@@ -1,4 +1,3 @@
-import React from "react";
 import InitiativeBar from "../components/combat/InitiativeBar";
 
 const Game = () => {

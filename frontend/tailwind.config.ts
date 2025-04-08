@@ -1,21 +1,28 @@
-// tailwind.config.ts
-import { fontFamily } from "tailwindcss/defaultTheme";
+import type { Config } from 'tailwindcss';
 
-export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+const config: Config = {
+  darkMode: 'class',
+  content: ['./index.html', './src/**/*.{ts,tsx,js,jsx}'],
   theme: {
     extend: {
-      fontFamily: {
-        serif: ["'IM Fell English SC'", ...fontFamily.serif],
-        display: ["'MedievalSharp'", ...fontFamily.sans],
-      },
       colors: {
-        parchment: "#f6f1d3",
-        ink: "#2e1f0e",
-        mana: "#4a8ec2",
-        health: "#a93030",
-        shadow: "#1c0e0a",
+        mana: '#6366f1',
+        health: '#ef4444',
+        parchment: '#f5f0e6',
+        ink: '#0a0a0a',
+        stone: {
+          700: '#44403c',
+          800: '#292524',
+          900: '#1c1917',
+        },
+      },
+      fontFamily: {
+        display: ['"IM Fell English SC"', 'serif'],
+        body: ['"MedievalSharp"', 'serif'],
       },
     },
   },
+  plugins: [],
 };
+
+export default config;

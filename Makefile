@@ -12,6 +12,11 @@
 build: ## Build the frontend and workers
 	npm run build && wrangler build
 
+clean: ## Delete node_modules and lockfiles from root, frontend, and workers
+	rm -rf node_modules package-lock.json
+	cd frontend && rm -rf node_modules package-lock.json
+	cd workers && rm -rf node_modules package-lock.json
+
 deploy: ## Deploy to Cloudflare Pages and Workers
 	npm run deploy && wrangler publish
 
@@ -19,6 +24,11 @@ dev: ## Run dev servers for frontend and workers in parallel (VSCode/WSL/macOS f
 	@echo "🚀 Starting frontend and workers dev servers..."
 	npm --prefix workers run dev & \
 	npm --prefix frontend run dev
+
+install: ## Reinstall all dependencies in root, frontend, and workers
+	npm install
+	cd frontend && npm install
+	cd workers && npm install
 
 lint: ## Lint the code
 	npm run lint

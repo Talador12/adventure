@@ -1,24 +1,26 @@
-import React from "react";
-import Sidebar from "./components/layout/Sidebar";
+import { Routes, Route } from "react-router-dom";
 import TopBar from "./components/layout/TopBar";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import Sidebar from "./components/layout/Sidebar";
 import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
 
-// No need for <Router> or <BrowserRouter> here anymore
-const App = () => (
-  <div className="flex">
-    <Sidebar />
-    <div className="flex-1 flex flex-col">
+const App = () => {
+  return (
+    <div className="flex flex-col min-h-screen bg-stone-900 text-white font-body">
       <TopBar />
-      <div className="p-4 flex-1">
-        <Routes>
-          <Route path="/" element={<Lobby />} />
-          <Route path="/game" element={<Game />} />
-        </Routes>
+
+      <div className="flex flex-1 min-h-0">
+        <Sidebar />
+
+        <main className="flex-1 px-6 py-8 overflow-y-auto">
+          <Routes>
+            <Route path="/" element={<Lobby />} />
+            <Route path="/game" element={<Game />} />
+          </Routes>
+        </main>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default App;
