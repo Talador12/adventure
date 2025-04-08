@@ -1,0 +1,16 @@
+{
+    "name": "workers",
+    "private": true,
+    "scripts": {
+      "dev": "wrangler dev",
+      "build": "wrangler build",
+      "lint": "eslint . --ext .ts",
+      "format": "prettier --write .",
+      "test": "vitest"
+    },
+    "devDependencies": {
+      "wrangler": "^3.0.0",
+      "typescript": "^5.0.0"
+    }
+  }
+  
