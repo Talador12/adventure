@@ -61,6 +61,7 @@ target/
 
 # Environments
 .env
+.env.*
 .venv
 env/
 venv/
@@ -86,12 +87,18 @@ Anaconda3-*.sh
 node_modules/
 */node_modules/
 package-lock.json
+pnpm-lock.yaml
 dist/
 build/
 out/
 .vite/
 frontend/.vite/
 frontend/public/vite.svg
+
+# Output
+dist/
+.next/
+.turbo/
 .tree-output.txt
 
 # IDE / OS / Misc

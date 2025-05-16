@@ -26,9 +26,10 @@ build: makeinfo ## Build both frontend and backend
 	npm run build && wrangler build
 
 clean: makeinfo ## Remove dist folders and all node_modules/lockfiles
-	rm -rf node_modules package-lock.json $(DIST_DIR)
-	cd frontend && rm -rf node_modules package-lock.json
-	cd workers && rm -rf node_modules package-lock.json
+	rm -rf node_modules package-lock.json $(DIST_DIR) || true
+	cd frontend && rm -rf node_modules package-lock.json || true
+	cd workers && rm -rf node_modules package-lock.json || true
+	rm -rf .tree-output.txt || true
 
 commit: makeinfo ## Format, test stub, and commit with a message: make commit M='your message'
 	@msg="$(M)"; \
