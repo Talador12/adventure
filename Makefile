@@ -5,19 +5,6 @@
 .PHONY: help makeinfo
 .DEFAULT_GOAL := help
 
-# Directories
-SRC_DIR = src
-DIST_DIR = dist
-CSS_DIR = $(SRC_DIR)/css
-JS_DIR = $(SRC_DIR)/js
-TS_DIR = $(SRC_DIR)/ts
-ASSETS_DIR = $(SRC_DIR)/assets
-
-# Tools
-TSC = npx tsc
-SASS = npx sass
-BROWSER_SYNC = npx browser-sync start
-
 ################################################################################
 #                                  Commands                                    #
 ################################################################################
@@ -28,11 +15,13 @@ amend: ## Reset last commit and recommit current files using the same message
 	git reset --soft HEAD~1 && \
 	make commit M="$$msg"
 
-build: makeinfo ## Build both frontend and backend
-	npm run build && wrangler build
+build: makeinfo ## Validate that public/ is ready for Pages deploy
+	@test -f frontend/public/index.html || (echo "❌ index.html missing in public/"; exit 1)
+	@test -f frontend/public/_worker.js || (echo "❌ _worker.js missing in public/"; exit 1)
+	@echo "✅ Pages build folder validated."
 
 clean: makeinfo ## Remove dist folders and all node_modules/lockfiles
-	rm -rf node_modules package-lock.json $(DIST_DIR) || true
+	rm -rf node_modules package-lock.json || true
 	cd frontend && rm -rf node_modules package-lock.json || true
 	cd workers && rm -rf node_modules package-lock.json || true
 	rm -rf .tree-output.txt || true
@@ -50,8 +39,11 @@ commit: makeinfo ## Format, test stub, and commit with a message: make commit M=
 	git commit -m "$$msg" && \
 	git push --force
 
-deploy: makeinfo ## Deploy to Cloudflare Pages and Workers
-	npm run deploy && wrangler publish
+deploy-staging: makeinfo ## Deploy to Cloudflare Pages (staging branch)
+	cd frontend && npx wrangler pages deploy public --project-name=adventure --branch=staging
+
+deploy-prod: makeinfo ## Deploy to Cloudflare Pages (production)
+	cd frontend && npx wrangler pages deploy public --project-name=adventure --branch=main
 
 dev: makeinfo ## Run both frontend (Pages) and backend (Workers)
 	@echo "💀 Killing debugger port 9229 (if needed)..."
@@ -74,19 +66,11 @@ install: makeinfo ## Install all dependencies in root, frontend, and workers
 lint: makeinfo ## Lint code using ESLint
 	npm run lint
 
-serve: makeinfo ## Serve built static frontend (for local testing)
-	$(BROWSER_SYNC) --server $(DIST_DIR) --files "$(DIST_DIR)/**/*"
-
 test: makeinfo ## Run unit tests
 	npm run test
 
 tree: makeinfo ## Output directory tree, excluding common clutter
 	tree -I 'node_modules|.git|dist|.next|.turbo' -L 3 > .tree-output.txt
-
-watch: makeinfo ## Watch for file changes and rebuild CSS/TS
-	$(SASS) --watch $(CSS_DIR):$(DIST_DIR)/css &
-	$(TSC) --watch &
-	$(BROWSER_SYNC) --server $(DIST_DIR) --files "$(DIST_DIR)/**/*"
 
 ################################################################################
 #                            Functions and Helpers                             #

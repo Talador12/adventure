@@ -1,6 +1,5 @@
 var __defProp = Object.defineProperty;
-var __name = (target, value) =>
-  __defProp(target, "name", { value, configurable: true });
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
 // .wrangler/tmp/bundle-6y03nh/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
@@ -12,9 +11,9 @@ __name(stripCfConnectingIPHeader, "stripCfConnectingIPHeader");
 globalThis.fetch = new Proxy(globalThis.fetch, {
   apply(target, thisArg, argArray) {
     return Reflect.apply(target, thisArg, [
-      stripCfConnectingIPHeader.apply(null, argArray),
+      stripCfConnectingIPHeader.apply(null, argArray)
     ]);
-  },
+  }
 });
 
 // src/lobby.ts
@@ -39,7 +38,7 @@ var Lobby = class {
       await this.handleWebSocket(server);
       return new Response(null, {
         status: 101,
-        webSocket: client,
+        webSocket: client
       });
     }
     if (new URL(req.url).pathname === "/state") {
@@ -117,27 +116,25 @@ var src_default = {
     const id = env.LOBBY.idFromName(roomId);
     const obj = env.LOBBY.get(id);
     return obj.fetch(req);
-  },
+  }
 };
 
 // ../node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
-var drainBody = /* @__PURE__ */ __name(
-  async (request, env, _ctx, middlewareCtx) => {
+var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } finally {
     try {
-      return await middlewareCtx.next(request, env);
-    } finally {
-      try {
-        if (request.body !== null && !request.bodyUsed) {
-          const reader = request.body.getReader();
-          while (!(await reader.read()).done) {}
+      if (request.body !== null && !request.bodyUsed) {
+        const reader = request.body.getReader();
+        while (!(await reader.read()).done) {
         }
-      } catch (e) {
-        console.error("Failed to drain the unused request body.", e);
       }
+    } catch (e) {
+      console.error("Failed to drain the unused request body.", e);
     }
-  },
-  "drainBody",
-);
+  }
+}, "drainBody");
 var middleware_ensure_req_body_drained_default = drainBody;
 
 // ../node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
@@ -146,30 +143,27 @@ function reduceError(e) {
     name: e?.name,
     message: e?.message ?? String(e),
     stack: e?.stack,
-    cause: e?.cause === void 0 ? void 0 : reduceError(e.cause),
+    cause: e?.cause === void 0 ? void 0 : reduceError(e.cause)
   };
 }
 __name(reduceError, "reduceError");
-var jsonError = /* @__PURE__ */ __name(
-  async (request, env, _ctx, middlewareCtx) => {
-    try {
-      return await middlewareCtx.next(request, env);
-    } catch (e) {
-      const error = reduceError(e);
-      return Response.json(error, {
-        status: 500,
-        headers: { "MF-Experimental-Error-Stack": "true" },
-      });
-    }
-  },
-  "jsonError",
-);
+var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } catch (e) {
+    const error = reduceError(e);
+    return Response.json(error, {
+      status: 500,
+      headers: { "MF-Experimental-Error-Stack": "true" }
+    });
+  }
+}, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
 // .wrangler/tmp/bundle-6y03nh/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
-  middleware_miniflare3_json_error_default,
+  middleware_miniflare3_json_error_default
 ];
 var middleware_insertion_facade_default = src_default;
 
@@ -185,7 +179,7 @@ function __facade_invokeChain__(request, env, ctx, dispatch, middlewareChain) {
     dispatch,
     next(newRequest, newEnv) {
       return __facade_invokeChain__(newRequest, newEnv, ctx, dispatch, tail);
-    },
+    }
   };
   return head(request, env, ctx, middlewareCtx);
 }
@@ -193,7 +187,7 @@ __name(__facade_invokeChain__, "__facade_invokeChain__");
 function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
   return __facade_invokeChain__(request, env, ctx, dispatch, [
     ...__facade_middleware__,
-    finalMiddleware,
+    finalMiddleware
   ]);
 }
 __name(__facade_invoke__, "__facade_invoke__");
@@ -217,16 +211,13 @@ var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   }
 };
 function wrapExportedHandler(worker) {
-  if (
-    __INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 ||
-    __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0
-  ) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
     return worker;
   }
   for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
     __facade_register__(middleware);
   }
-  const fetchDispatcher = /* @__PURE__ */ __name(function (request, env, ctx) {
+  const fetchDispatcher = /* @__PURE__ */ __name(function(request, env, ctx) {
     if (worker.fetch === void 0) {
       throw new Error("Handler does not export a fetch() function.");
     }
@@ -235,26 +226,24 @@ function wrapExportedHandler(worker) {
   return {
     ...worker,
     fetch(request, env, ctx) {
-      const dispatcher = /* @__PURE__ */ __name(function (type, init) {
+      const dispatcher = /* @__PURE__ */ __name(function(type, init) {
         if (type === "scheduled" && worker.scheduled !== void 0) {
           const controller = new __Facade_ScheduledController__(
             Date.now(),
             init.cron ?? "",
-            () => {},
+            () => {
+            }
           );
           return worker.scheduled(controller, env, ctx);
         }
       }, "dispatcher");
       return __facade_invoke__(request, env, ctx, dispatcher, fetchDispatcher);
-    },
+    }
   };
 }
 __name(wrapExportedHandler, "wrapExportedHandler");
 function wrapWorkerEntrypoint(klass) {
-  if (
-    __INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 ||
-    __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0
-  ) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
     return klass;
   }
   for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
@@ -274,7 +263,8 @@ function wrapWorkerEntrypoint(klass) {
         const controller = new __Facade_ScheduledController__(
           Date.now(),
           init.cron ?? "",
-          () => {},
+          () => {
+          }
         );
         return super.scheduled(controller);
       }
@@ -285,7 +275,7 @@ function wrapWorkerEntrypoint(klass) {
         this.env,
         this.ctx,
         this.#dispatcher,
-        this.#fetchDispatcher,
+        this.#fetchDispatcher
       );
     }
   };
@@ -301,6 +291,6 @@ var middleware_loader_entry_default = WRAPPED_ENTRY;
 export {
   Lobby,
   __INTERNAL_WRANGLER_MIDDLEWARE__,
-  middleware_loader_entry_default as default,
+  middleware_loader_entry_default as default
 };
 //# sourceMappingURL=index.js.map
