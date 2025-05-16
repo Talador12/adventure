@@ -1,10 +1,6 @@
-// packages/worker/index.ts
-
 import { Lobby } from "./lobby";
 
-export interface Env {
-  LOBBY: DurableObjectNamespace;
-}
+export { Lobby };
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext) {

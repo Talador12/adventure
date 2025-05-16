@@ -66,7 +66,7 @@ make build
 - **Queues**: Turn-based logic, action management.
 - **Pages**: Frontend hosting.
 
-**Frontend:** React (Vite), Tailwind, Radix UI, Framer Motion
+**Frontend:** React (Vite)
 
 **Dev Tools:** Makefile, npm workspaces, Wrangler
 

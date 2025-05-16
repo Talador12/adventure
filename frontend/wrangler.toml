@@ -1,0 +1,11 @@
+name = "frontend-pages"
+compatibility_date = "2025-05-16"
+
+main = "public/_worker.js"
+
+[site]
+bucket = "./public"
+
+[[services]]
+binding = "backend"
+service = "adventure-backend"

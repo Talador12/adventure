@@ -1,12 +1,13 @@
-name = "adventure-workers"
+name = "adventure-backend"
 main = "src/index.ts"
-compatibility_date = "2025-04-07"
-compatibility_flags = ["nodejs_compat"]
-type = "javascript"
+compatibility_date = "2025-05-16"
 
 [[durable_objects.bindings]]
 name = "LOBBY"
 class_name = "Lobby"
 
 [durable_objects]
-bindings = [{ name = "LOBBY", class_name = "Lobby" }]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["Lobby"]
