@@ -29,10 +29,10 @@ clean: ## Remove dist folders and all node_modules/lockfiles
 	cd frontend && rm -rf node_modules package-lock.json
 	cd workers && rm -rf node_modules package-lock.json
 
-commit: ## Format, test stub, and commit with a message: make commit MESSAGE='your message'
-	@msg="$(MESSAGE)"; \
+commit: ## Format, test stub, and commit with a message: make commit M='your message'
+	@msg="$(M)"; \
 	if [ -z "$$msg" ]; then \
-		echo "❌ Please provide a commit message using: make commit MESSAGE='your message'"; \
+		echo "❌ Please provide a commit message using: make commit M='your message'"; \
 		exit 1; \
 	fi && \
 	make format && \
