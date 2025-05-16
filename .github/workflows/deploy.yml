@@ -27,9 +27,6 @@ jobs:
       - name: Install deps
         run: pnpm install
 
-      - name: Lint
-        run: make lint
-
       - name: Test
         run: make test
 

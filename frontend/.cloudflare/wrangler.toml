@@ -2,6 +2,7 @@ name = "frontend-pages"
 compatibility_date = "2025-05-16"
 
 main = "public/_worker.js"
+pages_build_output_dir = "public"
 
 [site]
 bucket = "./public"

@@ -1,6 +1,6 @@
 name = "adventure-backend"
 main = "src/index.ts"
-compatibility_date = "2025-05-16"
+compatibility_date = "2024-05-16"
 
 [[durable_objects.bindings]]
 name = "LOBBY"
@@ -11,3 +11,6 @@ class_name = "Lobby"
 [[migrations]]
 tag = "v1"
 new_classes = ["Lobby"]
+
+[build]
+command = ""
