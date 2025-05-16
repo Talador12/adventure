@@ -3,3 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2025-04-07"
 compatibility_flags = ["nodejs_compat"]
 type = "javascript"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+
+[durable_objects]
+bindings = [{ name = "LOBBY", class_name = "Lobby" }]
