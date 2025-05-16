@@ -103,12 +103,13 @@ make tree
 ## 📁 Project Structure
 
 ```
-adventure/
-├── frontend/       # React frontend
-├── workers/        # Cloudflare Workers backend
-├── Makefile        # Dev automation tasks
-├── package.json    # Root npm workspace
-└── wrangler.toml   # Cloudflare deployment config
+├── public/
+│   ├── index.html          <-- static site root
+│   └── _worker.js          <-- JS re-export for Worker module
+├── _worker.ts              <-- main dynamic logic (Durable Objects, APIs, etc)
+├── src/                    <-- app logic, React, etc
+├── wrangler.toml
+
 ```
 
 ---

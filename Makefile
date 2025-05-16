@@ -11,11 +11,12 @@ WRANGLER = ./node_modules/.bin/wrangler
 ################################################################################
 
 all: makeinfo ## clean, upgrade, install, format, build, dev server deployed locally
-	make clean && \
-	make upgrade && \
-	make install && \
-	make format && \
-	make build && \
+	make clean
+	make kill
+	make upgrade
+	make install
+	make format
+	make build
 	make dev
 
 amend: makeinfo ## Reset last commit and recommit current files using the same message
@@ -25,19 +26,16 @@ amend: makeinfo ## Reset last commit and recommit current files using the same m
 	make commit M="$$msg"
 
 build-pages: makeinfo ## Validate that public/ folder is ready for Pages deploy
-	@test -f frontend/public/index.html || (echo "❌ index.html missing in frontend/public"; exit 1)
-	@test -f frontend/public/_worker.js || (echo "❌ _worker.js missing in frontend/public"; exit 1)
+	@test -f public/index.html || (echo "❌ index.html missing in public/"; exit 1)
+	@test -f public/_worker.js || (echo "❌ _worker.js missing in public/"; exit 1)
 	@echo "✅ Pages public/ folder looks good."
 
-build: makeinfo ## Validate frontend + build backend Worker (wrangler 4.x)
+build: makeinfo ## Validate public + build backend Worker (wrangler 4.x)
 	make build-pages
 	rm -rf .wrangler && $(WRANGLER) build
 
-clean: makeinfo ## Remove dist folders and all node_modules/lockfiles
-	@lsof -ti :8787 | xargs kill -9 > /dev/null 2>&1 || true
-	@lsof -ti :9229 | xargs kill -9 > /dev/null 2>&1 || true
-	rm -rf node_modules package-lock.json .wrangler dist/ || true
-	rm -rf .tree-output.txt || true
+clean: makeinfo ## Remove node_modules, lockfiles, dist, wrangler tmp, ports
+	rm -rf node_modules package-lock.json .wrangler dist/ .tree-output.txt
 
 commit: makeinfo ## Install, format, build, and commit with a message: make commit M='your message'
 	@msg="$(M)"; \
@@ -53,19 +51,14 @@ commit: makeinfo ## Install, format, build, and commit with a message: make comm
 	git push --force
 
 deploy-prod: makeinfo ## Deploy to Cloudflare Pages (production)
-	$(WRANGLER) pages deploy frontend/public --project-name=adventure --branch=main
+	$(WRANGLER) pages deploy public --project-name=adventure --branch=main
 
 deploy-staging: makeinfo ## Deploy to Cloudflare Pages (staging branch)
-	$(WRANGLER) pages deploy frontend/public --project-name=adventure --branch=staging
+	$(WRANGLER) pages deploy public --project-name=adventure --branch=staging
 
-dev: makeinfo ## Run both frontend (Pages) and backend (Workers)
-	@echo "💀 Killing debugger port 9229 (if needed)..."
-	@lsof -ti :9229 | xargs kill -9 > /dev/null 2>&1 || true
-	@echo "⚡ Starting backend on http://localhost:8787 (default debugger port 9229)..."
-	$(WRANGLER) dev --port=8787 & \
-	sleep 2 && \
-	echo "⚡ Starting frontend on http://localhost:8788 (inspector on 9333)..." && \
-	$(WRANGLER) pages dev frontend/public --inspector-port=9333 --port=8788
+dev: makeinfo ## Run full local dev server with frontend and backend
+	@echo "⚡ Starting backend+frontend on http://localhost:8787 (debugger 9229)..."
+	$(WRANGLER) dev --port=8787 --inspector-port=9229
 
 format: makeinfo ## Format code using Prettier
 	npx prettier --write .
@@ -74,13 +67,20 @@ install: makeinfo ## Install all dependencies from root only
 	NPM_CONFIG_LOGLEVEL=error npm install --save-exact
 
 lint: makeinfo ## Check formatting with Prettier
-	npx prettier --write .
+	npx prettier --check .
+
+kill: makeinfo ## Kill all local ports used by frontend/backend
+	@echo "💀 Killing local deployments..."
+	@lsof -ti :8787 | xargs kill -9 > /dev/null 2>&1 || true
+	@lsof -ti :8788 | xargs kill -9 > /dev/null 2>&1 || true
+	@lsof -ti :9229 | xargs kill -9 > /dev/null 2>&1 || true
+	@lsof -ti :9333 | xargs kill -9 > /dev/null 2>&1 || true
 
 tree: makeinfo ## Output directory tree, excluding common clutter
 	tree -I 'node_modules|.git|dist|.next|.turbo' -L 6 > .tree-output.txt
 	code -r .tree-output.txt
 
-upgrade: ## Upgrade Node (from .nvmrc), npm, and all dependencies
+upgrade: makeinfo ## Upgrade Node (from .nvmrc), npm, and all dependencies
 	@echo "📦 Reading Node version from .nvmrc..."
 	@export NODE_VERSION=$$(cat .nvmrc); \
 	bash -c '\
@@ -102,11 +102,9 @@ upgrade: ## Upgrade Node (from .nvmrc), npm, and all dependencies
 help: makeinfo # Show available make commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-makeinfo: # Show the current Makefile command
+makeinfo: # Shows the current make command running
 	@goal="$(MAKECMDGOALS)"; \
-	if [ "$$goal" = "" ] || [ "$$goal" = "makeinfo" ]; then \
-		goal="help"; \
-	fi; \
+	if [ "$$goal" = "" ] || [ "$$goal" = "makeinfo" ]; then goal="help"; fi; \
 	echo ""; \
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 	echo "🛠  Running: \033[35m$$goal\033[0m"; \
