@@ -25,7 +25,7 @@ build: makeinfo ## Validate frontend + build backend Worker (wrangler 4.x)
 	cd workers && rm -rf .wrangler && npx wrangler build
 
 clean: makeinfo ## Remove dist folders and all node_modules/lockfiles
-	rm -rf node_modules package-lock.json .wrangler || true
+	rm -rf node_modules package-lock.json .wrangler frontend/dist workers/dist || true
 	cd frontend && rm -rf node_modules package-lock.json .wrangler || true
 	cd workers && rm -rf node_modules package-lock.json .wrangler || true
 	rm -rf .tree-output.txt || true
@@ -76,7 +76,8 @@ test: makeinfo ## Run unit tests
 	npm run test
 
 tree: makeinfo ## Output directory tree, excluding common clutter
-	tree -I 'node_modules|.git|dist|.next|.turbo' -L 3 > .tree-output.txt
+	tree -I 'node_modules|.git|dist|.next|.turbo' -L 6 > .tree-output.txt
+	code -r .tree-output.txt
 
 upgrade: ## Upgrade Node (from .nvmrc), npm, and all dependencies (frontend + workers)
 	@echo "📦 Reading Node version from .nvmrc..."
@@ -94,7 +95,6 @@ upgrade: ## Upgrade Node (from .nvmrc), npm, and all dependencies (frontend + wo
 	cd frontend && ncu -u
 	cd workers && ncu -u
 	make install
-
 
 ################################################################################
 #                            Functions and Helpers                             #

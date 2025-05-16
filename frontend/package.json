@@ -1,40 +1,27 @@
 {
   "name": "frontend",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "wrangler pages dev public --inspector-port=9333 --port=8788",
+    "build": "tsc -b",
+    "format": "prettier --write ."
   },
   "dependencies": {
+    "@fortawesome/free-brands-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.12.1",
-    "howler": "^2.2.4",
-    "radix-ui": "^1.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.27.0",
-    "@types/react": "^19.1.4",
-    "@types/react-dom": "^19.1.5",
-    "@types/react-router-dom": "^5.3.3",
-    "eslint": "^9.27.0",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.1.0",
     "prettier": "^3.5.3",
-    "typescript": "~5.8.3",
-    "typescript-eslint": "^8.32.1"
+    "typescript": "~5.8.3"
   },
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "eslint.config.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "description": "Frontend for Adventure",
+  "author": "Keith Adler",
+  "license": "UNLICENSED"
 }

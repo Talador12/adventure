@@ -1,7 +1,4 @@
-// frontend/public/_worker.js
-
-export default {
-  async fetch(request, env, ctx) {
-    return await env.ASSETS.fetch(request);
-  },
-};
+export { onRequest } from '../src/main.tsx';
+export async function onRequest(context) {
+  return new Response("Hello from Pages!");
+}
