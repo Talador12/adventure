@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 interface DieProps {
   value: number;
@@ -17,14 +17,7 @@ const animationVariants = {
 };
 
 const Die = ({ value, environment }: DieProps) => (
-  <motion.div
-    key={value}
-    className="w-28 h-28 bg-parchment border-4 border-mana rounded-xl shadow-xl flex items-center justify-center text-5xl font-display text-ink"
-    initial={animationVariants[environment].initial}
-    animate={animationVariants[environment].animate}
-    exit={{ scale: 0, opacity: 0 }}
-    transition={{ type: "spring", stiffness: 120, damping: 20, duration: 1.5 }}
-  >
+  <motion.div key={value} className="flex h-28 w-28 items-center justify-center rounded-xl border-4 border-mana bg-parchment font-display text-5xl text-ink shadow-xl" initial={animationVariants[environment].initial} animate={animationVariants[environment].animate} exit={{ scale: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 120, damping: 20, duration: 1.5 }}>
     {value}
   </motion.div>
 );

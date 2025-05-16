@@ -1,10 +1,10 @@
-type DiceType = "d4" | "d6" | "d8" | "d10" | "d12" | "d20";
+type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20';
 
 const DiceIcon = ({ type }: { type: DiceType }) => {
-  const base = "w-16 h-16 text-mana";
+  const base = 'w-16 h-16 text-mana';
 
   switch (type) {
-    case "d4":
+    case 'd4':
       return (
         <svg viewBox="0 0 120 100" className={base} fill="none" stroke="currentColor" strokeWidth={4}>
           <polygon points="60,10 10,90 110,90" />
@@ -12,7 +12,7 @@ const DiceIcon = ({ type }: { type: DiceType }) => {
         </svg>
       );
 
-    case "d6":
+    case 'd6':
       return (
         <svg viewBox="0 0 100 100" className={base} fill="none" stroke="currentColor" strokeWidth={4}>
           <rect x="10" y="10" width="80" height="80" rx="8" />
@@ -22,7 +22,7 @@ const DiceIcon = ({ type }: { type: DiceType }) => {
         </svg>
       );
 
-    case "d8":
+    case 'd8':
       return (
         <svg viewBox="0 0 100 100" className={base} fill="none" stroke="currentColor" strokeWidth={4}>
           <polygon points="50,5 95,50 50,95 5,50" />
@@ -30,7 +30,7 @@ const DiceIcon = ({ type }: { type: DiceType }) => {
         </svg>
       );
 
-    case "d10":
+    case 'd10':
       return (
         <svg viewBox="0 0 120 100" className={base} fill="none" stroke="currentColor" strokeWidth={4}>
           <polygon points="60,5 105,35 95,95 25,95 15,35" />
@@ -38,7 +38,7 @@ const DiceIcon = ({ type }: { type: DiceType }) => {
         </svg>
       );
 
-    case "d12":
+    case 'd12':
       return (
         <svg viewBox="0 0 120 100" className={base} fill="none" stroke="currentColor" strokeWidth={4}>
           <polygon points="60,5 95,15 115,50 95,85 60,95 25,85 5,50 25,15" />
@@ -46,7 +46,7 @@ const DiceIcon = ({ type }: { type: DiceType }) => {
         </svg>
       );
 
-    case "d20":
+    case 'd20':
       return (
         <svg viewBox="0 0 120 100" className={base} fill="none" stroke="currentColor" strokeWidth={4}>
           <polygon points="60,5 100,20 115,60 90,95 30,95 5,60 20,20" />

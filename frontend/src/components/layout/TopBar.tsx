@@ -1,7 +1,7 @@
 const TopBar = () => {
   return (
-    <header className="w-full bg-stone-800 p-4 shadow-md flex items-center justify-between">
-      <div className="text-xl font-display text-parchment">Adventure</div>
+    <header className="flex w-full items-center justify-between bg-stone-800 p-4 shadow-md">
+      <div className="font-display text-xl text-parchment">Adventure</div>
       {/* Add nav buttons or profile info here later */}
     </header>
   );

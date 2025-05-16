@@ -1,16 +1,16 @@
 {
-    "name": "workers",
-    "private": true,
-    "scripts": {
-      "dev": "wrangler dev",
-      "build": "wrangler build",
-      "lint": "eslint . --ext .ts",
-      "format": "prettier --write .",
-      "test": "vitest"
-    },
-    "devDependencies": {
-      "wrangler": "^4.8.0",
-      "typescript": "^5.8.3"
-    }
+  "name": "workers",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler build",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "wrangler": "^4.8.0",
+    "typescript": "^5.8.3"
   }
-  
+}
