@@ -2,6 +2,7 @@
 #                                  Variables                                   #
 ################################################################################
 
+.PHONY: help
 .DEFAULT_GOAL := help
 
 # Directories
@@ -21,15 +22,15 @@ BROWSER_SYNC = npx browser-sync start
 #                                  Commands                                    #
 ################################################################################
 
-build: ## Build both frontend and backend
+build: makeinfo ## Build both frontend and backend
 	npm run build && wrangler build
 
-clean: ## Remove dist folders and all node_modules/lockfiles
+clean: makeinfo ## Remove dist folders and all node_modules/lockfiles
 	rm -rf node_modules package-lock.json $(DIST_DIR)
 	cd frontend && rm -rf node_modules package-lock.json
 	cd workers && rm -rf node_modules package-lock.json
 
-commit: ## Format, test stub, and commit with a message: make commit M='your message'
+commit: makeinfo ## Format, test stub, and commit with a message: make commit M='your message'
 	@msg="$(M)"; \
 	if [ -z "$$msg" ]; then \
 		echo "❌ Please provide a commit message using: make commit M='your message'"; \
@@ -42,36 +43,36 @@ commit: ## Format, test stub, and commit with a message: make commit M='your mes
 	git commit -m "$$msg" && \
 	git push
 
-deploy: ## Deploy to Cloudflare Pages and Workers
+deploy: makeinfo ## Deploy to Cloudflare Pages and Workers
 	npm run deploy && wrangler publish
 
-dev: ## Start dev servers for frontend and workers (parallel)
+dev: makeinfo ## Start dev servers for frontend and workers (parallel)
 	@echo "🚀 Starting frontend and workers dev servers..."
 	npm --prefix workers run dev & \
 	npm --prefix frontend run dev
 
-install: ## Install all dependencies in root, frontend, and workers
+format: makeinfo ## Format code using Prettier
+	cd frontend && npx prettier --write .
+	cd workers && npx prettier --write .
+
+install: makeinfo ## Install all dependencies in root, frontend, and workers
 	npm install
 	cd frontend && npm install
 	cd workers && npm install
 
-lint: ## Lint code using ESLint
+lint: makeinfo ## Lint code using ESLint
 	npm run lint
 
-format: ## Format code using Prettier
-	cd frontend && npx prettier --write .
-	cd workers && npx prettier --write .
-
-test: ## Run unit tests
-	npm run test
-
-tree: ## Output directory tree, excluding common clutter
-	tree -I 'node_modules|.git|dist|.next|.turbo' -L 3 > .tree-output.txt
-
-serve: ## Serve built static frontend (for local testing)
+serve: makeinfo ## Serve built static frontend (for local testing)
 	$(BROWSER_SYNC) --server $(DIST_DIR) --files "$(DIST_DIR)/**/*"
 
-watch: ## Watch for file changes and rebuild CSS/TS
+test: makeinfo ## Run unit tests
+	npm run test
+
+tree: makeinfo ## Output directory tree, excluding common clutter
+	tree -I 'node_modules|.git|dist|.next|.turbo' -L 3 > .tree-output.txt
+
+watch: makeinfo ## Watch for file changes and rebuild CSS/TS
 	$(SASS) --watch $(CSS_DIR):$(DIST_DIR)/css &
 	$(TSC) --watch &
 	$(BROWSER_SYNC) --server $(DIST_DIR) --files "$(DIST_DIR)/**/*"
@@ -80,5 +81,16 @@ watch: ## Watch for file changes and rebuild CSS/TS
 #                            Functions and Helpers                             #
 ################################################################################
 
-help: ## Show available make commands
+help: makeinfo ## Show available make commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+makeinfo: ## Show the current Makefile command
+	@goal="$(MAKECMDGOALS)"; \
+	if [ "$$goal" = "" ] || [ "$$goal" = "makeinfo" ]; then \
+		goal="help"; \
+	fi; \
+	echo ""; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	echo "🛠  Running: \033[35m$$goal\033[0m"; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	echo ""
