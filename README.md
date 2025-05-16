@@ -1,6 +1,6 @@
 # 🧙 Adventure
 
-*An immersive, AI-enhanced virtual tabletop built on Cloudflare for procedurally-generated fantasy campaigns.*
+_An immersive, AI-enhanced virtual tabletop built on Cloudflare for procedurally-generated fantasy campaigns._
 
 ---
 
@@ -22,32 +22,38 @@ make build
 ## 🎲 Key Features
 
 ### ⚔️ Gameplay
+
 - **Human or AI Players:** Solo, multiplayer, or mixed modes.
 - **Procedural Campaigns:** AI-generated storylines and one-shots.
 - **Real-time Sync:** Durable Objects ensure seamless multiplayer.
 - **In-Game Assistance:** Dice rolls, spell effects, condition tracking.
 
 ### 🗺️ AI-Generated Maps
+
 - Overworld, city, biome-specific, and battle-grid maps.
 - DM-controlled fog of war.
 - Interactive lore pins.
 
 ### 🧙 Player Tools
+
 - Guided character creation with attribute rolling.
 - Dynamic character sheets (live updates, autosave).
 - Roleplay dashboard with notes and voice-style prompts.
 
 ### 🧠 Dungeon Master Tools
+
 - **DM God Mode:** Roll override, visibility toggles, event injection.
 - **Narration & Scene Prompts:** AI-generated descriptions, NPC dialogue.
 - **Dynamic Difficulty:** Real-time control over encounter challenge.
 
 ### 🎵 Immersive FX & Audio
+
 - Particle effects for spells and combat.
 - Mood music and sound effects synced to gameplay events.
 - Accessibility-friendly "Low-FX" mode.
 
 ### 🌐 Multiplayer & Mod Support
+
 - Persistent, rejoinable game sessions.
 - Drop-in-drop-out guest characters.
 - Optional Discord-style voice/video integrations.
@@ -112,5 +118,3 @@ adventure/
 © 2025 Keith Adler. All Rights Reserved.
 
 This software is proprietary. Unauthorized copying, modification, distribution, or usage without explicit permission is prohibited.
-
-

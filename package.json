@@ -1,21 +1,29 @@
 {
-    "name": "adventure",
-    "private": true,
-    "workspaces": [
-        "frontend",
-        "workers"
-    ],
-    "scripts": {
-        "build": "make build",
-        "dev": "make dev",
-        "lint": "make lint",
-        "format": "make format",
-        "test": "make test"
-    },
-    "devDependencies": {
-        "eslint": "^9.24.0",
-        "eslint-config-prettier": "^10.1.1",
-        "prettier": "^3.5.3",
-        "tsx": "^4.19.3"
-    }
+  "name": "adventure",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "make dev",
+    "build": "make build",
+    "format": "make format",
+    "upgrade": "make upgrade",
+    "commit": "make commit"
+  },
+  "dependencies": {
+    "@fortawesome/free-brands-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.12.1",
+    "howler": "^2.2.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0"
+  },
+  "devDependencies": {
+    "prettier": "3.5.3",
+    "typescript": "5.8.3",
+    "wrangler": "4.15.2"
+  }
 }
