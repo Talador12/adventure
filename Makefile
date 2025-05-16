@@ -29,16 +29,17 @@ clean: ## Remove dist folders and all node_modules/lockfiles
 	cd frontend && rm -rf node_modules package-lock.json
 	cd workers && rm -rf node_modules package-lock.json
 
-commit: ## Format, test, and commit with a message: make commit "your message"
-	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
-		echo "❌ Please provide a commit message: make commit \"your message\""; \
+commit: ## Format, test stub, and commit with a message: make commit MESSAGE='your message'
+	@msg="$(MESSAGE)"; \
+	if [ -z "$$msg" ]; then \
+		echo "❌ Please provide a commit message using: make commit MESSAGE='your message'"; \
 		exit 1; \
-	fi
-	make format
-	@echo "🧪 Running tests (stub)..."
-	@echo "✅ No tests implemented yet"
-	git add -A
-	git commit -m "$(filter-out $@,$(MAKECMDGOALS))"
+	fi && \
+	make format && \
+	echo "🧪 Running tests (stub)..." && \
+	echo "✅ No tests implemented yet" && \
+	git add . && \
+	git commit -m "$$msg" && \
 	git push
 
 deploy: ## Deploy to Cloudflare Pages and Workers
