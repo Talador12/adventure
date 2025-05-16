@@ -9,7 +9,7 @@
 #                                  Commands                                    #
 ################################################################################
 
-amend: makeinfo check-node ## Reset last commit and recommit current files using the same message
+amend: makeinfo ## Reset last commit and recommit current files using the same message
 	@msg="$$(git log -1 --pretty=%B)"; \
 	echo "⚠️  Amending last commit: $$msg"; \
 	git reset --soft HEAD~1 && \
@@ -20,7 +20,7 @@ build-pages: makeinfo ## Validate that public/ folder is ready for Pages deploy
 	@test -f frontend/public/_worker.js || (echo "❌ _worker.js missing in frontend/public"; exit 1)
 	@echo "✅ Pages public/ folder looks good."
 
-build: makeinfo check-node ## Validate frontend + build backend Worker (wrangler 4.x)
+build: makeinfo ## Validate frontend + build backend Worker (wrangler 4.x)
 	make build-pages
 	cd workers && rm -rf .wrangler && npx wrangler build
 
@@ -30,7 +30,7 @@ clean: makeinfo ## Remove dist folders and all node_modules/lockfiles
 	cd workers && rm -rf node_modules package-lock.json .wrangler || true
 	rm -rf .tree-output.txt || true
 
-commit: makeinfo check-node ## Format, test stub, and commit with a message: make commit M='your message'
+commit: makeinfo ## Format, test stub, and commit with a message: make commit M='your message'
 	@msg="$(M)"; \
 	if [ -z "$$msg" ]; then \
 		echo "❌ Please provide a commit message using: make commit M='your message'"; \
@@ -45,12 +45,11 @@ commit: makeinfo check-node ## Format, test stub, and commit with a message: mak
 	git commit -m "$$msg" && \
 	git push --force
 
-deploy-prod: makeinfo check-node ## Deploy to Cloudflare Pages (production)
+deploy-prod: makeinfo ## Deploy to Cloudflare Pages (production)
 	cd frontend && npx wrangler pages deploy public --project-name=adventure --branch=main --config .cloudflare/wrangler.toml
 
-deploy-staging: makeinfo check-node ## Deploy to Cloudflare Pages (staging branch)
+deploy-staging: makeinfo ## Deploy to Cloudflare Pages (staging branch)
 	cd frontend && npx wrangler pages deploy public --project-name=adventure --branch=staging --config .cloudflare/wrangler.toml
-
 
 dev: makeinfo ## Run both frontend (Pages) and backend (Workers)
 	@echo "💀 Killing debugger port 9229 (if needed)..."
@@ -66,9 +65,9 @@ format: makeinfo ## Format code using Prettier
 	cd workers && npx prettier --write .
 
 install: makeinfo ## Install all dependencies in root, frontend, and workers
-	NPM_CONFIG_LOGLEVEL=error npm install
-	cd frontend && NPM_CONFIG_LOGLEVEL=error npm install
-	cd workers && NPM_CONFIG_LOGLEVEL=error npm install
+	NPM_CONFIG_LOGLEVEL=error npm install --save-exact
+	cd frontend && NPM_CONFIG_LOGLEVEL=error npm install --save-exact
+	cd workers && NPM_CONFIG_LOGLEVEL=error npm install --save-exact
 
 lint: makeinfo ## Lint code using ESLint
 	npm run lint
@@ -79,17 +78,27 @@ test: makeinfo ## Run unit tests
 tree: makeinfo ## Output directory tree, excluding common clutter
 	tree -I 'node_modules|.git|dist|.next|.turbo' -L 3 > .tree-output.txt
 
+upgrade: ## Upgrade Node (from .nvmrc), npm, and all dependencies (frontend + workers)
+	@echo "📦 Reading Node version from .nvmrc..."
+	@export NODE_VERSION=$$(cat .nvmrc); \
+	bash -c '\
+		export NVM_DIR="$$HOME/.nvm"; \
+		[ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; \
+		echo "⬇️  Installing Node $$NODE_VERSION..."; \
+		nvm install $$NODE_VERSION --reinstall-packages-from=current && \
+		nvm alias default $$NODE_VERSION && \
+		nvm use $$NODE_VERSION && \
+		echo "🔧 Using Node: $$(node -v)"; \
+		echo "🔧 Using npm: $$(npm -v)"'
+	npm install -g npm-check-updates
+	cd frontend && ncu -u
+	cd workers && ncu -u
+	make install
+
+
 ################################################################################
 #                            Functions and Helpers                             #
 ################################################################################
-
-check-node: # Check Node version
-	@node_version=$$(node -v); \
-	required="v20.19.2"; \
-	if [ "$$(printf "%s\n$$required\n$$node_version" | sort -V | head -n1)" != "$$required" ]; then \
-		echo "⚠️  Warning: Node $$node_version may be too old, upgrade to $$required or higher"; \
-	fi
-
 
 help: makeinfo # Show available make commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
