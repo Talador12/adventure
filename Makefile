@@ -4,7 +4,7 @@
 
 .PHONY: help makeinfo all
 .DEFAULT_GOAL := help
-WRANGLER = ./node_modules/.bin/wrangler
+WRANGLER = npx wrangler@latest
 
 ################################################################################
 #                                  Commands                                    #
@@ -12,11 +12,11 @@ WRANGLER = ./node_modules/.bin/wrangler
 
 all: makeinfo ## clean, upgrade, install, format, build, dev server deployed locally
 	make clean
-	make kill
 	make upgrade
 	make install
 	make format
 	make build
+	make kill
 	make dev
 
 amend: makeinfo ## Reset last commit and recommit current files using the same message
@@ -30,9 +30,12 @@ build-pages: makeinfo ## Validate that public/ folder is ready for Pages deploy
 	@test -f public/_worker.js || (echo "❌ _worker.js missing in public/"; exit 1)
 	@echo "✅ Pages public/ folder looks good."
 
-build: makeinfo ## Validate public + build backend Worker (wrangler 4.x)
-	make build-pages
-	rm -rf .wrangler && $(WRANGLER) build
+build: makeinfo ## Build frontend and worker
+	npm run build-frontend
+	npx wrangler build
+
+build-frontend:
+	vite build
 
 clean: makeinfo ## Remove node_modules, lockfiles, dist, wrangler tmp, ports
 	rm -rf node_modules package-lock.json .wrangler dist/ .tree-output.txt
@@ -43,6 +46,7 @@ commit: makeinfo ## Install, format, build, and commit with a message: make comm
 		echo "❌ Please provide a commit message using: make commit M='your message'"; \
 		exit 1; \
 	fi && \
+	make kill && \
 	make install && \
 	make format && \
 	make build && \
@@ -57,8 +61,15 @@ deploy-staging: makeinfo ## Deploy to Cloudflare Pages (staging branch)
 	$(WRANGLER) pages deploy public --project-name=adventure --branch=staging
 
 dev: makeinfo ## Run full local dev server with frontend and backend
-	@echo "⚡ Starting backend+frontend on http://localhost:8787 (debugger 9229)..."
-	$(WRANGLER) dev --port=8787 --inspector-port=9229
+	@echo "⚡ Starting backend+frontend servers..."
+	npx vite --port 5173 & \
+	npx wrangler dev --port=8787 --inspector-port=9229 & \
+	sleep 3 && \
+	echo "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" && \
+	echo "🌐 Frontend: http://localhost:5173" && \
+	echo "🔧 Backend: http://localhost:8787" && \
+	echo "🔍 Debugger: http://localhost:9229" && \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
 format: makeinfo ## Format code using Prettier
 	npx prettier --write .
@@ -71,10 +82,14 @@ lint: makeinfo ## Check formatting with Prettier
 
 kill: makeinfo ## Kill all local ports used by frontend/backend
 	@echo "💀 Killing local deployments..."
+	@lsof -ti :5173 | xargs kill -9 > /dev/null 2>&1 || true
 	@lsof -ti :8787 | xargs kill -9 > /dev/null 2>&1 || true
-	@lsof -ti :8788 | xargs kill -9 > /dev/null 2>&1 || true
 	@lsof -ti :9229 | xargs kill -9 > /dev/null 2>&1 || true
-	@lsof -ti :9333 | xargs kill -9 > /dev/null 2>&1 || true
+
+start: makeinfo ## Quick start assuming dependencies are already installed
+	make kill
+	make build
+	make dev
 
 tree: makeinfo ## Output directory tree, excluding common clutter
 	tree -I 'node_modules|.git|dist|.next|.turbo' -L 6 > .tree-output.txt

@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Sun, Moon } from 'lucide-react';
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(true);

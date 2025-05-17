@@ -4,9 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "make dev",
-    "build": "make build",
-    "format": "make format",
+    "dev": "vite --port 5173",
+    "build": "vite build && npx wrangler build",
+    "build-frontend": "vite build",
+    "preview": "vite preview",
+    "format": "prettier --write .",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "vitest",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:staging": "npm run build && wrangler deploy --env development",
+    "deploy:prod": "npm run build && wrangler deploy --env production",
     "upgrade": "make upgrade",
     "commit": "make commit"
   },
@@ -14,16 +21,24 @@
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
-    "clsx": "^2.1.1",
+    "@types/react": "19.1.4",
+    "@types/react-dom": "19.1.5",
+    "clsx": "2.1.1",
     "framer-motion": "^12.12.1",
     "howler": "^2.2.4",
+    "lucide-react": "0.511.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.0"
+    "react-router-dom": "^7.6.0",
+    "tailwind-merge": "3.3.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "4.20250517.0",
+    "@types/node": "22.15.18",
+    "@vitejs/plugin-react": "4.4.1",
     "prettier": "3.5.3",
     "typescript": "5.8.3",
+    "vite": "6.3.5",
     "wrangler": "4.15.2"
   }
 }

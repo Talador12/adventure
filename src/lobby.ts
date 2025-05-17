@@ -1,101 +1,84 @@
-// packages/worker/lobby.ts
+// _worker.ts
+import { Lobby } from './src/lobby';
+import type { DurableObject, DurableObjectState } from '@cloudflare/workers-types';
 
-import { RoomState, Message, Player } from './types';
+// Define the Environment interface
+interface Env {
+  LOBBY: DurableObjectNamespace;
+  ASSETS?: { fetch: (req: Request) => Promise<Response> };
+}
 
-export class Lobby {
-  state: DurableObjectState;
-  storage: DurableObjectStorage;
-  room: RoomState;
-  sockets: Map<WebSocket, string>;
+export default {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(req.url);
 
-  constructor(state: DurableObjectState) {
-    this.state = state;
-    this.storage = state.storage;
-    this.room = { players: {}, log: [] };
-    this.sockets = new Map();
-  }
-
-  async fetch(req: Request): Promise<Response> {
-    const upgradeHeader = req.headers.get('Upgrade');
-    if (upgradeHeader === 'websocket') {
-      const [client, server] = Object.values(new WebSocketPair());
-      await this.handleWebSocket(server);
-      return new Response(null, {
-        status: 101,
-        webSocket: client,
-      });
-    }
-
-    // Debug endpoint to inspect current state
-    if (new URL(req.url).pathname === '/state') {
-      return Response.json(this.room);
-    }
-
-    return new Response('Expected WebSocket', { status: 400 });
-  }
-
-  async handleWebSocket(ws: WebSocket) {
-    ws.accept();
-
-    ws.addEventListener('message', (evt) => {
-      try {
-        const msg = JSON.parse(evt.data as string) as Message;
-        this.handleMessage(msg, ws);
-      } catch (err) {
-        ws.send(JSON.stringify({ error: 'Invalid message format' }));
-      }
-    });
-
-    ws.addEventListener('close', () => {
-      const playerId = this.sockets.get(ws);
-      if (playerId) {
-        delete this.room.players[playerId];
-        this.broadcast({ type: 'leave', playerId });
-        this.room.log.push(`${playerId} disconnected`);
-        this.sockets.delete(ws);
-      }
-    });
-  }
-
-  handleMessage(msg: Message, ws: WebSocket) {
-    switch (msg.type) {
-      case 'join': {
-        this.room.players[msg.player.id] = msg.player;
-        this.sockets.set(ws, msg.player.id);
-        this.room.log.push(`${msg.player.name} joined`);
-        this.broadcast(msg);
-        break;
-      }
-      case 'leave': {
-        delete this.room.players[msg.playerId];
-        this.room.log.push(`${msg.playerId} left`);
-        this.broadcast(msg);
-        break;
-      }
-      case 'update': {
-        const existing = this.room.players[msg.player.id];
-        if (existing) {
-          this.room.players[msg.player.id] = { ...existing, ...msg.player };
-          this.broadcast(msg);
+    // Serve static assets by default (if not an API request)
+    if (!url.pathname.startsWith('/api')) {
+      if (env.ASSETS) {
+        // Use ASSETS binding if available (normal Pages deployment)
+        return env.ASSETS.fetch(req);
+      } else {
+        // For local development, for simple paths, try to serve index.html
+        // This is a simple fallback - for more complex setups, you'd need to implement
+        // a more sophisticated static file server
+        if (url.pathname === '/' || url.pathname === '/index.html') {
+          return new Response(
+            `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adventure</title>
+  </head>
+  <body>
+    <div id="root">
+      <h1>Adventure Game</h1>
+      <p>This is a local development server. Static assets are being served directly.</p>
+      <p>API endpoints at /api/* are available.</p>
+    </div>
+  </body>
+</html>`,
+            {
+              headers: {
+                'content-type': 'text/html;charset=UTF-8',
+              },
+            }
+          );
         }
-        break;
-      }
-      case 'chat': {
-        this.room.log.push(`${msg.playerId}: ${msg.message}`);
-        this.broadcast(msg);
-        break;
+
+        // Fallback for other static assets
+        return new Response(`Static asset "${url.pathname}" not found in local development mode.`, {
+          status: 404,
+          headers: {
+            'content-type': 'text/plain;charset=UTF-8',
+          },
+        });
       }
     }
+
+    // Handle API requests via Durable Object
+    try {
+      const roomId = url.searchParams.get('room') || 'default';
+      const id = env.LOBBY.idFromName(roomId);
+      const obj = env.LOBBY.get(id);
+      return await obj.fetch(req);
+    } catch (error) {
+      console.error('Error accessing Durable Object:', error);
+      return new Response(`Error: ${error.message}`, { status: 500 });
+    }
+  },
+};
+
+export class Lobby implements DurableObject {
+  state: DurableObjectState;
+  env: any;
+
+  constructor(state: DurableObjectState, env: any) {
+    this.state = state;
+    this.env = env;
   }
 
-  broadcast(msg: Message) {
-    const str = JSON.stringify(msg);
-    for (const socket of this.sockets.keys()) {
-      try {
-        socket.send(str);
-      } catch {
-        this.sockets.delete(socket);
-      }
-    }
+  async fetch(request: Request): Promise<Response> {
+    return new Response(`Lobby Durable Object received a ${request.method} request at ${new URL(request.url).pathname}`, { status: 200, headers: { 'content-type': 'text/plain' } });
   }
 }
