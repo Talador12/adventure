@@ -23,8 +23,6 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "0.2.2",
     "@tailwindcss/vite": "4.1.7",
-    "@types/react": "19.1.4",
-    "@types/react-dom": "19.1.5",
     "clsx": "2.1.1",
     "framer-motion": "^12.12.1",
     "howler": "^2.2.4",
@@ -37,6 +35,8 @@
   "devDependencies": {
     "@cloudflare/workers-types": "4.20250517.0",
     "@types/node": "22.15.18",
+    "@types/react": "19.1.4",
+    "@types/react-dom": "19.1.5",
     "@vitejs/plugin-react": "4.4.1",
     "prettier": "3.5.3",
     "tailwindcss": "4.1.7",
