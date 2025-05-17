@@ -18,9 +18,10 @@
     "commit": "make commit"
   },
   "dependencies": {
-    "@fortawesome/free-brands-svg-icons": "^6.7.2",
+    "@fortawesome/fontawesome-svg-core": "6.7.2",
+    "@fortawesome/free-brands-svg-icons": "6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
-    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@fortawesome/react-fontawesome": "0.2.2",
     "@tailwindcss/vite": "4.1.7",
     "@types/react": "19.1.4",
     "@types/react-dom": "19.1.5",

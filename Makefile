@@ -1,3 +1,5 @@
+MAKEFLAGS += --no-print-directory --warn-undefined-variables --output-sync=target
+
 ################################################################################
 #                                  Variables                                   #
 ################################################################################
@@ -82,9 +84,9 @@ lint: makeinfo ## Check formatting with Prettier
 
 kill: makeinfo ## Kill all local ports used by frontend/backend
 	@echo "💀 Killing local deployments..."
-	@lsof -ti :5173 | xargs kill -9 > /dev/null 2>&1 || true
-	@lsof -ti :8787 | xargs kill -9 > /dev/null 2>&1 || true
-	@lsof -ti :9229 | xargs kill -9 > /dev/null 2>&1 || true
+	@pids_5173=$$(lsof -ti :5173); if [ -n "$$pids_5173" ]; then echo "Killing port 5173: $$pids_5173"; kill -9 $$pids_5173; fi
+	@pids_8787=$$(lsof -ti :8787); if [ -n "$$pids_8787" ]; then echo "Killing port 8787: $$pids_8787"; kill -9 $$pids_8787; fi
+	@pids_9229=$$(lsof -ti :9229); if [ -n "$$pids_9229" ]; then echo "Killing port 9229: $$pids_9229"; kill -9 $$pids_9229; fi
 
 start: makeinfo ## Quick start assuming dependencies are already installed
 	make kill

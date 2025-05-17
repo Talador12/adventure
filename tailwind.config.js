@@ -4,10 +4,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: 'hsl(var(--background) / <alpha-value>)',
-        foreground: 'hsl(var(--foreground) / <alpha-value>)',
-        accent: 'hsl(var(--accent) / <alpha-value>)',
-        cloudflare: 'hsl(var(--cloudflare) / <alpha-value>)',
+        accent: '#F38020',
+        cloudflare: '#F38020',
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui'],
