@@ -38,7 +38,7 @@ build-frontend:
 	vite build
 
 clean: makeinfo ## Remove node_modules, lockfiles, dist, wrangler tmp, ports
-	rm -rf node_modules package-lock.json .wrangler dist/ .tree-output.txt
+	rm -rf node_modules package-lock.json .wrangler dist/ .tree-output.txt public .vite
 
 commit: makeinfo ## Install, format, build, and commit with a message: make commit M='your message'
 	@msg="$(M)"; \
