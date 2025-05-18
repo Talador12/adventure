@@ -13,32 +13,31 @@ VITE = npx vite@latest
 #                            Build Commands                                    #
 ################################################################################
 
+build-assets: makeinfo # Copy all static assets needed for build
+	cp -r assets/* public/
+
 build-frontend: makeinfo # Build frontend assets
 	$(VITE) build
-
-build-pages: makeinfo # Validate public/ folder for Pages deployment
-	@test -f public/index.html || (echo "❌ index.html missing in public/"; exit 1)
-	@test -f public/_worker.js || (echo "❌ _worker.js missing in public/"; exit 1)
-	@echo "✅ Pages public/ folder looks good."
 
 build-worker: makeinfo # Build Cloudflare Worker
 	$(WRANGLER) build
 
 build: makeinfo ## Build both frontend and worker
-	make build-frontend
 	make build-worker
+	make build-frontend
+	make build-assets
 
 ################################################################################
 #                            Cleanup Commands                                  #
 ################################################################################
 
-clean-ports: makeinfo # Kill all local ports used by frontend/backend
+kill: makeinfo # Kill all local ports used by frontend/backend
 	@echo "💀 Killing local deployments..."
 	@pids_5173=$$(lsof -ti :5173); if [ -n "$$pids_5173" ]; then echo "Killing port 5173: $$pids_5173"; kill -9 $$pids_5173; fi
 	@pids_8787=$$(lsof -ti :8787); if [ -n "$$pids_8787" ]; then echo "Killing port 8787: $$pids_8787"; kill -9 $$pids_8787; fi
 	@pids_9229=$$(lsof -ti :9229); if [ -n "$$pids_9229" ]; then echo "Killing port 9229: $$pids_9229"; kill -9 $$pids_9229; fi
 
-clean: makeinfo ## Remove all generated files and dependencies
+clean: makeinfo # Remove all generated files and dependencies
 	rm -rf node_modules package-lock.json .wrangler dist/ .tree-output.txt public .vite
 
 ################################################################################
@@ -63,24 +62,23 @@ deploy-worker-staging: makeinfo # Deploy Worker to staging
 #                            Development Commands                              #
 ################################################################################
 
-dev-fresh: makeinfo ## Fresh start: clean install, build, and start local development servers
-	make clean
-	make clean-ports
+fresh: makeinfo ## Fresh start: install, build, and start local development servers
+	make kill
 	make upgrade
 	make install
 	make format
 	make build
 	make dev
 
-dev-start: makeinfo ## Quick start assuming dependencies are already installed
-	make clean-ports
+start: makeinfo ## Quick start assuming dependencies are already installed
+	make kill
 	make build
 	make dev
 
 dev-worker: makeinfo # Start Cloudflare Worker in development mode
 	@echo "🔑 Checking for DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET secrets..."
 	@if [ -z "$$($(WRANGLER) secret list | grep DISCORD_CLIENT_ID)" ] || [ -z "$$($(WRANGLER) secret list | grep DISCORD_CLIENT_SECRET)" ]; then \
-		echo "❌ DISCORD_CLIENT_ID or DISCORD_CLIENT_SECRET is missing. Please run 'make secrets-set-development' first."; \
+		echo "❌ DISCORD_CLIENT_ID or DISCORD_CLIENT_SECRET is missing. Please run 'make secrets-development' first."; \
 		exit 1; \
 	fi
 	$(WRANGLER) dev --env development --port=8787 --inspector-port=9229
@@ -97,29 +95,29 @@ dev: makeinfo # Start both frontend and backend development servers
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
 ################################################################################
-#                            Setup Commands                                    #
+#                            Utility Commands                                  #
 ################################################################################
 
 format: makeinfo ## Format code using Prettier
 	npx prettier --write .
 
-git-amend: makeinfo # Reset last commit and recommit current files using the same message
+amend: makeinfo # Reset last commit and recommit current files using the same message
 	@msg="$$(git log -1 --pretty=%B)"; \
 	echo "⚠️  Amending last commit: $$msg"; \
 	git reset --soft HEAD~1 && \
-	make git-commit M="$$msg"
+	make commit M="$$msg"
 
-git-commit: makeinfo ## Install, format, build, and commit with a message: make git-commit M='your message'
+commit: makeinfo ## Install, format, build, and commit with a message: make commit M='your message'
 	@( \
 		msg="$(M)"; \
 		if [ -z "$$msg" ]; then \
-			echo "❌ Please provide a commit message using: make git-commit M='your message'"; \
+			echo "❌ Please provide a commit message using: make commit M='your message'"; \
 			exit 1; \
 		fi; \
 		grep '^DISCORD_CLIENT_ID' wrangler.toml > .wrangler.secrets.bak; \
 		grep '^DISCORD_CLIENT_SECRET' wrangler.toml >> .wrangler.secrets.bak; \
 		sed -i.bak -E 's/(DISCORD_CLIENT_ID\s*=\\s*\").*(\")/\\1dev-123\\2/g; s/(DISCORD_CLIENT_SECRET\\s*=\\s*\").*(\")/\\1dev-abc\\2/g' wrangler.toml; \
-		make clean-ports; \
+		make kill; \
 		make install; \
 		make format; \
 		make build; \
@@ -144,12 +142,12 @@ lint: makeinfo # Check formatting with Prettier
 #                            Secrets Commands                                  #
 ################################################################################
 
-secrets-dev-to-staging: makeinfo # Promote Discord secrets from development to staging
+secrets-staging: makeinfo # Promote Discord secrets from development to staging
 	@echo "Promoting DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET from development to staging..."
 	$(WRANGLER) secret put DISCORD_CLIENT_ID --env staging
 	$(WRANGLER) secret put DISCORD_CLIENT_SECRET --env staging
 
-secrets-set-development: makeinfo ## Set Discord secrets for development environment
+secrets-development: makeinfo # Set Discord secrets for development environment
 	@echo "🔑 Setting Discord secrets for development environment..."
 	@read -p "Enter DISCORD_CLIENT_ID: " client_id; \
 	read -p "Enter DISCORD_CLIENT_SECRET: " client_secret; \
@@ -161,7 +159,7 @@ secrets-set-development: makeinfo ## Set Discord secrets for development environ
 	echo "DISCORD_CLIENT_SECRET=$$client_secret" >> .dev.vars; \
 	echo "✅ Secrets set successfully!"
 
-secrets-staging-to-prod: makeinfo # Promote Discord secrets from staging to production
+secrets-prod: makeinfo # Promote Discord secrets from staging to production
 	@echo "Promoting DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET from staging to prod..."
 	$(WRANGLER) secret put DISCORD_CLIENT_ID
 	$(WRANGLER) secret put DISCORD_CLIENT_SECRET

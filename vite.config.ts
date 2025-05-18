@@ -18,7 +18,7 @@ export default defineConfig({
       },
     },
   },
-  publicDir: 'static',
+  publicDir: 'public',
   server: {
     proxy: {
       '/api': {

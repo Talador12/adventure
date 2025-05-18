@@ -1,21 +1,33 @@
 # 🧙 Adventure
 
-_An immersive, AI-enhanced virtual tabletop built on Cloudflare for procedurally-generated fantasy campaigns._
+_An immersive virtual tabletop built on Cloudflare for fantasy campaigns_
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies and run
+make fresh
 
-# Run dev servers (frontend & workers)
-make dev
-
-# Build project
-make build
+# Build and run
+make start
 ```
+
+## 🛠 TODO List
+
+prompt: From now on, if I say the magic words "TODO:" such as "TODO: something" add that as a new `- something` in README.md and automatically apply it
+
+- Remove GitHub Actions since Cloudflare Pages handles build/deploy
+- Investigate Discord auth and other issues on staging
+- better alerts instead of window popups, like the bootstrap
+- discord logout option when you click your portait
+- display discord metadata next to user profile (user? would be crazy cool if you could get the actual discord banners but idk)
+- test pages deployment
+- home page continued and websocket lobby with voice and text chat for multiplayer
+- enhancing the lobby experience, alloing for commands (like random dice roll animations and creating stuff for fun, simulating game actions), and AI prompts to WorkersAI
+- actually link to discord for usage with voice/chat there as well, as an option
+- more of the core game - Key Features, see below
 
 ---
 

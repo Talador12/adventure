@@ -88,24 +88,6 @@ app.get('/api/auth/me', async (c) => {
   }
 });
 
-// DEV-ONLY: Expose secrets for local development
-app.get('/api/dev-secrets', (c) => {
-  // Only allow in local/dev environment
-  // Option 1: If you have an ENVIRONMENT variable
-  // if (c.env.ENVIRONMENT !== 'development') return c.text('Not allowed', 403);
-
-  // Option 2: Only allow if secrets look like dev/test values
-  if (!c.env.DISCORD_CLIENT_ID?.startsWith('dev-') && !c.env.DISCORD_CLIENT_ID?.startsWith('test-')) {
-    return c.text('Not allowed', 403);
-  }
-  return c.json({
-    DISCORD_CLIENT_ID: c.env.DISCORD_CLIENT_ID,
-    DISCORD_CLIENT_SECRET: c.env.DISCORD_CLIENT_SECRET,
-    GOOGLE_CLIENT_ID: c.env.GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET: c.env.GOOGLE_CLIENT_SECRET,
-  });
-});
-
 // Proxy all other /api requests to Durable Object
 app.all('/api/*', async (c, next) => {
   const req = c.req.raw;

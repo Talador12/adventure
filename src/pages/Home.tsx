@@ -38,26 +38,6 @@ export default function Home() {
       .then((data) => setUser(data.user));
   }, [theme]);
 
-  // Fetch dev secrets in local development only
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      fetch('/api/dev-secrets')
-        .then((res) => {
-          if (!res.ok) throw new Error('Not allowed or not in dev mode');
-          return res.json();
-        })
-        .then((secrets) => {
-          // You can use these secrets as needed in your dev environment
-          console.log('Dev secrets:', secrets);
-          // Example: set them in state, context, or pass to child components
-        })
-        .catch((err) => {
-          // Not available in prod or if not using dev/test secrets
-          console.warn('Dev secrets endpoint not available:', err.message);
-        });
-    }
-  }, []);
-
   const toggleTheme = () => {
     setTheme((prev: Theme) => (prev === 'dark' ? 'light' : 'dark'));
   };
