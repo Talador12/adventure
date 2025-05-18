@@ -1,6 +1,7 @@
 name = "adventure"
 main = "_worker.ts"
 compatibility_date = "2024-01-01"
+account_id = "41361179c1d85f87c496f78a9095b8c0"
 
 [site]
 bucket = "./public"
@@ -8,12 +9,27 @@ bucket = "./public"
 [env.development]
 name = "adventure-dev"
 workers_dev = true
+[env.development.durable_objects]
+bindings = [
+  { name = "LOBBY", class_name = "Lobby" }
+]
+
+[env.development.vars]
+DISCORD_CLIENT_ID = "1373524237414957247"
+DISCORD_CLIENT_SECRET = "6EGYRlHfh9bGBv4PFh3LBJpvvxuCmEey"
+
+[env.staging]
+name = "adventure-staging"
+workers_dev = true
+[env.staging.durable_objects]
+bindings = [
+  { name = "LOBBY", class_name = "Lobby" }
+]
 
 [env.production]
 name = "adventure"
 workers_dev = false
-
-[durable_objects]
+[env.production.durable_objects]
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }
 ]

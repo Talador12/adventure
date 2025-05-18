@@ -114,3 +114,4 @@ Thumbs.db
 ~/.wrangler/
 */.wrangler/
 */.wrangler/*
+.wrangler.secrets.bak

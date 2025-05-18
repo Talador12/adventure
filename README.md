@@ -119,3 +119,26 @@ make tree
 © 2025 Keith Adler. All Rights Reserved.
 
 This software is proprietary. Unauthorized copying, modification, distribution, or usage without explicit permission is prohibited.
+
+## Makefile Usage
+
+The project uses a Makefile to streamline common development tasks:
+
+```bash
+# Start local development server
+make dev
+
+# Build for production
+make build
+
+# Deploy to Cloudflare Pages
+make deploy
+
+# Clean build artifacts
+make clean
+
+# Kill any running dev servers
+make kill
+```
+
+Each command provides clear output and process management. The dev server runs on port 5173 by default.
