@@ -111,4 +111,8 @@ dist/
 Thumbs.db
 
 # Wrangler
+.wrangler/
 ~/.wrangler/
+*/.wrangler/
+*/.wrangler/*
+.wrangler.secrets.bak

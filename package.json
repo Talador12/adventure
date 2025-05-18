@@ -1,21 +1,49 @@
 {
-    "name": "adventure",
-    "private": true,
-    "workspaces": [
-        "frontend",
-        "workers"
-    ],
-    "scripts": {
-        "build": "make build",
-        "dev": "make dev",
-        "lint": "make lint",
-        "format": "make format",
-        "test": "make test"
-    },
-    "devDependencies": {
-        "eslint": "^9.24.0",
-        "eslint-config-prettier": "^10.1.1",
-        "prettier": "^3.5.3",
-        "tsx": "^4.19.3"
-    }
+  "name": "adventure",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "vite build && npx wrangler build",
+    "build-frontend": "vite build",
+    "preview": "vite preview",
+    "format": "prettier --write .",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "vitest",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:staging": "npm run build && wrangler deploy --env development",
+    "deploy:prod": "npm run build && wrangler deploy --env production",
+    "upgrade": "make upgrade",
+    "commit": "make commit"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "6.7.2",
+    "@fortawesome/free-brands-svg-icons": "6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "0.2.2",
+    "@tailwindcss/vite": "4.1.7",
+    "clsx": "2.1.1",
+    "framer-motion": "^12.12.1",
+    "hono": "4.7.10",
+    "howler": "^2.2.4",
+    "jose": "6.0.11",
+    "lucide-react": "0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0",
+    "tailwind-merge": "3.3.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20250517.0",
+    "@types/node": "22.15.18",
+    "@types/react": "19.1.4",
+    "@types/react-dom": "19.1.5",
+    "@vitejs/plugin-react": "4.4.1",
+    "prettier": "3.5.3",
+    "tailwindcss": "4.1.7",
+    "typescript": "5.8.3",
+    "vite": "6.3.5",
+    "wrangler": "4.15.2"
+  }
 }
