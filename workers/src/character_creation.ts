@@ -40,6 +40,7 @@ app.post('/generate', async (c) => {
     const temperature = body.temperature ?? 2;
     const top_p = body.top_p ?? 0.9;
     const max_tokens = body.max_tokens ?? 256;
+    const model = body.model ?? "@cf/meta/llama-4-scout-17b-16e-instruct";
 
     const messages = [
       {
@@ -53,7 +54,7 @@ app.post('/generate', async (c) => {
     ];
 
     const response = await c.env.AI.run(
-      "@cf/meta/llama-4-scout-17b-16e-instruct",
+      model,
       {
         messages,
         guided_json: characterCreationSchema,
