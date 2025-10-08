@@ -50,17 +50,17 @@ commit: makeinfo ## Format, test stub, and commit with a message: make commit M=
 	git commit -m "$$msg" && \
 	git push --force
 
-deploy: makeinfo ## Deploy to Cloudflare Pages and Workers
-	npm run deploy && wrangler publish
+deploy: makeinfo ## Deploy to Cloudflare Workers (frontend and backend)
+	cd frontend && npm run deploy && cd ../workers && wrangler deploy
 
-dev: makeinfo ## Run both frontend (Pages) and backend (Workers)
+dev: makeinfo ## Run both frontend (Workers) and backend (Workers)
 	@echo "💀 Killing debugger port 9229 (if needed)..."
 	@lsof -ti :9229 | xargs kill -9 > /dev/null 2>&1 || true
 	@echo "⚡ Starting backend on http://localhost:8787 (default debugger port 9229)..."
 	cd workers && npx wrangler dev --port=8787 & \
 	sleep 2 && \
 	echo "⚡ Starting frontend on http://localhost:8788 (inspector on 9333)..." && \
-	cd frontend && npx wrangler pages dev public --inspector-port=9333 --port=8788
+	cd frontend && npx wrangler dev --port=8788 --inspector-port=9333
 
 format: makeinfo ## Format code using Prettier
 	cd frontend && npx prettier --write .

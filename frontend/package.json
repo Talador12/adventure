@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "wrangler deploy",
+    "dev:wrangler": "wrangler dev"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -20,9 +22,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
+    "@types/howler": "^2.2.12",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.1",
     "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^5.0.4",
     "eslint": "^9.24.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -30,7 +34,8 @@
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.29.1"
+    "typescript-eslint": "^8.29.1",
+    "wrangler": "^4.42.1"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "main": "eslint.config.js",

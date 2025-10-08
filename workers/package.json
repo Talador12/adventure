@@ -10,7 +10,10 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "wrangler": "^4.8.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "wrangler": "^4.8.0"
+  },
+  "dependencies": {
+    "hono": "^4.9.10"
   }
 }

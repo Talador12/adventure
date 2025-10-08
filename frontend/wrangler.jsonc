@@ -1,0 +1,15 @@
+{
+	"name": "frontend-worker",
+	"compatibility_date": "2025-05-16",
+	"main": "public/_worker.js",
+	"assets": {
+		"directory": "public",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			"binding": "backend",
+			"service": "adventure-backend"
+		}
+	]
+}

@@ -2,6 +2,9 @@ name = "adventure-backend"
 main = "src/index.ts"
 compatibility_date = "2025-05-16"
 
+[ai]
+binding = "AI"
+
 [[durable_objects.bindings]]
 name = "LOBBY"
 class_name = "Lobby"

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 interface DieProps {
   value: number;
-  environment: string;
+  environment: 'table' | 'tower';
 }
 
 const animationVariants = {
