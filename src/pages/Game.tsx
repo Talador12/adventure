@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import InitiativeBar from '../components/combat/InitiativeBar';
 import BattleMap from '../components/combat/BattleMap';
+import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
@@ -24,7 +25,7 @@ export default function Game() {
   const {
     setPlayers, setUnits, units, setCurrentPlayer, currentPlayer,
     rolls, selectedUnitId, characters,
-    inCombat, rollInitiative, nextTurn, combatRound,
+    inCombat, setInCombat, rollInitiative, nextTurn, combatRound,
     damageUnit, removeUnit,
   } = useGame();
 
@@ -44,6 +45,8 @@ export default function Game() {
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [activeView, setActiveView] = useState<'narration' | 'map'>('narration');
+  const [showSheet, setShowSheet] = useState(false);
+  const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
 
   // Initialize — no demo data, real data from character selection
   useEffect(() => {
@@ -133,6 +136,47 @@ export default function Game() {
     }
   }, [selectedCharacter, adventureStarted, dmHistory, addDmMessage]);
 
+  // Auto-execute enemy turns: when an enemy unit becomes the active turn, auto-attack a player
+  useEffect(() => {
+    if (!inCombat) return;
+    const currentUnit = units.find((u) => u.isCurrentTurn);
+    if (!currentUnit || currentUnit.type !== 'enemy' || currentUnit.hp <= 0) return;
+
+    // Find a living player to attack
+    const playerTargets = units.filter((u) => u.type === 'player' && u.hp > 0);
+    if (playerTargets.length === 0) return;
+
+    const timer = setTimeout(() => {
+      const target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
+      const attackRoll = Math.floor(Math.random() * 20) + 1;
+      const attackBonus = 3; // generic enemy attack bonus
+      const totalAttack = attackRoll + attackBonus;
+      const isHit = attackRoll === 20 || totalAttack >= target.ac;
+      const isCrit = attackRoll === 20;
+
+      if (isHit) {
+        const baseDmg = Math.floor(Math.random() * 6) + 1; // d6 weapon
+        const dmg = isCrit ? baseDmg * 2 + 2 : baseDmg + 2;
+        const finalDmg = Math.max(1, dmg);
+        damageUnit(target.id, finalDmg);
+        playCombatHit();
+        if (isCrit) playCritical();
+        const logMsg = isCrit
+          ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`
+          : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`;
+        addDmMessage(logMsg);
+      } else {
+        playCombatMiss();
+        addDmMessage(`${currentUnit.name} misses ${target.name}! (${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`);
+      }
+
+      // Auto-advance to next turn after enemy acts
+      setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
+    }, 800); // delay before enemy acts for dramatic effect
+
+    return () => clearTimeout(timer);
+  }, [inCombat, units, damageUnit, addDmMessage, nextTurn]);
+
   // Begin Adventure — first DM narration
   const handleBeginAdventure = useCallback(async () => {
     setAdventureStarted(true);
@@ -172,7 +216,7 @@ export default function Game() {
         body: JSON.stringify({
           partyLevel: selectedCharacter.level,
           partySize: 1,
-          difficulty: 'medium',
+          difficulty: encounterDifficulty,
           context: dmHistory.length > 0 ? dmHistory[dmHistory.length - 1] : 'a dark dungeon corridor',
         }),
       });
@@ -206,7 +250,7 @@ export default function Game() {
     } finally {
       setEncounterLoading(false);
     }
-  }, [selectedCharacter, dmHistory, addDmMessage, setUnits]);
+  }, [selectedCharacter, dmHistory, addDmMessage, setUnits, encounterDifficulty]);
 
   // Handle incoming WebSocket messages
   const handleWsMessage = useCallback((msg: WSMessage) => {
@@ -536,6 +580,18 @@ export default function Game() {
                     Encounter
                   </button>
 
+                  {/* Difficulty selector */}
+                  <select
+                    value={encounterDifficulty}
+                    onChange={(e) => setEncounterDifficulty(e.target.value as typeof encounterDifficulty)}
+                    className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 outline-none"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                    <option value="deadly">Deadly</option>
+                  </select>
+
                   {/* Combat controls — show when enemies exist */}
                   {units.some((u) => u.type === 'enemy') && (
                     <>
@@ -604,6 +660,22 @@ export default function Game() {
                           </button>
                         );
                       })()}
+                      {/* End Combat button */}
+                      {inCombat && (
+                        <button
+                          onClick={() => {
+                            setInCombat(false);
+                            // Remove dead enemies, reset initiative
+                            setUnits((prev: Unit[]) => prev
+                              .filter((u) => u.type === 'player' || u.hp > 0)
+                              .map((u) => ({ ...u, isCurrentTurn: false, initiative: -1 })));
+                            addDmMessage('The battle ends. You catch your breath.');
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/50 text-slate-300 text-xs font-semibold rounded-lg transition-all"
+                        >
+                          End Combat
+                        </button>
+                      )}
                     </>
                   )}
 
@@ -675,14 +747,40 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Right sidebar: dice + chat */}
+        {/* Right sidebar: character sheet / dice / chat */}
         <div className="w-80 border-l border-slate-800 bg-slate-900 flex flex-col shrink-0">
-          <div className="p-4 border-b border-slate-800 overflow-y-auto">
-            <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} useServerRolls={status === 'connected'} />
-          </div>
-          <div className="flex-1 flex flex-col p-4 overflow-hidden">
-            <ChatPanel messages={chatMessages} onSend={handleChatSend} currentPlayerId={wsPlayerId || currentPlayer.id} />
-          </div>
+          {/* Sidebar tabs */}
+          {selectedCharacter && (
+            <div className="flex border-b border-slate-800 shrink-0">
+              <button
+                onClick={() => setShowSheet(false)}
+                className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${!showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+              >
+                Dice & Chat
+              </button>
+              <button
+                onClick={() => setShowSheet(true)}
+                className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+              >
+                Character
+              </button>
+            </div>
+          )}
+
+          {showSheet && selectedCharacter ? (
+            <div className="flex-1 overflow-y-auto p-4">
+              <CharacterSheet character={selectedCharacter} />
+            </div>
+          ) : (
+            <>
+              <div className="p-4 border-b border-slate-800 overflow-y-auto">
+                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} useServerRolls={status === 'connected'} />
+              </div>
+              <div className="flex-1 flex flex-col p-4 overflow-hidden">
+                <ChatPanel messages={chatMessages} onSend={handleChatSend} currentPlayerId={wsPlayerId || currentPlayer.id} />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

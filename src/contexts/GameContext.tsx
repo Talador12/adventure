@@ -1,5 +1,8 @@
 // GameContext — shared state for players, units, dice rolls, characters, and their associations.
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+// Characters are persisted to localStorage so they survive page refreshes.
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+
+const CHARACTERS_STORAGE_KEY = 'adventure_characters';
 
 export type ControllerType = 'human' | 'ai';
 
@@ -146,12 +149,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentPlayer, setCurrentPlayer] = useState<Player>(DEFAULT_PLAYER);
   const [players, setPlayers] = useState<Player[]>([DEFAULT_PLAYER]);
   const [units, setUnits] = useState<Unit[]>([]);
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const [characters, setCharacters] = useState<Character[]>(() => {
+    try {
+      const stored = localStorage.getItem(CHARACTERS_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const [rolls, setRolls] = useState<DiceRoll[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [inCombat, setInCombat] = useState(false);
   const [combatRound, setCombatRound] = useState(0);
   const [turnIndex, setTurnIndex] = useState(0);
+
+  // Persist characters to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHARACTERS_STORAGE_KEY, JSON.stringify(characters));
+    } catch {
+      // storage full or unavailable — silently fail
+    }
+  }, [characters]);
 
   const addCharacter = useCallback((c: Character) => {
     setCharacters((prev) => [...prev, c]);
