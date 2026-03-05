@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import InitiativeBar from '../components/combat/InitiativeBar';
+import BattleMap from '../components/combat/BattleMap';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
@@ -42,6 +43,7 @@ export default function Game() {
   const [actionInput, setActionInput] = useState('');
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [combatLog, setCombatLog] = useState<string[]>([]);
+  const [activeView, setActiveView] = useState<'narration' | 'map'>('narration');
 
   // Initialize — no demo data, real data from character selection
   useEffect(() => {
@@ -501,8 +503,24 @@ export default function Game() {
                 </button>
               </div>
             ) : (
-              // Adventure in progress: DM tools + narration area
+              // Adventure in progress: DM tools + narration/map area
               <div className="rounded-xl border border-slate-800 bg-slate-900 flex flex-col h-full">
+                {/* View tabs */}
+                <div className="flex items-center border-b border-slate-800 shrink-0">
+                  <button
+                    onClick={() => setActiveView('narration')}
+                    className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'narration' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+                  >
+                    Narration
+                  </button>
+                  <button
+                    onClick={() => setActiveView('map')}
+                    className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'map' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+                  >
+                    Battle Map
+                  </button>
+                </div>
+
                 {/* DM + Combat toolbar */}
                 <div className="flex items-center gap-2 p-3 border-b border-slate-800 flex-wrap">
                   <button
@@ -596,55 +614,62 @@ export default function Game() {
                   </span>
                 </div>
 
-                {/* Narration display — shows recent DM messages prominently */}
-                <div className="flex-1 p-6 overflow-auto space-y-4">
-                  {dmHistory.length === 0 && (
-                    <div className="text-center text-slate-600 py-12">
-                      <p className="text-sm">The adventure unfolds here...</p>
+                {activeView === 'narration' ? (
+                  <>
+                    {/* Narration display — shows recent DM messages prominently */}
+                    <div className="flex-1 p-6 overflow-auto space-y-4">
+                      {dmHistory.length === 0 && (
+                        <div className="text-center text-slate-600 py-12">
+                          <p className="text-sm">The adventure unfolds here...</p>
+                        </div>
+                      )}
+
+                      {dmHistory.map((text, i) => {
+                        // Combat log entries (attacks, initiative) use a different style
+                        const isCombatEntry = text.includes('hits ') || text.includes('misses ') || text.includes('CRITICAL') || text.includes('falls!') || text.includes('Initiative');
+                        return (
+                          <div key={i} className={`rounded-xl px-5 py-4 border ${isCombatEntry ? 'border-slate-700/50 bg-slate-800/40' : 'border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40'}`}>
+                            <p className={`leading-relaxed ${isCombatEntry ? 'text-slate-300 text-sm font-mono' : 'text-amber-100/90 italic'}`}>{text}</p>
+                          </div>
+                        );
+                      })}
+
+                      {dmLoading && (
+                        <div className="rounded-xl px-5 py-4 border border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40 animate-pulse">
+                          <div className="flex items-center gap-2 text-amber-500/60">
+                            <div className="w-4 h-4 border-2 border-amber-500/60 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm italic">The Dungeon Master weaves the tale...</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {dmHistory.map((text, i) => {
-                    // Combat log entries (attacks, initiative) use a different style
-                    const isCombatEntry = text.includes('hits ') || text.includes('misses ') || text.includes('CRITICAL') || text.includes('falls!') || text.includes('Initiative');
-                    return (
-                      <div key={i} className={`rounded-xl px-5 py-4 border ${isCombatEntry ? 'border-slate-700/50 bg-slate-800/40' : 'border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40'}`}>
-                        <p className={`leading-relaxed ${isCombatEntry ? 'text-slate-300 text-sm font-mono' : 'text-amber-100/90 italic'}`}>{text}</p>
-                      </div>
-                    );
-                  })}
-
-                  {dmLoading && (
-                    <div className="rounded-xl px-5 py-4 border border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40 animate-pulse">
-                      <div className="flex items-center gap-2 text-amber-500/60">
-                        <div className="w-4 h-4 border-2 border-amber-500/60 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm italic">The Dungeon Master weaves the tale...</span>
+                    {/* Player action input */}
+                    <div className="p-4 border-t border-slate-800">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={actionInput}
+                          onChange={(e) => setActionInput(e.target.value)}
+                          placeholder="What do you do? (e.g., 'I search the room for traps')"
+                          className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-600 outline-none transition-all"
+                          onKeyDown={(e) => e.key === 'Enter' && handlePlayerAction()}
+                          disabled={dmLoading}
+                        />
+                        <button
+                          onClick={handlePlayerAction}
+                          disabled={!actionInput.trim() || dmLoading}
+                          className="px-5 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
+                        >
+                          Act
+                        </button>
                       </div>
                     </div>
-                  )}
-                </div>
-
-                {/* Player action input */}
-                <div className="p-4 border-t border-slate-800">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={actionInput}
-                      onChange={(e) => setActionInput(e.target.value)}
-                      placeholder="What do you do? (e.g., 'I search the room for traps')"
-                      className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-600 outline-none transition-all"
-                      onKeyDown={(e) => e.key === 'Enter' && handlePlayerAction()}
-                      disabled={dmLoading}
-                    />
-                    <button
-                      onClick={handlePlayerAction}
-                      disabled={!actionInput.trim() || dmLoading}
-                      className="px-5 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
-                    >
-                      Act
-                    </button>
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  /* Battle Map view */
+                  <BattleMap />
+                )}
               </div>
             )}
           </div>
