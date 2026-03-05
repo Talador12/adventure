@@ -1,9 +1,19 @@
-// Lobby Durable Object - real-time multiplayer room via WebSocket
+// Lobby Durable Object — real-time multiplayer room via WebSocket.
+// Handles player sessions, chat, dice rolls (with full metadata), and system events.
 /// <reference types="@cloudflare/workers-types" />
 
 interface Session {
   id: string;
   username: string;
+  avatar?: string;
+  joinedAt: number;
+}
+
+interface PlayerInfo {
+  id: string;
+  username: string;
+  avatar?: string;
+  joinedAt: number;
 }
 
 export class Lobby {
@@ -27,32 +37,13 @@ export class Lobby {
 
       server.accept();
       const sessionId = crypto.randomUUID();
-      this.sessions.set(server, { id: sessionId, username: 'Anonymous' });
+      const now = Date.now();
+      this.sessions.set(server, { id: sessionId, username: 'Anonymous', joinedAt: now });
 
       server.addEventListener('message', (event) => {
         try {
           const data = JSON.parse(event.data as string);
-          switch (data.type) {
-            case 'join':
-              this.sessions.set(server, { id: sessionId, username: data.username || 'Anonymous' });
-              this.broadcast({ type: 'player_joined', username: data.username, players: this.getPlayerList() });
-              break;
-            case 'chat':
-              this.broadcast({
-                type: 'chat',
-                username: this.sessions.get(server)?.username,
-                message: data.message,
-                timestamp: Date.now(),
-              });
-              break;
-            case 'roll': {
-              const result = this.rollDice(data.dice || 20, data.count || 1);
-              this.broadcast({ type: 'roll_result', username: this.sessions.get(server)?.username, ...result });
-              break;
-            }
-            default:
-              server.send(JSON.stringify({ type: 'error', message: `Unknown message type: ${data.type}` }));
-          }
+          this.handleMessage(server, sessionId, data);
         } catch {
           server.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
         }
@@ -61,7 +52,15 @@ export class Lobby {
       server.addEventListener('close', () => {
         const session = this.sessions.get(server);
         this.sessions.delete(server);
-        this.broadcast({ type: 'player_left', username: session?.username, players: this.getPlayerList() });
+        if (session) {
+          this.broadcast({
+            type: 'player_left',
+            username: session.username,
+            playerId: session.id,
+            players: this.getPlayerList(),
+            timestamp: Date.now(),
+          });
+        }
       });
 
       return new Response(null, { status: 101, webSocket: client });
@@ -75,23 +74,103 @@ export class Lobby {
     return Response.json({ status: 'ok', players: this.sessions.size });
   }
 
+  private handleMessage(server: WebSocket, sessionId: string, data: Record<string, unknown>) {
+    switch (data.type) {
+      case 'join': {
+        const username = (data.username as string) || 'Anonymous';
+        const avatar = (data.avatar as string) || undefined;
+        this.sessions.set(server, { id: sessionId, username, avatar, joinedAt: Date.now() });
+
+        // Send current player list to the joining player
+        server.send(
+          JSON.stringify({
+            type: 'welcome',
+            playerId: sessionId,
+            players: this.getPlayerList(),
+            timestamp: Date.now(),
+          })
+        );
+
+        // Broadcast join to everyone else
+        this.broadcast({
+          type: 'player_joined',
+          username,
+          playerId: sessionId,
+          players: this.getPlayerList(),
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
+      case 'chat': {
+        const session = this.sessions.get(server);
+        if (!session) return;
+        const message = (data.message as string) || '';
+        if (!message.trim()) return;
+
+        this.broadcast({
+          type: 'chat',
+          playerId: session.id,
+          username: session.username,
+          message: message.trim(),
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
+      case 'roll': {
+        const session = this.sessions.get(server);
+        if (!session) return;
+
+        const sides = Math.min(Math.max(Number(data.sides) || 20, 2), 100);
+        const die = (data.die as string) || `d${sides}`;
+        const value = Math.floor(Math.random() * sides) + 1;
+        const isCritical = value === sides;
+        const isFumble = value === 1;
+
+        this.broadcast({
+          type: 'roll_result',
+          playerId: session.id,
+          username: session.username,
+          die,
+          sides,
+          value,
+          isCritical,
+          isFumble,
+          unitId: (data.unitId as string) || undefined,
+          unitName: (data.unitName as string) || undefined,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
+      case 'ping': {
+        server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+        break;
+      }
+
+      default:
+        server.send(JSON.stringify({ type: 'error', message: `Unknown message type: ${data.type}` }));
+    }
+  }
+
   private broadcast(message: object) {
     const payload = JSON.stringify(message);
     for (const [ws] of this.sessions) {
       try {
         ws.send(payload);
       } catch {
-        // dead socket, will be cleaned up on close
+        // dead socket — will be cleaned up on close event
       }
     }
   }
 
-  private getPlayerList() {
-    return Array.from(this.sessions.values()).map((s) => ({ id: s.id, username: s.username }));
-  }
-
-  private rollDice(sides: number, count: number) {
-    const rolls = Array.from({ length: Math.min(count, 20) }, () => Math.floor(Math.random() * sides) + 1);
-    return { dice: `d${sides}`, count, rolls, total: rolls.reduce((a, b) => a + b, 0) };
+  private getPlayerList(): PlayerInfo[] {
+    return Array.from(this.sessions.values()).map((s) => ({
+      id: s.id,
+      username: s.username,
+      avatar: s.avatar,
+      joinedAt: s.joinedAt,
+    }));
   }
 }

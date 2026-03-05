@@ -95,6 +95,18 @@ app.get('/api/auth/signout', (c) => {
   return c.redirect('/');
 });
 
+// WebSocket upgrade — dedicated route so Vite proxy doesn't interfere
+app.get('/api/ws', async (c) => {
+  const req = c.req.raw;
+  if (req.headers.get('Upgrade') !== 'websocket') {
+    return c.text('Expected WebSocket upgrade', 426);
+  }
+  const roomId = new URL(req.url).searchParams.get('room') || 'default';
+  const id = c.env.LOBBY.idFromName(roomId);
+  const obj = c.env.LOBBY.get(id);
+  return await obj.fetch(req);
+});
+
 // Proxy all other /api requests to Lobby Durable Object
 app.all('/api/*', async (c) => {
   const req = c.req.raw;
