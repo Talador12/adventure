@@ -1,84 +1,97 @@
-// _worker.ts
-import { Lobby } from './src/lobby';
-import type { DurableObject, DurableObjectState } from '@cloudflare/workers-types';
+// Lobby Durable Object - real-time multiplayer room via WebSocket
+/// <reference types="@cloudflare/workers-types" />
 
-// Define the Environment interface
-interface Env {
-  LOBBY: DurableObjectNamespace;
-  ASSETS?: { fetch: (req: Request) => Promise<Response> };
+interface Session {
+  id: string;
+  username: string;
 }
 
-export default {
-  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(req.url);
-
-    // Serve static assets by default (if not an API request)
-    if (!url.pathname.startsWith('/api')) {
-      if (env.ASSETS) {
-        // Use ASSETS binding if available (normal Pages deployment)
-        return env.ASSETS.fetch(req);
-      } else {
-        // For local development, for simple paths, try to serve index.html
-        // This is a simple fallback - for more complex setups, you'd need to implement
-        // a more sophisticated static file server
-        if (url.pathname === '/' || url.pathname === '/index.html') {
-          return new Response(
-            `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Adventure</title>
-  </head>
-  <body>
-    <div id="root">
-      <h1>Adventure Game</h1>
-      <p>This is a local development server. Static assets are being served directly.</p>
-      <p>API endpoints at /api/* are available.</p>
-    </div>
-  </body>
-</html>`,
-            {
-              headers: {
-                'content-type': 'text/html;charset=UTF-8',
-              },
-            }
-          );
-        }
-
-        // Fallback for other static assets
-        return new Response(`Static asset "${url.pathname}" not found in local development mode.`, {
-          status: 404,
-          headers: {
-            'content-type': 'text/plain;charset=UTF-8',
-          },
-        });
-      }
-    }
-
-    // Handle API requests via Durable Object
-    try {
-      const roomId = url.searchParams.get('room') || 'default';
-      const id = env.LOBBY.idFromName(roomId);
-      const obj = env.LOBBY.get(id);
-      return await obj.fetch(req);
-    } catch (error) {
-      console.error('Error accessing Durable Object:', error);
-      return new Response(`Error: ${error.message}`, { status: 500 });
-    }
-  },
-};
-
-export class Lobby implements DurableObject {
+export class Lobby {
   state: DurableObjectState;
-  env: any;
+  env: unknown;
+  sessions: Map<WebSocket, Session>;
 
-  constructor(state: DurableObjectState, env: any) {
+  constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
     this.env = env;
+    this.sessions = new Map();
   }
 
   async fetch(request: Request): Promise<Response> {
-    return new Response(`Lobby Durable Object received a ${request.method} request at ${new URL(request.url).pathname}`, { status: 200, headers: { 'content-type': 'text/plain' } });
+    const url = new URL(request.url);
+
+    // WebSocket upgrade for real-time lobby
+    if (request.headers.get('Upgrade') === 'websocket') {
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+
+      server.accept();
+      const sessionId = crypto.randomUUID();
+      this.sessions.set(server, { id: sessionId, username: 'Anonymous' });
+
+      server.addEventListener('message', (event) => {
+        try {
+          const data = JSON.parse(event.data as string);
+          switch (data.type) {
+            case 'join':
+              this.sessions.set(server, { id: sessionId, username: data.username || 'Anonymous' });
+              this.broadcast({ type: 'player_joined', username: data.username, players: this.getPlayerList() });
+              break;
+            case 'chat':
+              this.broadcast({
+                type: 'chat',
+                username: this.sessions.get(server)?.username,
+                message: data.message,
+                timestamp: Date.now(),
+              });
+              break;
+            case 'roll': {
+              const result = this.rollDice(data.dice || 20, data.count || 1);
+              this.broadcast({ type: 'roll_result', username: this.sessions.get(server)?.username, ...result });
+              break;
+            }
+            default:
+              server.send(JSON.stringify({ type: 'error', message: `Unknown message type: ${data.type}` }));
+          }
+        } catch {
+          server.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
+        }
+      });
+
+      server.addEventListener('close', () => {
+        const session = this.sessions.get(server);
+        this.sessions.delete(server);
+        this.broadcast({ type: 'player_left', username: session?.username, players: this.getPlayerList() });
+      });
+
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
+    // REST: get player list
+    if (url.pathname.endsWith('/players')) {
+      return Response.json({ players: this.getPlayerList() });
+    }
+
+    return Response.json({ status: 'ok', players: this.sessions.size });
+  }
+
+  private broadcast(message: object) {
+    const payload = JSON.stringify(message);
+    for (const [ws] of this.sessions) {
+      try {
+        ws.send(payload);
+      } catch {
+        // dead socket, will be cleaned up on close
+      }
+    }
+  }
+
+  private getPlayerList() {
+    return Array.from(this.sessions.values()).map((s) => ({ id: s.id, username: s.username }));
+  }
+
+  private rollDice(sides: number, count: number) {
+    const rolls = Array.from({ length: Math.min(count, 20) }, () => Math.floor(Math.random() * sides) + 1);
+    return { dice: `d${sides}`, count, rolls, total: rolls.reduce((a, b) => a + b, 0) };
   }
 }

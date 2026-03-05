@@ -18,7 +18,8 @@ export default defineConfig({
       },
     },
   },
-  publicDir: 'public',
+  // Use assets/ as the static dir so it doesn't conflict with build outDir
+  publicDir: 'assets',
   server: {
     proxy: {
       '/api': {

@@ -1,12 +1,27 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastProvider } from './components/ui/toast';
+import { GameProvider } from './contexts/GameContext';
 import Home from './pages/Home';
+import Lobby from './pages/Lobby';
+import Game from './pages/Game';
 import './styles.css';
-
-// Dev secrets are fetched in Home.tsx for local development only
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Home />
+    <BrowserRouter>
+      <ToastProvider>
+        <GameProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/lobby" element={<Lobby />} />
+            <Route path="/lobby/:roomId" element={<Lobby />} />
+            <Route path="/game" element={<Game />} />
+            <Route path="/game/:roomId" element={<Game />} />
+          </Routes>
+        </GameProvider>
+      </ToastProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

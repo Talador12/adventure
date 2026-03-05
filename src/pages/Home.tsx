@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
+import { useToast } from '../components/ui/toast';
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCloudflare, faDiscord } from '@fortawesome/free-brands-svg-icons';
@@ -26,46 +28,60 @@ function getInitialTheme(): Theme {
 export default function Home() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [campaignCode, setCampaignCode] = useState('');
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<Record<string, string> | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
+  // Apply theme class
   useEffect(() => {
     document.documentElement.classList.remove('dark', 'light');
     document.documentElement.classList.add(theme);
     localStorage.theme = theme;
-    // Fetch user info from /api/auth/me
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => setUser(data.user));
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev: Theme) => (prev === 'dark' ? 'light' : 'dark'));
-  };
+  // Fetch user session once on mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        const d = data as { user?: Record<string, string> };
+        if (d.user) setUser(d.user);
+      })
+      .catch(() => {}); // silently fail if backend not running
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
 
   const handleJoinCampaign = () => {
     if (!campaignCode.trim()) {
-      alert('Please enter a campaign code');
+      toast('Enter a campaign code first', 'warning');
       return;
     }
-    // TODO: Implement join campaign logic
-    console.log('Joining campaign:', campaignCode);
+    toast(`Joining campaign: ${campaignCode}`, 'info');
+    navigate(`/lobby/${campaignCode.trim()}`);
   };
 
   const handleCreateCampaign = () => {
-    // TODO: Implement create campaign logic
-    console.log('Creating new campaign');
+    const roomId = crypto.randomUUID().slice(0, 8);
+    toast(`Created campaign: ${roomId}`, 'success');
+    navigate(`/lobby/${roomId}`);
   };
 
   const handleManageCharacters = () => {
-    // TODO: Implement character management logic
-    console.log('Opening character management');
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, action: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      action();
-    }
+    toast('Character management coming soon!', 'info');
   };
 
   const handleDiscordLogin = () => {
@@ -73,86 +89,101 @@ export default function Home() {
   };
 
   const handleSignOut = () => {
-    // Clear cookie by expiring it
     document.cookie = 'adventure_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     setUser(null);
-    window.location.reload();
+    setShowDropdown(false);
+    toast('Signed out', 'info');
   };
+
+  const avatarUrl = user?.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <header className="w-full bg-gradient-to-r from-accent to-cloudflare shadow-lg py-6 px-8 flex justify-between items-center">
-        <h1 className="text-3xl font-extrabold tracking-tight drop-shadow text-white">Adventure</h1>
-        <div className="flex gap-4 items-center">
-          {/* Discord Auth/Profile Button */}
+      {/* Header */}
+      <header className="w-full bg-gradient-to-r from-[#F38020] to-[#e06a10] shadow-lg py-4 px-6 flex justify-between items-center">
+        <h1 className="text-2xl font-extrabold tracking-tight drop-shadow text-white">Adventure</h1>
+        <div className="flex gap-3 items-center">
+          {/* Theme toggle */}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white">
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+
+          {/* Discord Auth / Profile Dropdown */}
           {user ? (
-            <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow focus:outline-none focus:ring-2 focus:ring-accent" title={user.username || user.email} onClick={handleSignOut}>
-              <img src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`} alt="Profile" className="w-full h-full object-cover" />
-            </button>
+            <div ref={dropdownRef} className="relative">
+              <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow focus:outline-none focus:ring-2 focus:ring-white/50 transition hover:ring-2 hover:ring-white/50" onClick={() => setShowDropdown(!showDropdown)} title={user.username}>
+                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl overflow-hidden z-50 animate-[slideIn_0.15s_ease-out]">
+                  <div className="px-4 py-3 border-b border-slate-700">
+                    <div className="flex items-center gap-3">
+                      <img src={avatarUrl} className="w-10 h-10 rounded-full" alt="" />
+                      <div>
+                        <div className="text-sm font-semibold text-white">{user.global_name || user.username}</div>
+                        <div className="text-xs text-slate-400 flex items-center gap-1">
+                          <FontAwesomeIcon icon={faDiscord} className="text-[#5865F2]" />
+                          {user.username}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="py-1">
+                    <button onClick={toggleTheme} className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700/50 flex items-center gap-2">
+                      {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                      {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                    </button>
+                    <button onClick={handleSignOut} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700/50">
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
-            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#5865F2] text-white shadow border-2 border-[#5865F2] focus:outline-none focus:ring-2 focus:ring-[#5865F2] transition cursor-pointer hover:bg-[#6a76fa] hover:shadow-md hover:border-white active:bg-[#4752c4] active:scale-95 active:ring-4 active:ring-[#5865F2] active:ring-opacity-80" onClick={handleDiscordLogin} title="Sign in with Discord">
+            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#5865F2] text-white shadow border-2 border-[#5865F2] focus:outline-none focus:ring-2 focus:ring-[#5865F2] transition cursor-pointer hover:bg-[#6a76fa] hover:shadow-md hover:border-white active:bg-[#4752c4] active:scale-95" onClick={handleDiscordLogin} title="Sign in with Discord">
               <FontAwesomeIcon icon={faDiscord} className="text-2xl" />
             </button>
           )}
-          {/* <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10">
-            {theme === 'dark' ? <Sun className="h-5 w-5 text-white" /> : <Moon className="h-5 w-5 text-white" />}
-          </Button> */}
-          <a href="https://github.com/talador12/adventure" target="_blank" rel="noreferrer" className="text-sm underline text-white/80 hover:text-white font-medium focus:outline-none focus:ring-2 focus:ring-white rounded px-2 py-1" aria-label="Visit project on GitHub">
-            GitHub • Keith Adler
+
+          <a href="https://github.com/talador12/adventure" target="_blank" rel="noreferrer" className="text-sm underline text-white/80 hover:text-white font-medium hidden sm:inline">
+            GitHub
           </a>
         </div>
       </header>
 
+      {/* Main content */}
       <main className="flex-1 p-6 flex flex-col items-center gap-8 max-w-6xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+          {/* Join a Campaign */}
           <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">
             <CardContent className="p-8 space-y-4">
-              <h2 className="text-xl font-semibold text-accent">Join a Campaign</h2>
+              <h2 className="text-xl font-semibold text-[#F38020]">Join a Campaign</h2>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Enter campaign code or link"
-                  className="w-full px-3 py-2 border-2 border-white/10 dark:border-white/10 rounded bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-100 ring-accent focus:ring-4 focus:ring-accent focus:border-accent transition-all hover:border-white/40 dark:hover:border-white/40"
-                  value={campaignCode}
-                  onChange={(e) => setCampaignCode(e.target.value)}
-                  onKeyPress={(e) => handleKeyPress(e, handleJoinCampaign)}
-                  aria-label="Campaign code input"
-                />
-                <Button
-                  variant="default"
-                  className="w-full bg-accent/90 hover:bg-accent text-white font-semibold py-2.5 rounded-md shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:ring-4 active:ring-accent active:ring-opacity-80 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-white/20 hover:border-white/40 active:border-accent hover:scale-[1.02] active:scale-[0.98]"
-                  onClick={handleJoinCampaign}
-                  aria-label="Join campaign"
-                >
+                <input type="text" placeholder="Enter campaign code" className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
+                <Button variant="default" className="w-full bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 rounded-md shadow hover:shadow-md transition-all active:scale-[0.98]" onClick={handleJoinCampaign}>
                   Join Campaign
                 </Button>
               </div>
             </CardContent>
           </Card>
 
+          {/* Start a New Campaign */}
           <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">
             <CardContent className="p-8 space-y-4">
-              <h2 className="text-xl font-semibold text-cloudflare">Start a New Campaign</h2>
-              <Button
-                variant="default"
-                className="w-full bg-cloudflare/90 hover:bg-cloudflare text-white font-semibold py-2.5 rounded-md shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-cloudflare/50 active:ring-4 active:ring-cloudflare active:ring-opacity-80 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-white/20 hover:border-white/40 active:border-cloudflare hover:scale-[1.02] active:scale-[0.98]"
-                onClick={handleCreateCampaign}
-                aria-label="Create new campaign"
-              >
+              <h2 className="text-xl font-semibold text-[#F38020]">Start a New Campaign</h2>
+              <Button variant="default" className="w-full bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 rounded-md shadow hover:shadow-md transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
                 Create Campaign
               </Button>
             </CardContent>
           </Card>
 
+          {/* Manage Characters */}
           <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">
             <CardContent className="p-8 space-y-4">
               <h2 className="text-xl font-semibold">Characters</h2>
-              <Button
-                variant="secondary"
-                className="w-full bg-accent/90 hover:bg-accent text-white font-semibold py-2.5 rounded-md shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:ring-4 active:ring-accent active:ring-opacity-80 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-white/20 hover:border-white/40 active:border-accent hover:scale-[1.02] active:scale-[0.98]"
-                onClick={handleManageCharacters}
-                aria-label="Manage characters"
-              >
+              <Button variant="secondary" className="w-full bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 rounded-md shadow hover:shadow-md transition-all active:scale-[0.98]" onClick={handleManageCharacters}>
                 Manage My Characters
               </Button>
             </CardContent>
@@ -160,11 +191,13 @@ export default function Home() {
         </div>
 
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-6 opacity-80 flex items-center gap-1">
-          Built by Keith Adler (@talador12) running on Cloudflare
-          <FontAwesomeIcon icon={faCloudflare} style={{ color: '#F38020', fontSize: '1.2em' }} aria-hidden="true" />
+          Built by{' '}
+          <a href="https://github.com/Talador12" target="_blank" rel="noreferrer" className="underline hover:text-[#F38020]">
+            Keith Adler (@talador12)
+          </a>{' '}
+          running on Cloudflare
+          <FontAwesomeIcon icon={faCloudflare} style={{ color: '#F38020', fontSize: '1.2em' }} />
         </p>
-
-        {/* <div className="h-32 w-32 bg-red-500 dark:bg-blue-900 border-4 border-red-500 dark:border-green-500"></div> */}
       </main>
     </div>
   );

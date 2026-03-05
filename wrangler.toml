@@ -6,6 +6,7 @@ account_id = "41361179c1d85f87c496f78a9095b8c0"
 [site]
 bucket = "./public"
 
+# Development: secrets come from .dev.vars (gitignored) - run `make secrets-development` to set up
 [env.development]
 name = "adventure-dev"
 workers_dev = true
@@ -13,10 +14,6 @@ workers_dev = true
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }
 ]
-
-[env.development.vars]
-DISCORD_CLIENT_ID = "1373524237414957247"
-DISCORD_CLIENT_SECRET = "6EGYRlHfh9bGBv4PFh3LBJpvvxuCmEey"
 
 [env.staging]
 name = "adventure-staging"
