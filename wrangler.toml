@@ -10,6 +10,8 @@ bucket = "./public"
 [env.development]
 name = "adventure-dev"
 workers_dev = true
+[env.development.ai]
+binding = "AI"
 [env.development.durable_objects]
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }
@@ -18,6 +20,8 @@ bindings = [
 [env.staging]
 name = "adventure-staging"
 workers_dev = true
+[env.staging.ai]
+binding = "AI"
 [env.staging.durable_objects]
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }
@@ -26,6 +30,8 @@ bindings = [
 [env.production]
 name = "adventure"
 workers_dev = false
+[env.production.ai]
+binding = "AI"
 [env.production.durable_objects]
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }

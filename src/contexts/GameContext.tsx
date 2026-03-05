@@ -42,6 +42,7 @@ export interface Character {
   hp: number;
   maxHp: number;
   ac: number;
+  portrait?: string; // data URL (base64) or undefined for default
   playerId: string; // who owns this character
   createdAt: number;
 }

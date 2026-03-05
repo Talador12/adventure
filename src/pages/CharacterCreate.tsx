@@ -1,8 +1,20 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/toast';
 import { useGame, STAT_NAMES, RACES, CLASSES, type Stats, type Race, type CharacterClass, type StatName } from '../contexts/GameContext';
+
+// Default portrait colors + silhouette features per race
+const RACE_PORTRAIT: Record<Race, { bg: string; accent: string; icon: string }> = {
+  Human: { bg: '#475569', accent: '#94a3b8', icon: 'M50 25c0-8 6-15 14-15s14 7 14 15-6 15-14 15-14-7-14-15zM30 85c0-14 10-25 20-28v0h28c10 3 20 14 20 28v5H30v-5z' },
+  Elf: { bg: '#1e3a5f', accent: '#7dd3fc', icon: 'M50 25c0-8 6-15 14-15s14 7 14 15-6 15-14 15-14-7-14-15zM22 42l12-8M92 42l-12-8M30 85c0-14 10-25 20-28h28c10 3 20 14 20 28v5H30v-5z' },
+  Dwarf: { bg: '#7c2d12', accent: '#fdba74', icon: 'M50 20c0-7 6-13 14-13s14 6 14 13-6 13-14 13-14-6-14-13zM40 42c0 0-2 12 0 18h48c2-6 0-18 0-18M28 85c0-12 10-22 20-25h32c10 3 20 13 20 25v5H28v-5z' },
+  Halfling: { bg: '#365314', accent: '#bef264', icon: 'M50 30c0-7 5-12 12-12s12 5 12 12-5 12-12 12-12-5-12-12zM35 85c0-12 8-20 18-23h22c10 3 18 11 18 23v5H35v-5z' },
+  Gnome: { bg: '#4c1d95', accent: '#c4b5fd', icon: 'M48 28c0-9 6-16 15-16s15 7 15 16-6 16-15 16-15-7-15-16zM35 85c0-12 8-20 18-23h22c10 3 18 11 18 23v5H35v-5z' },
+  'Half-Orc': { bg: '#14532d', accent: '#4ade80', icon: 'M50 23c0-8 7-16 15-16s15 8 15 16-7 16-15 16-15-8-15-16zM55 50l-3 5 3 3 8-3-3-5M25 85c0-14 12-26 22-29h34c10 3 22 15 22 29v5H25v-5z' },
+  Tiefling: { bg: '#4c0519', accent: '#fda4af', icon: 'M42 10c4-6 8-6 12 0M70 10c4-6 8-6 12 0M50 25c0-8 6-15 14-15s14 7 14 15-6 15-14 15-14-7-14-15zM30 85c0-14 10-25 20-28h28c10 3 20 14 20 28v5H30v-5z' },
+  Dragonborn: { bg: '#1e3a5f', accent: '#fbbf24', icon: 'M46 20c0-9 7-16 16-16s16 7 16 16-7 14-16 14-16-5-16-14zM50 40l-4 6h36l-4-6M25 85c0-14 12-26 22-29h34c10 3 22 15 22 29v5H25v-5z' },
+};
 
 // 4d6 drop lowest — the classic D&D stat generation method
 function roll4d6DropLowest(): { rolls: number[]; dropped: number; total: number } {
@@ -65,6 +77,44 @@ export default function CharacterCreate() {
     Object.fromEntries(STAT_NAMES.map((s) => [s, null])) as Record<StatName, StatRoll | null>
   );
   const [rollingAll, setRollingAll] = useState(false);
+  const [portrait, setPortrait] = useState<string | null>(null); // data URL from AI or null for default
+  const [generatingPortrait, setGeneratingPortrait] = useState(false);
+
+  // Build the default SVG portrait as a data URL
+  const defaultPortraitSvg = useMemo(() => {
+    const p = RACE_PORTRAIT[race];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 100"><rect width="128" height="100" rx="12" fill="${p.bg}"/><g transform="translate(0,2)"><path d="${p.icon}" fill="${p.accent}" opacity="0.85"/></g><text x="64" y="96" text-anchor="middle" font-size="9" font-family="sans-serif" fill="${p.accent}" opacity="0.6">${race}</text></svg>`;
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+  }, [race]);
+
+  const generatePortrait = useCallback(async () => {
+    const stats = getFinalStats();
+    setGeneratingPortrait(true);
+    try {
+      const res = await fetch('/api/portrait/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name || 'Adventurer',
+          race,
+          class: charClass,
+          level: 1,
+          stats: stats || {},
+        }),
+      });
+      const data = await res.json() as { portrait?: string; error?: string };
+      if (data.portrait) {
+        setPortrait(data.portrait);
+        toast('Portrait generated!', 'success');
+      } else {
+        toast(data.error || 'Failed to generate portrait', 'warning');
+      }
+    } catch {
+      toast('Portrait generation failed — server may be unavailable', 'warning');
+    } finally {
+      setGeneratingPortrait(false);
+    }
+  }, [name, race, charClass, toast]);
 
   const rollStat = useCallback((stat: StatName) => {
     // Start animation
@@ -140,6 +190,7 @@ export default function CharacterCreate() {
       hp: maxHp,
       maxHp,
       ac: 10 + Math.floor((finalStats.DEX - 10) / 2), // base AC = 10 + DEX mod
+      portrait: portrait || undefined, // AI-generated portrait or undefined for default
       playerId: currentPlayer.id,
       createdAt: Date.now(),
     };
@@ -305,16 +356,62 @@ export default function CharacterCreate() {
           </div>
         </div>
 
+        {/* Portrait */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Portrait</label>
+          <div className="flex items-start gap-6">
+            {/* Portrait image */}
+            <div className="relative group shrink-0">
+              <img
+                src={portrait || defaultPortraitSvg}
+                alt={`${race} ${charClass} portrait`}
+                className="w-32 h-32 rounded-xl border-2 border-slate-700 object-cover bg-slate-900"
+              />
+              {generatingPortrait && (
+                <div className="absolute inset-0 rounded-xl bg-slate-950/80 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-[#F38020] border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            {/* Portrait controls */}
+            <div className="flex flex-col gap-2 flex-1">
+              <p className="text-xs text-slate-500">
+                {portrait ? 'AI-generated portrait. You can regenerate or clear it.' : 'Using default race portrait. Generate an AI portrait with your character details.'}
+              </p>
+              <button
+                onClick={generatePortrait}
+                disabled={generatingPortrait}
+                className="text-xs bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 w-fit"
+              >
+                {generatingPortrait ? 'Generating...' : portrait ? 'Regenerate Portrait' : 'Generate AI Portrait'}
+              </button>
+              {portrait && (
+                <button
+                  onClick={() => setPortrait(null)}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors w-fit"
+                >
+                  Clear &amp; use default
+                </button>
+              )}
+              <p className="text-[10px] text-slate-600 mt-1">
+                Uses Workers AI (FLUX) with your name, race, class, and stats to curate the image.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Preview + Create */}
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Character Preview</h2>
           </div>
           <div className="flex items-start gap-6">
-            {/* Avatar placeholder */}
-            <div className="w-20 h-20 rounded-xl bg-slate-800 flex items-center justify-center text-3xl font-black text-slate-600 shrink-0">
-              {name ? name.charAt(0).toUpperCase() : '?'}
-            </div>
+            {/* Portrait thumbnail */}
+            <img
+              src={portrait || defaultPortraitSvg}
+              alt="Portrait"
+              className="w-20 h-20 rounded-xl object-cover bg-slate-800 shrink-0"
+            />
             <div className="flex-1 space-y-1">
               <div className="text-xl font-bold text-white">{name || 'Unnamed Hero'}</div>
               <div className="text-sm text-slate-400">

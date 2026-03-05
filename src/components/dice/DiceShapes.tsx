@@ -103,33 +103,41 @@ export function D12Shape({ className = '', size = 120 }: DiceShapeProps) {
   );
 }
 
-// d20: Icosahedron — the classic D&D d20 viewed face-on.
-// Outer shape is a regular triangle, inner ring of triangles shows the faceted geometry.
+// d20: Icosahedron — the classic D&D d20 viewed from a vertex-on angle.
+// Shows a regular decagon (10-sided) outline with internal facet lines radiating
+// from center, which is the iconic silhouette of a 20-sided die.
 export function D20Shape({ className = '', size = 120 }: DiceShapeProps) {
-  // Classic icosahedron front view: equilateral triangle outer with an inverted inner
-  // triangle and connecting lines to form the signature faceted look.
-  // Outer equilateral triangle (point up)
-  const top = '60,6';
-  const bl = '6,100';
-  const br = '114,100';
-  // Inner inverted triangle (point down) — creates the iconic d20 facet pattern
-  const iTop = '60,72';
-  const iBl = '30,36';
-  const iBr = '90,36';
+  const cx = 60, cy = 60, r = 54, ri = 33;
+  // Outer decagon (10 vertices)
+  const outer = Array.from({ length: 10 }, (_, i) => {
+    const angle = (i * 36 - 90) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  });
+  // Inner pentagonal ring (5 vertices, offset by 36deg)
+  const inner = Array.from({ length: 5 }, (_, i) => {
+    const angle = (i * 72 - 90 + 36) * (Math.PI / 180);
+    return { x: cx + ri * Math.cos(angle), y: cy + ri * Math.sin(angle) };
+  });
+  const outerPts = outer.map((p) => `${p.x},${p.y}`).join(' ');
 
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Outer equilateral triangle */}
-      <polygon points={`${top} ${br} ${bl}`} stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" fill="none" />
-      {/* Inner inverted triangle */}
-      <polygon points={`${iBl} ${iBr} ${iTop}`} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" opacity="0.45" />
-      {/* Connect outer vertices to inner vertices — the facet lines */}
-      <line x1="60" y1="6" x2="30" y2="36" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
-      <line x1="60" y1="6" x2="90" y2="36" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
-      <line x1="6" y1="100" x2="90" y2="36" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
-      <line x1="6" y1="100" x2="60" y2="72" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
-      <line x1="114" y1="100" x2="30" y2="36" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
-      <line x1="114" y1="100" x2="60" y2="72" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+      {/* Outer decagon outline */}
+      <polygon points={outerPts} stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" fill="none" />
+      {/* Inner pentagon — the visible back-face edges */}
+      <polygon points={inner.map((p) => `${p.x},${p.y}`).join(' ')} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" opacity="0.4" />
+      {/* Lines from each outer vertex to the two nearest inner vertices */}
+      {outer.map((o, i) => {
+        // Each outer vertex connects to the inner vertex at floor(i/2) and the next one
+        const i1 = Math.floor(i / 2) % 5;
+        const i2 = (i1 + (i % 2 === 0 ? 4 : 0)) % 5;
+        return (
+          <g key={i}>
+            <line x1={o.x} y1={o.y} x2={inner[i1].x} y2={inner[i1].y} stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
+            {i1 !== i2 && <line x1={o.x} y1={o.y} x2={inner[i2].x} y2={inner[i2].y} stroke="currentColor" strokeWidth="1" opacity="0.2" />}
+          </g>
+        );
+      })}
     </svg>
   );
 }

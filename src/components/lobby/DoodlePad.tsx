@@ -1,11 +1,27 @@
 // DoodlePad — simple canvas drawing pad for lobby waiting room.
-// Paint-like: pick colors, brush size, eraser, clear. Pure canvas, no deps.
-import { useRef, useState, useEffect, useCallback } from 'react';
+// Paint-like: pick colors, brush size, eraser, clear. Syncs strokes via WebSocket.
+import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 
 const COLORS = ['#F38020', '#ef4444', '#3b82f6', '#22c55e', '#a855f7', '#ec4899', '#facc15', '#ffffff', '#94a3b8'];
 const BRUSH_SIZES = [2, 4, 8, 14];
+const BG_COLOR = '#020617'; // slate-950
 
-export default function DoodlePad() {
+export interface DoodleStroke {
+  x1: number; y1: number; x2: number; y2: number;
+  color: string; width: number;
+}
+
+interface DoodlePadProps {
+  onStroke?: (stroke: DoodleStroke) => void;
+  onClear?: () => void;
+}
+
+export interface DoodlePadHandle {
+  drawRemote: (stroke: DoodleStroke) => void;
+  clearRemote: () => void;
+}
+
+const DoodlePad = forwardRef<DoodlePadHandle, DoodlePadProps>(function DoodlePad({ onStroke, onClear }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [color, setColor] = useState('#F38020');
@@ -50,25 +66,53 @@ export default function DoodlePad() {
     [getPos]
   );
 
+  // Draw a line segment on canvas (used for both local and remote strokes)
+  const drawSegment = useCallback((x1: number, y1: number, x2: number, y2: number, strokeColor: string, width: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }, []);
+
   const draw = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!drawing || !lastPos.current) return;
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d')!;
       const pos = getPos(e);
+      const strokeColor = isEraser ? BG_COLOR : color;
 
-      ctx.beginPath();
-      ctx.moveTo(lastPos.current.x, lastPos.current.y);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.strokeStyle = isEraser ? '#0f172a' : color; // eraser = bg color
-      ctx.lineWidth = brushSize;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.stroke();
+      drawSegment(lastPos.current.x, lastPos.current.y, pos.x, pos.y, strokeColor, brushSize);
+
+      // Send stroke to WebSocket for other players
+      onStroke?.({
+        x1: lastPos.current.x, y1: lastPos.current.y,
+        x2: pos.x, y2: pos.y,
+        color: strokeColor, width: brushSize,
+      });
+
       lastPos.current = pos;
     },
-    [drawing, color, brushSize, isEraser, getPos]
+    [drawing, color, brushSize, isEraser, getPos, drawSegment, onStroke]
   );
+
+  // Imperative: draw a remote stroke from another player
+  const drawRemote = useCallback((stroke: DoodleStroke) => {
+    drawSegment(stroke.x1, stroke.y1, stroke.x2, stroke.y2, stroke.color, stroke.width);
+  }, [drawSegment]);
+
+  // Imperative: clear canvas from remote signal
+  const clearRemote = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }, []);
 
   const stopDraw = useCallback(() => {
     setDrawing(false);
@@ -80,7 +124,11 @@ export default function DoodlePad() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }, []);
+    onClear?.(); // notify WebSocket
+  }, [onClear]);
+
+  // Expose imperative methods for parent to call on remote WebSocket events
+  useImperativeHandle(ref, () => ({ drawRemote, clearRemote }), [drawRemote, clearRemote]);
 
   return (
     <div className="flex flex-col h-full">
@@ -132,4 +180,6 @@ export default function DoodlePad() {
       </div>
     </div>
   );
-}
+});
+
+export default DoodlePad;

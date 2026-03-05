@@ -7,8 +7,13 @@ declare const WebSocketPair: { new (): { 0: WebSocket; 1: WebSocket } };
 type DurableObjectNamespace = { idFromName(name: string): { toString(): string }; get(id: unknown): { fetch(req: RequestInfo | URL): Promise<Response> } };
 type ExecutionContext = { waitUntil(promise: Promise<unknown>): void; passThroughOnException(): void };
 
+interface Ai {
+  run(model: string, input: Record<string, unknown>): Promise<ArrayBuffer | ReadableStream | Record<string, unknown>>;
+}
+
 interface Env {
   LOBBY: DurableObjectNamespace;
+  AI?: Ai;
   ASSETS?: { fetch: (req: Request) => Promise<Response> };
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
@@ -93,6 +98,112 @@ app.get('/api/auth/me', async (c) => {
 app.get('/api/auth/signout', (c) => {
   c.header('Set-Cookie', `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
   return c.redirect('/');
+});
+
+// Portrait generation via Workers AI
+function buildPortraitPrompt(char: Record<string, unknown>): string {
+  const race = String(char.race || 'Human');
+  const cls = String(char.class || 'Fighter');
+  const name = String(char.name || 'Adventurer');
+  const stats = (char.stats || {}) as Record<string, number>;
+
+  // Describe physique from stats
+  const physique: string[] = [];
+  if (stats.STR >= 16) physique.push('powerfully muscular');
+  else if (stats.STR <= 8) physique.push('slight and thin');
+  if (stats.DEX >= 16) physique.push('graceful and agile');
+  if (stats.CON >= 16) physique.push('hardy and robust');
+  else if (stats.CON <= 8) physique.push('frail-looking');
+  if (stats.INT >= 16) physique.push('with sharp, intelligent eyes');
+  if (stats.WIS >= 16) physique.push('with a calm, knowing gaze');
+  if (stats.CHA >= 16) physique.push('strikingly attractive');
+
+  // Race-specific features
+  const raceTraits: Record<string, string> = {
+    Human: 'a human with varied features',
+    Elf: 'an elf with pointed ears, angular features, and an ethereal quality',
+    Dwarf: 'a stout dwarf with a thick beard and broad shoulders',
+    Halfling: 'a small halfling with a round, cheerful face and curly hair',
+    Gnome: 'a small gnome with an oversized head and curious, twinkling eyes',
+    'Half-Orc': 'a half-orc with greenish skin, prominent tusks, and a strong jaw',
+    Tiefling: 'a tiefling with reddish skin, curved horns, and a long tail',
+    Dragonborn: 'a dragonborn with scaled skin, a draconic snout, and no hair',
+  };
+
+  // Class-specific attire/vibe
+  const classStyle: Record<string, string> = {
+    Fighter: 'wearing practical plate armor with a sword at their hip',
+    Wizard: 'wearing flowing robes with arcane symbols, holding a staff',
+    Rogue: 'wearing dark leather armor with a hood and daggers',
+    Cleric: 'wearing polished chainmail with a holy symbol around their neck',
+    Ranger: 'wearing green-brown leathers with a longbow and a forest cloak',
+    Paladin: 'wearing gleaming full plate with a radiant holy emblem on their shield',
+    Barbarian: 'bare-chested with war paint, furs, and a massive greataxe',
+    Bard: 'wearing colorful, stylish clothes with a lute slung over their shoulder',
+    Sorcerer: 'with faintly glowing eyes and arcane energy crackling at their fingertips',
+    Warlock: 'wearing dark, otherworldly robes with an eldritch sigil on their hand',
+    Druid: 'wearing natural hide armor adorned with leaves and a wooden staff',
+    Monk: 'wearing simple wraps and a serene expression, hands in a fighting stance',
+  };
+
+  const raceTrait = raceTraits[race] || 'a fantasy adventurer';
+  const style = classStyle[cls] || 'in adventuring gear';
+  const physiqueStr = physique.length > 0 ? `, ${physique.join(', ')}` : '';
+
+  return `Fantasy character portrait of ${name}, ${raceTrait}${physiqueStr}, ${style}. Detailed digital painting, dramatic lighting, painterly style, upper body portrait, dark atmospheric background, high fantasy RPG art, D&D character art style.`;
+}
+
+app.post('/api/portrait/generate', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<Record<string, unknown>>();
+  const prompt = buildPortraitPrompt(body);
+
+  try {
+    const result = await c.env.AI.run('@cf/black-forest-labs/FLUX-1-schnell', {
+      prompt,
+      num_steps: 4,
+    });
+
+    // FLUX-1-schnell returns a ReadableStream of PNG data
+    if (result instanceof ReadableStream) {
+      const reader = result.getReader();
+      const chunks: Uint8Array[] = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) chunks.push(value);
+      }
+      const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
+      const merged = new Uint8Array(totalLen);
+      let offset = 0;
+      for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      // Convert to base64 data URL
+      let binary = '';
+      for (let i = 0; i < merged.length; i++) binary += String.fromCharCode(merged[i]);
+      const base64 = btoa(binary);
+      return c.json({ portrait: `data:image/png;base64,${base64}`, prompt });
+    }
+
+    // Fallback: might be ArrayBuffer directly
+    if (result instanceof ArrayBuffer) {
+      const bytes = new Uint8Array(result);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      return c.json({ portrait: `data:image/png;base64,${base64}`, prompt });
+    }
+
+    return c.json({ error: 'Unexpected AI response format' }, 500);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'AI generation failed';
+    return c.json({ error: msg }, 500);
+  }
 });
 
 // WebSocket upgrade — dedicated route so Vite proxy doesn't interfere

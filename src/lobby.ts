@@ -144,6 +144,37 @@ export class Lobby {
         break;
       }
 
+      case 'draw': {
+        // Broadcast draw stroke to all OTHER clients (not back to sender)
+        const drawSession = this.sessions.get(server);
+        if (!drawSession) return;
+        const payload = JSON.stringify({
+          type: 'draw',
+          playerId: drawSession.id,
+          x1: data.x1,
+          y1: data.y1,
+          x2: data.x2,
+          y2: data.y2,
+          color: data.color,
+          width: data.width,
+        });
+        for (const [ws] of this.sessions) {
+          if (ws === server) continue; // don't echo back to sender
+          try { ws.send(payload); } catch { /* dead socket */ }
+        }
+        break;
+      }
+
+      case 'clear_canvas': {
+        // Broadcast canvas clear to all OTHER clients
+        const clearPayload = JSON.stringify({ type: 'clear_canvas' });
+        for (const [ws] of this.sessions) {
+          if (ws === server) continue;
+          try { ws.send(clearPayload); } catch { /* dead socket */ }
+        }
+        break;
+      }
+
       case 'ping': {
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
         break;

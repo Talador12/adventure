@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useToast } from '../components/ui/toast';
 import { Button } from '../components/ui/button';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
-import DiceRoller, { type DiceRollerHandle, type RemoteRoll } from '../components/dice/DiceRoller';
-import DoodlePad from '../components/lobby/DoodlePad';
+import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
+import DoodlePad, { type DoodlePadHandle, type DoodleStroke } from '../components/lobby/DoodlePad';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { useGame, type DieType } from '../contexts/GameContext';
 
@@ -14,8 +14,6 @@ interface LobbyPlayer {
   avatar?: string;
   joinedAt: number;
 }
-
-type LobbyTab = 'doodle' | 'dice';
 
 export default function Lobby() {
   const { roomId } = useParams();
@@ -28,8 +26,8 @@ export default function Lobby() {
   const [players, setPlayers] = useState<LobbyPlayer[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<LobbyTab>('dice');
   const diceRef = useRef<DiceRollerHandle>(null);
+  const doodleRef = useRef<DoodlePadHandle>(null);
 
   // WebSocket message handler
   const handleWsMessage = useCallback((msg: WSMessage) => {
@@ -92,6 +90,19 @@ export default function Lobby() {
         });
         break;
       }
+
+      case 'draw':
+        // Remote doodle stroke from another player
+        doodleRef.current?.drawRemote({
+          x1: msg.x1 as number, y1: msg.y1 as number,
+          x2: msg.x2 as number, y2: msg.y2 as number,
+          color: msg.color as string, width: msg.width as number,
+        });
+        break;
+
+      case 'clear_canvas':
+        doodleRef.current?.clearRemote();
+        break;
     }
   }, []);
 
@@ -114,6 +125,17 @@ export default function Lobby() {
     },
     [send]
   );
+
+  const handleDoodleStroke = useCallback(
+    (stroke: DoodleStroke) => {
+      send({ type: 'draw', ...stroke });
+    },
+    [send]
+  );
+
+  const handleDoodleClear = useCallback(() => {
+    send({ type: 'clear_canvas' });
+  }, [send]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(roomLink).then(() => toast('Link copied!', 'success'));
@@ -172,24 +194,17 @@ export default function Lobby() {
             )}
           </div>
 
-          {/* Tab bar */}
-          <div className="flex border-b border-slate-800 shrink-0">
-            <button onClick={() => setActiveTab('dice')} className={`px-4 py-2 text-xs font-semibold transition-colors ${activeTab === 'dice' ? 'text-[#F38020] border-b-2 border-[#F38020]' : 'text-slate-500 hover:text-slate-300'}`}>
-              Dice
-            </button>
-            <button onClick={() => setActiveTab('doodle')} className={`px-4 py-2 text-xs font-semibold transition-colors ${activeTab === 'doodle' ? 'text-[#F38020] border-b-2 border-[#F38020]' : 'text-slate-500 hover:text-slate-300'}`}>
-              Doodle Pad
-            </button>
-          </div>
-
-          {/* Activity area */}
-          <div className="flex-1 overflow-hidden">
-            {activeTab === 'dice' && (
-              <div className="p-6 max-w-sm mx-auto">
-                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} useServerRolls={status === 'connected'} compact />
-              </div>
-            )}
-            {activeTab === 'doodle' && <DoodlePad />}
+          {/* Dice + Doodle Pad side by side */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Dice roller — left */}
+            <div className="w-64 shrink-0 border-r border-slate-800 p-4 flex flex-col items-center overflow-y-auto">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Dice</h3>
+              <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} useServerRolls={status === 'connected'} compact />
+            </div>
+            {/* Doodle pad — fills remaining space, synced via WebSocket */}
+            <div className="flex-1 overflow-hidden">
+              <DoodlePad ref={doodleRef} onStroke={handleDoodleStroke} onClear={handleDoodleClear} />
+            </div>
           </div>
         </div>
 

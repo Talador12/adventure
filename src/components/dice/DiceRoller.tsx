@@ -48,7 +48,8 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
   const [rolling, setRolling] = useState<DieType | null>(null);
   const [displayValue, setDisplayValue] = useState<number | null>(null);
   const [lastRoll, setLastRoll] = useState<{ die: DieType; value: number; sides: number; playerName?: string } | null>(null);
-  const [showCritEffect, setShowCritEffect] = useState<'crit' | 'fumble' | null>(null);
+  const [critState, setCritState] = useState<'crit' | 'fumble' | null>(null); // persistent color — stays until next roll
+  const [showBurst, setShowBurst] = useState(false); // temporary VFX burst — fades after animation
   const [rollerLabel, setRollerLabel] = useState<string | null>(null);
   const diceDisplayRef = useRef<HTMLDivElement>(null);
   // Queue for remote rolls that arrive while an animation is playing
@@ -67,7 +68,8 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
       }
       animatingRef.current = true;
       setRolling(die);
-      setShowCritEffect(null);
+      setCritState(null);
+      setShowBurst(false);
       setRollerLabel(isLocal ? null : playerName || null);
 
       let ticks = 0;
@@ -96,9 +98,14 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
             unitName: isLocal ? selectedUnit?.name : unitName,
           });
 
-          if (isCrit) setShowCritEffect('crit');
-          else if (isFumble) setShowCritEffect('fumble');
-          setTimeout(() => setShowCritEffect(null), 2500);
+          // Persistent crit/fumble color — stays until next roll starts
+          if (isCrit) setCritState('crit');
+          else if (isFumble) setCritState('fumble');
+          // Temporary burst VFX — fades after animation plays
+          if (isCrit || isFumble) {
+            setShowBurst(true);
+            setTimeout(() => setShowBurst(false), 2500);
+          }
 
           // Play next queued remote roll
           setTimeout(() => {
@@ -123,7 +130,8 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         onLocalRoll(die, sides);
         // Start the animation immediately with random placeholder, will be overridden
         setRolling(die);
-        setShowCritEffect(null);
+        setCritState(null);
+        setShowBurst(false);
         setRollerLabel(null);
         let ticks = 0;
         const spinInterval = setInterval(() => {
@@ -249,42 +257,62 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
       </div>
 
       {/* Animated dice display */}
-      <div ref={diceDisplayRef} className="relative flex items-center justify-center py-6" style={showCritEffect === 'fumble' ? { animation: 'fumbleShake 0.6s ease-out' } : undefined}>
-        {/* Dice shape outline */}
+      <div ref={diceDisplayRef} className="relative flex items-center justify-center py-6" style={showBurst && critState === 'fumble' ? { animation: 'fumbleShake 0.6s ease-out' } : undefined}>
+        {/* Dice shape outline — tint gold/red persistently on crit/fumble */}
         {ShapeComponent && (
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              color: activeColor,
+              color: critState === 'crit' ? '#facc15' : critState === 'fumble' ? '#ef4444' : activeColor,
               animation: rolling ? 'diceRoll 0.9s ease-in-out infinite' : 'diceSettle 0.35s ease-out',
-              opacity: rolling ? 0.6 : 0.35,
+              opacity: rolling ? 0.6 : critState ? 0.5 : 0.35,
             }}
           >
             <ShapeComponent size={compact ? 110 : 130} />
           </div>
         )}
 
-        {/* Crit star burst */}
-        {showCritEffect === 'crit' && (
+        {/* Crit star burst — temporary VFX */}
+        {showBurst && critState === 'crit' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-40 h-40 rounded-full" style={{ animation: 'critStarBurst 1.2s ease-out forwards', background: 'radial-gradient(circle, rgba(250,204,21,0.4) 0%, transparent 70%)' }} />
           </div>
         )}
 
-        {/* Fumble crack */}
-        {showCritEffect === 'fumble' && (
+        {/* Fumble crack — temporary VFX */}
+        {showBurst && critState === 'fumble' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-32 h-32 rounded-full" style={{ animation: 'fumbleCrack 1s ease-out forwards', background: 'radial-gradient(circle, rgba(239,68,68,0.4) 0%, transparent 70%)' }} />
           </div>
         )}
 
-        {/* Crit glow ring */}
-        {showCritEffect === 'crit' && <div className="absolute w-28 h-28 rounded-full" style={{ animation: 'critGlow 1.5s ease-out forwards' }} />}
+        {/* Crit glow ring — temporary VFX */}
+        {showBurst && critState === 'crit' && <div className="absolute w-28 h-28 rounded-full" style={{ animation: 'critGlow 1.5s ease-out forwards' }} />}
+
+        {/* Persistent subtle glow behind number for crits/fumbles */}
+        {!rolling && critState && (
+          <div className="absolute w-24 h-24 rounded-full pointer-events-none" style={{
+            background: critState === 'crit'
+              ? 'radial-gradient(circle, rgba(250,204,21,0.15) 0%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)',
+          }} />
+        )}
 
         {/* Number display */}
         {displayValue !== null && (
           <div className="relative z-10 text-center">
-            <div className={`text-4xl font-black tabular-nums transition-all duration-150 ${showCritEffect === 'crit' ? 'text-yellow-400' : showCritEffect === 'fumble' ? 'text-red-500' : rolling ? 'text-slate-300' : 'text-white'}`} style={showCritEffect === 'crit' ? { filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.8))', animation: 'critText 0.4s ease-out' } : showCritEffect === 'fumble' ? { filter: 'drop-shadow(0 0 15px rgba(239,68,68,0.6))' } : undefined}>
+            <div
+              className={`text-4xl font-black tabular-nums transition-all duration-150 ${
+                critState === 'crit' ? 'text-yellow-400' : critState === 'fumble' ? 'text-red-500' : rolling ? 'text-slate-300' : 'text-white'
+              }`}
+              style={
+                critState === 'crit'
+                  ? { filter: `drop-shadow(0 0 ${showBurst ? '20px' : '8px'} rgba(250,204,21,${showBurst ? 0.8 : 0.4}))`, ...(showBurst ? { animation: 'critText 0.4s ease-out' } : {}) }
+                  : critState === 'fumble'
+                    ? { filter: `drop-shadow(0 0 ${showBurst ? '15px' : '6px'} rgba(239,68,68,${showBurst ? 0.6 : 0.3}))` }
+                    : undefined
+              }
+            >
               {displayValue}
             </div>
 
@@ -293,13 +321,14 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
               <div className="mt-1 space-y-0.5">
                 {/* Remote roller attribution */}
                 {rollerLabel && <div className="text-[10px] text-sky-400 font-medium">{rollerLabel} rolled</div>}
-                <div className="text-xs text-slate-500">{lastRoll.die.toUpperCase()}</div>
-                {showCritEffect === 'crit' && (
-                  <div className="text-xs font-bold text-yellow-400 tracking-wide" style={{ animation: 'critText 0.5s ease-out' }}>
+                <div className={`text-xs ${critState === 'crit' ? 'text-yellow-500/70' : critState === 'fumble' ? 'text-red-500/70' : 'text-slate-500'}`}>{lastRoll.die.toUpperCase()}</div>
+                {/* Crit/fumble text — persists with the color */}
+                {critState === 'crit' && (
+                  <div className="text-xs font-bold text-yellow-400 tracking-wide" style={showBurst ? { animation: 'critText 0.5s ease-out' } : undefined}>
                     CRITICAL HIT!
                   </div>
                 )}
-                {showCritEffect === 'fumble' && <div className="text-xs font-bold text-red-500 tracking-wide">CRITICAL FAIL!</div>}
+                {critState === 'fumble' && <div className="text-xs font-bold text-red-500 tracking-wide">CRITICAL FAIL!</div>}
               </div>
             )}
           </div>
