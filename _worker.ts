@@ -206,6 +206,89 @@ app.post('/api/portrait/generate', async (c) => {
   }
 });
 
+// AI Dungeon Master — narration, encounters, NPC dialogue via Workers AI text generation
+app.post('/api/dm/narrate', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<Record<string, unknown>>();
+  const characters = (body.characters as Array<Record<string, unknown>>) || [];
+  const context = String(body.context || '');
+  const action = String(body.action || '');
+  const history = (body.history as string[]) || [];
+
+  const charDescriptions = characters.map((ch) => {
+    const stats = (ch.stats || {}) as Record<string, number>;
+    return `${ch.name} (Level ${ch.level} ${ch.race} ${ch.class}, HP ${ch.hp}/${ch.maxHp}, AC ${ch.ac}, STR ${stats.STR || 10} DEX ${stats.DEX || 10} CON ${stats.CON || 10} INT ${stats.INT || 10} WIS ${stats.WIS || 10} CHA ${stats.CHA || 10})`;
+  }).join('\n');
+
+  const historyStr = history.length > 0 ? `\nRecent events:\n${history.slice(-10).join('\n')}` : '';
+
+  const systemPrompt = `You are a dramatic, immersive Dungeon Master for a D&D 5e adventure. You narrate in vivid second-person prose. Keep responses to 2-4 sentences. Be atmospheric and exciting. When combat happens, describe it cinematically. When players make choices, present consequences with flair.
+
+Party:
+${charDescriptions || 'No characters yet.'}
+${historyStr}
+${context ? `\nCurrent scene: ${context}` : ''}`;
+
+  try {
+    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: action || 'Set the scene for the beginning of a new adventure. The party gathers at a tavern.' },
+      ],
+      max_tokens: 300,
+    });
+
+    const response = (result as Record<string, unknown>).response as string || '';
+    return c.json({ narration: response.trim() });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'DM narration failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// AI DM encounter generator — creates enemies with stats
+app.post('/api/dm/encounter', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<Record<string, unknown>>();
+  const partyLevel = Number(body.partyLevel) || 1;
+  const partySize = Number(body.partySize) || 1;
+  const difficulty = String(body.difficulty || 'medium');
+  const context = String(body.context || 'a dark dungeon corridor');
+
+  const prompt = `Generate a D&D 5e combat encounter for a party of ${partySize} level ${partyLevel} adventurers. Difficulty: ${difficulty}. Setting: ${context}.
+
+Return ONLY valid JSON (no markdown, no explanation) in this exact format:
+{"enemies":[{"name":"Goblin","hp":7,"maxHp":7,"ac":15,"type":"enemy"},{"name":"Goblin Archer","hp":7,"maxHp":7,"ac":13,"type":"enemy"}],"description":"Two goblins leap from behind the rocks, weapons drawn!"}`;
+
+  try {
+    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'You are a D&D encounter designer. Return ONLY valid JSON. No markdown code fences. No extra text.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 500,
+    });
+
+    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    // Try to extract JSON from the response
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const encounter = JSON.parse(jsonMatch[0]);
+      return c.json(encounter);
+    }
+    return c.json({ error: 'Failed to parse encounter', raw }, 500);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Encounter generation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // WebSocket upgrade — dedicated route so Vite proxy doesn't interfere
 app.get('/api/ws', async (c) => {
   const req = c.req.raw;

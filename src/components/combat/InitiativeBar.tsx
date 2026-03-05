@@ -5,7 +5,7 @@ interface InitiativeBarProps {
 }
 
 export default function InitiativeBar({ entries }: InitiativeBarProps) {
-  const { players, selectedUnitId, setSelectedUnitId } = useGame();
+  const { players, characters, selectedUnitId, setSelectedUnitId } = useGame();
 
   // Look up the player controlling each unit
   const getPlayerLabel = (unit: Unit) => {
@@ -13,6 +13,13 @@ export default function InitiativeBar({ entries }: InitiativeBarProps) {
     if (!player) return null;
     if (player.controllerType === 'ai') return { label: 'AI', color: 'text-purple-400 bg-purple-500/20' };
     return { label: player.username, color: 'text-sky-400 bg-sky-500/15' };
+  };
+
+  // Look up portrait from linked character
+  const getPortrait = (unit: Unit): string | null => {
+    if (!unit.characterId) return null;
+    const char = characters.find((c) => c.id === unit.characterId);
+    return char?.portrait || null;
   };
 
   return (
@@ -25,6 +32,7 @@ export default function InitiativeBar({ entries }: InitiativeBarProps) {
           const isMid = hpPct <= 50 && !isLow;
           const isSelected = selectedUnitId === entry.id;
           const playerLabel = getPlayerLabel(entry);
+          const portrait = getPortrait(entry);
 
           return (
             <button
@@ -41,8 +49,12 @@ export default function InitiativeBar({ entries }: InitiativeBarProps) {
               {/* Selected for dice indicator */}
               {isSelected && !entry.isCurrentTurn && <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#F38020] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">DICE</div>}
 
-              {/* Avatar initial */}
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${entry.type === 'enemy' ? 'bg-red-900/60 text-red-300' : entry.type === 'npc' ? 'bg-blue-900/60 text-blue-300' : 'bg-orange-500/20 text-orange-400'}`}>{entry.name.charAt(0).toUpperCase()}</div>
+              {/* Avatar — portrait if linked to character, otherwise initial */}
+              {portrait ? (
+                <img src={portrait} alt={entry.name} className="w-10 h-10 rounded-full object-cover border border-slate-600" />
+              ) : (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${entry.type === 'enemy' ? 'bg-red-900/60 text-red-300' : entry.type === 'npc' ? 'bg-blue-900/60 text-blue-300' : 'bg-orange-500/20 text-orange-400'}`}>{entry.name.charAt(0).toUpperCase()}</div>
+              )}
 
               {/* Name */}
               <span className={`text-xs font-semibold truncate max-w-[80px] ${isSelected ? 'text-[#F38020]' : entry.isCurrentTurn ? 'text-yellow-300' : 'text-slate-300'}`}>{entry.name}</span>

@@ -1,7 +1,7 @@
 // ChatPanel — real-time chat with roll announcements and system messages.
 import { useState, useRef, useEffect } from 'react';
 
-export type ChatMessageType = 'chat' | 'roll' | 'system' | 'join' | 'leave';
+export type ChatMessageType = 'chat' | 'roll' | 'system' | 'join' | 'leave' | 'dm';
 
 export interface ChatMessage {
   id: string;
@@ -27,6 +27,23 @@ interface ChatPanelProps {
 function formatTime(ts: number) {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function DmMessage({ msg }: { msg: ChatMessage }) {
+  return (
+    <div className="rounded-xl px-4 py-3 border border-amber-600/30 bg-gradient-to-br from-amber-950/40 to-stone-900/60 shadow-md">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-amber-400 text-xs">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 inline">
+            <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
+          </svg>
+        </span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Dungeon Master</span>
+        <span className="text-[9px] text-amber-700/60">{formatTime(msg.timestamp)}</span>
+      </div>
+      <p className="text-sm text-amber-100/90 leading-relaxed italic">{msg.text}</p>
+    </div>
+  );
 }
 
 function RollMessage({ msg }: { msg: ChatMessage }) {
@@ -75,6 +92,10 @@ export default function ChatPanel({ messages, onSend, currentPlayerId }: ChatPan
         {messages.length === 0 && <div className="text-xs text-slate-600 text-center py-8">No messages yet. Say hello!</div>}
 
         {messages.map((msg) => {
+          if (msg.type === 'dm') {
+            return <DmMessage key={msg.id} msg={msg} />;
+          }
+
           if (msg.type === 'roll') {
             return <RollMessage key={msg.id} msg={msg} />;
           }

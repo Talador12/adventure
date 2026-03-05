@@ -74,7 +74,7 @@ interface GameContextValue {
 
   // Units on the board
   units: Unit[];
-  setUnits: (u: Unit[]) => void;
+  setUnits: (u: Unit[] | ((prev: Unit[]) => Unit[])) => void;
 
   // Characters
   characters: Character[];
