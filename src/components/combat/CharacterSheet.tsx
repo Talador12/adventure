@@ -1,5 +1,5 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, and equipment.
-import { type Character, STAT_NAMES, type StatName } from '../../contexts/GameContext';
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame } from '../../contexts/GameContext';
 
 interface CharacterSheetProps {
   character: Character;
@@ -39,11 +39,19 @@ const CLASS_SAVE_PROFICIENCIES: Record<string, StatName[]> = {
 };
 
 export default function CharacterSheet({ character }: CharacterSheetProps) {
+  const { restCharacter } = useGame();
   const prof = proficiencyBonus(character.level);
   const saveProficiencies = CLASS_SAVE_PROFICIENCIES[character.class] || [];
 
   const hpPct = Math.max(0, (character.hp / character.maxHp) * 100);
   const hpColor = hpPct > 50 ? 'bg-green-500' : hpPct > 25 ? 'bg-yellow-500' : 'bg-red-500';
+
+  // XP progress
+  const currentLevelXP = character.level > 1 ? XP_THRESHOLDS[character.level - 1] : 0;
+  const nextLevelXP = character.level < 20 ? XP_THRESHOLDS[character.level] : XP_THRESHOLDS[19];
+  const xpInLevel = character.xp - currentLevelXP;
+  const xpNeeded = nextLevelXP - currentLevelXP;
+  const xpPct = xpNeeded > 0 ? Math.min(100, (xpInLevel / xpNeeded) * 100) : 100;
 
   return (
     <div className="space-y-4 text-sm">
@@ -74,6 +82,73 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all duration-500 ${hpColor}`} style={{ width: `${hpPct}%` }} />
         </div>
+      </div>
+
+      {/* XP bar */}
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-slate-400">Experience</span>
+          <span className="font-mono text-purple-400">{character.xp} / {nextLevelXP} XP</span>
+        </div>
+        <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-purple-500 transition-all duration-500" style={{ width: `${xpPct}%` }} />
+        </div>
+        {character.level < 20 && (
+          <div className="text-[9px] text-slate-600">{xpNeeded - xpInLevel} XP to level {character.level + 1}</div>
+        )}
+      </div>
+
+      {/* Condition + Death Saves */}
+      {character.condition !== 'normal' && (
+        <div className={`rounded-lg px-3 py-2 border text-xs font-semibold text-center ${
+          character.condition === 'unconscious' ? 'border-red-800/50 bg-red-900/20 text-red-400' :
+          character.condition === 'dead' ? 'border-red-600/50 bg-red-900/40 text-red-300' :
+          'border-yellow-800/50 bg-yellow-900/20 text-yellow-400'
+        }`}>
+          {character.condition === 'unconscious' ? 'UNCONSCIOUS' :
+           character.condition === 'dead' ? 'DEAD' : 'STABILIZED'}
+        </div>
+      )}
+
+      {(character.condition === 'unconscious' || character.deathSaves.successes > 0 || character.deathSaves.failures > 0) && (
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">Saves:</span>
+            {[0, 1, 2].map((i) => (
+              <div key={`s${i}`} className={`w-3 h-3 rounded-full border ${i < character.deathSaves.successes ? 'bg-green-500 border-green-400' : 'border-slate-600'}`} />
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">Fails:</span>
+            {[0, 1, 2].map((i) => (
+              <div key={`f${i}`} className={`w-3 h-3 rounded-full border ${i < character.deathSaves.failures ? 'bg-red-500 border-red-400' : 'border-slate-600'}`} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gold + Rest */}
+      <div className="flex gap-2">
+        <div className="flex-1 rounded-lg bg-slate-800 border border-slate-700 p-2 text-center">
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider">Gold</div>
+          <div className="text-lg font-black text-yellow-400">{character.gold}</div>
+        </div>
+        <button
+          onClick={() => restCharacter(character.id, 'short')}
+          disabled={character.hp >= character.maxHp || character.condition === 'dead'}
+          className="flex-1 rounded-lg bg-blue-900/20 border border-blue-800/40 hover:bg-blue-900/40 disabled:opacity-30 p-2 text-center transition-all"
+        >
+          <div className="text-[10px] text-blue-400 uppercase tracking-wider font-semibold">Short Rest</div>
+          <div className="text-[9px] text-slate-500 mt-0.5">Hit Die + CON</div>
+        </button>
+        <button
+          onClick={() => restCharacter(character.id, 'long')}
+          disabled={character.hp >= character.maxHp || character.condition === 'dead'}
+          className="flex-1 rounded-lg bg-indigo-900/20 border border-indigo-800/40 hover:bg-indigo-900/40 disabled:opacity-30 p-2 text-center transition-all"
+        >
+          <div className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold">Long Rest</div>
+          <div className="text-[9px] text-slate-500 mt-0.5">Full Heal</div>
+        </button>
       </div>
 
       {/* AC + Speed */}

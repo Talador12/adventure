@@ -186,12 +186,16 @@ export default function CharacterCreate() {
       race,
       class: charClass,
       level: 1,
+      xp: 0,
       stats: finalStats,
       hp: maxHp,
       maxHp,
       ac: 10 + Math.floor((finalStats.DEX - 10) / 2), // base AC = 10 + DEX mod
+      deathSaves: { successes: 0, failures: 0 },
+      condition: 'normal' as const,
       portrait: portrait || undefined, // AI-generated portrait or undefined for default
       playerId: currentPlayer.id,
+      gold: 15, // starting gold
       createdAt: Date.now(),
     };
 

@@ -28,6 +28,8 @@ export default function Lobby() {
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const doodleRef = useRef<DoodlePadHandle>(null);
+  // Track optimistic message IDs so we can deduplicate server echoes
+  const pendingChatIds = useRef<Set<string>>(new Set());
 
   // WebSocket message handler
   const handleWsMessage = useCallback((msg: WSMessage) => {
@@ -48,19 +50,31 @@ export default function Lobby() {
         setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'leave', username: msg.username as string, text: `${msg.username} left the lobby`, timestamp: msg.timestamp as number }]);
         break;
 
-      case 'chat':
+      case 'chat': {
+        const incomingPlayerId = msg.playerId as string;
+        // If this is the server echo of our own optimistic message, skip it
+        if (incomingPlayerId === wsPlayerId) {
+          // Check if we have a pending optimistic message with the same text
+          const msgText = msg.message as string;
+          const matchKey = `${incomingPlayerId}:${msgText}`;
+          if (pendingChatIds.current.has(matchKey)) {
+            pendingChatIds.current.delete(matchKey);
+            return; // deduplicated — already shown optimistically
+          }
+        }
         setChatMessages((prev) => [
           ...prev,
           {
             id: crypto.randomUUID(),
             type: 'chat',
-            playerId: msg.playerId as string,
+            playerId: incomingPlayerId,
             username: msg.username as string,
             text: msg.message as string,
             timestamp: msg.timestamp as number,
           },
         ]);
         break;
+      }
 
       case 'roll_result': {
         // Show roll in chat
@@ -104,7 +118,7 @@ export default function Lobby() {
         doodleRef.current?.clearRemote();
         break;
     }
-  }, []);
+  }, [wsPlayerId]);
 
   const { status, send } = useWebSocket({
     roomId: room,
@@ -114,9 +128,27 @@ export default function Lobby() {
 
   const handleChatSend = useCallback(
     (text: string) => {
+      // Optimistic local display: show immediately regardless of WS state
+      const playerId = wsPlayerId || currentPlayer.id;
+      const dedupKey = `${playerId}:${text}`;
+      pendingChatIds.current.add(dedupKey);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: 'chat',
+          playerId,
+          username: currentPlayer.username,
+          text,
+          timestamp: Date.now(),
+        },
+      ]);
+      // Send to server (if connected, it'll broadcast to others + echo back, which we deduplicate)
       send({ type: 'chat', message: text });
+      // Clean up stale dedup keys after 5s (in case server never echoes)
+      setTimeout(() => pendingChatIds.current.delete(dedupKey), 5000);
     },
-    [send]
+    [send, wsPlayerId, currentPlayer.id, currentPlayer.username]
   );
 
   const handleLocalRoll = useCallback(

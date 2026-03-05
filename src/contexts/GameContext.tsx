@@ -37,18 +37,27 @@ export type Race = (typeof RACES)[number];
 export const CLASSES = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Barbarian', 'Bard', 'Sorcerer', 'Warlock', 'Druid', 'Monk'] as const;
 export type CharacterClass = (typeof CLASSES)[number];
 
+// XP thresholds per level (D&D 5e)
+export const XP_THRESHOLDS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000] as const;
+
+export type Condition = 'normal' | 'unconscious' | 'dead' | 'stabilized';
+
 export interface Character {
   id: string;
   name: string;
   race: Race;
   class: CharacterClass;
   level: number;
+  xp: number;
   stats: Stats;
   hp: number;
   maxHp: number;
   ac: number;
+  deathSaves: { successes: number; failures: number }; // D&D 5e death saving throws
+  condition: Condition;
   portrait?: string; // data URL (base64) or undefined for default
   playerId: string; // who owns this character
+  gold: number; // currency
   createdAt: number;
 }
 
@@ -85,6 +94,9 @@ interface GameContextValue {
   characters: Character[];
   addCharacter: (c: Character) => void;
   removeCharacter: (id: string) => void;
+  updateCharacter: (id: string, updates: Partial<Character>) => void;
+  grantXP: (id: string, xp: number) => { leveledUp: boolean; newLevel: number };
+  restCharacter: (id: string, type: 'short' | 'long') => void;
 
   // Dice roll log (most recent first)
   rolls: DiceRoll[];
@@ -123,6 +135,9 @@ const GameContext = createContext<GameContextValue>({
   characters: [],
   addCharacter: () => {},
   removeCharacter: () => {},
+  updateCharacter: () => {},
+  grantXP: () => ({ leveledUp: false, newLevel: 1 }),
+  restCharacter: () => {},
   rolls: [],
   addRoll: () => ({}) as DiceRoll,
   clearRolls: () => {},
@@ -178,6 +193,58 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const removeCharacter = useCallback((id: string) => {
     setCharacters((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  const updateCharacter = useCallback((id: string, updates: Partial<Character>) => {
+    setCharacters((prev) => prev.map((c) => c.id === id ? { ...c, ...updates } : c));
+  }, []);
+
+  // Grant XP to a character, auto-level if threshold reached
+  const grantXP = useCallback((id: string, xp: number): { leveledUp: boolean; newLevel: number } => {
+    let leveledUp = false;
+    let newLevel = 1;
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      const totalXP = c.xp + xp;
+      let level = c.level;
+      // Check for level up
+      while (level < 20 && totalXP >= XP_THRESHOLDS[level]) {
+        level++;
+      }
+      leveledUp = level > c.level;
+      newLevel = level;
+      if (leveledUp) {
+        // Recalculate maxHp on level up (add hit die average + CON mod)
+        const hitDieAvg: Record<string, number> = {
+          Fighter: 6, Barbarian: 7, Paladin: 6, Ranger: 6, Rogue: 5, Monk: 5,
+          Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
+        };
+        const conMod = Math.floor((c.stats.CON - 10) / 2);
+        const hpGain = (hitDieAvg[c.class] || 5) + conMod;
+        const newMaxHp = c.maxHp + hpGain;
+        return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp }; // full heal on level up
+      }
+      return { ...c, xp: totalXP };
+    }));
+    return { leveledUp, newLevel };
+  }, []);
+
+  // Rest: short rest heals hit die + CON, long rest fully heals + resets death saves
+  const restCharacter = useCallback((id: string, type: 'short' | 'long') => {
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      if (type === 'long') {
+        return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition };
+      }
+      // Short rest: heal hit die average + CON mod (once)
+      const hitDieAvg: Record<string, number> = {
+        Fighter: 6, Barbarian: 7, Paladin: 6, Ranger: 6, Rogue: 5, Monk: 5,
+        Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
+      };
+      const conMod = Math.floor((c.stats.CON - 10) / 2);
+      const heal = Math.max(1, (hitDieAvg[c.class] || 5) + conMod);
+      return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? 'normal' as Condition : c.condition };
+    }));
   }, []);
 
   const addRoll = useCallback((partial: Omit<DiceRoll, 'id' | 'timestamp' | 'isCritical' | 'isFumble'> & { value: number; sides: number }): DiceRoll => {
@@ -285,6 +352,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         characters,
         addCharacter,
         removeCharacter,
+        updateCharacter,
+        grantXP,
+        restCharacter,
         rolls,
         addRoll,
         clearRolls,
