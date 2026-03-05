@@ -4,8 +4,9 @@ import InitiativeBar from '../components/combat/InitiativeBar';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type Player, type DieType, type Character } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character } from '../contexts/GameContext';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
+import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, isMuted, toggleMute } from '../hooks/useSoundFX';
 
 // Build the API base URL — hits wrangler on :8787 in dev, same origin in prod
 function apiBase(): string {
@@ -22,6 +23,8 @@ export default function Game() {
   const {
     setPlayers, setUnits, units, setCurrentPlayer, currentPlayer,
     rolls, selectedUnitId, characters,
+    inCombat, rollInitiative, nextTurn, combatRound,
+    damageUnit, removeUnit,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -37,6 +40,8 @@ export default function Game() {
   const [encounterLoading, setEncounterLoading] = useState(false);
   const [dmHistory, setDmHistory] = useState<string[]>([]);
   const [actionInput, setActionInput] = useState('');
+  const [soundMuted, setSoundMuted] = useState(isMuted());
+  const [combatLog, setCombatLog] = useState<string[]>([]);
 
   // Initialize — no demo data, real data from character selection
   useEffect(() => {
@@ -63,6 +68,8 @@ export default function Game() {
       name: char.name,
       hp: char.hp,
       maxHp: char.maxHp,
+      ac: char.ac,
+      initiative: -1,
       isCurrentTurn: false,
       type: 'player',
       playerId: currentPlayer.id,
@@ -172,6 +179,7 @@ export default function Game() {
       if (data.enemies && data.description) {
         // Add DM description
         addDmMessage(data.description);
+        playEncounterStart();
 
         // Create enemy units
         const enemyUnits: Unit[] = data.enemies.map((e, i) => ({
@@ -179,6 +187,8 @@ export default function Game() {
           name: e.name,
           hp: e.hp,
           maxHp: e.maxHp,
+          ac: e.ac || 12,
+          initiative: -1,
           isCurrentTurn: false,
           type: 'enemy' as const,
           playerId: 'ai-dm',
@@ -234,6 +244,11 @@ export default function Game() {
             unitName: msg.unitName as string | undefined,
           },
         ]);
+        // Sound FX
+        playDiceRoll();
+        if (msg.isCritical) setTimeout(playCritical, 400);
+        if (msg.isFumble) setTimeout(playFumble, 400);
+
         diceRef.current?.playRemoteRoll({
           die: msg.die as DieType,
           sides: msg.sides as number,
@@ -245,6 +260,7 @@ export default function Game() {
       }
 
       case 'player_joined':
+        playPlayerJoin();
         setChatMessages((prev) => [
           ...prev,
           {
@@ -390,12 +406,29 @@ export default function Game() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* Sound toggle */}
+          <button
+            onClick={() => { toggleMute(); setSoundMuted(!soundMuted); }}
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            title={soundMuted ? 'Unmute sounds' : 'Mute sounds'}
+          >
+            {soundMuted ? (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M9.547 3.062A.75.75 0 0110 3.75v12.5a.75.75 0 01-1.264.546L5.203 13H3.75A.75.75 0 013 12.25v-4.5A.75.75 0 013.75 7h1.453l3.533-3.796a.75.75 0 01.811-.142zM13.78 7.22a.75.75 0 10-1.06 1.06L14.44 10l-1.72 1.72a.75.75 0 001.06 1.06L15.5 11.06l1.72 1.72a.75.75 0 101.06-1.06L16.56 10l1.72-1.72a.75.75 0 00-1.06-1.06L15.5 8.94l-1.72-1.72z" /></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10 3.75a.75.75 0 00-1.264-.546L5.203 7H3.75A.75.75 0 003 7.75v4.5a.75.75 0 00.75.75h1.453l3.533 3.796A.75.75 0 0010 16.25V3.75zM15.95 5.05a.75.75 0 00-1.06 1.06 5.5 5.5 0 010 7.78.75.75 0 001.06 1.06 7 7 0 000-9.9z" /><path d="M13.829 7.172a.75.75 0 00-1.06 1.06 2.5 2.5 0 010 3.536.75.75 0 001.06 1.06 4 4 0 000-5.656z" /></svg>
+            )}
+          </button>
           <button
             onClick={() => setShowCharacterPicker(true)}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
           >
             Switch Character
           </button>
+          {inCombat && (
+            <span className="text-xs text-red-400 font-semibold">
+              Round {combatRound}
+            </span>
+          )}
           {rolls.length > 0 && (
             <span className="text-xs text-slate-500">
               {rolls.length} roll{rolls.length !== 1 ? 's' : ''}
@@ -470,27 +503,96 @@ export default function Game() {
             ) : (
               // Adventure in progress: DM tools + narration area
               <div className="rounded-xl border border-slate-800 bg-slate-900 flex flex-col h-full">
-                {/* DM toolbar */}
-                <div className="flex items-center gap-3 p-4 border-b border-slate-800">
+                {/* DM + Combat toolbar */}
+                <div className="flex items-center gap-2 p-3 border-b border-slate-800 flex-wrap">
                   <button
                     onClick={handleGenerateEncounter}
                     disabled={encounterLoading || dmLoading}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-red-900/40 hover:bg-red-900/60 border border-red-800/50 disabled:opacity-30 text-red-300 text-xs font-semibold rounded-lg transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/40 hover:bg-red-900/60 border border-red-800/50 disabled:opacity-30 text-red-300 text-xs font-semibold rounded-lg transition-all"
                   >
                     {encounterLoading ? (
-                      <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                        <path d="M9.653 16.915l-.005-.003-.019-.01a20.759 20.759 0 01-1.162-.682 22.045 22.045 0 01-2.582-1.9C4.045 12.733 2 10.352 2 7.5a4.5 4.5 0 018-2.828A4.5 4.5 0 0118 7.5c0 2.852-2.044 5.233-3.885 6.82a22.049 22.049 0 01-3.744 2.582l-.019.01-.005.003h-.002a.723.723 0 01-.692 0l-.002-.001z" />
-                      </svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M9.944 3.143a.75.75 0 01.112 1.056l-2.4 3h2.594a.75.75 0 01.59 1.213l-3.75 4.5a.75.75 0 11-1.152-.96l2.4-3H5.744a.75.75 0 01-.59-1.213l3.75-4.5a.75.75 0 011.04-.096z" clipRule="evenodd" /><path fillRule="evenodd" d="M13.944 6.143a.75.75 0 01.112 1.056l-1.2 1.5h1.394a.75.75 0 01.59 1.213l-2.25 2.7a.75.75 0 11-1.152-.96l1.2-1.5h-1.394a.75.75 0 01-.59-1.213l2.25-2.7a.75.75 0 011.04-.096z" clipRule="evenodd" /></svg>
                     )}
-                    Generate Encounter
+                    Encounter
                   </button>
+
+                  {/* Combat controls — show when enemies exist */}
+                  {units.some((u) => u.type === 'enemy') && (
+                    <>
+                      {!inCombat ? (
+                        <button
+                          onClick={() => { rollInitiative(); playTurnChange(); setCombatLog((prev) => [...prev, 'Initiative rolled! Combat begins.']); addDmMessage('Roll for initiative!'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-900/40 hover:bg-yellow-900/60 border border-yellow-700/50 text-yellow-300 text-xs font-semibold rounded-lg transition-all"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 1a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1zM5.05 3.05a.75.75 0 011.06 0l1.062 1.06a.75.75 0 11-1.06 1.061L5.05 4.11a.75.75 0 010-1.06zm9.9 0a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 01-1.061-1.06l1.06-1.06a.75.75 0 011.06 0zM10 7a3 3 0 100 6 3 3 0 000-6zm-6.25 3a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm11 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75z" clipRule="evenodd" /></svg>
+                          Roll Initiative
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { nextTurn(); playTurnChange(); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/40 hover:bg-green-900/60 border border-green-700/50 text-green-300 text-xs font-semibold rounded-lg transition-all"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" /></svg>
+                          Next Turn
+                        </button>
+                      )}
+
+                      {/* Quick attack — roll d20 vs selected enemy */}
+                      {inCombat && selectedUnitId && (() => {
+                        const target = units.find((u) => u.id === selectedUnitId);
+                        if (!target || target.type === 'player') return null;
+                        return (
+                          <button
+                            onClick={() => {
+                              const attackRoll = Math.floor(Math.random() * 20) + 1;
+                              const strMod = selectedCharacter ? Math.floor((selectedCharacter.stats.STR - 10) / 2) : 0;
+                              const totalAttack = attackRoll + strMod;
+                              const isHit = totalAttack >= target.ac;
+                              const isCrit = attackRoll === 20;
+
+                              if (isCrit || isHit) {
+                                const baseDmg = Math.floor(Math.random() * 8) + 1; // d8 weapon
+                                const dmg = isCrit ? baseDmg * 2 + strMod : baseDmg + strMod;
+                                const finalDmg = Math.max(1, dmg);
+                                damageUnit(target.id, finalDmg);
+                                playCombatHit();
+                                if (isCrit) playCritical();
+                                const logMsg = isCrit
+                                  ? `CRITICAL HIT! ${selectedCharacter?.name || 'You'} strikes ${target.name} for ${finalDmg} damage! (rolled ${attackRoll}+${strMod}=${totalAttack} vs AC ${target.ac})`
+                                  : `${selectedCharacter?.name || 'You'} hits ${target.name} for ${finalDmg} damage! (rolled ${attackRoll}+${strMod}=${totalAttack} vs AC ${target.ac})`;
+                                setCombatLog((prev) => [...prev, logMsg]);
+                                addDmMessage(logMsg);
+
+                                // Check if target died
+                                if (target.hp - finalDmg <= 0) {
+                                  playEnemyDeath();
+                                  const deathMsg = `${target.name} falls!`;
+                                  setCombatLog((prev) => [...prev, deathMsg]);
+                                  addDmMessage(deathMsg);
+                                }
+                              } else {
+                                playCombatMiss();
+                                const missMsg = `${selectedCharacter?.name || 'You'} misses ${target.name}! (rolled ${attackRoll}+${strMod}=${totalAttack} vs AC ${target.ac})`;
+                                setCombatLog((prev) => [...prev, missMsg]);
+                                addDmMessage(missMsg);
+                              }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.061l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.06-1.061a.75.75 0 10-1.06 1.06l1.06 1.06zM5.404 6.464a.75.75 0 001.06-1.06l-1.06-1.06a.75.75 0 10-1.061 1.06l1.06 1.06z" /></svg>
+                            Attack {target.name}
+                          </button>
+                        );
+                      })()}
+                    </>
+                  )}
 
                   <div className="flex-1" />
 
                   <span className="text-[10px] text-slate-600">
-                    {dmHistory.length} narration{dmHistory.length !== 1 ? 's' : ''} so far
+                    {dmHistory.length} narration{dmHistory.length !== 1 ? 's' : ''}{inCombat ? ` | Round ${combatRound}` : ''}
                   </span>
                 </div>
 
@@ -502,11 +604,15 @@ export default function Game() {
                     </div>
                   )}
 
-                  {dmHistory.map((text, i) => (
-                    <div key={i} className="rounded-xl px-5 py-4 border border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40">
-                      <p className="text-amber-100/90 leading-relaxed italic">{text}</p>
-                    </div>
-                  ))}
+                  {dmHistory.map((text, i) => {
+                    // Combat log entries (attacks, initiative) use a different style
+                    const isCombatEntry = text.includes('hits ') || text.includes('misses ') || text.includes('CRITICAL') || text.includes('falls!') || text.includes('Initiative');
+                    return (
+                      <div key={i} className={`rounded-xl px-5 py-4 border ${isCombatEntry ? 'border-slate-700/50 bg-slate-800/40' : 'border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40'}`}>
+                        <p className={`leading-relaxed ${isCombatEntry ? 'text-slate-300 text-sm font-mono' : 'text-amber-100/90 italic'}`}>{text}</p>
+                      </div>
+                    );
+                  })}
 
                   {dmLoading && (
                     <div className="rounded-xl px-5 py-4 border border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40 animate-pulse">

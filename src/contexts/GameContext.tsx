@@ -15,6 +15,8 @@ export interface Unit {
   name: string;
   hp: number;
   maxHp: number;
+  ac: number;
+  initiative: number; // d20 + DEX mod, -1 means unrolled
   isCurrentTurn: boolean;
   type: 'player' | 'enemy' | 'npc';
   playerId: string; // which Player controls this unit
@@ -89,6 +91,21 @@ interface GameContextValue {
   // Currently selected unit for dice association
   selectedUnitId: string | null;
   setSelectedUnitId: (id: string | null) => void;
+
+  // Combat state
+  inCombat: boolean;
+  setInCombat: (v: boolean) => void;
+  combatRound: number;
+  setCombatRound: (r: number) => void;
+  turnIndex: number; // index into initiative-sorted units
+  setTurnIndex: (i: number) => void;
+
+  // Combat helpers
+  damageUnit: (unitId: string, damage: number) => void;
+  healUnit: (unitId: string, amount: number) => void;
+  removeUnit: (unitId: string) => void;
+  rollInitiative: () => void; // roll initiative for all units, sort, start combat
+  nextTurn: () => void; // advance to next unit in initiative order
 }
 
 const DEFAULT_PLAYER: Player = { id: 'local', username: 'You', controllerType: 'human' };
@@ -108,6 +125,17 @@ const GameContext = createContext<GameContextValue>({
   clearRolls: () => {},
   selectedUnitId: null,
   setSelectedUnitId: () => {},
+  inCombat: false,
+  setInCombat: () => {},
+  combatRound: 0,
+  setCombatRound: () => {},
+  turnIndex: 0,
+  setTurnIndex: () => {},
+  damageUnit: () => {},
+  healUnit: () => {},
+  removeUnit: () => {},
+  rollInitiative: () => {},
+  nextTurn: () => {},
 });
 
 export function useGame() {
@@ -121,6 +149,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [rolls, setRolls] = useState<DiceRoll[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [inCombat, setInCombat] = useState(false);
+  const [combatRound, setCombatRound] = useState(0);
+  const [turnIndex, setTurnIndex] = useState(0);
 
   const addCharacter = useCallback((c: Character) => {
     setCharacters((prev) => [...prev, c]);
@@ -144,6 +175,85 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const clearRolls = useCallback(() => setRolls([]), []);
 
+  // Combat: apply damage to a unit (clamp to 0)
+  const damageUnit = useCallback((unitId: string, damage: number) => {
+    setUnits((prev) => prev.map((u) =>
+      u.id === unitId ? { ...u, hp: Math.max(0, u.hp - damage) } : u
+    ));
+  }, []);
+
+  // Combat: heal a unit (clamp to maxHp)
+  const healUnit = useCallback((unitId: string, amount: number) => {
+    setUnits((prev) => prev.map((u) =>
+      u.id === unitId ? { ...u, hp: Math.min(u.maxHp, u.hp + amount) } : u
+    ));
+  }, []);
+
+  // Combat: remove a unit (dead enemy, etc)
+  const removeUnit = useCallback((unitId: string) => {
+    setUnits((prev) => prev.filter((u) => u.id !== unitId));
+  }, []);
+
+  // Roll initiative for all units, sort by result (descending), mark first as current turn
+  const rollInitiative = useCallback(() => {
+    setUnits((prev) => {
+      const withInitiative = prev.map((u) => {
+        // Player characters get DEX mod bonus from linked character
+        let dexMod = 0;
+        if (u.characterId) {
+          const char = characters.find((c) => c.id === u.characterId);
+          if (char) dexMod = Math.floor((char.stats.DEX - 10) / 2);
+        }
+        const roll = Math.floor(Math.random() * 20) + 1 + dexMod;
+        return { ...u, initiative: roll, isCurrentTurn: false };
+      });
+      // Sort descending by initiative (higher goes first)
+      withInitiative.sort((a, b) => b.initiative - a.initiative);
+      // Mark first unit as current turn
+      if (withInitiative.length > 0) {
+        withInitiative[0].isCurrentTurn = true;
+      }
+      return withInitiative;
+    });
+    setInCombat(true);
+    setCombatRound(1);
+    setTurnIndex(0);
+  }, [characters]);
+
+  // Advance to next turn in initiative order
+  const nextTurn = useCallback(() => {
+    setUnits((prev) => {
+      const alive = prev.filter((u) => u.hp > 0);
+      if (alive.length === 0) return prev;
+
+      // Find current turn unit
+      const currentIdx = prev.findIndex((u) => u.isCurrentTurn);
+      const cleared = prev.map((u) => ({ ...u, isCurrentTurn: false }));
+
+      // Find next alive unit after current
+      let nextIdx = currentIdx + 1;
+      let wrapped = false;
+      while (true) {
+        if (nextIdx >= cleared.length) {
+          nextIdx = 0;
+          wrapped = true;
+        }
+        if (cleared[nextIdx].hp > 0) break;
+        nextIdx++;
+        if (nextIdx === currentIdx) break; // safety: all dead somehow
+      }
+
+      cleared[nextIdx].isCurrentTurn = true;
+
+      // Advance round if we wrapped
+      if (wrapped || nextIdx <= currentIdx) {
+        setCombatRound((r) => r + 1);
+      }
+      setTurnIndex(nextIdx);
+      return cleared;
+    });
+  }, []);
+
   return (
     <GameContext.Provider
       value={{
@@ -161,6 +271,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
         clearRolls,
         selectedUnitId,
         setSelectedUnitId,
+        inCombat,
+        setInCombat,
+        combatRound,
+        setCombatRound,
+        turnIndex,
+        setTurnIndex,
+        damageUnit,
+        healUnit,
+        removeUnit,
+        rollInitiative,
+        nextTurn,
       }}
     >
       {children}

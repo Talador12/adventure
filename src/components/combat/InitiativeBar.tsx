@@ -62,6 +62,12 @@ export default function InitiativeBar({ entries }: InitiativeBarProps) {
               {/* Player/AI controller label */}
               {playerLabel && <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${playerLabel.color}`}>{playerLabel.label}</span>}
 
+              {/* AC + Initiative */}
+              <div className="flex items-center gap-2 text-[9px] font-mono">
+                <span className="text-sky-400">AC {entry.ac}</span>
+                {entry.initiative > 0 && <span className="text-amber-400">Init {entry.initiative}</span>}
+              </div>
+
               {/* HP bar */}
               <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all duration-500 ease-out ${isLow ? 'bg-red-500' : isMid ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${hpPct}%` }} />
