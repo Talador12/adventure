@@ -1,156 +1,157 @@
-# 🧙 Adventure
+# Adventure
 
-_An immersive virtual tabletop built on Cloudflare for fantasy campaigns_
+_An immersive AI-enhanced virtual tabletop built on Cloudflare for fantasy campaigns._
+_Think Baldur's Gate 3 but never-ending — AI DM, human or AI players, full RP._
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Install dependencies and run
-make fresh
-
-# Build and run
-make start
+make fresh   # install deps, build, start dev servers
+# or
+make start   # quick: kill + build + dev
 ```
 
-## 🛠 TODO List
+Frontend: http://localhost:5173 | Backend: http://localhost:8787
 
-prompt: From now on, if I say the magic words "TODO:" such as "TODO: something" add that as a new `- something` in README.md and automatically apply it
+## What's Built
 
-- Remove GitHub Actions since Cloudflare Pages handles build/deploy
-- Investigate Discord auth and other issues on staging
-- better alerts instead of window popups, like the bootstrap
-- discord logout option when you click your portait
-- display discord metadata next to user profile (user? would be crazy cool if you could get the actual discord banners but idk)
-- test pages deployment
-- home page continued and websocket lobby with voice and text chat for multiplayer
-- enhancing the lobby experience, alloing for commands (like random dice roll animations and creating stuff for fun, simulating game actions), and AI prompts to WorkersAI
-- actually link to discord for usage with voice/chat there as well, as an option
-- more of the core game - Key Features, see below
+### Authentication
 
----
+- Discord OAuth with JWT session cookies
+- Profile dropdown with avatar, theme toggle, sign out
 
-## 🎲 Key Features
+### Multiplayer (WebSocket)
 
-### ⚔️ Gameplay
+- Lobby Durable Object: real-time player sessions, chat, dice broadcasts
+- `useWebSocket` hook: auto-reconnect with exponential backoff
+- Live player list with join/leave notifications
+- All dice rolls broadcast to every connected client with full animation
 
-- **Human or AI Players:** Solo, multiplayer, or mixed modes.
-- **Procedural Campaigns:** AI-generated storylines and one-shots.
-- **Real-time Sync:** Durable Objects ensure seamless multiplayer.
-- **In-Game Assistance:** Dice rolls, spell effects, condition tracking.
+### Dice System
 
-### 🗺️ AI-Generated Maps
+- SVG dice shapes for each die type (d4 tetrahedron, d6 cube, d8 octahedron, d10 pentagonal, d12 dodecahedron, d20 icosahedron)
+- Animated roll: shape tumbles while numbers cycle, then settles on result
+- Critical Hit (max roll): golden glow burst + star burst + "CRITICAL HIT!" text
+- Critical Fail (rolled 1): red crack effect + screen shake + "CRITICAL FAIL!"
+- Remote roll sync: when any player rolls, all clients see the full animation
+- Roll history with crit/fail badges, player name, and associated unit
 
-- Overworld, city, biome-specific, and battle-grid maps.
-- DM-controlled fog of war.
-- Interactive lore pins.
+### Combat
 
-### 🧙 Player Tools
+- Initiative bar: turn tracker with HP bars, color-coded health (green/yellow/red)
+- Player/AI controller labels on each unit
+- Click a unit to associate dice rolls with it (DICE badge)
 
-- Guided character creation with attribute rolling.
-- Dynamic character sheets (live updates, autosave).
-- Roleplay dashboard with notes and voice-style prompts.
+### Lobby
 
-### 🧠 Dungeon Master Tools
+- Live chat with styled message bubbles, roll announcements, system messages
+- Dice rolling that syncs across all connected players
+- Doodle pad: canvas drawing tool with color picker, brush sizes, eraser, clear
+- Invite link with copy-to-clipboard
 
-- **DM God Mode:** Roll override, visibility toggles, event injection.
-- **Narration & Scene Prompts:** AI-generated descriptions, NPC dialogue.
-- **Dynamic Difficulty:** Real-time control over encounter challenge.
+### Game Board
 
-### 🎵 Immersive FX & Audio
+- Full-height layout: initiative bar → game board → dice + chat sidebar
+- WebSocket connection status indicator
+- Session roll counter
 
-- Particle effects for spells and combat.
-- Mood music and sound effects synced to gameplay events.
-- Accessibility-friendly "Low-FX" mode.
+### UI
 
-### 🌐 Multiplayer & Mod Support
-
-- Persistent, rejoinable game sessions.
-- Drop-in-drop-out guest characters.
-- Optional Discord-style voice/video integrations.
-- Modular engine supports homebrew rules and third-party mods.
+- Toast notification system (success/error/warning/info)
+- Dark/light mode toggle (Tailwind v4 `@custom-variant`)
+- Cloudflare orange (#F38020) accent throughout
 
 ---
 
-## 🛠️ Tech Stack
+## TODO
 
-**Cloudflare Ecosystem:**
+### In Progress
 
-- **Workers**: Game logic and AI integration.
-- **Durable Objects**: Real-time multiplayer state.
-- **Workers AI**: Procedural storytelling, NPC dialogue, visuals.
-- **KV / R2**: Persistent data storage (characters, maps, campaigns).
-- **Queues**: Turn-based logic, action management.
-- **Pages**: Frontend hosting.
+- Character creation and management
+- Wire Discord profile data into WebSocket sessions (avatars, display names)
 
-**Frontend:** React (Vite)
+### Next Up
 
-**Dev Tools:** Makefile, npm workspaces, Wrangler
+- AI DM via Workers AI: narration, NPC dialogue, encounter generation
+- Map system: procedural generation, fog of war, tokens, grid
+- DM tools: god mode, roll override, visibility toggles, event injection
+- Sound FX (howler.js): mood music, spell effects, combat sounds
+- Shared doodle pad over WebSocket (broadcast strokes to all players)
+- Discord integration for voice/chat as an option
+
+### Backlog
+
+- Persistent campaigns via KV/R2 (save/load game state)
+- Character sheets with live updates and autosave
+- Drop-in/drop-out guest characters
+- Roleplay dashboard with notes and voice-style prompts
+- Particle effects for spells and combat
+- Dynamic difficulty: real-time control over encounter challenge
+- Modular engine for homebrew rules and third-party mods
+- Accessibility-friendly "Low-FX" mode
+- Better Discord profile display (banners, metadata)
 
 ---
 
-## 🧑‍💻 Development Commands
+## Tech Stack
+
+| Layer    | Technology                                 |
+| -------- | ------------------------------------------ |
+| Frontend | React 19, Vite, Tailwind CSS v4            |
+| Backend  | Cloudflare Workers (Hono), Durable Objects |
+| Auth     | Discord OAuth, jose JWT                    |
+| Realtime | WebSocket via Durable Objects              |
+| Build    | Makefile, wrangler, vite                   |
+| Hosting  | Cloudflare Pages                           |
+
+**Lean deps policy:** React is the only framework. clsx, tailwind-merge, lucide-react, fontawesome, react-router-dom. No animation libraries — all CSS keyframes + canvas.
+
+---
+
+## Project Structure
+
+```
+_worker.ts              Worker entry (Hono router, Discord OAuth, DO proxy)
+src/
+  lobby.ts              Lobby Durable Object (WebSocket multiplayer)
+  main.tsx              React entry (BrowserRouter, providers)
+  contexts/
+    GameContext.tsx      Shared state: players, units, dice rolls
+  hooks/
+    useWebSocket.ts     Reconnecting WebSocket hook
+  pages/
+    Home.tsx            Landing page, auth, campaign create/join
+    Lobby.tsx           Pre-game room: players, chat, dice, doodle
+    Game.tsx            Combat: initiative, board, dice sidebar, chat
+  components/
+    chat/ChatPanel.tsx  Real-time chat with roll announcements
+    combat/InitiativeBar.tsx  Turn tracker with HP bars
+    dice/DiceRoller.tsx Animated dice with remote roll support
+    dice/DiceShapes.tsx SVG shapes for each die type
+    lobby/DoodlePad.tsx Canvas drawing tool
+    ui/                 button, card, toast
+  lib/utils.ts          cn() helper (clsx + tailwind-merge)
+```
+
+---
+
+## Dev Commands
 
 ```bash
-# Install project dependencies
-npm install
-
-# Run dev environment
-make dev
-
-# Build the full project
-make build
-
-# Lint and format code
-make lint
-make format
-
-# Show project structure
-make tree
+make fresh       # full reset: upgrade, install, format, build, dev
+make start       # quick: kill + build + dev
+make dev         # vite :5173 + wrangler :8787
+make build       # build frontend + worker
+make format      # prettier
+make commit M='msg'  # format, build, commit, push
+make deploy-prod     # deploy to production
+make help        # show all commands
 ```
 
 ---
 
-## 📁 Project Structure
+## License
 
-```
-├── public/
-│   ├── index.html          <-- static site root
-│   └── _worker.js          <-- JS re-export for Worker module
-├── _worker.ts              <-- main dynamic logic (Durable Objects, APIs, etc)
-├── src/                    <-- app logic, React, etc
-├── wrangler.toml
-
-```
-
----
-
-## 📜 License
-
-© 2025 Keith Adler. All Rights Reserved.
-
-This software is proprietary. Unauthorized copying, modification, distribution, or usage without explicit permission is prohibited.
-
-## Makefile Usage
-
-The project uses a Makefile to streamline common development tasks:
-
-```bash
-# Start local development server
-make dev
-
-# Build for production
-make build
-
-# Deploy to Cloudflare Pages
-make deploy
-
-# Clean build artifacts
-make clean
-
-# Kill any running dev servers
-make kill
-```
-
-Each command provides clear output and process management. The dev server runs on port 5173 by default.
+(c) 2025 Keith Adler. All Rights Reserved.
