@@ -6,6 +6,7 @@ import { GameProvider } from './contexts/GameContext';
 import Home from './pages/Home';
 import Lobby from './pages/Lobby';
 import Game from './pages/Game';
+import CharacterCreate from './pages/CharacterCreate';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -19,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/lobby/:roomId" element={<Lobby />} />
             <Route path="/game" element={<Game />} />
             <Route path="/game/:roomId" element={<Game />} />
+            <Route path="/characters/new" element={<CharacterCreate />} />
           </Routes>
         </GameProvider>
       </ToastProvider>
