@@ -37,6 +37,48 @@ export type Race = (typeof RACES)[number];
 export const CLASSES = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Barbarian', 'Bard', 'Sorcerer', 'Warlock', 'Druid', 'Monk'] as const;
 export type CharacterClass = (typeof CLASSES)[number];
 
+// D&D 5e Backgrounds — each grants 2 skill proficiencies + a feature
+export const BACKGROUNDS = ['Acolyte', 'Charlatan', 'Criminal', 'Entertainer', 'Folk Hero', 'Guild Artisan', 'Hermit', 'Noble', 'Outlander', 'Sage', 'Sailor', 'Soldier', 'Urchin'] as const;
+export type Background = (typeof BACKGROUNDS)[number];
+
+// Alignment — 3x3 grid
+export const ALIGNMENTS = ['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil'] as const;
+export type Alignment = (typeof ALIGNMENTS)[number];
+
+// Appearance customization — drives live SVG portrait rendering
+// Body types: 1 = broader shoulders, angular jaw, flatter torso
+//             2 = narrower shoulders, softer jaw, curvier silhouette
+export const BODY_TYPES = [1, 2] as const;
+export type BodyType = (typeof BODY_TYPES)[number];
+
+export const HAIR_STYLES = ['short', 'long', 'braided', 'shaved', 'ponytail', 'wild'] as const;
+export type HairStyle = (typeof HAIR_STYLES)[number];
+
+export const SCAR_TYPES = ['none', 'left-eye', 'right-cheek', 'forehead'] as const;
+export type ScarType = (typeof SCAR_TYPES)[number];
+
+export const FACE_MARKING_TYPES = ['none', 'war-paint', 'arcane-runes', 'tribal-tattoo'] as const;
+export type FaceMarkingType = (typeof FACE_MARKING_TYPES)[number];
+
+export const FACIAL_HAIR_TYPES = ['none', 'stubble', 'full-beard', 'goatee', 'mustache'] as const;
+export type FacialHairType = (typeof FACIAL_HAIR_TYPES)[number];
+
+export interface Appearance {
+  bodyType: BodyType;
+  skinTone: number;   // index into race-specific skin tone palette (0-5)
+  hairColor: number;  // index into hair color palette (0-7)
+  eyeColor: number;   // index into eye color palette (0-5)
+  hairStyle: HairStyle;
+  scar: ScarType;
+  faceMarking: FaceMarkingType;
+  facialHair: FacialHairType;
+}
+
+export const DEFAULT_APPEARANCE: Appearance = {
+  bodyType: 1, skinTone: 0, hairColor: 0, eyeColor: 0,
+  hairStyle: 'short', scar: 'none', faceMarking: 'none', facialHair: 'none',
+};
+
 // XP thresholds per level (D&D 5e)
 export const XP_THRESHOLDS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000] as const;
 
@@ -56,6 +98,13 @@ export interface Character {
   deathSaves: { successes: number; failures: number }; // D&D 5e death saving throws
   condition: Condition;
   portrait?: string; // data URL (base64) or undefined for default
+  appearance: Appearance; // customizable visual options
+  background: Background; // D&D 5e background
+  alignment: Alignment;
+  personalityTraits: string; // freeform — 2 traits from background
+  ideals: string;
+  bonds: string;
+  flaws: string;
   playerId: string; // who owns this character
   gold: number; // currency
   createdAt: number;

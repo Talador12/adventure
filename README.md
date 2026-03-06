@@ -65,21 +65,53 @@ Frontend: http://localhost:5173 | Backend: http://localhost:8787
 
 ---
 
-## TODO
+## Roadmap
 
-### In Progress
+### Character Creation (In Progress)
 
-- Character creation and management
-- Wire Discord profile data into WebSocket sessions (avatars, display names)
+| Feature | Status |
+| ------- | ------ |
+| Core character creation page (race, class, stats, appearance, background, alignment) | Done |
+| SVG portrait system — composable race+class+appearance vector art | Done |
+| 4d6-drop-lowest stat rolling with animation + stat swap | Done |
+| AI portrait generation (Workers AI / FLUX) | Done |
+| Portrait upload with AES-256-GCM encryption at rest | Done |
+| Name generator (syllable tables per race) + AI translation | Done |
+| Tavern-style backdrop for character creation page | In Progress |
+| Race selection cards with inline SVG portraits | In Progress |
+| Class selection cards with inline SVG portraits | In Progress |
+| Warm card styling + gold/orange selection highlights | In Progress |
+| Wire Discord profile data into WebSocket sessions | Planned |
+| Character management (edit, delete, level up from Home page) | Planned |
 
-### Next Up
+### AI Dungeon Master (Planned)
 
-- AI DM via Workers AI: narration, NPC dialogue, encounter generation
-- Map system: procedural generation, fog of war, tokens, grid
-- DM tools: god mode, roll override, visibility toggles, event injection
-- Sound FX (howler.js): mood music, spell effects, combat sounds
-- Shared doodle pad over WebSocket (broadcast strokes to all players)
-- Discord integration for voice/chat as an option
+| Feature | Status |
+| ------- | ------ |
+| Workers AI narration + NPC dialogue | Planned |
+| Encounter generation | Planned |
+| DM tools: god mode, roll override, visibility toggles | Planned |
+
+### Map System (Planned)
+
+| Feature | Status |
+| ------- | ------ |
+| Procedural map generation | Planned |
+| Fog of war | Planned |
+| Draggable tokens + grid | Planned |
+
+### Audio (Planned)
+
+| Feature | Status |
+| ------- | ------ |
+| Sound FX (howler.js): mood music, spell effects, combat sounds | Planned |
+
+### Multiplayer Enhancements (Planned)
+
+| Feature | Status |
+| ------- | ------ |
+| Shared doodle pad over WebSocket | Planned |
+| Discord integration for voice/chat | Planned |
 
 ### Backlog
 

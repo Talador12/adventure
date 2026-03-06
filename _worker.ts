@@ -11,10 +11,17 @@ interface Ai {
   run(model: string, input: Record<string, unknown>): Promise<ArrayBuffer | ReadableStream | Record<string, unknown>>;
 }
 
+interface KVNamespace {
+  get(key: string, options?: { type?: string }): Promise<string | ArrayBuffer | null>;
+  put(key: string, value: string | ArrayBuffer, options?: { expirationTtl?: number; metadata?: Record<string, string> }): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
 interface Env {
   LOBBY: DurableObjectNamespace;
   AI?: Ai;
   ASSETS?: { fetch: (req: Request) => Promise<Response> };
+  PORTRAITS?: KVNamespace;
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
   JWT_SECRET?: string;
@@ -206,6 +213,77 @@ app.post('/api/portrait/generate', async (c) => {
   }
 });
 
+// Name translation — translate a name's meaning into a random language via Workers AI
+const NAME_LANGUAGES = [
+  { name: 'Spanish', flag: '\u{1F1EA}\u{1F1F8}' },
+  { name: 'French', flag: '\u{1F1EB}\u{1F1F7}' },
+  { name: 'German', flag: '\u{1F1E9}\u{1F1EA}' },
+  { name: 'Italian', flag: '\u{1F1EE}\u{1F1F9}' },
+  { name: 'Portuguese', flag: '\u{1F1E7}\u{1F1F7}' },
+  { name: 'Japanese', flag: '\u{1F1EF}\u{1F1F5}' },
+  { name: 'Korean', flag: '\u{1F1F0}\u{1F1F7}' },
+  { name: 'Mandarin Chinese', flag: '\u{1F1E8}\u{1F1F3}' },
+  { name: 'Russian', flag: '\u{1F1F7}\u{1F1FA}' },
+  { name: 'Arabic', flag: '\u{1F1F8}\u{1F1E6}' },
+  { name: 'Hindi', flag: '\u{1F1EE}\u{1F1F3}' },
+  { name: 'Turkish', flag: '\u{1F1F9}\u{1F1F7}' },
+  { name: 'Polish', flag: '\u{1F1F5}\u{1F1F1}' },
+  { name: 'Swedish', flag: '\u{1F1F8}\u{1F1EA}' },
+  { name: 'Norwegian', flag: '\u{1F1F3}\u{1F1F4}' },
+  { name: 'Finnish', flag: '\u{1F1EB}\u{1F1EE}' },
+  { name: 'Dutch', flag: '\u{1F1F3}\u{1F1F1}' },
+  { name: 'Greek', flag: '\u{1F1EC}\u{1F1F7}' },
+  { name: 'Irish', flag: '\u{1F1EE}\u{1F1EA}' },
+  { name: 'Welsh', flag: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}' },
+  { name: 'Swahili', flag: '\u{1F1F0}\u{1F1EA}' },
+  { name: 'Thai', flag: '\u{1F1F9}\u{1F1ED}' },
+  { name: 'Vietnamese', flag: '\u{1F1FB}\u{1F1F3}' },
+  { name: 'Hebrew', flag: '\u{1F1EE}\u{1F1F1}' },
+  { name: 'Latin', flag: '\u{1F3DB}\u{FE0F}' },
+  { name: 'Hawaiian', flag: '\u{1F1FA}\u{1F1F8}' },
+  { name: 'Maori', flag: '\u{1F1F3}\u{1F1FF}' },
+  { name: 'Icelandic', flag: '\u{1F1EE}\u{1F1F8}' },
+  { name: 'Romanian', flag: '\u{1F1F7}\u{1F1F4}' },
+  { name: 'Czech', flag: '\u{1F1E8}\u{1F1FF}' },
+];
+
+app.post('/api/name/translate', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<{ name: string; language?: string }>();
+  const name = String(body.name || '').trim();
+  if (!name) return c.json({ error: 'Name is required' }, 400);
+
+  // Pick a random language or use the one specified
+  const lang = body.language
+    ? NAME_LANGUAGES.find((l) => l.name.toLowerCase() === body.language!.toLowerCase()) || NAME_LANGUAGES[Math.floor(Math.random() * NAME_LANGUAGES.length)]
+    : NAME_LANGUAGES[Math.floor(Math.random() * NAME_LANGUAGES.length)];
+
+  const prompt = `Translate the meaning of the English word or name "${name}" into ${lang.name}. If the name is a compound word or has a clear meaning (like "Lumberjack" = one who cuts wood), translate that meaning. If it's a proper name with no obvious meaning, transliterate it into ${lang.name} phonetics. Return ONLY the single translated/transliterated word or short phrase in ${lang.name} script or romanized form — nothing else, no quotes, no explanation.`;
+
+  try {
+    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'You are a precise translator. Return ONLY the translated word. No quotes, no punctuation, no explanation. Just the word.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 50,
+    });
+
+    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    // Clean up: remove quotes, periods, extra whitespace, "Translation:" prefixes
+    const translated = raw.replace(/^["'`]+|["'`.,!]+$/g, '').replace(/^(translation|answer|result)[:\s]*/i, '').trim();
+    if (!translated) return c.json({ error: 'Translation returned empty' }, 500);
+
+    return c.json({ translated, language: lang.name, flag: lang.flag, original: name });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Translation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // AI Dungeon Master — narration, encounters, NPC dialogue via Workers AI text generation
 app.post('/api/dm/narrate', async (c) => {
   if (!c.env.AI) {
@@ -285,6 +363,88 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
     return c.json({ error: 'Failed to parse encounter', raw }, 500);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Encounter generation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Portrait upload — encrypt with AES-256-GCM and store in KV
+async function deriveEncryptionKey(secret: string): Promise<CryptoKey> {
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: new TextEncoder().encode('adventure-portraits'), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+app.post('/api/portrait/upload', async (c) => {
+  if (!c.env.PORTRAITS) {
+    return c.json({ error: 'Portrait storage not available' }, 503);
+  }
+
+  const body = await c.req.json<{ image: string; characterId?: string }>();
+  const image = String(body.image || '');
+  if (!image || !image.startsWith('data:image/')) {
+    return c.json({ error: 'Invalid image data URL' }, 400);
+  }
+
+  // Limit to 2MB base64 (~1.5MB image)
+  if (image.length > 2 * 1024 * 1024) {
+    return c.json({ error: 'Image too large (max 2MB)' }, 400);
+  }
+
+  const portraitId = body.characterId || crypto.randomUUID();
+  const secret = c.env.JWT_SECRET || DEV_JWT_FALLBACK;
+
+  try {
+    const key = await deriveEncryptionKey(secret);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(image);
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+
+    // Store IV (12 bytes) + ciphertext together
+    const stored = new Uint8Array(iv.length + encrypted.byteLength);
+    stored.set(iv, 0);
+    stored.set(new Uint8Array(encrypted), iv.length);
+
+    await c.env.PORTRAITS.put(`portrait:${portraitId}`, stored.buffer, {
+      metadata: { contentType: image.split(';')[0].split(':')[1] || 'image/png', uploadedAt: new Date().toISOString() },
+    });
+
+    return c.json({ portraitId, url: `/api/portrait/${portraitId}` });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Upload failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Portrait download — decrypt from KV and serve
+app.get('/api/portrait/:id', async (c) => {
+  if (!c.env.PORTRAITS) {
+    return c.json({ error: 'Portrait storage not available' }, 503);
+  }
+
+  const portraitId = c.req.param('id');
+  const secret = c.env.JWT_SECRET || DEV_JWT_FALLBACK;
+
+  try {
+    const stored = await c.env.PORTRAITS.get(`portrait:${portraitId}`, { type: 'arrayBuffer' });
+    if (!stored) return c.json({ error: 'Portrait not found' }, 404);
+
+    const data = new Uint8Array(stored as ArrayBuffer);
+    const iv = data.slice(0, 12);
+    const ciphertext = data.slice(12);
+
+    const key = await deriveEncryptionKey(secret);
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+    const dataUrl = new TextDecoder().decode(decrypted);
+
+    // Return the data URL as JSON (client uses it directly as img src)
+    return c.json({ portrait: dataUrl });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Download failed';
     return c.json({ error: msg }, 500);
   }
 });

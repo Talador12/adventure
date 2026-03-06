@@ -203,13 +203,11 @@ export default function Lobby() {
           <div className="bg-slate-900/50 border-b border-slate-800 px-4 py-3 shrink-0">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Players ({players.length})</h2>
-              <div className="flex items-center gap-2">
+              <button onClick={copyLink} className="flex items-center gap-2 cursor-pointer group" title="Click to copy invite link">
                 <span className="text-xs text-slate-600">Invite:</span>
-                <code className="text-[10px] bg-slate-800 px-2 py-1 rounded text-[#F38020] select-all truncate max-w-[200px]">{roomLink}</code>
-                <button onClick={copyLink} className="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition-colors">
-                  Copy
-                </button>
-              </div>
+                <code className="text-[10px] bg-slate-800 px-2 py-1 rounded text-[#F38020] group-hover:text-[#f9a05f] transition-colors select-all">{roomLink}</code>
+                <span className="text-sm group-hover:scale-110 transition-transform">&#x1F4CB;</span>
+              </button>
             </div>
             {players.length === 0 ? (
               <div className="text-xs text-slate-600">Waiting for players to connect...</div>

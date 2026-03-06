@@ -102,11 +102,65 @@ make help    # show all commands
 - Dice rolls go through WebSocket so all players see animations. Server is the source of truth for roll values.
 - This is a fun project. Ship fast, iterate, make it feel good.
 
+## Uncommitted Work (session crash safety)
+
+Large uncommitted changeset (~1422 lines across 8 files) on `staging` branch.
+This includes the full character creation redesign, worker API endpoints, and
+wrangler config changes. **Commit before doing more feature work.**
+
+Files changed:
+- `src/pages/CharacterCreate.tsx` — full tavern redesign + SVG portrait system (+1193 lines)
+- `_worker.ts` — `/api/name/translate` + `/api/portrait/generate` + `/api/portrait/upload` endpoints (+160 lines)
+- `src/contexts/GameContext.tsx` — character state additions (+49 lines)
+- `wrangler.toml` — KV/AI bindings (+12 lines)
+- `Makefile` — new targets (+42 lines)
+- `README.md` — updated docs (+62 lines)
+- `claude.md` — this file
+- `.gitignore` — minor addition
+- `src/pages/Lobby.tsx` — invite link UX fix (full URL, clipboard emoji, click-to-copy)
+
+## Completed Work: Character Creation UI Redesign
+
+### Reference
+`assets/characters.jpg` — tavern-backdrop card grid with illustrated portraits per race/class.
+
+### What Was Built
+Full tavern-themed character creation page (CharacterCreate.tsx, 1466 lines):
+- **Tavern backdrop** — warm `#2a1f14`->`#14100a` gradient, wood grain overlay
+- **Race cards (8)** — inline SVG portraits, stat bonuses, `#F38020` selection glow
+- **Class cards (12)** — inline SVG portraits, hit die display
+- **Appearance system** — BG3-style live preview: skin/hair/eye palettes per race, 6 hair styles, scars, face markings, facial hair
+- **Name generator** — syllable-table per race + `/api/name/translate` for fantasy names
+- **AI portraits** — Workers AI FLUX via `/api/portrait/generate`, AES-256-GCM encrypted KV upload
+- **Stat rolling** — 4d6-drop-lowest with animation, race bonuses, stat swap
+- **Background + alignment** — 13 backgrounds, 9-grid alignment, personality textareas
+- **Character preview** — summary card with computed HP/AC/gold
+
+### SVG Portrait System (self-contained in CharacterCreate.tsx)
+- `buildRacePortraitSvg()` — composable 128x100 SVG: background + particles + face + hair + scars + markings + facial hair + outfit
+- `buildRaceDefs()` — 8 races with unique face SVGs, skin/hair/eye palettes
+- `buildClassDefs()` — 12 classes with unique outfit + weapon SVGs
+- Color customization via regex replacement on hardcoded face SVG strings
+
+## Completed: Lobby Invite Link Fix
+
+- [x] Show full invite URL (removed `truncate max-w-[200px]`)
+- [x] Clipboard emoji at end of link text instead of separate "Copy" button
+- [x] Entire link section is one clickable `<button>` that copies to clipboard
+- [x] Hover effects on link text + emoji scale
+
 ## TODO
+
+### Immediate (this session)
+
+- [ ] Commit all uncommitted work on staging
+- [ ] Extract portrait system from CharacterCreate.tsx into `src/lib/portrait.ts` (~400 lines)
+- [ ] Extract name generator into `src/lib/names.ts`
+- [ ] Extract palette data into `src/lib/palettes.ts`
 
 ### Next Up
 
-- Character creation and management
+- Character creation and management (save/load characters, character list)
 - Wire Discord profile data (avatars, display names) into WebSocket sessions
 - AI DM via Workers AI: narration, NPC dialogue, encounter generation
 - Map system: procedural generation, fog of war, tokens, grid

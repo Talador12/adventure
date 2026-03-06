@@ -16,6 +16,10 @@ binding = "AI"
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }
 ]
+[[env.development.kv_namespaces]]
+binding = "PORTRAITS"
+id = "portraits-dev"
+preview_id = "portraits-dev-preview"
 
 [env.staging]
 name = "adventure-staging"
@@ -26,6 +30,10 @@ binding = "AI"
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }
 ]
+# TODO: create real KV namespace with `wrangler kv namespace create PORTRAITS --env staging`
+[[env.staging.kv_namespaces]]
+binding = "PORTRAITS"
+id = "portraits-staging"
 
 [env.production]
 name = "adventure"
@@ -36,6 +44,10 @@ binding = "AI"
 bindings = [
   { name = "LOBBY", class_name = "Lobby" }
 ]
+# TODO: create real KV namespace with `wrangler kv namespace create PORTRAITS`
+[[env.production.kv_namespaces]]
+binding = "PORTRAITS"
+id = "portraits-prod"
 
 [[migrations]]
 tag = "v1"
