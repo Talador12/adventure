@@ -9,77 +9,40 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 - `staging` — active development
 - `main` — stable releases
 
-## What's Built
+## Current Focus
 
-### Core Platform
-- Home page with Discord OAuth, campaign create/join, theme toggle
-- Lobby with live player list, chat, synced dice rolling, doodle pad, invite link
-- Game page with initiative bar, dice roller, chat, battle map (grid/tokens/fog-of-war)
-- Character sheets, AI enemy turns, encounter difficulty, combat end conditions
-- WebSocket multiplayer via Durable Objects (chat, dice, draw, player management)
-- Toast notification system
+Character creation complete. Next: character persistence, multiplayer identity, and AI DM.
 
-### Dice System
-- SVG shapes per die type (d4/d6/d8/d10/d12/d20)
-- Animated rolls with tumble physics, crit/fumble visual effects
-- Server-authoritative: server generates roll value, all clients animate to it
-- Remote roll sync via imperative `playRemoteRoll()` API
-- Roll queuing with 400ms gap between animations
+## Working Items
 
-### Character Creation (`/create`)
-- Tavern-themed UI with warm gradients and wood grain overlay
-- 8 races with inline SVG portraits and stat bonuses
-- 12 classes with inline SVG portraits and hit die display
-- BG3-style appearance: skin/hair/eye palettes per race, hair styles, scars, markings, facial hair
-- Name generator (syllable tables per race) + AI fantasy name translation
-- 4d6-drop-lowest stat rolling with animation, race bonuses, click-to-swap
-- 13 backgrounds with skill/feature info, 9-grid alignment selector
-- Personality traits, ideals, bonds, flaws, backstory (all resize-y textareas)
-- Character preview with computed HP/AC/gold
+### Character management (save/load)
+- **Status:** Todo
+- Save characters to KV/R2, character list page, selection screen
+- Required before characters can persist across sessions
 
-### Portrait System (tabbed UI under Appearance)
-- **Default**: Live SVG from race/class/appearance — zero server dependency
-- **AI Generate**: 8 art styles (Classic Fantasy, Watercolor, Anime, Gothic, Storybook, Cel-Shaded, Realistic, Painterly) via Workers AI FLUX-1-schnell
-- **Upload**: File upload with optional AI analysis (Llama 3.2 Vision) for appearance description
+### Wire Discord profile data into WebSocket
+- **Status:** Todo
+- Use Discord avatars and display names in lobby/game
+- Currently WebSocket sessions don't carry Discord identity
 
-### AI Features (Workers AI)
-- **AI Build Character**: one-click full character generation with anti-cliche prompts, smart stat allocation by AI priority order
-- **AI Personality**: generates coherent trait/ideal/bond/flaw groups from character context
-- **AI Backstory**: generates backstories with named NPCs, inciting incidents, sensory details, unresolved mysteries
-- **AI Portrait Description**: Llama 3.2 Vision analyzes uploaded images for physical descriptions
+### AI DM via Workers AI
+- **Status:** Todo
+- Narration, NPC dialogue, encounter generation
+- Feed character appearance descriptions into DM context
+- Use Llama for text generation
 
-### Character Export
-- Formats: Adventure JSON, Markdown (download + clipboard), Foundry VTT (dnd5e actor JSON), Fantasy Grounds (5e XML), Printable HTML (new tab), D&D Beyond (clipboard text)
-- Export modal with format picker, method badges, status feedback
-- Can export from character creation form before saving
-- Coming soon: Pathfinder 2e, Forbidden Lands, Savage Worlds (need system conversion)
+### Map system improvements
+- **Status:** Backlog
+- Procedural generation, better fog of war
+- DM tools: god mode, roll override, visibility toggles
 
-### SVG Portrait System (`src/lib/portrait.ts`)
-- `buildRacePortraitSvg()` — composable 128x100 SVG: background + particles + face + hair + scars + markings + facial hair + outfit
-- 8 race face SVGs with unique features, 12 class outfit/weapon SVGs
-- Color customization via regex replacement, overlay generators for each feature
-- Extracted from CharacterCreate.tsx alongside `names.ts` and `palettes.ts`
-
-### Makefile
-- `PRODUCTION_RELEASE := false` gate on deploy/release commands
-- Port variables, commands: `login`, `whoami`, `open`, `logs`, `status`, `deploy`, `release`
-- `deploy` targets staging, `release` is gated production
-
-## What's Next
-
-### Near Term
-- Character management — save/load characters, character list, selection screen
-- Wire Discord profile data (avatars, display names) into WebSocket sessions
-- AI DM via Workers AI — narration, NPC dialogue, encounter generation
-- Feed AI appearance descriptions into game context for DM narration
-
-### Medium Term
-- Map system improvements — procedural generation, better fog of war
-- DM tools — god mode, roll override, visibility toggles, event injection
-- Persistent campaigns via KV/R2 (save/load game state)
+### Persistent campaigns
+- **Status:** Backlog
+- Save/load game state via KV/R2
 - Character sheets with live updates and autosave
 
-### Backlog
+## Backlog
+
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
 - Portrait gallery — save/browse generated portraits, remix styles
 - Sound FX — mood music, spell effects, combat sounds
@@ -90,3 +53,15 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 - Modular engine for homebrew rules and mods
 - Accessibility "Low-FX" mode
 - Drop-in/drop-out guest characters
+
+## Completed
+
+- Full character creation: 8 races, 12 classes, BG3-style appearance, stat rolling, export
+- SVG portrait system with AI generation (FLUX) and upload (Llama 3.2 Vision)
+- AI character builder, personality generator, backstory generator
+- Dice system with SVG shapes, animation, crit/fumble FX, server-authoritative sync
+- Lobby with WebSocket multiplayer (chat, dice, draw, player management)
+- Game page with initiative bar, battle map, fog of war
+- Discord OAuth, campaign create/join, theme toggle
+- Character export: Adventure JSON, Markdown, Foundry VTT, Fantasy Grounds, HTML, D&D Beyond
+- Removed `.claude/` scratchpad, updated to two-file AI Working Context
