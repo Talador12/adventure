@@ -136,11 +136,15 @@ Full tavern-themed character creation page (CharacterCreate.tsx, 1466 lines):
 - **Background + alignment** — 13 backgrounds, 9-grid alignment, personality textareas
 - **Character preview** — summary card with computed HP/AC/gold
 
-### SVG Portrait System (self-contained in CharacterCreate.tsx)
+### SVG Portrait System (`src/lib/portrait.ts`)
 - `buildRacePortraitSvg()` — composable 128x100 SVG: background + particles + face + hair + scars + markings + facial hair + outfit
+- `buildMiniPortraitDataUrl()` — convenience wrapper returning base64 data URL
 - `buildRaceDefs()` — 8 races with unique face SVGs, skin/hair/eye palettes
 - `buildClassDefs()` — 12 classes with unique outfit + weapon SVGs
+- `buildHairSvg/ScarSvg/FaceMarkingSvg/FacialHairSvg` — overlay generators
 - Color customization via regex replacement on hardcoded face SVG strings
+- Palette data in `src/lib/palettes.ts` (SKIN_PALETTES, HAIR_PALETTES, EYE_PALETTES)
+- Name generator in `src/lib/names.ts` (randomFantasyName, syllable tables by race)
 
 ## Completed: Lobby Invite Link Fix
 
@@ -149,14 +153,15 @@ Full tavern-themed character creation page (CharacterCreate.tsx, 1466 lines):
 - [x] Entire link section is one clickable `<button>` that copies to clipboard
 - [x] Hover effects on link text + emoji scale
 
+## Completed: Module Extraction Refactor
+
+- [x] Commit all uncommitted work on staging (e44982c)
+- [x] Extract portrait system from CharacterCreate.tsx into `src/lib/portrait.ts` (~350 lines)
+- [x] Extract name generator into `src/lib/names.ts` (~30 lines)
+- [x] Extract palette data into `src/lib/palettes.ts` (~35 lines)
+- CharacterCreate.tsx reduced from 1466 to ~1050 lines
+
 ## TODO
-
-### Immediate (this session)
-
-- [ ] Commit all uncommitted work on staging
-- [ ] Extract portrait system from CharacterCreate.tsx into `src/lib/portrait.ts` (~400 lines)
-- [ ] Extract name generator into `src/lib/names.ts`
-- [ ] Extract palette data into `src/lib/palettes.ts`
 
 ### Next Up
 
