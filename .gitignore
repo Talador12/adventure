@@ -37,3 +37,6 @@ Thumbs.db
 # ────────────── Misc ──────────────
 *.log
 characters.jpg
+
+# ────────────── AI Agent Context ──────────────
+.claude/
