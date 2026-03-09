@@ -108,11 +108,25 @@ app.get('/api/auth/signout', (c) => {
 });
 
 // Portrait generation via Workers AI
+// Art style prompts — matched to frontend PORTRAIT_STYLES ids
+const ART_STYLE_PROMPTS: Record<string, string> = {
+  'classic-fantasy': 'Detailed oil painting, medieval fantasy illustration, rich earth tones, dramatic chiaroscuro lighting, high fantasy RPG art',
+  'watercolor': 'Soft watercolor painting with gentle washes, flowing lines, muted pastel palette, delicate brushwork, fantasy illustration',
+  'anime-fantasy': 'Anime-inspired fantasy art, vibrant saturated colors, expressive features, clean lines, dynamic composition, light cel-shading',
+  'dark-gothic': 'Dark gothic illustration, heavy shadows, dramatic contrast, muted desaturated palette, ornate details, grim and foreboding atmosphere',
+  'storybook': 'Whimsical hand-drawn storybook illustration, warm soft lighting, cozy atmosphere, rounded shapes, gentle color palette',
+  'cel-shaded': 'Bold cel-shaded art, clean sharp outlines, flat vibrant colors, graphic novel style, strong silhouettes',
+  'realistic': 'Photorealistic digital portrait, cinematic lighting, subsurface scattering on skin, sharp detail, studio photography feel',
+  'painterly': 'Loose impressionist brushwork, rich textures, dramatic palette knife strokes, visible paint texture, expressive color mixing',
+};
+
 function buildPortraitPrompt(char: Record<string, unknown>): string {
   const race = String(char.race || 'Human');
   const cls = String(char.class || 'Fighter');
   const name = String(char.name || 'Adventurer');
   const stats = (char.stats || {}) as Record<string, number>;
+  const style = String(char.style || 'classic-fantasy');
+  const appearance = (char.appearance || {}) as Record<string, unknown>;
 
   // Describe physique from stats
   const physique: string[] = [];
@@ -124,6 +138,24 @@ function buildPortraitPrompt(char: Record<string, unknown>): string {
   if (stats.INT >= 16) physique.push('with sharp, intelligent eyes');
   if (stats.WIS >= 16) physique.push('with a calm, knowing gaze');
   if (stats.CHA >= 16) physique.push('strikingly attractive');
+
+  // Appearance details (hair style, scars, markings)
+  const appearanceDetails: string[] = [];
+  if (appearance.hairStyle && appearance.hairStyle !== 'short') {
+    appearanceDetails.push(`${appearance.hairStyle} hair`);
+  }
+  if (appearance.scar && appearance.scar !== 'none') {
+    const scarName = String(appearance.scar).replace(/-/g, ' ');
+    appearanceDetails.push(`a ${scarName} scar`);
+  }
+  if (appearance.faceMarking && appearance.faceMarking !== 'none') {
+    const markingName = String(appearance.faceMarking).replace(/-/g, ' ');
+    appearanceDetails.push(`${markingName} face markings`);
+  }
+  if (appearance.facialHair && appearance.facialHair !== 'none') {
+    const fhName = String(appearance.facialHair).replace(/-/g, ' ');
+    appearanceDetails.push(`a ${fhName}`);
+  }
 
   // Race-specific features
   const raceTraits: Record<string, string> = {
@@ -138,7 +170,7 @@ function buildPortraitPrompt(char: Record<string, unknown>): string {
   };
 
   // Class-specific attire/vibe
-  const classStyle: Record<string, string> = {
+  const classAttire: Record<string, string> = {
     Fighter: 'wearing practical plate armor with a sword at their hip',
     Wizard: 'wearing flowing robes with arcane symbols, holding a staff',
     Rogue: 'wearing dark leather armor with a hood and daggers',
@@ -154,10 +186,12 @@ function buildPortraitPrompt(char: Record<string, unknown>): string {
   };
 
   const raceTrait = raceTraits[race] || 'a fantasy adventurer';
-  const style = classStyle[cls] || 'in adventuring gear';
+  const attire = classAttire[cls] || 'in adventuring gear';
   const physiqueStr = physique.length > 0 ? `, ${physique.join(', ')}` : '';
+  const appearanceStr = appearanceDetails.length > 0 ? `, with ${appearanceDetails.join(', ')}` : '';
+  const artStyle = ART_STYLE_PROMPTS[style] || ART_STYLE_PROMPTS['classic-fantasy'];
 
-  return `Fantasy character portrait of ${name}, ${raceTrait}${physiqueStr}, ${style}. Detailed digital painting, dramatic lighting, painterly style, upper body portrait, dark atmospheric background, high fantasy RPG art, D&D character art style.`;
+  return `Fantasy character portrait of ${name}, ${raceTrait}${physiqueStr}${appearanceStr}, ${attire}. Upper body portrait, dark atmospheric background. ${artStyle}.`;
 }
 
 app.post('/api/portrait/generate', async (c) => {
@@ -280,6 +314,189 @@ app.post('/api/name/translate', async (c) => {
     return c.json({ translated, language: lang.name, flag: lang.flag, original: name });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Translation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// AI full character generator — creative builds, not generic
+app.post('/api/character/generate', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<{ campaign?: string }>();
+  const campaign = String(body.campaign || '').trim();
+
+  const campaignCtx = campaign
+    ? `\nCAMPAIGN CONTEXT (tailor the character to fit this setting):\n${campaign}\n`
+    : '';
+
+  const prompt = `Generate a COMPLETE, UNIQUE D&D 5e character concept. Return ONLY valid JSON, no markdown fences.
+${campaignCtx}
+RULES FOR INTERESTING BUILDS:
+- Create UNEXPECTED but VIABLE race/class combos. Not "elf wizard" or "dwarf fighter". Think: gnome barbarian who channels rage through unhinged cackling. Tiefling paladin oath-bound to a trickster god. Half-orc bard whose instrument is a warhammer beaten against a shield. Dragonborn monk raised by a pacifist monastery who breathes fire when their vows crack.
+- Background should ADD A TWIST, not just reinforce the class. A noble rogue. A criminal cleric. An entertainer barbarian.
+- statPriority should be optimized for the build — list the 6 ability scores from most to least important.
+- personalityTraits should be SPECIFIC and VIVID with concrete behaviors, not vague.
+- ideals/bonds/flaws should create dramatic tension and RP hooks.
+- backstory: 2-4 paragraphs. Must include a NAMED NPC, a SPECIFIC inciting incident, a SENSORY DETAIL, and an UNRESOLVED MYSTERY. No cliche openings ("Born in...", "From a young age..."). Third person past tense.
+- name should be original and fitting for the race.
+
+VALID VALUES:
+- race: Human, Elf, Dwarf, Halfling, Gnome, Half-Orc, Tiefling, Dragonborn
+- class: Fighter, Barbarian, Paladin, Ranger, Rogue, Monk, Cleric, Bard, Druid, Warlock, Wizard, Sorcerer
+- background: Acolyte, Charlatan, Criminal, Entertainer, Folk Hero, Guild Artisan, Hermit, Noble, Outlander, Sage, Sailor, Soldier, Urchin
+- alignment: Lawful Good, Neutral Good, Chaotic Good, Lawful Neutral, True Neutral, Chaotic Neutral, Lawful Evil, Neutral Evil, Chaotic Evil
+- hairStyle: short, long, braided, mohawk, bald, wild
+- scar: none, eye-scar, cheek-slash, forehead-mark
+- faceMarking: none, tribal-lines, arcane-runes, war-paint, freckles
+- facialHair: none, beard, goatee, mustache, stubble
+
+JSON format:
+{"name":"...","race":"...","class":"...","background":"...","alignment":"...","statPriority":["CHA","DEX","CON","WIS","INT","STR"],"personalityTraits":"...","ideals":"...","bonds":"...","flaws":"...","backstory":"...","appearance":{"hairStyle":"...","scar":"...","faceMarking":"...","facialHair":"..."},"concept":"one sentence pitch for this character"}`;
+
+  try {
+    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'You are a wildly creative D&D character designer. You hate boring builds. Every character should make a DM grin. Return ONLY valid JSON. No markdown. No explanation. No code fences.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 1200,
+    });
+
+    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return c.json(parsed);
+    }
+    return c.json({ error: 'Failed to parse character concept', raw }, 500);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Character generation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// AI personality generator — personality traits + ideals + bonds + flaws as a group
+app.post('/api/character/suggest-personality', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<Record<string, unknown>>();
+  const name = String(body.name || 'an adventurer');
+  const race = String(body.race || 'Human');
+  const cls = String(body.class || 'Fighter');
+  const bg = String(body.background || 'Folk Hero');
+  const alignment = String(body.alignment || 'True Neutral');
+  const backstory = String(body.backstory || '');
+
+  const backstoryCtx = backstory ? `\nTheir backstory: ${backstory.slice(0, 500)}` : '';
+
+  const prompt = `Generate personality details for ${name}, a ${race} ${cls} with the ${bg} background (${alignment}).${backstoryCtx}
+
+Return ONLY valid JSON with these 4 fields:
+- personalityTraits: 1-2 specific behavioral traits (not vague — concrete habits, tics, ways they talk or act)
+- ideals: what drives them, what principle they'd die for
+- bonds: who or what they're tied to, what they protect, who they owe
+- flaws: a real weakness — not "I'm too brave". Something that causes actual problems.
+
+Make these INTERESTING and SPECIFIC to this character. Create dramatic tension. A paladin whose flaw undermines their oath. A rogue whose bond is to the law. Contradict the obvious.
+
+JSON only, no markdown fences:
+{"personalityTraits":"...","ideals":"...","bonds":"...","flaws":"..."}`;
+
+  try {
+    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'You write vivid, specific D&D character personality details. Return ONLY valid JSON. No markdown. No explanation.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 400,
+    });
+
+    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return c.json(parsed);
+    }
+    return c.json({ error: 'Failed to parse personality', raw }, 500);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Personality generation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// AI Backstory generator — creates unique, non-generic character origins
+app.post('/api/backstory/generate', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<Record<string, unknown>>();
+  const name = String(body.name || 'a nameless wanderer');
+  const race = String(body.race || 'Human');
+  const cls = String(body.class || 'Fighter');
+  const bg = String(body.background || 'Folk Hero');
+  const alignment = String(body.alignment || 'True Neutral');
+  const stats = (body.stats || {}) as Record<string, number>;
+  const personalityTraits = String(body.personalityTraits || '');
+  const ideals = String(body.ideals || '');
+  const bonds = String(body.bonds || '');
+  const flaws = String(body.flaws || '');
+
+  // Build stat-derived personality hints
+  const statHints: string[] = [];
+  if (stats.STR >= 16) statHints.push('physically imposing');
+  else if (stats.STR <= 8) statHints.push('physically weak');
+  if (stats.INT >= 16) statHints.push('brilliantly intelligent');
+  else if (stats.INT <= 8) statHints.push('not book-smart');
+  if (stats.WIS >= 16) statHints.push('deeply perceptive');
+  if (stats.CHA >= 16) statHints.push('magnetically charismatic');
+  else if (stats.CHA <= 8) statHints.push('socially awkward');
+  if (stats.CON >= 16) statHints.push('unnaturally resilient');
+  else if (stats.CON <= 8) statHints.push('sickly or frail');
+
+  const traitContext = [
+    personalityTraits && `Personality: ${personalityTraits}`,
+    ideals && `Ideals: ${ideals}`,
+    bonds && `Bonds: ${bonds}`,
+    flaws && `Flaws: ${flaws}`,
+  ].filter(Boolean).join('\n');
+
+  const prompt = `Write a backstory for a D&D character. 2-4 paragraphs, vivid and specific.
+
+Character: ${name}, a ${race} ${cls} with a ${bg} background. Alignment: ${alignment}.
+${statHints.length > 0 ? `They are ${statHints.join(', ')}.` : ''}
+${traitContext ? `\n${traitContext}` : ''}
+
+CRITICAL RULES — follow these or the backstory is garbage:
+- NO generic origins. Not "you were a street urchin who learned to fight." Not "a wizard who studied in a tower." Not "a rogue from the thieves guild." Those are boring.
+- Give them a SPECIFIC inciting incident that changed everything. A moment, a betrayal, a discovery, an accident.
+- Include at least one NAMED person from their past (a mentor, rival, lost love, enemy, sibling — someone specific).
+- Include a SENSORY DETAIL — a smell, a sound, a texture that haunts them or brings them comfort.
+- Their class/background should inform the story but NOT define it predictably. A fighter doesn't have to come from military. A druid doesn't have to come from the forest. Subvert expectations.
+- Weave in a MYSTERY or UNRESOLVED THREAD — something the character doesn't know or hasn't settled. A DM can hook into this.
+- Write in third person past tense. Tone: literary fantasy, not dry encyclopedia.
+- Do NOT start with "Born in" or "From a young age" or any cliche opening.`;
+
+  try {
+    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'You are a fantasy author who writes compelling, original character backstories. You hate cliches. You love specificity, emotional hooks, and stories that make a DM excited to build on them. Never be generic. Every character deserves to be interesting.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 800,
+    });
+
+    const backstory = ((result as Record<string, unknown>).response as string || '').trim();
+    if (!backstory) {
+      return c.json({ error: 'AI returned empty backstory' }, 500);
+    }
+    return c.json({ backstory });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Backstory generation failed';
     return c.json({ error: msg }, 500);
   }
 });
@@ -416,6 +633,65 @@ app.post('/api/portrait/upload', async (c) => {
     return c.json({ portraitId, url: `/api/portrait/${portraitId}` });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Upload failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Portrait AI description — analyze an uploaded image to infer character physical traits
+app.post('/api/portrait/describe', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<{ image: string; race?: string; class?: string }>();
+  const image = String(body.image || '');
+  if (!image || !image.startsWith('data:image/')) {
+    return c.json({ error: 'Invalid image data URL' }, 400);
+  }
+
+  const race = String(body.race || 'Human');
+  const cls = String(body.class || 'Fighter');
+
+  // Extract base64 from data URL
+  const base64Match = image.match(/^data:image\/\w+;base64,(.+)$/);
+  if (!base64Match) {
+    return c.json({ error: 'Invalid base64 image' }, 400);
+  }
+
+  const prompt = `You are analyzing a character portrait for a fantasy tabletop RPG. The player says this character is a ${race} ${cls}. Describe the character's physical appearance in 2-3 sentences: build, hair color and style, eye color, skin tone, notable features (scars, markings, facial hair), expression, and any visible gear or clothing. Be specific and vivid but concise. Do not mention the art style or medium — only describe the character as a person.`;
+
+  try {
+    // Use Llama Vision model for image understanding
+    const result = await c.env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+      messages: [
+        { role: 'user', content: prompt },
+      ],
+      image: base64Match[1],
+      max_tokens: 200,
+    });
+
+    const description = ((result as Record<string, unknown>).response as string || '').trim();
+    if (!description) {
+      return c.json({ error: 'AI returned empty description' }, 500);
+    }
+    return c.json({ description });
+  } catch (err: unknown) {
+    // Fallback: try text-only model if vision model isn't available
+    try {
+      const fallbackResult = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages: [
+          { role: 'system', content: 'You describe fantasy RPG characters. Be vivid and specific in 2-3 sentences.' },
+          { role: 'user', content: `Describe the physical appearance of a typical ${race} ${cls} character in a fantasy setting. Include build, hair, eyes, skin, and notable features. 2-3 sentences only.` },
+        ],
+        max_tokens: 200,
+      });
+      const description = ((fallbackResult as Record<string, unknown>).response as string || '').trim();
+      if (description) {
+        return c.json({ description, fallback: true });
+      }
+    } catch { /* ignore fallback errors */ }
+
+    const msg = err instanceof Error ? err.message : 'Image analysis failed';
     return c.json({ error: msg }, 500);
   }
 });

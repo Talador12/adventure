@@ -33,6 +33,10 @@
 - `src/components/combat/InitiativeBar.tsx` - Turn tracker with HP bars, player/AI labels, unit selection
 - `src/components/lobby/DoodlePad.tsx` - Canvas drawing tool with colors, brush sizes, eraser
 - `src/components/ui/` - button, card, toast (all custom, no framework deps)
+- `src/lib/portrait.ts` - SVG portrait system (composable race/class/appearance portraits)
+- `src/lib/names.ts` - Fantasy name generator (syllable tables per race)
+- `src/lib/palettes.ts` - Skin/hair/eye color palettes per race
+- `src/lib/export.ts` - Character export (JSON, Markdown, Foundry VTT, Fantasy Grounds, HTML, D&D Beyond)
 - `wrangler.toml` - Worker/DO/Pages config
 - Secrets live in `.dev.vars` (gitignored), never in wrangler.toml or source
 
@@ -102,22 +106,52 @@ make help    # show all commands
 - Dice rolls go through WebSocket so all players see animations. Server is the source of truth for roll values.
 - This is a fun project. Ship fast, iterate, make it feel good.
 
-## Uncommitted Work (session crash safety)
+## Completed: AI Character Generation System
 
-Large uncommitted changeset (~1422 lines across 8 files) on `staging` branch.
-This includes the full character creation redesign, worker API endpoints, and
-wrangler config changes. **Commit before doing more feature work.**
+Full AI-powered character building pipeline via Workers AI:
 
-Files changed:
-- `src/pages/CharacterCreate.tsx` — full tavern redesign + SVG portrait system (+1193 lines)
-- `_worker.ts` — `/api/name/translate` + `/api/portrait/generate` + `/api/portrait/upload` endpoints (+160 lines)
-- `src/contexts/GameContext.tsx` — character state additions (+49 lines)
-- `wrangler.toml` — KV/AI bindings (+12 lines)
-- `Makefile` — new targets (+42 lines)
-- `README.md` — updated docs (+62 lines)
-- `claude.md` — this file
-- `.gitignore` — minor addition
-- `src/pages/Lobby.tsx` — invite link UX fix (full URL, clipboard emoji, click-to-copy)
+### AI Build Character (top-of-page banner)
+- "Roll Character" button with optional campaign context textarea
+- `POST /api/character/generate` — returns name, race, class, background, alignment, statPriority, personalityTraits, ideals, bonds, flaws, backstory, appearance suggestions, concept pitch
+- Anti-cliche prompt engineering: demands unexpected but viable builds, named NPCs, subverted class expectations
+- After generation: sets all form fields, triggers stat rolling, smart-allocates stats by AI priority order via `useEffect` watching `pendingStatPriority`
+
+### AI Personality Generation
+- "Roll with AI" button on Personality & Backstory section header
+- `POST /api/character/suggest-personality` — generates traits + ideals + bonds + flaws as coherent group
+- Uses existing character data (race, class, background, alignment, stats) for context
+
+### AI Backstory Generation
+- "Generate with AI" / "Rewrite with AI" button on Backstory header
+- `POST /api/backstory/generate` — anti-cliche prompt with named NPCs, inciting incidents, sensory details, unresolved mysteries
+
+## Completed: Character Export System
+
+### Export Module (`src/lib/export.ts`)
+- Zero deps, all string templates + Blob downloads
+- Formats: JSON (native), Markdown (download + clipboard), Foundry VTT (dnd5e actor JSON), Fantasy Grounds (5e XML), Printable HTML (new tab with print button), D&D Beyond (formatted text to clipboard)
+- Format registry (`EXPORT_FORMATS`) with availability flags
+- Pathfinder 2e, Forbidden Lands, Savage Worlds marked as "coming soon"
+- `runExport(formatId, char)` dispatcher
+
+### Export Modal (in CharacterCreate.tsx)
+- Triggered via "Export Character Sheet" button below "Create Character"
+- Modal with format list, method badges (Download/Clipboard/Preview), descriptions
+- Builds preview Character from form state (works before creating)
+- Status feedback with auto-dismiss on success
+
+## Completed: Personality & Backstory Section
+
+- Personality traits (3 rows), Ideals/Bonds/Flaws (3-column, `min-h-[80px]`, `resize-y`, `text-sm`)
+- Backstory (8 rows, `min-h-[160px]`, `resize-y`)
+- Pulled out of alignment column into own full-width section
+- "Starting Alignment" label with subtext about alignment shifting through play
+
+## Completed: Makefile Rewrite
+
+- `PRODUCTION_RELEASE := false` gate on deploy commands
+- Port variables, new commands: `login`, `whoami`, `open`, `logs`, `status`
+- `deploy` defaults to staging, `release` is gated production
 
 ## Completed Work: Character Creation UI Redesign
 
@@ -131,9 +165,9 @@ Full tavern-themed character creation page (CharacterCreate.tsx, 1466 lines):
 - **Class cards (12)** — inline SVG portraits, hit die display
 - **Appearance system** — BG3-style live preview: skin/hair/eye palettes per race, 6 hair styles, scars, face markings, facial hair
 - **Name generator** — syllable-table per race + `/api/name/translate` for fantasy names
-- **AI portraits** — Workers AI FLUX via `/api/portrait/generate`, AES-256-GCM encrypted KV upload
+- **Portrait system** — unified tabbed UI (Default SVG / AI Generate / Upload), 8 art styles, AI image description for uploads
 - **Stat rolling** — 4d6-drop-lowest with animation, race bonuses, stat swap
-- **Background + alignment** — 13 backgrounds, 9-grid alignment, personality textareas
+- **Background + starting alignment** — 13 backgrounds, 9-grid alignment (labeled as starting, can shift), personality textareas (expand on focus)
 - **Character preview** — summary card with computed HP/AC/gold
 
 ### SVG Portrait System (`src/lib/portrait.ts`)
@@ -145,6 +179,38 @@ Full tavern-themed character creation page (CharacterCreate.tsx, 1466 lines):
 - Color customization via regex replacement on hardcoded face SVG strings
 - Palette data in `src/lib/palettes.ts` (SKIN_PALETTES, HAIR_PALETTES, EYE_PALETTES)
 - Name generator in `src/lib/names.ts` (randomFantasyName, syllable tables by race)
+
+## Completed: Portrait System Redesign
+
+Single consolidated portrait section under Appearance with three tabbed modes:
+
+### Default Portrait (SVG)
+- Live-updating SVG from `buildRacePortraitSvg()` reflecting race, class, and all appearance selections
+- Zero server dependency — renders entirely client-side
+- Used as fallback when AI/upload aren't available
+
+### AI Generate
+- 8 art styles (no copyrighted names): Classic Fantasy, Watercolor, Anime Fantasy, Dark Gothic, Storybook, Cel-Shaded, Realistic, Painterly
+- Style IDs map to detailed prompts in `ART_STYLE_PROMPTS` (`_worker.ts`)
+- Prompt includes: race traits, class attire, stats-derived physique, appearance details (hair style, scars, markings, facial hair), and selected art style
+- Workers AI FLUX-1-schnell for image generation
+
+### Upload Image
+- User uploads PNG/JPEG/WebP (max 1.5MB)
+- AES-256-GCM encrypted at rest in KV
+- AI inference via `/api/portrait/describe` — Llama 3.2 Vision analyzes the uploaded image and returns a 2-3 sentence physical description
+- Falls back to Llama 3.1 text-only if vision model unavailable
+- Description displayed in UI; non-blocking (image works without AI)
+
+### API Endpoints (Worker — `_worker.ts`)
+- `POST /api/portrait/generate` — accepts `style` (art style ID) and `appearance` (hair/scars/markings/facial hair), Workers AI FLUX-1-schnell
+- `POST /api/portrait/describe` — accepts `image` (data URL), `race`, `class`; returns `{ description }` using Llama 3.2 Vision
+- `POST /api/portrait/upload` — AES-256-GCM encrypted KV storage
+- `GET /api/portrait/:id` — decrypt and serve
+- `POST /api/character/generate` — full AI character builder (name, race, class, background, alignment, stats priority, personality, backstory, appearance)
+- `POST /api/character/suggest-personality` — AI personality group generation (traits, ideals, bonds, flaws)
+- `POST /api/backstory/generate` — AI backstory with anti-cliche prompt engineering
+- `POST /api/name/translate` — fantasy name translation via Workers AI
 
 ## Completed: Lobby Invite Link Fix
 
@@ -165,20 +231,24 @@ Full tavern-themed character creation page (CharacterCreate.tsx, 1466 lines):
 
 ### Next Up
 
-- Character creation and management (save/load characters, character list)
+- Wrangler auth (`make login`) — AI features need Workers AI bindings to work locally
+- Character management (save/load characters, character list, character selection)
+- Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds (system conversion needed)
 - Wire Discord profile data (avatars, display names) into WebSocket sessions
 - AI DM via Workers AI: narration, NPC dialogue, encounter generation
+- Feed AI appearance description into game context for DM narration
 - Map system: procedural generation, fog of war, tokens, grid
 - DM tools: god mode, roll override, visibility toggles, event injection
-- Sound FX (howler.js): mood music, spell effects, combat sounds
-- Shared doodle pad over WebSocket (broadcast strokes to all players)
-- Discord integration for voice/chat
 
 ### Backlog
 
 - Persistent campaigns via KV/R2 (save/load game state)
 - Character sheets with live updates and autosave
 - Drop-in/drop-out guest characters
+- Portrait gallery: save/browse generated portraits, remix styles, compare versions
+- Sound FX: mood music, spell effects, combat sounds
+- Shared doodle pad over WebSocket (broadcast strokes to all players)
+- Discord integration for voice/chat
 - Roleplay dashboard with notes and voice-style prompts
 - Particle effects for spells and combat
 - Dynamic difficulty control

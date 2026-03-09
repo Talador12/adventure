@@ -105,6 +105,8 @@ export interface Character {
   ideals: string;
   bonds: string;
   flaws: string;
+  backstory: string; // freeform — player-written or AI-generated origin story
+  appearanceDescription?: string; // AI-inferred physical description from uploaded portrait
   playerId: string; // who owns this character
   gold: number; // currency
   createdAt: number;

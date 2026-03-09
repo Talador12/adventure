@@ -8,9 +8,30 @@ SHELL := /bin/bash
 WRANGLER = npx wrangler
 VITE = npx vite
 
+# Flip to true when ready to deploy production. Guards all prod targets.
+PRODUCTION_RELEASE := false
+
+# Ports
+PORT_FRONTEND := 5173
+PORT_BACKEND := 8787
+PORT_INSPECTOR := 9229
+
 ################################################################################
 #                                 Functions                                    #
 ################################################################################
+
+# Gate macro: aborts if PRODUCTION_RELEASE is not true
+define require_production_release
+	@if [ "$(PRODUCTION_RELEASE)" != "true" ]; then \
+		echo ""; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "  PRODUCTION_RELEASE is false. Set to true in Makefile"; \
+		echo "  to enable production deployments."; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo ""; \
+		exit 1; \
+	fi
+endef
 
 ################################################################################
 #                                 Commands                                     #
@@ -23,12 +44,51 @@ VITE = npx vite
 Makefile: makeinfo ;
 
 ################################################################################
+#                           Development Commands                               #
+################################################################################
+
+dev: makeinfo kill ## [Dev] Start frontend + worker dev servers
+	@echo "Starting dev servers..."
+	@$(VITE) --port $(PORT_FRONTEND) & \
+	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) & \
+	sleep 3 && \
+	echo "" && \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" && \
+	echo "  Frontend: http://localhost:$(PORT_FRONTEND)" && \
+	echo "  Backend:  http://localhost:$(PORT_BACKEND)" && \
+	echo "  Debugger: http://localhost:$(PORT_INSPECTOR)" && \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" && \
+	echo ""
+
+dev-frontend: makeinfo kill-frontend ## [Dev] Start frontend only (no worker)
+	$(VITE) --port $(PORT_FRONTEND)
+
+dev-worker: makeinfo ## [Dev] Start worker only (no frontend)
+	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR)
+
+start: makeinfo ## [Dev] Quick start: kill, build, dev
+	$(MAKE) kill
+	$(MAKE) build
+	$(MAKE) dev
+
+fresh: makeinfo ## [Dev] Full reset: clean, install, format, build, dev
+	$(MAKE) kill
+	$(MAKE) clean
+	$(MAKE) install
+	$(MAKE) format
+	$(MAKE) build
+	$(MAKE) dev
+
+open: makeinfo ## [Dev] Open frontend in browser
+	@open http://localhost:$(PORT_FRONTEND)
+
+################################################################################
 #                             Build Commands                                   #
 ################################################################################
 
 build: makeinfo ## [Build] Build frontend and worker
-	make build-worker
-	make build-frontend
+	$(MAKE) build-frontend
+	$(MAKE) build-worker
 
 build-frontend: makeinfo # Build frontend with Vite
 	$(VITE) build
@@ -37,61 +97,40 @@ build-worker: makeinfo # Build Cloudflare Worker
 	$(WRANGLER) build
 
 ################################################################################
-#                           Development Commands                               #
+#                         Staging Deploy Commands                              #
 ################################################################################
 
-dev: makeinfo ## [Dev] Start frontend + worker dev servers
-	@echo "Starting dev servers..."
-	npx vite --port 5173 & \
-	$(WRANGLER) dev --env development --port=8787 --inspector-port=9229 & \
-	sleep 3 && \
-	echo "" && \
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" && \
-	echo "  Frontend: http://localhost:5173" && \
-	echo "  Backend:  http://localhost:8787" && \
-	echo "  Debugger: http://localhost:9229" && \
-	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" && \
-	echo ""
-
-dev-worker: makeinfo # Start Cloudflare Worker only
-	$(WRANGLER) dev --env development --port=8787 --inspector-port=9229
-
-fresh: makeinfo ## [Dev] Full reset: upgrade, install, format, build, dev
-	make kill
-	make upgrade
-	make install
-	make format
-	make build
-	make dev
-
-start: makeinfo ## [Dev] Quick start: kill, build, dev
-	make kill
-	make build
-	make dev
-
-################################################################################
-#                           Deployment Commands                                #
-################################################################################
-
-deploy-prod: makeinfo ## [Deploy] Deploy worker + pages to production
-	make deploy-worker-prod
-	$(WRANGLER) pages deploy public --project-name=adventure --branch=main
-
-deploy-staging: makeinfo ## [Deploy] Deploy worker + pages to staging
-	make deploy-worker-staging
+deploy: makeinfo ## [Deploy] Deploy worker + pages to staging (default)
+	$(MAKE) deploy-worker-staging
 	$(WRANGLER) pages deploy public --project-name=adventure --branch=staging
-
-deploy-worker-prod: makeinfo # Deploy Worker to production
-	$(WRANGLER) deploy
 
 deploy-worker-staging: makeinfo # Deploy Worker to staging
 	$(WRANGLER) deploy --env staging
 
 ################################################################################
-#                            Secrets Commands                                  #
+#                        Production Deploy Commands                            #
 ################################################################################
 
-secrets-development: makeinfo ## [Secrets] Set Discord secrets for dev environment
+release: makeinfo ## [Deploy] Deploy worker + pages to production (gated)
+	$(require_production_release)
+	$(MAKE) deploy-worker-prod
+	$(WRANGLER) pages deploy public --project-name=adventure --branch=main
+
+deploy-worker-prod: makeinfo # Deploy Worker to production (gated)
+	$(require_production_release)
+	$(WRANGLER) deploy
+
+################################################################################
+#                            Auth & Secrets                                    #
+################################################################################
+
+login: makeinfo ## [Auth] Authenticate with Cloudflare (wrangler login)
+	$(WRANGLER) login
+
+whoami: makeinfo ## [Auth] Show current Cloudflare auth status
+	$(WRANGLER) whoami
+
+secrets-development: makeinfo ## [Auth] Set Discord secrets for dev environment
 	@read -p "Enter DISCORD_CLIENT_ID: " client_id; \
 	read -p "Enter DISCORD_CLIENT_SECRET: " client_secret; \
 	echo "Setting secrets..."; \
@@ -102,13 +141,48 @@ secrets-development: makeinfo ## [Secrets] Set Discord secrets for dev environme
 	echo "DISCORD_CLIENT_SECRET=$$client_secret" >> .dev.vars; \
 	echo "Secrets set."
 
-secrets-staging: makeinfo ## [Secrets] Promote secrets to staging
+secrets-staging: makeinfo ## [Auth] Promote secrets to staging
 	$(WRANGLER) secret put DISCORD_CLIENT_ID --env staging
 	$(WRANGLER) secret put DISCORD_CLIENT_SECRET --env staging
 
-secrets-prod: makeinfo ## [Secrets] Promote secrets to production
+secrets-prod: makeinfo ## [Auth] Promote secrets to production (gated)
+	$(require_production_release)
 	$(WRANGLER) secret put DISCORD_CLIENT_ID
 	$(WRANGLER) secret put DISCORD_CLIENT_SECRET
+
+################################################################################
+#                          Monitoring Commands                                 #
+################################################################################
+
+logs: makeinfo ## [Monitor] Tail worker logs from staging
+	$(WRANGLER) tail --env staging
+
+logs-prod: makeinfo ## [Monitor] Tail worker logs from production (gated)
+	$(require_production_release)
+	$(WRANGLER) tail
+
+status: makeinfo ## [Monitor] Show deploy status and port usage
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Port Status"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@for port in $(PORT_FRONTEND) $(PORT_BACKEND) $(PORT_INSPECTOR); do \
+		pid=$$(lsof -ti :$$port 2>/dev/null); \
+		if [ -n "$$pid" ]; then \
+			echo "  :$$port — active (PID $$pid)"; \
+		else \
+			echo "  :$$port — free"; \
+		fi; \
+	done
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Git"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Branch: $$(git branch --show-current)"
+	@echo "  Last commit: $$(git log -1 --oneline)"
+	@echo ""
+	@echo "  PRODUCTION_RELEASE = $(PRODUCTION_RELEASE)"
+	@echo ""
 
 ################################################################################
 #                            Cleanup Commands                                  #
@@ -118,19 +192,16 @@ clean: makeinfo ## [Cleanup] Remove all generated files and dependencies
 	rm -rf node_modules package-lock.json .wrangler dist/ .tree-output.txt public .vite
 
 kill: makeinfo ## [Cleanup] Kill all dev server ports
-	@pids_5173=$$(lsof -ti :5173); if [ -n "$$pids_5173" ]; then echo "Killing port 5173"; kill -9 $$pids_5173; fi
-	@pids_8787=$$(lsof -ti :8787); if [ -n "$$pids_8787" ]; then echo "Killing port 8787"; kill -9 $$pids_8787; fi
-	@pids_9229=$$(lsof -ti :9229); if [ -n "$$pids_9229" ]; then echo "Killing port 9229"; kill -9 $$pids_9229; fi
+	@pids_5173=$$(lsof -ti :$(PORT_FRONTEND)); if [ -n "$$pids_5173" ]; then echo "Killing port $(PORT_FRONTEND)"; kill -9 $$pids_5173; fi
+	@pids_8787=$$(lsof -ti :$(PORT_BACKEND)); if [ -n "$$pids_8787" ]; then echo "Killing port $(PORT_BACKEND)"; kill -9 $$pids_8787; fi
+	@pids_9229=$$(lsof -ti :$(PORT_INSPECTOR)); if [ -n "$$pids_9229" ]; then echo "Killing port $(PORT_INSPECTOR)"; kill -9 $$pids_9229; fi
+
+kill-frontend: makeinfo # Kill frontend port only
+	@pid=$$(lsof -ti :$(PORT_FRONTEND)); if [ -n "$$pid" ]; then echo "Killing port $(PORT_FRONTEND)"; kill -9 $$pid; fi
 
 ################################################################################
 #                            Utility Commands                                  #
 ################################################################################
-
-amend: makeinfo # Amend last commit with same message
-	@msg="$$(git log -1 --pretty=%B)"; \
-	echo "Amending last commit: $$msg"; \
-	git reset --soft HEAD~1 && \
-	make commit M="$$msg"
 
 commit: makeinfo ## [Git] Format, build, commit: make commit M='message'
 	@( \
@@ -139,12 +210,12 @@ commit: makeinfo ## [Git] Format, build, commit: make commit M='message'
 			echo "Usage: make commit M='your message'"; \
 			exit 1; \
 		fi; \
-		make kill; \
-		make format; \
-		make build; \
+		$(MAKE) kill; \
+		$(MAKE) format; \
+		$(MAKE) build; \
 		git add .; \
 		git commit -m "$$msg"; \
-		git push --force \
+		git push \
 	)
 
 format: makeinfo ## [Utility] Format code with Prettier

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/toast';
@@ -6,8 +6,24 @@ import { useGame, STAT_NAMES, RACES, CLASSES, BACKGROUNDS, ALIGNMENTS, HAIR_STYL
 import { SKIN_PALETTES, HAIR_PALETTES, EYE_PALETTES } from '../lib/palettes';
 import { randomFantasyName } from '../lib/names';
 import { buildRacePortraitSvg, buildMiniPortraitDataUrl } from '../lib/portrait';
+import { EXPORT_FORMATS, runExport, type ExportFormat } from '../lib/export';
 
 
+
+// Art styles for AI portrait generation — fantasy themes, no copyrighted names
+const PORTRAIT_STYLES = [
+  { id: 'classic-fantasy', label: 'Classic Fantasy', desc: 'Detailed oil painting, medieval fantasy illustration' },
+  { id: 'watercolor', label: 'Watercolor', desc: 'Soft watercolor painting with gentle washes and flowing lines' },
+  { id: 'anime-fantasy', label: 'Anime Fantasy', desc: 'Anime-inspired fantasy art with vibrant colors and expressive features' },
+  { id: 'dark-gothic', label: 'Dark Gothic', desc: 'Dark, moody gothic illustration with heavy shadows and dramatic contrast' },
+  { id: 'storybook', label: 'Storybook', desc: 'Whimsical hand-drawn storybook illustration with warm, soft lighting' },
+  { id: 'cel-shaded', label: 'Cel-Shaded', desc: 'Bold cel-shaded art with clean lines and flat vibrant colors' },
+  { id: 'realistic', label: 'Realistic', desc: 'Photorealistic digital portrait with cinematic lighting' },
+  { id: 'painterly', label: 'Painterly', desc: 'Loose impressionist brushwork, rich textures, dramatic palette knife strokes' },
+] as const;
+
+type PortraitStyle = (typeof PORTRAIT_STYLES)[number]['id'];
+type PortraitMode = 'default' | 'ai' | 'upload';
 
 // Background flavor text for the creation screen
 const BACKGROUND_INFO: Record<Background, { skills: string; feature: string; flavor: string }> = {
@@ -92,6 +108,8 @@ export default function CharacterCreate() {
   const [ideals, setIdeals] = useState('');
   const [bonds, setBonds] = useState('');
   const [flaws, setFlaws] = useState('');
+  const [backstory, setBackstory] = useState('');
+  const [generatingBackstory, setGeneratingBackstory] = useState(false);
   const [statRolls, setStatRolls] = useState<Record<StatName, StatRoll | null>>(
     Object.fromEntries(STAT_NAMES.map((s) => [s, null])) as Record<StatName, StatRoll | null>
   );
@@ -100,6 +118,19 @@ export default function CharacterCreate() {
   const [generatingPortrait, setGeneratingPortrait] = useState(false);
   const [uploadingPortrait, setUploadingPortrait] = useState(false);
   const [portraitSource, setPortraitSource] = useState<'ai' | 'upload' | null>(null); // track where portrait came from
+  const [portraitMode, setPortraitMode] = useState<PortraitMode>('default');
+  const [portraitStyle, setPortraitStyle] = useState<PortraitStyle>('classic-fantasy');
+  const [aiDescription, setAiDescription] = useState<string | null>(null); // AI-inferred description of uploaded image
+  const [describingImage, setDescribingImage] = useState(false);
+  const [analyzeUpload, setAnalyzeUpload] = useState(true); // checkbox: send upload to AI for appearance summary
+
+  // AI full build state
+  const [generatingCharacter, setGeneratingCharacter] = useState(false);
+  const [campaignContext, setCampaignContext] = useState('');
+  const [pendingStatPriority, setPendingStatPriority] = useState<StatName[] | null>(null);
+  const [generatingPersonality, setGeneratingPersonality] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportStatus, setExportStatus] = useState<{ message: string; success: boolean } | null>(null);
 
   // Name translation state
   const [translating, setTranslating] = useState(false);
@@ -192,12 +223,15 @@ export default function CharacterCreate() {
           class: charClass,
           level: 1,
           stats: stats || {},
+          style: portraitStyle,
+          appearance,
         }),
       });
       const data = await res.json() as { portrait?: string; error?: string };
       if (data.portrait) {
         setPortrait(data.portrait);
         setPortraitSource('ai');
+        setPortraitMode('ai');
         toast('Portrait generated!', 'success');
       } else {
         toast(data.error || 'Failed to generate portrait', 'warning');
@@ -207,9 +241,30 @@ export default function CharacterCreate() {
     } finally {
       setGeneratingPortrait(false);
     }
-  }, [name, race, charClass, toast]);
+  }, [name, race, charClass, portraitStyle, appearance, toast]);
 
-  // Upload a custom portrait — read file, send to server for encrypted KV storage
+  // Ask AI to describe an uploaded image — infer physical traits
+  const describeUploadedImage = useCallback(async (dataUrl: string) => {
+    setDescribingImage(true);
+    try {
+      const res = await fetch('/api/portrait/describe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl, race, class: charClass }),
+      });
+      const data = await res.json() as { description?: string; error?: string };
+      if (data.description) {
+        setAiDescription(data.description);
+        toast('AI analyzed your portrait!', 'success');
+      }
+    } catch {
+      // Non-blocking — image still works without AI description
+    } finally {
+      setDescribingImage(false);
+    }
+  }, [race, charClass, toast]);
+
+  // Upload a custom portrait — read file, send to server for encrypted KV storage, then AI describe
   const handleUploadPortrait = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -234,22 +289,27 @@ export default function CharacterCreate() {
         });
         const data = await res.json() as { portraitId?: string; url?: string; error?: string };
         if (data.portraitId) {
-          setPortrait(dataUrl); // use the data URL directly for instant preview
-          setPortraitSource('upload');
-          toast('Portrait uploaded and encrypted!', 'success');
-        } else {
-          // Fallback: use locally if server storage fails (e.g. no KV in dev)
           setPortrait(dataUrl);
           setPortraitSource('upload');
+          setPortraitMode('upload');
+          toast('Portrait uploaded and encrypted!', 'success');
+        } else {
+          setPortrait(dataUrl);
+          setPortraitSource('upload');
+          setPortraitMode('upload');
           toast('Portrait set locally (server storage unavailable)', 'info');
         }
       } catch {
-        // Still use locally even if server fails
         setPortrait(dataUrl);
         setPortraitSource('upload');
+        setPortraitMode('upload');
         toast('Portrait set locally (server unavailable)', 'info');
       } finally {
         setUploadingPortrait(false);
+      }
+      // Fire off AI description in parallel (non-blocking) if checkbox is on
+      if (analyzeUpload) {
+        describeUploadedImage(dataUrl);
       }
     };
     reader.onerror = () => {
@@ -257,9 +317,41 @@ export default function CharacterCreate() {
       setUploadingPortrait(false);
     };
     reader.readAsDataURL(file);
-    // Reset the input so the same file can be re-selected
     e.target.value = '';
-  }, [toast]);
+  }, [toast, describeUploadedImage, analyzeUpload]);
+
+  const generateBackstory = useCallback(async () => {
+    setGeneratingBackstory(true);
+    try {
+      const res = await fetch('/api/backstory/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name || 'a nameless wanderer',
+          race,
+          class: charClass,
+          background,
+          alignment,
+          stats: getFinalStats() || {},
+          personalityTraits,
+          ideals,
+          bonds,
+          flaws,
+        }),
+      });
+      const data = await res.json() as { backstory?: string; error?: string };
+      if (data.backstory) {
+        setBackstory(data.backstory);
+        toast('Backstory generated!', 'success');
+      } else {
+        toast(data.error || 'Failed to generate backstory', 'warning');
+      }
+    } catch {
+      toast('Backstory generation failed — server may be unavailable', 'warning');
+    } finally {
+      setGeneratingBackstory(false);
+    }
+  }, [name, race, charClass, background, alignment, personalityTraits, ideals, bonds, flaws, toast]);
 
   const rollStat = useCallback((stat: StatName) => {
     // Start animation
@@ -299,6 +391,116 @@ export default function CharacterCreate() {
     });
   }, [rollStat]);
 
+  // Smart stat allocation — after AI build rolls stats, assign them by priority
+  useEffect(() => {
+    if (!pendingStatPriority) return;
+    const allDone = STAT_NAMES.every((s) => statRolls[s] && !statRolls[s]!.animating);
+    if (!allDone || rollingAll) return;
+
+    // Collect rolled totals, sort descending (best rolls first)
+    const rolled = STAT_NAMES.map((s) => ({ stat: s, roll: statRolls[s]! }));
+    const sortedRolls = [...rolled].sort((a, b) => b.roll.total - a.roll.total);
+
+    // Assign best roll to highest priority stat
+    const newRolls = { ...statRolls };
+    pendingStatPriority.forEach((priorityStat, i) => {
+      if (sortedRolls[i]) {
+        newRolls[priorityStat] = sortedRolls[i].roll;
+      }
+    });
+    setStatRolls(newRolls as Record<StatName, StatRoll | null>);
+    setPendingStatPriority(null);
+  }, [statRolls, rollingAll, pendingStatPriority]);
+
+  // AI full character generation
+  const generateFullCharacter = useCallback(async () => {
+    setGeneratingCharacter(true);
+    try {
+      const res = await fetch('/api/character/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign: campaignContext || undefined }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (data.error) {
+        toast(String(data.error), 'warning');
+        return;
+      }
+
+      // Set all fields from AI response
+      if (data.name) setName(String(data.name));
+      if (data.race && RACES.includes(data.race as Race)) setRace(data.race as Race);
+      if (data.class && CLASSES.includes(data.class as CharacterClass)) setCharClass(data.class as CharacterClass);
+      if (data.background && BACKGROUNDS.includes(data.background as Background)) setBackground(data.background as Background);
+      if (data.alignment && ALIGNMENTS.includes(data.alignment as Alignment)) setAlignment(data.alignment as Alignment);
+      if (data.personalityTraits) setPersonalityTraits(String(data.personalityTraits));
+      if (data.ideals) setIdeals(String(data.ideals));
+      if (data.bonds) setBonds(String(data.bonds));
+      if (data.flaws) setFlaws(String(data.flaws));
+      if (data.backstory) setBackstory(String(data.backstory));
+      setTranslation(null);
+
+      // Apply appearance suggestions
+      const app = data.appearance as Record<string, string> | undefined;
+      if (app) {
+        setAppearance(prev => ({
+          ...prev,
+          ...(app.hairStyle && HAIR_STYLES.includes(app.hairStyle as HairStyle) ? { hairStyle: app.hairStyle as HairStyle } : {}),
+          ...(app.scar && SCAR_TYPES.includes(app.scar as ScarType) ? { scar: app.scar as ScarType } : {}),
+          ...(app.faceMarking && FACE_MARKING_TYPES.includes(app.faceMarking as FaceMarkingType) ? { faceMarking: app.faceMarking as FaceMarkingType } : {}),
+          ...(app.facialHair && FACIAL_HAIR_TYPES.includes(app.facialHair as FacialHairType) ? { facialHair: app.facialHair as FacialHairType } : {}),
+        }));
+      }
+
+      // Roll stats, then smart-allocate by priority after rolling finishes
+      const priority = data.statPriority as string[] | undefined;
+      if (priority && priority.length === 6 && priority.every(s => STAT_NAMES.includes(s as StatName))) {
+        setPendingStatPriority(priority as StatName[]);
+      }
+      rollAllStats();
+
+      const concept = data.concept ? ` — ${data.concept}` : '';
+      toast(`Character generated!${concept}`, 'success');
+    } catch {
+      toast('Character generation failed — server may be unavailable', 'warning');
+    } finally {
+      setGeneratingCharacter(false);
+    }
+  }, [campaignContext, rollAllStats, toast]);
+
+  // AI personality generation (traits + ideals + bonds + flaws together)
+  const generatePersonality = useCallback(async () => {
+    setGeneratingPersonality(true);
+    try {
+      const res = await fetch('/api/character/suggest-personality', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name || 'an adventurer',
+          race,
+          class: charClass,
+          background,
+          alignment,
+          backstory,
+        }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (data.error) {
+        toast(String(data.error), 'warning');
+        return;
+      }
+      if (data.personalityTraits) setPersonalityTraits(String(data.personalityTraits));
+      if (data.ideals) setIdeals(String(data.ideals));
+      if (data.bonds) setBonds(String(data.bonds));
+      if (data.flaws) setFlaws(String(data.flaws));
+      toast('Personality generated!', 'success');
+    } catch {
+      toast('Personality generation failed — server may be unavailable', 'warning');
+    } finally {
+      setGeneratingPersonality(false);
+    }
+  }, [name, race, charClass, background, alignment, backstory, toast]);
+
   // Compute final stats with race bonuses
   const getFinalStats = (): Stats | null => {
     const hasAll = STAT_NAMES.every((s) => statRolls[s] && !statRolls[s]!.animating);
@@ -310,6 +512,52 @@ export default function CharacterCreate() {
   };
 
   const finalStats = getFinalStats();
+
+  // Build a Character object from current form state (for export preview)
+  const buildPreviewCharacter = useCallback(() => {
+    if (!finalStats) return null;
+    const hitDie = CLASS_HIT_DIE[charClass];
+    const conMod = Math.floor((finalStats.CON - 10) / 2);
+    const maxHp = hitDie + conMod;
+    return {
+      id: 'preview',
+      name: name.trim() || 'Unnamed Hero',
+      race,
+      class: charClass,
+      level: 1,
+      xp: 0,
+      stats: finalStats,
+      hp: maxHp,
+      maxHp,
+      ac: 10 + Math.floor((finalStats.DEX - 10) / 2),
+      deathSaves: { successes: 0, failures: 0 },
+      condition: 'normal' as const,
+      portrait: portrait || undefined,
+      appearance,
+      background,
+      alignment,
+      personalityTraits,
+      ideals,
+      bonds,
+      flaws,
+      backstory,
+      appearanceDescription: (analyzeUpload && aiDescription) || undefined,
+      playerId: currentPlayer.id,
+      gold: 15,
+      createdAt: Date.now(),
+    };
+  }, [finalStats, charClass, name, race, portrait, appearance, background, alignment, personalityTraits, ideals, bonds, flaws, backstory, analyzeUpload, aiDescription, currentPlayer.id]);
+
+  const handleExport = useCallback(async (format: ExportFormat) => {
+    const char = buildPreviewCharacter();
+    if (!char) return;
+    setExportStatus(null);
+    const result = await runExport(format.id, char);
+    setExportStatus(result);
+    if (result.success) {
+      setTimeout(() => setExportStatus(null), 3000);
+    }
+  }, [buildPreviewCharacter]);
 
   const handleCreate = () => {
     if (!name.trim()) {
@@ -346,6 +594,8 @@ export default function CharacterCreate() {
       ideals,
       bonds,
       flaws,
+      backstory,
+      appearanceDescription: (analyzeUpload && aiDescription) || undefined,
       playerId: currentPlayer.id,
       gold: 15, // starting gold
       createdAt: Date.now(),
@@ -386,6 +636,46 @@ export default function CharacterCreate() {
       </header>
 
       <main className="relative max-w-4xl mx-auto p-6 space-y-8">
+        {/* AI Build — generate entire character */}
+        <div className="rounded-xl border border-purple-500/20 bg-purple-950/20 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-purple-300">AI Build Character</h2>
+              <p className="text-[11px] text-purple-400/50 mt-0.5">Generate an entire character with creative race/class combos, stats, personality, and backstory</p>
+            </div>
+            <button
+              onClick={generateFullCharacter}
+              disabled={generatingCharacter}
+              className="text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-5 py-2.5 rounded-xl font-semibold transition-colors flex items-center gap-2 shrink-0"
+            >
+              {generatingCharacter ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Building...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M12 3v4m0 14v-4m9-5h-4M7 12H3m15.364-6.364l-2.828 2.828M9.464 14.536l-2.828 2.828m12.728 0l-2.828-2.828M9.464 9.464L6.636 6.636"/></svg>
+                  Roll Character
+                </>
+              )}
+            </button>
+          </div>
+          {/* Campaign context — optional, collapses */}
+          <details className="group">
+            <summary className="text-[11px] text-purple-400/40 cursor-pointer hover:text-purple-400/60 transition-colors select-none">
+              Campaign context (optional — helps AI tailor the character)
+            </summary>
+            <textarea
+              value={campaignContext}
+              onChange={(e) => setCampaignContext(e.target.value)}
+              placeholder="e.g. Curse of Strahd gothic horror campaign, party needs a healer, set in a dark Victorian-inspired land of Barovia..."
+              rows={2}
+              className="w-full mt-2 bg-purple-950/30 border border-purple-500/15 rounded-lg px-3 py-2 text-xs text-purple-200/70 placeholder:text-purple-400/25 focus:border-purple-500/30 focus:outline-none resize-y"
+            />
+          </details>
+        </div>
+
         {/* Name */}
         <div className="space-y-2">
           <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Name</label>
@@ -696,27 +986,163 @@ export default function CharacterCreate() {
             </div>
           </div>
 
-          {/* Portrait source controls (compact, under the main portrait area) */}
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={generatePortrait}
-              disabled={generatingPortrait || uploadingPortrait}
-              className="text-xs bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors"
-            >
-              {generatingPortrait ? 'Generating...' : 'AI Portrait'}
-            </button>
-            <label className={`text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${uploadingPortrait ? 'opacity-40 cursor-not-allowed' : ''}`}>
-              {uploadingPortrait ? 'Uploading...' : 'Upload'}
-              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleUploadPortrait} disabled={uploadingPortrait} className="hidden" />
-            </label>
-            {portrait && (
-              <button onClick={() => { setPortrait(null); setPortraitSource(null); }} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                Clear
-              </button>
-            )}
-            <span className="text-[10px] text-amber-800/50 ml-auto">
-              {portraitSource === 'upload' ? 'AES-256-GCM encrypted at rest' : portrait ? 'Workers AI (FLUX)' : 'SVG — updates live'}
-            </span>
+          {/* Portrait source tabs */}
+          <div className="rounded-xl border border-amber-900/30 bg-[#1e160e]/60 overflow-hidden">
+            {/* Tab bar */}
+            <div className="flex border-b border-amber-900/25">
+              {([
+                { mode: 'default' as PortraitMode, label: 'Default Portrait', icon: (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                )},
+                { mode: 'ai' as PortraitMode, label: 'AI Generate', icon: (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M16 14H8a4 4 0 0 0-4 4v4h16v-4a4 4 0 0 0-4-4z"/><circle cx="9" cy="6" r="0.5" fill="currentColor"/><circle cx="15" cy="6" r="0.5" fill="currentColor"/></svg>
+                )},
+                { mode: 'upload' as PortraitMode, label: 'Upload Image', icon: (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                )},
+              ]).map(({ mode, label, icon }) => (
+                <button
+                  key={mode}
+                  onClick={() => setPortraitMode(mode)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-all ${
+                    portraitMode === mode
+                      ? 'bg-[#F38020]/10 text-[#F38020] border-b-2 border-[#F38020]'
+                      : 'text-amber-600/50 hover:text-amber-400/70 hover:bg-amber-900/10'
+                  }`}
+                >
+                  {icon}
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab content */}
+            <div className="p-4">
+              {/* Default portrait tab */}
+              {portraitMode === 'default' && (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-600/50">
+                    Using your race, class, and appearance selections to render a live SVG portrait. This updates automatically as you customize.
+                  </p>
+                  {portrait && (
+                    <button
+                      onClick={() => { setPortrait(null); setPortraitSource(null); }}
+                      className="text-xs text-amber-600/50 hover:text-amber-400 transition-colors"
+                    >
+                      Clear AI/uploaded portrait and use default
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* AI Generate tab */}
+              {portraitMode === 'ai' && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-amber-600/60 font-medium">Art Style</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {PORTRAIT_STYLES.map((style) => (
+                        <button
+                          key={style.id}
+                          onClick={() => setPortraitStyle(style.id)}
+                          className={`px-2.5 py-2 rounded-lg text-xs font-medium text-left transition-all border ${
+                            portraitStyle === style.id
+                              ? 'border-[#F38020] bg-[#F38020]/15 text-[#F38020]'
+                              : 'border-amber-900/30 bg-[#2a1f14] text-amber-200/60 hover:border-amber-800/50'
+                          }`}
+                          title={style.desc}
+                        >
+                          {style.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-amber-800/40">
+                      {PORTRAIT_STYLES.find(s => s.id === portraitStyle)?.desc}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={generatePortrait}
+                      disabled={generatingPortrait}
+                      className="text-xs bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5"
+                    >
+                      {generatingPortrait ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Generating...
+                        </>
+                      ) : portrait && portraitSource === 'ai' ? 'Regenerate' : 'Generate Portrait'}
+                    </button>
+                    <p className="text-[10px] text-amber-800/40">
+                      Uses Workers AI (FLUX) with your character details + selected art style
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload tab */}
+              {portraitMode === 'upload' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <label className={`text-xs bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${uploadingPortrait ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                      {uploadingPortrait ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                          </svg>
+                          Choose Image
+                        </>
+                      )}
+                      <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleUploadPortrait} disabled={uploadingPortrait} className="hidden" />
+                    </label>
+                    <span className="text-[10px] text-amber-800/40">PNG, JPEG, or WebP (max 1.5MB)</span>
+                  </div>
+                  {/* AI analysis checkbox */}
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={analyzeUpload}
+                      onChange={(e) => setAnalyzeUpload(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-amber-900/40 bg-[#1e160e] text-[#F38020] focus:ring-[#F38020] focus:ring-offset-0 accent-[#F38020] cursor-pointer"
+                    />
+                    <span className="text-xs text-amber-400/70 group-hover:text-amber-300/80 transition-colors select-none">
+                      AI appearance analysis
+                    </span>
+                    <span className="text-[10px] text-amber-800/40">— adds a physical description to your character sheet</span>
+                  </label>
+                  {/* AI description of uploaded image */}
+                  {portrait && portraitSource === 'upload' && analyzeUpload && (
+                    <div className="rounded-lg border border-amber-900/25 bg-[#2a1f14]/60 p-3 space-y-1.5">
+                      {describingImage ? (
+                        <div className="flex items-center gap-2 text-xs text-amber-600/50">
+                          <div className="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                          AI is analyzing your image...
+                        </div>
+                      ) : aiDescription ? (
+                        <>
+                          <div className="text-[10px] text-amber-500/60 font-medium uppercase tracking-wider">Appearance Summary</div>
+                          <p className="text-xs text-amber-200/70 leading-relaxed">{aiDescription}</p>
+                          <p className="text-[10px] text-amber-800/40">This description will be saved to your character sheet.</p>
+                        </>
+                      ) : (
+                        <p className="text-[10px] text-amber-700/40">AI unavailable — your image will be used without a description.</p>
+                      )}
+                    </div>
+                  )}
+                  {portrait && portraitSource === 'upload' && !analyzeUpload && (
+                    <p className="text-[10px] text-amber-800/40">Raw upload — no AI analysis. Image only.</p>
+                  )}
+                  {portrait && portraitSource === 'upload' && (
+                    <p className="text-[10px] text-amber-800/40">Uploaded images are AES-256-GCM encrypted at rest.</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -753,9 +1179,10 @@ export default function CharacterCreate() {
             </div>
           </div>
 
-          {/* Alignment */}
+          {/* Starting Alignment */}
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Alignment</label>
+            <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Starting Alignment</label>
+            <p className="text-[10px] text-amber-700/40 -mt-1">Your character's moral compass at creation — alignment can shift through play.</p>
             <div className="grid grid-cols-3 gap-1.5">
               {ALIGNMENTS.map((a) => {
                 const [law, moral] = [a.split(' ')[0], a.split(' ').slice(-1)[0]];
@@ -776,50 +1203,115 @@ export default function CharacterCreate() {
                 );
               })}
             </div>
+          </div>
+        </div>
 
-            {/* Personality / Ideals / Bonds / Flaws — freeform text */}
-            <div className="space-y-2 mt-3">
-              <label className="text-xs text-amber-600/60 font-medium">Personality Traits</label>
+        {/* Personality & Backstory — full width, proper sizing */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Personality & Backstory</label>
+            <button
+              onClick={generatePersonality}
+              disabled={generatingPersonality}
+              className="text-[11px] bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5"
+            >
+              {generatingPersonality ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Rolling...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M12 3v4m0 14v-4m9-5h-4M7 12H3m15.364-6.364l-2.828 2.828M9.464 14.536l-2.828 2.828m12.728 0l-2.828-2.828M9.464 9.464L6.636 6.636"/></svg>
+                  {personalityTraits || ideals || bonds || flaws ? 'Reroll Personality' : 'Roll with AI'}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Personality Traits */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-amber-600/60 font-medium">Personality Traits</label>
+            <textarea
+              value={personalityTraits}
+              onChange={(e) => setPersonalityTraits(e.target.value)}
+              placeholder="I idolize a particular hero and constantly refer to their deeds. I misquote wise sayings to fit any situation. Nothing can shake my optimistic attitude..."
+              rows={3}
+              className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-4 py-3 text-sm text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-y transition-colors duration-200"
+            />
+          </div>
+
+          {/* Ideals / Bonds / Flaws — 3-column but full page width */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-amber-600/60 font-medium">Ideals</label>
               <textarea
-                value={personalityTraits}
-                onChange={(e) => setPersonalityTraits(e.target.value)}
-                placeholder="I idolize a particular hero and constantly refer to their deeds..."
-                rows={2}
-                className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-3 py-2 text-xs text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-none"
+                value={ideals}
+                onChange={(e) => setIdeals(e.target.value)}
+                placeholder="Greater good. Beauty. Logic. Freedom. Tradition. Charity. Honor above all else..."
+                rows={3}
+                className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-3 py-2.5 text-sm text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-y min-h-[80px] transition-colors duration-200"
               />
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-[10px] text-amber-600/60 font-medium">Ideals</label>
-                  <textarea
-                    value={ideals}
-                    onChange={(e) => setIdeals(e.target.value)}
-                    placeholder="Greater good..."
-                    rows={2}
-                    className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-2 py-1.5 text-[10px] text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-amber-600/60 font-medium">Bonds</label>
-                  <textarea
-                    value={bonds}
-                    onChange={(e) => setBonds(e.target.value)}
-                    placeholder="I protect those who cannot protect themselves..."
-                    rows={2}
-                    className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-2 py-1.5 text-[10px] text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-amber-600/60 font-medium">Flaws</label>
-                  <textarea
-                    value={flaws}
-                    onChange={(e) => setFlaws(e.target.value)}
-                    placeholder="I have trouble trusting my allies..."
-                    rows={2}
-                    className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-2 py-1.5 text-[10px] text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-none"
-                  />
-                </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-amber-600/60 font-medium">Bonds</label>
+              <textarea
+                value={bonds}
+                onChange={(e) => setBonds(e.target.value)}
+                placeholder="I protect those who cannot protect themselves. I owe my life to the priest who took me in. My family's honor must be restored..."
+                rows={3}
+                className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-3 py-2.5 text-sm text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-y min-h-[80px] transition-colors duration-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-amber-600/60 font-medium">Flaws</label>
+              <textarea
+                value={flaws}
+                onChange={(e) => setFlaws(e.target.value)}
+                placeholder="I have trouble trusting my allies. I am slow to forgive. A scandal from my past haunts me to this day..."
+                rows={3}
+                className="w-full bg-[#1e160e] border border-amber-900/30 rounded-lg px-3 py-2.5 text-sm text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-y min-h-[80px] transition-colors duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Backstory — the novel goes here */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-amber-600/60 font-medium">Backstory</label>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-amber-800/40">{backstory.length > 0 ? `${backstory.length} chars` : 'optional'}</span>
+                <button
+                  onClick={generateBackstory}
+                  disabled={generatingBackstory}
+                  className="text-[11px] bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-3 py-1 rounded-lg font-semibold transition-colors flex items-center gap-1.5"
+                >
+                  {generatingBackstory ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Writing...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                        <path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/>
+                      </svg>
+                      {backstory ? 'Rewrite with AI' : 'Generate with AI'}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
+            <textarea
+              value={backstory}
+              onChange={(e) => setBackstory(e.target.value)}
+              placeholder="Write your own origin story, or hit 'Generate with AI' to have one written for you based on your character's race, class, background, stats, and personality. The AI writes unique, non-generic backstories with named characters, unresolved mysteries, and hooks your DM can build on."
+              rows={8}
+              className="w-full bg-[#1e160e] border border-amber-900/30 rounded-xl px-4 py-3 text-sm text-amber-100/80 placeholder:text-amber-900/40 focus:border-[#F38020] focus:outline-none resize-y min-h-[160px] transition-colors duration-200 leading-relaxed"
+            />
+            <p className="text-[10px] text-amber-800/40">
+              Write as much or as little as you want. AI backstories use your character's details to create something specific — not cookie-cutter. You can edit after generating. Your backstory helps the DM weave your history into the campaign.
+            </p>
           </div>
         </div>
 
@@ -929,76 +1421,6 @@ export default function CharacterCreate() {
           )}
         </div>
 
-        {/* Portrait */}
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Portrait</label>
-          <div className="flex items-start gap-6">
-            {/* Portrait image */}
-            <div className="relative group shrink-0">
-              <img
-                src={portrait || defaultPortraitSvg}
-                alt={`${race} ${charClass} portrait`}
-                className="w-32 h-32 rounded-xl border-2 border-amber-900/40 object-cover bg-[#1e160e]"
-              />
-              {(generatingPortrait || uploadingPortrait) && (
-                <div className="absolute inset-0 rounded-xl bg-slate-950/80 flex items-center justify-center">
-                  <div className={`w-8 h-8 border-2 ${uploadingPortrait ? 'border-sky-400' : 'border-[#F38020]'} border-t-transparent rounded-full animate-spin`} />
-                </div>
-              )}
-            </div>
-            {/* Portrait controls */}
-            <div className="flex flex-col gap-2 flex-1">
-              <p className="text-xs text-amber-700/50">
-                {portrait && portraitSource === 'ai' && 'AI-generated portrait. You can regenerate, upload your own, or clear it.'}
-                {portrait && portraitSource === 'upload' && 'Custom uploaded portrait (encrypted server-side). You can replace it or clear it.'}
-                {!portrait && 'Using default race portrait. Generate an AI portrait, or upload your own image.'}
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={generatePortrait}
-                  disabled={generatingPortrait || uploadingPortrait}
-                  className="text-xs bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5"
-                >
-                  {generatingPortrait ? 'Generating...' : portrait && portraitSource === 'ai' ? 'Regenerate AI' : 'Generate AI Portrait'}
-                </button>
-                <label className={`text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${uploadingPortrait ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                  {uploadingPortrait ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-                      </svg>
-                      Upload Image
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={handleUploadPortrait}
-                    disabled={uploadingPortrait}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              {portrait && (
-                <button
-                  onClick={() => { setPortrait(null); setPortraitSource(null); }}
-                  className="text-xs text-amber-700/50 hover:text-amber-400 transition-colors w-fit"
-                >
-                  Clear &amp; use default
-                </button>
-              )}
-              <p className="text-[10px] text-amber-800/40 mt-1">
-                {portraitSource === 'upload' ? 'Uploaded images are AES-256-GCM encrypted at rest in server storage.' : 'AI uses Workers AI (FLUX). Uploaded images are encrypted server-side.'}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Preview + Create */}
         <div className="rounded-xl border border-amber-900/30 bg-[#1e160e]/90 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -1033,8 +1455,76 @@ export default function CharacterCreate() {
           >
             Create Character
           </button>
+
+          {/* Export button */}
+          <button
+            onClick={() => setShowExportModal(true)}
+            disabled={!finalStats}
+            className="mt-2 w-full py-2 bg-transparent border border-amber-900/40 hover:border-amber-700/60 hover:bg-amber-900/10 disabled:opacity-30 disabled:cursor-not-allowed text-amber-400/70 hover:text-amber-300 text-sm rounded-xl transition-all"
+          >
+            Export Character Sheet
+          </button>
         </div>
       </main>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowExportModal(false)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-lg rounded-2xl border border-amber-900/40 bg-[#1e160e] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-amber-900/30 px-6 py-4">
+              <h3 className="text-lg font-semibold text-amber-100">Export Character</h3>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-amber-700/50 hover:text-amber-400 transition-colors text-xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Format list */}
+            <div className="px-6 py-4 space-y-2 max-h-[60vh] overflow-y-auto">
+              {EXPORT_FORMATS.map((fmt) => (
+                <button
+                  key={fmt.id}
+                  onClick={() => handleExport(fmt)}
+                  disabled={!fmt.available}
+                  className={`w-full text-left rounded-xl border p-3 transition-all ${
+                    fmt.available
+                      ? 'border-amber-900/30 hover:border-[#F38020]/50 hover:bg-amber-900/10 cursor-pointer'
+                      : 'border-amber-900/15 opacity-40 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-amber-100">{fmt.label}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-amber-700/50">
+                      {fmt.method === 'download' ? 'Download' : fmt.method === 'clipboard' ? 'Clipboard' : 'Preview'}
+                      {fmt.ext && ` (${fmt.ext})`}
+                    </span>
+                  </div>
+                  <div className="text-xs text-amber-400/50 mt-0.5">{fmt.desc}</div>
+                  {fmt.systemNote && (
+                    <div className="text-[10px] text-amber-700/40 mt-1 italic">{fmt.systemNote}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Status bar */}
+            {exportStatus && (
+              <div className={`mx-6 mb-4 px-3 py-2 rounded-lg text-xs ${
+                exportStatus.success ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
+              }`}>
+                {exportStatus.message}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
