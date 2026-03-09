@@ -95,11 +95,8 @@ Server broadcasts:
 - Run `make secrets-development` to set up local dev secrets
 - NEVER commit secrets to `wrangler.toml` or source code
 
-## AI Agent Context
+## AI Working Context
 
-This repo uses the three-tier AI context convention:
-- `AGENTS.md` (this file) — stable architecture reference, committed
-- `claude.md` — project status and roadmap, committed, updated every commit
-- `.claude/` — branch-specific working state, gitignored
-
-See the root `AGENTS.md` for the full convention spec.
+Two files per repo:
+- **`AGENTS.md`** (this file) — how to work on this project. Stable, changes slowly.
+- **`claude.md`** — what we're working on. Status, roadmap, what's next. Update every commit.
