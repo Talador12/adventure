@@ -100,3 +100,54 @@ export function findBestMoveToward(
 export function isAdjacent(col1: number, row1: number, col2: number, row2: number): boolean {
   return Math.max(Math.abs(col1 - col2), Math.abs(row1 - row2)) <= 1;
 }
+
+// Chebyshev distance between two grid positions (diagonals count as 1)
+export function chebyshevDistance(col1: number, row1: number, col2: number, row2: number): number {
+  return Math.max(Math.abs(col1 - col2), Math.abs(row1 - row2));
+}
+
+// Bresenham line-of-sight: returns true if no wall/void blocks the path between two cells
+export function hasLineOfSight(
+  terrain: TerrainType[][],
+  col1: number,
+  row1: number,
+  col2: number,
+  row2: number,
+): boolean {
+  // Same cell always has LOS
+  if (col1 === col2 && row1 === row2) return true;
+
+  // Bresenham's line algorithm — walk every cell on the line
+  let x0 = col1, y0 = row1;
+  const x1 = col2, y1 = row2;
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+
+  while (true) {
+    // Skip start and end cells — only intermediate cells block LOS
+    if (!(x0 === col1 && y0 === row1) && !(x0 === col2 && y0 === row2)) {
+      const cell = terrain[y0]?.[x0];
+      if (!cell || cell === 'wall' || cell === 'void') return false;
+    }
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+  }
+  return true;
+}
+
+// Parse a D&D range string to cells (1 cell = 5ft). "Touch" = 1, "Self" = 0
+export function parseRangeFt(rangeStr: string): number {
+  if (!rangeStr) return 0;
+  const lower = rangeStr.toLowerCase().trim();
+  if (lower === 'self') return 0;
+  if (lower === 'touch') return 1;
+  // Match patterns like "60ft", "120 ft", "150/600ft" (use short range)
+  const match = lower.match(/^(\d+)/);
+  if (match) return Math.max(1, Math.floor(parseInt(match[1], 10) / 5));
+  return 0;
+}

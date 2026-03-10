@@ -49,6 +49,7 @@ make help    # show all commands
 | `src/lib/names.ts` | Fantasy name generator (syllable tables per race) |
 | `src/lib/palettes.ts` | Skin/hair/eye color palettes per race |
 | `src/lib/export.ts` | Character export — JSON, Markdown, Foundry VTT, Fantasy Grounds, HTML, D&D Beyond |
+| `src/lib/mapUtils.ts` | Shared spatial types + pure functions: terrain, pathfinding, LOS, range parsing |
 | `wrangler.toml` | Worker/DO/Pages config |
 
 ## Design Principles

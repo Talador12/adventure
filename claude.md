@@ -11,7 +11,35 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 17 shipped: Spatial combat engine. Map state (terrain + positions) lifted to GameContext. Enemies now pathfind toward players and move on the map during their turns. Melee attacks require adjacency (Chebyshev distance <= 1) for both players and enemies. Next: ranged attacks, multiplayer map sync, journal/notes, or party management.
+Round 18 in progress: Ranged Combat + Line of Sight. `mapUtils.ts` has new functions (`hasLineOfSight`, `chebyshevDistance`, `parseRangeFt`). `Item` interface has `isRanged`/`range` fields. Weapon entries in loot tables and shop still need updating, then Game.tsx player attacks, enemy AI, and spell range enforcement. See detailed plan below.
+
+### Round 18: Ranged Combat + Line of Sight — IN PROGRESS (~15%)
+
+**Done:**
+- `mapUtils.ts`: Added `chebyshevDistance()`, `hasLineOfSight()` (Bresenham raycasting), `parseRangeFt()` (parses "60ft"->12 cells, "Touch"->1, "Self"->0)
+- `GameContext.tsx`: Added `isRanged?: boolean` and `range?: number` to Item interface
+
+**Not started:**
+1. Update all weapon entries in COMMON_LOOT, UNCOMMON_LOOT, RARE_LOOT, EPIC_LOOT, SHOP_ITEMS with `isRanged`/`range` values
+   - Melee weapons: `isRanged: false, range: 1` (or omit, default to melee)
+   - Light Crossbow: `isRanged: true, range: 16` (80ft short range)
+   - Longbow (shop): `isRanged: true, range: 30` (150ft short range)
+   - Add new ranged weapons: Shortbow, Hand Crossbow to shop/loot
+2. Add `isRanged?: boolean` and `range?: number` to `EnemyAbility` interface
+   - Tag ranged abilities: Breath Weapon, Mind Blast, Hellfire Orb, Fire Breath, etc.
+3. Update player Quick Attack (Game.tsx ~line 1147):
+   - If weapon `isRanged`: check `chebyshevDistance <= weapon.range && hasLineOfSight`
+   - If melee: keep `isAdjacent()` check
+   - Use DEX mod instead of STR mod for ranged weapons
+   - Update tooltip: "Out of range" vs "No line of sight" vs "Too far — move adjacent"
+4. Update enemy AI (Game.tsx ~line 462):
+   - If enemy has ranged capability: check distance + LOS instead of adjacency
+   - Smart behavior: if ranged enemy already has LOS, don't move closer
+5. Spell range enforcement:
+   - Parse spell `range` string to cells via `parseRangeFt()`
+   - Check distance + LOS when casting targeted spells
+   - Disable cast button if target out of range or no LOS
+6. Type check, update claude.md, commit and push
 
 ## Working Items
 

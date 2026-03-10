@@ -281,6 +281,8 @@ export interface Item {
   damageDie?: string;     // weapon: e.g. "1d8", "2d6"
   damageBonus?: number;   // weapon: flat bonus to damage
   attackBonus?: number;   // weapon: flat bonus to hit
+  isRanged?: boolean;     // weapon: true = ranged (uses DEX), false/undefined = melee (uses STR)
+  range?: number;         // weapon: attack range in cells (1=melee, 30=longbow 150ft, etc.)
   healAmount?: number;    // potion: HP restored
   statBonus?: Partial<Stats>; // ring/misc: stat bonuses
   quantity?: number;      // stackable items (potions, scrolls)
