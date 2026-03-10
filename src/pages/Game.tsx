@@ -6,8 +6,8 @@ import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character, type StatName, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
-import { findBestMoveToward, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
+import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
+import { findBestMoveToward, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
 
@@ -23,12 +23,12 @@ export default function Game() {
   const {
     setPlayers, setUnits, units, setCurrentPlayer, currentPlayer,
     rolls, selectedUnitId, characters,
-    inCombat, setInCombat, rollInitiative, nextTurn, combatRound,
+    inCombat, setInCombat, rollInitiative, nextTurn, combatRound, setCombatRound, turnIndex, setTurnIndex,
     damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
     addItem, useItem, buyItem, sellItem, castSpell, restoreSpellSlots,
     applyCondition, removeCondition, tickConditions, useClassAbility,
     applyASI, selectFeat, concentrationMessages,
-    terrain, mapPositions, setMapPositions,
+    terrain, setTerrain, mapPositions, setMapPositions,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -130,11 +130,19 @@ export default function Game() {
           sceneName,
           selectedCharacterId: selectedCharacterId || null,
           combatLog,
+          // Combat state — survives page refresh mid-combat
+          units: inCombat ? units : null,
+          inCombat,
+          combatRound: inCombat ? combatRound : 0,
+          turnIndex: inCombat ? units.findIndex((u) => u.isCurrentTurn) : 0,
+          terrain,
+          mapPositions,
+          quests,
         }),
       }).catch(() => {}); // server unavailable — localStorage is fallback
     }, 2000); // debounce 2s
     return () => clearTimeout(campaignSaveTimer.current);
-  }, [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted]);
+  }, [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted, inCombat, units, combatRound, terrain, mapPositions, quests]);
 
   // Load campaign from server on mount — merge with localStorage (server wins for newer data)
   const campaignLoadedRef = useRef(false);
@@ -142,21 +150,44 @@ export default function Game() {
     if (campaignLoadedRef.current) return;
     campaignLoadedRef.current = true;
     fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`)
-      .then((r) => r.ok ? r.json() as Promise<{ campaign?: { dmHistory?: string[]; sceneName?: string; selectedCharacterId?: string } }> : null)
+      .then((r) => r.ok ? r.json() as Promise<{ campaign?: Record<string, unknown> }> : null)
       .then((data) => {
         if (data?.campaign) {
           const c = data.campaign;
           // Server history is longer — use it (otherwise keep local which may be more recent)
-          if (c.dmHistory && c.dmHistory.length > dmHistory.length) {
-            setDmHistory(c.dmHistory);
+          const serverHistory = c.dmHistory as string[] | undefined;
+          if (serverHistory && serverHistory.length > dmHistory.length) {
+            setDmHistory(serverHistory);
           }
           if (c.sceneName && !sceneName) {
-            setSceneName(c.sceneName);
+            setSceneName(c.sceneName as string);
           }
           // Auto-select character if we had one saved
           if (c.selectedCharacterId && !selectedCharacterId) {
             const found = characters.find((ch) => ch.id === c.selectedCharacterId);
             if (found) handleSelectCharacter(found);
+          }
+          // Restore combat state if server had an active combat session
+          if (c.inCombat && Array.isArray(c.units) && (c.units as unknown[]).length > 0) {
+            setUnits(c.units as Unit[]);
+            setInCombat(true);
+            setCombatRound((c.combatRound as number) || 1);
+            setTurnIndex((c.turnIndex as number) || 0);
+          }
+          // Restore terrain + map positions if present
+          if (c.terrain && Array.isArray(c.terrain)) {
+            setTerrain(c.terrain as TerrainType[][]);
+          }
+          if (c.mapPositions && Array.isArray(c.mapPositions)) {
+            setMapPositions(c.mapPositions as TokenPosition[]);
+          }
+          // Restore quests
+          if (c.quests && Array.isArray(c.quests)) {
+            setQuests(c.quests as Quest[]);
+          }
+          // Restore combat log
+          if (c.combatLog && Array.isArray(c.combatLog)) {
+            setCombatLog(c.combatLog as string[]);
           }
         }
       })
@@ -676,11 +707,11 @@ export default function Game() {
     if (!selectedCharacter) return;
     setEncounterLoading(true);
     try {
-      // Generate enemies from templates (stat blocks, abilities, CR-based rewards)
-      const enemyUnits = generateEnemies(encounterDifficulty, selectedCharacter.level);
+      // Generate enemies from templates as baseline (stat blocks, abilities, CR-based rewards)
+      let enemyUnits = generateEnemies(encounterDifficulty, selectedCharacter.level);
       const theme = randomEncounterTheme();
 
-      // Try to get AI narration for the encounter
+      // Try to get AI encounter — may return both enemies and narration
       let description = '';
       try {
         const res = await fetch(`${apiBase()}/api/dm/encounter`, {
@@ -695,9 +726,45 @@ export default function Game() {
             twist: theme.twist,
           }),
         });
-        const data = await res.json() as { description?: string; error?: string };
+        const data = await res.json() as { enemies?: { name: string; hp: number; maxHp: number; ac: number; type?: string }[]; description?: string; error?: string };
         if (data.description) description = data.description;
-      } catch { /* AI narration is optional */ }
+        // Use AI-generated enemies if they have valid stat blocks, merged with template abilities
+        if (data.enemies?.length && data.enemies.every((e) => e.name && e.hp > 0 && e.ac > 0)) {
+          const levelScale = 1 + (selectedCharacter.level - 1) * 0.15;
+          enemyUnits = data.enemies.map((aiEnemy, i) => {
+            // Find a matching template for abilities/CR — match by name or difficulty tier
+            const templates = Object.values(
+              // flatten all template tiers into a single array
+              { easy: [], medium: [], hard: [], deadly: [], ...{ [encounterDifficulty]: generateEnemies(encounterDifficulty, selectedCharacter.level) } }
+            ).flat();
+            // Use AI stats but enrich with template abilities for gameplay depth
+            const templateMatch = enemyUnits[i] || enemyUnits[0];
+            const scaledHp = Math.round(aiEnemy.hp * levelScale);
+            return {
+              id: `enemy-${crypto.randomUUID().slice(0, 8)}-${i}`,
+              name: aiEnemy.name,
+              hp: scaledHp,
+              maxHp: scaledHp,
+              ac: aiEnemy.ac,
+              initiative: -1,
+              isCurrentTurn: false,
+              type: 'enemy' as const,
+              playerId: 'ai-dm',
+              attackBonus: templateMatch?.attackBonus ?? 3,
+              damageDie: templateMatch?.damageDie ?? '1d6',
+              damageBonus: templateMatch?.damageBonus ?? 1,
+              dexMod: templateMatch?.dexMod ?? 1,
+              abilities: templateMatch?.abilities ? templateMatch.abilities.map((a: EnemyAbility) => ({ ...a })) : [],
+              abilityCooldowns: {},
+              conditions: [],
+              speed: 6,
+              movementUsed: 0,
+              cr: templateMatch?.cr ?? 1,
+              xpValue: templateMatch?.xpValue ?? 200,
+            } satisfies Unit;
+          });
+        }
+      } catch { /* AI narration/encounter is optional — template enemies already generated */ }
 
       // Announce the encounter with theme fallback
       const enemyNames = enemyUnits.map((e) => e.name).join(', ');

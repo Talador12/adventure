@@ -270,6 +270,8 @@ export type ItemType = 'weapon' | 'armor' | 'shield' | 'potion' | 'ring' | 'scro
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic';
 export type EquipSlot = 'weapon' | 'armor' | 'shield' | 'ring';
 
+export type ArmorCategory = 'light' | 'medium' | 'heavy';
+
 export interface Item {
   id: string;
   name: string;
@@ -280,6 +282,7 @@ export interface Item {
   // Equipment stats (only for equippable items)
   equipSlot?: EquipSlot;
   acBonus?: number;       // armor: base AC or shield: +AC
+  armorCategory?: ArmorCategory; // D&D 5e: light=full DEX, medium=DEX max +2, heavy=no DEX
   damageDie?: string;     // weapon: e.g. "1d8", "2d6"
   damageBonus?: number;   // weapon: flat bonus to damage
   attackBonus?: number;   // weapon: flat bonus to hit
@@ -304,11 +307,11 @@ export const EMPTY_EQUIPMENT: EquipmentSlots = { weapon: null, armor: null, shie
 const COMMON_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 1 },
   { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'A reliable blade.', value: 10, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
-  { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11 },
+  { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light' },
   { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2 },
   { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Handaxe', type: 'weapon', rarity: 'common', description: 'Can be thrown.', value: 5, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
-  { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor.', value: 50, equipSlot: 'armor', acBonus: 13 },
+  { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor.', value: 50, equipSlot: 'armor', acBonus: 13, armorCategory: 'medium' },
   { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: 'Reveals an item\'s properties.', value: 25 },
   { name: 'Quarterstaff', type: 'weapon', rarity: 'common', description: 'A sturdy wooden staff.', value: 2, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16 },
@@ -319,20 +322,20 @@ const COMMON_LOOT: Omit<Item, 'id'>[] = [
 const UNCOMMON_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Greater Healing Potion', type: 'potion', rarity: 'uncommon', description: 'Restores 4d4+4 HP.', value: 150, healAmount: 18, quantity: 1 },
   { name: 'Longsword +1', type: 'weapon', rarity: 'uncommon', description: 'A finely crafted blade that glows faintly.', value: 200, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 1, attackBonus: 1, range: 1 },
-  { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14 },
+  { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14, armorCategory: 'medium' },
   { name: 'Shield +1', type: 'shield', rarity: 'uncommon', description: 'An enchanted shield. +3 AC.', value: 200, equipSlot: 'shield', acBonus: 3 },
   { name: 'Ring of Protection', type: 'ring', rarity: 'uncommon', description: '+1 to AC while worn.', value: 300, equipSlot: 'ring', acBonus: 1 },
   { name: 'Battleaxe', type: 'weapon', rarity: 'uncommon', description: 'A heavy, well-balanced axe.', value: 100, equipSlot: 'weapon', damageDie: '1d10', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Flaming Dagger', type: 'weapon', rarity: 'uncommon', description: 'A dagger with a blade of living fire. +1d4 damage.', value: 250, equipSlot: 'weapon', damageDie: '1d4+2', damageBonus: 0, attackBonus: 1, range: 1 },
   { name: 'Hand Crossbow +1', type: 'weapon', rarity: 'uncommon', description: 'A compact crossbow enchanted for accuracy. Range 30/120ft.', value: 300, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 1, isRanged: true, range: 6 },
-  { name: 'Breastplate', type: 'armor', rarity: 'uncommon', description: 'Polished medium armor. AC 14 + DEX (max 2).', value: 400, equipSlot: 'armor', acBonus: 14 },
+  { name: 'Breastplate', type: 'armor', rarity: 'uncommon', description: 'Polished medium armor. AC 14 + DEX (max 2).', value: 400, equipSlot: 'armor', acBonus: 14, armorCategory: 'medium' },
   { name: 'Cloak of Elvenkind', type: 'misc', rarity: 'uncommon', description: 'Advantage on stealth. +1 DEX while worn.', value: 350, statBonus: { DEX: 1 } },
 ];
 
 const RARE_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Superior Healing Potion', type: 'potion', rarity: 'rare', description: 'Restores 8d4+8 HP.', value: 500, healAmount: 36, quantity: 1 },
   { name: 'Greatsword +2', type: 'weapon', rarity: 'rare', description: 'A massive blade wreathed in flame.', value: 800, equipSlot: 'weapon', damageDie: '2d6', damageBonus: 2, attackBonus: 2, range: 1 },
-  { name: 'Half Plate +1', type: 'armor', rarity: 'rare', description: 'Heavy armor with magical reinforcement.', value: 1000, equipSlot: 'armor', acBonus: 16 },
+  { name: 'Half Plate +1', type: 'armor', rarity: 'rare', description: 'Medium armor with magical reinforcement. AC 16 + DEX (max 2).', value: 1000, equipSlot: 'armor', acBonus: 16, armorCategory: 'medium' },
   { name: 'Ring of Strength', type: 'ring', rarity: 'rare', description: '+2 STR while worn.', value: 800, equipSlot: 'ring', statBonus: { STR: 2 } },
   { name: 'Amulet of Health', type: 'misc', rarity: 'rare', description: 'A warm glow that bolsters vitality. +2 CON.', value: 800, statBonus: { CON: 2 } },
   { name: 'Frostbrand Rapier', type: 'weapon', rarity: 'rare', description: 'A rapier that trails wisps of frost. +2 to hit and damage.', value: 900, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 2, attackBonus: 2, range: 1 },
@@ -344,7 +347,7 @@ const RARE_LOOT: Omit<Item, 'id'>[] = [
 const EPIC_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Potion of Supreme Healing', type: 'potion', rarity: 'epic', description: 'Restores 10d4+20 HP.', value: 1500, healAmount: 55, quantity: 1 },
   { name: 'Vorpal Greatsword', type: 'weapon', rarity: 'epic', description: 'A blade so sharp it hums. +3 to hit and damage.', value: 3000, equipSlot: 'weapon', damageDie: '2d6+3', damageBonus: 3, attackBonus: 3, range: 1 },
-  { name: 'Plate Armor of Etherealness', type: 'armor', rarity: 'epic', description: 'Gleaming full plate infused with planar energy.', value: 5000, equipSlot: 'armor', acBonus: 18 },
+  { name: 'Plate Armor of Etherealness', type: 'armor', rarity: 'epic', description: 'Gleaming full plate infused with planar energy.', value: 5000, equipSlot: 'armor', acBonus: 18, armorCategory: 'heavy' },
   { name: 'Ring of Spell Storing', type: 'ring', rarity: 'epic', description: 'Stores latent magic. +2 AC, +2 WIS.', value: 4000, equipSlot: 'ring', acBonus: 2, statBonus: { WIS: 2 } },
   { name: 'Oathbow', type: 'weapon', rarity: 'epic', description: 'Sworn enemy takes 3d6 extra. +3 to hit. Range 150/600ft.', value: 4500, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 3, attackBonus: 3, isRanged: true, range: 30 },
   { name: 'Staff of Power', type: 'weapon', rarity: 'epic', description: 'Crackles with arcane might. +3 to hit, 2d8+3 damage.', value: 4000, equipSlot: 'weapon', damageDie: '2d8', damageBonus: 3, attackBonus: 3, range: 1 },
@@ -402,10 +405,10 @@ export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
   { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16, category: 'Weapons' },
   { name: 'Hand Crossbow', type: 'weapon', rarity: 'common', description: 'Range 30/120ft. One-handed.', value: 75, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, isRanged: true, range: 6, category: 'Weapons' },
   // Armor
-  { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, category: 'Armor' },
-  { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor, reliable.', value: 50, equipSlot: 'armor', acBonus: 13, category: 'Armor' },
-  { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14, category: 'Armor' },
-  { name: 'Chain Mail', type: 'armor', rarity: 'uncommon', description: 'Heavy armor.', value: 75, equipSlot: 'armor', acBonus: 16, category: 'Armor' },
+  { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light', category: 'Armor' },
+  { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor, reliable.', value: 50, equipSlot: 'armor', acBonus: 13, armorCategory: 'medium', category: 'Armor' },
+  { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14, armorCategory: 'medium', category: 'Armor' },
+  { name: 'Chain Mail', type: 'armor', rarity: 'uncommon', description: 'Heavy armor.', value: 75, equipSlot: 'armor', acBonus: 16, armorCategory: 'heavy', category: 'Armor' },
   { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2, category: 'Armor' },
   // Potions
   { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 1, category: 'Potions' },
@@ -417,6 +420,44 @@ export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
 ];
 
 export const SHOP_CATEGORIES = ['Weapons', 'Armor', 'Potions', 'Accessories'] as const;
+
+// Hit die average by class — used for HP gain on level-up and short rest healing
+export const HIT_DIE_AVG: Record<string, number> = {
+  Fighter: 6, Barbarian: 7, Paladin: 6, Ranger: 6, Rogue: 5, Monk: 5,
+  Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
+};
+
+// D&D 5e AC calculation: respects armor category DEX caps
+// Light: base + full DEX mod, Medium: base + DEX mod (max +2), Heavy: base (no DEX)
+export function calculateAC(stats: Stats, equipment: EquipmentSlots): number {
+  const dexMod = Math.floor((stats.DEX - 10) / 2);
+  const armor = equipment.armor;
+  const shieldAC = equipment.shield?.acBonus ?? 0;
+  const ringAC = equipment.ring?.acBonus ?? 0;
+
+  if (!armor || !armor.acBonus) {
+    // No armor: 10 + full DEX mod
+    return 10 + dexMod + shieldAC + ringAC;
+  }
+
+  let armorAC = armor.acBonus;
+  switch (armor.armorCategory) {
+    case 'light':
+      armorAC += dexMod;
+      break;
+    case 'medium':
+      armorAC += Math.min(dexMod, 2);
+      break;
+    case 'heavy':
+      // No DEX bonus
+      break;
+    default:
+      // Legacy items without armorCategory: use old behavior (base AC, no DEX — conservative)
+      break;
+  }
+
+  return armorAC + shieldAC + ringAC;
+}
 
 // --- Spell system ---
 export type SpellSchool = 'evocation' | 'abjuration' | 'conjuration' | 'divination' | 'enchantment' | 'illusion' | 'necromancy' | 'transmutation';
@@ -906,10 +947,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       newLevel = level;
       if (leveledUp) {
         // Recalculate maxHp on level up (add hit die average + CON mod)
-        const hitDieAvg: Record<string, number> = {
-          Fighter: 6, Barbarian: 7, Paladin: 6, Ranger: 6, Rogue: 5, Monk: 5,
-          Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
-        };
         const conMod = Math.floor((c.stats.CON - 10) / 2);
         // Feat HP bonuses: Tough (+2/level), Durable (+1/level)
         const featHpPerLevel = (c.feats || []).reduce((sum, fid) => {
@@ -917,7 +954,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           return sum + (f?.maxHpPerLevel || 0);
         }, 0);
         const levelsGained = level - c.level;
-        const hpGain = ((hitDieAvg[c.class] || 5) + conMod + featHpPerLevel) * levelsGained;
+        const hpGain = ((HIT_DIE_AVG[c.class] || 5) + conMod + featHpPerLevel) * levelsGained;
         const newMaxHp = c.maxHp + hpGain;
         return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp }; // full heal on level up
       }
@@ -937,12 +974,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false };
       }
       // Short rest: heal hit die average + CON mod (once)
-      const hitDieAvg: Record<string, number> = {
-        Fighter: 6, Barbarian: 7, Paladin: 6, Ranger: 6, Rogue: 5, Monk: 5,
-        Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
-      };
       const conMod = Math.floor((c.stats.CON - 10) / 2);
-      const heal = Math.max(1, (hitDieAvg[c.class] || 5) + conMod);
+      const heal = Math.max(1, (HIT_DIE_AVG[c.class] || 5) + conMod);
       return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? 'normal' as Condition : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed };
     }));
     // Long rest also clears all combat conditions on the player's unit
@@ -997,15 +1030,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (eq[slot]) newInv = [...newInv, eq[slot]!];
       eq[slot] = item;
 
-      // Recalculate AC from equipment
-      const baseAC = 10 + Math.floor((c.stats.DEX - 10) / 2);
-      const armorAC = eq.armor?.acBonus ?? 0; // armor acBonus is base AC (e.g. 13 for chain shirt)
-      const shieldAC = eq.shield?.acBonus ?? 0;
-      const ringAC = eq.ring?.acBonus ?? 0;
-      // If armor provides base AC, use it; otherwise use DEX-based
-      const newAC = (armorAC > 0 ? armorAC : baseAC) + shieldAC + ringAC;
-
-      return { ...c, inventory: newInv, equipment: eq, ac: newAC };
+      return { ...c, inventory: newInv, equipment: eq, ac: calculateAC(c.stats, eq) };
     }));
   }, []);
 
@@ -1020,14 +1045,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       eq[slot] = null;
       const newInv = [...(c.inventory || []), item];
 
-      // Recalculate AC
-      const baseAC = 10 + Math.floor((c.stats.DEX - 10) / 2);
-      const armorAC = eq.armor?.acBonus ?? 0;
-      const shieldAC = eq.shield?.acBonus ?? 0;
-      const ringAC = eq.ring?.acBonus ?? 0;
-      const newAC = (armorAC > 0 ? armorAC : baseAC) + shieldAC + ringAC;
-
-      return { ...c, inventory: newInv, equipment: eq, ac: newAC };
+      return { ...c, inventory: newInv, equipment: eq, ac: calculateAC(c.stats, eq) };
     }));
   }, []);
 

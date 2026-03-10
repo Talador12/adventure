@@ -11,10 +11,177 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 18 shipped: Ranged Combat + Line of Sight. Full spatial range system — weapons, enemy abilities, and spells all enforce distance + line of sight on the battle map. Next: multiplayer map sync, journal/notes, party management, or Opportunity Attacks.
+Round 19: Multiplayer Session Sync + Test Framework. The game currently has solid social sync (chat, dice, doodle strokes, DM narration) but zero game-mechanical sync — units, combat, HP, initiative, turns, terrain, tokens, and characters are all local-only. The goal is a hybrid AI/real player experience with flawless socket session management for all shared features. The test framework validates existing game logic and multiplayer behavior before sync work begins.
 
-### Ranged combat + line of sight
-- **Status:** Done
+### Test framework
+- **Status:** In progress — player tests passing, worker tests mostly passing, Makefile targets next
+
+**Three test categories:**
+1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 15 describe blocks, 69 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity. **All 69 passing.**
+2. **AI fallback tests** (`tests/ai/fallback.test.ts`) — AI binding `undefined` → all 9 AI endpoints return 503 with helpful message. Non-AI endpoints (campaign save/load) still work. **All 11 passing.**
+3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **10 of 11 passing** (1 failure: `/api/name/translate` returns 500 on empty AI response instead of graceful fallback — the endpoint's try/catch doesn't handle empty `.response` field).
+4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare. **Tests pass but hit isolated storage frame warning** from Miniflare (WebSocket connections not fully disposed — known `@cloudflare/vitest-pool-workers` issue with DO WebSocket tests).
+
+**Infrastructure:**
+- `vitest.config.ts` — plain vitest for player tests (no Workers runtime)
+- `vitest.workers.config.ts` — `@cloudflare/vitest-pool-workers` for multiplayer + AI tests (Miniflare)
+- `wrangler.test.toml` — test-only wrangler config (DO + KV bindings, no AI binding to avoid remote proxy login)
+- vitest downgraded to 3.2.4 (pool-workers requires `2.0.x - 3.2.x`, vitest 4 removed `test.poolOptions`)
+- Budget-aware: `AI_TESTS` env var → `__TEST_AI_MODE__` define in vitest config. `describe.skipIf(AI_TESTS !== 'live')` guards live AI tests.
+
+**Remaining test work:**
+- Fix 1 failing AI error test (`/api/name/translate` empty response handling)
+- Fix multiplayer test isolated storage warning (await WebSocket close or use `using` keyword)
+- Add Makefile targets: `make test`, `make test-player`, `make test-ai`, `make test-multiplayer`
+- Remove em-dash (—) from describe block names to avoid Miniflare header encoding warnings
+
+### Multiplayer session sync — full game state over WebSocket
+- **Status:** Planned (audit complete, implementation planned, blocked on test framework completion)
+
+#### What's already synced (working)
+| Feature | Mechanism | Quality |
+|---------|-----------|---------|
+| Chat messages | `chat` → Lobby DO → all clients | Good — optimistic local + dedup |
+| Dice rolls | `roll` → DO (server-authoritative RNG) → `roll_result` | Good — no client cheating |
+| Player presence | `join`/`player_joined`/`player_left`/`welcome` | Good — username + avatar |
+| DM narration text | `dm_narrate` broadcast | Good — all see same DM text |
+| NPC dialogue text | `dm_npc` broadcast | Good — all see same NPC |
+| Player actions text | `dm_action` broadcast | Good — action descriptions |
+| Doodle pad strokes | `draw` → DO (exclude sender) → others | Partial — strokes sync but no replay on late-join, no per-player attribution |
+| Canvas clear | `clear_canvas` → DO (exclude sender) → others | Good |
+| Keepalive | `ping`/`pong` every 25s | Good |
+
+#### What's NOT synced (the gap — all local-only today)
+
+**Critical (game breaks in multiplayer without these):**
+| Missing sync | Impact |
+|---|---|
+| Units array (HP, AC, conditions, initiative, isCurrentTurn, abilities) | Players see different board states |
+| Combat state (inCombat, combatRound, turnIndex) | Player A in combat, Player B not |
+| Encounter spawn (enemy units added) | Enemies only exist in spawner's state |
+| Damage / healing results | HP changes invisible to other players |
+| Turn advancement (nextTurn calls) | Initiative bar frozen for non-active player |
+| Token positions (mapPositions) | Tokens at different locations per client |
+
+**Important (multiplayer degraded without these):**
+| Missing sync | Impact |
+|---|---|
+| Character data (HP, stats, level, conditions, death saves) | Can't see party member health |
+| Terrain grid changes (DM painting) | Only DM sees map changes |
+| Scene name | Different scene labels per client |
+| Quest tracker | Quests per-client only |
+| Combat log entries | Only action originator sees structured log |
+| Spell slot / ability usage | Can't see caster resources |
+
+**Nice to have:**
+| Missing sync | Impact |
+|---|---|
+| Selected unit highlight | Can't see what others target |
+| NPC conversation state (mode/name/role) | Others don't know NPC context |
+| Active view tab | Cosmetic — sync views across party |
+
+#### Architecture audit findings
+
+**Lobby DO (`src/lobby.ts`, 253 lines):**
+- In-memory only — sessions Map is sole state, no `this.state.storage` usage
+- No DO hibernation API — uses `server.accept()` not `this.state.acceptWebSocket()`
+- 10 message types handled (join, chat, roll, draw, clear_canvas, dm_narrate, dm_npc, dm_action, ping, default)
+- Two broadcast patterns: `broadcast()` (all including sender) vs manual loop excluding sender (draw, clear_canvas)
+- No auth — any player can send dm_narrate/dm_npc/dm_action
+- No rate limiting, no input sanitization, no message size limits
+
+**useWebSocket hook (`src/hooks/useWebSocket.ts`, 146 lines):**
+- Exponential backoff: 1s → 2s → 4s → 8s → 10s cap, retries indefinitely
+- Auto-sends `join` on open, `ping` every 25s
+- Single `onMessage` callback model — no event emitter
+- `send()` silently drops messages when socket not OPEN (no queue)
+- Each reconnect gets a new UUID — brief "left then joined" for other players
+
+**GameContext (`src/contexts/GameContext.tsx`, 1649 lines):**
+- 11 useState hooks, 9 raw setters, 22 action functions, 1 ref
+- Zero WebSocket integration — purely local React state + localStorage
+- 43 context values exposed via useGame()
+- Key combat functions: `damageUnit`, `healUnit`, `rollInitiative`, `nextTurn`, `removeUnit`, `applyCondition`, `removeCondition`, `tickConditions`, `castSpell`, `useClassAbility`
+- `damageUnit` has randomness (concentration save d20 roll) — can't replay deterministically
+- `rollInitiative` has randomness (d20 + dexMod per unit)
+- `tickConditions` has randomness (1d6 burning damage)
+
+**Game.tsx (2304 lines) — mutation call sites:**
+- `damageUnit`: 4 sites (3 in enemy AI useEffect, 1 in Quick Attack onClick)
+- `nextTurn`: 5 sites (4 in enemy AI useEffect, 1 in End Turn onClick)
+- `setUnits`: 11 sites (campaign load, character sync, character select, enemy AI movement, encounter spawn, dash, end combat)
+- `updateCharacter`: 11 sites (unconscious detection, death saves, enemy attacks on unconscious, combat gold)
+- `applyCondition`: 2 sites (enemy ability hit, Dodge action)
+- `tickConditions`: 2 sites (enemy AI turn start)
+- `rollInitiative`: 1 site (Roll Initiative button)
+- `castSpell`: 1 site (spell dropdown)
+- `useClassAbility`: 1 site (class ability button)
+
+**BattleMap.tsx — zero socket awareness:**
+- Takes zero props — all state via `useGame()` context
+- No `useImperativeHandle` — can't be driven by parent
+- `setMapPositions`: 3 call sites (spawn useEffect, drag-drop handleMouseUp, regenerate)
+- `setTerrain`: 4 call sites (initial dungeon gen, paint handler, door toggle, regenerate)
+- Token drag-drop: handleMouseDown (701-762), handleMouseMove (764-777), handleMouseUp (779-847)
+- Terrain painting: paintTerrain (665-698), continuous painting via mouseMove (769-772)
+
+#### Implementation plan
+
+**Design: Result-broadcasting with suppression flag**
+- Each mutation computes its result and broadcasts the outcome (not the intent)
+- A `isRemoteEventRef` flag prevents rebroadcast when applying received events
+- The Lobby DO gets a single `game_event` passthrough relay (exclude sender, like `draw`)
+- Two event granularity levels: `game_sync` (full combat state snapshot) for correctness, `token_move` (single position) for smooth drag UX
+
+**Phase 1: Lobby DO expansion**
+Add `game_event` case to lobby.ts — relay to all OTHER clients (exclude sender). The DO doesn't need to understand game state; it's a dumb pipe. Single case handles all sub-events.
+
+**Phase 2: GameContext return values**
+Modify `rollInitiative`, `nextTurn`, `damageUnit`, `healUnit` to return their results via a closure variable captured inside the `setUnits` functional updater. The updater runs synchronously within `setUnits`, so the result is available immediately after the call returns.
+
+**Phase 3: Game.tsx sync infrastructure**
+- `broadcastGameEvent(event, data)` helper using `sendRef`
+- `isRemoteEventRef` flag to prevent echo loops
+- `handleGameEvent(event, data)` receiver in `handleWsMessage`
+- Ref-based state snapshots (`unitsRef`, `terrainRef`, etc.) for reading latest state in timeouts
+
+**Phase 4: Combat state sync**
+Wire broadcasts at all mutation sites:
+- `encounter_spawn` — after `handleGenerateEncounter` (line 776): full enemies + terrain + mapPositions
+- `initiative_rolled` — after `rollInitiative` (line 1216): full sorted units + combatRound + turnIndex
+- `turn_advance` — after all `nextTurn` calls (lines 452, 540, 558, 663, 1230): updated units
+- `unit_damage` — after `damageUnit` calls (lines 585, 594, 633, 1311): affected unit state
+- `combat_end` — after End Combat (line 1534): cleaned units array
+- `spell_cast` / `ability_use` — after `castSpell` (1394) and `useClassAbility` (1447): affected units
+- `condition_apply` — after `applyCondition` (597, 1481): affected unit
+
+**Phase 5: Map state sync**
+- Add `onTokenMove` and `onTerrainChange` callback props to BattleMap (currently takes zero props)
+- `token_move` event — after drag-drop in BattleMap (line 814): single `{unitId, col, row}`
+- `terrain_update` event — after paint/door toggle: full terrain grid
+- `map_positions` event — after enemy AI movement (line 501): full positions array
+
+**Phase 6: Character + story sync**
+- `character_visible` — broadcast HP, maxHp, AC, level, conditions, class, name after updateCharacter changes
+- `scene_sync` — broadcast sceneName when changed
+- `quest_sync` — broadcast quests array on add/complete/delete
+- `dm_history_sync` — ensure dmHistory array is consistent across clients (text already broadcasts but array rebuild differs)
+
+**Phase 7: DoodlePad improvements**
+- Late-join canvas replay: store stroke history in Lobby DO memory, send to new joiners on `welcome`
+- Per-player attribution: color-code brush by player or show player cursor
+- Canvas state snapshot: on join, existing client sends current canvas as image data
+
+**Phase 8: Session robustness**
+- Reconnect state recovery: on reconnect, request full state snapshot from another client or load from campaign save
+- Host election: designate DM/first-joiner as authoritative for conflict resolution
+- Message queue: buffer sends during disconnect, flush on reconnect
+- Lobby DO hibernation: migrate to `this.state.acceptWebSocket()` API for cost reduction
+- Rate limiting: per-message throttle for game_events (prevent state flood)
+- Auth on DM actions: only designated DM can send dm_narrate/dm_npc/terrain edits
+
+### Previous: Ranged combat + line of sight
+- **Status:** Done (Round 18)
 - `mapUtils.ts`: `chebyshevDistance()`, `hasLineOfSight()` (Bresenham raycasting), `parseRangeFt()` (parses "60ft"->12 cells, "Touch"->1, "Self"->0)
 - `Item` interface: `isRanged?: boolean` and `range?: number` (cells) — ranged weapons use DEX mod, melee uses STR
 - `EnemyAbility` interface: `isRanged?: boolean` and `range?: number` — tagged on Breath Weapon, Mind Blast, Fire Breath, Hellfire Orb
@@ -308,16 +475,43 @@ Round 18 shipped: Ranged Combat + Line of Sight. Full spatial range system — w
 
 ## Backlog
 
-- Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
+### High priority (next after multiplayer sync)
+- Test framework completion — fix remaining 1 AI error test, multiplayer isolated storage warning, Makefile targets, em-dash header warnings
+- AI fallback hardening — `fetchWithTimeout` utility (created at `src/lib/fetchUtils.ts`), `res.ok` checks before `.json()`, `aiRunWithTimeout` wrapper for backend `c.env.AI.run()` calls. 10 backend AI calls and 10 frontend fetch calls need timeout + graceful fallback. Audit complete, utility created, wiring not started.
+- Opportunity Attacks — melee enemies/players get reaction attack when a unit leaves their threat range
+- Condition system fixes — `prone` should use advantage/disadvantage (not flat -2), `blessed` overloaded for 3 mechanics (Bless spell, Dodge action, Phase Shift), AC modifiers from `CONDITION_EFFECTS` defined but never applied in attack calculations
+- Dead/commented-out code cleanup — BattleMap door-closing dead code, `useSoundFX.ts` unused `originalDestGetter` (line 317)
+
+### Medium priority
+- Party management — invite/remove players, assign DM role, character visibility settings
+- Journal/notes system — shared campaign notes, session summaries, DM-only notes
+- Sound FX expansion — mood music, remaining spell effects, enemy abilities, traps, death saves, conditions
+- Export formats — Pathfinder 2e, Forbidden Lands, Savage Worlds
 - Portrait gallery — save/browse generated portraits, remix styles
-- Sound FX — mood music, spell effects, combat sounds
-- Shared doodle pad over WebSocket (broadcast strokes)
-- Discord integration for voice/chat
+- Dynamic difficulty — auto-scale encounters based on party size/level, death count
 - Particle effects for spells and combat
-- Dynamic difficulty control
+
+### Low priority / nice to have
+- Discord integration for voice/chat
 - Modular engine for homebrew rules and mods
 - Accessibility "Low-FX" mode
 - Drop-in/drop-out guest characters
+- Web-based campaign browser (public game listings)
+- Mobile responsive layout improvements
+- Undo/redo system for DM actions
+- Fog of war multiplayer sync (each player sees only from their token's perspective)
+
+## Known Technical Debt
+
+- `damageUnit` has randomness in concentration saves (d20 roll) — broadcasting action+replaying will diverge between clients. Fix: broadcast the resolved result (new HP + concentration status) rather than the action.
+- `rollInitiative` has randomness (d20 per unit) — must broadcast sorted result, not re-roll on each client.
+- `tickConditions` has randomness (1d6 burning damage) — same treatment: broadcast result.
+- BattleMap takes zero props and pulls everything from `useGame()` context — need to add callback props (`onTokenMove`, `onTerrainChange`) or wrap context setters to intercept for broadcasting.
+- React `setUnits` is async (batched) — can't read updated state immediately after calling mutation functions. Workaround: capture result via closure variable inside the functional updater (updater runs synchronously within `setUnits`).
+- `useWebSocket` assigns new UUID on every reconnect — brief "left then joined" flash for other players. No session resume protocol.
+- Lobby DO uses no persistent storage — all state lost on eviction/hibernation. Strokes, player list, etc. are ephemeral.
+- No auth on DM-only actions — any connected player can send `dm_narrate`, `dm_npc`, `dm_action`, terrain edits.
+- `send()` silently drops messages when socket not OPEN — no outbound queue or retry.
 
 ## Completed
 
@@ -359,3 +553,4 @@ Round 18 shipped: Ranged Combat + Line of Sight. Full spatial range system — w
 - Dash mechanics + condition visuals + hidden traps: real Dash doubles movement, condition pips on tokens, 4 trap types, DM trap tools, Perception search
 - Spatial combat engine: map state lifted to context, enemy AI pathfinding + movement, melee adjacency enforcement for players and enemies
 - Ranged combat + line of sight: Bresenham LOS raycasting, weapon/ability/spell range enforcement, DEX for ranged weapons, smart ranged enemy AI, new ranged weapons (Shortbow, Hand Crossbow, Longbow +2, Oathbow)
+- Test framework infrastructure: vitest 3.2.4 + @cloudflare/vitest-pool-workers, dual config (plain + workers pool), 4 test files across 3 categories (player/multiplayer/AI), 90 of 91 tests passing, budget-aware AI_TESTS env var

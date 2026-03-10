@@ -803,15 +803,16 @@ app.get('/api/portrait/:id', async (c) => {
 
 // ── Character persistence (KV-backed, localStorage fallback on client) ──
 
-// Helper: get JWT user ID from Authorization header
+// Helper: get JWT user ID from cookie (uses same COOKIE_NAME and key derivation as auth endpoints)
 async function getUserId(c: { req: { raw: Request }; env: Env }): Promise<string | null> {
   const cookie = c.req.raw.headers.get('Cookie') || '';
-  const match = cookie.match(/auth_token=([^;]+)/);
+  const match = cookie.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
   if (!match) return null;
   try {
-    const secret = new TextEncoder().encode(c.env.JWT_SECRET || 'dev-jwt-secret-do-not-use-in-production');
-    const { payload } = await jwtVerify(match[1], secret);
-    return (payload as Record<string, string>).sub || null;
+    const { payload } = await jwtVerify(match[1], getJwtKey(c.env));
+    // JWT stores Discord user object — extract the id
+    const user = payload.user as Record<string, string> | undefined;
+    return user?.id || (payload as Record<string, string>).sub || null;
   } catch {
     return null;
   }
@@ -833,7 +834,7 @@ app.get('/api/campaign/:roomId', async (c) => {
   }
 });
 
-// PUT /api/campaign/:roomId — save campaign state
+// PUT /api/campaign/:roomId — save campaign state (includes combat state for mid-combat persistence)
 app.put('/api/campaign/:roomId', async (c) => {
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
@@ -845,6 +846,14 @@ app.put('/api/campaign/:roomId', async (c) => {
       sceneName: body.sceneName || '',
       selectedCharacterId: body.selectedCharacterId || null,
       combatLog: body.combatLog || [],
+      // Combat state — persisted so mid-combat refreshes don't lose progress
+      units: body.units || null,
+      inCombat: body.inCombat ?? false,
+      combatRound: body.combatRound ?? 0,
+      turnIndex: body.turnIndex ?? 0,
+      terrain: body.terrain || null,
+      mapPositions: body.mapPositions || null,
+      quests: body.quests || [],
       updatedAt: Date.now(),
       updatedBy: userId,
     };

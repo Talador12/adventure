@@ -196,7 +196,10 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         </div>
         <div className="flex-1 rounded-lg bg-slate-800 border border-slate-700 p-2.5 text-center">
           <div className="text-[10px] text-slate-500 uppercase tracking-wider">Speed</div>
-          <div className="text-xl font-black text-slate-300">30ft</div>
+          <div className="text-xl font-black text-slate-300">{(() => {
+            const playerUnit = units.find((u) => u.characterId === character.id);
+            return `${(playerUnit?.speed ?? 6) * 5}ft`;
+          })()}</div>
         </div>
         <div className="flex-1 rounded-lg bg-slate-800 border border-slate-700 p-2.5 text-center">
           <div className="text-[10px] text-slate-500 uppercase tracking-wider">Initiative</div>

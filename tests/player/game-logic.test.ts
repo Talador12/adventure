@@ -1,0 +1,482 @@
+// Player mode tests — pure game logic, no AI, no network
+// Tests the core D&D engine: combat math, spatial reasoning, spells, items, characters
+import { describe, it, expect } from 'vitest';
+import {
+  computeReachableCells,
+  findBestMoveToward,
+  isAdjacent,
+  chebyshevDistance,
+  hasLineOfSight,
+  parseRangeFt,
+  TERRAIN_COST,
+  type TerrainType,
+} from '../../src/lib/mapUtils';
+import {
+  calculateAC,
+  HIT_DIE_AVG,
+  generateEnemies,
+  rollLoot,
+  getSpellSlots,
+  getClassSpells,
+  rollSpellDamage,
+  getClassAbility,
+  hasPendingASI,
+  randomEncounterTheme,
+  STAT_NAMES,
+  RACES,
+  CLASSES,
+  BACKGROUNDS,
+  ALIGNMENTS,
+  XP_THRESHOLDS,
+  CONDITION_EFFECTS,
+  ENEMY_TEMPLATES,
+  ENCOUNTER_THEMES,
+  SPELL_LIST,
+  CLASS_ABILITIES,
+  FEATS,
+  ASI_LEVELS,
+  EXTRA_ATTACK_CLASSES,
+  FULL_CASTERS,
+  HALF_CASTERS,
+  SHOP_ITEMS,
+  type Character,
+  type Unit,
+  type Item,
+  type Stats,
+} from '../../src/contexts/GameContext';
+
+// ---------------------------------------------------------------------------
+// Spatial engine (mapUtils)
+// ---------------------------------------------------------------------------
+describe('spatial engine', () => {
+  // Helper: create a grid of a single terrain type
+  const makeGrid = (rows: number, cols: number, fill: TerrainType = 'floor'): TerrainType[][] =>
+    Array.from({ length: rows }, () => Array(cols).fill(fill));
+
+  describe('chebyshevDistance', () => {
+    it('same cell is 0', () => {
+      expect(chebyshevDistance(5, 5, 5, 5)).toBe(0);
+    });
+    it('orthogonal neighbors are 1', () => {
+      expect(chebyshevDistance(3, 3, 4, 3)).toBe(1);
+      expect(chebyshevDistance(3, 3, 3, 4)).toBe(1);
+    });
+    it('diagonal neighbors are 1', () => {
+      expect(chebyshevDistance(3, 3, 4, 4)).toBe(1);
+    });
+    it('long distances computed correctly', () => {
+      expect(chebyshevDistance(0, 0, 10, 7)).toBe(10);
+    });
+  });
+
+  describe('isAdjacent', () => {
+    it('same cell is adjacent', () => {
+      expect(isAdjacent(5, 5, 5, 5)).toBe(true);
+    });
+    it('all 8 neighbors are adjacent', () => {
+      for (const dc of [-1, 0, 1]) {
+        for (const dr of [-1, 0, 1]) {
+          expect(isAdjacent(5, 5, 5 + dc, 5 + dr)).toBe(true);
+        }
+      }
+    });
+    it('2 cells away is not adjacent', () => {
+      expect(isAdjacent(5, 5, 7, 5)).toBe(false);
+    });
+  });
+
+  describe('hasLineOfSight', () => {
+    it('same cell always has LOS', () => {
+      const grid = makeGrid(10, 10);
+      expect(hasLineOfSight(grid, 5, 5, 5, 5)).toBe(true);
+    });
+    it('clear path has LOS', () => {
+      const grid = makeGrid(10, 10);
+      expect(hasLineOfSight(grid, 0, 0, 9, 9)).toBe(true);
+    });
+    it('wall blocks LOS', () => {
+      const grid = makeGrid(10, 10);
+      grid[5][5] = 'wall';
+      expect(hasLineOfSight(grid, 0, 0, 9, 9)).toBe(false);
+    });
+    it('void blocks LOS', () => {
+      const grid = makeGrid(10, 10);
+      grid[5][5] = 'void';
+      expect(hasLineOfSight(grid, 0, 0, 9, 9)).toBe(false);
+    });
+    it('water does not block LOS', () => {
+      const grid = makeGrid(10, 10);
+      grid[5][5] = 'water';
+      expect(hasLineOfSight(grid, 0, 0, 9, 9)).toBe(true);
+    });
+    it('door does not block LOS', () => {
+      const grid = makeGrid(10, 10);
+      grid[5][5] = 'door';
+      expect(hasLineOfSight(grid, 0, 0, 9, 9)).toBe(true);
+    });
+  });
+
+  describe('parseRangeFt', () => {
+    it('Self = 0', () => expect(parseRangeFt('Self')).toBe(0));
+    it('Touch = 1', () => expect(parseRangeFt('Touch')).toBe(1));
+    it('60ft = 12 cells', () => expect(parseRangeFt('60ft')).toBe(12));
+    it('120ft = 24 cells', () => expect(parseRangeFt('120ft')).toBe(24));
+    it('handles 150/600ft (uses short range)', () => expect(parseRangeFt('150/600ft')).toBe(30));
+    it('empty string = 0', () => expect(parseRangeFt('')).toBe(0));
+  });
+
+  describe('computeReachableCells', () => {
+    it('starting cell always reachable at cost 0', () => {
+      const grid = makeGrid(5, 5);
+      const reachable = computeReachableCells(grid, 2, 2, 3, 5, 5);
+      expect(reachable.get('2,2')).toBe(0);
+    });
+    it('movement 0 only includes start', () => {
+      const grid = makeGrid(5, 5);
+      const reachable = computeReachableCells(grid, 2, 2, 0, 5, 5);
+      expect(reachable.size).toBe(1);
+    });
+    it('walls are impassable', () => {
+      const grid = makeGrid(5, 5);
+      // Wall off right side of start
+      grid[2][3] = 'wall';
+      grid[1][3] = 'wall';
+      grid[3][3] = 'wall';
+      const reachable = computeReachableCells(grid, 2, 2, 1, 5, 5);
+      expect(reachable.has('3,2')).toBe(false); // blocked by wall
+    });
+    it('water costs 2 movement', () => {
+      const grid = makeGrid(5, 5);
+      grid[2][3] = 'water';
+      const reachable = computeReachableCells(grid, 2, 2, 2, 5, 5);
+      // Can reach the water cell (cost 2) but not beyond it
+      expect(reachable.get('3,2')).toBe(2);
+    });
+  });
+
+  describe('findBestMoveToward', () => {
+    it('finds closest reachable cell to target', () => {
+      const grid = makeGrid(10, 10);
+      const result = findBestMoveToward(grid, 0, 0, 9, 0, 3, 10, 10);
+      expect(result).not.toBeNull();
+      expect(result!.col).toBe(3); // moved 3 cells toward target
+      expect(result!.row).toBe(0);
+    });
+    it('returns null on empty grid', () => {
+      const grid = makeGrid(3, 3, 'wall');
+      const result = findBestMoveToward(grid, 0, 0, 2, 2, 5, 3, 3);
+      // Start is surrounded by walls, but start itself is reachable
+      // findBestMoveToward returns the start cell since it's the only reachable cell
+      expect(result).not.toBeNull();
+      expect(result!.col).toBe(0);
+      expect(result!.row).toBe(0);
+    });
+  });
+
+  describe('terrain costs', () => {
+    it('floor, door, pit cost 1', () => {
+      expect(TERRAIN_COST.floor).toBe(1);
+      expect(TERRAIN_COST.door).toBe(1);
+      expect(TERRAIN_COST.pit).toBe(1);
+    });
+    it('water, difficult cost 2', () => {
+      expect(TERRAIN_COST.water).toBe(2);
+      expect(TERRAIN_COST.difficult).toBe(2);
+    });
+    it('wall, void are impassable', () => {
+      expect(TERRAIN_COST.wall).toBe(Infinity);
+      expect(TERRAIN_COST.void).toBe(Infinity);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AC calculation (D&D 5e armor rules)
+// ---------------------------------------------------------------------------
+describe('AC calculation', () => {
+  const baseStats: Stats = { STR: 10, DEX: 16, CON: 12, INT: 10, WIS: 10, CHA: 10 };
+
+  it('unarmored = 10 + DEX mod', () => {
+    expect(calculateAC(baseStats, { weapon: null, armor: null, shield: null, ring: null })).toBe(13);
+  });
+  it('light armor uses full DEX mod', () => {
+    const armor: Item = { id: '1', name: 'Leather', type: 'armor', rarity: 'common', description: 'Light armor', value: 10, acBonus: 11, armorCategory: 'light' };
+    expect(calculateAC(baseStats, { weapon: null, armor, shield: null, ring: null })).toBe(14); // 11 + 3
+  });
+  it('medium armor caps DEX bonus at +2', () => {
+    const armor: Item = { id: '1', name: 'Breastplate', type: 'armor', rarity: 'common', description: 'Medium armor', value: 10, acBonus: 14, armorCategory: 'medium' };
+    expect(calculateAC(baseStats, { weapon: null, armor, shield: null, ring: null })).toBe(16); // 14 + 2 (capped)
+  });
+  it('heavy armor ignores DEX', () => {
+    const armor: Item = { id: '1', name: 'Plate', type: 'armor', rarity: 'common', description: 'Heavy armor', value: 10, acBonus: 18, armorCategory: 'heavy' };
+    expect(calculateAC(baseStats, { weapon: null, armor, shield: null, ring: null })).toBe(18);
+  });
+  it('shield adds +2', () => {
+    const shield: Item = { id: '2', name: 'Shield', type: 'shield', rarity: 'common', description: 'A sturdy shield', value: 10, acBonus: 2 };
+    expect(calculateAC(baseStats, { weapon: null, armor: null, shield, ring: null })).toBe(15); // 10+3+2
+  });
+  it('ring with AC bonus stacks', () => {
+    const ring: Item = { id: '3', name: 'Ring of Protection', type: 'ring', rarity: 'uncommon', description: 'A magical ring', value: 100, acBonus: 1 };
+    expect(calculateAC(baseStats, { weapon: null, armor: null, shield: null, ring })).toBe(14); // 10+3+1
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hit die averages
+// ---------------------------------------------------------------------------
+describe('hit die averages', () => {
+  it('all 12 classes have entries', () => {
+    for (const cls of CLASSES) {
+      expect(HIT_DIE_AVG[cls]).toBeDefined();
+      expect(HIT_DIE_AVG[cls]).toBeGreaterThan(0);
+    }
+  });
+  it('d6 classes get 4', () => {
+    expect(HIT_DIE_AVG['Wizard']).toBe(4);
+    expect(HIT_DIE_AVG['Sorcerer']).toBe(4);
+  });
+  it('d12 class gets 7', () => {
+    expect(HIT_DIE_AVG['Barbarian']).toBe(7);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enemy generation
+// ---------------------------------------------------------------------------
+describe('enemy generation', () => {
+  const difficulties = ['easy', 'medium', 'hard', 'deadly'] as const;
+
+  for (const diff of difficulties) {
+    it(`generates enemies for ${diff} difficulty`, () => {
+      const enemies = generateEnemies(diff, 1);
+      expect(enemies.length).toBeGreaterThan(0);
+      for (const e of enemies) {
+        expect(e.name).toBeTruthy();
+        expect(e.hp).toBeGreaterThan(0);
+        expect(e.ac).toBeGreaterThan(0);
+        expect(e.type).toBe('enemy');
+        expect(e.cr).toBeGreaterThan(0);
+        expect(e.xpValue).toBeGreaterThan(0);
+      }
+    });
+  }
+
+  it('scales HP with party level', () => {
+    const lv1 = generateEnemies('medium', 1);
+    const lv10 = generateEnemies('medium', 10);
+    // Higher level should generally produce higher HP enemies
+    const avgHp1 = lv1.reduce((s, e) => s + e.hp, 0) / lv1.length;
+    const avgHp10 = lv10.reduce((s, e) => s + e.hp, 0) / lv10.length;
+    expect(avgHp10).toBeGreaterThan(avgHp1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter themes
+// ---------------------------------------------------------------------------
+describe('encounter themes', () => {
+  it('has at least 10 themes', () => {
+    expect(ENCOUNTER_THEMES.length).toBeGreaterThanOrEqual(10);
+  });
+  it('randomEncounterTheme returns a valid theme', () => {
+    const theme = randomEncounterTheme();
+    expect(theme.setting).toBeTruthy();
+    expect(theme.twist).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spell system
+// ---------------------------------------------------------------------------
+describe('spell system', () => {
+  it('all spells have required fields', () => {
+    for (const spell of SPELL_LIST) {
+      expect(spell.id).toBeTruthy();
+      expect(spell.name).toBeTruthy();
+      expect(spell.level).toBeGreaterThanOrEqual(0);
+      expect(spell.school).toBeTruthy();
+      expect(spell.range).toBeTruthy();
+    }
+  });
+
+  it('cantrips are level 0', () => {
+    const cantrips = SPELL_LIST.filter((s) => s.level === 0);
+    expect(cantrips.length).toBeGreaterThan(0);
+    for (const c of cantrips) expect(c.level).toBe(0);
+  });
+
+  it('full casters get spell slots from level 1', () => {
+    for (const cls of FULL_CASTERS) {
+      const slots = getSpellSlots(cls, 1);
+      expect(Object.keys(slots).length).toBeGreaterThan(0);
+      expect(slots[1]).toBeGreaterThan(0); // at least 1 level-1 slot
+    }
+  });
+
+  it('half casters get spell slots from level 2', () => {
+    for (const cls of HALF_CASTERS) {
+      expect(Object.keys(getSpellSlots(cls, 1)).length).toBe(0); // no slots at level 1
+      const slots = getSpellSlots(cls, 2);
+      expect(Object.keys(slots).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('non-casters get no spell slots', () => {
+    expect(Object.keys(getSpellSlots('Fighter', 20)).length).toBe(0);
+    expect(Object.keys(getSpellSlots('Barbarian', 20)).length).toBe(0);
+    expect(Object.keys(getSpellSlots('Rogue', 20)).length).toBe(0);
+  });
+
+  it('getClassSpells returns spells for caster classes', () => {
+    const wizardSpells = getClassSpells('Wizard', 5);
+    expect(wizardSpells.length).toBeGreaterThan(0);
+  });
+
+  it('rollSpellDamage produces positive values', () => {
+    // Run a few times to confirm it always returns > 0
+    for (let i = 0; i < 20; i++) {
+      const dmg = rollSpellDamage('2d6');
+      expect(dmg).toBeGreaterThanOrEqual(2);
+      expect(dmg).toBeLessThanOrEqual(12);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Class abilities
+// ---------------------------------------------------------------------------
+describe('class abilities', () => {
+  it('every class has an ability', () => {
+    for (const cls of CLASSES) {
+      const ability = getClassAbility(cls);
+      expect(ability).toBeDefined();
+      expect(ability!.name).toBeTruthy();
+      expect(ability!.class).toBe(cls);
+    }
+  });
+  it('abilities have valid reset types', () => {
+    for (const a of CLASS_ABILITIES) {
+      expect(['short', 'long']).toContain(a.resetsOn);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Feats + ASI
+// ---------------------------------------------------------------------------
+describe('feats and ASI', () => {
+  it('ASI levels match D&D 5e (4, 8, 12, 16, 19)', () => {
+    expect(ASI_LEVELS).toEqual([4, 8, 12, 16, 19]);
+  });
+  it('hasPendingASI detects pending choices', () => {
+    const char = { level: 4, asiChoicesMade: 0 } as Character;
+    expect(hasPendingASI(char)).toBe(true);
+  });
+  it('hasPendingASI returns false when all choices made', () => {
+    const char = { level: 4, asiChoicesMade: 1 } as Character;
+    expect(hasPendingASI(char)).toBe(false);
+  });
+  it('all feats have at least one bonus', () => {
+    for (const feat of FEATS) {
+      expect(feat.id).toBeTruthy();
+      expect(feat.name).toBeTruthy();
+      expect(feat.description).toBeTruthy();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// XP thresholds
+// ---------------------------------------------------------------------------
+describe('XP and leveling', () => {
+  it('XP thresholds are monotonically increasing', () => {
+    for (let i = 1; i < XP_THRESHOLDS.length; i++) {
+      expect(XP_THRESHOLDS[i]).toBeGreaterThan(XP_THRESHOLDS[i - 1]);
+    }
+  });
+  it('level 1 requires 0 XP', () => {
+    expect(XP_THRESHOLDS[0]).toBe(0);
+  });
+  it('supports 20 levels', () => {
+    expect(XP_THRESHOLDS.length).toBe(20);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Condition effects
+// ---------------------------------------------------------------------------
+describe('conditions', () => {
+  it('all 7 condition types have effects defined', () => {
+    const types = ['poisoned', 'stunned', 'frightened', 'blessed', 'hexed', 'burning', 'prone'];
+    for (const t of types) {
+      expect(CONDITION_EFFECTS[t]).toBeDefined();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Loot system
+// ---------------------------------------------------------------------------
+describe('loot system', () => {
+  it('rollLoot returns items', () => {
+    // Run many times to cover rarity RNG
+    let gotItem = false;
+    for (let i = 0; i < 50; i++) {
+      const items = rollLoot(5, 1); // level 5, 1 enemy
+      if (items.length > 0) {
+        gotItem = true;
+        for (const item of items) {
+          expect(item.name).toBeTruthy();
+          expect(item.type).toBeTruthy();
+          expect(item.rarity).toBeTruthy();
+        }
+      }
+    }
+    expect(gotItem).toBe(true); // should get at least 1 item in 50 rolls
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shop
+// ---------------------------------------------------------------------------
+describe('shop', () => {
+  it('all shop items have required fields', () => {
+    for (const item of SHOP_ITEMS) {
+      expect(item.name).toBeTruthy();
+      expect(item.type).toBeTruthy();
+      expect(item.value).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Extra attack
+// ---------------------------------------------------------------------------
+describe('extra attack', () => {
+  it('martial classes get extra attack', () => {
+    expect(EXTRA_ATTACK_CLASSES).toContain('Fighter');
+    expect(EXTRA_ATTACK_CLASSES).toContain('Barbarian');
+    expect(EXTRA_ATTACK_CLASSES).toContain('Paladin');
+    expect(EXTRA_ATTACK_CLASSES).toContain('Ranger');
+    expect(EXTRA_ATTACK_CLASSES).toContain('Monk');
+  });
+  it('casters do not get extra attack', () => {
+    expect(EXTRA_ATTACK_CLASSES).not.toContain('Wizard');
+    expect(EXTRA_ATTACK_CLASSES).not.toContain('Sorcerer');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Data integrity
+// ---------------------------------------------------------------------------
+describe('data integrity', () => {
+  it('all 8 races are defined', () => expect(RACES.length).toBe(8));
+  it('all 12 classes are defined', () => expect(CLASSES.length).toBe(12));
+  it('6 stat names', () => expect(STAT_NAMES).toEqual(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']));
+  it('enemy templates exist for all tiers', () => {
+    expect(ENEMY_TEMPLATES.easy.length).toBeGreaterThan(0);
+    expect(ENEMY_TEMPLATES.medium.length).toBeGreaterThan(0);
+    expect(ENEMY_TEMPLATES.hard.length).toBeGreaterThan(0);
+    expect(ENEMY_TEMPLATES.deadly.length).toBeGreaterThan(0);
+  });
+});

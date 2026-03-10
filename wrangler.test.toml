@@ -1,0 +1,27 @@
+# Test-only wrangler config — Miniflare simulates bindings locally, no real IDs needed
+# AI binding intentionally omitted: tests inject mock AI or set AI=undefined directly.
+# This avoids wrangler requiring remote proxy login for Workers AI.
+name = "adventure-test"
+main = "_worker.ts"
+compatibility_date = "2024-01-01"
+
+[durable_objects]
+bindings = [
+  { name = "LOBBY", class_name = "Lobby" }
+]
+
+[[kv_namespaces]]
+binding = "PORTRAITS"
+id = "portraits-test"
+
+[[kv_namespaces]]
+binding = "CHARACTERS"
+id = "characters-test"
+
+[[kv_namespaces]]
+binding = "CAMPAIGNS"
+id = "campaigns-test"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["Lobby"]
