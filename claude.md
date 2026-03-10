@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 10 shipped: class abilities + saving throws. Every class now has a unique combat ability. Next: multiplayer map sync, encounter variety, or journal/notes system.
+Round 11 shipped: encounter variety, themes, combat log. Encounters now have 16 enemy templates, 12 environment themes, and a proper combat log panel. Next: multiplayer map sync, journal/notes, or character progression depth.
 
 ## Working Items
 
@@ -177,6 +177,15 @@ Round 10 shipped: class abilities + saving throws. Every class now has a unique 
   - On fail: full damage + condition applied as before
   - Casting stat mapped per class (INT for Wizard, CHA for Sorcerer/Bard/Warlock/Paladin, WIS for Cleric/Druid/Ranger)
 
+### Encounter variety + themes + combat log
+- **Status:** Done
+- Enemy templates expanded from 8 to 16: added Stirge/Crawling Claw/Twig Blight, Cultist/Tribal Warrior/Thug (easy), Fire Beetle/Giant Spider/Vine Blight, Specter/Wight/Animated Armor (medium), Hell Hound/Phase Spider/Displacer Beast, Ettin/Flesh Golem/Gelatinous Cube (hard), Shambling Mound/Elemental/Chimera, Death Knight/Oni/Night Hag (deadly)
+- New abilities across templates: Pack Tactics, Venomous Bite, Necrotic Touch, Fire Breath, Phase Shift, Double Strike, Stunning Slam, Engulf, Lightning Absorption, Hellfire Orb, Soul Rend, Dark Command
+- 12 encounter themes with setting + twist: ravine fog, collapsed watchtower, moonlit dead forest, flooded crypt, merchant caravan, stone bridge, burning village, bioluminescent cave, defiled shrine, wrecked ship, forgotten arena, frozen lake
+- `randomEncounterTheme()` used in encounter generation — theme passed to AI narration context, used as fallback flavor text when AI unavailable
+- Combat log panel: togglable during combat, color-coded entries (hits/orange, misses/grey, deaths/red, conditions/purple), entry count badge, max-h-40 scrollable
+- `showCombatLog` state for toggle
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -222,3 +231,4 @@ Round 10 shipped: class abilities + saving throws. Every class now has a unique 
 - Combat depth: enemy stat blocks with abilities/conditions, smart AI targeting, weapon-based player attacks, CR-based rewards
 - Combat actions + condition spells + quest tracker: Dodge/Dash actions, 4 condition spells, collapsible quest panel, long rest clears unit conditions
 - Class abilities + saving throws: 12 unique class abilities, spell save DC system, half damage on save, per-class color theming
+- Encounter variety + themes + combat log: 16 enemy templates, 12 encounter themes, togglable color-coded combat log panel

@@ -6,7 +6,7 @@ import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme } from '../contexts/GameContext';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, isMuted, toggleMute } from '../hooks/useSoundFX';
 
@@ -52,6 +52,7 @@ export default function Game() {
   const [actionInput, setActionInput] = useState('');
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [combatLog, setCombatLog] = useState<string[]>([]);
+  const [showCombatLog, setShowCombatLog] = useState(false);
   const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop'>('narration');
   const [shopCategory, setShopCategory] = useState<string>('Weapons');
   const [shopMessage, setShopMessage] = useState<string | null>(null);
@@ -562,6 +563,7 @@ export default function Game() {
     try {
       // Generate enemies from templates (stat blocks, abilities, CR-based rewards)
       const enemyUnits = generateEnemies(encounterDifficulty, selectedCharacter.level);
+      const theme = randomEncounterTheme();
 
       // Try to get AI narration for the encounter
       let description = '';
@@ -574,15 +576,18 @@ export default function Game() {
             partySize: 1,
             difficulty: encounterDifficulty,
             context: dmHistory.length > 0 ? dmHistory[dmHistory.length - 1] : 'a dark dungeon corridor',
+            setting: theme.setting,
+            twist: theme.twist,
           }),
         });
         const data = await res.json() as { description?: string; error?: string };
         if (data.description) description = data.description;
       } catch { /* AI narration is optional */ }
 
-      // Announce the encounter
+      // Announce the encounter with theme fallback
       const enemyNames = enemyUnits.map((e) => e.name).join(', ');
-      addDmMessage(description || `${enemyNames} ${enemyUnits.length > 1 ? 'emerge' : 'emerges'} from the shadows!`);
+      const fallback = `In ${theme.setting}, ${enemyNames} ${enemyUnits.length > 1 ? 'appear' : 'appears'}! ${theme.twist}.`;
+      addDmMessage(description || fallback);
       playEncounterStart();
 
       // Add enemy units to existing units (keep player units)
@@ -1607,6 +1612,41 @@ export default function Game() {
                         </div>
                       )}
                     </div>
+
+                    {/* Combat log — togglable during combat */}
+                    {inCombat && combatLog.length > 0 && (
+                      <div className="border-t border-slate-800">
+                        <button
+                          onClick={() => setShowCombatLog(!showCombatLog)}
+                          className="w-full flex items-center gap-2 px-4 py-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-300 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showCombatLog ? 'rotate-90' : ''}`}><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
+                          Combat Log
+                          <span className="px-1 py-0.5 text-[8px] bg-slate-800 rounded text-slate-600">{combatLog.length}</span>
+                        </button>
+                        {showCombatLog && (
+                          <div className="max-h-40 overflow-y-auto px-4 pb-2 space-y-0.5">
+                            {combatLog.map((entry, i) => {
+                              const isHit = entry.includes('hits ') || entry.includes('CRITICAL') || entry.includes('damage');
+                              const isMiss = entry.includes('misses ') || entry.includes('resists');
+                              const isDeath = entry.includes('falls!');
+                              const isCondition = entry.includes('stunned') || entry.includes('poisoned') || entry.includes('frightened') || entry.includes('burning') || entry.includes('hexed') || entry.includes('blessed');
+                              return (
+                                <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                                  isDeath ? 'text-red-400 bg-red-950/30' :
+                                  isHit ? 'text-orange-300 bg-orange-950/20' :
+                                  isMiss ? 'text-slate-500' :
+                                  isCondition ? 'text-purple-300 bg-purple-950/20' :
+                                  'text-slate-400'
+                                }`}>
+                                  {entry}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Player action input */}
                     <div className="p-4 border-t border-slate-800">

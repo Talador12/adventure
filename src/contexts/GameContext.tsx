@@ -85,6 +85,10 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
   easy: [
     { names: ['Goblin', 'Kobold', 'Giant Rat', 'Skeleton'], cr: 0.25, hp: [7, 12], ac: 12, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 2, xpValue: 50, abilities: [] },
     { names: ['Zombie', 'Wolf', 'Bandit'], cr: 0.25, hp: [10, 16], ac: 11, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 0, xpValue: 50, abilities: [] },
+    { names: ['Stirge', 'Crawling Claw', 'Twig Blight'], cr: 0.25, hp: [5, 9], ac: 13, attackBonus: 4, damageDie: '1d4', damageBonus: 2, dexMod: 3, xpValue: 50, abilities: [] },
+    { names: ['Cultist', 'Tribal Warrior', 'Thug'], cr: 0.5, hp: [12, 18], ac: 12, attackBonus: 3, damageDie: '1d8', damageBonus: 1, dexMod: 1, xpValue: 100, abilities: [
+      { name: 'Pack Tactics', type: 'attack', damageDie: '1d8', attackBonus: 4, cooldown: 2, description: 'Coordinates with allies for a precise strike.' },
+    ]},
   ],
   medium: [
     { names: ['Orc', 'Gnoll', 'Bugbear', 'Hobgoblin'], cr: 1, hp: [15, 25], ac: 13, attackBonus: 5, damageDie: '1d10', damageBonus: 3, dexMod: 1, xpValue: 200, abilities: [
@@ -92,6 +96,12 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
     ]},
     { names: ['Dire Wolf', 'Ghoul', 'Shadow'], cr: 1, hp: [18, 28], ac: 14, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 2, xpValue: 200, abilities: [
       { name: 'Paralyzing Touch', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'On hit, the target is stunned until the end of its next turn.' },
+    ]},
+    { names: ['Fire Beetle', 'Giant Spider', 'Vine Blight'], cr: 1, hp: [14, 22], ac: 13, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 1, xpValue: 200, abilities: [
+      { name: 'Venomous Bite', type: 'condition', condition: 'poisoned', conditionDuration: 2, cooldown: 3, description: 'Injects venom that saps strength and focus.' },
+    ]},
+    { names: ['Specter', 'Wight', 'Animated Armor'], cr: 1, hp: [20, 30], ac: 15, attackBonus: 4, damageDie: '1d8', damageBonus: 3, dexMod: 2, xpValue: 200, abilities: [
+      { name: 'Necrotic Touch', type: 'attack', damageDie: '2d6', attackBonus: 4, condition: 'hexed', conditionDuration: 1, cooldown: 3, description: 'Drains the warmth from living flesh.' },
     ]},
   ],
   hard: [
@@ -101,6 +111,14 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
     ]},
     { names: ['Wraith', 'Basilisk', 'Manticore'], cr: 3, hp: [35, 55], ac: 15, attackBonus: 6, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [
       { name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' },
+    ]},
+    { names: ['Hell Hound', 'Phase Spider', 'Displacer Beast'], cr: 3, hp: [32, 48], ac: 14, attackBonus: 5, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [
+      { name: 'Fire Breath', type: 'aoe', damageDie: '3d6', cooldown: 4, description: 'Exhales a cone of searing flame.' },
+      { name: 'Phase Shift', type: 'condition', condition: 'blessed', conditionDuration: 1, cooldown: 4, description: 'Blinks between planes, becoming harder to hit.' },
+    ]},
+    { names: ['Ettin', 'Flesh Golem', 'Gelatinous Cube'], cr: 2, hp: [40, 60], ac: 13, attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: -1, xpValue: 450, abilities: [
+      { name: 'Double Strike', type: 'attack', damageDie: '2d10', attackBonus: 7, cooldown: 2, description: 'Two heads swing in unison — or the mass engulfs its prey.' },
+      { name: 'Stunning Slam', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'A blow so heavy it rattles your skull.' },
     ]},
   ],
   deadly: [
@@ -113,8 +131,37 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
       { name: 'Mind Blast', type: 'aoe', damageDie: '4d8', cooldown: 5, description: 'A cone of psychic energy stuns all who fail their save.' },
       { name: 'Psychic Grasp', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 3, description: 'Seizes the mind of a target, paralyzing them.' },
     ]},
+    { names: ['Shambling Mound', 'Elemental', 'Chimera'], cr: 4, hp: [55, 80], ac: 15, attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: 1, xpValue: 1100, abilities: [
+      { name: 'Engulf', type: 'attack', damageDie: '3d8', attackBonus: 7, condition: 'prone', conditionDuration: 1, cooldown: 3, description: 'Wraps around a target, crushing and smothering.' },
+      { name: 'Lightning Absorption', type: 'heal', cooldown: 5, description: 'Absorbs elemental energy to regenerate.' },
+    ]},
+    { names: ['Death Knight', 'Oni', 'Night Hag'], cr: 5, hp: [65, 95], ac: 18, attackBonus: 9, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800, abilities: [
+      { name: 'Hellfire Orb', type: 'aoe', damageDie: '5d8', cooldown: 5, description: 'Hurls a sphere of searing hellfire that detonates on impact.' },
+      { name: 'Soul Rend', type: 'attack', damageDie: '3d10', attackBonus: 9, condition: 'hexed', conditionDuration: 3, cooldown: 4, description: 'Tears at the soul, leaving the target cursed and weakened.' },
+      { name: 'Dark Command', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 4, description: 'Issues a command laced with dark power. Obey or tremble.' },
+    ]},
   ],
 };
+
+// Encounter themes — random flavor for AI narration
+export const ENCOUNTER_THEMES: { setting: string; twist: string }[] = [
+  { setting: 'a narrow ravine choked with fog', twist: 'The ground is slick with ice — footing is treacherous' },
+  { setting: 'the ruins of a collapsed watchtower', twist: 'Rubble shifts underfoot, and something glints in the debris' },
+  { setting: 'a moonlit clearing in a dead forest', twist: 'The trees whisper warnings that only the druid can hear' },
+  { setting: 'a flooded crypt reeking of decay', twist: 'The water hides something that moves beneath the surface' },
+  { setting: 'a merchant caravan under siege', twist: 'The merchants are not what they seem' },
+  { setting: 'an ancient stone bridge over a chasm', twist: 'The bridge groans — it will not hold forever' },
+  { setting: 'a burning village, smoke blotting out the sky', twist: 'Survivors are trapped in the chapel' },
+  { setting: 'a dark cavern lit by bioluminescent fungi', twist: 'The spores cause hallucinations if inhaled too deeply' },
+  { setting: 'a crossroads shrine defiled by dark magic', twist: 'The shrine pulses with residual power that could be harnessed' },
+  { setting: 'the deck of a wrecked ship half-buried in sand', twist: 'The cargo hold still has something alive in it' },
+  { setting: 'an overgrown arena from a forgotten civilization', twist: 'Spectral crowds cheer from the crumbling stands' },
+  { setting: 'a frozen lake with something moving beneath the ice', twist: 'Cracks spread with every heavy impact' },
+];
+
+export function randomEncounterTheme(): { setting: string; twist: string } {
+  return ENCOUNTER_THEMES[Math.floor(Math.random() * ENCOUNTER_THEMES.length)];
+}
 
 // Generate enemy units from templates based on difficulty and party level
 export function generateEnemies(difficulty: string, partyLevel: number, count?: number): Unit[] {
