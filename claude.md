@@ -11,14 +11,18 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Character creation complete. Next: character persistence, multiplayer identity, and AI DM.
+Character management shipped (edit mode, KV persistence, server sync). Next: multiplayer identity and AI DM.
 
 ## Working Items
 
 ### Character management (save/load)
-- **Status:** Todo
-- Save characters to KV/R2, character list page, selection screen
-- Required before characters can persist across sessions
+- **Status:** Done
+- Edit mode at `/characters/:id/edit` — pre-fills all fields, updates in place
+- KV-backed server persistence with localStorage fallback
+- API: `GET /api/characters`, `PUT /api/characters`, `DELETE /api/characters/:charId`
+- Server sync: loads from server on mount (merges), saves on every change (fire-and-forget)
+- Edit button + clickable name on Home page character cards
+- KV namespaces: `CHARACTERS` binding in dev/staging/production (IDs need `wrangler kv namespace create`)
 
 ### Wire Discord profile data into WebSocket
 - **Status:** Todo
@@ -64,4 +68,5 @@ Character creation complete. Next: character persistence, multiplayer identity, 
 - Game page with initiative bar, battle map, fog of war
 - Discord OAuth, campaign create/join, theme toggle
 - Character export: Adventure JSON, Markdown, Foundry VTT, Fantasy Grounds, HTML, D&D Beyond
+- Character edit mode (`/characters/:id/edit`) with KV persistence and server sync
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context

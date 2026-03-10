@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/toast';
 import { useGame, STAT_NAMES, RACES, CLASSES, BACKGROUNDS, ALIGNMENTS, HAIR_STYLES, SCAR_TYPES, FACE_MARKING_TYPES, FACIAL_HAIR_TYPES, DEFAULT_APPEARANCE, type Stats, type Race, type CharacterClass, type StatName, type Background, type Alignment, type Appearance, type HairStyle, type ScarType, type FaceMarkingType, type FacialHairType } from '../contexts/GameContext';
@@ -95,8 +95,11 @@ interface StatRoll {
 
 export default function CharacterCreate() {
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
   const { toast } = useToast();
-  const { addCharacter, currentPlayer } = useGame();
+  const { addCharacter, updateCharacter, characters, currentPlayer } = useGame();
+  const editingCharacter = editId ? characters.find((c) => c.id === editId) : null;
+  const isEditMode = Boolean(editingCharacter);
 
   const [name, setName] = useState('');
   const [race, setRace] = useState<Race>('Human');
@@ -135,6 +138,39 @@ export default function CharacterCreate() {
   // Name translation state
   const [translating, setTranslating] = useState(false);
   const [translation, setTranslation] = useState<{ translated: string; language: string; flag: string; original: string } | null>(null);
+
+  // Edit mode — load existing character into form fields
+  const [editLoaded, setEditLoaded] = useState(false);
+  useEffect(() => {
+    if (!editingCharacter || editLoaded) return;
+    setName(editingCharacter.name);
+    setRace(editingCharacter.race);
+    setCharClass(editingCharacter.class);
+    setBackground(editingCharacter.background);
+    setAlignment(editingCharacter.alignment);
+    setAppearance(editingCharacter.appearance);
+    setPersonalityTraits(editingCharacter.personalityTraits);
+    setIdeals(editingCharacter.ideals);
+    setBonds(editingCharacter.bonds);
+    setFlaws(editingCharacter.flaws);
+    setBackstory(editingCharacter.backstory);
+    if (editingCharacter.portrait) {
+      setPortrait(editingCharacter.portrait);
+      setPortraitMode('upload'); // show the existing portrait in upload tab
+      setPortraitSource('upload');
+    }
+    if (editingCharacter.appearanceDescription) {
+      setAiDescription(editingCharacter.appearanceDescription);
+    }
+    // Reconstruct stat rolls from existing stats (show as already rolled)
+    const rolls: Record<StatName, StatRoll | null> = {} as Record<StatName, StatRoll | null>;
+    for (const stat of STAT_NAMES) {
+      const base = editingCharacter.stats[stat] - (RACE_BONUSES[editingCharacter.race][stat] || 0);
+      rolls[stat] = { rolls: [base, 0, 0, 0], dropped: 0, total: base, animating: false };
+    }
+    setStatRolls(rolls);
+    setEditLoaded(true);
+  }, [editingCharacter, editLoaded]);
 
   // Stat swap state — click one stat, then another, to swap their rolled values
   const [swapSource, setSwapSource] = useState<StatName | null>(null);
@@ -559,7 +595,7 @@ export default function CharacterCreate() {
     }
   }, [buildPreviewCharacter]);
 
-  const handleCreate = () => {
+  const handleSave = () => {
     if (!name.trim()) {
       toast('Give your character a name!', 'warning');
       return;
@@ -573,36 +609,60 @@ export default function CharacterCreate() {
     const conMod = Math.floor((finalStats.CON - 10) / 2);
     const maxHp = hitDie + conMod; // Level 1 HP = max hit die + CON mod
 
-    const character = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      race,
-      class: charClass,
-      level: 1,
-      xp: 0,
-      stats: finalStats,
-      hp: maxHp,
-      maxHp,
-      ac: 10 + Math.floor((finalStats.DEX - 10) / 2), // base AC = 10 + DEX mod
-      deathSaves: { successes: 0, failures: 0 },
-      condition: 'normal' as const,
-      portrait: portrait || undefined, // AI-generated portrait or undefined for default
-      appearance,
-      background,
-      alignment,
-      personalityTraits,
-      ideals,
-      bonds,
-      flaws,
-      backstory,
-      appearanceDescription: (analyzeUpload && aiDescription) || undefined,
-      playerId: currentPlayer.id,
-      gold: 15, // starting gold
-      createdAt: Date.now(),
-    };
-
-    addCharacter(character);
-    toast(`${character.name} the ${race} ${charClass} is ready!`, 'success');
+    if (isEditMode && editingCharacter) {
+      // Edit mode — preserve id, level, xp, gold, deathSaves, condition, createdAt
+      updateCharacter(editingCharacter.id, {
+        name: name.trim(),
+        race,
+        class: charClass,
+        stats: finalStats,
+        hp: Math.min(editingCharacter.hp, maxHp), // don't exceed new max
+        maxHp,
+        ac: 10 + Math.floor((finalStats.DEX - 10) / 2),
+        portrait: portrait || undefined,
+        appearance,
+        background,
+        alignment,
+        personalityTraits,
+        ideals,
+        bonds,
+        flaws,
+        backstory,
+        appearanceDescription: (analyzeUpload && aiDescription) || undefined,
+      });
+      toast(`${name.trim()} updated!`, 'success');
+    } else {
+      // Create mode
+      const character = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        race,
+        class: charClass,
+        level: 1,
+        xp: 0,
+        stats: finalStats,
+        hp: maxHp,
+        maxHp,
+        ac: 10 + Math.floor((finalStats.DEX - 10) / 2),
+        deathSaves: { successes: 0, failures: 0 },
+        condition: 'normal' as const,
+        portrait: portrait || undefined,
+        appearance,
+        background,
+        alignment,
+        personalityTraits,
+        ideals,
+        bonds,
+        flaws,
+        backstory,
+        appearanceDescription: (analyzeUpload && aiDescription) || undefined,
+        playerId: currentPlayer.id,
+        gold: 15,
+        createdAt: Date.now(),
+      };
+      addCharacter(character);
+      toast(`${character.name} the ${race} ${charClass} is ready!`, 'success');
+    }
     navigate('/');
   };
 
@@ -631,7 +691,7 @@ export default function CharacterCreate() {
           <Button variant="ghost" onClick={() => navigate('/')} className="text-amber-700 hover:text-amber-400">
             &larr; Home
           </Button>
-          <h1 className="text-lg font-bold text-[#F38020]">Create Character</h1>
+          <h1 className="text-lg font-bold text-[#F38020]">{isEditMode ? `Edit ${editingCharacter?.name || 'Character'}` : 'Create Character'}</h1>
         </div>
       </header>
 
@@ -1449,11 +1509,11 @@ export default function CharacterCreate() {
           </div>
 
           <button
-            onClick={handleCreate}
+            onClick={handleSave}
             disabled={!name.trim() || !finalStats}
             className="mt-6 w-full py-3 bg-[#F38020] hover:bg-[#e06a10] disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] text-lg"
           >
-            Create Character
+            {isEditMode ? 'Save Changes' : 'Create Character'}
           </button>
 
           {/* Export button */}

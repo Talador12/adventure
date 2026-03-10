@@ -215,10 +215,17 @@ export default function Home() {
                           {c.name.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">{c.name}</div>
+                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => navigate(`/characters/${c.id}/edit`)}>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white truncate hover:text-[#F38020] transition-colors">{c.name}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">Lv{c.level} {c.race} {c.class}</div>
                       </div>
+                      <button
+                        onClick={() => navigate(`/characters/${c.id}/edit`)}
+                        className="text-xs text-amber-500 hover:text-amber-300 ml-1 shrink-0"
+                        title="Edit character"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => { removeCharacter(c.id); toast(`${c.name} deleted`, 'info'); }}
                         className="text-xs text-red-400 hover:text-red-300 ml-1 shrink-0"

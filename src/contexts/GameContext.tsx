@@ -1,6 +1,6 @@
 // GameContext — shared state for players, units, dice rolls, characters, and their associations.
 // Characters are persisted to localStorage so they survive page refreshes.
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 const CHARACTERS_STORAGE_KEY = 'adventure_characters';
 
@@ -229,14 +229,44 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [combatRound, setCombatRound] = useState(0);
   const [turnIndex, setTurnIndex] = useState(0);
 
-  // Persist characters to localStorage on change
+  // Persist characters to localStorage + server sync on change
+  const syncingRef = useRef(false); // prevent save-during-load loops
   useEffect(() => {
     try {
       localStorage.setItem(CHARACTERS_STORAGE_KEY, JSON.stringify(characters));
     } catch {
       // storage full or unavailable — silently fail
     }
+    // Fire-and-forget server sync (don't block UI, don't fail loudly)
+    if (!syncingRef.current && characters.length >= 0) {
+      fetch('/api/characters', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ characters }),
+      }).catch(() => {}); // server unavailable — localStorage is the fallback
+    }
   }, [characters]);
+
+  // Try to load from server on mount (merge: server data fills in any missing characters)
+  useEffect(() => {
+    syncingRef.current = true;
+    fetch('/api/characters')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { characters?: Character[] } | null) => {
+        if (data?.characters?.length) {
+          setCharacters((local) => {
+            const localIds = new Set(local.map((c) => c.id));
+            const merged = [...local];
+            for (const sc of data.characters) {
+              if (!localIds.has(sc.id)) merged.push(sc);
+            }
+            return merged.length > local.length ? merged : local;
+          });
+        }
+      })
+      .catch(() => {}) // server unavailable — use localStorage only
+      .finally(() => { syncingRef.current = false; });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addCharacter = useCallback((c: Character) => {
     setCharacters((prev) => [...prev, c]);

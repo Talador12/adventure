@@ -21,6 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/game" element={<Game />} />
             <Route path="/game/:roomId" element={<Game />} />
             <Route path="/characters/new" element={<CharacterCreate />} />
+            <Route path="/characters/:id/edit" element={<CharacterCreate />} />
           </Routes>
         </GameProvider>
       </ToastProvider>

@@ -22,6 +22,7 @@ interface Env {
   AI?: Ai;
   ASSETS?: { fetch: (req: Request) => Promise<Response> };
   PORTRAITS?: KVNamespace;
+  CHARACTERS?: KVNamespace;
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
   JWT_SECRET?: string;
@@ -722,6 +723,74 @@ app.get('/api/portrait/:id', async (c) => {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Download failed';
     return c.json({ error: msg }, 500);
+  }
+});
+
+// ── Character persistence (KV-backed, localStorage fallback on client) ──
+
+// Helper: get JWT user ID from Authorization header
+async function getUserId(c: { req: { raw: Request }; env: Env }): Promise<string | null> {
+  const cookie = c.req.raw.headers.get('Cookie') || '';
+  const match = cookie.match(/auth_token=([^;]+)/);
+  if (!match) return null;
+  try {
+    const secret = new TextEncoder().encode(c.env.JWT_SECRET || 'dev-jwt-secret-do-not-use-in-production');
+    const { payload } = await jwtVerify(match[1], secret);
+    return (payload as Record<string, string>).sub || null;
+  } catch {
+    return null;
+  }
+}
+
+// GET /api/characters — load all characters for the authenticated user
+app.get('/api/characters', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
+  try {
+    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`);
+    const characters = raw ? JSON.parse(raw) : [];
+    return c.json({ characters });
+  } catch {
+    return c.json({ characters: [] });
+  }
+});
+
+// PUT /api/characters — save all characters for the authenticated user (full replace)
+app.put('/api/characters', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
+  try {
+    const { characters } = await c.req.raw.json() as { characters: unknown[] };
+    if (!Array.isArray(characters)) return c.json({ error: 'characters must be an array' }, 400);
+    // Strip portrait data URLs to save KV space (portraits stored separately in PORTRAITS KV)
+    const lean = characters.map((ch: Record<string, unknown>) => {
+      const { portrait, ...rest } = ch;
+      return { ...rest, hasPortrait: Boolean(portrait) };
+    });
+    await c.env.CHARACTERS.put(`user:${userId}:chars`, JSON.stringify(lean));
+    return c.json({ ok: true, count: lean.length });
+  } catch (e) {
+    return c.json({ error: 'Failed to save characters' }, 500);
+  }
+});
+
+// DELETE /api/characters/:id — delete a single character
+app.delete('/api/characters/:charId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
+  const charId = c.req.param('charId');
+  try {
+    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`);
+    const characters: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+    const filtered = characters.filter((ch) => ch.id !== charId);
+    if (filtered.length === characters.length) return c.json({ error: 'Character not found' }, 404);
+    await c.env.CHARACTERS.put(`user:${userId}:chars`, JSON.stringify(filtered));
+    return c.json({ ok: true });
+  } catch {
+    return c.json({ error: 'Failed to delete character' }, 500);
   }
 });
 

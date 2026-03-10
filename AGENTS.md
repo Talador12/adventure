@@ -87,6 +87,9 @@ Server broadcasts:
 | POST | `/api/character/suggest-personality` | AI personality group (traits/ideals/bonds/flaws) |
 | POST | `/api/backstory/generate` | AI backstory generation |
 | POST | `/api/name/translate` | Fantasy name translation |
+| GET | `/api/characters` | Load user's characters from KV (requires auth) |
+| PUT | `/api/characters` | Save user's characters to KV (full replace) |
+| DELETE | `/api/characters/:charId` | Delete a single character from KV |
 
 ## Secrets
 
