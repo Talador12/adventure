@@ -6,7 +6,7 @@ import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType } from '../contexts/GameContext';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, isMuted, toggleMute } from '../hooks/useSoundFX';
 
@@ -25,6 +25,7 @@ export default function Game() {
     inCombat, setInCombat, rollInitiative, nextTurn, combatRound,
     damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
     addItem, useItem, buyItem, sellItem, castSpell, restoreSpellSlots,
+    applyCondition, removeCondition, tickConditions,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -360,27 +361,47 @@ export default function Game() {
     }
   }, [selectedCharacter, updateCharacter, addDmMessage]);
 
-  // Auto-execute enemy turns: when an enemy unit becomes the active turn, auto-attack a player
+  // Auto-execute enemy turns: stat-block-driven AI with abilities, conditions, and smart targeting
   useEffect(() => {
     if (!inCombat) return;
     const currentUnit = units.find((u) => u.isCurrentTurn);
     if (!currentUnit || currentUnit.type !== 'enemy' || currentUnit.hp <= 0) return;
 
-    // Find a living player to attack
+    // Stunned enemies skip their turn
+    if (currentUnit.conditions?.some((c) => c.type === 'stunned')) {
+      const timer = setTimeout(() => {
+        addDmMessage(`${currentUnit.name} is stunned and cannot act!`);
+        // Tick conditions before passing
+        const msgs = tickConditions(currentUnit.id);
+        msgs.forEach((m) => addDmMessage(m));
+        setTimeout(() => { nextTurn(); playTurnChange(); }, 400);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+
     const playerTargets = units.filter((u) => u.type === 'player' && u.hp > 0);
     if (playerTargets.length === 0) return;
 
     const timer = setTimeout(() => {
-      const target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
+      // Tick conditions at start of turn (burning damage, duration countdown)
+      const condMsgs = tickConditions(currentUnit.id);
+      condMsgs.forEach((m) => addDmMessage(m));
 
-      // Check if target is unconscious — hits auto-fail death saves (crit = 2 failures)
+      // Smart target selection: prefer low-HP targets, 30% chance to target lowest
+      let target: Unit;
+      if (Math.random() < 0.3) {
+        target = [...playerTargets].sort((a, b) => a.hp - b.hp)[0];
+      } else {
+        target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
+      }
+
+      // Check unconscious target — auto-crit for death saves
       const targetChar = target.characterId ? characters.find((c) => c.id === target.characterId) : null;
       if (targetChar && targetChar.condition === 'unconscious') {
-        // Melee attack on unconscious creature auto-hits and is a crit
         playCombatHit();
         playCritical();
         const ds = { ...targetChar.deathSaves };
-        ds.failures = Math.min(3, ds.failures + 2); // crit = 2 death save failures
+        ds.failures = Math.min(3, ds.failures + 2);
         if (ds.failures >= 3) {
           updateCharacter(targetChar.id, { condition: 'dead', deathSaves: ds });
           addDmMessage(`${currentUnit.name} strikes the fallen ${target.name} — a killing blow! ${target.name} has died.`);
@@ -392,34 +413,99 @@ export default function Game() {
         return;
       }
 
-      const attackRoll = Math.floor(Math.random() * 20) + 1;
-      const attackBonus = 3; // generic enemy attack bonus
-      const totalAttack = attackRoll + attackBonus;
-      const isHit = attackRoll === 20 || totalAttack >= target.ac;
-      const isCrit = attackRoll === 20;
+      // Check if an ability is available and should be used
+      const abilities = currentUnit.abilities || [];
+      const cooldowns = currentUnit.abilityCooldowns || {};
+      const availAbility = abilities.find((a) => (cooldowns[a.name] || 0) <= 0 && Math.random() < 0.6);
 
-      if (isHit) {
-        const baseDmg = Math.floor(Math.random() * 6) + 1; // d6 weapon
-        const dmg = isCrit ? baseDmg * 2 + 2 : baseDmg + 2;
-        const finalDmg = Math.max(1, dmg);
-        damageUnit(target.id, finalDmg);
-        playCombatHit();
-        if (isCrit) playCritical();
-        const logMsg = isCrit
-          ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`
-          : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`;
-        addDmMessage(logMsg);
+      if (availAbility) {
+        // Use ability
+        const atkBonus = availAbility.attackBonus ?? currentUnit.attackBonus ?? 3;
+        let abilMsg = `${currentUnit.name} uses ${availAbility.name}!`;
+
+        if (availAbility.type === 'aoe') {
+          // AoE hits all players
+          const dmg = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 0;
+          playerTargets.forEach((pt) => damageUnit(pt.id, dmg));
+          abilMsg += ` All players take ${dmg} damage!`;
+          playCombatHit();
+        } else if (availAbility.type === 'attack' || availAbility.type === 'condition') {
+          const roll = Math.floor(Math.random() * 20) + 1;
+          const total = roll + atkBonus;
+          const hit = roll === 20 || total >= target.ac;
+          if (hit) {
+            const dmg = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 0;
+            if (dmg > 0) damageUnit(target.id, roll === 20 ? dmg * 2 : dmg);
+            abilMsg += ` Hits ${target.name} for ${roll === 20 ? dmg * 2 : dmg} damage! (${roll}+${atkBonus}=${total} vs AC ${target.ac})`;
+            if (availAbility.condition) {
+              applyCondition(target.id, { type: availAbility.condition, duration: availAbility.conditionDuration || 2, source: currentUnit.name });
+              abilMsg += ` ${target.name} is ${availAbility.condition}!`;
+            }
+            playCombatHit();
+            if (roll === 20) playCritical();
+          } else {
+            abilMsg += ` Misses ${target.name}! (${roll}+${atkBonus}=${total} vs AC ${target.ac})`;
+            playCombatMiss();
+          }
+        } else if (availAbility.type === 'heal') {
+          const heal = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 10;
+          // Heal self or lowest-HP ally
+          const healTarget = currentUnit;
+          setUnits((prev) => prev.map((u) => u.id === healTarget.id ? { ...u, hp: Math.min(u.maxHp, u.hp + heal) } : u));
+          abilMsg += ` Heals for ${heal} HP!`;
+        }
+
+        addDmMessage(abilMsg);
+        // Set cooldown
+        setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, abilityCooldowns: { ...cooldowns, [availAbility.name]: availAbility.cooldown } } : u));
       } else {
-        playCombatMiss();
-        addDmMessage(`${currentUnit.name} misses ${target.name}! (${attackRoll}+${attackBonus}=${totalAttack} vs AC ${target.ac})`);
+        // Basic attack using unit's stat block
+        const atkBonus = currentUnit.attackBonus ?? 3;
+        const dmgBonus = currentUnit.damageBonus ?? 2;
+        const dmgDie = currentUnit.damageDie || '1d6';
+        // Condition modifiers
+        const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
+
+        const attackRoll = Math.floor(Math.random() * 20) + 1;
+        const totalAttack = attackRoll + atkBonus + condAtkMod;
+        const isHit = attackRoll === 20 || totalAttack >= target.ac;
+        const isCrit = attackRoll === 20;
+
+        if (isHit) {
+          const baseDmg = rollSpellDamage(dmgDie);
+          const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + dmgBonus : baseDmg + dmgBonus);
+          damageUnit(target.id, finalDmg);
+          playCombatHit();
+          if (isCrit) playCritical();
+          addDmMessage(isCrit
+            ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${target.ac})`
+            : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${target.ac})`);
+          // Check if target died
+          if (target.hp - finalDmg <= 0) {
+            playEnemyDeath();
+            addDmMessage(`${target.name} falls!`);
+          }
+        } else {
+          playCombatMiss();
+          addDmMessage(`${currentUnit.name} misses ${target.name}! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${target.ac})`);
+        }
       }
 
-      // Auto-advance to next turn after enemy acts
+      // Tick ability cooldowns
+      setUnits((prev) => prev.map((u) => {
+        if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
+        const newCd: Record<string, number> = {};
+        for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
+          if (cd > 0) newCd[name] = cd - 1;
+        }
+        return { ...u, abilityCooldowns: newCd };
+      }));
+
       setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
-    }, 800); // delay before enemy acts for dramatic effect
+    }, 800);
 
     return () => clearTimeout(timer);
-  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn]);
+  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn, tickConditions, applyCondition, setUnits]);
 
   // Begin Adventure — first DM narration
   // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
@@ -457,46 +543,38 @@ export default function Game() {
     }
   }, [actionInput, currentPlayer.id, currentPlayer.username, selectedCharacter, callDmNarrate, callNpcDialogue, npcMode]);
 
-  // Generate encounter — spawn enemy units
+  // Generate encounter — spawn enemy units with stat blocks from templates
   const handleGenerateEncounter = useCallback(async () => {
     if (!selectedCharacter) return;
     setEncounterLoading(true);
     try {
-      const res = await fetch(`${apiBase()}/api/dm/encounter`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyLevel: selectedCharacter.level,
-          partySize: 1,
-          difficulty: encounterDifficulty,
-          context: dmHistory.length > 0 ? dmHistory[dmHistory.length - 1] : 'a dark dungeon corridor',
-        }),
-      });
-      const data = await res.json() as { enemies?: Array<{ name: string; hp: number; maxHp: number; ac: number }>; description?: string; error?: string };
+      // Generate enemies from templates (stat blocks, abilities, CR-based rewards)
+      const enemyUnits = generateEnemies(encounterDifficulty, selectedCharacter.level);
 
-      if (data.enemies && data.description) {
-        // Add DM description
-        addDmMessage(data.description);
-        playEncounterStart();
+      // Try to get AI narration for the encounter
+      let description = '';
+      try {
+        const res = await fetch(`${apiBase()}/api/dm/encounter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partyLevel: selectedCharacter.level,
+            partySize: 1,
+            difficulty: encounterDifficulty,
+            context: dmHistory.length > 0 ? dmHistory[dmHistory.length - 1] : 'a dark dungeon corridor',
+          }),
+        });
+        const data = await res.json() as { description?: string; error?: string };
+        if (data.description) description = data.description;
+      } catch { /* AI narration is optional */ }
 
-        // Create enemy units
-        const enemyUnits: Unit[] = data.enemies.map((e, i) => ({
-          id: `enemy-${crypto.randomUUID().slice(0, 8)}-${i}`,
-          name: e.name,
-          hp: e.hp,
-          maxHp: e.maxHp,
-          ac: e.ac || 12,
-          initiative: -1,
-          isCurrentTurn: false,
-          type: 'enemy' as const,
-          playerId: 'ai-dm',
-        }));
+      // Announce the encounter
+      const enemyNames = enemyUnits.map((e) => e.name).join(', ');
+      addDmMessage(description || `${enemyNames} ${enemyUnits.length > 1 ? 'emerge' : 'emerges'} from the shadows!`);
+      playEncounterStart();
 
-        // Add enemy units to existing units (keep player units)
-        setUnits((prev: Unit[]) => [...prev.filter((u) => u.type === 'player'), ...enemyUnits]);
-      } else {
-        addDmMessage(data.error || 'The shadows stir, but nothing emerges...');
-      }
+      // Add enemy units to existing units (keep player units)
+      setUnits((prev: Unit[]) => [...prev.filter((u) => u.type === 'player'), ...enemyUnits]);
     } catch {
       addDmMessage('*The encounter fades before it can materialize...*');
     } finally {
@@ -952,33 +1030,39 @@ export default function Game() {
                         </button>
                       )}
 
-                      {/* Quick attack — roll d20 vs selected enemy */}
+                      {/* Quick attack — uses equipped weapon stats or STR-based unarmed */}
                       {inCombat && selectedUnitId && (() => {
                         const target = units.find((u) => u.id === selectedUnitId);
                         if (!target || target.type === 'player') return null;
+                        // Use equipped weapon if available
+                        const weapon = selectedCharacter?.equipment?.weapon;
+                        const weaponDie = weapon?.damageDie || '1d4'; // unarmed = 1d4
+                        const weaponAtkBonus = weapon?.attackBonus || 0;
+                        const weaponDmgBonus = weapon?.damageBonus || 0;
+                        const strMod = selectedCharacter ? Math.floor((selectedCharacter.stats.STR - 10) / 2) : 0;
+                        // Player condition modifiers
+                        const playerUnit = selectedCharacter ? units.find((u) => u.characterId === selectedCharacter.id) : null;
+                        const condAtkMod = (playerUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
                         return (
                           <button
                             onClick={() => {
                               const attackRoll = Math.floor(Math.random() * 20) + 1;
-                              const strMod = selectedCharacter ? Math.floor((selectedCharacter.stats.STR - 10) / 2) : 0;
-                              const totalAttack = attackRoll + strMod;
-                              const isHit = totalAttack >= target.ac;
+                              const totalAttack = attackRoll + strMod + weaponAtkBonus + condAtkMod;
+                              const isHit = attackRoll === 20 || totalAttack >= target.ac;
                               const isCrit = attackRoll === 20;
 
-                              if (isCrit || isHit) {
-                                const baseDmg = Math.floor(Math.random() * 8) + 1; // d8 weapon
-                                const dmg = isCrit ? baseDmg * 2 + strMod : baseDmg + strMod;
-                                const finalDmg = Math.max(1, dmg);
+                              if (isHit) {
+                                const baseDmg = rollSpellDamage(weaponDie);
+                                const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + strMod + weaponDmgBonus : baseDmg + strMod + weaponDmgBonus);
                                 damageUnit(target.id, finalDmg);
                                 playCombatHit();
                                 if (isCrit) playCritical();
+                                const atkLabel = `${attackRoll}+${strMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}=${totalAttack}`;
                                 const logMsg = isCrit
-                                  ? `CRITICAL HIT! ${selectedCharacter?.name || 'You'} strikes ${target.name} for ${finalDmg} damage! (rolled ${attackRoll}+${strMod}=${totalAttack} vs AC ${target.ac})`
-                                  : `${selectedCharacter?.name || 'You'} hits ${target.name} for ${finalDmg} damage! (rolled ${attackRoll}+${strMod}=${totalAttack} vs AC ${target.ac})`;
+                                  ? `CRITICAL HIT! ${selectedCharacter?.name || 'You'} strikes ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`
+                                  : `${selectedCharacter?.name || 'You'} hits ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`;
                                 setCombatLog((prev) => [...prev, logMsg]);
                                 addDmMessage(logMsg);
-
-                                // Check if target died
                                 if (target.hp - finalDmg <= 0) {
                                   playEnemyDeath();
                                   const deathMsg = `${target.name} falls!`;
@@ -987,7 +1071,8 @@ export default function Game() {
                                 }
                               } else {
                                 playCombatMiss();
-                                const missMsg = `${selectedCharacter?.name || 'You'} misses ${target.name}! (rolled ${attackRoll}+${strMod}=${totalAttack} vs AC ${target.ac})`;
+                                const atkLabel = `${attackRoll}+${strMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}=${totalAttack}`;
+                                const missMsg = `${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${target.ac})`;
                                 setCombatLog((prev) => [...prev, missMsg]);
                                 addDmMessage(missMsg);
                               }
@@ -995,7 +1080,7 @@ export default function Game() {
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.061l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.06-1.061a.75.75 0 10-1.06 1.06l1.06 1.06zM5.404 6.464a.75.75 0 001.06-1.06l-1.06-1.06a.75.75 0 10-1.061 1.06l1.06 1.06z" /></svg>
-                            Attack {target.name}
+                            {weapon ? `Attack (${weapon.name})` : 'Unarmed Strike'}
                           </button>
                         );
                       })()}
@@ -1061,17 +1146,16 @@ export default function Game() {
                       {inCombat && (
                         <button
                           onClick={async () => {
-                            // Count defeated enemies for XP/gold rewards
+                            // Count defeated enemies — use CR-based XP from unit stat block
                             const deadEnemies = units.filter((u) => u.type === 'enemy' && u.hp <= 0);
-                            const xpPerEnemy = 50 * (selectedCharacter?.level || 1);
-                            const totalXP = deadEnemies.length * xpPerEnemy;
-                            const goldReward = deadEnemies.length * (10 + Math.floor(Math.random() * 20));
+                            const totalXP = deadEnemies.reduce((sum, e) => sum + (e.xpValue || 50 * (selectedCharacter?.level || 1)), 0);
+                            const goldReward = deadEnemies.reduce((sum, e) => sum + Math.floor((e.cr || 0.25) * 30) + Math.floor(Math.random() * 20), 0);
 
                             setInCombat(false);
-                            // Remove dead enemies, reset initiative
+                            // Remove dead enemies, reset initiative and conditions
                             setUnits((prev: Unit[]) => prev
                               .filter((u) => u.type === 'player' || u.hp > 0)
-                              .map((u) => ({ ...u, isCurrentTurn: false, initiative: -1 })));
+                              .map((u) => ({ ...u, isCurrentTurn: false, initiative: -1, conditions: [] })));
 
                             // Award XP and gold to the selected character
                             if (selectedCharacter && totalXP > 0) {

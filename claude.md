@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Shop system + spell casting shipped. Next: multiplayer map sync, condition effects, or encounter variety.
+Combat depth overhaul shipped (enemy stat blocks, conditions, smart AI, weapon-based attacks). Next: multiplayer map sync, status effect spells, or quest/objective system.
 
 ## Working Items
 
@@ -119,6 +119,25 @@ Shop system + spell casting shipped. Next: multiplayer map sync, condition effec
 - CharacterSheet spellbook: spell slot pips (filled/empty), cantrip list, leveled spell list with dim-when-exhausted
 - Character creation includes spellSlotsUsed: {} initialization
 
+### Combat depth overhaul
+- **Status:** Done
+- Unit type extended: attackBonus, damageDie, damageBonus, dexMod, abilities, abilityCooldowns, conditions, cr, xpValue
+- 7 condition types: poisoned (-2 atk/saves), stunned (skip turn, -2 AC), frightened (-2 atk), blessed (+2 atk/saves), hexed (-2 saves), burning (1d6/turn), prone (-2 atk)
+- Condition system: applyCondition, removeCondition, tickConditions (duration tracking, burning damage, auto-expire messages)
+- Enemy stat templates by difficulty: easy (goblins CR 0.25), medium (orcs CR 1), hard (ogres CR 2-3), deadly (dragons CR 4-5)
+- 8 enemy abilities: Aggressive Charge, Paralyzing Touch, Crushing Blow, Frightening Roar, Life Drain, Breath Weapon, Multiattack, Mind Blast, Psychic Grasp
+- Enemy AI rewrite: uses real stat block for attacks, 60% chance to use available abilities, cooldown tracking, condition-modified attack rolls, AoE damage, condition application on hit
+- Smart targeting: 30% chance to focus lowest-HP player
+- Stunned enemies skip their turn with message
+- Player Quick Attack uses equipped weapon stats (damageDie, attackBonus, damageBonus) or 1d4 unarmed
+- Player attack button label shows weapon name
+- CR-based XP/gold rewards on End Combat (from unit.xpValue and unit.cr)
+- Condition badges in InitiativeBar (colored, with remaining duration)
+- End Combat clears all conditions
+- Enemies get dexMod for initiative rolls (not just flat d20)
+- HP scales with party level (15% per level above 1)
+- generateEnemies() function for client-side encounter creation (AI narration optional)
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -161,3 +180,4 @@ Shop system + spell casting shipped. Next: multiplayer map sync, condition effec
 - Inventory/loot system: item types, equipment slots, loot tables, combat drops, CharacterSheet UI, potion use, AC recalc
 - Shop system: curated merchant inventory, buy/sell with gold, shop tab in game view, category filters
 - Spell system: 25 spells, spell slots (full/half caster tables), cast in combat, spellbook in CharacterSheet
+- Combat depth: enemy stat blocks with abilities/conditions, smart AI targeting, weapon-based player attacks, CR-based rewards

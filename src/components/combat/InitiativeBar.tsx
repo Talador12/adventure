@@ -1,4 +1,4 @@
-import { useGame, type Unit } from '../../contexts/GameContext';
+import { useGame, type Unit, CONDITION_EFFECTS } from '../../contexts/GameContext';
 
 interface InitiativeBarProps {
   entries: Unit[];
@@ -77,6 +77,17 @@ export default function InitiativeBar({ entries }: InitiativeBarProps) {
               <span className={`text-[10px] font-mono ${isLow ? 'text-red-400' : isMid ? 'text-yellow-400' : 'text-slate-500'}`}>
                 {entry.hp}/{maxHp}
               </span>
+
+              {/* Condition badges */}
+              {entry.conditions && entry.conditions.length > 0 && (
+                <div className="flex flex-wrap gap-0.5 mt-0.5">
+                  {entry.conditions.map((c, i) => (
+                    <span key={i} className={`text-[7px] font-bold uppercase px-1 py-0 rounded ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'} bg-slate-900/80`} title={CONDITION_EFFECTS[c.type]?.description}>
+                      {c.type}{c.duration > 0 ? ` ${c.duration}` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
             </button>
           );
         })}

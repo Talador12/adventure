@@ -13,6 +13,37 @@ export interface Player {
   controllerType: ControllerType;
 }
 
+// --- Condition system ---
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone';
+export interface ActiveCondition {
+  type: ConditionType;
+  duration: number; // rounds remaining, -1 = until cured
+  source?: string;  // who/what applied it
+}
+
+// Condition effects on combat rolls
+export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod: number; saveMod: number; description: string; color: string }> = {
+  poisoned:   { attackMod: -2, acMod: 0, saveMod: -2, description: 'Disadvantage on attacks and saves', color: 'text-green-400' },
+  stunned:    { attackMod: -99, acMod: -2, saveMod: -99, description: 'Cannot act, auto-fail STR/DEX saves', color: 'text-yellow-300' },
+  frightened: { attackMod: -2, acMod: 0, saveMod: 0, description: 'Disadvantage on attacks while source is visible', color: 'text-purple-400' },
+  blessed:    { attackMod: 2, acMod: 0, saveMod: 2, description: '+1d4 to attacks and saves', color: 'text-sky-400' },
+  hexed:      { attackMod: 0, acMod: 0, saveMod: -2, description: 'Disadvantage on ability checks', color: 'text-fuchsia-400' },
+  burning:    { attackMod: 0, acMod: 0, saveMod: 0, description: 'Takes 1d6 fire damage at start of turn', color: 'text-orange-400' },
+  prone:      { attackMod: -2, acMod: 0, saveMod: 0, description: 'Melee attacks have advantage, ranged have disadvantage', color: 'text-amber-600' },
+};
+
+// --- Enemy ability system ---
+export interface EnemyAbility {
+  name: string;
+  type: 'attack' | 'aoe' | 'condition' | 'heal';
+  damageDie?: string;       // e.g. "2d6"
+  attackBonus?: number;
+  condition?: ConditionType; // applies this condition on hit
+  conditionDuration?: number;
+  cooldown: number;         // turns between uses, 0 = every turn
+  description: string;
+}
+
 export interface Unit {
   id: string;
   name: string;
@@ -24,6 +55,101 @@ export interface Unit {
   type: 'player' | 'enemy' | 'npc';
   playerId: string; // which Player controls this unit
   characterId?: string; // link to a Character if this is a PC
+  // Enemy combat stats (populated from stat templates)
+  attackBonus?: number;
+  damageDie?: string;     // e.g. "1d8"
+  damageBonus?: number;
+  dexMod?: number;        // for initiative
+  abilities?: EnemyAbility[];
+  abilityCooldowns?: Record<string, number>; // ability name -> turns until available
+  conditions?: ActiveCondition[];
+  cr?: number; // challenge rating for XP calculation
+  xpValue?: number; // XP reward on kill
+}
+
+// --- Enemy stat templates by CR tier ---
+export interface EnemyTemplate {
+  names: string[];
+  cr: number;
+  hp: [number, number]; // [min, max]
+  ac: number;
+  attackBonus: number;
+  damageDie: string;
+  damageBonus: number;
+  dexMod: number;
+  abilities: EnemyAbility[];
+  xpValue: number;
+}
+
+export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
+  easy: [
+    { names: ['Goblin', 'Kobold', 'Giant Rat', 'Skeleton'], cr: 0.25, hp: [7, 12], ac: 12, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 2, xpValue: 50, abilities: [] },
+    { names: ['Zombie', 'Wolf', 'Bandit'], cr: 0.25, hp: [10, 16], ac: 11, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 0, xpValue: 50, abilities: [] },
+  ],
+  medium: [
+    { names: ['Orc', 'Gnoll', 'Bugbear', 'Hobgoblin'], cr: 1, hp: [15, 25], ac: 13, attackBonus: 5, damageDie: '1d10', damageBonus: 3, dexMod: 1, xpValue: 200, abilities: [
+      { name: 'Aggressive Charge', type: 'attack', damageDie: '2d6', attackBonus: 5, cooldown: 3, description: 'Rushes forward and strikes with extra force.' },
+    ]},
+    { names: ['Dire Wolf', 'Ghoul', 'Shadow'], cr: 1, hp: [18, 28], ac: 14, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 2, xpValue: 200, abilities: [
+      { name: 'Paralyzing Touch', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'On hit, the target is stunned until the end of its next turn.' },
+    ]},
+  ],
+  hard: [
+    { names: ['Ogre', 'Minotaur', 'Owlbear', 'Troll'], cr: 2, hp: [30, 50], ac: 14, attackBonus: 6, damageDie: '2d8', damageBonus: 4, dexMod: 0, xpValue: 450, abilities: [
+      { name: 'Crushing Blow', type: 'attack', damageDie: '3d8', attackBonus: 6, cooldown: 3, description: 'A devastating overhead strike.' },
+      { name: 'Frightening Roar', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 5, description: 'A terrifying bellow that shakes your resolve.' },
+    ]},
+    { names: ['Wraith', 'Basilisk', 'Manticore'], cr: 3, hp: [35, 55], ac: 15, attackBonus: 6, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [
+      { name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' },
+    ]},
+  ],
+  deadly: [
+    { names: ['Young Dragon', 'Beholder Zombie', 'Hydra', 'Lich Apprentice'], cr: 5, hp: [60, 90], ac: 17, attackBonus: 8, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800, abilities: [
+      { name: 'Breath Weapon', type: 'aoe', damageDie: '6d6', cooldown: 4, description: 'A torrent of elemental fury engulfs the area.' },
+      { name: 'Multiattack', type: 'attack', damageDie: '2d8', attackBonus: 8, cooldown: 0, description: 'Strikes twice in rapid succession.' },
+      { name: 'Terrifying Presence', type: 'condition', condition: 'frightened', conditionDuration: 3, cooldown: 6, description: 'An aura of dread forces a WIS save or be frightened.' },
+    ]},
+    { names: ['Mind Flayer', 'Vampire Spawn', 'Flameskull Trio'], cr: 4, hp: [50, 75], ac: 16, attackBonus: 7, damageDie: '2d8', damageBonus: 4, dexMod: 3, xpValue: 1100, abilities: [
+      { name: 'Mind Blast', type: 'aoe', damageDie: '4d8', cooldown: 5, description: 'A cone of psychic energy stuns all who fail their save.' },
+      { name: 'Psychic Grasp', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 3, description: 'Seizes the mind of a target, paralyzing them.' },
+    ]},
+  ],
+};
+
+// Generate enemy units from templates based on difficulty and party level
+export function generateEnemies(difficulty: string, partyLevel: number, count?: number): Unit[] {
+  const templates = ENEMY_TEMPLATES[difficulty] || ENEMY_TEMPLATES.medium;
+  const template = templates[Math.floor(Math.random() * templates.length)];
+  const enemyCount = count || (difficulty === 'easy' ? 2 + Math.floor(Math.random() * 2) : difficulty === 'deadly' ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 3));
+
+  // Scale HP with party level
+  const levelScale = 1 + (partyLevel - 1) * 0.15;
+
+  return Array.from({ length: enemyCount }, (_, i) => {
+    const name = template.names[Math.floor(Math.random() * template.names.length)];
+    const baseHp = template.hp[0] + Math.floor(Math.random() * (template.hp[1] - template.hp[0] + 1));
+    const scaledHp = Math.round(baseHp * levelScale);
+    return {
+      id: `enemy-${crypto.randomUUID().slice(0, 8)}-${i}`,
+      name: enemyCount > 1 && template.names.length <= enemyCount ? `${name} ${String.fromCharCode(65 + i)}` : name,
+      hp: scaledHp,
+      maxHp: scaledHp,
+      ac: template.ac,
+      initiative: -1,
+      isCurrentTurn: false,
+      type: 'enemy' as const,
+      playerId: 'ai-dm',
+      attackBonus: template.attackBonus,
+      damageDie: template.damageDie,
+      damageBonus: template.damageBonus,
+      dexMod: template.dexMod,
+      abilities: template.abilities.map((a) => ({ ...a })),
+      abilityCooldowns: {},
+      conditions: [],
+      cr: template.cr,
+      xpValue: template.xpValue,
+    } satisfies Unit;
+  });
 }
 
 // D&D 5e-inspired stat block
@@ -386,6 +512,11 @@ interface GameContextValue {
   castSpell: (charId: string, spellId: string, targetUnitId?: string) => { success: boolean; message: string };
   restoreSpellSlots: (charId: string) => void;
 
+  // Conditions
+  applyCondition: (unitId: string, condition: ActiveCondition) => void;
+  removeCondition: (unitId: string, conditionType: ConditionType) => void;
+  tickConditions: (unitId: string) => string[]; // returns messages for expired conditions
+
   // Dice roll log (most recent first)
   rolls: DiceRoll[];
   addRoll: (roll: Omit<DiceRoll, 'id' | 'timestamp' | 'isCritical' | 'isFumble'> & { value: number; sides: number }) => DiceRoll;
@@ -435,6 +566,9 @@ const GameContext = createContext<GameContextValue>({
   sellItem: () => ({ success: false, message: '' }),
   castSpell: () => ({ success: false, message: '' }),
   restoreSpellSlots: () => {},
+  applyCondition: () => {},
+  removeCondition: () => {},
+  tickConditions: () => [],
   rolls: [],
   addRoll: () => ({}) as DiceRoll,
   clearRolls: () => {},
@@ -829,6 +963,49 @@ export function GameProvider({ children }: { children: ReactNode }) {
     ));
   }, []);
 
+  // Conditions: apply a condition to a unit
+  const applyCondition = useCallback((unitId: string, condition: ActiveCondition) => {
+    setUnits((prev) => prev.map((u) => {
+      if (u.id !== unitId) return u;
+      const conditions = (u.conditions || []).filter((c) => c.type !== condition.type); // replace existing
+      return { ...u, conditions: [...conditions, condition] };
+    }));
+  }, []);
+
+  // Conditions: remove a specific condition from a unit
+  const removeCondition = useCallback((unitId: string, conditionType: ConditionType) => {
+    setUnits((prev) => prev.map((u) => {
+      if (u.id !== unitId) return u;
+      return { ...u, conditions: (u.conditions || []).filter((c) => c.type !== conditionType) };
+    }));
+  }, []);
+
+  // Conditions: tick durations at start of turn, return messages for expired/triggered conditions
+  const tickConditions = useCallback((unitId: string): string[] => {
+    const messages: string[] = [];
+    setUnits((prev) => prev.map((u) => {
+      if (u.id !== unitId || !u.conditions?.length) return u;
+      const remaining: ActiveCondition[] = [];
+      for (const cond of u.conditions) {
+        // Burning deals damage at start of turn
+        if (cond.type === 'burning') {
+          const burnDmg = Math.floor(Math.random() * 6) + 1;
+          messages.push(`${u.name} takes ${burnDmg} fire damage from burning!`);
+          u = { ...u, hp: Math.max(0, u.hp - burnDmg) };
+        }
+        if (cond.duration === -1) {
+          remaining.push(cond); // permanent until cured
+        } else if (cond.duration > 1) {
+          remaining.push({ ...cond, duration: cond.duration - 1 });
+        } else {
+          messages.push(`${u.name} is no longer ${cond.type}.`);
+        }
+      }
+      return { ...u, conditions: remaining };
+    }));
+    return messages;
+  }, []);
+
   // Combat: remove a unit (dead enemy, etc)
   const removeUnit = useCallback((unitId: string) => {
     setUnits((prev) => prev.filter((u) => u.id !== unitId));
@@ -838,8 +1015,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const rollInitiative = useCallback(() => {
     setUnits((prev) => {
       const withInitiative = prev.map((u) => {
-        // Player characters get DEX mod bonus from linked character
-        let dexMod = 0;
+        // DEX mod from character (players) or unit stat (enemies)
+        let dexMod = u.dexMod || 0;
         if (u.characterId) {
           const char = characters.find((c) => c.id === u.characterId);
           if (char) dexMod = Math.floor((char.stats.DEX - 10) / 2);
@@ -918,6 +1095,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         sellItem,
         castSpell,
         restoreSpellSlots,
+        applyCondition,
+        removeCondition,
+        tickConditions,
         rolls,
         addRoll,
         clearRolls,
