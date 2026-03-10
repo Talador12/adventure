@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Persistent campaigns shipped. Next: map system improvements.
+Combat rewards, rest system, and gameplay polish shipped. Next: map system improvements.
 
 ## Working Items
 
@@ -97,4 +97,7 @@ Persistent campaigns shipped. Next: map system improvements.
 - Discord avatars in chat: ChatPanel renders avatars next to messages, Lobby DO broadcasts avatars
 - DM history persistence: localStorage-backed per room, narration + scene survive page refresh
 - Persistent campaigns: CAMPAIGNS KV, server-synced game state, "Your Campaigns" on Home page
+- Combat rewards: XP + gold on combat end, level-up notification, DM aftermath narration
+- Rest system: Short Rest (hit die + CON heal) and Long Rest (full HP restore) toolbar buttons
+- Clear narration history button with confirm dialog, HP/gold status in toolbar
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context

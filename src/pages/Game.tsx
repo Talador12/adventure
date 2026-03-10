@@ -23,7 +23,7 @@ export default function Game() {
     setPlayers, setUnits, units, setCurrentPlayer, currentPlayer,
     rolls, selectedUnitId, characters,
     inCombat, setInCombat, rollInitiative, nextTurn, combatRound,
-    damageUnit, removeUnit,
+    damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -903,13 +903,36 @@ export default function Game() {
                       {/* End Combat button */}
                       {inCombat && (
                         <button
-                          onClick={() => {
+                          onClick={async () => {
+                            // Count defeated enemies for XP/gold rewards
+                            const deadEnemies = units.filter((u) => u.type === 'enemy' && u.hp <= 0);
+                            const xpPerEnemy = 50 * (selectedCharacter?.level || 1);
+                            const totalXP = deadEnemies.length * xpPerEnemy;
+                            const goldReward = deadEnemies.length * (10 + Math.floor(Math.random() * 20));
+
                             setInCombat(false);
                             // Remove dead enemies, reset initiative
                             setUnits((prev: Unit[]) => prev
                               .filter((u) => u.type === 'player' || u.hp > 0)
                               .map((u) => ({ ...u, isCurrentTurn: false, initiative: -1 })));
-                            addDmMessage('The battle ends. You catch your breath.');
+
+                            // Award XP and gold to the selected character
+                            if (selectedCharacter && totalXP > 0) {
+                              const { leveledUp, newLevel } = grantXP(selectedCharacter.id, totalXP);
+                              updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + goldReward });
+
+                              const rewardMsg = `Battle won! Earned ${totalXP} XP and ${goldReward} gold.`;
+                              addDmMessage(rewardMsg);
+
+                              if (leveledUp) {
+                                addDmMessage(`LEVEL UP! ${selectedCharacter.name} is now level ${newLevel}!`);
+                              }
+                            } else {
+                              addDmMessage('The battle ends. You catch your breath.');
+                            }
+
+                            // Ask the DM to narrate the aftermath
+                            callDmNarrate(`The combat has ended. ${deadEnemies.length} enemies were defeated. Narrate the aftermath — what do the characters find? Any loot, clues, or consequences?`);
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/50 text-slate-300 text-xs font-semibold rounded-lg transition-all"
                         >
@@ -919,10 +942,54 @@ export default function Game() {
                     </>
                   )}
 
+                  {/* Rest buttons — show when not in combat and character selected */}
+                  {selectedCharacter && !inCombat && (
+                    <>
+                      <button
+                        onClick={() => {
+                          restCharacter(selectedCharacter.id, 'short');
+                          addDmMessage(`${selectedCharacter.name} takes a short rest, tending wounds and catching their breath.`);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-800/50 text-sky-300 text-xs font-semibold rounded-lg transition-all"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" /></svg>
+                        Short Rest
+                      </button>
+                      <button
+                        onClick={() => {
+                          restCharacter(selectedCharacter.id, 'long');
+                          addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored.`);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-800/50 text-indigo-300 text-xs font-semibold rounded-lg transition-all"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.061l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.06-1.061a.75.75 0 10-1.06 1.06l1.06 1.06zM5.404 6.464a.75.75 0 001.06-1.06l-1.06-1.06a.75.75 0 10-1.061 1.06l1.06 1.06z" /></svg>
+                        Long Rest
+                      </button>
+                    </>
+                  )}
+
+                  {/* Clear history button */}
+                  {dmHistory.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Clear all narration history for this campaign?')) {
+                          setDmHistory([]);
+                          setCombatLog([]);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-2 py-1.5 text-slate-600 hover:text-red-400 text-[10px] transition-colors"
+                      title="Clear narration history"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5z" clipRule="evenodd" /></svg>
+                      Clear
+                    </button>
+                  )}
+
                   <div className="flex-1" />
 
+                  {/* Status indicators */}
                   <span className="text-[10px] text-slate-600">
-                    {dmHistory.length} narration{dmHistory.length !== 1 ? 's' : ''}{inCombat ? ` | Round ${combatRound}` : ''}
+                    {dmHistory.length} narration{dmHistory.length !== 1 ? 's' : ''}{inCombat ? ` | Round ${combatRound}` : ''}{selectedCharacter ? ` | ${selectedCharacter.hp}/${selectedCharacter.maxHp} HP | ${selectedCharacter.gold || 0}g` : ''}
                   </span>
                 </div>
 
