@@ -1,5 +1,5 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT } from '../../contexts/GameContext';
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS } from '../../contexts/GameContext';
 import { useState } from 'react';
 
 interface CharacterSheetProps {
@@ -332,21 +332,82 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         )}
       </div>
 
-      {/* Spell Slots placeholder (for casters) */}
-      {['Wizard', 'Sorcerer', 'Warlock', 'Cleric', 'Druid', 'Bard', 'Paladin', 'Ranger'].includes(character.class) && (
-        <div>
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Spell Slots</div>
-          <div className="flex gap-1">
-            {/* Level 1: 2 slots at level 1 */}
-            {[1, 2].map((i) => (
-              <div key={i} className="w-6 h-6 rounded border border-purple-600/50 bg-purple-900/30 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-purple-400" />
+      {/* Spellbook (for casters) */}
+      {[...FULL_CASTERS, ...HALF_CASTERS].includes(character.class) && (() => {
+        const slots = getSpellSlots(character.class, character.level);
+        const used = character.spellSlotsUsed || {};
+        const spells = getClassSpells(character.class, character.level);
+        const cantrips = spells.filter((s) => s.level === 0);
+        const leveled = spells.filter((s) => s.level > 0);
+
+        return (
+          <div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Spellbook</div>
+
+            {/* Spell slots */}
+            {Object.keys(slots).length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {Object.entries(slots).map(([lvl, max]) => {
+                  const usedCount = used[Number(lvl)] || 0;
+                  const remaining = max - usedCount;
+                  return (
+                    <div key={lvl} className="text-center">
+                      <div className="text-[8px] text-slate-600 mb-0.5">Lv{lvl}</div>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: max }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`w-5 h-5 rounded border flex items-center justify-center ${
+                              i < remaining
+                                ? 'border-purple-600/50 bg-purple-900/30'
+                                : 'border-slate-700 bg-slate-800/50'
+                            }`}
+                          >
+                            {i < remaining && <div className="w-2 h-2 rounded-full bg-purple-400" />}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
+
+            {/* Cantrips */}
+            {cantrips.length > 0 && (
+              <div className="mb-1.5">
+                <div className="text-[9px] text-slate-600 mb-1">Cantrips</div>
+                <div className="space-y-0.5">
+                  {cantrips.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30">
+                      <span className="text-slate-300 font-medium">{s.name}</span>
+                      <span className="text-slate-500">{s.damage || s.description.slice(0, 20)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Leveled spells */}
+            {leveled.length > 0 && (
+              <div>
+                <div className="text-[9px] text-slate-600 mb-1">Spells</div>
+                <div className="space-y-0.5">
+                  {leveled.map((s) => {
+                    const slotsAvail = (slots[s.level] || 0) - (used[s.level] || 0);
+                    return (
+                      <div key={s.id} className={`flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30 ${slotsAvail <= 0 ? 'opacity-40' : ''}`}>
+                        <span className="text-purple-300 font-medium">{s.name}</span>
+                        <span className="text-slate-500">Lv{s.level} • {s.damage || (s.healAmount ? `+${s.healAmount}HP` : s.range)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="text-[9px] text-slate-600 mt-1">Level 1 slots</div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

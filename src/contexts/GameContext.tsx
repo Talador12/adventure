@@ -181,6 +181,130 @@ export const RARITY_BG: Record<ItemRarity, string> = {
   epic: 'border-purple-700/50',
 };
 
+// --- Shop system ---
+// Curated shop inventory — items available for purchase (always in stock)
+export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
+  // Weapons
+  { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
+  { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'A reliable blade.', value: 10, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
+  { name: 'Longsword', type: 'weapon', rarity: 'common', description: 'Versatile and dependable.', value: 15, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
+  { name: 'Battleaxe', type: 'weapon', rarity: 'uncommon', description: 'A heavy, well-balanced axe.', value: 100, equipSlot: 'weapon', damageDie: '1d10', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
+  { name: 'Greatsword', type: 'weapon', rarity: 'uncommon', description: 'Two-handed, devastating.', value: 150, equipSlot: 'weapon', damageDie: '2d6', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
+  { name: 'Longbow', type: 'weapon', rarity: 'common', description: 'Range 150/600ft.', value: 50, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
+  // Armor
+  { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, category: 'Armor' },
+  { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor, reliable.', value: 50, equipSlot: 'armor', acBonus: 13, category: 'Armor' },
+  { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14, category: 'Armor' },
+  { name: 'Chain Mail', type: 'armor', rarity: 'uncommon', description: 'Heavy armor.', value: 75, equipSlot: 'armor', acBonus: 16, category: 'Armor' },
+  { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2, category: 'Armor' },
+  // Potions
+  { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 1, category: 'Potions' },
+  { name: 'Greater Healing Potion', type: 'potion', rarity: 'uncommon', description: 'Restores 4d4+4 HP.', value: 150, healAmount: 18, quantity: 1, category: 'Potions' },
+  { name: 'Superior Healing Potion', type: 'potion', rarity: 'rare', description: 'Restores 8d4+8 HP.', value: 500, healAmount: 36, quantity: 1, category: 'Potions' },
+  // Accessories
+  { name: 'Ring of Protection', type: 'ring', rarity: 'uncommon', description: '+1 AC while worn.', value: 300, equipSlot: 'ring', acBonus: 1, category: 'Accessories' },
+  { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: 'Reveals an item\'s properties.', value: 25, category: 'Accessories' },
+];
+
+export const SHOP_CATEGORIES = ['Weapons', 'Armor', 'Potions', 'Accessories'] as const;
+
+// --- Spell system ---
+export type SpellSchool = 'evocation' | 'abjuration' | 'conjuration' | 'divination' | 'enchantment' | 'illusion' | 'necromancy' | 'transmutation';
+
+export interface Spell {
+  id: string;
+  name: string;
+  level: number; // 0 = cantrip, 1-9 = spell levels
+  school: SpellSchool;
+  description: string;
+  damage?: string;      // e.g. "1d10" for fire bolt, scales with level
+  healAmount?: number;   // for healing spells
+  range: string;         // "Touch", "Self", "60ft", etc.
+  duration: string;      // "Instantaneous", "1 minute", "Concentration, 1 hour"
+  saveStat?: StatName;   // target save stat (DEX for fireball, WIS for hold person)
+  isConcentration: boolean;
+  classes: CharacterClass[]; // which classes can learn this
+}
+
+// Spell slot table: spellSlots[classLevel][spellLevel] = number of slots
+// Simplified D&D 5e full caster table (levels 1-5 for now)
+export const FULL_CASTER_SLOTS: Record<number, Record<number, number>> = {
+  1: { 1: 2 },
+  2: { 1: 3 },
+  3: { 1: 4, 2: 2 },
+  4: { 1: 4, 2: 3 },
+  5: { 1: 4, 2: 3, 3: 2 },
+};
+// Half-casters (Paladin, Ranger) get slots 1 level later
+export const HALF_CASTER_SLOTS: Record<number, Record<number, number>> = {
+  1: {},
+  2: { 1: 2 },
+  3: { 1: 3 },
+  4: { 1: 3 },
+  5: { 1: 4, 2: 2 },
+};
+
+export const FULL_CASTERS: CharacterClass[] = ['Wizard', 'Sorcerer', 'Cleric', 'Druid', 'Bard', 'Warlock'];
+export const HALF_CASTERS: CharacterClass[] = ['Paladin', 'Ranger'];
+
+// Get spell slots for a class at a given level
+export function getSpellSlots(charClass: CharacterClass, level: number): Record<number, number> {
+  const clampedLevel = Math.min(level, 5);
+  if (FULL_CASTERS.includes(charClass)) return FULL_CASTER_SLOTS[clampedLevel] || {};
+  if (HALF_CASTERS.includes(charClass)) return HALF_CASTER_SLOTS[clampedLevel] || {};
+  return {}; // non-casters
+}
+
+// Curated spell list — cantrips + level 1-3 spells, enough for levels 1-5
+export const SPELL_LIST: Spell[] = [
+  // Cantrips (level 0)
+  { id: 'fire-bolt', name: 'Fire Bolt', level: 0, school: 'evocation', description: 'Hurl a mote of fire. +spell attack, 1d10 fire damage.', damage: '1d10', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'sacred-flame', name: 'Sacred Flame', level: 0, school: 'evocation', description: 'Radiant flames descend. DEX save or 1d8 radiant damage.', damage: '1d8', range: '60ft', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Cleric'] },
+  { id: 'eldritch-blast', name: 'Eldritch Blast', level: 0, school: 'evocation', description: 'A beam of crackling energy. +spell attack, 1d10 force damage.', damage: '1d10', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Warlock'] },
+  { id: 'vicious-mockery', name: 'Vicious Mockery', level: 0, school: 'enchantment', description: 'Cutting words. WIS save or 1d4 psychic damage + disadvantage.', damage: '1d4', range: '60ft', duration: 'Instantaneous', saveStat: 'WIS', isConcentration: false, classes: ['Bard'] },
+  { id: 'produce-flame', name: 'Produce Flame', level: 0, school: 'conjuration', description: 'A flame in your palm. Hurl it for 1d8 fire damage.', damage: '1d8', range: '30ft', duration: 'Instantaneous', isConcentration: false, classes: ['Druid'] },
+  { id: 'ray-of-frost', name: 'Ray of Frost', level: 0, school: 'evocation', description: 'A frigid beam. +spell attack, 1d8 cold damage, -10ft speed.', damage: '1d8', range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'minor-illusion', name: 'Minor Illusion', level: 0, school: 'illusion', description: 'Create a sound or image of an object within range.', range: '30ft', duration: '1 minute', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard', 'Warlock'] },
+  // Level 1
+  { id: 'magic-missile', name: 'Magic Missile', level: 1, school: 'evocation', description: 'Three darts of magical force. Each deals 1d4+1. Auto-hit.', damage: '3d4+3', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'cure-wounds', name: 'Cure Wounds', level: 1, school: 'evocation', description: 'Touch a creature and restore 1d8+mod HP.', healAmount: 8, range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Druid', 'Bard', 'Paladin', 'Ranger'] },
+  { id: 'shield', name: 'Shield', level: 1, school: 'abjuration', description: 'Reaction: +5 AC until your next turn.', range: 'Self', duration: '1 round', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'burning-hands', name: 'Burning Hands', level: 1, school: 'evocation', description: '15ft cone of fire. DEX save or 3d6 fire damage.', damage: '3d6', range: 'Self (15ft cone)', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'healing-word', name: 'Healing Word', level: 1, school: 'evocation', description: 'Bonus action. Heal 1d4+mod HP at range.', healAmount: 5, range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Bard', 'Druid'] },
+  { id: 'thunderwave', name: 'Thunderwave', level: 1, school: 'evocation', description: '15ft cube of thunder. CON save or 2d8 damage + pushed 10ft.', damage: '2d8', range: 'Self (15ft cube)', duration: 'Instantaneous', saveStat: 'CON', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard', 'Druid'] },
+  { id: 'hex', name: 'Hex', level: 1, school: 'enchantment', description: 'Curse a target. Deal extra 1d6 necrotic on each hit.', damage: '1d6', range: '90ft', duration: 'Concentration, 1 hour', isConcentration: true, classes: ['Warlock'] },
+  { id: 'hunters-mark', name: "Hunter's Mark", level: 1, school: 'divination', description: 'Mark a target. Deal extra 1d6 on each hit.', damage: '1d6', range: '90ft', duration: 'Concentration, 1 hour', isConcentration: true, classes: ['Ranger'] },
+  { id: 'divine-smite-spell', name: 'Searing Smite', level: 1, school: 'evocation', description: 'Your weapon flares with fire. +1d6 fire damage on hit.', damage: '1d6', range: 'Self', duration: 'Concentration, 1 minute', isConcentration: true, classes: ['Paladin'] },
+  // Level 2
+  { id: 'scorching-ray', name: 'Scorching Ray', level: 2, school: 'evocation', description: 'Three rays of fire. Each +spell attack for 2d6 fire.', damage: '6d6', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'spiritual-weapon', name: 'Spiritual Weapon', level: 2, school: 'evocation', description: 'Floating spectral weapon. Bonus action attack for 1d8+mod.', damage: '1d8', range: '60ft', duration: '1 minute', isConcentration: false, classes: ['Cleric'] },
+  { id: 'misty-step', name: 'Misty Step', level: 2, school: 'conjuration', description: 'Bonus action teleport up to 30ft.', range: 'Self', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Warlock'] },
+  { id: 'lesser-restoration', name: 'Lesser Restoration', level: 2, school: 'abjuration', description: 'End one disease or condition on a creature.', range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Druid', 'Bard', 'Paladin', 'Ranger'] },
+  { id: 'hold-person', name: 'Hold Person', level: 2, school: 'enchantment', description: 'WIS save or paralyzed for 1 minute (concentration).', range: '60ft', duration: 'Concentration, 1 minute', saveStat: 'WIS', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Cleric', 'Bard', 'Warlock', 'Druid'] },
+  // Level 3
+  { id: 'fireball', name: 'Fireball', level: 3, school: 'evocation', description: '20ft radius explosion. DEX save or 8d6 fire damage.', damage: '8d6', range: '150ft', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'spirit-guardians', name: 'Spirit Guardians', level: 3, school: 'conjuration', description: 'Spirits swirl around you. Enemies in 15ft take 3d8 radiant.', damage: '3d8', range: 'Self (15ft radius)', duration: 'Concentration, 10 minutes', saveStat: 'WIS', isConcentration: true, classes: ['Cleric'] },
+  { id: 'revivify', name: 'Revivify', level: 3, school: 'necromancy', description: 'Touch a creature dead for less than 1 minute. It returns with 1 HP.', healAmount: 1, range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Paladin', 'Druid'] },
+  { id: 'counterspell', name: 'Counterspell', level: 3, school: 'abjuration', description: 'Reaction: interrupt a creature casting a spell of 3rd level or lower.', range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Warlock'] },
+];
+
+// Get spells available for a class (cantrips + spells they can cast at their level)
+export function getClassSpells(charClass: CharacterClass, level: number): Spell[] {
+  const slots = getSpellSlots(charClass, level);
+  const maxSpellLevel = Object.keys(slots).map(Number).sort((a, b) => b - a)[0] || 0;
+  return SPELL_LIST.filter((s) => s.classes.includes(charClass) && s.level <= Math.max(maxSpellLevel, 0));
+}
+
+// Roll spell damage: parse "XdY" or "XdY+Z"
+export function rollSpellDamage(die: string): number {
+  const match = die.match(/^(\d+)d(\d+)(?:\+(\d+))?$/);
+  if (!match) return 0;
+  const [, count, sides, bonus] = match;
+  let total = 0;
+  for (let i = 0; i < Number(count); i++) total += Math.floor(Math.random() * Number(sides)) + 1;
+  return total + (bonus ? Number(bonus) : 0);
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -208,6 +332,7 @@ export interface Character {
   gold: number; // currency
   inventory: Item[]; // carried items
   equipment: EquipmentSlots; // currently equipped gear
+  spellSlotsUsed: Record<number, number>; // spellLevel -> slots used this rest
   createdAt: number;
 }
 
@@ -252,6 +377,14 @@ interface GameContextValue {
   equipItem: (charId: string, itemId: string) => void;
   unequipItem: (charId: string, slot: EquipSlot) => void;
   useItem: (charId: string, itemId: string) => { message: string };
+
+  // Shop
+  buyItem: (charId: string, shopItem: Omit<Item, 'id'>) => { success: boolean; message: string };
+  sellItem: (charId: string, itemId: string) => { success: boolean; message: string };
+
+  // Spells
+  castSpell: (charId: string, spellId: string, targetUnitId?: string) => { success: boolean; message: string };
+  restoreSpellSlots: (charId: string) => void;
 
   // Dice roll log (most recent first)
   rolls: DiceRoll[];
@@ -298,6 +431,10 @@ const GameContext = createContext<GameContextValue>({
   equipItem: () => {},
   unequipItem: () => {},
   useItem: () => ({ message: '' }),
+  buyItem: () => ({ success: false, message: '' }),
+  sellItem: () => ({ success: false, message: '' }),
+  castSpell: () => ({ success: false, message: '' }),
+  restoreSpellSlots: () => {},
   rolls: [],
   addRoll: () => ({}) as DiceRoll,
   clearRolls: () => {},
@@ -446,7 +583,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setCharacters((prev) => prev.map((c) => {
       if (c.id !== id) return c;
       if (type === 'long') {
-        return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition };
+        return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {} };
       }
       // Short rest: heal hit die average + CON mod (once)
       const hitDieAvg: Record<string, number> = {
@@ -572,6 +709,37 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return { message: msg };
   }, []);
 
+  // Shop: buy an item (deduct gold, add to inventory)
+  const buyItem = useCallback((charId: string, shopItem: Omit<Item, 'id'>): { success: boolean; message: string } => {
+    let result = { success: false, message: '' };
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      if (c.gold < shopItem.value) {
+        result = { success: false, message: `Not enough gold! Need ${shopItem.value}g, have ${c.gold}g.` };
+        return c;
+      }
+      const newItem: Item = { ...shopItem, id: crypto.randomUUID() };
+      result = { success: true, message: `Bought ${shopItem.name} for ${shopItem.value}g.` };
+      return { ...c, gold: c.gold - shopItem.value, inventory: [...(c.inventory || []), newItem] };
+    }));
+    return result;
+  }, []);
+
+  // Shop: sell an item (half value, remove from inventory)
+  const sellItem = useCallback((charId: string, itemId: string): { success: boolean; message: string } => {
+    let result = { success: false, message: '' };
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const inv = c.inventory || [];
+      const item = inv.find((i) => i.id === itemId);
+      if (!item) { result = { success: false, message: 'Item not found.' }; return c; }
+      const sellPrice = Math.max(1, Math.floor(item.value / 2));
+      result = { success: true, message: `Sold ${item.name} for ${sellPrice}g.` };
+      return { ...c, gold: c.gold + sellPrice, inventory: inv.filter((i) => i.id !== itemId) };
+    }));
+    return result;
+  }, []);
+
   const addRoll = useCallback((partial: Omit<DiceRoll, 'id' | 'timestamp' | 'isCritical' | 'isFumble'> & { value: number; sides: number }): DiceRoll => {
     const roll: DiceRoll = {
       ...partial,
@@ -597,6 +765,67 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const healUnit = useCallback((unitId: string, amount: number) => {
     setUnits((prev) => prev.map((u) =>
       u.id === unitId ? { ...u, hp: Math.min(u.maxHp, u.hp + amount) } : u
+    ));
+  }, []);
+
+  // Spells: cast a spell (check slots, apply damage/healing, consume slot)
+  const castSpell = useCallback((charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
+    let result = { success: false, message: '' };
+    const spell = SPELL_LIST.find((s) => s.id === spellId);
+    if (!spell) { return { success: false, message: 'Unknown spell.' }; }
+
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      if (spell.level > 0) {
+        const maxSlots = getSpellSlots(c.class, c.level);
+        const used = c.spellSlotsUsed || {};
+        const slotsAvail = (maxSlots[spell.level] || 0) - (used[spell.level] || 0);
+        if (slotsAvail <= 0) {
+          result = { success: false, message: `No level ${spell.level} spell slots remaining!` };
+          return c;
+        }
+        const newUsed = { ...used, [spell.level]: (used[spell.level] || 0) + 1 };
+        result = { success: true, message: '' };
+        return { ...c, spellSlotsUsed: newUsed };
+      }
+      result = { success: true, message: '' };
+      return c;
+    }));
+
+    if (result.success) {
+      const char = characters.find((c) => c.id === charId);
+      const casterName = char?.name || 'Caster';
+      if (spell.damage) {
+        const dmg = rollSpellDamage(spell.damage);
+        if (targetUnitId) damageUnit(targetUnitId, dmg);
+        result.message = `${casterName} casts ${spell.name} for ${dmg} damage!`;
+      } else if (spell.healAmount) {
+        if (char) {
+          const healed = Math.min(spell.healAmount, char.maxHp - char.hp);
+          setCharacters((prev) => prev.map((c) => {
+            if (c.id !== charId) return c;
+            let updated = { ...c, hp: Math.min(c.maxHp, c.hp + spell.healAmount!) };
+            if (c.condition === 'unconscious' || c.condition === 'stabilized') {
+              updated = { ...updated, condition: 'normal' as const, deathSaves: { successes: 0, failures: 0 } };
+            }
+            return updated;
+          }));
+          result.message = `${casterName} casts ${spell.name}, restoring ${healed} HP!`;
+        } else {
+          result.message = `${casterName} casts ${spell.name}.`;
+        }
+      } else {
+        result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
+      }
+      if (spell.level > 0) result.message += ` (Level ${spell.level} slot used)`;
+    }
+    return result;
+  }, [characters, damageUnit]);
+
+  // Spells: restore all spell slots (called on long rest)
+  const restoreSpellSlots = useCallback((charId: string) => {
+    setCharacters((prev) => prev.map((c) =>
+      c.id === charId ? { ...c, spellSlotsUsed: {} } : c
     ));
   }, []);
 
@@ -685,6 +914,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         equipItem,
         unequipItem,
         useItem,
+        buyItem,
+        sellItem,
+        castSpell,
+        restoreSpellSlots,
         rolls,
         addRoll,
         clearRolls,

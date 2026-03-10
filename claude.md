@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Inventory/loot system shipped. Next: multiplayer map sync, spell system, or shop/merchant UI.
+Shop system + spell casting shipped. Next: multiplayer map sync, condition effects, or encounter variety.
 
 ## Working Items
 
@@ -99,6 +99,26 @@ Inventory/loot system shipped. Next: multiplayer map sync, spell system, or shop
 - AC recalculation: equipping/unequipping armor, shields, rings auto-updates character AC
 - Consumable use: potions heal HP and revive from unconscious/stabilized, scrolls show use message
 
+### Shop system
+- **Status:** Done
+- Curated shop inventory: 16 items across 4 categories (Weapons, Armor, Potions, Accessories)
+- Buy items with gold (full price), sell items for half value
+- Shop tab in game view (alongside Narration/Battle Map), only available out of combat
+- Category filter tabs, gold display, buy/sell toast messages
+- Sell section shows all inventory items with sell prices
+
+### Spell system
+- **Status:** Done
+- Spell interface with school, level, damage, healing, range, duration, concentration, save stat
+- 25 spells: 7 cantrips + 10 level 1 + 5 level 2 + 3 level 3 spells across all caster classes
+- D&D 5e spell slot tables: full casters (Wizard/Sorcerer/Cleric/Druid/Bard/Warlock) and half casters (Paladin/Ranger)
+- Spell slot tracking: consume on cast, restore on long rest, cantrips are free
+- Cast Spell dropdown in combat toolbar with slot availability display
+- Damage spells roll dice and apply to targeted enemy unit
+- Healing spells restore HP and revive from unconscious/stabilized
+- CharacterSheet spellbook: spell slot pips (filled/empty), cantrip list, leveled spell list with dim-when-exhausted
+- Character creation includes spellSlotsUsed: {} initialization
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -139,3 +159,5 @@ Inventory/loot system shipped. Next: multiplayer map sync, spell system, or shop
 - Death saving throws: D&D 5e rules (nat 20/1, 3 successes/failures, enemy crits on unconscious)
 - Map system overhaul: procedural dungeons, vision-based fog, terrain painting, zoom/pan, DM mode
 - Inventory/loot system: item types, equipment slots, loot tables, combat drops, CharacterSheet UI, potion use, AC recalc
+- Shop system: curated merchant inventory, buy/sell with gold, shop tab in game view, category filters
+- Spell system: 25 spells, spell slots (full/half caster tables), cast in combat, spellbook in CharacterSheet
