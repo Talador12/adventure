@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 12 shipped: turn flow improvements, magic items, epic loot tier. Context-aware End Turn button, turn indicator banner, expanded loot tables with epic tier. Next: multiplayer map sync, journal/notes, or character progression depth.
+Round 13 shipped: character progression (ASI/feats at levels 4/8/12/16/19), Extra Attack for martial classes, turn enforcement, and full sound FX wiring. Next: multiplayer map sync, terrain mechanics, journal/notes, or concentration tracking.
 
 ## Working Items
 
@@ -195,6 +195,25 @@ Round 12 shipped: turn flow improvements, magic items, epic loot tier. Context-a
 - New EPIC_LOOT tier: 5 items (Potion of Supreme Healing, Vorpal Greatsword, Plate Armor of Etherealness, Ring of Spell Storing, Staff of Power)
 - `rollLoot` updated with epic tier chance (scales with level, ~0% at lv1, ~1% at lv5)
 
+### Character progression + combat polish
+- **Status:** Done
+- Ability Score Improvement (ASI) at D&D 5e standard levels (4, 8, 12, 16, 19)
+  - Choose +2 to one stat or +1 to two stats (max 20 cap enforced)
+  - CON increases retroactively adjust HP (level * delta)
+- 8 feats as alternative to ASI: Tough (+2 HP/level), Alert (+5 init), Great Weapon Master (+3 dmg), War Caster (+2 spell atk), Lucky (+1 saves), Durable (+1 CON +1 HP/lv), Observant (+1 WIS), Resilient (+1 CON +1 saves)
+  - `Feat` interface with stat bonuses, HP/level, AC, initiative, attack, damage, saving throw bonuses
+  - `feats: string[]` and `asiChoicesMade: number` on Character
+  - `hasPendingASI()` check compares ASI levels reached vs choices made
+- Level-up choice modal: tabbed ASI vs Feat selection, stat preview, auto-opens after combat level-up
+  - Persistent "Level Up!" pulse button in toolbar when choices are pending
+- Extra Attack for martial classes (Fighter/Barbarian/Paladin/Ranger/Monk) at level 5+
+  - Quick Attack rolls 2 attacks with independent hit/miss, feat bonuses applied
+  - Attack button shows "x2" badge
+- Turn enforcement: combat actions (Attack, Cast Spell, Class Ability, Dodge, Dash) disabled when not player's turn
+  - Buttons greyed out with "Wait for your turn" tooltip
+- Sound FX wiring: `playMagicSpell()` on spell cast, `playLevelUp()` fanfare on level-up, `playHealing()` on heal/rest, `playLootDrop()` jingle on loot drops
+  - 3 new synthesized sounds: level-up fanfare (C major rising), healing shimmer (warm rising), loot jingle (metallic)
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -242,3 +261,4 @@ Round 12 shipped: turn flow improvements, magic items, epic loot tier. Context-a
 - Class abilities + saving throws: 12 unique class abilities, spell save DC system, half damage on save, per-class color theming
 - Encounter variety + themes + combat log: 16 enemy templates, 12 encounter themes, togglable color-coded combat log panel
 - Turn flow + magic items + epic loot: context-aware End Turn button, turn indicator banner, expanded loot tables, epic loot tier
+- Character progression + combat polish: ASI/feats at levels 4/8/12/16/19, Extra Attack for martial classes, turn enforcement, sound FX wiring

@@ -252,6 +252,66 @@ export function playEncounterStart() {
   });
 }
 
+// Level up — triumphant fanfare
+export function playLevelUp() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+
+  // Rising fanfare: C major triad then octave
+  [261.63, 329.63, 392, 523.25, 659.25, 783.99].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    const t = now + i * 0.1;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.5);
+  });
+}
+
+// Healing — warm rising shimmer
+export function playHealing() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+
+  [392, 493.88, 587.33].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * 0.5, now + i * 0.08);
+    osc.frequency.linearRampToValueAtTime(freq, now + i * 0.08 + 0.3);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, now + i * 0.08);
+    g.gain.linearRampToValueAtTime(0.12, now + i * 0.08 + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.4);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(now + i * 0.08);
+    osc.stop(now + i * 0.08 + 0.4);
+  });
+}
+
+// Loot drop — metallic jingle
+export function playLootDrop() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+
+  [1200, 1500, 1800, 2100].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    const t = now + i * 0.06;
+    g.gain.setValueAtTime(0.06, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.12);
+  });
+}
+
 // Volume control — global mute state
 let muted = false;
 const originalDestGetter = Object.getOwnPropertyDescriptor(AudioContext.prototype, 'destination');

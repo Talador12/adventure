@@ -546,6 +546,47 @@ export function getClassAbility(charClass: CharacterClass): ClassAbility | undef
   return CLASS_ABILITIES.find((a) => a.class === charClass);
 }
 
+// --- Feats system ---
+export interface Feat {
+  id: string;
+  name: string;
+  description: string;
+  // Concrete bonuses applied to character on selection
+  statBonuses?: Partial<Record<StatName, number>>;
+  maxHpPerLevel?: number; // bonus HP per character level (Tough)
+  acBonus?: number;
+  initiativeBonus?: number;
+  attackBonus?: number;
+  damageBonus?: number;
+  savingThrowBonus?: number; // flat bonus to all saves
+}
+
+export const FEATS: Feat[] = [
+  { id: 'tough', name: 'Tough', description: 'Your hit point maximum increases by 2 for every level you have.', maxHpPerLevel: 2 },
+  { id: 'alert', name: 'Alert', description: '+5 to initiative. You can\'t be surprised while conscious.', initiativeBonus: 5 },
+  { id: 'great-weapon-master', name: 'Great Weapon Master', description: 'Your heavy weapon strikes deal +3 bonus damage.', damageBonus: 3 },
+  { id: 'war-caster', name: 'War Caster', description: '+2 to spell attack rolls and concentration saves.', attackBonus: 2 },
+  { id: 'lucky', name: 'Lucky', description: '+1 to all saving throws from sheer fortune.', savingThrowBonus: 1 },
+  { id: 'durable', name: 'Durable', description: '+1 CON and +1 HP per level.', statBonuses: { CON: 1 }, maxHpPerLevel: 1 },
+  { id: 'observant', name: 'Observant', description: '+1 WIS. You read lips and notice hidden details.', statBonuses: { WIS: 1 } },
+  { id: 'resilient', name: 'Resilient', description: '+1 CON and proficiency in CON saving throws.', statBonuses: { CON: 1 }, savingThrowBonus: 1 },
+];
+
+// ASI levels in D&D 5e (all classes)
+export const ASI_LEVELS = [4, 8, 12, 16, 19];
+
+// Check if a character has a pending level-up choice
+export function hasPendingASI(character: Character): boolean {
+  // Count how many ASI levels the character has reached
+  const asiLevelsReached = ASI_LEVELS.filter((l) => character.level >= l).length;
+  // Count how many choices they've already made (ASIs applied + feats taken)
+  const choicesMade = (character.asiChoicesMade || 0);
+  return asiLevelsReached > choicesMade;
+}
+
+// Martial classes that get Extra Attack at level 5
+export const EXTRA_ATTACK_CLASSES: CharacterClass[] = ['Fighter', 'Barbarian', 'Paladin', 'Ranger', 'Monk'];
+
 export interface Character {
   id: string;
   name: string;
@@ -575,6 +616,8 @@ export interface Character {
   equipment: EquipmentSlots; // currently equipped gear
   spellSlotsUsed: Record<number, number>; // spellLevel -> slots used this rest
   classAbilityUsed: boolean; // whether the class ability has been used this rest period
+  feats: string[]; // feat IDs the character has taken
+  asiChoicesMade: number; // how many ASI/feat choices have been applied (tracks against ASI_LEVELS)
   createdAt: number;
 }
 
@@ -631,6 +674,10 @@ interface GameContextValue {
   // Class abilities
   useClassAbility: (charId: string, targetUnitId?: string) => { success: boolean; message: string };
 
+  // ASI / Feats
+  applyASI: (charId: string, stat1: StatName, stat2?: StatName) => { success: boolean; message: string };
+  selectFeat: (charId: string, featId: string) => { success: boolean; message: string };
+
   // Conditions
   applyCondition: (unitId: string, condition: ActiveCondition) => void;
   removeCondition: (unitId: string, conditionType: ConditionType) => void;
@@ -686,6 +733,8 @@ const GameContext = createContext<GameContextValue>({
   castSpell: () => ({ success: false, message: '' }),
   restoreSpellSlots: () => {},
   useClassAbility: () => ({ success: false, message: '' }),
+  applyASI: () => ({ success: false, message: '' }),
+  selectFeat: () => ({ success: false, message: '' }),
   applyCondition: () => {},
   removeCondition: () => {},
   tickConditions: () => [],
@@ -1262,6 +1311,82 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return { success: true, message: msg || `${casterName} uses ${ability.name}!` };
   }, [characters, units, applyCondition, damageUnit]);
 
+  // ASI: increase one stat by 2, or two different stats by 1 each (max 20)
+  const applyASI = useCallback((charId: string, stat1: StatName, stat2?: StatName): { success: boolean; message: string } => {
+    const char = characters.find((c) => c.id === charId);
+    if (!char) return { success: false, message: 'Character not found.' };
+    if (!hasPendingASI(char)) return { success: false, message: 'No ability score improvement available.' };
+
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const newStats = { ...c.stats };
+      if (stat2 && stat2 !== stat1) {
+        // +1 to two different stats
+        newStats[stat1] = Math.min(20, newStats[stat1] + 1);
+        newStats[stat2] = Math.min(20, newStats[stat2] + 1);
+      } else {
+        // +2 to one stat
+        newStats[stat1] = Math.min(20, newStats[stat1] + 2);
+      }
+      // Recalculate HP if CON changed
+      const oldConMod = Math.floor((c.stats.CON - 10) / 2);
+      const newConMod = Math.floor((newStats.CON - 10) / 2);
+      const hpDelta = (newConMod - oldConMod) * c.level;
+      return {
+        ...c,
+        stats: newStats,
+        maxHp: c.maxHp + hpDelta,
+        hp: c.hp + hpDelta,
+        asiChoicesMade: (c.asiChoicesMade || 0) + 1,
+      };
+    }));
+
+    const label = stat2 && stat2 !== stat1 ? `+1 ${stat1}, +1 ${stat2}` : `+2 ${stat1}`;
+    return { success: true, message: `${char.name} improves ability scores: ${label}!` };
+  }, [characters]);
+
+  // Select a feat as an alternative to ASI
+  const selectFeat = useCallback((charId: string, featId: string): { success: boolean; message: string } => {
+    const char = characters.find((c) => c.id === charId);
+    if (!char) return { success: false, message: 'Character not found.' };
+    if (!hasPendingASI(char)) return { success: false, message: 'No feat selection available.' };
+    if ((char.feats || []).includes(featId)) return { success: false, message: 'You already have this feat.' };
+
+    const feat = FEATS.find((f) => f.id === featId);
+    if (!feat) return { success: false, message: 'Feat not found.' };
+
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const newStats = { ...c.stats };
+      // Apply stat bonuses
+      if (feat.statBonuses) {
+        for (const [stat, bonus] of Object.entries(feat.statBonuses)) {
+          newStats[stat as StatName] = Math.min(20, newStats[stat as StatName] + (bonus || 0));
+        }
+      }
+      // Apply HP per level bonus
+      let hpBonus = 0;
+      if (feat.maxHpPerLevel) hpBonus = feat.maxHpPerLevel * c.level;
+      // CON change HP recalc
+      const oldConMod = Math.floor((c.stats.CON - 10) / 2);
+      const newConMod = Math.floor((newStats.CON - 10) / 2);
+      const conHpDelta = (newConMod - oldConMod) * c.level;
+      // Apply AC bonus
+      const acDelta = feat.acBonus || 0;
+      return {
+        ...c,
+        stats: newStats,
+        maxHp: c.maxHp + hpBonus + conHpDelta,
+        hp: c.hp + hpBonus + conHpDelta,
+        ac: c.ac + acDelta,
+        feats: [...(c.feats || []), featId],
+        asiChoicesMade: (c.asiChoicesMade || 0) + 1,
+      };
+    }));
+
+    return { success: true, message: `${char.name} gains the ${feat.name} feat!` };
+  }, [characters]);
+
   // Combat: remove a unit (dead enemy, etc)
   const removeUnit = useCallback((unitId: string) => {
     setUnits((prev) => prev.filter((u) => u.id !== unitId));
@@ -1352,6 +1477,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         castSpell,
         restoreSpellSlots,
         useClassAbility,
+        applyASI,
+        selectFeat,
         applyCondition,
         removeCondition,
         tickConditions,

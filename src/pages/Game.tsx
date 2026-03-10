@@ -6,9 +6,9 @@ import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character, type StatName, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
-import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, isMuted, toggleMute } from '../hooks/useSoundFX';
+import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
 
 // API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
 function apiBase(): string {
@@ -26,6 +26,7 @@ export default function Game() {
     damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
     addItem, useItem, buyItem, sellItem, castSpell, restoreSpellSlots,
     applyCondition, removeCondition, tickConditions, useClassAbility,
+    applyASI, selectFeat,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -59,6 +60,13 @@ export default function Game() {
   const [showSheet, setShowSheet] = useState(false);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
 
+  // Level-up choice modal state
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [levelUpTab, setLevelUpTab] = useState<'asi' | 'feat'>('asi');
+  const [asiStat1, setAsiStat1] = useState<StatName>('STR');
+  const [asiStat2, setAsiStat2] = useState<StatName | null>(null);
+  const [asiMode, setAsiMode] = useState<'single' | 'split'>('single'); // +2 to one or +1 to two
+
   // Quest tracker
   interface Quest { id: string; title: string; description: string; completed: boolean; }
   const questStorageKey = `adventure:quests:${room}`;
@@ -80,6 +88,10 @@ export default function Game() {
   const [sceneName, setSceneName] = useState(() => {
     try { return localStorage.getItem(`adventure:scene:${room}`) || ''; } catch { return ''; }
   });
+
+  // Derived: is it currently the player's turn? Used to enforce turn-based action restrictions.
+  const currentTurnUnit = units.find((u) => u.isCurrentTurn);
+  const isPlayerTurn = !inCombat || (currentTurnUnit?.type === 'player');
 
   // Persist DM history + scene to localStorage on every change
   useEffect(() => {
@@ -1060,7 +1072,7 @@ export default function Game() {
                         );
                       })()}
 
-                      {/* Quick attack — uses equipped weapon stats or STR-based unarmed */}
+                      {/* Quick attack — uses equipped weapon stats or STR-based unarmed (disabled when not player's turn) */}
                       {inCombat && selectedUnitId && (() => {
                         const target = units.find((u) => u.id === selectedUnitId);
                         if (!target || target.type === 'player') return null;
@@ -1074,43 +1086,63 @@ export default function Game() {
                         const playerUnit = selectedCharacter ? units.find((u) => u.characterId === selectedCharacter.id) : null;
                         const condAtkMod = (playerUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
                         return (
-                          <button
+                           <button
+                            disabled={!isPlayerTurn}
+                            title={!isPlayerTurn ? 'Wait for your turn' : undefined}
                             onClick={() => {
-                              const attackRoll = Math.floor(Math.random() * 20) + 1;
-                              const totalAttack = attackRoll + strMod + weaponAtkBonus + condAtkMod;
-                              const isHit = attackRoll === 20 || totalAttack >= target.ac;
-                              const isCrit = attackRoll === 20;
+                              // Extra Attack: martial classes at level 5+ get 2 attacks
+                              const hasExtraAttack = selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5;
+                              const numAttacks = hasExtraAttack ? 2 : 1;
+                              // Feat bonuses
+                              const featDmgBonus = (selectedCharacter?.feats || []).reduce((sum, fid) => {
+                                const f = FEATS.find((ft) => ft.id === fid);
+                                return sum + (f?.damageBonus || 0);
+                              }, 0);
+                              const featAtkBonus = (selectedCharacter?.feats || []).reduce((sum, fid) => {
+                                const f = FEATS.find((ft) => ft.id === fid);
+                                return sum + (f?.attackBonus || 0);
+                              }, 0);
 
-                              if (isHit) {
-                                const baseDmg = rollSpellDamage(weaponDie);
-                                const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + strMod + weaponDmgBonus : baseDmg + strMod + weaponDmgBonus);
-                                damageUnit(target.id, finalDmg);
-                                playCombatHit();
-                                if (isCrit) playCritical();
-                                const atkLabel = `${attackRoll}+${strMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}=${totalAttack}`;
-                                const logMsg = isCrit
-                                  ? `CRITICAL HIT! ${selectedCharacter?.name || 'You'} strikes ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`
-                                  : `${selectedCharacter?.name || 'You'} hits ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`;
-                                setCombatLog((prev) => [...prev, logMsg]);
-                                addDmMessage(logMsg);
-                                if (target.hp - finalDmg <= 0) {
-                                  playEnemyDeath();
-                                  const deathMsg = `${target.name} falls!`;
-                                  setCombatLog((prev) => [...prev, deathMsg]);
-                                  addDmMessage(deathMsg);
+                              let totalDamageDealt = 0;
+                              for (let atk = 0; atk < numAttacks; atk++) {
+                                const attackRoll = Math.floor(Math.random() * 20) + 1;
+                                const totalAttack = attackRoll + strMod + weaponAtkBonus + condAtkMod + featAtkBonus;
+                                const isHit = attackRoll === 20 || totalAttack >= target.ac;
+                                const isCrit = attackRoll === 20;
+                                const atkLabel = `${attackRoll}+${strMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}=${totalAttack}`;
+                                const atkPrefix = numAttacks > 1 ? `[Attack ${atk + 1}] ` : '';
+
+                                if (isHit) {
+                                  const baseDmg = rollSpellDamage(weaponDie);
+                                  const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + strMod + weaponDmgBonus + featDmgBonus : baseDmg + strMod + weaponDmgBonus + featDmgBonus);
+                                  totalDamageDealt += finalDmg;
+                                  damageUnit(target.id, finalDmg);
+                                  playCombatHit();
+                                  if (isCrit) playCritical();
+                                  const logMsg = isCrit
+                                    ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} strikes ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`
+                                    : `${atkPrefix}${selectedCharacter?.name || 'You'} hits ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`;
+                                  setCombatLog((prev) => [...prev, logMsg]);
+                                  addDmMessage(logMsg);
+                                } else {
+                                  playCombatMiss();
+                                  const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${target.ac})`;
+                                  setCombatLog((prev) => [...prev, missMsg]);
+                                  addDmMessage(missMsg);
                                 }
-                              } else {
-                                playCombatMiss();
-                                const atkLabel = `${attackRoll}+${strMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}=${totalAttack}`;
-                                const missMsg = `${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${target.ac})`;
-                                setCombatLog((prev) => [...prev, missMsg]);
-                                addDmMessage(missMsg);
+                              }
+                              // Check for enemy death after all attacks
+                              if (target.hp - totalDamageDealt <= 0) {
+                                playEnemyDeath();
+                                const deathMsg = `${target.name} falls!`;
+                                setCombatLog((prev) => [...prev, deathMsg]);
+                                addDmMessage(deathMsg);
                               }
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.061l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.06-1.061a.75.75 0 10-1.06 1.06l1.06 1.06zM5.404 6.464a.75.75 0 001.06-1.06l-1.06-1.06a.75.75 0 10-1.061 1.06l1.06 1.06z" /></svg>
                             {weapon ? `Attack (${weapon.name})` : 'Unarmed Strike'}
+                            {selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5 && <span className="text-[9px] ml-1 opacity-70">x2</span>}
                           </button>
                         );
                       })()}
@@ -1124,7 +1156,11 @@ export default function Game() {
                         const enemyTarget = target && target.type === 'enemy' ? target : null;
                         return (
                           <div className="relative group">
-                            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/40 hover:bg-purple-900/60 border border-purple-700/50 text-purple-300 text-xs font-semibold rounded-lg transition-all">
+                            <button
+                              disabled={!isPlayerTurn}
+                              title={!isPlayerTurn ? 'Wait for your turn' : undefined}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/40 hover:bg-purple-900/60 border border-purple-700/50 text-purple-300 text-xs font-semibold rounded-lg transition-all ${!isPlayerTurn ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            >
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path d="M15.98 1.804a1 1 0 00-1.96 0l-.24 1.192a1 1 0 01-.784.785l-1.192.238a1 1 0 000 1.962l1.192.238a1 1 0 01.785.785l.238 1.192a1 1 0 001.962 0l.238-1.192a1 1 0 01.785-.785l1.192-.238a1 1 0 000-1.962l-1.192-.238a1 1 0 01-.785-.785l-.238-1.192zM6.949 5.684a1 1 0 00-1.898 0l-.683 2.051a1 1 0 01-.633.633l-2.051.683a1 1 0 000 1.898l2.051.684a1 1 0 01.633.632l.683 2.051a1 1 0 001.898 0l.683-2.051a1 1 0 01.633-.633l2.051-.683a1 1 0 000-1.898l-2.051-.683a1 1 0 01-.633-.633L6.95 5.684z" /></svg>
                               Cast Spell
                             </button>
@@ -1147,12 +1183,14 @@ export default function Game() {
                                     onClick={() => {
                                       const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id);
                                       if (result.success) {
+                                        playMagicSpell();
                                         setCombatLog((prev) => [...prev, result.message]);
                                         addDmMessage(result.message);
                                         if (spell.damage && enemyTarget && enemyTarget.hp <= 0) {
                                           playEnemyDeath();
                                           addDmMessage(`${enemyTarget.name} falls!`);
                                         }
+                                        if (spell.healAmount) playHealing();
                                       } else {
                                         setShopMessage(result.message);
                                         setTimeout(() => setShopMessage(null), 2500);
@@ -1194,7 +1232,7 @@ export default function Game() {
                         const colors = colorMap[ability.color] || colorMap.slate;
                         return (
                           <button
-                            disabled={isUsed || (needsTarget && !enemyTarget)}
+                            disabled={isUsed || (needsTarget && !enemyTarget) || !isPlayerTurn}
                             onClick={() => {
                               const result = useClassAbility(selectedCharacter.id, enemyTarget?.id);
                               if (result.success) {
@@ -1204,13 +1242,14 @@ export default function Game() {
                                   playEnemyDeath();
                                   addDmMessage(`${enemyTarget.name} falls!`);
                                 }
-                                if (ability.type === 'heal') playCombatHit();
+                                if (ability.type === 'heal') playHealing();
+                              if (ability.type === 'attack') playCombatHit();
                               } else {
                                 setShopMessage(result.message);
                                 setTimeout(() => setShopMessage(null), 2500);
                               }
                             }}
-                            title={`${ability.description} (Resets on ${ability.resetsOn} rest)`}
+                            title={!isPlayerTurn ? 'Wait for your turn' : `${ability.description} (Resets on ${ability.resetsOn} rest)`}
                             className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all disabled:opacity-30 ${colors}`}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" /></svg>
@@ -1226,7 +1265,8 @@ export default function Game() {
                         const isDodging = playerUnit.conditions?.some((c) => c.type === 'blessed' && c.source === 'Dodge');
                         return (
                           <button
-                            disabled={!!isDodging}
+                            disabled={!!isDodging || !isPlayerTurn}
+                            title={!isPlayerTurn ? 'Wait for your turn' : undefined}
                             onClick={() => {
                               applyCondition(playerUnit.id, { type: 'blessed', duration: 1, source: 'Dodge' });
                               const msg = `${selectedCharacter.name} takes the Dodge action! (+2 AC until next turn)`;
@@ -1244,12 +1284,14 @@ export default function Game() {
                       {/* Dash action — disengage, end turn */}
                       {inCombat && selectedCharacter && (
                         <button
+                          disabled={!isPlayerTurn}
+                          title={!isPlayerTurn ? 'Wait for your turn' : undefined}
                           onClick={() => {
                             const msg = `${selectedCharacter.name} takes the Dash action, disengaging from combat!`;
                             setCombatLog((prev) => [...prev, msg]);
                             addDmMessage(msg);
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clipRule="evenodd" /></svg>
                           Dash
@@ -1280,12 +1322,19 @@ export default function Game() {
                               addDmMessage(rewardMsg);
 
                               if (leveledUp) {
+                                playLevelUp();
                                 addDmMessage(`LEVEL UP! ${selectedCharacter.name} is now level ${newLevel}!`);
+                                // Check if this level grants an ASI/feat choice
+                                const updatedChar = characters.find((c) => c.id === selectedCharacter.id);
+                                if (updatedChar && hasPendingASI({ ...updatedChar, level: newLevel })) {
+                                  setTimeout(() => setShowLevelUpModal(true), 1500); // show after a beat
+                                }
                               }
 
                               // Roll for loot drops
                               const loot = rollLoot(deadEnemies.length, selectedCharacter.level);
                               if (loot.length > 0) {
+                                playLootDrop();
                                 for (const item of loot) addItem(selectedCharacter.id, item);
                                 const lootNames = loot.map((i) => i.name).join(', ');
                                 addDmMessage(`Loot found: ${lootNames}`);
@@ -1306,12 +1355,24 @@ export default function Game() {
                     </>
                   )}
 
+                   {/* Level Up indicator — show when character has pending ASI/feat choice */}
+                  {selectedCharacter && hasPendingASI(selectedCharacter) && (
+                    <button
+                      onClick={() => setShowLevelUpModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-800/50 hover:bg-amber-700/60 border border-amber-500/60 text-amber-200 text-xs font-bold rounded-lg transition-all animate-pulse"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" /></svg>
+                      Level Up!
+                    </button>
+                  )}
+
                   {/* Rest buttons — show when not in combat and character selected */}
                   {selectedCharacter && !inCombat && (
                     <>
                       <button
-                        onClick={() => {
+                         onClick={() => {
                           restCharacter(selectedCharacter.id, 'short');
+                          playHealing();
                           addDmMessage(`${selectedCharacter.name} takes a short rest, tending wounds and catching their breath.`);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-800/50 text-sky-300 text-xs font-semibold rounded-lg transition-all"
@@ -1320,8 +1381,9 @@ export default function Game() {
                         Short Rest
                       </button>
                       <button
-                        onClick={() => {
+                         onClick={() => {
                           restCharacter(selectedCharacter.id, 'long');
+                          playHealing();
                           addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored.`);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-800/50 text-indigo-300 text-xs font-semibold rounded-lg transition-all"
@@ -1861,6 +1923,160 @@ export default function Game() {
           )}
         </div>
       </div>
+
+      {/* Level-Up Choice Modal — ASI or Feat */}
+      {showLevelUpModal && selectedCharacter && hasPendingASI(selectedCharacter) && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-slate-900 border border-amber-700/60 rounded-2xl shadow-2xl shadow-amber-900/30 w-[480px] max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-amber-800/40 bg-gradient-to-r from-amber-900/30 to-yellow-900/20">
+              <h2 className="text-lg font-bold text-amber-300">Level Up — Ability Score Improvement</h2>
+              <p className="text-xs text-amber-400/70 mt-1">{selectedCharacter.name} reached level {selectedCharacter.level}! Choose an improvement.</p>
+            </div>
+
+            {/* Tab switcher */}
+            <div className="flex border-b border-slate-800">
+              <button
+                onClick={() => setLevelUpTab('asi')}
+                className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'asi' ? 'border-amber-500 text-amber-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+              >
+                Ability Scores
+              </button>
+              <button
+                onClick={() => setLevelUpTab('feat')}
+                className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'feat' ? 'border-purple-500 text-purple-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+              >
+                Feats
+              </button>
+            </div>
+
+            <div className="p-6">
+              {levelUpTab === 'asi' ? (
+                <div>
+                  {/* ASI mode toggle */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => { setAsiMode('single'); setAsiStat2(null); }}
+                      className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${asiMode === 'single' ? 'bg-amber-900/40 border-amber-600/60 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'}`}
+                    >
+                      +2 to one stat
+                    </button>
+                    <button
+                      onClick={() => setAsiMode('split')}
+                      className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${asiMode === 'split' ? 'bg-amber-900/40 border-amber-600/60 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'}`}
+                    >
+                      +1 to two stats
+                    </button>
+                  </div>
+
+                  {/* Stat selection grid */}
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as StatName[]).map((stat) => {
+                      const val = selectedCharacter.stats[stat];
+                      const isMaxed = val >= 20;
+                      const isSelected1 = asiStat1 === stat;
+                      const isSelected2 = asiStat2 === stat;
+                      const wouldExceed = asiMode === 'single' ? val + 2 > 20 : val + 1 > 20;
+                      return (
+                        <button
+                          key={stat}
+                          disabled={isMaxed}
+                          onClick={() => {
+                            if (asiMode === 'single') {
+                              setAsiStat1(stat);
+                              setAsiStat2(null);
+                            } else {
+                              // Split mode: select first then second
+                              if (!isSelected1 && !isSelected2) {
+                                if (asiStat1 === stat) return;
+                                if (!asiStat2) setAsiStat2(stat);
+                                else setAsiStat1(stat);
+                              } else if (isSelected1) {
+                                setAsiStat1(asiStat2 || stat);
+                                setAsiStat2(null);
+                              } else {
+                                setAsiStat2(null);
+                              }
+                            }
+                          }}
+                          className={`px-3 py-3 rounded-lg border text-center transition-all ${
+                            isMaxed ? 'opacity-30 cursor-not-allowed bg-slate-800 border-slate-700' :
+                            (isSelected1 || isSelected2) ? 'bg-amber-900/50 border-amber-500/70 text-amber-200 ring-1 ring-amber-500/30' :
+                            'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                          }`}
+                        >
+                          <div className="text-xs font-bold">{stat}</div>
+                          <div className="text-lg font-bold">{val}</div>
+                          <div className="text-[9px] text-slate-500">
+                            {isMaxed ? 'MAX' : wouldExceed && asiMode === 'single' ? 'Cap 20' : isSelected1 && asiMode === 'single' ? `→ ${Math.min(20, val + 2)}` : (isSelected1 || isSelected2) ? `→ ${Math.min(20, val + 1)}` : `mod ${val >= 10 ? '+' : ''}${Math.floor((val - 10) / 2)}`}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Confirm ASI */}
+                  <button
+                    disabled={asiMode === 'split' && (!asiStat2 || asiStat1 === asiStat2)}
+                    onClick={() => {
+                      const result = applyASI(selectedCharacter.id, asiStat1, asiMode === 'split' ? asiStat2 || undefined : undefined);
+                      if (result.success) {
+                        addDmMessage(result.message);
+                        setCombatLog((prev) => [...prev, result.message]);
+                        // Check if more pending ASI choices remain
+                        const updated = characters.find((c) => c.id === selectedCharacter.id);
+                        if (!updated || !hasPendingASI(updated)) setShowLevelUpModal(false);
+                      }
+                    }}
+                    className="w-full py-2.5 bg-amber-700/60 hover:bg-amber-700/80 border border-amber-600/60 text-amber-200 text-sm font-bold rounded-xl transition-all disabled:opacity-30"
+                  >
+                    {asiMode === 'single' ? `Apply +2 ${asiStat1}` : asiStat2 ? `Apply +1 ${asiStat1}, +1 ${asiStat2}` : 'Select a second stat'}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-xs text-slate-400 mb-3">Choose a feat instead of an ability score improvement:</p>
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {FEATS.filter((f) => !(selectedCharacter.feats || []).includes(f.id)).map((feat) => (
+                      <button
+                        key={feat.id}
+                        onClick={() => {
+                          const result = selectFeat(selectedCharacter.id, feat.id);
+                          if (result.success) {
+                            addDmMessage(result.message);
+                            setCombatLog((prev) => [...prev, result.message]);
+                            const updated = characters.find((c) => c.id === selectedCharacter.id);
+                            if (!updated || !hasPendingASI(updated)) setShowLevelUpModal(false);
+                          }
+                        }}
+                        className="w-full text-left px-4 py-3 bg-slate-800 hover:bg-purple-900/30 border border-slate-700 hover:border-purple-600/50 rounded-xl transition-all"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-bold text-purple-300">{feat.name}</span>
+                          <div className="flex gap-1.5">
+                            {feat.statBonuses && Object.entries(feat.statBonuses).map(([s, v]) => (
+                              <span key={s} className="text-[9px] px-1.5 py-0.5 bg-amber-900/40 text-amber-300 rounded-full">+{v} {s}</span>
+                            ))}
+                            {feat.maxHpPerLevel && <span className="text-[9px] px-1.5 py-0.5 bg-red-900/40 text-red-300 rounded-full">+{feat.maxHpPerLevel} HP/lv</span>}
+                            {feat.damageBonus && <span className="text-[9px] px-1.5 py-0.5 bg-orange-900/40 text-orange-300 rounded-full">+{feat.damageBonus} dmg</span>}
+                            {feat.initiativeBonus && <span className="text-[9px] px-1.5 py-0.5 bg-yellow-900/40 text-yellow-300 rounded-full">+{feat.initiativeBonus} init</span>}
+                            {feat.attackBonus && <span className="text-[9px] px-1.5 py-0.5 bg-blue-900/40 text-blue-300 rounded-full">+{feat.attackBonus} atk</span>}
+                            {feat.savingThrowBonus && <span className="text-[9px] px-1.5 py-0.5 bg-green-900/40 text-green-300 rounded-full">+{feat.savingThrowBonus} saves</span>}
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400">{feat.description}</p>
+                      </button>
+                    ))}
+                    {FEATS.filter((f) => !(selectedCharacter.feats || []).includes(f.id)).length === 0 && (
+                      <p className="text-xs text-slate-500 text-center py-4">All feats already taken!</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
