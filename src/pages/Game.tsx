@@ -70,6 +70,65 @@ export default function Game() {
     try { localStorage.setItem(`adventure:scene:${room}`, sceneName); } catch { /* full */ }
   }, [sceneName, room]);
 
+  // Fire-and-forget server campaign sync — debounced to avoid spamming on rapid updates
+  const campaignSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    if (!adventureStarted) return; // don't save empty campaigns
+    clearTimeout(campaignSaveTimer.current);
+    campaignSaveTimer.current = setTimeout(() => {
+      fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dmHistory,
+          sceneName,
+          selectedCharacterId: selectedCharacter?.id || null,
+          combatLog,
+        }),
+      }).catch(() => {}); // server unavailable — localStorage is fallback
+    }, 2000); // debounce 2s
+    return () => clearTimeout(campaignSaveTimer.current);
+  }, [dmHistory, sceneName, selectedCharacter?.id, combatLog, room, adventureStarted]);
+
+  // Load campaign from server on mount — merge with localStorage (server wins for newer data)
+  const campaignLoadedRef = useRef(false);
+  useEffect(() => {
+    if (campaignLoadedRef.current) return;
+    campaignLoadedRef.current = true;
+    fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`)
+      .then((r) => r.ok ? r.json() as Promise<{ campaign?: { dmHistory?: string[]; sceneName?: string; selectedCharacterId?: string } }> : null)
+      .then((data) => {
+        if (data?.campaign) {
+          const c = data.campaign;
+          // Server history is longer — use it (otherwise keep local which may be more recent)
+          if (c.dmHistory && c.dmHistory.length > dmHistory.length) {
+            setDmHistory(c.dmHistory);
+          }
+          if (c.sceneName && !sceneName) {
+            setSceneName(c.sceneName);
+          }
+          // Auto-select character if we had one saved
+          if (c.selectedCharacterId && !selectedCharacter) {
+            const found = characters.find((ch) => ch.id === c.selectedCharacterId);
+            if (found) handleSelectCharacter(found);
+          }
+        }
+      })
+      .catch(() => {}); // server unavailable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room]);
+
+  // Register campaign on first adventure start
+  useEffect(() => {
+    if (adventureStarted && dmHistory.length === 1) {
+      fetch(`${apiBase()}/api/campaigns`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room, name: `Campaign ${room.slice(0, 8)}` }),
+      }).catch(() => {});
+    }
+  }, [adventureStarted, dmHistory.length, room]);
+
   // Ref for WebSocket send — avoids circular deps between callbacks and useWebSocket
   const sendRef = useRef<(msg: WSMessage) => void>(() => {});
 

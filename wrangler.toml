@@ -24,6 +24,10 @@ preview_id = "portraits-dev-preview"
 binding = "CHARACTERS"
 id = "characters-dev"
 preview_id = "characters-dev-preview"
+[[env.development.kv_namespaces]]
+binding = "CAMPAIGNS"
+id = "campaigns-dev"
+preview_id = "campaigns-dev-preview"
 
 [env.staging]
 name = "adventure-staging"
@@ -41,6 +45,9 @@ id = "portraits-staging"
 [[env.staging.kv_namespaces]]
 binding = "CHARACTERS"
 id = "characters-staging"
+[[env.staging.kv_namespaces]]
+binding = "CAMPAIGNS"
+id = "campaigns-staging"
 
 [env.production]
 name = "adventure"
@@ -58,6 +65,9 @@ id = "portraits-prod"
 [[env.production.kv_namespaces]]
 binding = "CHARACTERS"
 id = "characters-prod"
+[[env.production.kv_namespaces]]
+binding = "CAMPAIGNS"
+id = "campaigns-prod"
 
 [[migrations]]
 tag = "v1"

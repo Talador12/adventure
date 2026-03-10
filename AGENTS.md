@@ -99,6 +99,11 @@ Server broadcasts:
 | POST | `/api/dm/narrate` | AI DM narration (full party context, scene, history) |
 | POST | `/api/dm/encounter` | AI encounter generator (enemy stats + description) |
 | POST | `/api/dm/npc` | AI NPC dialogue (named NPC, role, conversational memory) |
+| GET | `/api/campaign/:roomId` | Load campaign game state from KV |
+| PUT | `/api/campaign/:roomId` | Save campaign game state to KV |
+| GET | `/api/campaigns` | List user's saved campaigns |
+| POST | `/api/campaigns` | Register a campaign for the user |
+| DELETE | `/api/campaigns/:roomId` | Delete a campaign and its state |
 
 ## Secrets
 

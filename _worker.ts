@@ -23,6 +23,7 @@ interface Env {
   ASSETS?: { fetch: (req: Request) => Promise<Response> };
   PORTRAITS?: KVNamespace;
   CHARACTERS?: KVNamespace;
+  CAMPAIGNS?: KVNamespace;
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
   JWT_SECRET?: string;
@@ -815,6 +816,102 @@ async function getUserId(c: { req: { raw: Request }; env: Env }): Promise<string
     return null;
   }
 }
+
+// Campaign persistence — save/load full game state per room
+
+// GET /api/campaign/:roomId — load campaign state
+app.get('/api/campaign/:roomId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const raw = await c.env.CAMPAIGNS.get(`campaign:${c.req.param('roomId')}`) as string | null;
+    if (!raw) return c.json({ campaign: null });
+    return c.json({ campaign: JSON.parse(raw) });
+  } catch {
+    return c.json({ campaign: null });
+  }
+});
+
+// PUT /api/campaign/:roomId — save campaign state
+app.put('/api/campaign/:roomId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const state = {
+      dmHistory: body.dmHistory || [],
+      sceneName: body.sceneName || '',
+      selectedCharacterId: body.selectedCharacterId || null,
+      combatLog: body.combatLog || [],
+      updatedAt: Date.now(),
+      updatedBy: userId,
+    };
+    await c.env.CAMPAIGNS.put(`campaign:${c.req.param('roomId')}`, JSON.stringify(state));
+    return c.json({ ok: true });
+  } catch {
+    return c.json({ error: 'Failed to save campaign' }, 500);
+  }
+});
+
+// GET /api/campaigns — list all campaigns for the authenticated user
+app.get('/api/campaigns', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const raw = await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`) as string | null;
+    const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+    return c.json({ campaigns });
+  } catch {
+    return c.json({ campaigns: [] });
+  }
+});
+
+// POST /api/campaigns — register a campaign for the user's campaign list
+app.post('/api/campaigns', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const roomId = String(body.roomId || '');
+    const name = String(body.name || roomId);
+    if (!roomId) return c.json({ error: 'roomId is required' }, 400);
+
+    const raw = await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`) as string | null;
+    const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+
+    // Don't duplicate
+    if (!campaigns.find((c) => c.roomId === roomId)) {
+      campaigns.push({ roomId, name, createdAt: Date.now() });
+      await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+    }
+    return c.json({ ok: true });
+  } catch {
+    return c.json({ error: 'Failed to register campaign' }, 500);
+  }
+});
+
+// DELETE /api/campaigns/:roomId — remove a campaign from user's list
+app.delete('/api/campaigns/:roomId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const roomId = c.req.param('roomId');
+    const raw = await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`) as string | null;
+    const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+    const filtered = campaigns.filter((c) => c.roomId !== roomId);
+    await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(filtered));
+    // Also delete campaign state
+    await c.env.CAMPAIGNS.delete(`campaign:${roomId}`);
+    return c.json({ ok: true });
+  } catch {
+    return c.json({ error: 'Failed to delete campaign' }, 500);
+  }
+});
 
 // GET /api/characters — load all characters for the authenticated user
 app.get('/api/characters', async (c) => {

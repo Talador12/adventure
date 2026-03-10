@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-TypeScript zero-error, chat avatars, DM history persistence. Next: persistent campaigns or map improvements.
+Persistent campaigns shipped. Next: map system improvements.
 
 ## Working Items
 
@@ -57,9 +57,14 @@ TypeScript zero-error, chat avatars, DM history persistence. Next: persistent ca
 - DM tools: god mode, roll override, visibility toggles
 
 ### Persistent campaigns
-- **Status:** Backlog
-- Save/load game state via KV/R2
-- Character sheets with live updates and autosave
+- **Status:** Done
+- `CAMPAIGNS` KV namespace in dev/staging/production
+- API: `GET/PUT /api/campaign/:roomId` (game state), `GET/POST /api/campaigns` (user's campaign list), `DELETE /api/campaigns/:roomId`
+- Campaign state: dmHistory, sceneName, selectedCharacterId, combatLog, timestamps
+- Game.tsx: auto-saves to server (debounced 2s), loads on mount (server > localStorage merge)
+- Registers campaigns on first adventure start, auto-selects character on resume
+- Home page: "Your Campaigns" card with Play/Lobby/Delete buttons, sorted by creation date
+- localStorage still used for instant persistence, server for cross-device sync
 
 ## Backlog
 
@@ -91,4 +96,5 @@ TypeScript zero-error, chat avatars, DM history persistence. Next: persistent ca
 - Zero TypeScript errors: fixed all 8 pre-existing type errors in _worker.ts and GameContext.tsx
 - Discord avatars in chat: ChatPanel renders avatars next to messages, Lobby DO broadcasts avatars
 - DM history persistence: localStorage-backed per room, narration + scene survive page refresh
+- Persistent campaigns: CAMPAIGNS KV, server-synced game state, "Your Campaigns" on Home page
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context
