@@ -66,6 +66,9 @@ Client sends:
 - `{ type: "join", username, avatar? }` — join room
 - `{ type: "chat", message }` — chat message
 - `{ type: "roll", die, sides, unitId?, unitName? }` — request dice roll
+- `{ type: "dm_narrate", narration }` — broadcast DM narration to all players
+- `{ type: "dm_npc", npcName, dialogue }` — broadcast NPC dialogue to all players
+- `{ type: "dm_action", characterName, action }` — broadcast player action to all players
 - `{ type: "ping" }` — keepalive
 
 Server broadcasts:
@@ -74,6 +77,9 @@ Server broadcasts:
 - `{ type: "player_left", username, playerId, players, timestamp }`
 - `{ type: "chat", playerId, username, message, timestamp }`
 - `{ type: "roll_result", playerId, username, die, sides, value, isCritical, isFumble, unitId?, unitName?, timestamp }`
+- `{ type: "dm_narrate", playerId, username, narration, timestamp }` — DM narration
+- `{ type: "dm_npc", playerId, username, npcName, dialogue, timestamp }` — NPC dialogue
+- `{ type: "dm_action", playerId, username, characterName, action, timestamp }` — player action
 
 ## API Endpoints (Worker)
 
@@ -90,6 +96,9 @@ Server broadcasts:
 | GET | `/api/characters` | Load user's characters from KV (requires auth) |
 | PUT | `/api/characters` | Save user's characters to KV (full replace) |
 | DELETE | `/api/characters/:charId` | Delete a single character from KV |
+| POST | `/api/dm/narrate` | AI DM narration (full party context, scene, history) |
+| POST | `/api/dm/encounter` | AI encounter generator (enemy stats + description) |
+| POST | `/api/dm/npc` | AI NPC dialogue (named NPC, role, conversational memory) |
 
 ## Secrets
 

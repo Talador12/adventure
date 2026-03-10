@@ -175,6 +175,50 @@ export class Lobby {
         break;
       }
 
+      case 'dm_narrate': {
+        // Broadcast DM narration to ALL players so everyone sees the same story
+        const dmSession = this.sessions.get(server);
+        if (!dmSession) return;
+        this.broadcast({
+          type: 'dm_narrate',
+          playerId: dmSession.id,
+          username: dmSession.username,
+          narration: data.narration,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
+      case 'dm_npc': {
+        // Broadcast NPC dialogue to all players
+        const npcSession = this.sessions.get(server);
+        if (!npcSession) return;
+        this.broadcast({
+          type: 'dm_npc',
+          playerId: npcSession.id,
+          username: npcSession.username,
+          npcName: data.npcName,
+          dialogue: data.dialogue,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
+      case 'dm_action': {
+        // Broadcast a player's action to all players (so everyone sees what they did)
+        const actionSession = this.sessions.get(server);
+        if (!actionSession) return;
+        this.broadcast({
+          type: 'dm_action',
+          playerId: actionSession.id,
+          username: actionSession.username,
+          characterName: data.characterName,
+          action: data.action,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
       case 'ping': {
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
         break;

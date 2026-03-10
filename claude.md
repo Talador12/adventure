@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-WebSocket dev connectivity fixed (Vite proxy + same-origin). Next: AI DM via Workers AI.
+AI DM shipped — enriched narration, NPC dialogue, multiplayer broadcast. Next: map system improvements or persistent campaigns.
 
 ## Working Items
 
@@ -39,10 +39,17 @@ WebSocket dev connectivity fixed (Vite proxy + same-origin). Next: AI DM via Wor
 - Requires `make dev` (starts both Vite + Wrangler) for WebSocket features
 
 ### AI DM via Workers AI
-- **Status:** Todo
-- Narration, NPC dialogue, encounter generation
-- Feed character appearance descriptions into DM context
-- Use Llama for text generation
+- **Status:** Done
+- `/api/dm/narrate` — enriched with full party context (backstory, personality, bonds, flaws, alignment, condition, appearance)
+- `/api/dm/npc` — NPC dialogue endpoint: named NPCs with role, personality, conversational memory
+- System prompts demand specificity: named NPCs, sensory details, subverted expectations, character-reactive narration
+- DM narration broadcasts via WebSocket (`dm_narrate`, `dm_npc`, `dm_action` message types in Lobby DO)
+- All players see the same DM text in multiplayer — no more client-only narration
+- NPC Talk mode in Game.tsx: purple-themed UI, name/role inputs, dialogue history tracking
+- ChatPanel: NPC messages render purple-themed (vs amber for DM), shows NPC name as label
+- Narration panel: NPC dialogue styled distinctly from DM narration and combat log
+- Game.tsx `apiBase()` fixed to use Vite proxy (same-origin) instead of hardcoded port 8787
+- Scene name field in toolbar feeds location context into AI prompts
 
 ### Map system improvements
 - **Status:** Backlog
@@ -80,4 +87,5 @@ WebSocket dev connectivity fixed (Vite proxy + same-origin). Next: AI DM via Wor
 - Character edit mode (`/characters/:id/edit`) with KV persistence and server sync
 - Discord identity wired into WebSocket: avatars + display names in lobby player list
 - WebSocket dev connectivity: Vite proxy `ws: true` + same-origin connection (no more hardcoded port 8787)
+- AI DM: enriched narration with full party context, NPC dialogue system, multiplayer broadcast via WebSocket
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context

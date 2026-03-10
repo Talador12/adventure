@@ -30,18 +30,21 @@ function formatTime(ts: number) {
 }
 
 function DmMessage({ msg }: { msg: ChatMessage }) {
+  const isNpc = msg.username !== 'Dungeon Master';
   return (
-    <div className="rounded-xl px-4 py-3 border border-amber-600/30 bg-gradient-to-br from-amber-950/40 to-stone-900/60 shadow-md">
+    <div className={`rounded-xl px-4 py-3 border shadow-md ${isNpc ? 'border-purple-600/30 bg-gradient-to-br from-purple-950/40 to-slate-900/60' : 'border-amber-600/30 bg-gradient-to-br from-amber-950/40 to-stone-900/60'}`}>
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-amber-400 text-xs">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 inline">
-            <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
-          </svg>
+        <span className={`text-xs ${isNpc ? 'text-purple-400' : 'text-amber-400'}`}>
+          {isNpc ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 inline"><path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 3.976 1 5.365v2.171c0 1.388.993 2.61 2.43 2.841A41.587 41.587 0 0010 11c2.233 0 4.412-.187 6.57-.623C18.007 10.146 19 8.924 19 7.536V5.365c0-1.389-.993-2.61-2.43-2.841A41.587 41.587 0 0010 2zM1 13.694v-1.358C2.32 13.107 4.106 13.5 6 13.695v.705A4.5 4.5 0 011.5 18H1v-4.306zM14 14.4v-.705c1.894-.196 3.68-.588 5-1.36v1.359L19 18h-.5A4.5 4.5 0 0114 14.4z" clipRule="evenodd" /></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 inline"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" /></svg>
+          )}
         </span>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Dungeon Master</span>
-        <span className="text-[9px] text-amber-700/60">{formatTime(msg.timestamp)}</span>
+        <span className={`text-[10px] font-bold uppercase tracking-widest ${isNpc ? 'text-purple-400' : 'text-amber-500'}`}>{msg.username}</span>
+        <span className={`text-[9px] ${isNpc ? 'text-purple-700/60' : 'text-amber-700/60'}`}>{formatTime(msg.timestamp)}</span>
       </div>
-      <p className="text-sm text-amber-100/90 leading-relaxed italic">{msg.text}</p>
+      <p className={`text-sm leading-relaxed ${isNpc ? 'text-purple-100/90' : 'text-amber-100/90 italic'}`}>{msg.text}</p>
     </div>
   );
 }

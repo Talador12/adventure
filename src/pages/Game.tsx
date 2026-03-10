@@ -10,11 +10,8 @@ import { useGame, type Unit, type DieType, type Character } from '../contexts/Ga
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, isMuted, toggleMute } from '../hooks/useSoundFX';
 
-// Build the API base URL — hits wrangler on :8787 in dev, same origin in prod
+// API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
 function apiBase(): string {
-  if (typeof window !== 'undefined' && (window.location.port === '5173' || import.meta.env.DEV)) {
-    return `http://${window.location.hostname}:8787`;
-  }
   return '';
 }
 
@@ -47,6 +44,17 @@ export default function Game() {
   const [activeView, setActiveView] = useState<'narration' | 'map'>('narration');
   const [showSheet, setShowSheet] = useState(false);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
+
+  // NPC dialogue state
+  const [npcMode, setNpcMode] = useState(false);
+  const [npcName, setNpcName] = useState('');
+  const [npcRole, setNpcRole] = useState('');
+  const [npcLoading, setNpcLoading] = useState(false);
+  const [npcDialogueHistory, setNpcDialogueHistory] = useState<string[]>([]);
+  const [sceneName, setSceneName] = useState('');
+
+  // Ref for WebSocket send — avoids circular deps between callbacks and useWebSocket
+  const sendRef = useRef<(msg: WSMessage) => void>(() => {});
 
   // Initialize — no demo data, real data from character selection
   useEffect(() => {
@@ -99,6 +107,35 @@ export default function Game() {
     setDmHistory((prev) => [...prev, text]);
   }, []);
 
+  // Build rich character payload for DM context
+  const buildPartyPayload = useCallback(() => {
+    // Send all party characters, not just the selected one
+    const partyChars = selectedCharacter ? [selectedCharacter] : [];
+    // Also include other player characters from the characters list
+    for (const ch of characters) {
+      if (!partyChars.find((p) => p.id === ch.id)) partyChars.push(ch);
+    }
+    return partyChars.map((ch) => ({
+      name: ch.name,
+      race: ch.race,
+      class: ch.class,
+      level: ch.level,
+      hp: ch.hp,
+      maxHp: ch.maxHp,
+      ac: ch.ac,
+      stats: ch.stats,
+      alignment: ch.alignment,
+      background: ch.background,
+      condition: ch.condition,
+      personalityTraits: ch.personalityTraits,
+      ideals: ch.ideals,
+      bonds: ch.bonds,
+      flaws: ch.flaws,
+      backstory: ch.backstory,
+      appearanceDescription: ch.appearanceDescription,
+    }));
+  }, [selectedCharacter, characters]);
+
   // Call the DM narration endpoint
   const callDmNarrate = useCallback(async (action?: string) => {
     if (!selectedCharacter) return;
@@ -108,24 +145,18 @@ export default function Game() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          characters: [{
-            name: selectedCharacter.name,
-            race: selectedCharacter.race,
-            class: selectedCharacter.class,
-            level: selectedCharacter.level,
-            hp: selectedCharacter.hp,
-            maxHp: selectedCharacter.maxHp,
-            ac: selectedCharacter.ac,
-            stats: selectedCharacter.stats,
-          }],
+          characters: buildPartyPayload(),
           context: adventureStarted ? 'The adventure is underway.' : '',
           action: action || '',
           history: dmHistory.slice(-10),
+          scene: sceneName,
         }),
       });
       const data = await res.json() as { narration?: string; error?: string };
       if (data.narration) {
         addDmMessage(data.narration);
+        // Broadcast narration to all players via WebSocket
+        sendRef.current({ type: 'dm_narrate', narration: data.narration });
       } else {
         addDmMessage(data.error || 'The DM pauses, lost in thought...');
       }
@@ -134,7 +165,53 @@ export default function Game() {
     } finally {
       setDmLoading(false);
     }
-  }, [selectedCharacter, adventureStarted, dmHistory, addDmMessage]);
+  }, [selectedCharacter, adventureStarted, dmHistory, addDmMessage, buildPartyPayload, sceneName]);
+
+  // Call the NPC dialogue endpoint
+  const callNpcDialogue = useCallback(async (playerMessage: string) => {
+    if (!selectedCharacter || !npcName) return;
+    setNpcLoading(true);
+    try {
+      const res = await fetch(`${apiBase()}/api/dm/npc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          npcName,
+          npcRole,
+          playerMessage,
+          playerName: selectedCharacter.name,
+          playerClass: selectedCharacter.class,
+          scene: sceneName,
+          dialogueHistory: npcDialogueHistory.slice(-8),
+        }),
+      });
+      const data = await res.json() as { dialogue?: string; npcName?: string; error?: string };
+      if (data.dialogue) {
+        const npcText = data.dialogue;
+        // Add NPC message to chat
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            type: 'dm' as const,
+            username: npcName,
+            text: npcText,
+            timestamp: Date.now(),
+          },
+        ]);
+        setDmHistory((prev) => [...prev, `${npcName}: "${npcText}"`]);
+        setNpcDialogueHistory((prev) => [...prev, `${selectedCharacter.name}: ${playerMessage}`, `${npcName}: ${npcText}`]);
+        // Broadcast NPC dialogue to all players
+        sendRef.current({ type: 'dm_npc', npcName, dialogue: npcText });
+      } else {
+        addDmMessage(data.error || `${npcName} stares at you blankly.`);
+      }
+    } catch {
+      addDmMessage(`*${npcName} mutters something unintelligible...*`);
+    } finally {
+      setNpcLoading(false);
+    }
+  }, [selectedCharacter, npcName, npcRole, sceneName, npcDialogueHistory, addDmMessage]);
 
   // Auto-execute enemy turns: when an enemy unit becomes the active turn, auto-attack a player
   useEffect(() => {
@@ -183,7 +260,7 @@ export default function Game() {
     await callDmNarrate('Set the scene for the beginning of a new adventure. The party gathers at a tavern.');
   }, [callDmNarrate]);
 
-  // Player action — send to DM
+  // Player action — send to DM or NPC
   const handlePlayerAction = useCallback(async () => {
     const text = actionInput.trim();
     if (!text) return;
@@ -197,13 +274,20 @@ export default function Game() {
         type: 'chat',
         playerId: currentPlayer.id,
         username: selectedCharacter?.name || currentPlayer.username,
-        text: `*${text}*`,
+        text: npcMode ? `"${text}"` : `*${text}*`,
         timestamp: Date.now(),
       },
     ]);
 
-    await callDmNarrate(text);
-  }, [actionInput, currentPlayer.id, currentPlayer.username, selectedCharacter, callDmNarrate]);
+    // Broadcast the action to all players
+    sendRef.current({ type: 'dm_action', characterName: selectedCharacter?.name || currentPlayer.username, action: text });
+
+    if (npcMode) {
+      await callNpcDialogue(text);
+    } else {
+      await callDmNarrate(text);
+    }
+  }, [actionInput, currentPlayer.id, currentPlayer.username, selectedCharacter, callDmNarrate, callNpcDialogue, npcMode]);
 
   // Generate encounter — spawn enemy units
   const handleGenerateEncounter = useCallback(async () => {
@@ -331,14 +415,66 @@ export default function Game() {
           },
         ]);
         break;
+
+      case 'dm_narrate':
+        // DM narration broadcast from another player — only add if we didn't trigger it
+        if (msg.playerId !== wsPlayerId) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'dm',
+              username: 'Dungeon Master',
+              text: msg.narration as string,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+          setDmHistory((prev) => [...prev, msg.narration as string]);
+        }
+        break;
+
+      case 'dm_npc':
+        // NPC dialogue broadcast from another player
+        if (msg.playerId !== wsPlayerId) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'dm',
+              username: msg.npcName as string,
+              text: msg.dialogue as string,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+          setDmHistory((prev) => [...prev, `${msg.npcName}: "${msg.dialogue}"`]);
+        }
+        break;
+
+      case 'dm_action':
+        // Another player's action broadcast — show it in chat
+        if (msg.playerId !== wsPlayerId) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'chat',
+              playerId: msg.playerId as string,
+              username: msg.characterName as string || msg.username as string,
+              text: `*${msg.action}*`,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+        }
+        break;
     }
-  }, []);
+  }, [wsPlayerId]);
 
   const { status, send } = useWebSocket({
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
     onMessage: handleWsMessage,
   });
+  sendRef.current = send;
 
   const handleChatSend = useCallback((text: string) => send({ type: 'chat', message: text }), [send]);
 
@@ -592,6 +728,31 @@ export default function Game() {
                     <option value="deadly">Deadly</option>
                   </select>
 
+                  {/* NPC Talk toggle */}
+                  <button
+                    onClick={() => {
+                      if (npcMode) {
+                        setNpcMode(false);
+                        setNpcDialogueHistory([]);
+                      } else {
+                        setNpcMode(true);
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all ${npcMode ? 'bg-purple-600/40 border-purple-500/50 text-purple-200' : 'bg-purple-900/40 hover:bg-purple-900/60 border-purple-800/50 text-purple-300'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 3.976 1 5.365v2.171c0 1.388.993 2.61 2.43 2.841A41.587 41.587 0 0010 11c2.233 0 4.412-.187 6.57-.623C18.007 10.146 19 8.924 19 7.536V5.365c0-1.389-.993-2.61-2.43-2.841A41.587 41.587 0 0010 2zM1 13.694v-1.358C2.32 13.107 4.106 13.5 6 13.695v.705A4.5 4.5 0 011.5 18H1v-4.306zM14 14.4v-.705c1.894-.196 3.68-.588 5-1.36v1.359L19 18h-.5A4.5 4.5 0 0114 14.4z" clipRule="evenodd" /></svg>
+                    {npcMode ? 'End Talk' : 'Talk NPC'}
+                  </button>
+
+                  {/* Scene name input — compact inline */}
+                  <input
+                    type="text"
+                    value={sceneName}
+                    onChange={(e) => setSceneName(e.target.value)}
+                    placeholder="Scene..."
+                    className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 placeholder-slate-600 outline-none w-24 focus:w-40 transition-all focus:ring-1 focus:ring-amber-600/50"
+                  />
+
                   {/* Combat controls — show when enemies exist */}
                   {units.some((u) => u.type === 'enemy') && (
                     <>
@@ -688,6 +849,27 @@ export default function Game() {
 
                 {activeView === 'narration' ? (
                   <>
+                    {/* NPC setup panel — shown when NPC mode is active */}
+                    {npcMode && (
+                      <div className="p-3 border-b border-purple-800/30 bg-purple-950/20 flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Talking to:</span>
+                        <input
+                          type="text"
+                          value={npcName}
+                          onChange={(e) => setNpcName(e.target.value)}
+                          placeholder="NPC name..."
+                          className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none w-32 focus:ring-1 focus:ring-purple-500/50"
+                        />
+                        <input
+                          type="text"
+                          value={npcRole}
+                          onChange={(e) => setNpcRole(e.target.value)}
+                          placeholder="Role (e.g., tavern keeper, guard captain)..."
+                          className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none flex-1 min-w-40 focus:ring-1 focus:ring-purple-500/50"
+                        />
+                      </div>
+                    )}
+
                     {/* Narration display — shows recent DM messages prominently */}
                     <div className="flex-1 p-6 overflow-auto space-y-4">
                       {dmHistory.length === 0 && (
@@ -697,6 +879,16 @@ export default function Game() {
                       )}
 
                       {dmHistory.map((text, i) => {
+                        // NPC dialogue lines (format: "NpcName: "dialogue"")
+                        const npcMatch = text.match(/^(.+?):\s*"(.+)"$/);
+                        if (npcMatch) {
+                          return (
+                            <div key={i} className="rounded-xl px-5 py-4 border border-purple-600/20 bg-gradient-to-br from-purple-950/30 to-slate-900/40">
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-1">{npcMatch[1]}</div>
+                              <p className="text-purple-100/90 leading-relaxed">&ldquo;{npcMatch[2]}&rdquo;</p>
+                            </div>
+                          );
+                        }
                         // Combat log entries (attacks, initiative) use a different style
                         const isCombatEntry = text.includes('hits ') || text.includes('misses ') || text.includes('CRITICAL') || text.includes('falls!') || text.includes('Initiative');
                         return (
@@ -706,11 +898,11 @@ export default function Game() {
                         );
                       })}
 
-                      {dmLoading && (
-                        <div className="rounded-xl px-5 py-4 border border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40 animate-pulse">
-                          <div className="flex items-center gap-2 text-amber-500/60">
-                            <div className="w-4 h-4 border-2 border-amber-500/60 border-t-transparent rounded-full animate-spin" />
-                            <span className="text-sm italic">The Dungeon Master weaves the tale...</span>
+                      {(dmLoading || npcLoading) && (
+                        <div className={`rounded-xl px-5 py-4 border animate-pulse ${npcLoading ? 'border-purple-600/20 bg-gradient-to-br from-purple-950/30 to-slate-900/40' : 'border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40'}`}>
+                          <div className={`flex items-center gap-2 ${npcLoading ? 'text-purple-500/60' : 'text-amber-500/60'}`}>
+                            <div className={`w-4 h-4 border-2 border-t-transparent rounded-full animate-spin ${npcLoading ? 'border-purple-500/60' : 'border-amber-500/60'}`} />
+                            <span className="text-sm italic">{npcLoading ? `${npcName || 'The NPC'} considers their words...` : 'The Dungeon Master weaves the tale...'}</span>
                           </div>
                         </div>
                       )}
@@ -723,17 +915,17 @@ export default function Game() {
                           type="text"
                           value={actionInput}
                           onChange={(e) => setActionInput(e.target.value)}
-                          placeholder="What do you do? (e.g., 'I search the room for traps')"
-                          className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-600 outline-none transition-all"
+                          placeholder={npcMode ? `Say something to ${npcName || 'the NPC'}...` : "What do you do? (e.g., 'I search the room for traps')"}
+                          className={`flex-1 px-4 py-3 bg-slate-800 border rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none transition-all ${npcMode ? 'border-purple-700/50 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-600' : 'border-slate-700 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-600'}`}
                           onKeyDown={(e) => e.key === 'Enter' && handlePlayerAction()}
-                          disabled={dmLoading}
+                          disabled={dmLoading || npcLoading}
                         />
                         <button
                           onClick={handlePlayerAction}
-                          disabled={!actionInput.trim() || dmLoading}
-                          className="px-5 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
+                          disabled={!actionInput.trim() || dmLoading || npcLoading}
+                          className={`px-5 py-3 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${npcMode ? 'bg-purple-600 hover:bg-purple-500' : 'bg-amber-600 hover:bg-amber-500'}`}
                         >
-                          Act
+                          {npcMode ? 'Speak' : 'Act'}
                         </button>
                       </div>
                     </div>

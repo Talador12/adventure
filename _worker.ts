@@ -513,20 +513,43 @@ app.post('/api/dm/narrate', async (c) => {
   const context = String(body.context || '');
   const action = String(body.action || '');
   const history = (body.history as string[]) || [];
+  const scene = String(body.scene || '');
 
+  // Build rich character descriptions with personality and backstory
   const charDescriptions = characters.map((ch) => {
     const stats = (ch.stats || {}) as Record<string, number>;
-    return `${ch.name} (Level ${ch.level} ${ch.race} ${ch.class}, HP ${ch.hp}/${ch.maxHp}, AC ${ch.ac}, STR ${stats.STR || 10} DEX ${stats.DEX || 10} CON ${stats.CON || 10} INT ${stats.INT || 10} WIS ${stats.WIS || 10} CHA ${stats.CHA || 10})`;
-  }).join('\n');
+    const lines = [
+      `${ch.name} — Level ${ch.level} ${ch.race} ${ch.class} (${ch.alignment || 'Neutral'}, ${ch.background || 'Unknown'} background)`,
+      `  HP ${ch.hp}/${ch.maxHp}, AC ${ch.ac}, STR ${stats.STR || 10} DEX ${stats.DEX || 10} CON ${stats.CON || 10} INT ${stats.INT || 10} WIS ${stats.WIS || 10} CHA ${stats.CHA || 10}`,
+      `  Condition: ${ch.condition || 'normal'}`,
+    ];
+    if (ch.appearanceDescription) lines.push(`  Appearance: ${ch.appearanceDescription}`);
+    if (ch.personalityTraits) lines.push(`  Personality: ${ch.personalityTraits}`);
+    if (ch.ideals) lines.push(`  Ideals: ${ch.ideals}`);
+    if (ch.bonds) lines.push(`  Bonds: ${ch.bonds}`);
+    if (ch.flaws) lines.push(`  Flaws: ${ch.flaws}`);
+    if (ch.backstory) lines.push(`  Backstory (brief): ${String(ch.backstory).slice(0, 200)}`);
+    return lines.join('\n');
+  }).join('\n\n');
 
   const historyStr = history.length > 0 ? `\nRecent events:\n${history.slice(-10).join('\n')}` : '';
 
-  const systemPrompt = `You are a dramatic, immersive Dungeon Master for a D&D 5e adventure. You narrate in vivid second-person prose. Keep responses to 2-4 sentences. Be atmospheric and exciting. When combat happens, describe it cinematically. When players make choices, present consequences with flair.
+  const systemPrompt = `You are a master Dungeon Master — theatrical, unpredictable, and deeply immersive. You narrate a D&D 5e adventure in vivid second-person prose.
 
-Party:
-${charDescriptions || 'No characters yet.'}
+RULES:
+- 2-4 sentences per response. Dense with sensory detail — sounds, smells, textures, light.
+- Name every NPC. Give them a quirk, a voice, a motivation. "The barkeep" is lazy writing. "Marta Ashwick, the one-armed barkeep who hums battle hymns while she pours" is good.
+- Subvert expectations. The chest is already open. The goblin wants to negotiate. The king is a fraud.
+- React to WHO these characters are. A chaotic rogue and a lawful paladin experience the same tavern differently.
+- When players have low HP or harsh conditions, reflect it — they limp, bleed, struggle.
+- During combat, describe it cinematically with specific body language and impact.
+- Never break character. Never mention rules, dice, or game mechanics.
+
+THE PARTY:
+${charDescriptions || 'A lone wanderer with no name.'}
 ${historyStr}
-${context ? `\nCurrent scene: ${context}` : ''}`;
+${scene ? `\nCurrent location: ${scene}` : ''}
+${context ? `\nScene context: ${context}` : ''}`;
 
   try {
     const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
@@ -534,13 +557,64 @@ ${context ? `\nCurrent scene: ${context}` : ''}`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: action || 'Set the scene for the beginning of a new adventure. The party gathers at a tavern.' },
       ],
-      max_tokens: 300,
+      max_tokens: 400,
     });
 
     const response = (result as Record<string, unknown>).response as string || '';
     return c.json({ narration: response.trim() });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'DM narration failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// AI NPC dialogue — speak as a specific NPC in character
+app.post('/api/dm/npc', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<Record<string, unknown>>();
+  const npcName = String(body.npcName || 'the stranger');
+  const npcRole = String(body.npcRole || 'a mysterious figure');
+  const npcPersonality = String(body.npcPersonality || '');
+  const playerMessage = String(body.playerMessage || '');
+  const playerName = String(body.playerName || 'Adventurer');
+  const playerClass = String(body.playerClass || '');
+  const scene = String(body.scene || '');
+  const history = (body.dialogueHistory as string[]) || [];
+
+  const historyStr = history.length > 0
+    ? `\nConversation so far:\n${history.slice(-8).join('\n')}`
+    : '';
+
+  const systemPrompt = `You are ${npcName}, ${npcRole} in a D&D 5e world. Stay completely in character.
+
+YOUR PERSONALITY: ${npcPersonality || 'Guarded but not hostile. You know things you don\'t share freely.'}
+
+RULES:
+- Speak ONLY as ${npcName}. No narration, no stage directions, no quotation marks around your speech.
+- 1-3 sentences. Terse is better than rambling. Leave things unsaid.
+- Have an agenda. You want something from the player, even if it's just to be left alone.
+- React to who is talking to you. A ${playerClass || 'stranger'} named ${playerName} is addressing you.
+- If they're rude, you can refuse to help. If they're clever, reward it. If they threaten you, react realistically.
+- Use speech patterns that fit your role — a scholar uses different words than a thief.
+${scene ? `\nSetting: ${scene}` : ''}
+${historyStr}`;
+
+  try {
+    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: playerMessage || `${playerName} approaches you.` },
+      ],
+      max_tokens: 200,
+    });
+
+    const response = (result as Record<string, unknown>).response as string || '';
+    return c.json({ dialogue: response.trim(), npcName });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'NPC dialogue failed';
     return c.json({ error: msg }, 500);
   }
 });
