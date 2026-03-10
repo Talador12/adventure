@@ -58,10 +58,10 @@ export function useWebSocket({ roomId, username, avatar, onMessage, enabled = tr
     setStatus('connecting');
     intentionalClose.current = false;
 
-    // Build WebSocket URL — use the backend (wrangler) port in dev, same host in prod
+    // Build WebSocket URL — always use same origin so Vite proxy (dev) or prod routing handles it
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = import.meta.env.DEV ? '8787' : window.location.port;
+    const port = window.location.port;
     const wsUrl = `${protocol}//${host}${port ? ':' + port : ''}/api/ws?room=${encodeURIComponent(roomId)}`;
 
     const ws = new WebSocket(wsUrl);

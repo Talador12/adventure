@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Character management shipped (edit mode, KV persistence, server sync). Next: multiplayer identity and AI DM.
+WebSocket dev connectivity fixed (Vite proxy + same-origin). Next: AI DM via Workers AI.
 
 ## Working Items
 
@@ -30,6 +30,13 @@ Character management shipped (edit mode, KV persistence, server sync). Next: mul
 - WebSocket join message now sends `avatar` alongside `username`
 - Lobby player list renders Discord avatars (falls back to initial-circle for unauthenticated)
 - Follow-up: add avatars to chat messages (ChatMessage interface + ChatPanel rendering)
+
+### WebSocket dev connectivity
+- **Status:** Done
+- Root cause: Vite proxy missing `ws: true` + useWebSocket hardcoded port 8787 in dev
+- Fix: Added `ws: true` to Vite proxy config, changed useWebSocket to use same-origin (page host/port)
+- WebSocket now routes through Vite proxy in dev, eliminating cross-port issues
+- Requires `make dev` (starts both Vite + Wrangler) for WebSocket features
 
 ### AI DM via Workers AI
 - **Status:** Todo
@@ -72,4 +79,5 @@ Character management shipped (edit mode, KV persistence, server sync). Next: mul
 - Character export: Adventure JSON, Markdown, Foundry VTT, Fantasy Grounds, HTML, D&D Beyond
 - Character edit mode (`/characters/:id/edit`) with KV persistence and server sync
 - Discord identity wired into WebSocket: avatars + display names in lobby player list
+- WebSocket dev connectivity: Vite proxy `ws: true` + same-origin connection (no more hardcoded port 8787)
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context
