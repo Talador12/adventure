@@ -13,6 +13,7 @@ export interface WSMessage {
 interface UseWebSocketOptions {
   roomId: string;
   username: string;
+  avatar?: string;
   onMessage?: (msg: WSMessage) => void;
   enabled?: boolean; // default true, set false to defer connection
 }
@@ -27,7 +28,7 @@ const MAX_RECONNECT_DELAY = 10000;
 const BASE_RECONNECT_DELAY = 1000;
 const PING_INTERVAL = 25000; // 25s keepalive
 
-export function useWebSocket({ roomId, username, onMessage, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
+export function useWebSocket({ roomId, username, avatar, onMessage, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -38,6 +39,8 @@ export function useWebSocket({ roomId, username, onMessage, enabled = true }: Us
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
   const usernameRef = useRef(username);
+  const avatarRef = useRef(avatar);
+  avatarRef.current = avatar;
   usernameRef.current = username;
 
   const stopPing = useCallback(() => {
@@ -68,8 +71,8 @@ export function useWebSocket({ roomId, username, onMessage, enabled = true }: Us
       setStatus('connected');
       reconnectAttempt.current = 0;
 
-      // Send join message with current username
-      ws.send(JSON.stringify({ type: 'join', username: usernameRef.current }));
+      // Send join message with current username + avatar
+      ws.send(JSON.stringify({ type: 'join', username: usernameRef.current, avatar: avatarRef.current }));
 
       // Start keepalive ping
       stopPing();

@@ -229,6 +229,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [combatRound, setCombatRound] = useState(0);
   const [turnIndex, setTurnIndex] = useState(0);
 
+  // Fetch Discord identity on mount — populate currentPlayer with real user data
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { user?: { id?: string; username?: string; global_name?: string; avatar?: string } } | null) => {
+        if (data?.user?.id) {
+          const u = data.user;
+          const avatarUrl = u.avatar
+            ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128`
+            : 'https://cdn.discordapp.com/embed/avatars/0.png';
+          setCurrentPlayer({
+            id: u.id,
+            username: u.global_name || u.username || 'Adventurer',
+            avatar: avatarUrl,
+            controllerType: 'human',
+          });
+        }
+      })
+      .catch(() => {}); // backend unavailable — keep DEFAULT_PLAYER
+  }, []);
+
   // Persist characters to localStorage + server sync on change
   const syncingRef = useRef(false); // prevent save-during-load loops
   useEffect(() => {

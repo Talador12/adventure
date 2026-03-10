@@ -123,6 +123,7 @@ export default function Lobby() {
   const { status, send } = useWebSocket({
     roomId: room,
     username: currentPlayer.username,
+    avatar: currentPlayer.avatar,
     onMessage: handleWsMessage,
   });
 
@@ -215,7 +216,11 @@ export default function Lobby() {
               <div className="flex gap-3 overflow-x-auto">
                 {players.map((p) => (
                   <div key={p.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs ${p.id === wsPlayerId ? 'border-[#F38020]/50 bg-[#F38020]/10' : 'border-slate-700 bg-slate-800/50'}`}>
-                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">{p.username.charAt(0).toUpperCase()}</div>
+                    {p.avatar ? (
+                      <img src={p.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">{p.username.charAt(0).toUpperCase()}</div>
+                    )}
                     <span className="font-medium text-slate-200">{p.username}</span>
                     {p.id === wsPlayerId && <span className="text-[9px] text-[#F38020]">(you)</span>}
                   </div>

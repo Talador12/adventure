@@ -25,9 +25,11 @@ Character management shipped (edit mode, KV persistence, server sync). Next: mul
 - KV namespaces: `CHARACTERS` binding in dev/staging/production (IDs need `wrangler kv namespace create`)
 
 ### Wire Discord profile data into WebSocket
-- **Status:** Todo
-- Use Discord avatars and display names in lobby/game
-- Currently WebSocket sessions don't carry Discord identity
+- **Status:** Done
+- GameContext fetches `/api/auth/me` on mount, populates `currentPlayer` with Discord id, display name, avatar URL
+- WebSocket join message now sends `avatar` alongside `username`
+- Lobby player list renders Discord avatars (falls back to initial-circle for unauthenticated)
+- Follow-up: add avatars to chat messages (ChatMessage interface + ChatPanel rendering)
 
 ### AI DM via Workers AI
 - **Status:** Todo
@@ -69,4 +71,5 @@ Character management shipped (edit mode, KV persistence, server sync). Next: mul
 - Discord OAuth, campaign create/join, theme toggle
 - Character export: Adventure JSON, Markdown, Foundry VTT, Fantasy Grounds, HTML, D&D Beyond
 - Character edit mode (`/characters/:id/edit`) with KV persistence and server sync
+- Discord identity wired into WebSocket: avatars + display names in lobby player list
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context
