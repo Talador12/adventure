@@ -1,5 +1,5 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS } from '../../contexts/GameContext';
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility } from '../../contexts/GameContext';
 import { useState } from 'react';
 
 interface CharacterSheetProps {
@@ -331,6 +331,37 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           </div>
         )}
       </div>
+
+      {/* Class ability */}
+      {(() => {
+        const ability = getClassAbility(character.class);
+        if (!ability) return null;
+        const colorMap: Record<string, string> = {
+          red: 'border-red-700/50 text-red-300', slate: 'border-slate-600/50 text-slate-300',
+          yellow: 'border-yellow-700/50 text-yellow-300', green: 'border-green-700/50 text-green-300',
+          cyan: 'border-cyan-700/50 text-cyan-300', pink: 'border-pink-700/50 text-pink-300',
+          fuchsia: 'border-fuchsia-700/50 text-fuchsia-300', blue: 'border-blue-700/50 text-blue-300',
+          amber: 'border-amber-700/50 text-amber-300',
+        };
+        const colors = colorMap[ability.color] || colorMap.slate;
+        return (
+          <div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Class Ability</div>
+            <div className={`flex items-center justify-between px-2 py-1.5 rounded-lg border bg-slate-800/30 ${colors}`}>
+              <div>
+                <div className="text-xs font-semibold">{ability.name}</div>
+                <div className="text-[9px] text-slate-500">{ability.description}</div>
+              </div>
+              <div className="text-right shrink-0 ml-2">
+                <div className={`text-[9px] font-bold ${character.classAbilityUsed ? 'text-red-400' : 'text-green-400'}`}>
+                  {character.classAbilityUsed ? 'Used' : 'Ready'}
+                </div>
+                <div className="text-[8px] text-slate-600">{ability.resetsOn} rest</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Spellbook (for casters) */}
       {[...FULL_CASTERS, ...HALF_CASTERS].includes(character.class) && (() => {

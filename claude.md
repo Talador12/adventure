@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 9 shipped: combat actions, condition spells, quest tracker. Next: multiplayer map sync, encounter variety, or journal/notes system.
+Round 10 shipped: class abilities + saving throws. Every class now has a unique combat ability. Next: multiplayer map sync, encounter variety, or journal/notes system.
 
 ## Working Items
 
@@ -151,6 +151,32 @@ Round 9 shipped: combat actions, condition spells, quest tracker. Next: multipla
 - Long rest now clears all combat conditions on the player's unit (in addition to HP/spell slots)
 - Condition functions (applyCondition, removeCondition, tickConditions) moved above castSpell to fix block-scoped variable ordering
 
+### Class abilities + saving throws
+- **Status:** Done
+- ClassAbility interface: id, name, class, type (heal/buff/attack/utility), resetsOn (short/long), damage, healFormula, condition application
+- 12 class abilities — one per class:
+  - Fighter: Second Wind (heal 1d10+level, short rest)
+  - Barbarian: Rage (+2 atk blessed for 3 rounds, long rest)
+  - Rogue: Sneak Attack (2d6 extra damage, short rest)
+  - Paladin: Lay on Hands (heal level*5, long rest)
+  - Ranger: Hunter's Mark (hex target 3 rounds, short rest)
+  - Monk: Flurry of Blows (2d4 damage, short rest)
+  - Cleric: Channel Divinity (heal level*d6, short rest)
+  - Bard: Bardic Inspiration (blessed 3 rounds, short rest)
+  - Druid: Wild Shape (heal 1d10+level, short rest)
+  - Warlock: Eldritch Blast (2d10 force damage, short rest)
+  - Wizard: Arcane Recovery (restore 1 spell slot, long rest)
+  - Sorcerer: Metamagic Empower (3d8 force damage, long rest)
+- `useClassAbility` in GameContext: handles all 4 ability types, marks used, refunds on invalid target
+- `classAbilityUsed: boolean` on Character — tracks cooldown per rest
+- `restCharacter` resets class ability based on `resetsOn` (short rest resets short-rest abilities, long rest resets all)
+- Class ability button in combat toolbar with per-class color theming
+- CharacterSheet: class ability section showing name, description, Ready/Used status, rest type
+- Saving throws for condition spells: spell DC = 8 + proficiency + casting stat mod, target rolls d20 + save mod
+  - On save: damage halved, conditions not applied (with descriptive message)
+  - On fail: full damage + condition applied as before
+  - Casting stat mapped per class (INT for Wizard, CHA for Sorcerer/Bard/Warlock/Paladin, WIS for Cleric/Druid/Ranger)
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -195,3 +221,4 @@ Round 9 shipped: combat actions, condition spells, quest tracker. Next: multipla
 - Spell system: 25 spells, spell slots (full/half caster tables), cast in combat, spellbook in CharacterSheet
 - Combat depth: enemy stat blocks with abilities/conditions, smart AI targeting, weapon-based player attacks, CR-based rewards
 - Combat actions + condition spells + quest tracker: Dodge/Dash actions, 4 condition spells, collapsible quest panel, long rest clears unit conditions
+- Class abilities + saving throws: 12 unique class abilities, spell save DC system, half damage on save, per-class color theming

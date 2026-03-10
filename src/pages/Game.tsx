@@ -6,7 +6,7 @@ import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility } from '../contexts/GameContext';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, isMuted, toggleMute } from '../hooks/useSoundFX';
 
@@ -25,7 +25,7 @@ export default function Game() {
     inCombat, setInCombat, rollInitiative, nextTurn, combatRound,
     damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
     addItem, useItem, buyItem, sellItem, castSpell, restoreSpellSlots,
-    applyCondition, removeCondition, tickConditions,
+    applyCondition, removeCondition, tickConditions, useClassAbility,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -1154,6 +1154,53 @@ export default function Game() {
                           </div>
                         );
                       })()}
+                      {/* Class ability — unique per class, 1/rest */}
+                      {selectedCharacter && (() => {
+                        const ability = getClassAbility(selectedCharacter.class);
+                        if (!ability) return null;
+                        const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                        const enemyTarget = target && target.type === 'enemy' ? target : null;
+                        const isUsed = selectedCharacter.classAbilityUsed;
+                        const needsTarget = (ability.type === 'attack') || (ability.type === 'buff' && !ability.selfOnly);
+                        const colorMap: Record<string, string> = {
+                          red: 'bg-red-900/40 hover:bg-red-900/60 border-red-700/50 text-red-300',
+                          slate: 'bg-slate-700/40 hover:bg-slate-700/60 border-slate-600/50 text-slate-300',
+                          yellow: 'bg-yellow-900/40 hover:bg-yellow-900/60 border-yellow-700/50 text-yellow-300',
+                          green: 'bg-green-900/40 hover:bg-green-900/60 border-green-700/50 text-green-300',
+                          cyan: 'bg-cyan-900/40 hover:bg-cyan-900/60 border-cyan-700/50 text-cyan-300',
+                          pink: 'bg-pink-900/40 hover:bg-pink-900/60 border-pink-700/50 text-pink-300',
+                          fuchsia: 'bg-fuchsia-900/40 hover:bg-fuchsia-900/60 border-fuchsia-700/50 text-fuchsia-300',
+                          blue: 'bg-blue-900/40 hover:bg-blue-900/60 border-blue-700/50 text-blue-300',
+                          amber: 'bg-amber-900/40 hover:bg-amber-900/60 border-amber-700/50 text-amber-300',
+                        };
+                        const colors = colorMap[ability.color] || colorMap.slate;
+                        return (
+                          <button
+                            disabled={isUsed || (needsTarget && !enemyTarget)}
+                            onClick={() => {
+                              const result = useClassAbility(selectedCharacter.id, enemyTarget?.id);
+                              if (result.success) {
+                                setCombatLog((prev) => [...prev, result.message]);
+                                addDmMessage(result.message);
+                                if (ability.type === 'attack' && enemyTarget && enemyTarget.hp <= 0) {
+                                  playEnemyDeath();
+                                  addDmMessage(`${enemyTarget.name} falls!`);
+                                }
+                                if (ability.type === 'heal') playCombatHit();
+                              } else {
+                                setShopMessage(result.message);
+                                setTimeout(() => setShopMessage(null), 2500);
+                              }
+                            }}
+                            title={`${ability.description} (Resets on ${ability.resetsOn} rest)`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all disabled:opacity-30 ${colors}`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" /></svg>
+                            {ability.name}{isUsed ? ' (Used)' : ''}
+                          </button>
+                        );
+                      })()}
+
                       {/* Dodge action — +2 AC until next turn */}
                       {inCombat && selectedCharacter && (() => {
                         const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);

@@ -583,6 +583,7 @@ export default function CharacterCreate() {
       inventory: [],
       equipment: { weapon: null, armor: null, shield: null, ring: null },
       spellSlotsUsed: {},
+      classAbilityUsed: false,
       createdAt: Date.now(),
     };
   }, [finalStats, charClass, name, race, portrait, appearance, background, alignment, personalityTraits, ideals, bonds, flaws, backstory, analyzeUpload, aiDescription, currentPlayer.id]);
@@ -664,6 +665,7 @@ export default function CharacterCreate() {
         inventory: [],
         equipment: { weapon: null, armor: null, shield: null, ring: null },
         spellSlotsUsed: {},
+        classAbilityUsed: false,
         createdAt: Date.now(),
       };
       addCharacter(character);

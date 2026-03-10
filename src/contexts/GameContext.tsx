@@ -433,6 +433,53 @@ export function rollSpellDamage(die: string): number {
   return total + (bonus ? Number(bonus) : 0);
 }
 
+// --- Class ability system ---
+export interface ClassAbility {
+  id: string;
+  name: string;
+  class: CharacterClass;
+  description: string;
+  type: 'heal' | 'buff' | 'attack' | 'utility'; // what the ability does
+  resetsOn: 'short' | 'long'; // when the cooldown resets
+  damage?: string;          // e.g. "2d6" — for attack-type abilities
+  healFormula?: 'level_d10' | 'level_x5' | 'level_d6'; // scaled heal
+  appliesCondition?: ConditionType;
+  conditionDuration?: number;
+  selfOnly?: boolean;       // targets self (vs enemy)
+  color: string;            // tailwind color for UI
+}
+
+export const CLASS_ABILITIES: ClassAbility[] = [
+  // Fighter: Second Wind — heal 1d10+level HP, 1/short rest
+  { id: 'second-wind', name: 'Second Wind', class: 'Fighter', type: 'heal', resetsOn: 'short', healFormula: 'level_d10', selfOnly: true, color: 'red', description: 'Dig deep and recover 1d10+level HP' },
+  // Barbarian: Rage — +2 damage, blessed condition (damage resistance flavor), 1/long rest
+  { id: 'rage', name: 'Rage', class: 'Barbarian', type: 'buff', resetsOn: 'long', appliesCondition: 'blessed', conditionDuration: 3, selfOnly: true, color: 'red', description: 'Enter a rage: +2 to attacks for 3 rounds' },
+  // Rogue: Sneak Attack — extra 2d6 damage on one attack, 1/short rest
+  { id: 'sneak-attack', name: 'Sneak Attack', class: 'Rogue', type: 'attack', resetsOn: 'short', damage: '2d6', color: 'slate', description: 'Strike a vital spot for 2d6 extra damage' },
+  // Paladin: Lay on Hands — heal level*5 HP, 1/long rest
+  { id: 'lay-on-hands', name: 'Lay on Hands', class: 'Paladin', type: 'heal', resetsOn: 'long', healFormula: 'level_x5', selfOnly: true, color: 'yellow', description: 'Channel divine energy to heal level\u00d75 HP' },
+  // Ranger: Hunter's Mark — hex the target for 3 rounds (+bonus damage), 1/short rest
+  { id: 'hunters-mark', name: "Hunter's Mark", class: 'Ranger', type: 'buff', resetsOn: 'short', appliesCondition: 'hexed', conditionDuration: 3, selfOnly: false, color: 'green', description: "Mark a target \u2014 they're hexed for 3 rounds" },
+  // Monk: Flurry of Blows — deal 2d4 extra damage, 1/short rest
+  { id: 'flurry-of-blows', name: 'Flurry of Blows', class: 'Monk', type: 'attack', resetsOn: 'short', damage: '2d4', color: 'cyan', description: 'Unleash a rapid flurry of unarmed strikes for 2d4 damage' },
+  // Cleric: Channel Divinity — heal self for level*d6, 1/short rest
+  { id: 'channel-divinity', name: 'Channel Divinity', class: 'Cleric', type: 'heal', resetsOn: 'short', healFormula: 'level_d6', selfOnly: true, color: 'yellow', description: 'Invoke divine power to heal level\u00d7d6 HP' },
+  // Bard: Bardic Inspiration — apply blessed to self for 3 rounds, 1/short rest
+  { id: 'bardic-inspiration', name: 'Bardic Inspiration', class: 'Bard', type: 'buff', resetsOn: 'short', appliesCondition: 'blessed', conditionDuration: 3, selfOnly: true, color: 'pink', description: 'Inspire yourself with a rousing melody (+2 attacks/saves for 3 rounds)' },
+  // Druid: Wild Shape — gain temp HP (level*3) via blessed condition, 1/short rest
+  { id: 'wild-shape', name: 'Wild Shape', class: 'Druid', type: 'heal', resetsOn: 'short', healFormula: 'level_d10', selfOnly: true, color: 'green', description: 'Shift into beast form, recovering 1d10+level HP' },
+  // Warlock: Eldritch Blast — deal 2d10 force damage to a target, 1/short rest
+  { id: 'eldritch-blast', name: 'Eldritch Blast', class: 'Warlock', type: 'attack', resetsOn: 'short', damage: '2d10', color: 'fuchsia', description: 'Hurl a beam of crackling force for 2d10 damage' },
+  // Wizard: Arcane Recovery — restore 1 used spell slot, 1/long rest
+  { id: 'arcane-recovery', name: 'Arcane Recovery', class: 'Wizard', type: 'utility', resetsOn: 'long', color: 'blue', description: 'Recover one expended spell slot through study' },
+  // Sorcerer: Metamagic Empower — deal 3d8 force damage (empowered spell), 1/long rest
+  { id: 'metamagic-empower', name: 'Metamagic: Empower', class: 'Sorcerer', type: 'attack', resetsOn: 'long', damage: '3d8', color: 'amber', description: 'Channel raw sorcery into a 3d8 empowered blast' },
+];
+
+export function getClassAbility(charClass: CharacterClass): ClassAbility | undefined {
+  return CLASS_ABILITIES.find((a) => a.class === charClass);
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -461,6 +508,7 @@ export interface Character {
   inventory: Item[]; // carried items
   equipment: EquipmentSlots; // currently equipped gear
   spellSlotsUsed: Record<number, number>; // spellLevel -> slots used this rest
+  classAbilityUsed: boolean; // whether the class ability has been used this rest period
   createdAt: number;
 }
 
@@ -513,6 +561,9 @@ interface GameContextValue {
   // Spells
   castSpell: (charId: string, spellId: string, targetUnitId?: string) => { success: boolean; message: string };
   restoreSpellSlots: (charId: string) => void;
+
+  // Class abilities
+  useClassAbility: (charId: string, targetUnitId?: string) => { success: boolean; message: string };
 
   // Conditions
   applyCondition: (unitId: string, condition: ActiveCondition) => void;
@@ -568,6 +619,7 @@ const GameContext = createContext<GameContextValue>({
   sellItem: () => ({ success: false, message: '' }),
   castSpell: () => ({ success: false, message: '' }),
   restoreSpellSlots: () => {},
+  useClassAbility: () => ({ success: false, message: '' }),
   applyCondition: () => {},
   removeCondition: () => {},
   tickConditions: () => [],
@@ -715,11 +767,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Rest: short rest heals hit die + CON, long rest fully heals + resets death saves + clears conditions
+  // Both rest types reset class abilities based on the ability's resetsOn property
   const restCharacter = useCallback((id: string, type: 'short' | 'long') => {
     setCharacters((prev) => prev.map((c) => {
       if (c.id !== id) return c;
+      const ability = getClassAbility(c.class);
+      const resetAbility = ability ? (type === 'long' || ability.resetsOn === 'short') : false;
       if (type === 'long') {
-        return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {} };
+        return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false };
       }
       // Short rest: heal hit die average + CON mod (once)
       const hitDieAvg: Record<string, number> = {
@@ -728,7 +783,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       };
       const conMod = Math.floor((c.stats.CON - 10) / 2);
       const heal = Math.max(1, (hitDieAvg[c.class] || 5) + conMod);
-      return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? 'normal' as Condition : c.condition };
+      return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? 'normal' as Condition : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed };
     }));
     // Long rest also clears all combat conditions on the player's unit
     if (type === 'long') {
@@ -978,14 +1033,44 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (result.success) {
       const char = characters.find((c) => c.id === charId);
       const casterName = char?.name || 'Caster';
+
+      // Saving throw: if spell has saveStat, target rolls to resist
+      let targetSaved = false;
+      if (spell.saveStat && targetUnitId) {
+        const target = units.find((u) => u.id === targetUnitId);
+        if (target && char) {
+          // Spell save DC = 8 + proficiency + casting stat mod
+          const castingStatMap: Record<string, StatName> = {
+            Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS', Bard: 'CHA',
+            Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS',
+          };
+          const castingStat = castingStatMap[char.class] || 'INT';
+          const castMod = Math.floor((char.stats[castingStat] - 10) / 2);
+          const profBonus = Math.ceil(char.level / 4) + 1;
+          const spellDC = 8 + profBonus + castMod;
+          // Target save roll: d20 + save stat mod (enemies use dexMod for DEX, or 0 for others)
+          const saveRoll = Math.floor(Math.random() * 20) + 1;
+          const targetSaveMod = spell.saveStat === 'DEX' ? (target.dexMod || 0) : 0;
+          const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
+          const totalSave = saveRoll + targetSaveMod + condSaveMod;
+          targetSaved = totalSave >= spellDC;
+        }
+      }
+
       if (spell.damage) {
-        const dmg = rollSpellDamage(spell.damage);
+        let dmg = rollSpellDamage(spell.damage);
+        if (targetSaved) dmg = Math.floor(dmg / 2); // half damage on save
         if (targetUnitId) damageUnit(targetUnitId, dmg);
-        result.message = `${casterName} casts ${spell.name} for ${dmg} damage!`;
-        // Apply condition if the spell has one
-        if (spell.appliesCondition && targetUnitId) {
+        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+        result.message = targetSaved
+          ? `${casterName} casts ${spell.name}! ${targetName} saves \u2014 ${dmg} damage (half).`
+          : `${casterName} casts ${spell.name} for ${dmg} damage!`;
+        // Apply condition only if target failed the save
+        if (spell.appliesCondition && targetUnitId && !targetSaved) {
           applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
           result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
+        } else if (spell.appliesCondition && targetSaved) {
+          result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} resists the ${spell.appliesCondition} effect.`;
         }
       } else if (spell.healAmount) {
         if (char) {
@@ -1004,8 +1089,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
       } else if (spell.appliesCondition && targetUnitId) {
         // Pure condition spell (like Hold Person with no damage)
-        applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
-        result.message = `${casterName} casts ${spell.name}! ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
+        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+        if (targetSaved) {
+          result.message = `${casterName} casts ${spell.name}! ${targetName} resists with a successful save.`;
+        } else {
+          applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+          result.message = `${casterName} casts ${spell.name}! ${targetName} is ${spell.appliesCondition}!`;
+        }
       } else {
         result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
       }
@@ -1020,6 +1110,91 @@ export function GameProvider({ children }: { children: ReactNode }) {
       c.id === charId ? { ...c, spellSlotsUsed: {} } : c
     ));
   }, []);
+
+  // Class abilities: use the class-specific ability (1/rest cooldown)
+  const useClassAbility = useCallback((charId: string, targetUnitId?: string): { success: boolean; message: string } => {
+    const char = characters.find((c) => c.id === charId);
+    if (!char) return { success: false, message: 'No character found.' };
+    const ability = getClassAbility(char.class);
+    if (!ability) return { success: false, message: `${char.class} has no special ability.` };
+    if (char.classAbilityUsed) return { success: false, message: `${ability.name} already used — rest to recharge.` };
+
+    // Mark as used
+    setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: true } : c));
+
+    const casterName = char.name;
+    let msg = '';
+
+    if (ability.type === 'heal' && ability.healFormula) {
+      let healAmt = 0;
+      if (ability.healFormula === 'level_d10') healAmt = Math.floor(Math.random() * 10) + 1 + char.level;
+      else if (ability.healFormula === 'level_x5') healAmt = char.level * 5;
+      else if (ability.healFormula === 'level_d6') healAmt = (Math.floor(Math.random() * 6) + 1) * Math.max(1, Math.ceil(char.level / 2));
+      const healed = Math.min(healAmt, char.maxHp - char.hp);
+      setCharacters((prev) => prev.map((c) => {
+        if (c.id !== charId) return c;
+        let updated = { ...c, hp: Math.min(c.maxHp, c.hp + healAmt) };
+        if (c.condition === 'unconscious' || c.condition === 'stabilized') {
+          updated = { ...updated, condition: 'normal' as Condition, deathSaves: { successes: 0, failures: 0 } };
+        }
+        return updated;
+      }));
+      msg = `${casterName} uses ${ability.name}, restoring ${healed} HP!`;
+    } else if (ability.type === 'buff' && ability.appliesCondition) {
+      // Buff self or target
+      if (ability.selfOnly) {
+        const playerUnit = units.find((u) => u.characterId === charId);
+        if (playerUnit) {
+          applyCondition(playerUnit.id, { type: ability.appliesCondition, duration: ability.conditionDuration || 3, source: ability.name });
+          msg = `${casterName} uses ${ability.name}! ${CONDITION_EFFECTS[ability.appliesCondition].description} for ${ability.conditionDuration || 3} rounds.`;
+        } else {
+          msg = `${casterName} uses ${ability.name}!`;
+        }
+      } else if (targetUnitId) {
+        applyCondition(targetUnitId, { type: ability.appliesCondition, duration: ability.conditionDuration || 3, source: casterName });
+        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+        msg = `${casterName} uses ${ability.name} on ${targetName}! They are ${ability.appliesCondition} for ${ability.conditionDuration || 3} rounds.`;
+      } else {
+        // No target — refund
+        setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: false } : c));
+        return { success: false, message: 'Select an enemy target first.' };
+      }
+    } else if (ability.type === 'attack' && ability.damage) {
+      if (targetUnitId) {
+        const dmg = rollSpellDamage(ability.damage);
+        damageUnit(targetUnitId, dmg);
+        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+        msg = `${casterName} uses ${ability.name} on ${targetName} for ${dmg} damage!`;
+      } else {
+        setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: false } : c));
+        return { success: false, message: 'Select an enemy target first.' };
+      }
+    } else if (ability.type === 'utility') {
+      // Arcane Recovery: restore lowest empty spell slot
+      const slots = getSpellSlots(char.class, char.level);
+      const used = char.spellSlotsUsed || {};
+      let recovered = false;
+      for (const lvl of Object.keys(slots).map(Number).sort()) {
+        if ((used[lvl] || 0) > 0) {
+          setCharacters((prev) => prev.map((c) => {
+            if (c.id !== charId) return c;
+            const newUsed = { ...c.spellSlotsUsed };
+            newUsed[lvl] = Math.max(0, (newUsed[lvl] || 0) - 1);
+            return { ...c, spellSlotsUsed: newUsed };
+          }));
+          msg = `${casterName} uses ${ability.name}, recovering a level ${lvl} spell slot!`;
+          recovered = true;
+          break;
+        }
+      }
+      if (!recovered) {
+        setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: false } : c));
+        return { success: false, message: 'No spell slots to recover.' };
+      }
+    }
+
+    return { success: true, message: msg || `${casterName} uses ${ability.name}!` };
+  }, [characters, units, applyCondition, damageUnit]);
 
   // Combat: remove a unit (dead enemy, etc)
   const removeUnit = useCallback((unitId: string) => {
@@ -1110,6 +1285,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         sellItem,
         castSpell,
         restoreSpellSlots,
+        useClassAbility,
         applyCondition,
         removeCondition,
         tickConditions,
