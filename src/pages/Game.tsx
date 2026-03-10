@@ -58,6 +58,18 @@ export default function Game() {
   const [showSheet, setShowSheet] = useState(false);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
 
+  // Quest tracker
+  interface Quest { id: string; title: string; description: string; completed: boolean; }
+  const questStorageKey = `adventure:quests:${room}`;
+  const [quests, setQuests] = useState<Quest[]>(() => {
+    try { const s = localStorage.getItem(questStorageKey); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [showQuests, setShowQuests] = useState(false);
+  const [newQuestTitle, setNewQuestTitle] = useState('');
+  useEffect(() => {
+    try { localStorage.setItem(questStorageKey, JSON.stringify(quests)); } catch { /* full */ }
+  }, [quests, questStorageKey]);
+
   // NPC dialogue state
   const [npcMode, setNpcMode] = useState(false);
   const [npcName, setNpcName] = useState('');
@@ -1142,6 +1154,43 @@ export default function Game() {
                           </div>
                         );
                       })()}
+                      {/* Dodge action — +2 AC until next turn */}
+                      {inCombat && selectedCharacter && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const isDodging = playerUnit.conditions?.some((c) => c.type === 'blessed' && c.source === 'Dodge');
+                        return (
+                          <button
+                            disabled={!!isDodging}
+                            onClick={() => {
+                              applyCondition(playerUnit.id, { type: 'blessed', duration: 1, source: 'Dodge' });
+                              const msg = `${selectedCharacter.name} takes the Dodge action! (+2 AC until next turn)`;
+                              setCombatLog((prev) => [...prev, msg]);
+                              addDmMessage(msg);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-700/50 text-sky-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" /></svg>
+                            Dodge
+                          </button>
+                        );
+                      })()}
+
+                      {/* Dash action — disengage, end turn */}
+                      {inCombat && selectedCharacter && (
+                        <button
+                          onClick={() => {
+                            const msg = `${selectedCharacter.name} takes the Dash action, disengaging from combat!`;
+                            setCombatLog((prev) => [...prev, msg]);
+                            addDmMessage(msg);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clipRule="evenodd" /></svg>
+                          Dash
+                        </button>
+                      )}
+
                       {/* End Combat button */}
                       {inCombat && (
                         <button
@@ -1315,6 +1364,98 @@ export default function Game() {
                         )}
                       </div>
                     )}
+
+                    {/* Quest tracker — collapsible panel */}
+                    <div className="border-b border-slate-800">
+                      <button
+                        onClick={() => setShowQuests(!showQuests)}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showQuests ? 'rotate-90' : ''}`}><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
+                        Quests
+                        {quests.filter((q) => !q.completed).length > 0 && (
+                          <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-900/50 text-amber-400 rounded-full">
+                            {quests.filter((q) => !q.completed).length}
+                          </span>
+                        )}
+                      </button>
+                      {showQuests && (
+                        <div className="px-4 pb-3 space-y-2">
+                          {/* Add quest form */}
+                          <div className="flex gap-1.5">
+                            <input
+                              type="text"
+                              value={newQuestTitle}
+                              onChange={(e) => setNewQuestTitle(e.target.value)}
+                              placeholder="New quest..."
+                              className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-600 outline-none focus:ring-1 focus:ring-amber-500/50"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newQuestTitle.trim()) {
+                                  setQuests((prev) => [...prev, { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false }]);
+                                  setNewQuestTitle('');
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={() => {
+                                if (newQuestTitle.trim()) {
+                                  setQuests((prev) => [...prev, { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false }]);
+                                  setNewQuestTitle('');
+                                }
+                              }}
+                              disabled={!newQuestTitle.trim()}
+                              className="px-2 py-1 text-[10px] font-bold bg-amber-900/40 hover:bg-amber-900/60 border border-amber-800/50 text-amber-400 rounded-lg disabled:opacity-30 transition-all"
+                            >
+                              Add
+                            </button>
+                          </div>
+                          {/* Quest list */}
+                          {quests.length === 0 ? (
+                            <p className="text-[10px] text-slate-600 italic">No quests yet. Add one above or let the DM narrate objectives.</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {quests.filter((q) => !q.completed).map((quest) => (
+                                <div key={quest.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 group">
+                                  <button
+                                    onClick={() => setQuests((prev) => prev.map((q) => q.id === quest.id ? { ...q, completed: true } : q))}
+                                    className="w-3.5 h-3.5 rounded border border-slate-600 hover:border-green-500 hover:bg-green-900/30 transition-colors shrink-0"
+                                    title="Mark complete"
+                                  />
+                                  <span className="flex-1 text-xs text-slate-300 truncate">{quest.title}</span>
+                                  <button
+                                    onClick={() => setQuests((prev) => prev.filter((q) => q.id !== quest.id))}
+                                    className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                    title="Remove quest"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3"><path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" /></svg>
+                                  </button>
+                                </div>
+                              ))}
+                              {quests.filter((q) => q.completed).length > 0 && (
+                                <div className="pt-1 border-t border-slate-800 mt-1">
+                                  <div className="text-[9px] text-slate-600 uppercase tracking-wider mb-1">Completed</div>
+                                  {quests.filter((q) => q.completed).map((quest) => (
+                                    <div key={quest.id} className="flex items-center gap-2 px-2 py-1 rounded-lg group">
+                                      <div className="w-3.5 h-3.5 rounded border border-green-700 bg-green-900/30 flex items-center justify-center shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-2.5 h-2.5 text-green-500"><path fillRule="evenodd" d="M12.416 3.376a.75.75 0 01.208 1.04l-5 7.5a.75.75 0 01-1.154.114l-3-3a.75.75 0 011.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 011.04-.207z" clipRule="evenodd" /></svg>
+                                      </div>
+                                      <span className="flex-1 text-xs text-slate-600 line-through truncate">{quest.title}</span>
+                                      <button
+                                        onClick={() => setQuests((prev) => prev.filter((q) => q.id !== quest.id))}
+                                        className="text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                        title="Remove"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3"><path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" /></svg>
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Death saving throw panel — shown when character is unconscious in combat */}
                     {selectedCharacter && inCombat && selectedCharacter.condition === 'unconscious' && (

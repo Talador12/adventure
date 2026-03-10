@@ -350,6 +350,8 @@ export interface Spell {
   saveStat?: StatName;   // target save stat (DEX for fireball, WIS for hold person)
   isConcentration: boolean;
   classes: CharacterClass[]; // which classes can learn this
+  appliesCondition?: ConditionType; // condition applied on hit/failed save
+  conditionDuration?: number;       // rounds the condition lasts
 }
 
 // Spell slot table: spellSlots[classLevel][spellLevel] = number of slots
@@ -387,7 +389,7 @@ export const SPELL_LIST: Spell[] = [
   { id: 'fire-bolt', name: 'Fire Bolt', level: 0, school: 'evocation', description: 'Hurl a mote of fire. +spell attack, 1d10 fire damage.', damage: '1d10', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
   { id: 'sacred-flame', name: 'Sacred Flame', level: 0, school: 'evocation', description: 'Radiant flames descend. DEX save or 1d8 radiant damage.', damage: '1d8', range: '60ft', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Cleric'] },
   { id: 'eldritch-blast', name: 'Eldritch Blast', level: 0, school: 'evocation', description: 'A beam of crackling energy. +spell attack, 1d10 force damage.', damage: '1d10', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Warlock'] },
-  { id: 'vicious-mockery', name: 'Vicious Mockery', level: 0, school: 'enchantment', description: 'Cutting words. WIS save or 1d4 psychic damage + disadvantage.', damage: '1d4', range: '60ft', duration: 'Instantaneous', saveStat: 'WIS', isConcentration: false, classes: ['Bard'] },
+  { id: 'vicious-mockery', name: 'Vicious Mockery', level: 0, school: 'enchantment', description: 'Cutting words. WIS save or 1d4 psychic damage + disadvantage.', damage: '1d4', range: '60ft', duration: 'Instantaneous', saveStat: 'WIS', isConcentration: false, classes: ['Bard'], appliesCondition: 'frightened', conditionDuration: 1 },
   { id: 'produce-flame', name: 'Produce Flame', level: 0, school: 'conjuration', description: 'A flame in your palm. Hurl it for 1d8 fire damage.', damage: '1d8', range: '30ft', duration: 'Instantaneous', isConcentration: false, classes: ['Druid'] },
   { id: 'ray-of-frost', name: 'Ray of Frost', level: 0, school: 'evocation', description: 'A frigid beam. +spell attack, 1d8 cold damage, -10ft speed.', damage: '1d8', range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
   { id: 'minor-illusion', name: 'Minor Illusion', level: 0, school: 'illusion', description: 'Create a sound or image of an object within range.', range: '30ft', duration: '1 minute', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard', 'Warlock'] },
@@ -395,10 +397,10 @@ export const SPELL_LIST: Spell[] = [
   { id: 'magic-missile', name: 'Magic Missile', level: 1, school: 'evocation', description: 'Three darts of magical force. Each deals 1d4+1. Auto-hit.', damage: '3d4+3', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
   { id: 'cure-wounds', name: 'Cure Wounds', level: 1, school: 'evocation', description: 'Touch a creature and restore 1d8+mod HP.', healAmount: 8, range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Druid', 'Bard', 'Paladin', 'Ranger'] },
   { id: 'shield', name: 'Shield', level: 1, school: 'abjuration', description: 'Reaction: +5 AC until your next turn.', range: 'Self', duration: '1 round', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
-  { id: 'burning-hands', name: 'Burning Hands', level: 1, school: 'evocation', description: '15ft cone of fire. DEX save or 3d6 fire damage.', damage: '3d6', range: 'Self (15ft cone)', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'burning-hands', name: 'Burning Hands', level: 1, school: 'evocation', description: '15ft cone of fire. DEX save or 3d6 fire damage. Sets target ablaze.', damage: '3d6', range: 'Self (15ft cone)', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'], appliesCondition: 'burning', conditionDuration: 2 },
   { id: 'healing-word', name: 'Healing Word', level: 1, school: 'evocation', description: 'Bonus action. Heal 1d4+mod HP at range.', healAmount: 5, range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Bard', 'Druid'] },
   { id: 'thunderwave', name: 'Thunderwave', level: 1, school: 'evocation', description: '15ft cube of thunder. CON save or 2d8 damage + pushed 10ft.', damage: '2d8', range: 'Self (15ft cube)', duration: 'Instantaneous', saveStat: 'CON', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard', 'Druid'] },
-  { id: 'hex', name: 'Hex', level: 1, school: 'enchantment', description: 'Curse a target. Deal extra 1d6 necrotic on each hit.', damage: '1d6', range: '90ft', duration: 'Concentration, 1 hour', isConcentration: true, classes: ['Warlock'] },
+  { id: 'hex', name: 'Hex', level: 1, school: 'enchantment', description: 'Curse a target. Deal extra 1d6 necrotic on each hit.', damage: '1d6', range: '90ft', duration: 'Concentration, 1 hour', isConcentration: true, classes: ['Warlock'], appliesCondition: 'hexed', conditionDuration: 3 },
   { id: 'hunters-mark', name: "Hunter's Mark", level: 1, school: 'divination', description: 'Mark a target. Deal extra 1d6 on each hit.', damage: '1d6', range: '90ft', duration: 'Concentration, 1 hour', isConcentration: true, classes: ['Ranger'] },
   { id: 'divine-smite-spell', name: 'Searing Smite', level: 1, school: 'evocation', description: 'Your weapon flares with fire. +1d6 fire damage on hit.', damage: '1d6', range: 'Self', duration: 'Concentration, 1 minute', isConcentration: true, classes: ['Paladin'] },
   // Level 2
@@ -406,7 +408,7 @@ export const SPELL_LIST: Spell[] = [
   { id: 'spiritual-weapon', name: 'Spiritual Weapon', level: 2, school: 'evocation', description: 'Floating spectral weapon. Bonus action attack for 1d8+mod.', damage: '1d8', range: '60ft', duration: '1 minute', isConcentration: false, classes: ['Cleric'] },
   { id: 'misty-step', name: 'Misty Step', level: 2, school: 'conjuration', description: 'Bonus action teleport up to 30ft.', range: 'Self', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Warlock'] },
   { id: 'lesser-restoration', name: 'Lesser Restoration', level: 2, school: 'abjuration', description: 'End one disease or condition on a creature.', range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Druid', 'Bard', 'Paladin', 'Ranger'] },
-  { id: 'hold-person', name: 'Hold Person', level: 2, school: 'enchantment', description: 'WIS save or paralyzed for 1 minute (concentration).', range: '60ft', duration: 'Concentration, 1 minute', saveStat: 'WIS', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Cleric', 'Bard', 'Warlock', 'Druid'] },
+  { id: 'hold-person', name: 'Hold Person', level: 2, school: 'enchantment', description: 'WIS save or paralyzed for 1 minute (concentration).', range: '60ft', duration: 'Concentration, 1 minute', saveStat: 'WIS', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Cleric', 'Bard', 'Warlock', 'Druid'], appliesCondition: 'stunned', conditionDuration: 2 },
   // Level 3
   { id: 'fireball', name: 'Fireball', level: 3, school: 'evocation', description: '20ft radius explosion. DEX save or 8d6 fire damage.', damage: '8d6', range: '150ft', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
   { id: 'spirit-guardians', name: 'Spirit Guardians', level: 3, school: 'conjuration', description: 'Spirits swirl around you. Enemies in 15ft take 3d8 radiant.', damage: '3d8', range: 'Self (15ft radius)', duration: 'Concentration, 10 minutes', saveStat: 'WIS', isConcentration: true, classes: ['Cleric'] },
@@ -712,7 +714,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return { leveledUp, newLevel };
   }, []);
 
-  // Rest: short rest heals hit die + CON, long rest fully heals + resets death saves
+  // Rest: short rest heals hit die + CON, long rest fully heals + resets death saves + clears conditions
   const restCharacter = useCallback((id: string, type: 'short' | 'long') => {
     setCharacters((prev) => prev.map((c) => {
       if (c.id !== id) return c;
@@ -728,6 +730,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const heal = Math.max(1, (hitDieAvg[c.class] || 5) + conMod);
       return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? 'normal' as Condition : c.condition };
     }));
+    // Long rest also clears all combat conditions on the player's unit
+    if (type === 'long') {
+      setUnits((prev) => prev.map((u) => u.characterId === id ? { ...u, conditions: [] } : u));
+    }
   }, []);
 
   // Inventory: add an item to a character's inventory
@@ -902,67 +908,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     ));
   }, []);
 
-  // Spells: cast a spell (check slots, apply damage/healing, consume slot)
-  const castSpell = useCallback((charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
-    let result = { success: false, message: '' };
-    const spell = SPELL_LIST.find((s) => s.id === spellId);
-    if (!spell) { return { success: false, message: 'Unknown spell.' }; }
-
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      if (spell.level > 0) {
-        const maxSlots = getSpellSlots(c.class, c.level);
-        const used = c.spellSlotsUsed || {};
-        const slotsAvail = (maxSlots[spell.level] || 0) - (used[spell.level] || 0);
-        if (slotsAvail <= 0) {
-          result = { success: false, message: `No level ${spell.level} spell slots remaining!` };
-          return c;
-        }
-        const newUsed = { ...used, [spell.level]: (used[spell.level] || 0) + 1 };
-        result = { success: true, message: '' };
-        return { ...c, spellSlotsUsed: newUsed };
-      }
-      result = { success: true, message: '' };
-      return c;
-    }));
-
-    if (result.success) {
-      const char = characters.find((c) => c.id === charId);
-      const casterName = char?.name || 'Caster';
-      if (spell.damage) {
-        const dmg = rollSpellDamage(spell.damage);
-        if (targetUnitId) damageUnit(targetUnitId, dmg);
-        result.message = `${casterName} casts ${spell.name} for ${dmg} damage!`;
-      } else if (spell.healAmount) {
-        if (char) {
-          const healed = Math.min(spell.healAmount, char.maxHp - char.hp);
-          setCharacters((prev) => prev.map((c) => {
-            if (c.id !== charId) return c;
-            let updated = { ...c, hp: Math.min(c.maxHp, c.hp + spell.healAmount!) };
-            if (c.condition === 'unconscious' || c.condition === 'stabilized') {
-              updated = { ...updated, condition: 'normal' as const, deathSaves: { successes: 0, failures: 0 } };
-            }
-            return updated;
-          }));
-          result.message = `${casterName} casts ${spell.name}, restoring ${healed} HP!`;
-        } else {
-          result.message = `${casterName} casts ${spell.name}.`;
-        }
-      } else {
-        result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
-      }
-      if (spell.level > 0) result.message += ` (Level ${spell.level} slot used)`;
-    }
-    return result;
-  }, [characters, damageUnit]);
-
-  // Spells: restore all spell slots (called on long rest)
-  const restoreSpellSlots = useCallback((charId: string) => {
-    setCharacters((prev) => prev.map((c) =>
-      c.id === charId ? { ...c, spellSlotsUsed: {} } : c
-    ));
-  }, []);
-
   // Conditions: apply a condition to a unit
   const applyCondition = useCallback((unitId: string, condition: ActiveCondition) => {
     setUnits((prev) => prev.map((u) => {
@@ -1004,6 +949,76 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return { ...u, conditions: remaining };
     }));
     return messages;
+  }, []);
+
+  // Spells: cast a spell (check slots, apply damage/healing, consume slot)
+  const castSpell = useCallback((charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
+    let result = { success: false, message: '' };
+    const spell = SPELL_LIST.find((s) => s.id === spellId);
+    if (!spell) { return { success: false, message: 'Unknown spell.' }; }
+
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      if (spell.level > 0) {
+        const maxSlots = getSpellSlots(c.class, c.level);
+        const used = c.spellSlotsUsed || {};
+        const slotsAvail = (maxSlots[spell.level] || 0) - (used[spell.level] || 0);
+        if (slotsAvail <= 0) {
+          result = { success: false, message: `No level ${spell.level} spell slots remaining!` };
+          return c;
+        }
+        const newUsed = { ...used, [spell.level]: (used[spell.level] || 0) + 1 };
+        result = { success: true, message: '' };
+        return { ...c, spellSlotsUsed: newUsed };
+      }
+      result = { success: true, message: '' };
+      return c;
+    }));
+
+    if (result.success) {
+      const char = characters.find((c) => c.id === charId);
+      const casterName = char?.name || 'Caster';
+      if (spell.damage) {
+        const dmg = rollSpellDamage(spell.damage);
+        if (targetUnitId) damageUnit(targetUnitId, dmg);
+        result.message = `${casterName} casts ${spell.name} for ${dmg} damage!`;
+        // Apply condition if the spell has one
+        if (spell.appliesCondition && targetUnitId) {
+          applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+          result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
+        }
+      } else if (spell.healAmount) {
+        if (char) {
+          const healed = Math.min(spell.healAmount, char.maxHp - char.hp);
+          setCharacters((prev) => prev.map((c) => {
+            if (c.id !== charId) return c;
+            let updated = { ...c, hp: Math.min(c.maxHp, c.hp + spell.healAmount!) };
+            if (c.condition === 'unconscious' || c.condition === 'stabilized') {
+              updated = { ...updated, condition: 'normal' as const, deathSaves: { successes: 0, failures: 0 } };
+            }
+            return updated;
+          }));
+          result.message = `${casterName} casts ${spell.name}, restoring ${healed} HP!`;
+        } else {
+          result.message = `${casterName} casts ${spell.name}.`;
+        }
+      } else if (spell.appliesCondition && targetUnitId) {
+        // Pure condition spell (like Hold Person with no damage)
+        applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+        result.message = `${casterName} casts ${spell.name}! ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
+      } else {
+        result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
+      }
+      if (spell.level > 0) result.message += ` (Level ${spell.level} slot used)`;
+    }
+    return result;
+  }, [characters, damageUnit, applyCondition, units]);
+
+  // Spells: restore all spell slots (called on long rest)
+  const restoreSpellSlots = useCallback((charId: string) => {
+    setCharacters((prev) => prev.map((c) =>
+      c.id === charId ? { ...c, spellSlotsUsed: {} } : c
+    ));
   }, []);
 
   // Combat: remove a unit (dead enemy, etc)

@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Combat depth overhaul shipped (enemy stat blocks, conditions, smart AI, weapon-based attacks). Next: multiplayer map sync, status effect spells, or quest/objective system.
+Round 9 shipped: combat actions, condition spells, quest tracker. Next: multiplayer map sync, encounter variety, or journal/notes system.
 
 ## Working Items
 
@@ -138,6 +138,19 @@ Combat depth overhaul shipped (enemy stat blocks, conditions, smart AI, weapon-b
 - HP scales with party level (15% per level above 1)
 - generateEnemies() function for client-side encounter creation (AI narration optional)
 
+### Combat actions + condition spells + quest tracker
+- **Status:** Done
+- 4 spells extended with condition application: Burning Hands (burning 2 rounds), Hex (hexed 3 rounds), Hold Person (stunned 2 rounds), Vicious Mockery (frightened 1 round)
+- Spell interface extended: `appliesCondition?: ConditionType`, `conditionDuration?: number`
+- `castSpell` applies conditions to targets when spell has `appliesCondition`, handles pure-condition spells (no damage)
+- Dodge combat action: applies 'blessed' condition (source='Dodge') for 1 round (+2 AC), disabled when already dodging
+- Dash combat action: logs disengage message to combat log
+- Quest tracker: Quest interface (id/title/description/completed), localStorage persistence per room
+- Collapsible quest panel in narration view with add form, complete/delete actions, active vs completed sections
+- Active quest count badge on Quests header
+- Long rest now clears all combat conditions on the player's unit (in addition to HP/spell slots)
+- Condition functions (applyCondition, removeCondition, tickConditions) moved above castSpell to fix block-scoped variable ordering
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -181,3 +194,4 @@ Combat depth overhaul shipped (enemy stat blocks, conditions, smart AI, weapon-b
 - Shop system: curated merchant inventory, buy/sell with gold, shop tab in game view, category filters
 - Spell system: 25 spells, spell slots (full/half caster tables), cast in combat, spellbook in CharacterSheet
 - Combat depth: enemy stat blocks with abilities/conditions, smart AI targeting, weapon-based player attacks, CR-based rewards
+- Combat actions + condition spells + quest tracker: Dodge/Dash actions, 4 condition spells, collapsible quest panel, long rest clears unit conditions
