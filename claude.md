@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Map system overhaul shipped (procedural dungeons, vision fog, terrain tools). Next: inventory/loot system or multiplayer map sync.
+Inventory/loot system shipped. Next: multiplayer map sync, spell system, or shop/merchant UI.
 
 ## Working Items
 
@@ -87,6 +87,18 @@ Map system overhaul shipped (procedural dungeons, vision fog, terrain tools). Ne
 - Enemy attacks on unconscious characters: auto-crit = 2 death save failures
 - Stabilized + dead condition notices in narration panel
 
+### Inventory & loot system
+- **Status:** Done
+- Item system: 7 types (weapon, armor, shield, potion, ring, scroll, misc), 4 rarities (common/uncommon/rare/epic)
+- Equipment slots: weapon, armor, shield, ring — each with equip/unequip, auto AC recalculation
+- Loot tables: 8 common, 6 uncommon, 5 rare items — rolled per enemy on combat end with level-scaled rarity chances
+- Combat loot drops: items announced in DM narration on End Combat
+- CharacterSheet.tsx: equipment slots with rarity-colored items + stats, collapsible inventory with equip/use/drop actions
+- "Use Potion" quick button in game toolbar (appears when character has healing potions and is hurt)
+- Potion stacking: identical potions stack by quantity, decrement on use
+- AC recalculation: equipping/unequipping armor, shields, rings auto-updates character AC
+- Consumable use: potions heal HP and revive from unconscious/stabilized, scrolls show use message
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -126,3 +138,4 @@ Map system overhaul shipped (procedural dungeons, vision fog, terrain tools). Ne
 - Character HP bar in narration panel header with color-coded health, XP, gold, condition
 - Death saving throws: D&D 5e rules (nat 20/1, 3 successes/failures, enemy crits on unconscious)
 - Map system overhaul: procedural dungeons, vision-based fog, terrain painting, zoom/pan, DM mode
+- Inventory/loot system: item types, equipment slots, loot tables, combat drops, CharacterSheet UI, potion use, AC recalc

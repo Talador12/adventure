@@ -1,5 +1,6 @@
-// CharacterSheet — side panel showing selected character's full stats, HP, conditions, and equipment.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame } from '../../contexts/GameContext';
+// CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT } from '../../contexts/GameContext';
+import { useState } from 'react';
 
 interface CharacterSheetProps {
   character: Character;
@@ -38,8 +39,32 @@ const CLASS_SAVE_PROFICIENCIES: Record<string, StatName[]> = {
   Sorcerer: ['CON', 'CHA'],
 };
 
+// Slot display names and icons
+const SLOT_LABELS: Record<EquipSlot, { label: string; icon: string }> = {
+  weapon: { label: 'Weapon', icon: '⚔️' },
+  armor: { label: 'Armor', icon: '🛡️' },
+  shield: { label: 'Shield', icon: '🔰' },
+  ring: { label: 'Ring', icon: '💍' },
+};
+
+// Item stat summary (one-line)
+function itemStatLine(item: Item): string {
+  const parts: string[] = [];
+  if (item.damageDie) parts.push(`${item.damageDie}${item.damageBonus ? `+${item.damageBonus}` : ''} dmg`);
+  if (item.attackBonus) parts.push(`+${item.attackBonus} hit`);
+  if (item.acBonus) parts.push(item.type === 'armor' ? `AC ${item.acBonus}` : `+${item.acBonus} AC`);
+  if (item.healAmount) parts.push(`+${item.healAmount} HP`);
+  if (item.statBonus) {
+    for (const [stat, val] of Object.entries(item.statBonus)) {
+      if (val) parts.push(`+${val} ${stat}`);
+    }
+  }
+  return parts.join(', ');
+}
+
 export default function CharacterSheet({ character }: CharacterSheetProps) {
-  const { restCharacter } = useGame();
+  const { restCharacter, equipItem, unequipItem, useItem, removeItem } = useGame();
+  const [showInventory, setShowInventory] = useState(false);
   const prof = proficiencyBonus(character.level);
   const saveProficiencies = CLASS_SAVE_PROFICIENCIES[character.class] || [];
 
@@ -209,12 +234,102 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         </div>
       </div>
 
-      {/* Equipment placeholder */}
+      {/* Equipment Slots */}
       <div>
         <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Equipment</div>
-        <div className="text-xs text-slate-600 italic p-3 border border-dashed border-slate-800 rounded-lg text-center">
-          Equipment and inventory coming soon
+        <div className="space-y-1.5">
+          {(['weapon', 'armor', 'shield', 'ring'] as EquipSlot[]).map((slot) => {
+            const equipped = (character.equipment || EMPTY_EQUIPMENT)[slot];
+            const { label, icon } = SLOT_LABELS[slot];
+            return (
+              <div key={slot} className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 border ${equipped ? RARITY_BG[equipped.rarity] : 'border-slate-800'} bg-slate-800/50`}>
+                <span className="text-sm w-5 text-center">{icon}</span>
+                <div className="flex-1 min-w-0">
+                  {equipped ? (
+                    <>
+                      <div className={`text-xs font-semibold truncate ${RARITY_COLORS[equipped.rarity]}`}>{equipped.name}</div>
+                      <div className="text-[9px] text-slate-500">{itemStatLine(equipped)}</div>
+                    </>
+                  ) : (
+                    <div className="text-[10px] text-slate-600 italic">No {label.toLowerCase()}</div>
+                  )}
+                </div>
+                {equipped && (
+                  <button
+                    onClick={() => unequipItem(character.id, slot)}
+                    className="text-[9px] text-slate-500 hover:text-red-400 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-700/50"
+                    title={`Unequip ${equipped.name}`}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
+      </div>
+
+      {/* Inventory */}
+      <div>
+        <button
+          onClick={() => setShowInventory(!showInventory)}
+          className="flex items-center gap-1.5 w-full text-left mb-2 group"
+        >
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold group-hover:text-slate-400 transition-colors">
+            Inventory ({(character.inventory || []).length})
+          </div>
+          <span className={`text-[9px] text-slate-600 transition-transform ${showInventory ? 'rotate-90' : ''}`}>▶</span>
+        </button>
+        {showInventory && (
+          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            {(character.inventory || []).length === 0 ? (
+              <div className="text-[10px] text-slate-600 italic text-center py-2">Empty</div>
+            ) : (
+              (character.inventory || []).map((item) => (
+                <div key={item.id} className={`rounded-lg border ${RARITY_BG[item.rarity]} bg-slate-800/30 px-2.5 py-1.5`}>
+                  <div className="flex items-start justify-between gap-1">
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-xs font-semibold ${RARITY_COLORS[item.rarity]}`}>
+                        {item.name}
+                        {item.quantity && item.quantity > 1 && <span className="text-slate-500 ml-1">×{item.quantity}</span>}
+                      </div>
+                      <div className="text-[9px] text-slate-500">{item.description}</div>
+                      {itemStatLine(item) && <div className="text-[9px] text-slate-400 font-mono mt-0.5">{itemStatLine(item)}</div>}
+                    </div>
+                    <div className="flex gap-0.5 shrink-0">
+                      {item.equipSlot && (
+                        <button
+                          onClick={() => equipItem(character.id, item.id)}
+                          className="text-[9px] text-sky-400 hover:text-sky-300 transition-colors px-1.5 py-0.5 rounded hover:bg-sky-900/30"
+                          title="Equip"
+                        >
+                          Equip
+                        </button>
+                      )}
+                      {(item.type === 'potion' || item.type === 'scroll') && (
+                        <button
+                          onClick={() => useItem(character.id, item.id)}
+                          className="text-[9px] text-green-400 hover:text-green-300 transition-colors px-1.5 py-0.5 rounded hover:bg-green-900/30"
+                          title="Use"
+                        >
+                          Use
+                        </button>
+                      )}
+                      <button
+                        onClick={() => removeItem(character.id, item.id)}
+                        className="text-[9px] text-slate-500 hover:text-red-400 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-700/50"
+                        title="Drop"
+                      >
+                        Drop
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-[8px] text-yellow-600 mt-0.5">{item.value}g • {item.rarity}</div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Spell Slots placeholder (for casters) */}

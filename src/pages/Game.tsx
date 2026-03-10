@@ -6,7 +6,7 @@ import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character, rollLoot, type Item } from '../contexts/GameContext';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, isMuted, toggleMute } from '../hooks/useSoundFX';
 
@@ -24,6 +24,7 @@ export default function Game() {
     rolls, selectedUnitId, characters,
     inCombat, setInCombat, rollInitiative, nextTurn, combatRound,
     damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
+    addItem, useItem,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -1015,12 +1016,21 @@ export default function Game() {
                               if (leveledUp) {
                                 addDmMessage(`LEVEL UP! ${selectedCharacter.name} is now level ${newLevel}!`);
                               }
+
+                              // Roll for loot drops
+                              const loot = rollLoot(deadEnemies.length, selectedCharacter.level);
+                              if (loot.length > 0) {
+                                for (const item of loot) addItem(selectedCharacter.id, item);
+                                const lootNames = loot.map((i) => i.name).join(', ');
+                                addDmMessage(`Loot found: ${lootNames}`);
+                              }
                             } else {
                               addDmMessage('The battle ends. You catch your breath.');
                             }
 
                             // Ask the DM to narrate the aftermath
-                            callDmNarrate(`The combat has ended. ${deadEnemies.length} enemies were defeated. Narrate the aftermath — what do the characters find? Any loot, clues, or consequences?`);
+                            const lootContext = selectedCharacter ? ` The party found some items among the remains.` : '';
+                            callDmNarrate(`The combat has ended. ${deadEnemies.length} enemies were defeated.${lootContext} Narrate the aftermath — what do the characters find? Any clues or consequences?`);
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/50 text-slate-300 text-xs font-semibold rounded-lg transition-all"
                         >
@@ -1055,6 +1065,26 @@ export default function Game() {
                       </button>
                     </>
                   )}
+
+                  {/* Use Potion button — show when character has healing potions and is hurt */}
+                  {selectedCharacter && selectedCharacter.hp < selectedCharacter.maxHp && (() => {
+                    const potions = (selectedCharacter.inventory || []).filter((i: Item) => i.type === 'potion' && i.healAmount);
+                    if (potions.length === 0) return null;
+                    const potion = potions[0]; // use first available potion
+                    return (
+                      <button
+                        onClick={() => {
+                          const { message } = useItem(selectedCharacter.id, potion.id);
+                          if (message) addDmMessage(message);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-800/50 text-emerald-300 text-xs font-semibold rounded-lg transition-all"
+                        title={`${potion.name} — restores ${potion.healAmount} HP`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>
+                        {potion.name}{potion.quantity && potion.quantity > 1 ? ` (${potion.quantity})` : ''}
+                      </button>
+                    );
+                  })()}
 
                   {/* Clear history button */}
                   {dmHistory.length > 0 && (

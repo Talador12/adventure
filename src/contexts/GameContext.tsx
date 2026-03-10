@@ -84,6 +84,103 @@ export const XP_THRESHOLDS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 4800
 
 export type Condition = 'normal' | 'unconscious' | 'dead' | 'stabilized';
 
+// --- Item & Equipment system ---
+export type ItemType = 'weapon' | 'armor' | 'shield' | 'potion' | 'ring' | 'scroll' | 'misc';
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic';
+export type EquipSlot = 'weapon' | 'armor' | 'shield' | 'ring';
+
+export interface Item {
+  id: string;
+  name: string;
+  type: ItemType;
+  rarity: ItemRarity;
+  description: string;
+  value: number; // gold value
+  // Equipment stats (only for equippable items)
+  equipSlot?: EquipSlot;
+  acBonus?: number;       // armor: base AC or shield: +AC
+  damageDie?: string;     // weapon: e.g. "1d8", "2d6"
+  damageBonus?: number;   // weapon: flat bonus to damage
+  attackBonus?: number;   // weapon: flat bonus to hit
+  healAmount?: number;    // potion: HP restored
+  statBonus?: Partial<Stats>; // ring/misc: stat bonuses
+  quantity?: number;      // stackable items (potions, scrolls)
+}
+
+export interface EquipmentSlots {
+  weapon: Item | null;
+  armor: Item | null;
+  shield: Item | null;
+  ring: Item | null;
+}
+
+export const EMPTY_EQUIPMENT: EquipmentSlots = { weapon: null, armor: null, shield: null, ring: null };
+
+// --- Loot tables ---
+// Items are grouped by rarity; combat loot rolls from these
+const COMMON_LOOT: Omit<Item, 'id'>[] = [
+  { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 1 },
+  { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'A reliable blade.', value: 10, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0 },
+  { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11 },
+  { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2 },
+  { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0 },
+  { name: 'Handaxe', type: 'weapon', rarity: 'common', description: 'Can be thrown.', value: 5, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0 },
+  { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor.', value: 50, equipSlot: 'armor', acBonus: 13 },
+  { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: 'Reveals an item\'s properties.', value: 25 },
+];
+
+const UNCOMMON_LOOT: Omit<Item, 'id'>[] = [
+  { name: 'Greater Healing Potion', type: 'potion', rarity: 'uncommon', description: 'Restores 4d4+4 HP.', value: 150, healAmount: 18, quantity: 1 },
+  { name: 'Longsword +1', type: 'weapon', rarity: 'uncommon', description: 'A finely crafted blade that glows faintly.', value: 200, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 1, attackBonus: 1 },
+  { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14 },
+  { name: 'Shield +1', type: 'shield', rarity: 'uncommon', description: 'An enchanted shield. +3 AC.', value: 200, equipSlot: 'shield', acBonus: 3 },
+  { name: 'Ring of Protection', type: 'ring', rarity: 'uncommon', description: '+1 to AC while worn.', value: 300, equipSlot: 'ring', acBonus: 1 },
+  { name: 'Battleaxe', type: 'weapon', rarity: 'uncommon', description: 'A heavy, well-balanced axe.', value: 100, equipSlot: 'weapon', damageDie: '1d10', damageBonus: 0, attackBonus: 0 },
+];
+
+const RARE_LOOT: Omit<Item, 'id'>[] = [
+  { name: 'Superior Healing Potion', type: 'potion', rarity: 'rare', description: 'Restores 8d4+8 HP.', value: 500, healAmount: 36, quantity: 1 },
+  { name: 'Greatsword +2', type: 'weapon', rarity: 'rare', description: 'A massive blade wreathed in flame.', value: 800, equipSlot: 'weapon', damageDie: '2d6', damageBonus: 2, attackBonus: 2 },
+  { name: 'Half Plate +1', type: 'armor', rarity: 'rare', description: 'Heavy armor with magical reinforcement.', value: 1000, equipSlot: 'armor', acBonus: 16 },
+  { name: 'Ring of Strength', type: 'ring', rarity: 'rare', description: '+2 STR while worn.', value: 800, equipSlot: 'ring', statBonus: { STR: 2 } },
+  { name: 'Amulet of Health', type: 'misc', rarity: 'rare', description: 'A warm glow that bolsters vitality. +2 CON.', value: 800, statBonus: { CON: 2 } },
+];
+
+// Roll loot based on enemy count and party level
+export function rollLoot(enemyCount: number, partyLevel: number): Item[] {
+  const items: Item[] = [];
+  for (let i = 0; i < enemyCount; i++) {
+    const roll = Math.random();
+    // Higher level = better loot chances
+    const rareChance = 0.02 + partyLevel * 0.01;
+    const uncommonChance = 0.1 + partyLevel * 0.02;
+
+    let pool: Omit<Item, 'id'>[];
+    if (roll < rareChance) pool = RARE_LOOT;
+    else if (roll < rareChance + uncommonChance) pool = UNCOMMON_LOOT;
+    else if (roll < 0.6) pool = COMMON_LOOT;
+    else continue; // ~40% chance of no item from this enemy
+
+    const template = pool[Math.floor(Math.random() * pool.length)];
+    items.push({ ...template, id: crypto.randomUUID() });
+  }
+  return items;
+}
+
+// Rarity color mapping for UI
+export const RARITY_COLORS: Record<ItemRarity, string> = {
+  common: 'text-slate-300',
+  uncommon: 'text-green-400',
+  rare: 'text-blue-400',
+  epic: 'text-purple-400',
+};
+export const RARITY_BG: Record<ItemRarity, string> = {
+  common: 'border-slate-600',
+  uncommon: 'border-green-700/50',
+  rare: 'border-blue-700/50',
+  epic: 'border-purple-700/50',
+};
+
 export interface Character {
   id: string;
   name: string;
@@ -109,6 +206,8 @@ export interface Character {
   appearanceDescription?: string; // AI-inferred physical description from uploaded portrait
   playerId: string; // who owns this character
   gold: number; // currency
+  inventory: Item[]; // carried items
+  equipment: EquipmentSlots; // currently equipped gear
   createdAt: number;
 }
 
@@ -148,6 +247,11 @@ interface GameContextValue {
   updateCharacter: (id: string, updates: Partial<Character>) => void;
   grantXP: (id: string, xp: number) => { leveledUp: boolean; newLevel: number };
   restCharacter: (id: string, type: 'short' | 'long') => void;
+  addItem: (charId: string, item: Item) => void;
+  removeItem: (charId: string, itemId: string) => void;
+  equipItem: (charId: string, itemId: string) => void;
+  unequipItem: (charId: string, slot: EquipSlot) => void;
+  useItem: (charId: string, itemId: string) => { message: string };
 
   // Dice roll log (most recent first)
   rolls: DiceRoll[];
@@ -189,6 +293,11 @@ const GameContext = createContext<GameContextValue>({
   updateCharacter: () => {},
   grantXP: () => ({ leveledUp: false, newLevel: 1 }),
   restCharacter: () => {},
+  addItem: () => {},
+  removeItem: () => {},
+  equipItem: () => {},
+  unequipItem: () => {},
+  useItem: () => ({ message: '' }),
   rolls: [],
   addRoll: () => ({}) as DiceRoll,
   clearRolls: () => {},
@@ -350,6 +459,119 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // Inventory: add an item to a character's inventory
+  const addItem = useCallback((charId: string, item: Item) => {
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const inv = c.inventory || [];
+      // Stack potions/scrolls if same name exists
+      if ((item.type === 'potion' || item.type === 'scroll') && item.quantity) {
+        const existing = inv.find((i) => i.name === item.name);
+        if (existing) {
+          return { ...c, inventory: inv.map((i) => i.id === existing.id ? { ...i, quantity: (i.quantity || 1) + (item.quantity || 1) } : i) };
+        }
+      }
+      return { ...c, inventory: [...inv, item] };
+    }));
+  }, []);
+
+  // Inventory: remove an item (or reduce quantity for stackables)
+  const removeItem = useCallback((charId: string, itemId: string) => {
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const inv = c.inventory || [];
+      const item = inv.find((i) => i.id === itemId);
+      if (!item) return c;
+      if (item.quantity && item.quantity > 1) {
+        return { ...c, inventory: inv.map((i) => i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i) };
+      }
+      return { ...c, inventory: inv.filter((i) => i.id !== itemId) };
+    }));
+  }, []);
+
+  // Equipment: equip an item from inventory — moves old item back to inventory, recalculates AC
+  const equipItem = useCallback((charId: string, itemId: string) => {
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const inv = c.inventory || [];
+      const item = inv.find((i) => i.id === itemId);
+      if (!item || !item.equipSlot) return c;
+
+      const eq = { ...(c.equipment || EMPTY_EQUIPMENT) };
+      const slot = item.equipSlot;
+      let newInv = inv.filter((i) => i.id !== itemId);
+
+      // Unequip current item in that slot back to inventory
+      if (eq[slot]) newInv = [...newInv, eq[slot]!];
+      eq[slot] = item;
+
+      // Recalculate AC from equipment
+      const baseAC = 10 + Math.floor((c.stats.DEX - 10) / 2);
+      const armorAC = eq.armor?.acBonus ?? 0; // armor acBonus is base AC (e.g. 13 for chain shirt)
+      const shieldAC = eq.shield?.acBonus ?? 0;
+      const ringAC = eq.ring?.acBonus ?? 0;
+      // If armor provides base AC, use it; otherwise use DEX-based
+      const newAC = (armorAC > 0 ? armorAC : baseAC) + shieldAC + ringAC;
+
+      return { ...c, inventory: newInv, equipment: eq, ac: newAC };
+    }));
+  }, []);
+
+  // Equipment: unequip an item back to inventory, recalculate AC
+  const unequipItem = useCallback((charId: string, slot: EquipSlot) => {
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const eq = { ...(c.equipment || EMPTY_EQUIPMENT) };
+      const item = eq[slot];
+      if (!item) return c;
+
+      eq[slot] = null;
+      const newInv = [...(c.inventory || []), item];
+
+      // Recalculate AC
+      const baseAC = 10 + Math.floor((c.stats.DEX - 10) / 2);
+      const armorAC = eq.armor?.acBonus ?? 0;
+      const shieldAC = eq.shield?.acBonus ?? 0;
+      const ringAC = eq.ring?.acBonus ?? 0;
+      const newAC = (armorAC > 0 ? armorAC : baseAC) + shieldAC + ringAC;
+
+      return { ...c, inventory: newInv, equipment: eq, ac: newAC };
+    }));
+  }, []);
+
+  // Use a consumable item (potion, scroll)
+  const useItem = useCallback((charId: string, itemId: string): { message: string } => {
+    let msg = '';
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== charId) return c;
+      const inv = c.inventory || [];
+      const item = inv.find((i) => i.id === itemId);
+      if (!item) return c;
+
+      let updated = { ...c };
+      if (item.type === 'potion' && item.healAmount) {
+        const healed = Math.min(item.healAmount, c.maxHp - c.hp);
+        updated.hp = Math.min(c.maxHp, c.hp + item.healAmount);
+        if (c.condition === 'unconscious' || c.condition === 'stabilized') {
+          updated.condition = 'normal';
+          updated.deathSaves = { successes: 0, failures: 0 };
+        }
+        msg = `${c.name} drinks ${item.name}, restoring ${healed} HP! (${updated.hp}/${c.maxHp})`;
+      } else {
+        msg = `${c.name} uses ${item.name}.`;
+      }
+
+      // Remove or decrement
+      if (item.quantity && item.quantity > 1) {
+        updated.inventory = inv.map((i) => i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i);
+      } else {
+        updated.inventory = inv.filter((i) => i.id !== itemId);
+      }
+      return updated;
+    }));
+    return { message: msg };
+  }, []);
+
   const addRoll = useCallback((partial: Omit<DiceRoll, 'id' | 'timestamp' | 'isCritical' | 'isFumble'> & { value: number; sides: number }): DiceRoll => {
     const roll: DiceRoll = {
       ...partial,
@@ -458,6 +680,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         updateCharacter,
         grantXP,
         restCharacter,
+        addItem,
+        removeItem,
+        equipItem,
+        unequipItem,
+        useItem,
         rolls,
         addRoll,
         clearRolls,
