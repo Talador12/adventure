@@ -31,8 +31,10 @@ export default function Game() {
   const diceRef = useRef<DiceRollerHandle>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
-  // Game state
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  // Game state — derive selectedCharacter from characters array so it stays reactive
+  // to GameContext updates (grantXP, restCharacter, updateCharacter, damageUnit, etc.)
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
+  const selectedCharacter = selectedCharacterId ? characters.find((c) => c.id === selectedCharacterId) ?? null : null;
   const [showCharacterPicker, setShowCharacterPicker] = useState(true);
   const [dmLoading, setDmLoading] = useState(false);
   const [encounterLoading, setEncounterLoading] = useState(false);
@@ -82,13 +84,13 @@ export default function Game() {
         body: JSON.stringify({
           dmHistory,
           sceneName,
-          selectedCharacterId: selectedCharacter?.id || null,
+          selectedCharacterId: selectedCharacterId || null,
           combatLog,
         }),
       }).catch(() => {}); // server unavailable — localStorage is fallback
     }, 2000); // debounce 2s
     return () => clearTimeout(campaignSaveTimer.current);
-  }, [dmHistory, sceneName, selectedCharacter?.id, combatLog, room, adventureStarted]);
+  }, [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted]);
 
   // Load campaign from server on mount — merge with localStorage (server wins for newer data)
   const campaignLoadedRef = useRef(false);
@@ -108,7 +110,7 @@ export default function Game() {
             setSceneName(c.sceneName);
           }
           // Auto-select character if we had one saved
-          if (c.selectedCharacterId && !selectedCharacter) {
+          if (c.selectedCharacterId && !selectedCharacterId) {
             const found = characters.find((ch) => ch.id === c.selectedCharacterId);
             if (found) handleSelectCharacter(found);
           }
@@ -148,9 +150,19 @@ export default function Game() {
     }
   }, [selectedCharacter]);
 
+  // Keep the player unit in sync with character stats (HP, maxHp, AC change from rest/level-up/damage)
+  useEffect(() => {
+    if (!selectedCharacter) return;
+    setUnits((prev: Unit[]) => prev.map((u) =>
+      u.characterId === selectedCharacter.id
+        ? { ...u, name: selectedCharacter.name, hp: selectedCharacter.hp, maxHp: selectedCharacter.maxHp, ac: selectedCharacter.ac }
+        : u
+    ));
+  }, [selectedCharacter?.hp, selectedCharacter?.maxHp, selectedCharacter?.ac, selectedCharacter?.name, selectedCharacter?.id, setUnits]);
+
   // When a character is selected, create a unit for them
   const handleSelectCharacter = useCallback((char: Character) => {
-    setSelectedCharacter(char);
+    setSelectedCharacterId(char.id);
 
     const unit: Unit = {
       id: `unit-${char.id}`,
@@ -289,6 +301,62 @@ export default function Game() {
     }
   }, [selectedCharacter, npcName, npcRole, sceneName, npcDialogueHistory, addDmMessage]);
 
+  // Detect when selected character drops to 0 HP — set unconscious, announce
+  useEffect(() => {
+    if (!selectedCharacter || !inCombat) return;
+    if (selectedCharacter.hp <= 0 && selectedCharacter.condition === 'normal') {
+      updateCharacter(selectedCharacter.id, { condition: 'unconscious' });
+      addDmMessage(`${selectedCharacter.name} falls unconscious! Death saving throws begin...`);
+    }
+  }, [selectedCharacter?.hp, selectedCharacter?.condition, selectedCharacter?.id, selectedCharacter?.name, inCombat, updateCharacter, addDmMessage]);
+
+  // Death saving throw — when it's the player's turn and they're unconscious
+  const handleDeathSave = useCallback(() => {
+    if (!selectedCharacter || selectedCharacter.condition !== 'unconscious') return;
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const ds = { ...selectedCharacter.deathSaves };
+
+    if (roll === 20) {
+      // Natural 20: regain 1 HP, stabilize
+      updateCharacter(selectedCharacter.id, {
+        hp: 1,
+        condition: 'normal',
+        deathSaves: { successes: 0, failures: 0 },
+      });
+      addDmMessage(`Death save: natural 20! ${selectedCharacter.name} miraculously regains consciousness with 1 HP!`);
+    } else if (roll === 1) {
+      // Natural 1: two failures
+      ds.failures = Math.min(3, ds.failures + 2);
+      if (ds.failures >= 3) {
+        updateCharacter(selectedCharacter.id, { condition: 'dead', deathSaves: ds });
+        addDmMessage(`Death save: natural 1 — two failures! ${selectedCharacter.name} has died.`);
+      } else {
+        updateCharacter(selectedCharacter.id, { deathSaves: ds });
+        addDmMessage(`Death save: natural 1 — two failures! (${ds.successes} successes, ${ds.failures} failures)`);
+      }
+    } else if (roll >= 10) {
+      // Success
+      ds.successes = Math.min(3, ds.successes + 1);
+      if (ds.successes >= 3) {
+        updateCharacter(selectedCharacter.id, { condition: 'stabilized', deathSaves: { successes: 0, failures: 0 } });
+        addDmMessage(`Death save success (rolled ${roll})! ${selectedCharacter.name} stabilizes! (3 successes)`);
+      } else {
+        updateCharacter(selectedCharacter.id, { deathSaves: ds });
+        addDmMessage(`Death save success (rolled ${roll}). (${ds.successes} successes, ${ds.failures} failures)`);
+      }
+    } else {
+      // Failure
+      ds.failures = Math.min(3, ds.failures + 1);
+      if (ds.failures >= 3) {
+        updateCharacter(selectedCharacter.id, { condition: 'dead', deathSaves: ds });
+        addDmMessage(`Death save failed (rolled ${roll}). ${selectedCharacter.name} has died. (3 failures)`);
+      } else {
+        updateCharacter(selectedCharacter.id, { deathSaves: ds });
+        addDmMessage(`Death save failed (rolled ${roll}). (${ds.successes} successes, ${ds.failures} failures)`);
+      }
+    }
+  }, [selectedCharacter, updateCharacter, addDmMessage]);
+
   // Auto-execute enemy turns: when an enemy unit becomes the active turn, auto-attack a player
   useEffect(() => {
     if (!inCombat) return;
@@ -301,6 +369,26 @@ export default function Game() {
 
     const timer = setTimeout(() => {
       const target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
+
+      // Check if target is unconscious — hits auto-fail death saves (crit = 2 failures)
+      const targetChar = target.characterId ? characters.find((c) => c.id === target.characterId) : null;
+      if (targetChar && targetChar.condition === 'unconscious') {
+        // Melee attack on unconscious creature auto-hits and is a crit
+        playCombatHit();
+        playCritical();
+        const ds = { ...targetChar.deathSaves };
+        ds.failures = Math.min(3, ds.failures + 2); // crit = 2 death save failures
+        if (ds.failures >= 3) {
+          updateCharacter(targetChar.id, { condition: 'dead', deathSaves: ds });
+          addDmMessage(`${currentUnit.name} strikes the fallen ${target.name} — a killing blow! ${target.name} has died.`);
+        } else {
+          updateCharacter(targetChar.id, { deathSaves: ds });
+          addDmMessage(`${currentUnit.name} strikes the fallen ${target.name}! (2 death save failures — ${ds.successes} successes, ${ds.failures} failures)`);
+        }
+        setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
+        return;
+      }
+
       const attackRoll = Math.floor(Math.random() * 20) + 1;
       const attackBonus = 3; // generic enemy attack bonus
       const totalAttack = attackRoll + attackBonus;
@@ -328,7 +416,7 @@ export default function Game() {
     }, 800); // delay before enemy acts for dramatic effect
 
     return () => clearTimeout(timer);
-  }, [inCombat, units, damageUnit, addDmMessage, nextTurn]);
+  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn]);
 
   // Begin Adventure — first DM narration
   // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
@@ -995,6 +1083,102 @@ export default function Game() {
 
                 {activeView === 'narration' ? (
                   <>
+                    {/* Character status bar — always visible during adventure */}
+                    {selectedCharacter && (
+                      <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-800 bg-slate-900/60">
+                        {selectedCharacter.portrait ? (
+                          <img src={selectedCharacter.portrait} alt={selectedCharacter.name} className="w-8 h-8 rounded-lg object-cover border border-slate-600 shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-500 border border-slate-700 shrink-0">
+                            {selectedCharacter.name.charAt(0)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white truncate">{selectedCharacter.name}</span>
+                            <span className="text-[10px] text-slate-500">Lv{selectedCharacter.level} {selectedCharacter.class}</span>
+                          </div>
+                          {/* HP bar */}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'bg-green-500' :
+                                  selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${Math.max(0, (selectedCharacter.hp / selectedCharacter.maxHp) * 100)}%` }}
+                              />
+                            </div>
+                            <span className={`text-[10px] font-mono font-bold tabular-nums ${
+                              selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'text-green-400' :
+                              selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'text-yellow-400' : 'text-red-400'
+                            }`}>
+                              {selectedCharacter.hp}/{selectedCharacter.maxHp}
+                            </span>
+                          </div>
+                        </div>
+                        {/* XP + Gold compact */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] text-purple-400 font-mono">{selectedCharacter.xp} XP</span>
+                          <span className="text-[10px] text-yellow-400 font-mono">{selectedCharacter.gold || 0}g</span>
+                        </div>
+                        {selectedCharacter.condition !== 'normal' && (
+                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                            selectedCharacter.condition === 'dead' ? 'bg-red-900/40 text-red-400' :
+                            selectedCharacter.condition === 'unconscious' ? 'bg-red-900/30 text-red-400' :
+                            'bg-yellow-900/30 text-yellow-400'
+                          }`}>
+                            {selectedCharacter.condition}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Death saving throw panel — shown when character is unconscious in combat */}
+                    {selectedCharacter && inCombat && selectedCharacter.condition === 'unconscious' && (
+                      <div className="p-4 border-b border-red-800/30 bg-red-950/20">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="text-red-400 font-bold text-sm">Death Saving Throws</div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-slate-400">Saves:</span>
+                              {[0, 1, 2].map((i) => (
+                                <div key={`ds-s${i}`} className={`w-3 h-3 rounded-full border transition-all ${i < (selectedCharacter.deathSaves?.successes || 0) ? 'bg-green-500 border-green-400 shadow-green-500/50 shadow-sm' : 'border-slate-600'}`} />
+                              ))}
+                              <span className="text-[10px] text-slate-400 ml-2">Fails:</span>
+                              {[0, 1, 2].map((i) => (
+                                <div key={`ds-f${i}`} className={`w-3 h-3 rounded-full border transition-all ${i < (selectedCharacter.deathSaves?.failures || 0) ? 'bg-red-500 border-red-400 shadow-red-500/50 shadow-sm' : 'border-slate-600'}`} />
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleDeathSave}
+                            className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-red-900/30"
+                          >
+                            Roll Death Save
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stabilized notice */}
+                    {selectedCharacter && selectedCharacter.condition === 'stabilized' && (
+                      <div className="p-3 border-b border-yellow-800/30 bg-yellow-950/20 flex items-center justify-between">
+                        <span className="text-yellow-400 text-xs font-semibold">
+                          {selectedCharacter.name} is stabilized but unconscious. Needs healing to regain consciousness.
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Dead notice */}
+                    {selectedCharacter && selectedCharacter.condition === 'dead' && (
+                      <div className="p-3 border-b border-red-800/30 bg-red-950/30 flex items-center justify-between">
+                        <span className="text-red-400 text-xs font-bold">
+                          {selectedCharacter.name} has fallen. Their adventure ends here.
+                        </span>
+                      </div>
+                    )}
+
                     {/* NPC setup panel — shown when NPC mode is active */}
                     {npcMode && (
                       <div className="p-3 border-b border-purple-800/30 bg-purple-950/20 flex items-center gap-2 flex-wrap">

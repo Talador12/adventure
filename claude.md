@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Combat rewards, rest system, and gameplay polish shipped. Next: map system improvements.
+Reactive character state, HP bar, death saving throws shipped. Next: map system improvements.
 
 ## Working Items
 
@@ -66,6 +66,17 @@ Combat rewards, rest system, and gameplay polish shipped. Next: map system impro
 - Home page: "Your Campaigns" card with Play/Lobby/Delete buttons, sorted by creation date
 - localStorage still used for instant persistence, server for cross-device sync
 
+### Reactive character state + death saving throws
+- **Status:** Done
+- `selectedCharacter` in Game.tsx was a stale local copy — replaced with `selectedCharacterId` + derived lookup from GameContext's `characters` array
+- All combat damage, XP, gold, rest, level-up changes now reflect immediately in UI
+- Player unit stats (HP/maxHp/AC) synced with character via useEffect
+- Character HP bar in narration panel header: portrait, name, level, HP bar (color-coded), XP, gold, condition badge
+- Death saving throws: full D&D 5e implementation (nat 20 = regain 1 HP, nat 1 = 2 failures, 3 successes = stabilize, 3 failures = death)
+- Death save UI: prominent panel with success/failure pips, Roll Death Save button
+- Enemy attacks on unconscious characters: auto-crit = 2 death save failures
+- Stabilized + dead condition notices in narration panel
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -101,3 +112,6 @@ Combat rewards, rest system, and gameplay polish shipped. Next: map system impro
 - Rest system: Short Rest (hit die + CON heal) and Long Rest (full HP restore) toolbar buttons
 - Clear narration history button with confirm dialog, HP/gold status in toolbar
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context
+- Reactive character state: selectedCharacter derived from GameContext, not stale local copy
+- Character HP bar in narration panel header with color-coded health, XP, gold, condition
+- Death saving throws: D&D 5e rules (nat 20/1, 3 successes/failures, enemy crits on unconscious)
