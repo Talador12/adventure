@@ -1,7 +1,7 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
 import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
-import { useGame, type Unit } from '../../contexts/GameContext';
+import { useGame, type Unit, type ConditionType } from '../../contexts/GameContext';
 
 const CELL_SIZE = 48;
 const TOKEN_RADIUS = 18;
@@ -23,6 +23,46 @@ const TERRAIN_COLORS: Record<TerrainType, { fill: string; stroke?: string; patte
   door:      { fill: '#92400e', stroke: '#d97706' },
   pit:       { fill: '#0c0a09', stroke: '#44403c' },
 };
+
+// Condition colors for token indicator pips (matches CONDITION_EFFECTS color scheme)
+const CONDITION_COLORS: Record<string, string> = {
+  poisoned: '#4ade80',   // green
+  stunned: '#fde047',    // yellow
+  frightened: '#c084fc',  // purple
+  blessed: '#38bdf8',    // sky blue
+  hexed: '#e879f9',      // fuchsia
+  burning: '#fb923c',    // orange
+  prone: '#d97706',      // amber
+};
+
+// --- Hidden trap system ---
+interface Trap {
+  id: string;
+  col: number;
+  row: number;
+  type: 'spike' | 'fire' | 'poison' | 'alarm';
+  detected: boolean;  // player spotted it
+  triggered: boolean; // already went off
+}
+
+const TRAP_TEMPLATES: Record<Trap['type'], { damage: string; condition?: ConditionType; conditionDuration?: number; description: string; color: string }> = {
+  spike:  { damage: '1d6', description: 'Spike Trap', color: '#94a3b8' },
+  fire:   { damage: '2d6', condition: 'burning', conditionDuration: 2, description: 'Fire Trap', color: '#fb923c' },
+  poison: { damage: '1d4', condition: 'poisoned', conditionDuration: 3, description: 'Poison Dart Trap', color: '#4ade80' },
+  alarm:  { damage: '0', description: 'Alarm Trap (alerts enemies)', color: '#fde047' },
+};
+
+function rollTrapDamage(formula: string): number {
+  if (formula === '0') return 0;
+  const match = formula.match(/^(\d+)d(\d+)$/);
+  if (!match) return 0;
+  const [, count, sides] = match;
+  let total = 0;
+  for (let i = 0; i < parseInt(count, 10); i++) {
+    total += Math.floor(Math.random() * parseInt(sides, 10)) + 1;
+  }
+  return total;
+}
 
 // Terrain movement costs (in cells): Infinity = impassable
 const TERRAIN_COST: Record<TerrainType, number> = {
@@ -369,12 +409,12 @@ function tokenBorderColor(unit: Unit, isSelected: boolean, isCurrentTurn: boolea
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm';
 
 export default function BattleMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, inCombat } = useGame();
+  const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat } = useGame();
 
   const [gridCols] = useState(DEFAULT_COLS);
   const [gridRows] = useState(DEFAULT_ROWS);
@@ -387,6 +427,10 @@ export default function BattleMap() {
 
   // Movement range: reachable cells during drag (only in combat)
   const [reachableCells, setReachableCells] = useState<Map<string, number> | null>(null);
+
+  // Hidden traps (DM-placed, invisible to players)
+  const [traps, setTraps] = useState<Trap[]>([]);
+  const [trapMessages, setTrapMessages] = useState<string[]>([]);
 
   // DM tools
   const [dmTool, setDmTool] = useState<DmTool>('select');
@@ -485,6 +529,39 @@ export default function BattleMap() {
       }
     }
 
+    // Draw traps (visible in DM mode, or when detected by players)
+    traps.forEach((trap) => {
+      if (trap.triggered) return; // already went off, don't render
+      if (!dmMode && !trap.detected) return; // hidden from players
+      const tc = TRAP_TEMPLATES[trap.type];
+      const trapX = trap.col * CELL_SIZE;
+      const trapY = trap.row * CELL_SIZE;
+      // Warning triangle
+      ctx.save();
+      ctx.globalAlpha = dmMode && !trap.detected ? 0.6 : 0.9;
+      const mx = trapX + CELL_SIZE / 2;
+      const my = trapY + CELL_SIZE / 2;
+      // Small colored diamond
+      ctx.beginPath();
+      ctx.moveTo(mx, my - 8);
+      ctx.lineTo(mx + 6, my);
+      ctx.lineTo(mx, my + 8);
+      ctx.lineTo(mx - 6, my);
+      ctx.closePath();
+      ctx.fillStyle = tc.color;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Exclamation mark
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', mx, my);
+      ctx.restore();
+    });
+
     // Movement range overlay (green tint on reachable cells when dragging)
     if (reachableCells && dragging) {
       reachableCells.forEach((_cost, key) => {
@@ -575,6 +652,29 @@ export default function BattleMap() {
         ctx.moveTo(cx + 8, cy - 8); ctx.lineTo(cx - 8, cy + 8);
         ctx.stroke();
       }
+
+      // Condition indicator pips (small colored dots above token)
+      const conditions = unit.conditions || [];
+      if (conditions.length > 0) {
+        const pipR = 3;
+        const pipY = cy - TOKEN_RADIUS - 6;
+        const totalW = conditions.length * (pipR * 2 + 2) - 2;
+        const startX = cx - totalW / 2 + pipR;
+        conditions.forEach((cond, ci) => {
+          const pipX = startX + ci * (pipR * 2 + 2);
+          const color = CONDITION_COLORS[cond.type] || '#94a3b8';
+          // Outer glow
+          ctx.beginPath();
+          ctx.arc(pipX, pipY, pipR + 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fill();
+          // Pip
+          ctx.beginPath();
+          ctx.arc(pipX, pipY, pipR, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        });
+      }
     });
 
     // Fog of war — cover unexplored cells
@@ -593,7 +693,7 @@ export default function BattleMap() {
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps]);
 
   useEffect(() => { draw(); }, [draw]);
 
@@ -622,7 +722,26 @@ export default function BattleMap() {
   // --- Terrain painting ---
   const paintTerrain = useCallback((col: number, row: number) => {
     if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
-    const terrainMap: Record<DmTool, TerrainType | null> = {
+
+    // Handle trap placement
+    if (dmTool.startsWith('trap-')) {
+      const trapType = dmTool.replace('trap-', '') as Trap['type'];
+      // Don't place on walls/void or where a trap already exists
+      if (terrain[row]?.[col] === 'wall' || terrain[row]?.[col] === 'void') return;
+      if (traps.some((t) => t.col === col && t.row === row && !t.triggered)) return;
+      setTraps((prev) => [...prev, {
+        id: `trap-${crypto.randomUUID().slice(0, 8)}`,
+        col, row, type: trapType, detected: false, triggered: false,
+      }]);
+      return;
+    }
+
+    // Erase also removes traps at the cell
+    if (dmTool === 'erase') {
+      setTraps((prev) => prev.filter((t) => !(t.col === col && t.row === row)));
+    }
+
+    const terrainMap: Record<string, TerrainType | null> = {
       select: null, wall: 'wall', floor: 'floor', water: 'water',
       difficult: 'difficult', door: 'door', pit: 'pit', erase: 'floor',
     };
@@ -634,7 +753,7 @@ export default function BattleMap() {
       next[row][col] = target;
       return next;
     });
-  }, [dmTool, gridCols, gridRows]);
+  }, [dmTool, gridCols, gridRows, terrain, traps]);
 
   // --- Mouse handlers ---
   const handleMouseDown = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
@@ -760,10 +879,30 @@ export default function BattleMap() {
       damageUnit(dragging.unitId, pitDamage);
     }
 
+    // Check for hidden traps at the landing cell
+    const activeTrap = traps.find((t) => t.col === col && t.row === row && !t.triggered);
+    if (activeTrap) {
+      const template = TRAP_TEMPLATES[activeTrap.type];
+      const unitName = units.find((u) => u.id === dragging.unitId)?.name || 'Unit';
+      // Mark as triggered
+      setTraps((prev) => prev.map((t) => t.id === activeTrap.id ? { ...t, triggered: true, detected: true } : t));
+
+      const damage = rollTrapDamage(template.damage);
+      if (damage > 0) {
+        damageUnit(dragging.unitId, damage);
+      }
+      if (template.condition) {
+        applyCondition(dragging.unitId, { type: template.condition, duration: template.conditionDuration || 2, source: template.description });
+      }
+      const dmgMsg = damage > 0 ? ` taking ${damage} damage` : '';
+      const condMsg = template.condition ? ` and is ${template.condition}!` : '!';
+      setTrapMessages((prev) => [...prev, `${unitName} triggers a ${template.description}${dmgMsg}${condMsg}`]);
+    }
+
     setDragging(null);
     setDragPos(null);
     setReachableCells(null);
-  }, [panning, painting, dragging, dragPos, gridCols, gridRows, terrain, inCombat, reachableCells, setUnits, damageUnit]);
+  }, [panning, painting, dragging, dragPos, gridCols, gridRows, terrain, inCombat, reachableCells, setUnits, damageUnit, traps, units, applyCondition]);
 
   // --- Zoom ---
   const handleWheel = useCallback((e: ReactWheelEvent<HTMLDivElement>) => {
@@ -779,7 +918,35 @@ export default function BattleMap() {
     setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
     // Reset token positions so they re-spawn in the new dungeon
     setPositions([]);
+    setTraps([]);
+    setTrapMessages([]);
   }, [gridCols, gridRows]);
+
+  // Search for traps: d20 Perception check (DC 13) reveals nearby hidden traps
+  const searchForTraps = useCallback(() => {
+    const selectedPos = positions.find((p) => p.unitId === selectedUnitId);
+    if (!selectedPos) { setTrapMessages(['Select a unit first.']); return; }
+    const unit = units.find((u) => u.id === selectedUnitId);
+    if (!unit) return;
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const dc = 13;
+    const searchRadius = 3; // cells
+    let found = 0;
+    if (roll >= dc) {
+      setTraps((prev) => prev.map((t) => {
+        if (t.triggered || t.detected) return t;
+        const dist = Math.abs(t.col - selectedPos.col) + Math.abs(t.row - selectedPos.row);
+        if (dist <= searchRadius) { found++; return { ...t, detected: true }; }
+        return t;
+      }));
+    }
+    const resultMsg = roll >= dc
+      ? found > 0
+        ? `${unit.name} searches (${roll} vs DC ${dc}) — found ${found} trap${found > 1 ? 's' : ''}!`
+        : `${unit.name} searches (${roll} vs DC ${dc}) — area seems safe.`
+      : `${unit.name} searches (${roll} vs DC ${dc}) — found nothing.`;
+    setTrapMessages((prev) => [...prev, resultMsg]);
+  }, [positions, selectedUnitId, units, traps]);
 
   const dmTools: { tool: DmTool; label: string; color: string }[] = [
     { tool: 'select', label: 'Select', color: 'text-slate-300' },
@@ -790,6 +957,13 @@ export default function BattleMap() {
     { tool: 'door', label: 'Door', color: 'text-yellow-400' },
     { tool: 'pit', label: 'Pit', color: 'text-stone-400' },
     { tool: 'erase', label: 'Erase', color: 'text-red-400' },
+  ];
+
+  const trapTools: { tool: DmTool; label: string; color: string }[] = [
+    { tool: 'trap-spike', label: 'Spike', color: 'text-slate-300' },
+    { tool: 'trap-fire', label: 'Fire', color: 'text-orange-400' },
+    { tool: 'trap-poison', label: 'Poison', color: 'text-green-400' },
+    { tool: 'trap-alarm', label: 'Alarm', color: 'text-yellow-400' },
   ];
 
   return (
@@ -830,6 +1004,38 @@ export default function BattleMap() {
             {t.label}
           </button>
         ))}
+
+        {/* Trap tools (DM only) */}
+        {dmMode && (
+          <>
+            <div className="w-px h-4 bg-slate-700 mx-1" />
+            <span className="text-[9px] text-red-500/70 uppercase tracking-wider font-semibold">Traps</span>
+            {trapTools.map((t) => (
+              <button
+                key={t.tool}
+                onClick={() => setDmTool(t.tool)}
+                className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === t.tool ? 'bg-red-900/60 text-white ring-1 ring-red-500/50' : `bg-red-950/40 ${t.color} hover:bg-red-900/40`}`}
+              >
+                {t.label}
+              </button>
+            ))}
+            {traps.filter((t) => !t.triggered).length > 0 && (
+              <span className="text-[9px] text-red-400/60 font-mono">{traps.filter((t) => !t.triggered).length} set</span>
+            )}
+          </>
+        )}
+
+        <div className="w-px h-4 bg-slate-700 mx-1" />
+
+        {/* Search for traps button (available to players) */}
+        <button
+          onClick={searchForTraps}
+          disabled={!selectedUnitId}
+          className="text-[10px] px-2 py-1 rounded bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 font-semibold transition-all disabled:opacity-30"
+          title="Search for hidden traps nearby (Perception DC 13, 3-cell radius)"
+        >
+          Search
+        </button>
 
         <div className="flex-1" />
 
@@ -885,6 +1091,15 @@ export default function BattleMap() {
         </div>
       </div>
 
+      {/* Trap messages */}
+      {trapMessages.length > 0 && (
+        <div className="flex items-center gap-2 px-3 py-1 border-t border-red-900/40 bg-red-950/20 shrink-0">
+          <span className="text-[9px] text-red-400 font-semibold uppercase">Trap</span>
+          <span className="text-[10px] text-red-300 flex-1 truncate">{trapMessages[trapMessages.length - 1]}</span>
+          <button onClick={() => setTrapMessages([])} className="text-[9px] text-red-500/50 hover:text-red-400">clear</button>
+        </div>
+      )}
+
       {/* Legend */}
       <div className="flex items-center gap-3 px-3 py-1.5 border-t border-slate-800 shrink-0 flex-wrap">
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-amber-500" /><span className="text-[9px] text-slate-500">Player</span></div>
@@ -899,12 +1114,13 @@ export default function BattleMap() {
         {inCombat && (() => {
           const currentUnit = units.find((u) => u.isCurrentTurn);
           if (!currentUnit) return null;
-          const remaining = (currentUnit.speed || 6) - (currentUnit.movementUsed || 0);
-          const totalFt = (currentUnit.speed || 6) * 5;
+          const spd = currentUnit.speed || 6;
+          const remaining = spd - (currentUnit.movementUsed || 0);
+          const hasDashed = (currentUnit.movementUsed || 0) < 0;
           const remainingFt = remaining * 5;
           return (
-            <span className={`text-[9px] font-mono ${remaining > 0 ? 'text-green-400' : 'text-red-400'}`} title={`${currentUnit.name}: ${remainingFt}/${totalFt}ft movement remaining`}>
-              {currentUnit.name.charAt(0)}: {remainingFt}ft
+            <span className={`text-[9px] font-mono ${remaining > 0 ? 'text-green-400' : 'text-red-400'}`} title={`${currentUnit.name}: ${remainingFt}ft remaining${hasDashed ? ' (Dashed!)' : ''}`}>
+              {currentUnit.name.charAt(0)}: {remainingFt}ft{hasDashed ? ' \u26A1' : ''}
             </span>
           );
         })()}

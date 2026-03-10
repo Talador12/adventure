@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 15 shipped: terrain mechanics + movement rules. Tokens now have speed/movement budgets enforced during combat, BFS-based pathfinding with terrain costs (water/rubble = 2x, wall/void = impassable), green movement range overlay on drag, pit damage (1d6), door open on click. Next: multiplayer map sync, range-based attacks, journal/notes, or AI encounter improvements.
+Round 16 shipped: Dash now doubles movement, condition indicators on map tokens, hidden trap system with DM placement + Perception detection. Next: multiplayer map sync, range-based attacks, journal/notes, or AI encounter improvements.
 
 ## Working Items
 
@@ -250,6 +250,29 @@ Round 15 shipped: terrain mechanics + movement rules. Tokens now have speed/move
 - Token positions remain local to BattleMap.tsx; speed/movementUsed live on Unit in GameContext (reset per turn)
 - Out of combat: free movement (no range restriction), only wall/void blocking preserved
 
+### Dash mechanics + condition visuals + hidden traps
+- **Status:** Done
+- Dash action: doubles remaining movement for the turn (grants extra speed cells as negative movementUsed)
+  - Button shows disabled after use, tooltip explains mechanic
+  - Movement indicator in map legend shows lightning bolt icon when dashed
+- Token condition indicator pips: colored dots rendered above tokens on the battle map
+  - 7 condition colors matching CONDITION_EFFECTS (poisoned=green, stunned=yellow, burning=orange, etc.)
+  - Pips auto-layout horizontally with dark background for readability
+- Hidden trap system: 4 trap types (Spike, Fire, Poison, Alarm)
+  - `Trap` interface: id, col, row, type, detected, triggered
+  - DM places traps via new trap tools (only visible in DM mode)
+  - Traps render as colored diamonds with "!" on the map
+  - Traps invisible to players unless detected
+  - Trigger on token landing: roll damage + apply condition (fire=burning 2 rounds, poison=poisoned 3 rounds)
+  - `rollTrapDamage()` parses "XdY" formulas for trap damage
+  - Erase DM tool removes traps at the cell
+  - Dungeon regeneration clears all traps
+- Search for Traps button: d20 Perception check vs DC 13
+  - Reveals hidden traps within 3-cell Manhattan distance of selected unit
+  - Results shown in trap message bar (found X traps / area seems safe / found nothing)
+  - Requires a unit to be selected
+- Trap message bar: red-themed notification above map legend, shows latest trigger/search result, clearable
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -300,3 +323,4 @@ Round 15 shipped: terrain mechanics + movement rules. Tokens now have speed/move
 - Character progression + combat polish: ASI/feats at levels 4/8/12/16/19, Extra Attack for martial classes, turn enforcement, sound FX wiring
 - Concentration tracking + feat integration: spell concentration D&D 5e rules, feat bonuses in combat, CharacterSheet feats display
 - Terrain mechanics + movement rules: BFS pathfinding, terrain costs, movement range overlay, pit damage, door toggle, Monk speed bonus
+- Dash mechanics + condition visuals + hidden traps: real Dash doubles movement, condition pips on tokens, 4 trap types, DM trap tools, Perception search

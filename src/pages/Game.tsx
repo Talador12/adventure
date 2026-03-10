@@ -1303,22 +1303,34 @@ export default function Game() {
                         );
                       })()}
 
-                      {/* Dash action — disengage, end turn */}
-                      {inCombat && selectedCharacter && (
-                        <button
-                          disabled={!isPlayerTurn}
-                          title={!isPlayerTurn ? 'Wait for your turn' : undefined}
-                          onClick={() => {
-                            const msg = `${selectedCharacter.name} takes the Dash action, disengaging from combat!`;
-                            setCombatLog((prev) => [...prev, msg]);
-                            addDmMessage(msg);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clipRule="evenodd" /></svg>
-                          Dash
-                        </button>
-                      )}
+                      {/* Dash action — doubles remaining movement for the turn */}
+                      {inCombat && selectedCharacter && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const hasDashed = (playerUnit.movementUsed || 0) < 0; // sentinel: negative means dashed
+                        return (
+                          <button
+                            disabled={!isPlayerTurn || hasDashed}
+                            title={!isPlayerTurn ? 'Wait for your turn' : hasDashed ? 'Already dashed this turn' : 'Double your remaining movement this turn'}
+                            onClick={() => {
+                              // Grant extra movement equal to speed (D&D 5e Dash = double movement)
+                              setUnits((prev: Unit[]) => prev.map((u) =>
+                                u.id === playerUnit.id
+                                  ? { ...u, movementUsed: Math.max(0, u.movementUsed) - u.speed }
+                                  : u
+                              ));
+                              const extraFt = (playerUnit.speed || 6) * 5;
+                              const msg = `${selectedCharacter.name} takes the Dash action! (+${extraFt}ft movement this turn)`;
+                              setCombatLog((prev) => [...prev, msg]);
+                              addDmMessage(msg);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clipRule="evenodd" /></svg>
+                            Dash
+                          </button>
+                        );
+                      })()}
 
                       {/* End Combat button */}
                       {inCombat && (
