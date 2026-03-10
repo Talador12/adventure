@@ -1,12 +1,28 @@
-// BattleMap — canvas-based tactical grid with draggable unit tokens.
-// Square grid, click to select, drag to move, fog of war per cell.
-import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent } from 'react';
+// BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
+// vision-based fog of war, DM tools, and zoom/pan support.
+import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit } from '../../contexts/GameContext';
 
-const CELL_SIZE = 48; // px per grid cell (5ft in D&D)
-const GRID_COLS = 20;
-const GRID_ROWS = 14;
+const CELL_SIZE = 48;
 const TOKEN_RADIUS = 18;
+const DEFAULT_COLS = 24;
+const DEFAULT_ROWS = 18;
+const VISION_RADIUS = 6; // cells (30ft in D&D)
+const MIN_ZOOM = 0.4;
+const MAX_ZOOM = 2.0;
+
+// --- Terrain system ---
+type TerrainType = 'floor' | 'wall' | 'water' | 'difficult' | 'door' | 'pit' | 'void';
+
+const TERRAIN_COLORS: Record<TerrainType, { fill: string; stroke?: string; pattern?: string }> = {
+  void:      { fill: '#0f172a' },
+  floor:     { fill: '#1e293b' },
+  wall:      { fill: '#475569', stroke: '#64748b' },
+  water:     { fill: '#1e3a5f', stroke: '#2563eb', pattern: 'wave' },
+  difficult: { fill: '#2d1f0e', stroke: '#92400e', pattern: 'cross' },
+  door:      { fill: '#92400e', stroke: '#d97706' },
+  pit:       { fill: '#0c0a09', stroke: '#44403c' },
+};
 
 interface TokenPosition {
   unitId: string;
@@ -14,13 +30,277 @@ interface TokenPosition {
   row: number;
 }
 
-// Color scheme for unit types
+// --- Procedural dungeon generation ---
+interface Room {
+  x: number; y: number; w: number; h: number;
+}
+
+function generateDungeon(cols: number, rows: number): TerrainType[][] {
+  const grid: TerrainType[][] = Array.from({ length: rows }, () => Array(cols).fill('void'));
+
+  // Place 5-9 rooms
+  const rooms: Room[] = [];
+  const numRooms = 5 + Math.floor(Math.random() * 5);
+  const attempts = numRooms * 15;
+
+  for (let a = 0; a < attempts && rooms.length < numRooms; a++) {
+    const w = 3 + Math.floor(Math.random() * 5); // 3-7 wide
+    const h = 3 + Math.floor(Math.random() * 4); // 3-6 tall
+    const x = 1 + Math.floor(Math.random() * (cols - w - 2));
+    const y = 1 + Math.floor(Math.random() * (rows - h - 2));
+
+    // Check overlap (with 1-cell buffer)
+    const overlaps = rooms.some((r) =>
+      x - 1 < r.x + r.w && x + w + 1 > r.x && y - 1 < r.y + r.h && y + h + 1 > r.y
+    );
+    if (overlaps) continue;
+
+    rooms.push({ x, y, w, h });
+
+    // Carve room — floor interior, wall border
+    for (let ry = y - 1; ry <= y + h; ry++) {
+      for (let rx = x - 1; rx <= x + w; rx++) {
+        if (ry < 0 || ry >= rows || rx < 0 || rx >= cols) continue;
+        const isInterior = rx >= x && rx < x + w && ry >= y && ry < y + h;
+        if (isInterior) {
+          grid[ry][rx] = 'floor';
+        } else if (grid[ry][rx] === 'void') {
+          grid[ry][rx] = 'wall';
+        }
+      }
+    }
+  }
+
+  // Connect rooms with corridors (L-shaped)
+  for (let i = 1; i < rooms.length; i++) {
+    const a = rooms[i - 1];
+    const b = rooms[i];
+    const ax = Math.floor(a.x + a.w / 2);
+    const ay = Math.floor(a.y + a.h / 2);
+    const bx = Math.floor(b.x + b.w / 2);
+    const by = Math.floor(b.y + b.h / 2);
+
+    // Horizontal then vertical (or vice versa, randomly)
+    const horizontalFirst = Math.random() > 0.5;
+    const carve = (cx: number, cy: number) => {
+      if (cy >= 0 && cy < rows && cx >= 0 && cx < cols) {
+        if (grid[cy][cx] === 'void' || grid[cy][cx] === 'wall') {
+          grid[cy][cx] = 'floor';
+        }
+        // Add walls around corridor
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const ny = cy + dy;
+            const nx = cx + dx;
+            if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && grid[ny][nx] === 'void') {
+              grid[ny][nx] = 'wall';
+            }
+          }
+        }
+      }
+    };
+
+    if (horizontalFirst) {
+      const stepX = ax < bx ? 1 : -1;
+      for (let cx = ax; cx !== bx; cx += stepX) carve(cx, ay);
+      const stepY = ay < by ? 1 : -1;
+      for (let cy = ay; cy !== by + stepY; cy += stepY) carve(bx, cy);
+    } else {
+      const stepY = ay < by ? 1 : -1;
+      for (let cy = ay; cy !== by; cy += stepY) carve(ax, cy);
+      const stepX = ax < bx ? 1 : -1;
+      for (let cx = ax; cx !== bx + stepX; cx += stepX) carve(cx, by);
+    }
+  }
+
+  // Add doors at corridor-room transitions (heuristic: wall adjacent to 2+ floors in a line)
+  for (let r = 1; r < rows - 1; r++) {
+    for (let c = 1; c < cols - 1; c++) {
+      if (grid[r][c] !== 'wall') continue;
+      // Horizontal door: floor-wall-floor
+      const hDoor = grid[r][c - 1] === 'floor' && grid[r][c + 1] === 'floor' &&
+                     (grid[r - 1][c] === 'wall' || grid[r - 1][c] === 'void') &&
+                     (grid[r + 1][c] === 'wall' || grid[r + 1][c] === 'void');
+      // Vertical door: floor-wall-floor
+      const vDoor = grid[r - 1][c] === 'floor' && grid[r + 1][c] === 'floor' &&
+                     (grid[r][c - 1] === 'wall' || grid[r][c - 1] === 'void') &&
+                     (grid[r][c + 1] === 'wall' || grid[r][c + 1] === 'void');
+      if ((hDoor || vDoor) && Math.random() < 0.3) {
+        grid[r][c] = 'door';
+      }
+    }
+  }
+
+  // Scatter hazards in some rooms
+  for (const room of rooms) {
+    if (Math.random() < 0.3) {
+      // Water pool
+      const wx = room.x + 1 + Math.floor(Math.random() * Math.max(1, room.w - 2));
+      const wy = room.y + 1 + Math.floor(Math.random() * Math.max(1, room.h - 2));
+      if (grid[wy]?.[wx] === 'floor') grid[wy][wx] = 'water';
+      // Expand pool
+      for (const [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+        if (Math.random() < 0.4 && grid[wy + dy]?.[wx + dx] === 'floor') {
+          grid[wy + dy][wx + dx] = 'water';
+        }
+      }
+    }
+    if (Math.random() < 0.2) {
+      // Difficult terrain (rubble)
+      const dx = room.x + Math.floor(Math.random() * room.w);
+      const dy = room.y + Math.floor(Math.random() * room.h);
+      if (grid[dy]?.[dx] === 'floor') grid[dy][dx] = 'difficult';
+    }
+  }
+
+  return grid;
+}
+
+// Find a walkable cell in the first room (for spawning players)
+function findSpawnPoints(terrain: TerrainType[][], count: number, side: 'left' | 'right'): { col: number; row: number }[] {
+  const rows = terrain.length;
+  const cols = terrain[0]?.length || 0;
+  const points: { col: number; row: number }[] = [];
+  const half = Math.floor(cols / 2);
+
+  // Scan for floor tiles on the specified side
+  const startC = side === 'left' ? 0 : half;
+  const endC = side === 'left' ? half : cols;
+
+  for (let r = 0; r < rows && points.length < count; r++) {
+    for (let c = startC; c < endC && points.length < count; c++) {
+      if (terrain[r][c] === 'floor') {
+        // Ensure no duplicate positions
+        if (!points.some((p) => p.col === c && p.row === r)) {
+          points.push({ col: c, row: r });
+        }
+      }
+    }
+  }
+  return points;
+}
+
+// --- Vision / Fog of War ---
+// Simple raycasting: a cell is visible if there's a clear line from a player token
+// to the cell center without passing through a wall.
+function computeVisibility(
+  terrain: TerrainType[][],
+  playerPositions: { col: number; row: number }[],
+  rows: number,
+  cols: number,
+  visionRadius: number,
+  isDM: boolean,
+): boolean[][] {
+  // DM sees everything
+  if (isDM) return Array.from({ length: rows }, () => Array(cols).fill(true));
+
+  const visible: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
+
+  for (const pp of playerPositions) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const dist = Math.sqrt((r - pp.row) ** 2 + (c - pp.col) ** 2);
+        if (dist > visionRadius) continue;
+        if (visible[r][c]) continue; // already visible
+
+        // Bresenham line from player to cell — check for walls
+        let blocked = false;
+        const steps = Math.max(Math.abs(c - pp.col), Math.abs(r - pp.row));
+        if (steps === 0) { visible[r][c] = true; continue; }
+
+        for (let s = 1; s < steps; s++) {
+          const t = s / steps;
+          const mr = Math.round(pp.row + t * (r - pp.row));
+          const mc = Math.round(pp.col + t * (c - pp.col));
+          if (terrain[mr]?.[mc] === 'wall') { blocked = true; break; }
+        }
+
+        if (!blocked) visible[r][c] = true;
+      }
+    }
+  }
+
+  return visible;
+}
+
+// --- Terrain drawing helpers ---
+function drawTerrainCell(ctx: CanvasRenderingContext2D, c: number, r: number, terrain: TerrainType, cellSize: number) {
+  const x = c * cellSize;
+  const y = r * cellSize;
+  const t = TERRAIN_COLORS[terrain];
+
+  ctx.fillStyle = t.fill;
+  ctx.fillRect(x, y, cellSize, cellSize);
+
+  if (t.stroke) {
+    ctx.strokeStyle = t.stroke;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
+  }
+
+  // Patterns
+  if (t.pattern === 'wave') {
+    ctx.strokeStyle = 'rgba(59,130,246,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 3; i++) {
+      const wy = y + 12 + i * 12;
+      ctx.moveTo(x + 4, wy);
+      ctx.quadraticCurveTo(x + cellSize * 0.25, wy - 5, x + cellSize * 0.5, wy);
+      ctx.quadraticCurveTo(x + cellSize * 0.75, wy + 5, x + cellSize - 4, wy);
+    }
+    ctx.stroke();
+  }
+
+  if (t.pattern === 'cross') {
+    ctx.strokeStyle = 'rgba(146,64,14,0.3)';
+    ctx.lineWidth = 1;
+    // Small hash marks for rubble
+    for (let i = 0; i < 3; i++) {
+      const ox = x + 8 + i * 14;
+      const oy = y + 10 + (i % 2) * 12;
+      ctx.beginPath();
+      ctx.moveTo(ox - 3, oy - 3); ctx.lineTo(ox + 3, oy + 3);
+      ctx.moveTo(ox + 3, oy - 3); ctx.lineTo(ox - 3, oy + 3);
+      ctx.stroke();
+    }
+  }
+
+  // Door: draw a rectangle icon
+  if (terrain === 'door') {
+    ctx.fillStyle = '#d97706';
+    const dw = cellSize * 0.5;
+    const dh = cellSize * 0.7;
+    ctx.fillRect(x + (cellSize - dw) / 2, y + (cellSize - dh) / 2, dw, dh);
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + (cellSize - dw) / 2, y + (cellSize - dh) / 2, dw, dh);
+    // Doorknob
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.arc(x + cellSize / 2 + dw * 0.15, y + cellSize / 2, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Pit: diagonal lines
+  if (terrain === 'pit') {
+    ctx.strokeStyle = 'rgba(68,64,60,0.5)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < cellSize * 2; i += 8) {
+      ctx.beginPath();
+      ctx.moveTo(x + i, y);
+      ctx.lineTo(x, y + i);
+      ctx.stroke();
+    }
+  }
+}
+
 function tokenColor(unit: Unit): string {
-  if (unit.hp <= 0) return '#4b5563'; // dead — gray
+  if (unit.hp <= 0) return '#4b5563';
   switch (unit.type) {
-    case 'player': return '#f59e0b'; // amber
-    case 'enemy': return '#ef4444'; // red
-    case 'npc': return '#3b82f6'; // blue
+    case 'player': return '#f59e0b';
+    case 'enemy': return '#ef4444';
+    case 'npc': return '#3b82f6';
     default: return '#6b7280';
   }
 }
@@ -31,18 +311,38 @@ function tokenBorderColor(unit: Unit, isSelected: boolean, isCurrentTurn: boolea
   return 'rgba(255,255,255,0.15)';
 }
 
+// --- Component ---
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase';
+
 export default function BattleMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { units, selectedUnitId, setSelectedUnitId } = useGame();
 
-  // Token positions on the grid
+  const [gridCols] = useState(DEFAULT_COLS);
+  const [gridRows] = useState(DEFAULT_ROWS);
+  const [terrain, setTerrain] = useState<TerrainType[][]>(() => generateDungeon(DEFAULT_COLS, DEFAULT_ROWS));
+
+  // Token positions
   const [positions, setPositions] = useState<TokenPosition[]>([]);
   const [dragging, setDragging] = useState<{ unitId: string; offsetX: number; offsetY: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
-  const [fog, setFog] = useState<boolean[][]>(() =>
-    Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
+
+  // DM tools
+  const [dmTool, setDmTool] = useState<DmTool>('select');
+  const [dmMode, setDmMode] = useState(false); // DM sees through fog
+  const [painting, setPainting] = useState(false); // mouse held for terrain painting
+
+  // Zoom + pan
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [panning, setPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  // Explored cells (persist what players have seen — stays revealed even after moving away)
+  const [explored, setExplored] = useState<boolean[][]>(() =>
+    Array.from({ length: DEFAULT_ROWS }, () => Array(DEFAULT_COLS).fill(false))
   );
-  const [fogMode, setFogMode] = useState(false); // toggle fog painting
 
   // Initialize token positions when units change
   useEffect(() => {
@@ -50,78 +350,111 @@ export default function BattleMap() {
       const existing = new Set(prev.map((p) => p.unitId));
       const newPositions = [...prev.filter((p) => units.some((u) => u.id === p.unitId))];
 
-      // Place new units
-      units.forEach((unit, i) => {
-        if (!existing.has(unit.id)) {
-          // Place players on left side, enemies on right
-          const col = unit.type === 'enemy' ? GRID_COLS - 3 - (i % 3) : 2 + (i % 3);
-          const row = 2 + Math.floor(i / 3) * 2;
-          newPositions.push({ unitId: unit.id, col: Math.min(col, GRID_COLS - 1), row: Math.min(row, GRID_ROWS - 1) });
+      const newUnits = units.filter((u) => !existing.has(u.id));
+      const playerSpawns = findSpawnPoints(terrain, newUnits.filter((u) => u.type === 'player').length, 'left');
+      const enemySpawns = findSpawnPoints(terrain, newUnits.filter((u) => u.type !== 'player').length, 'right');
+
+      let pi = 0;
+      let ei = 0;
+      for (const unit of newUnits) {
+        if (unit.type === 'player') {
+          const sp = playerSpawns[pi++] || { col: 2, row: 2 };
+          newPositions.push({ unitId: unit.id, col: sp.col, row: sp.row });
+        } else {
+          const sp = enemySpawns[ei++] || { col: gridCols - 3, row: gridRows - 3 };
+          newPositions.push({ unitId: unit.id, col: sp.col, row: sp.row });
         }
-      });
+      }
 
       return newPositions;
     });
-  }, [units]);
+  }, [units, terrain, gridCols, gridRows]);
 
-  // Draw the grid, tokens, and fog
+  // Compute visibility from player positions
+  const playerPositions = positions
+    .filter((p) => {
+      const u = units.find((u) => u.id === p.unitId);
+      return u && u.type === 'player' && u.hp > 0;
+    })
+    .map((p) => ({ col: p.col, row: p.row }));
+
+  const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, dmMode);
+
+  // Update explored map as players reveal cells
+  useEffect(() => {
+    setExplored((prev) => {
+      let changed = false;
+      const next = prev.map((row, r) => row.map((explored, c) => {
+        if (!explored && visibility[r]?.[c]) { changed = true; return true; }
+        return explored;
+      }));
+      return changed ? next : prev;
+    });
+  }, [visibility]);
+
+  // --- Drawing ---
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const w = GRID_COLS * CELL_SIZE;
-    const h = GRID_ROWS * CELL_SIZE;
+    const w = gridCols * CELL_SIZE;
+    const h = gridRows * CELL_SIZE;
     canvas.width = w;
     canvas.height = h;
 
-    // Background
-    ctx.fillStyle = '#1e293b';
+    // Clear
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, w, h);
 
+    // Draw terrain
+    for (let r = 0; r < gridRows; r++) {
+      for (let c = 0; c < gridCols; c++) {
+        const isVisible = visibility[r]?.[c] ?? false;
+        const wasExplored = explored[r]?.[c] ?? false;
+
+        if (!dmMode && !isVisible && !wasExplored) continue; // completely unknown
+        drawTerrainCell(ctx, c, r, terrain[r][c], CELL_SIZE);
+
+        // Dim explored but not currently visible cells
+        if (!dmMode && !isVisible && wasExplored) {
+          ctx.fillStyle = 'rgba(15,23,42,0.6)';
+          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+      }
+    }
+
     // Grid lines
-    ctx.strokeStyle = 'rgba(148,163,184,0.1)';
+    ctx.strokeStyle = 'rgba(148,163,184,0.07)';
     ctx.lineWidth = 1;
-    for (let c = 0; c <= GRID_COLS; c++) {
+    for (let c = 0; c <= gridCols; c++) {
       ctx.beginPath();
       ctx.moveTo(c * CELL_SIZE, 0);
       ctx.lineTo(c * CELL_SIZE, h);
       ctx.stroke();
     }
-    for (let r = 0; r <= GRID_ROWS; r++) {
+    for (let r = 0; r <= gridRows; r++) {
       ctx.beginPath();
       ctx.moveTo(0, r * CELL_SIZE);
       ctx.lineTo(w, r * CELL_SIZE);
       ctx.stroke();
     }
 
-    // Coordinate labels (subtle)
-    ctx.fillStyle = 'rgba(148,163,184,0.15)';
-    ctx.font = '9px monospace';
-    ctx.textAlign = 'center';
-    for (let c = 0; c < GRID_COLS; c++) {
-      ctx.fillText(String.fromCharCode(65 + c), c * CELL_SIZE + CELL_SIZE / 2, 10);
-    }
-    ctx.textAlign = 'left';
-    for (let r = 0; r < GRID_ROWS; r++) {
-      ctx.fillText(String(r + 1), 2, r * CELL_SIZE + CELL_SIZE / 2 + 3);
-    }
-
-    // Draw tokens
+    // Draw tokens (only visible ones, unless DM mode)
     positions.forEach((pos) => {
       const unit = units.find((u) => u.id === pos.unitId);
       if (!unit) return;
+      if (!dmMode && !visibility[pos.row]?.[pos.col]) return; // hidden in fog
 
-      // If dragging this token, use drag position instead
-      const isDragging = dragging?.unitId === pos.unitId && dragPos;
-      const cx = isDragging ? dragPos!.x : pos.col * CELL_SIZE + CELL_SIZE / 2;
-      const cy = isDragging ? dragPos!.y : pos.row * CELL_SIZE + CELL_SIZE / 2;
+      const isDrag = dragging?.unitId === pos.unitId && dragPos;
+      const cx = isDrag ? dragPos!.x : pos.col * CELL_SIZE + CELL_SIZE / 2;
+      const cy = isDrag ? dragPos!.y : pos.row * CELL_SIZE + CELL_SIZE / 2;
 
       const isSelected = selectedUnitId === unit.id;
       const isCurrentTurn = unit.isCurrentTurn;
 
-      // Selection/turn glow
+      // Glow
       if (isSelected || isCurrentTurn) {
         ctx.beginPath();
         ctx.arc(cx, cy, TOKEN_RADIUS + 4, 0, Math.PI * 2);
@@ -145,172 +478,284 @@ export default function BattleMap() {
       ctx.textBaseline = 'middle';
       ctx.fillText(unit.name.charAt(0).toUpperCase(), cx, cy - 1);
 
-      // HP bar under token
+      // HP bar
       if (unit.hp > 0) {
         const barW = TOKEN_RADIUS * 1.6;
         const barH = 3;
         const barX = cx - barW / 2;
         const barY = cy + TOKEN_RADIUS + 3;
         const hpPct = Math.max(0, unit.hp / unit.maxHp);
-
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(barX, barY, barW, barH);
         ctx.fillStyle = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
         ctx.fillRect(barX, barY, barW * hpPct, barH);
       } else {
-        // Dead X
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(cx - 8, cy - 8);
-        ctx.lineTo(cx + 8, cy + 8);
-        ctx.moveTo(cx + 8, cy - 8);
-        ctx.lineTo(cx - 8, cy + 8);
+        ctx.moveTo(cx - 8, cy - 8); ctx.lineTo(cx + 8, cy + 8);
+        ctx.moveTo(cx + 8, cy - 8); ctx.lineTo(cx - 8, cy + 8);
         ctx.stroke();
       }
     });
 
-    // Fog of war overlay
-    fog.forEach((row, r) => {
-      row.forEach((fogged, c) => {
-        if (fogged) {
-          ctx.fillStyle = 'rgba(15,23,42,0.85)';
-          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    // Fog of war — cover unexplored cells
+    if (!dmMode) {
+      for (let r = 0; r < gridRows; r++) {
+        for (let c = 0; c < gridCols; c++) {
+          if (!explored[r]?.[c] && !visibility[r]?.[c]) {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          }
         }
-      });
-    });
-  }, [positions, units, selectedUnitId, dragging, dragPos, fog]);
+      }
+    }
 
-  useEffect(() => {
-    draw();
-  }, [draw]);
+    // DM tool brush cursor (when painting terrain)
+    if (dmTool !== 'select' && containerRef.current) {
+      // Cursor handled via CSS
+    }
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows]);
 
-  // Get grid cell from mouse coordinates
-  const getCell = (e: ReactMouseEvent<HTMLCanvasElement>): { col: number; row: number; x: number; y: number } => {
-    const rect = canvasRef.current!.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    return { col: Math.floor(x / CELL_SIZE), row: Math.floor(y / CELL_SIZE), x, y };
-  };
+  useEffect(() => { draw(); }, [draw]);
 
-  // Find token at position
-  const tokenAt = (x: number, y: number): TokenPosition | null => {
+  // --- Mouse coordinate helpers ---
+  const canvasCoords = useCallback((e: ReactMouseEvent<HTMLCanvasElement> | { clientX: number; clientY: number }): { x: number; y: number; col: number; row: number } => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0, col: 0, row: 0 };
+    const rect = canvas.getBoundingClientRect();
+    // Account for zoom: canvas is scaled via CSS transform
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    return { x, y, col: Math.floor(x / CELL_SIZE), row: Math.floor(y / CELL_SIZE) };
+  }, []);
+
+  const tokenAt = useCallback((x: number, y: number): TokenPosition | null => {
     for (const pos of positions) {
       const cx = pos.col * CELL_SIZE + CELL_SIZE / 2;
       const cy = pos.row * CELL_SIZE + CELL_SIZE / 2;
-      const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-      if (dist <= TOKEN_RADIUS) return pos;
+      if (Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) <= TOKEN_RADIUS) return pos;
     }
     return null;
-  };
+  }, [positions]);
 
+  // --- Terrain painting ---
+  const paintTerrain = useCallback((col: number, row: number) => {
+    if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
+    const terrainMap: Record<DmTool, TerrainType | null> = {
+      select: null, wall: 'wall', floor: 'floor', water: 'water',
+      difficult: 'difficult', door: 'door', pit: 'pit', erase: 'floor',
+    };
+    const target = terrainMap[dmTool];
+    if (!target) return;
+    setTerrain((prev) => {
+      if (prev[row][col] === target) return prev;
+      const next = prev.map((r) => [...r]);
+      next[row][col] = target;
+      return next;
+    });
+  }, [dmTool, gridCols, gridRows]);
+
+  // --- Mouse handlers ---
   const handleMouseDown = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
-    const { col, row, x, y } = getCell(e);
-
-    // Fog painting mode
-    if (fogMode) {
-      setFog((prev) => {
-        const next = prev.map((r) => [...r]);
-        if (row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS) {
-          next[row][col] = !next[row][col];
-        }
-        return next;
-      });
+    // Middle mouse or right-click: pan
+    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+      e.preventDefault();
+      setPanning(true);
+      setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
       return;
     }
 
-    // Check if clicking a token
+    const { col, row, x, y } = canvasCoords(e);
+
+    // DM terrain painting
+    if (dmTool !== 'select') {
+      paintTerrain(col, row);
+      setPainting(true);
+      return;
+    }
+
+    // Token interaction
     const token = tokenAt(x, y);
     if (token) {
       const unit = units.find((u) => u.id === token.unitId);
-      if (unit) {
-        setSelectedUnitId(unit.id === selectedUnitId ? null : unit.id);
-      }
-      // Start dragging
+      if (unit) setSelectedUnitId(unit.id === selectedUnitId ? null : unit.id);
       const cx = token.col * CELL_SIZE + CELL_SIZE / 2;
       const cy = token.row * CELL_SIZE + CELL_SIZE / 2;
       setDragging({ unitId: token.unitId, offsetX: x - cx, offsetY: y - cy });
-      setDragPos({ x, y });
+      setDragPos({ x: cx, y: cy });
     } else {
       setSelectedUnitId(null);
     }
-  }, [fogMode, units, selectedUnitId, setSelectedUnitId, positions]);
+  }, [canvasCoords, tokenAt, dmTool, paintTerrain, units, selectedUnitId, setSelectedUnitId, panOffset]);
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
-    if (!dragging) return;
-    const rect = canvasRef.current!.getBoundingClientRect();
-    const x = e.clientX - rect.left - dragging.offsetX;
-    const y = e.clientY - rect.top - dragging.offsetY;
-    setDragPos({ x, y });
-  }, [dragging]);
-
-  const handleMouseUp = useCallback(() => {
-    if (!dragging || !dragPos) {
-      setDragging(null);
-      setDragPos(null);
+    if (panning) {
+      setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
       return;
     }
+    if (painting && dmTool !== 'select') {
+      const { col, row } = canvasCoords(e);
+      paintTerrain(col, row);
+      return;
+    }
+    if (!dragging) return;
+    const { x, y } = canvasCoords(e);
+    setDragPos({ x: x - dragging.offsetX, y: y - dragging.offsetY });
+  }, [panning, panStart, painting, dmTool, canvasCoords, paintTerrain, dragging]);
 
-    // Snap to grid
-    const col = Math.max(0, Math.min(GRID_COLS - 1, Math.floor(dragPos.x / CELL_SIZE)));
-    const row = Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(dragPos.y / CELL_SIZE)));
+  const handleMouseUp = useCallback(() => {
+    if (panning) { setPanning(false); return; }
+    if (painting) { setPainting(false); return; }
+    if (!dragging || !dragPos) { setDragging(null); setDragPos(null); return; }
 
-    setPositions((prev) =>
-      prev.map((p) => (p.unitId === dragging.unitId ? { ...p, col, row } : p))
-    );
+    const col = Math.max(0, Math.min(gridCols - 1, Math.floor(dragPos.x / CELL_SIZE)));
+    const row = Math.max(0, Math.min(gridRows - 1, Math.floor(dragPos.y / CELL_SIZE)));
+
+    // Don't allow placing tokens on walls
+    if (terrain[row]?.[col] !== 'wall' && terrain[row]?.[col] !== 'void') {
+      setPositions((prev) =>
+        prev.map((p) => (p.unitId === dragging.unitId ? { ...p, col, row } : p))
+      );
+    }
+
     setDragging(null);
     setDragPos(null);
-  }, [dragging, dragPos]);
+  }, [panning, painting, dragging, dragPos, gridCols, gridRows, terrain]);
+
+  // --- Zoom ---
+  const handleWheel = useCallback((e: ReactWheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
+  }, []);
+
+  // --- Generate new dungeon ---
+  const regenerate = useCallback(() => {
+    const newTerrain = generateDungeon(gridCols, gridRows);
+    setTerrain(newTerrain);
+    setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
+    // Reset token positions so they re-spawn in the new dungeon
+    setPositions([]);
+  }, [gridCols, gridRows]);
+
+  const dmTools: { tool: DmTool; label: string; color: string }[] = [
+    { tool: 'select', label: 'Select', color: 'text-slate-300' },
+    { tool: 'wall', label: 'Wall', color: 'text-slate-400' },
+    { tool: 'floor', label: 'Floor', color: 'text-slate-400' },
+    { tool: 'water', label: 'Water', color: 'text-blue-400' },
+    { tool: 'difficult', label: 'Rubble', color: 'text-amber-400' },
+    { tool: 'door', label: 'Door', color: 'text-yellow-400' },
+    { tool: 'pit', label: 'Pit', color: 'text-stone-400' },
+    { tool: 'erase', label: 'Erase', color: 'text-red-400' },
+  ];
 
   return (
     <div className="flex flex-col h-full">
-      {/* Map toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 shrink-0">
-        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Battle Map</span>
+      {/* Toolbar */}
+      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-800 shrink-0 flex-wrap">
+        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mr-1">Map</span>
+
+        {/* Generate button */}
+        <button
+          onClick={regenerate}
+          className="text-[10px] px-2 py-1 rounded bg-amber-900/40 hover:bg-amber-900/60 border border-amber-800/50 text-amber-300 font-semibold transition-all"
+          title="Generate a new random dungeon"
+        >
+          Generate
+        </button>
+
+        <div className="w-px h-4 bg-slate-700 mx-1" />
+
+        {/* DM mode toggle */}
+        <button
+          onClick={() => setDmMode(!dmMode)}
+          className={`text-[10px] px-2 py-1 rounded font-semibold transition-all ${dmMode ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+          title="DM Mode: see through fog of war"
+        >
+          {dmMode ? 'DM: ON' : 'DM'}
+        </button>
+
+        <div className="w-px h-4 bg-slate-700 mx-1" />
+
+        {/* Terrain tools */}
+        {dmTools.map((t) => (
+          <button
+            key={t.tool}
+            onClick={() => setDmTool(t.tool)}
+            className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === t.tool ? 'bg-slate-600 text-white ring-1 ring-slate-500' : `bg-slate-800/60 ${t.color} hover:bg-slate-700/60`}`}
+          >
+            {t.label}
+          </button>
+        ))}
+
         <div className="flex-1" />
+
+        {/* Zoom controls */}
         <button
-          onClick={() => setFogMode(!fogMode)}
-          className={`text-[10px] px-2 py-1 rounded font-medium transition-all ${fogMode ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+          onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - 0.2))}
+          className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
         >
-          {fogMode ? 'Fog: ON' : 'Fog'}
+          -
+        </button>
+        <span className="text-[9px] text-slate-500 font-mono w-8 text-center">{Math.round(zoom * 100)}%</span>
+        <button
+          onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 0.2))}
+          className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
+        >
+          +
         </button>
         <button
-          onClick={() => setFog(Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false)))}
-          className="text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium transition-all"
+          onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }}
+          className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
+          title="Reset zoom and position"
         >
-          Clear Fog
+          Reset
         </button>
-        <span className="text-[9px] text-slate-600">{GRID_COLS}x{GRID_ROWS} ({GRID_COLS * 5}x{GRID_ROWS * 5}ft)</span>
+
+        <span className="text-[9px] text-slate-600">{gridCols}x{gridRows} ({gridCols * 5}x{gridRows * 5}ft)</span>
       </div>
 
-      {/* Canvas */}
-      <div className="flex-1 overflow-auto flex items-center justify-center bg-slate-950/50 p-2">
-        <canvas
-          ref={canvasRef}
-          className="rounded-lg border border-slate-800 cursor-crosshair"
-          style={{ imageRendering: 'pixelated' }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        />
+      {/* Canvas with zoom/pan */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-hidden bg-slate-950/50"
+        onWheel={handleWheel}
+        style={{ cursor: dmTool !== 'select' ? 'crosshair' : panning ? 'grabbing' : 'default' }}
+      >
+        <div
+          style={{
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
+            width: gridCols * CELL_SIZE,
+            height: gridRows * CELL_SIZE,
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="rounded-lg border border-slate-800"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 px-3 py-1.5 border-t border-slate-800 shrink-0">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-amber-500" />
-          <span className="text-[9px] text-slate-500">Player</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <span className="text-[9px] text-slate-500">Enemy</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-blue-500" />
-          <span className="text-[9px] text-slate-500">NPC</span>
-        </div>
-        <span className="text-[9px] text-slate-600 ml-auto">Click to select, drag to move</span>
+      <div className="flex items-center gap-3 px-3 py-1.5 border-t border-slate-800 shrink-0 flex-wrap">
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-amber-500" /><span className="text-[9px] text-slate-500">Player</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-red-500" /><span className="text-[9px] text-slate-500">Enemy</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-blue-500" /><span className="text-[9px] text-slate-500">NPC</span></div>
+        <div className="w-px h-3 bg-slate-700" />
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#475569]" /><span className="text-[9px] text-slate-500">Wall</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#1e3a5f]" /><span className="text-[9px] text-slate-500">Water</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#2d1f0e]" /><span className="text-[9px] text-slate-500">Rubble</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#92400e]" /><span className="text-[9px] text-slate-500">Door</span></div>
+        <span className="text-[9px] text-slate-600 ml-auto">Scroll to zoom | Alt+drag to pan | Drag tokens to move</span>
       </div>
     </div>
   );

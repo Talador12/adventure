@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Reactive character state, HP bar, death saving throws shipped. Next: map system improvements.
+Map system overhaul shipped (procedural dungeons, vision fog, terrain tools). Next: inventory/loot system or multiplayer map sync.
 
 ## Working Items
 
@@ -52,9 +52,19 @@ Reactive character state, HP bar, death saving throws shipped. Next: map system 
 - Scene name field in toolbar feeds location context into AI prompts
 
 ### Map system improvements
-- **Status:** Backlog
-- Procedural generation, better fog of war
-- DM tools: god mode, roll override, visibility toggles
+- **Status:** Done
+- Procedural dungeon generation: room-and-corridor algorithm (5-9 rooms, L-shaped corridors, auto-doors, hazard scattering)
+- 7 terrain types: floor, wall, water, difficult (rubble), door, pit, void — each with distinct visual rendering
+- Vision-based fog of war: Bresenham raycasting from player tokens (6-cell / 30ft radius), walls block line of sight
+- Explored cells stay dimly visible after players move away (memory of what was seen)
+- DM mode toggle: see through fog, view entire map
+- Terrain painting tools: select, wall, floor, water, rubble, door, pit, erase — click or drag to paint
+- Generate button: create new random dungeon (resets explored fog + repositions tokens)
+- Smart token spawning: players spawn on floor tiles on left side, enemies on right
+- Tokens can't be placed on walls (snap-back on drop)
+- Zoom (scroll wheel, +/- buttons) and pan (alt+drag) with reset button
+- Expanded grid: 24x18 (120x90ft) from 20x14
+- Terrain legend in footer
 
 ### Persistent campaigns
 - **Status:** Done
@@ -115,3 +125,4 @@ Reactive character state, HP bar, death saving throws shipped. Next: map system 
 - Reactive character state: selectedCharacter derived from GameContext, not stale local copy
 - Character HP bar in narration panel header with color-coded health, XP, gold, condition
 - Death saving throws: D&D 5e rules (nat 20/1, 3 successes/failures, enemy crits on unconscious)
+- Map system overhaul: procedural dungeons, vision-based fog, terrain painting, zoom/pan, DM mode
