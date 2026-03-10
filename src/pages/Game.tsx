@@ -206,6 +206,8 @@ export default function Game() {
   const handleSelectCharacter = useCallback((char: Character) => {
     setSelectedCharacterId(char.id);
 
+    // Monk gets bonus speed at higher levels (5e: +10 at 2, +15 at 6, +20 at 10, etc.)
+    const monkSpeedBonus = char.class === 'Monk' ? Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0) : 0;
     const unit: Unit = {
       id: `unit-${char.id}`,
       name: char.name,
@@ -217,6 +219,8 @@ export default function Game() {
       type: 'player',
       playerId: currentPlayer.id,
       characterId: char.id,
+      speed: 6 + monkSpeedBonus, // 6 cells = 30ft base
+      movementUsed: 0,
     };
     setUnits([unit]);
     setShowCharacterPicker(false);

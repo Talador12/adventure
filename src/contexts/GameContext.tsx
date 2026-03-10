@@ -64,6 +64,8 @@ export interface Unit {
   abilityCooldowns?: Record<string, number>; // ability name -> turns until available
   conditions?: ActiveCondition[];
   concentratingOn?: string; // spell name if unit is concentrating on a spell
+  speed: number; // movement speed in cells (default 6 = 30ft)
+  movementUsed: number; // cells moved this turn
   cr?: number; // challenge rating for XP calculation
   xpValue?: number; // XP reward on kill
 }
@@ -194,6 +196,8 @@ export function generateEnemies(difficulty: string, partyLevel: number, count?: 
       abilities: template.abilities.map((a) => ({ ...a })),
       abilityCooldowns: {},
       conditions: [],
+      speed: 6, // 30ft default
+      movementUsed: 0,
       cr: template.cr,
       xpValue: template.xpValue,
     } satisfies Unit;
@@ -1481,7 +1485,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
           }
         }
         const roll = Math.floor(Math.random() * 20) + 1 + dexMod + featInitBonus;
-        return { ...u, initiative: roll, isCurrentTurn: false };
+        // Reset movement for combat start; calculate speed from character data
+        let speed = u.speed || 6;
+        if (u.characterId) {
+          const char = characters.find((c) => c.id === u.characterId);
+          if (char && char.class === 'Monk') {
+            speed = 6 + Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0);
+          }
+        }
+        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, speed };
       });
       // Sort descending by initiative (higher goes first)
       withInitiative.sort((a, b) => b.initiative - a.initiative);
@@ -1520,6 +1532,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
 
       cleared[nextIdx].isCurrentTurn = true;
+      cleared[nextIdx].movementUsed = 0; // reset movement for new turn
 
       // Advance round if we wrapped
       if (wrapped || nextIdx <= currentIdx) {

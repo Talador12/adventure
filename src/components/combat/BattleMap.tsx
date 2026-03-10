@@ -24,6 +24,63 @@ const TERRAIN_COLORS: Record<TerrainType, { fill: string; stroke?: string; patte
   pit:       { fill: '#0c0a09', stroke: '#44403c' },
 };
 
+// Terrain movement costs (in cells): Infinity = impassable
+const TERRAIN_COST: Record<TerrainType, number> = {
+  floor: 1, door: 1, pit: 1,
+  water: 2, difficult: 2,
+  wall: Infinity, void: Infinity,
+};
+
+// BFS to compute cells reachable within a movement budget, respecting terrain costs
+function computeReachableCells(
+  terrain: TerrainType[][],
+  startCol: number,
+  startRow: number,
+  maxMovement: number,
+  rows: number,
+  cols: number,
+): Map<string, number> {
+  const reachable = new Map<string, number>(); // "col,row" -> total cost to reach
+  const key = (c: number, r: number) => `${c},${r}`;
+  reachable.set(key(startCol, startRow), 0);
+
+  // Priority queue as simple sorted array (grid is small enough)
+  const queue: { col: number; row: number; cost: number }[] = [{ col: startCol, row: startRow, cost: 0 }];
+
+  while (queue.length > 0) {
+    // Pop lowest cost
+    queue.sort((a, b) => a.cost - b.cost);
+    const current = queue.shift()!;
+
+    const neighbors = [
+      { col: current.col - 1, row: current.row },
+      { col: current.col + 1, row: current.row },
+      { col: current.col, row: current.row - 1 },
+      { col: current.col, row: current.row + 1 },
+    ];
+
+    for (const n of neighbors) {
+      if (n.col < 0 || n.col >= cols || n.row < 0 || n.row >= rows) continue;
+      const terrainType = terrain[n.row]?.[n.col];
+      if (!terrainType) continue;
+      const moveCost = TERRAIN_COST[terrainType];
+      if (!isFinite(moveCost)) continue; // impassable
+
+      const totalCost = current.cost + moveCost;
+      if (totalCost > maxMovement) continue;
+
+      const k = key(n.col, n.row);
+      const existing = reachable.get(k);
+      if (existing !== undefined && existing <= totalCost) continue;
+
+      reachable.set(k, totalCost);
+      queue.push({ col: n.col, row: n.row, cost: totalCost });
+    }
+  }
+
+  return reachable;
+}
+
 interface TokenPosition {
   unitId: string;
   col: number;
@@ -317,7 +374,7 @@ type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pi
 export default function BattleMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { units, selectedUnitId, setSelectedUnitId } = useGame();
+  const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, inCombat } = useGame();
 
   const [gridCols] = useState(DEFAULT_COLS);
   const [gridRows] = useState(DEFAULT_ROWS);
@@ -327,6 +384,9 @@ export default function BattleMap() {
   const [positions, setPositions] = useState<TokenPosition[]>([]);
   const [dragging, setDragging] = useState<{ unitId: string; offsetX: number; offsetY: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Movement range: reachable cells during drag (only in combat)
+  const [reachableCells, setReachableCells] = useState<Map<string, number> | null>(null);
 
   // DM tools
   const [dmTool, setDmTool] = useState<DmTool>('select');
@@ -425,6 +485,24 @@ export default function BattleMap() {
       }
     }
 
+    // Movement range overlay (green tint on reachable cells when dragging)
+    if (reachableCells && dragging) {
+      reachableCells.forEach((_cost, key) => {
+        const [cStr, rStr] = key.split(',');
+        const cc = parseInt(cStr, 10);
+        const rr = parseInt(rStr, 10);
+        // Skip the starting cell (where the token is)
+        const dragUnit = positions.find((p) => p.unitId === dragging.unitId);
+        if (dragUnit && cc === dragUnit.col && rr === dragUnit.row) return;
+        ctx.fillStyle = 'rgba(34,197,94,0.18)';
+        ctx.fillRect(cc * CELL_SIZE, rr * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        // Subtle green border
+        ctx.strokeStyle = 'rgba(34,197,94,0.35)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cc * CELL_SIZE + 0.5, rr * CELL_SIZE + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
+      });
+    }
+
     // Grid lines
     ctx.strokeStyle = 'rgba(148,163,184,0.07)';
     ctx.lineWidth = 1;
@@ -515,7 +593,7 @@ export default function BattleMap() {
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells]);
 
   useEffect(() => { draw(); }, [draw]);
 
@@ -577,6 +655,24 @@ export default function BattleMap() {
       return;
     }
 
+    // Door toggle: click on a door cell with no token on it to open/close
+    if (dmTool === 'select' && terrain[row]?.[col] === 'door') {
+      const hasToken = positions.some((p) => p.col === col && p.row === row);
+      if (!hasToken) {
+        setTerrain((prev) => {
+          const next = prev.map((r) => [...r]);
+          next[row][col] = 'floor';
+          return next;
+        });
+        return;
+      }
+    }
+    if (dmTool === 'select' && terrain[row]?.[col] === 'floor') {
+      // Check if this was originally a door (adjacent walls on opposite sides suggest a doorway)
+      // For simplicity: allow right-click or double-tap to close? No — just allow placing door via DM tool.
+      // Door open = floor. Only DM tool can re-place door terrain. Toggle is one-way open.
+    }
+
     // Token interaction
     const token = tokenAt(x, y);
     if (token) {
@@ -586,10 +682,23 @@ export default function BattleMap() {
       const cy = token.row * CELL_SIZE + CELL_SIZE / 2;
       setDragging({ unitId: token.unitId, offsetX: x - cx, offsetY: y - cy });
       setDragPos({ x: cx, y: cy });
+
+      // Compute movement range if in combat
+      if (inCombat && unit) {
+        const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
+        if (remaining > 0) {
+          const reachable = computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols);
+          setReachableCells(reachable);
+        } else {
+          setReachableCells(new Map()); // no movement left
+        }
+      } else {
+        setReachableCells(null); // out of combat, free movement
+      }
     } else {
       setSelectedUnitId(null);
     }
-  }, [canvasCoords, tokenAt, dmTool, paintTerrain, units, selectedUnitId, setSelectedUnitId, panOffset]);
+  }, [canvasCoords, tokenAt, dmTool, paintTerrain, units, selectedUnitId, setSelectedUnitId, panOffset, inCombat, terrain, gridRows, gridCols, positions]);
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
     if (panning) {
@@ -609,21 +718,52 @@ export default function BattleMap() {
   const handleMouseUp = useCallback(() => {
     if (panning) { setPanning(false); return; }
     if (painting) { setPainting(false); return; }
-    if (!dragging || !dragPos) { setDragging(null); setDragPos(null); return; }
+    if (!dragging || !dragPos) { setDragging(null); setDragPos(null); setReachableCells(null); return; }
 
     const col = Math.max(0, Math.min(gridCols - 1, Math.floor(dragPos.x / CELL_SIZE)));
     const row = Math.max(0, Math.min(gridRows - 1, Math.floor(dragPos.y / CELL_SIZE)));
 
-    // Don't allow placing tokens on walls
-    if (terrain[row]?.[col] !== 'wall' && terrain[row]?.[col] !== 'void') {
-      setPositions((prev) =>
-        prev.map((p) => (p.unitId === dragging.unitId ? { ...p, col, row } : p))
-      );
+    // Don't allow placing tokens on walls or void
+    const targetTerrain = terrain[row]?.[col];
+    if (targetTerrain === 'wall' || targetTerrain === 'void') {
+      setDragging(null);
+      setDragPos(null);
+      setReachableCells(null);
+      return;
+    }
+
+    // In combat: enforce movement range
+    if (inCombat && reachableCells) {
+      const cellKey = `${col},${row}`;
+      const moveCost = reachableCells.get(cellKey);
+      if (moveCost === undefined) {
+        // Out of range — snap back, don't move
+        setDragging(null);
+        setDragPos(null);
+        setReachableCells(null);
+        return;
+      }
+      // Deduct movement cost from the unit
+      setUnits((prev) => prev.map((u) =>
+        u.id === dragging.unitId ? { ...u, movementUsed: (u.movementUsed || 0) + moveCost } : u
+      ));
+    }
+
+    // Move the token
+    setPositions((prev) =>
+      prev.map((p) => (p.unitId === dragging.unitId ? { ...p, col, row } : p))
+    );
+
+    // Pit damage: 1d6 when landing on a pit
+    if (targetTerrain === 'pit') {
+      const pitDamage = Math.floor(Math.random() * 6) + 1;
+      damageUnit(dragging.unitId, pitDamage);
     }
 
     setDragging(null);
     setDragPos(null);
-  }, [panning, painting, dragging, dragPos, gridCols, gridRows, terrain]);
+    setReachableCells(null);
+  }, [panning, painting, dragging, dragPos, gridCols, gridRows, terrain, inCombat, reachableCells, setUnits, damageUnit]);
 
   // --- Zoom ---
   const handleWheel = useCallback((e: ReactWheelEvent<HTMLDivElement>) => {
@@ -755,6 +895,19 @@ export default function BattleMap() {
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#1e3a5f]" /><span className="text-[9px] text-slate-500">Water</span></div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#2d1f0e]" /><span className="text-[9px] text-slate-500">Rubble</span></div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#92400e]" /><span className="text-[9px] text-slate-500">Door</span></div>
+        {/* Movement indicator */}
+        {inCombat && (() => {
+          const currentUnit = units.find((u) => u.isCurrentTurn);
+          if (!currentUnit) return null;
+          const remaining = (currentUnit.speed || 6) - (currentUnit.movementUsed || 0);
+          const totalFt = (currentUnit.speed || 6) * 5;
+          const remainingFt = remaining * 5;
+          return (
+            <span className={`text-[9px] font-mono ${remaining > 0 ? 'text-green-400' : 'text-red-400'}`} title={`${currentUnit.name}: ${remainingFt}/${totalFt}ft movement remaining`}>
+              {currentUnit.name.charAt(0)}: {remainingFt}ft
+            </span>
+          );
+        })()}
         <span className="text-[9px] text-slate-600 ml-auto">Scroll to zoom | Alt+drag to pan | Drag tokens to move</span>
       </div>
     </div>

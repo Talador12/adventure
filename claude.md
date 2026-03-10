@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 14 shipped: spell concentration tracking (D&D 5e rules), feat bonuses wired into combat (initiative, saves, HP), CharacterSheet feat display + concentration indicator. Next: multiplayer map sync, terrain mechanics, journal/notes, or movement rules.
+Round 15 shipped: terrain mechanics + movement rules. Tokens now have speed/movement budgets enforced during combat, BFS-based pathfinding with terrain costs (water/rubble = 2x, wall/void = impassable), green movement range overlay on drag, pit damage (1d6), door open on click. Next: multiplayer map sync, range-based attacks, journal/notes, or AI encounter improvements.
 
 ## Working Items
 
@@ -235,6 +235,21 @@ Round 14 shipped: spell concentration tracking (D&D 5e rules), feat bonuses wire
   - Concentration indicator panel showing active concentration spell
   - Units now exposed from useGame for unit-level data in CharacterSheet
 
+### Terrain mechanics + movement rules
+- **Status:** Done
+- `speed` (cells, default 6 = 30ft) and `movementUsed` fields on Unit interface
+  - Monk gets bonus speed at higher levels (scaled from D&D 5e Unarmored Movement)
+  - Speed initialized in `rollInitiative`, `movementUsed` reset on `nextTurn`
+- Terrain cost map: floor/door/pit = 1 cell, water/difficult = 2 cells, wall/void = impassable
+- BFS pathfinding: `computeReachableCells()` Dijkstra-style BFS computes all reachable cells within remaining movement budget
+- Movement range overlay: green-tinted cells with subtle borders shown during drag in combat
+- Movement enforcement: dropping a token outside reachable range snaps it back; within range deducts cost
+- Pit damage: landing on a pit cell deals 1d6 damage via `damageUnit`
+- Door toggle: clicking a door cell (with no token on it) opens the door (converts to floor); DM tool can re-place doors
+- Movement indicator in map legend: shows current unit's remaining movement in feet during combat
+- Token positions remain local to BattleMap.tsx; speed/movementUsed live on Unit in GameContext (reset per turn)
+- Out of combat: free movement (no range restriction), only wall/void blocking preserved
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -284,3 +299,4 @@ Round 14 shipped: spell concentration tracking (D&D 5e rules), feat bonuses wire
 - Turn flow + magic items + epic loot: context-aware End Turn button, turn indicator banner, expanded loot tables, epic loot tier
 - Character progression + combat polish: ASI/feats at levels 4/8/12/16/19, Extra Attack for martial classes, turn enforcement, sound FX wiring
 - Concentration tracking + feat integration: spell concentration D&D 5e rules, feat bonuses in combat, CharacterSheet feats display
+- Terrain mechanics + movement rules: BFS pathfinding, terrain costs, movement range overlay, pit damage, door toggle, Monk speed bonus
