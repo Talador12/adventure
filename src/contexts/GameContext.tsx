@@ -232,15 +232,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Fetch Discord identity on mount — populate currentPlayer with real user data
   useEffect(() => {
     fetch('/api/auth/me')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data: { user?: { id?: string; username?: string; global_name?: string; avatar?: string } } | null) => {
+      .then((r) => r.ok ? r.json() as Promise<{ user?: { id?: string; username?: string; global_name?: string; avatar?: string } }> : null)
+      .then((data) => {
         if (data?.user?.id) {
           const u = data.user;
           const avatarUrl = u.avatar
             ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128`
             : 'https://cdn.discordapp.com/embed/avatars/0.png';
           setCurrentPlayer({
-            id: u.id,
+            id: u.id!,
             username: u.global_name || u.username || 'Adventurer',
             avatar: avatarUrl,
             controllerType: 'human',
@@ -272,13 +272,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     syncingRef.current = true;
     fetch('/api/characters')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data: { characters?: Character[] } | null) => {
+      .then((r) => r.ok ? r.json() as Promise<{ characters?: Character[] }> : null)
+      .then((data) => {
         if (data?.characters?.length) {
+          const serverChars = data.characters;
           setCharacters((local) => {
             const localIds = new Set(local.map((c) => c.id));
             const merged = [...local];
-            for (const sc of data.characters) {
+            for (const sc of serverChars) {
               if (!localIds.has(sc.id)) merged.push(sc);
             }
             return merged.length > local.length ? merged : local;

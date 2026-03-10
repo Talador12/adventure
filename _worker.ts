@@ -822,7 +822,7 @@ app.get('/api/characters', async (c) => {
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
   try {
-    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`);
+    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`) as string | null;
     const characters = raw ? JSON.parse(raw) : [];
     return c.json({ characters });
   } catch {
@@ -839,7 +839,7 @@ app.put('/api/characters', async (c) => {
     const { characters } = await c.req.raw.json() as { characters: unknown[] };
     if (!Array.isArray(characters)) return c.json({ error: 'characters must be an array' }, 400);
     // Strip portrait data URLs to save KV space (portraits stored separately in PORTRAITS KV)
-    const lean = characters.map((ch: Record<string, unknown>) => {
+    const lean = (characters as Record<string, unknown>[]).map((ch) => {
       const { portrait, ...rest } = ch;
       return { ...rest, hasPortrait: Boolean(portrait) };
     });
@@ -857,7 +857,7 @@ app.delete('/api/characters/:charId', async (c) => {
   if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
   const charId = c.req.param('charId');
   try {
-    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`);
+    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`) as string | null;
     const characters: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     const filtered = characters.filter((ch) => ch.id !== charId);
     if (filtered.length === characters.length) return c.json({ error: 'Character not found' }, 404);
@@ -891,12 +891,12 @@ app.all('/api/*', async (c) => {
 });
 
 export default {
-  fetch: (req: Request, env: Env, ctx: ExecutionContext) => {
+  fetch: (req: Request, env: Env, ctx: ExecutionContext): Response | Promise<Response> => {
     const url = new URL(req.url);
 
     // API routes handled by Hono
     if (url.pathname.startsWith('/api')) {
-      return app.fetch(req, env, ctx);
+      return app.fetch(req, env, ctx as unknown as Parameters<typeof app.fetch>[2]);
     }
 
     // Static assets from Pages

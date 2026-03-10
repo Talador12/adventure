@@ -34,10 +34,17 @@ export default function Game() {
   // Game state
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [showCharacterPicker, setShowCharacterPicker] = useState(true);
-  const [adventureStarted, setAdventureStarted] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [encounterLoading, setEncounterLoading] = useState(false);
-  const [dmHistory, setDmHistory] = useState<string[]>([]);
+  // Persist DM history to localStorage keyed by room ID
+  const dmStorageKey = `adventure:dm-history:${room}`;
+  const [dmHistory, setDmHistory] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(dmStorageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [adventureStarted] = [dmHistory.length > 0]; // auto-detect from history
   const [actionInput, setActionInput] = useState('');
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [combatLog, setCombatLog] = useState<string[]>([]);
@@ -51,7 +58,17 @@ export default function Game() {
   const [npcRole, setNpcRole] = useState('');
   const [npcLoading, setNpcLoading] = useState(false);
   const [npcDialogueHistory, setNpcDialogueHistory] = useState<string[]>([]);
-  const [sceneName, setSceneName] = useState('');
+  const [sceneName, setSceneName] = useState(() => {
+    try { return localStorage.getItem(`adventure:scene:${room}`) || ''; } catch { return ''; }
+  });
+
+  // Persist DM history + scene to localStorage on every change
+  useEffect(() => {
+    try { localStorage.setItem(dmStorageKey, JSON.stringify(dmHistory)); } catch { /* full */ }
+  }, [dmHistory, dmStorageKey]);
+  useEffect(() => {
+    try { localStorage.setItem(`adventure:scene:${room}`, sceneName); } catch { /* full */ }
+  }, [sceneName, room]);
 
   // Ref for WebSocket send — avoids circular deps between callbacks and useWebSocket
   const sendRef = useRef<(msg: WSMessage) => void>(() => {});
@@ -255,8 +272,8 @@ export default function Game() {
   }, [inCombat, units, damageUnit, addDmMessage, nextTurn]);
 
   // Begin Adventure — first DM narration
+  // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
   const handleBeginAdventure = useCallback(async () => {
-    setAdventureStarted(true);
     await callDmNarrate('Set the scene for the beginning of a new adventure. The party gathers at a tavern.');
   }, [callDmNarrate]);
 
@@ -274,6 +291,7 @@ export default function Game() {
         type: 'chat',
         playerId: currentPlayer.id,
         username: selectedCharacter?.name || currentPlayer.username,
+        avatar: currentPlayer.avatar,
         text: npcMode ? `"${text}"` : `*${text}*`,
         timestamp: Date.now(),
       },
@@ -351,6 +369,7 @@ export default function Game() {
             type: 'chat',
             playerId: msg.playerId as string,
             username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
             text: msg.message as string,
             timestamp: msg.timestamp as number,
           },
@@ -365,6 +384,7 @@ export default function Game() {
             type: 'roll',
             playerId: msg.playerId as string,
             username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
             text: '',
             timestamp: msg.timestamp as number,
             die: msg.die as string,

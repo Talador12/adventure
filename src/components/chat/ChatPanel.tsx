@@ -10,6 +10,7 @@ export interface ChatMessage {
   username: string;
   text: string;
   timestamp: number;
+  avatar?: string; // Discord avatar URL
   // Roll-specific fields
   die?: string;
   value?: number;
@@ -114,12 +115,22 @@ export default function ChatPanel({ messages, onSend, currentPlayerId }: ChatPan
           // Regular chat message
           const isMe = msg.playerId === currentPlayerId;
           return (
-            <div key={msg.id} className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[10px] font-semibold ${isMe ? 'text-[#F38020]' : 'text-slate-400'}`}>{msg.username}</span>
-                <span className="text-[9px] text-slate-600">{formatTime(msg.timestamp)}</span>
+            <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
+              {/* Avatar */}
+              {msg.avatar ? (
+                <img src={msg.avatar} alt="" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
+              ) : (
+                <div className={`w-6 h-6 rounded-full shrink-0 mt-0.5 flex items-center justify-center text-[9px] font-bold ${isMe ? 'bg-[#F38020]/30 text-[#F38020]' : 'bg-slate-700 text-slate-400'}`}>
+                  {msg.username.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] font-semibold ${isMe ? 'text-[#F38020]' : 'text-slate-400'}`}>{msg.username}</span>
+                  <span className="text-[9px] text-slate-600">{formatTime(msg.timestamp)}</span>
+                </div>
+                <div className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
               </div>
-              <div className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
             </div>
           );
         })}

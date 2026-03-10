@@ -112,6 +112,7 @@ export class Lobby {
           type: 'chat',
           playerId: session.id,
           username: session.username,
+          avatar: session.avatar,
           message: message.trim(),
           timestamp: Date.now(),
         });
@@ -132,6 +133,7 @@ export class Lobby {
           type: 'roll_result',
           playerId: session.id,
           username: session.username,
+          avatar: session.avatar,
           die,
           sides,
           value,

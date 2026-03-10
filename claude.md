@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-AI DM shipped — enriched narration, NPC dialogue, multiplayer broadcast. Next: map system improvements or persistent campaigns.
+TypeScript zero-error, chat avatars, DM history persistence. Next: persistent campaigns or map improvements.
 
 ## Working Items
 
@@ -88,4 +88,7 @@ AI DM shipped — enriched narration, NPC dialogue, multiplayer broadcast. Next:
 - Discord identity wired into WebSocket: avatars + display names in lobby player list
 - WebSocket dev connectivity: Vite proxy `ws: true` + same-origin connection (no more hardcoded port 8787)
 - AI DM: enriched narration with full party context, NPC dialogue system, multiplayer broadcast via WebSocket
+- Zero TypeScript errors: fixed all 8 pre-existing type errors in _worker.ts and GameContext.tsx
+- Discord avatars in chat: ChatPanel renders avatars next to messages, Lobby DO broadcasts avatars
+- DM history persistence: localStorage-backed per room, narration + scene survive page refresh
 - Removed `.claude/` scratchpad, updated to two-file AI Working Context
