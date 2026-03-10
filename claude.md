@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 11 shipped: encounter variety, themes, combat log. Encounters now have 16 enemy templates, 12 environment themes, and a proper combat log panel. Next: multiplayer map sync, journal/notes, or character progression depth.
+Round 12 shipped: turn flow improvements, magic items, epic loot tier. Context-aware End Turn button, turn indicator banner, expanded loot tables with epic tier. Next: multiplayer map sync, journal/notes, or character progression depth.
 
 ## Working Items
 
@@ -89,7 +89,7 @@ Round 11 shipped: encounter variety, themes, combat log. Encounters now have 16 
 
 ### Inventory & loot system
 - **Status:** Done
-- Item system: 7 types (weapon, armor, shield, potion, ring, scroll, misc), 4 rarities (common/uncommon/rare/epic)
+- Item system: 7 types (weapon, armor, shield, potion, ring, scroll, misc), 4 rarities (common/uncommon/rare/epic) with level-scaled drop chances
 - Equipment slots: weapon, armor, shield, ring — each with equip/unequip, auto AC recalculation
 - Loot tables: 8 common, 6 uncommon, 5 rare items — rolled per enemy on combat end with level-scaled rarity chances
 - Combat loot drops: items announced in DM narration on End Combat
@@ -186,6 +186,15 @@ Round 11 shipped: encounter variety, themes, combat log. Encounters now have 16 
 - Combat log panel: togglable during combat, color-coded entries (hits/orange, misses/grey, deaths/red, conditions/purple), entry count badge, max-h-40 scrollable
 - `showCombatLog` state for toggle
 
+### Turn flow + magic items + epic loot
+- **Status:** Done
+- "Next Turn" button replaced with context-aware "End Turn" (green, prominent when player's turn) / "Next Turn" (grey when enemy turn)
+- End Turn logs turn-end message to combat log
+- Turn indicator banner in narration panel: current unit name, active conditions with duration, round number, animated pulse dot, color-coded (green=player, red=enemy)
+- Loot tables expanded: 3 new common items (Quarterstaff, Light Crossbow, Antidote), 3 new uncommon (Flaming Dagger, Breastplate, Cloak of Elvenkind), 3 new rare (Frostbrand Rapier, Adamantine Shield, Headband of Intellect)
+- New EPIC_LOOT tier: 5 items (Potion of Supreme Healing, Vorpal Greatsword, Plate Armor of Etherealness, Ring of Spell Storing, Staff of Power)
+- `rollLoot` updated with epic tier chance (scales with level, ~0% at lv1, ~1% at lv5)
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -232,3 +241,4 @@ Round 11 shipped: encounter variety, themes, combat log. Encounters now have 16 
 - Combat actions + condition spells + quest tracker: Dodge/Dash actions, 4 condition spells, collapsible quest panel, long rest clears unit conditions
 - Class abilities + saving throws: 12 unique class abilities, spell save DC system, half damage on save, per-class color theming
 - Encounter variety + themes + combat log: 16 enemy templates, 12 encounter themes, togglable color-coded combat log panel
+- Turn flow + magic items + epic loot: context-aware End Turn button, turn indicator banner, expanded loot tables, epic loot tier

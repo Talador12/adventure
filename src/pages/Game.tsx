@@ -1037,15 +1037,28 @@ export default function Game() {
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 1a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1zM5.05 3.05a.75.75 0 011.06 0l1.062 1.06a.75.75 0 11-1.06 1.061L5.05 4.11a.75.75 0 010-1.06zm9.9 0a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 01-1.061-1.06l1.06-1.06a.75.75 0 011.06 0zM10 7a3 3 0 100 6 3 3 0 000-6zm-6.25 3a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm11 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75z" clipRule="evenodd" /></svg>
                           Roll Initiative
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => { nextTurn(); playTurnChange(); }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/40 hover:bg-green-900/60 border border-green-700/50 text-green-300 text-xs font-semibold rounded-lg transition-all"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" /></svg>
-                          Next Turn
-                        </button>
-                      )}
+                      ) : (() => {
+                        const currentUnit = units.find((u) => u.isCurrentTurn);
+                        const isPlayerTurn = currentUnit?.type === 'player';
+                        return (
+                          <button
+                            onClick={() => {
+                              const msg = currentUnit ? `${currentUnit.name}'s turn ends.` : '';
+                              if (msg) setCombatLog((prev) => [...prev, msg]);
+                              nextTurn();
+                              playTurnChange();
+                            }}
+                            className={`flex items-center gap-1.5 px-4 py-1.5 border text-xs font-bold rounded-lg transition-all ${
+                              isPlayerTurn
+                                ? 'bg-green-900/50 hover:bg-green-800/60 border-green-600/60 text-green-300 shadow-green-900/30 shadow-sm'
+                                : 'bg-slate-700/40 hover:bg-slate-700/60 border-slate-600/50 text-slate-400'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" /></svg>
+                            {isPlayerTurn ? 'End Turn' : 'Next Turn'}
+                          </button>
+                        );
+                      })()}
 
                       {/* Quick attack — uses equipped weapon stats or STR-based unarmed */}
                       {inCombat && selectedUnitId && (() => {
@@ -1416,6 +1429,37 @@ export default function Game() {
                         )}
                       </div>
                     )}
+
+                    {/* Turn indicator — shown during combat */}
+                    {inCombat && (() => {
+                      const currentUnit = units.find((u) => u.isCurrentTurn);
+                      if (!currentUnit) return null;
+                      const isPlayer = currentUnit.type === 'player';
+                      return (
+                        <div className={`flex items-center justify-between px-4 py-2 border-b ${
+                          isPlayer
+                            ? 'border-green-800/30 bg-green-950/20'
+                            : 'border-red-800/30 bg-red-950/20'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${isPlayer ? 'bg-green-400' : 'bg-red-400'}`} />
+                            <span className={`text-xs font-bold ${isPlayer ? 'text-green-400' : 'text-red-400'}`}>
+                              {currentUnit.name}&apos;s Turn
+                            </span>
+                            {currentUnit.conditions && currentUnit.conditions.length > 0 && (
+                              <div className="flex gap-1">
+                                {currentUnit.conditions.map((c, i) => (
+                                  <span key={i} className={`text-[8px] px-1 py-0.5 rounded ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'} bg-slate-800/60`}>
+                                    {c.type} ({c.duration})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-600">Round {combatRound}</span>
+                        </div>
+                      );
+                    })()}
 
                     {/* Quest tracker — collapsible panel */}
                     <div className="border-b border-slate-800">
