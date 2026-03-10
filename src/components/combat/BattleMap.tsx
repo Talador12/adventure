@@ -2,17 +2,13 @@
 // vision-based fog of war, DM tools, and zoom/pan support.
 import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit, type ConditionType } from '../../contexts/GameContext';
+import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells } from '../../lib/mapUtils';
 
 const CELL_SIZE = 48;
 const TOKEN_RADIUS = 18;
-const DEFAULT_COLS = 24;
-const DEFAULT_ROWS = 18;
 const VISION_RADIUS = 6; // cells (30ft in D&D)
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.0;
-
-// --- Terrain system ---
-type TerrainType = 'floor' | 'wall' | 'water' | 'difficult' | 'door' | 'pit' | 'void';
 
 const TERRAIN_COLORS: Record<TerrainType, { fill: string; stroke?: string; pattern?: string }> = {
   void:      { fill: '#0f172a' },
@@ -62,69 +58,6 @@ function rollTrapDamage(formula: string): number {
     total += Math.floor(Math.random() * parseInt(sides, 10)) + 1;
   }
   return total;
-}
-
-// Terrain movement costs (in cells): Infinity = impassable
-const TERRAIN_COST: Record<TerrainType, number> = {
-  floor: 1, door: 1, pit: 1,
-  water: 2, difficult: 2,
-  wall: Infinity, void: Infinity,
-};
-
-// BFS to compute cells reachable within a movement budget, respecting terrain costs
-function computeReachableCells(
-  terrain: TerrainType[][],
-  startCol: number,
-  startRow: number,
-  maxMovement: number,
-  rows: number,
-  cols: number,
-): Map<string, number> {
-  const reachable = new Map<string, number>(); // "col,row" -> total cost to reach
-  const key = (c: number, r: number) => `${c},${r}`;
-  reachable.set(key(startCol, startRow), 0);
-
-  // Priority queue as simple sorted array (grid is small enough)
-  const queue: { col: number; row: number; cost: number }[] = [{ col: startCol, row: startRow, cost: 0 }];
-
-  while (queue.length > 0) {
-    // Pop lowest cost
-    queue.sort((a, b) => a.cost - b.cost);
-    const current = queue.shift()!;
-
-    const neighbors = [
-      { col: current.col - 1, row: current.row },
-      { col: current.col + 1, row: current.row },
-      { col: current.col, row: current.row - 1 },
-      { col: current.col, row: current.row + 1 },
-    ];
-
-    for (const n of neighbors) {
-      if (n.col < 0 || n.col >= cols || n.row < 0 || n.row >= rows) continue;
-      const terrainType = terrain[n.row]?.[n.col];
-      if (!terrainType) continue;
-      const moveCost = TERRAIN_COST[terrainType];
-      if (!isFinite(moveCost)) continue; // impassable
-
-      const totalCost = current.cost + moveCost;
-      if (totalCost > maxMovement) continue;
-
-      const k = key(n.col, n.row);
-      const existing = reachable.get(k);
-      if (existing !== undefined && existing <= totalCost) continue;
-
-      reachable.set(k, totalCost);
-      queue.push({ col: n.col, row: n.row, cost: totalCost });
-    }
-  }
-
-  return reachable;
-}
-
-interface TokenPosition {
-  unitId: string;
-  col: number;
-  row: number;
 }
 
 // --- Procedural dungeon generation ---
@@ -414,14 +347,23 @@ type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pi
 export default function BattleMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat } = useGame();
+  const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
+    terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions } = useGame();
 
   const [gridCols] = useState(DEFAULT_COLS);
   const [gridRows] = useState(DEFAULT_ROWS);
-  const [terrain, setTerrain] = useState<TerrainType[][]>(() => generateDungeon(DEFAULT_COLS, DEFAULT_ROWS));
+  const hasGeneratedRef = useRef(false);
 
-  // Token positions
-  const [positions, setPositions] = useState<TokenPosition[]>([]);
+  // Generate initial dungeon on first mount (terrain starts as void in context)
+  useEffect(() => {
+    if (hasGeneratedRef.current) return;
+    const hasFloor = terrain.some((row) => row.some((t) => t !== 'void'));
+    if (!hasFloor) {
+      setTerrain(generateDungeon(gridCols, gridRows));
+      hasGeneratedRef.current = true;
+    }
+  }, [terrain, setTerrain, gridCols, gridRows]);
+
   const [dragging, setDragging] = useState<{ unitId: string; offsetX: number; offsetY: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
 

@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 16 shipped: Dash now doubles movement, condition indicators on map tokens, hidden trap system with DM placement + Perception detection. Next: multiplayer map sync, range-based attacks, journal/notes, or AI encounter improvements.
+Round 17 shipped: Spatial combat engine. Map state (terrain + positions) lifted to GameContext. Enemies now pathfind toward players and move on the map during their turns. Melee attacks require adjacency (Chebyshev distance <= 1) for both players and enemies. Next: ranged attacks, multiplayer map sync, journal/notes, or party management.
 
 ## Working Items
 
@@ -273,6 +273,28 @@ Round 16 shipped: Dash now doubles movement, condition indicators on map tokens,
   - Requires a unit to be selected
 - Trap message bar: red-themed notification above map legend, shows latest trigger/search result, clearable
 
+### Spatial combat engine
+- **Status:** Done
+- Created `src/lib/mapUtils.ts` — shared spatial types and pure functions:
+  - `TerrainType`, `TokenPosition`, `TERRAIN_COST`, `DEFAULT_COLS/ROWS` exports
+  - `computeReachableCells()` — BFS pathfinding with terrain costs (moved from BattleMap)
+  - `findBestMoveToward()` — finds the reachable cell closest to a target (Chebyshev distance)
+  - `isAdjacent()` — Chebyshev distance <= 1 check for melee range
+- Lifted `terrain` (TerrainType[][]) and `mapPositions` (TokenPosition[]) from BattleMap local state to GameContext
+  - Both accessible from Game.tsx, BattleMap, and any future component
+  - BattleMap generates initial dungeon on mount via useEffect (terrain starts as void in context)
+  - BattleMap reads/writes terrain and positions through context setters
+- Enemy AI map movement:
+  - During enemy turns, AI finds the targeted player's position
+  - Uses `findBestMoveToward()` to pathfind toward target within movement budget
+  - Updates both position (on map) and movementUsed (on unit) in context
+  - Movement narrated in DM messages ("Goblin moves 15ft toward Aric.")
+- Melee adjacency enforcement:
+  - Enemies: if not adjacent after moving, skip attack and end turn ("can't reach target — ends turn")
+  - Players: Quick Attack button disabled with "Too far — move adjacent to attack" tooltip
+  - Graceful fallback: if positions don't exist (e.g. before map renders), adjacency defaults to true
+- Architecture: BattleMap still owns rendering, drag/drop, fog, DM tools, traps; GameContext now owns terrain grid and token positions
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -324,3 +346,4 @@ Round 16 shipped: Dash now doubles movement, condition indicators on map tokens,
 - Concentration tracking + feat integration: spell concentration D&D 5e rules, feat bonuses in combat, CharacterSheet feats display
 - Terrain mechanics + movement rules: BFS pathfinding, terrain costs, movement range overlay, pit damage, door toggle, Monk speed bonus
 - Dash mechanics + condition visuals + hidden traps: real Dash doubles movement, condition pips on tokens, 4 trap types, DM trap tools, Perception search
+- Spatial combat engine: map state lifted to context, enemy AI pathfinding + movement, melee adjacency enforcement for players and enemies

@@ -7,6 +7,7 @@ import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
+import { findBestMoveToward, isAdjacent, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
 
@@ -27,6 +28,7 @@ export default function Game() {
     addItem, useItem, buyItem, sellItem, castSpell, restoreSpellSlots,
     applyCondition, removeCondition, tickConditions, useClassAbility,
     applyASI, selectFeat, concentrationMessages,
+    terrain, mapPositions, setMapPositions,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -437,6 +439,43 @@ export default function Game() {
         target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
       }
 
+      // --- Enemy AI movement: pathfind toward target ---
+      const enemyPos = mapPositions.find((p) => p.unitId === currentUnit.id);
+      const targetPos = mapPositions.find((p) => p.unitId === target.id);
+      let isAdjacentToTarget = true; // default true if no positions (graceful fallback)
+      if (enemyPos && targetPos && terrain.length > 0) {
+        isAdjacentToTarget = isAdjacent(enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
+        if (!isAdjacentToTarget) {
+          const remaining = (currentUnit.speed || 6) - (currentUnit.movementUsed || 0);
+          if (remaining > 0) {
+            const dest = findBestMoveToward(terrain, enemyPos.col, enemyPos.row, targetPos.col, targetPos.row, remaining, DEFAULT_ROWS, DEFAULT_COLS);
+            if (dest && (dest.col !== enemyPos.col || dest.row !== enemyPos.row)) {
+              setMapPositions((prev) => prev.map((p) => p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p));
+              setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u));
+              isAdjacentToTarget = isAdjacent(dest.col, dest.row, targetPos.col, targetPos.row);
+              const moveFt = dest.cost * 5;
+              addDmMessage(`${currentUnit.name} moves ${moveFt}ft toward ${target.name}.`);
+            }
+          }
+        }
+      }
+
+      // If not adjacent to target after moving, skip melee attacks (end turn)
+      if (!isAdjacentToTarget) {
+        addDmMessage(`${currentUnit.name} can't reach ${target.name} — ends turn.`);
+        // Still tick ability cooldowns
+        setUnits((prev) => prev.map((u) => {
+          if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
+          const newCd: Record<string, number> = {};
+          for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
+            if (cd > 0) newCd[name] = cd - 1;
+          }
+          return { ...u, abilityCooldowns: newCd };
+        }));
+        setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
+        return;
+      }
+
       // Check unconscious target — auto-crit for death saves
       const targetChar = target.characterId ? characters.find((c) => c.id === target.characterId) : null;
       if (targetChar && targetChar.condition === 'unconscious') {
@@ -550,7 +589,7 @@ export default function Game() {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn, tickConditions, applyCondition, setUnits]);
+  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn, tickConditions, applyCondition, setUnits, terrain, mapPositions, setMapPositions]);
 
   // Begin Adventure — first DM narration
   // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
@@ -1092,7 +1131,7 @@ export default function Game() {
                         );
                       })()}
 
-                      {/* Quick attack — uses equipped weapon stats or STR-based unarmed (disabled when not player's turn) */}
+                      {/* Quick attack — uses equipped weapon stats or STR-based unarmed (disabled when not player's turn or out of range) */}
                       {inCombat && selectedUnitId && (() => {
                         const target = units.find((u) => u.id === selectedUnitId);
                         if (!target || target.type === 'player') return null;
@@ -1105,10 +1144,14 @@ export default function Game() {
                         // Player condition modifiers
                         const playerUnit = selectedCharacter ? units.find((u) => u.characterId === selectedCharacter.id) : null;
                         const condAtkMod = (playerUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
+                        // Adjacency check for melee attacks
+                        const attackerPos = playerUnit ? mapPositions.find((p) => p.unitId === playerUnit.id) : null;
+                        const targetPos = mapPositions.find((p) => p.unitId === target.id);
+                        const inMeleeRange = !attackerPos || !targetPos || isAdjacent(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
                         return (
                            <button
-                            disabled={!isPlayerTurn}
-                            title={!isPlayerTurn ? 'Wait for your turn' : undefined}
+                            disabled={!isPlayerTurn || !inMeleeRange}
+                            title={!isPlayerTurn ? 'Wait for your turn' : !inMeleeRange ? 'Too far — move adjacent to attack' : undefined}
                             onClick={() => {
                               // Extra Attack: martial classes at level 5+ get 2 attacks
                               const hasExtraAttack = selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5;

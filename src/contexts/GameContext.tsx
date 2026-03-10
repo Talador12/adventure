@@ -1,6 +1,7 @@
 // GameContext — shared state for players, units, dice rolls, characters, and their associations.
 // Characters are persisted to localStorage so they survive page refreshes.
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
 
 const CHARACTERS_STORAGE_KEY = 'adventure_characters';
 
@@ -705,6 +706,12 @@ interface GameContextValue {
   turnIndex: number; // index into initiative-sorted units
   setTurnIndex: (i: number) => void;
 
+  // Map state (shared so enemy AI can read/write positions)
+  terrain: TerrainType[][];
+  setTerrain: (t: TerrainType[][] | ((prev: TerrainType[][]) => TerrainType[][])) => void;
+  mapPositions: TokenPosition[];
+  setMapPositions: (p: TokenPosition[] | ((prev: TokenPosition[]) => TokenPosition[])) => void;
+
   // Combat helpers
   concentrationMessages: React.MutableRefObject<string[]>;
   damageUnit: (unitId: string, damage: number) => void;
@@ -755,6 +762,10 @@ const GameContext = createContext<GameContextValue>({
   setCombatRound: () => {},
   turnIndex: 0,
   setTurnIndex: () => {},
+  terrain: [],
+  setTerrain: () => {},
+  mapPositions: [],
+  setMapPositions: () => {},
   concentrationMessages: { current: [] },
   damageUnit: () => {},
   healUnit: () => {},
@@ -784,6 +795,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [inCombat, setInCombat] = useState(false);
   const [combatRound, setCombatRound] = useState(0);
   const [turnIndex, setTurnIndex] = useState(0);
+
+  // Map state — terrain grid and token positions (lifted from BattleMap for spatial combat)
+  const [terrain, setTerrain] = useState<TerrainType[][]>(() =>
+    Array.from({ length: DEFAULT_ROWS }, () => Array<TerrainType>(DEFAULT_COLS).fill('void'))
+  );
+  const [mapPositions, setMapPositions] = useState<TokenPosition[]>([]);
 
   // Fetch Discord identity on mount — populate currentPlayer with real user data
   useEffect(() => {
@@ -1584,6 +1601,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setCombatRound,
         turnIndex,
         setTurnIndex,
+        terrain,
+        setTerrain,
+        mapPositions,
+        setMapPositions,
         concentrationMessages: concentrationBreakMessages,
         damageUnit,
         healUnit,
