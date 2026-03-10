@@ -43,6 +43,8 @@ export interface EnemyAbility {
   conditionDuration?: number;
   cooldown: number;         // turns between uses, 0 = every turn
   description: string;
+  isRanged?: boolean;       // true = can use at distance (skips adjacency requirement)
+  range?: number;           // max range in cells (used with isRanged)
 }
 
 export interface Unit {
@@ -117,7 +119,7 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
       { name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' },
     ]},
     { names: ['Hell Hound', 'Phase Spider', 'Displacer Beast'], cr: 3, hp: [32, 48], ac: 14, attackBonus: 5, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [
-      { name: 'Fire Breath', type: 'aoe', damageDie: '3d6', cooldown: 4, description: 'Exhales a cone of searing flame.' },
+      { name: 'Fire Breath', type: 'aoe', damageDie: '3d6', cooldown: 4, description: 'Exhales a cone of searing flame.', isRanged: true, range: 6 },
       { name: 'Phase Shift', type: 'condition', condition: 'blessed', conditionDuration: 1, cooldown: 4, description: 'Blinks between planes, becoming harder to hit.' },
     ]},
     { names: ['Ettin', 'Flesh Golem', 'Gelatinous Cube'], cr: 2, hp: [40, 60], ac: 13, attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: -1, xpValue: 450, abilities: [
@@ -127,12 +129,12 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
   ],
   deadly: [
     { names: ['Young Dragon', 'Beholder Zombie', 'Hydra', 'Lich Apprentice'], cr: 5, hp: [60, 90], ac: 17, attackBonus: 8, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800, abilities: [
-      { name: 'Breath Weapon', type: 'aoe', damageDie: '6d6', cooldown: 4, description: 'A torrent of elemental fury engulfs the area.' },
+      { name: 'Breath Weapon', type: 'aoe', damageDie: '6d6', cooldown: 4, description: 'A torrent of elemental fury engulfs the area.', isRanged: true, range: 12 },
       { name: 'Multiattack', type: 'attack', damageDie: '2d8', attackBonus: 8, cooldown: 0, description: 'Strikes twice in rapid succession.' },
       { name: 'Terrifying Presence', type: 'condition', condition: 'frightened', conditionDuration: 3, cooldown: 6, description: 'An aura of dread forces a WIS save or be frightened.' },
     ]},
     { names: ['Mind Flayer', 'Vampire Spawn', 'Flameskull Trio'], cr: 4, hp: [50, 75], ac: 16, attackBonus: 7, damageDie: '2d8', damageBonus: 4, dexMod: 3, xpValue: 1100, abilities: [
-      { name: 'Mind Blast', type: 'aoe', damageDie: '4d8', cooldown: 5, description: 'A cone of psychic energy stuns all who fail their save.' },
+      { name: 'Mind Blast', type: 'aoe', damageDie: '4d8', cooldown: 5, description: 'A cone of psychic energy stuns all who fail their save.', isRanged: true, range: 12 },
       { name: 'Psychic Grasp', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 3, description: 'Seizes the mind of a target, paralyzing them.' },
     ]},
     { names: ['Shambling Mound', 'Elemental', 'Chimera'], cr: 4, hp: [55, 80], ac: 15, attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: 1, xpValue: 1100, abilities: [
@@ -140,7 +142,7 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
       { name: 'Lightning Absorption', type: 'heal', cooldown: 5, description: 'Absorbs elemental energy to regenerate.' },
     ]},
     { names: ['Death Knight', 'Oni', 'Night Hag'], cr: 5, hp: [65, 95], ac: 18, attackBonus: 9, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800, abilities: [
-      { name: 'Hellfire Orb', type: 'aoe', damageDie: '5d8', cooldown: 5, description: 'Hurls a sphere of searing hellfire that detonates on impact.' },
+      { name: 'Hellfire Orb', type: 'aoe', damageDie: '5d8', cooldown: 5, description: 'Hurls a sphere of searing hellfire that detonates on impact.', isRanged: true, range: 24 },
       { name: 'Soul Rend', type: 'attack', damageDie: '3d10', attackBonus: 9, condition: 'hexed', conditionDuration: 3, cooldown: 4, description: 'Tears at the soul, leaving the target cursed and weakened.' },
       { name: 'Dark Command', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 4, description: 'Issues a command laced with dark power. Obey or tremble.' },
     ]},
@@ -301,47 +303,51 @@ export const EMPTY_EQUIPMENT: EquipmentSlots = { weapon: null, armor: null, shie
 // Items are grouped by rarity; combat loot rolls from these
 const COMMON_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 1 },
-  { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'A reliable blade.', value: 10, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0 },
+  { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'A reliable blade.', value: 10, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11 },
   { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2 },
-  { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0 },
-  { name: 'Handaxe', type: 'weapon', rarity: 'common', description: 'Can be thrown.', value: 5, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0 },
+  { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0, range: 1 },
+  { name: 'Handaxe', type: 'weapon', rarity: 'common', description: 'Can be thrown.', value: 5, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor.', value: 50, equipSlot: 'armor', acBonus: 13 },
   { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: 'Reveals an item\'s properties.', value: 25 },
-  { name: 'Quarterstaff', type: 'weapon', rarity: 'common', description: 'A sturdy wooden staff.', value: 2, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0 },
-  { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Simple ranged weapon.', value: 25, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0 },
+  { name: 'Quarterstaff', type: 'weapon', rarity: 'common', description: 'A sturdy wooden staff.', value: 2, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
+  { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16 },
+  { name: 'Shortbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16 },
   { name: 'Antidote', type: 'potion', rarity: 'common', description: 'Cures poison. Restores 1d4 HP.', value: 30, healAmount: 3, quantity: 1 },
 ];
 
 const UNCOMMON_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Greater Healing Potion', type: 'potion', rarity: 'uncommon', description: 'Restores 4d4+4 HP.', value: 150, healAmount: 18, quantity: 1 },
-  { name: 'Longsword +1', type: 'weapon', rarity: 'uncommon', description: 'A finely crafted blade that glows faintly.', value: 200, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 1, attackBonus: 1 },
+  { name: 'Longsword +1', type: 'weapon', rarity: 'uncommon', description: 'A finely crafted blade that glows faintly.', value: 200, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 1, attackBonus: 1, range: 1 },
   { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14 },
   { name: 'Shield +1', type: 'shield', rarity: 'uncommon', description: 'An enchanted shield. +3 AC.', value: 200, equipSlot: 'shield', acBonus: 3 },
   { name: 'Ring of Protection', type: 'ring', rarity: 'uncommon', description: '+1 to AC while worn.', value: 300, equipSlot: 'ring', acBonus: 1 },
-  { name: 'Battleaxe', type: 'weapon', rarity: 'uncommon', description: 'A heavy, well-balanced axe.', value: 100, equipSlot: 'weapon', damageDie: '1d10', damageBonus: 0, attackBonus: 0 },
-  { name: 'Flaming Dagger', type: 'weapon', rarity: 'uncommon', description: 'A dagger with a blade of living fire. +1d4 damage.', value: 250, equipSlot: 'weapon', damageDie: '1d4+2', damageBonus: 0, attackBonus: 1 },
+  { name: 'Battleaxe', type: 'weapon', rarity: 'uncommon', description: 'A heavy, well-balanced axe.', value: 100, equipSlot: 'weapon', damageDie: '1d10', damageBonus: 0, attackBonus: 0, range: 1 },
+  { name: 'Flaming Dagger', type: 'weapon', rarity: 'uncommon', description: 'A dagger with a blade of living fire. +1d4 damage.', value: 250, equipSlot: 'weapon', damageDie: '1d4+2', damageBonus: 0, attackBonus: 1, range: 1 },
+  { name: 'Hand Crossbow +1', type: 'weapon', rarity: 'uncommon', description: 'A compact crossbow enchanted for accuracy. Range 30/120ft.', value: 300, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 1, isRanged: true, range: 6 },
   { name: 'Breastplate', type: 'armor', rarity: 'uncommon', description: 'Polished medium armor. AC 14 + DEX (max 2).', value: 400, equipSlot: 'armor', acBonus: 14 },
   { name: 'Cloak of Elvenkind', type: 'misc', rarity: 'uncommon', description: 'Advantage on stealth. +1 DEX while worn.', value: 350, statBonus: { DEX: 1 } },
 ];
 
 const RARE_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Superior Healing Potion', type: 'potion', rarity: 'rare', description: 'Restores 8d4+8 HP.', value: 500, healAmount: 36, quantity: 1 },
-  { name: 'Greatsword +2', type: 'weapon', rarity: 'rare', description: 'A massive blade wreathed in flame.', value: 800, equipSlot: 'weapon', damageDie: '2d6', damageBonus: 2, attackBonus: 2 },
+  { name: 'Greatsword +2', type: 'weapon', rarity: 'rare', description: 'A massive blade wreathed in flame.', value: 800, equipSlot: 'weapon', damageDie: '2d6', damageBonus: 2, attackBonus: 2, range: 1 },
   { name: 'Half Plate +1', type: 'armor', rarity: 'rare', description: 'Heavy armor with magical reinforcement.', value: 1000, equipSlot: 'armor', acBonus: 16 },
   { name: 'Ring of Strength', type: 'ring', rarity: 'rare', description: '+2 STR while worn.', value: 800, equipSlot: 'ring', statBonus: { STR: 2 } },
   { name: 'Amulet of Health', type: 'misc', rarity: 'rare', description: 'A warm glow that bolsters vitality. +2 CON.', value: 800, statBonus: { CON: 2 } },
-  { name: 'Frostbrand Rapier', type: 'weapon', rarity: 'rare', description: 'A rapier that trails wisps of frost. +2 to hit and damage.', value: 900, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 2, attackBonus: 2 },
+  { name: 'Frostbrand Rapier', type: 'weapon', rarity: 'rare', description: 'A rapier that trails wisps of frost. +2 to hit and damage.', value: 900, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 2, attackBonus: 2, range: 1 },
+  { name: 'Longbow +2', type: 'weapon', rarity: 'rare', description: 'An elven bow that hums with power. Range 150/600ft.', value: 900, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 2, attackBonus: 2, isRanged: true, range: 30 },
   { name: 'Adamantine Shield', type: 'shield', rarity: 'rare', description: 'Nearly indestructible. +3 AC.', value: 750, equipSlot: 'shield', acBonus: 3 },
   { name: 'Headband of Intellect', type: 'misc', rarity: 'rare', description: 'Sharpens the mind. +2 INT while worn.', value: 900, statBonus: { INT: 2 } },
 ];
 
 const EPIC_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Potion of Supreme Healing', type: 'potion', rarity: 'epic', description: 'Restores 10d4+20 HP.', value: 1500, healAmount: 55, quantity: 1 },
-  { name: 'Vorpal Greatsword', type: 'weapon', rarity: 'epic', description: 'A blade so sharp it hums. +3 to hit and damage.', value: 3000, equipSlot: 'weapon', damageDie: '2d6+3', damageBonus: 3, attackBonus: 3 },
+  { name: 'Vorpal Greatsword', type: 'weapon', rarity: 'epic', description: 'A blade so sharp it hums. +3 to hit and damage.', value: 3000, equipSlot: 'weapon', damageDie: '2d6+3', damageBonus: 3, attackBonus: 3, range: 1 },
   { name: 'Plate Armor of Etherealness', type: 'armor', rarity: 'epic', description: 'Gleaming full plate infused with planar energy.', value: 5000, equipSlot: 'armor', acBonus: 18 },
   { name: 'Ring of Spell Storing', type: 'ring', rarity: 'epic', description: 'Stores latent magic. +2 AC, +2 WIS.', value: 4000, equipSlot: 'ring', acBonus: 2, statBonus: { WIS: 2 } },
-  { name: 'Staff of Power', type: 'weapon', rarity: 'epic', description: 'Crackles with arcane might. +3 to hit, 2d8+3 damage.', value: 4000, equipSlot: 'weapon', damageDie: '2d8', damageBonus: 3, attackBonus: 3 },
+  { name: 'Oathbow', type: 'weapon', rarity: 'epic', description: 'Sworn enemy takes 3d6 extra. +3 to hit. Range 150/600ft.', value: 4500, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 3, attackBonus: 3, isRanged: true, range: 30 },
+  { name: 'Staff of Power', type: 'weapon', rarity: 'epic', description: 'Crackles with arcane might. +3 to hit, 2d8+3 damage.', value: 4000, equipSlot: 'weapon', damageDie: '2d8', damageBonus: 3, attackBonus: 3, range: 1 },
 ];
 
 // Roll loot based on enemy count and party level
@@ -384,13 +390,17 @@ export const RARITY_BG: Record<ItemRarity, string> = {
 // --- Shop system ---
 // Curated shop inventory — items available for purchase (always in stock)
 export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
-  // Weapons
-  { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
-  { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'A reliable blade.', value: 10, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
-  { name: 'Longsword', type: 'weapon', rarity: 'common', description: 'Versatile and dependable.', value: 15, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
-  { name: 'Battleaxe', type: 'weapon', rarity: 'uncommon', description: 'A heavy, well-balanced axe.', value: 100, equipSlot: 'weapon', damageDie: '1d10', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
-  { name: 'Greatsword', type: 'weapon', rarity: 'uncommon', description: 'Two-handed, devastating.', value: 150, equipSlot: 'weapon', damageDie: '2d6', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
-  { name: 'Longbow', type: 'weapon', rarity: 'common', description: 'Range 150/600ft.', value: 50, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, category: 'Weapons' },
+  // Weapons — Melee
+  { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0, range: 1, category: 'Weapons' },
+  { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'A reliable blade.', value: 10, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1, category: 'Weapons' },
+  { name: 'Longsword', type: 'weapon', rarity: 'common', description: 'Versatile and dependable.', value: 15, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, range: 1, category: 'Weapons' },
+  { name: 'Battleaxe', type: 'weapon', rarity: 'uncommon', description: 'A heavy, well-balanced axe.', value: 100, equipSlot: 'weapon', damageDie: '1d10', damageBonus: 0, attackBonus: 0, range: 1, category: 'Weapons' },
+  { name: 'Greatsword', type: 'weapon', rarity: 'uncommon', description: 'Two-handed, devastating.', value: 150, equipSlot: 'weapon', damageDie: '2d6', damageBonus: 0, attackBonus: 0, range: 1, category: 'Weapons' },
+  // Weapons — Ranged
+  { name: 'Shortbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16, category: 'Weapons' },
+  { name: 'Longbow', type: 'weapon', rarity: 'common', description: 'Range 150/600ft.', value: 50, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, isRanged: true, range: 30, category: 'Weapons' },
+  { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16, category: 'Weapons' },
+  { name: 'Hand Crossbow', type: 'weapon', rarity: 'common', description: 'Range 30/120ft. One-handed.', value: 75, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, isRanged: true, range: 6, category: 'Weapons' },
   // Armor
   { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, category: 'Armor' },
   { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor, reliable.', value: 50, equipSlot: 'armor', acBonus: 13, category: 'Armor' },

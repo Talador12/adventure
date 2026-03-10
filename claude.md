@@ -11,35 +11,18 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 18 in progress: Ranged Combat + Line of Sight. `mapUtils.ts` has new functions (`hasLineOfSight`, `chebyshevDistance`, `parseRangeFt`). `Item` interface has `isRanged`/`range` fields. Weapon entries in loot tables and shop still need updating, then Game.tsx player attacks, enemy AI, and spell range enforcement. See detailed plan below.
+Round 18 shipped: Ranged Combat + Line of Sight. Full spatial range system — weapons, enemy abilities, and spells all enforce distance + line of sight on the battle map. Next: multiplayer map sync, journal/notes, party management, or Opportunity Attacks.
 
-### Round 18: Ranged Combat + Line of Sight — IN PROGRESS (~15%)
-
-**Done:**
-- `mapUtils.ts`: Added `chebyshevDistance()`, `hasLineOfSight()` (Bresenham raycasting), `parseRangeFt()` (parses "60ft"->12 cells, "Touch"->1, "Self"->0)
-- `GameContext.tsx`: Added `isRanged?: boolean` and `range?: number` to Item interface
-
-**Not started:**
-1. Update all weapon entries in COMMON_LOOT, UNCOMMON_LOOT, RARE_LOOT, EPIC_LOOT, SHOP_ITEMS with `isRanged`/`range` values
-   - Melee weapons: `isRanged: false, range: 1` (or omit, default to melee)
-   - Light Crossbow: `isRanged: true, range: 16` (80ft short range)
-   - Longbow (shop): `isRanged: true, range: 30` (150ft short range)
-   - Add new ranged weapons: Shortbow, Hand Crossbow to shop/loot
-2. Add `isRanged?: boolean` and `range?: number` to `EnemyAbility` interface
-   - Tag ranged abilities: Breath Weapon, Mind Blast, Hellfire Orb, Fire Breath, etc.
-3. Update player Quick Attack (Game.tsx ~line 1147):
-   - If weapon `isRanged`: check `chebyshevDistance <= weapon.range && hasLineOfSight`
-   - If melee: keep `isAdjacent()` check
-   - Use DEX mod instead of STR mod for ranged weapons
-   - Update tooltip: "Out of range" vs "No line of sight" vs "Too far — move adjacent"
-4. Update enemy AI (Game.tsx ~line 462):
-   - If enemy has ranged capability: check distance + LOS instead of adjacency
-   - Smart behavior: if ranged enemy already has LOS, don't move closer
-5. Spell range enforcement:
-   - Parse spell `range` string to cells via `parseRangeFt()`
-   - Check distance + LOS when casting targeted spells
-   - Disable cast button if target out of range or no LOS
-6. Type check, update claude.md, commit and push
+### Ranged combat + line of sight
+- **Status:** Done
+- `mapUtils.ts`: `chebyshevDistance()`, `hasLineOfSight()` (Bresenham raycasting), `parseRangeFt()` (parses "60ft"->12 cells, "Touch"->1, "Self"->0)
+- `Item` interface: `isRanged?: boolean` and `range?: number` (cells) — ranged weapons use DEX mod, melee uses STR
+- `EnemyAbility` interface: `isRanged?: boolean` and `range?: number` — tagged on Breath Weapon, Mind Blast, Fire Breath, Hellfire Orb
+- All weapon entries in loot tables (COMMON/UNCOMMON/RARE/EPIC) and shop tagged with `range` (melee=1) and `isRanged` (ranged weapons)
+- New weapons: Shortbow (common loot+shop), Hand Crossbow (shop), Hand Crossbow +1 (uncommon loot), Longbow +2 (rare loot), Oathbow (epic loot)
+- Player Quick Attack: ranged weapons check Chebyshev distance + LOS; melee keeps adjacency. Tooltips: "Out of range (Xft/Yft)", "No line of sight", "Too far — move adjacent". Button label: "Shoot (Longbow)" vs "Attack (Shortsword)"
+- Enemy AI: ranged enemies check distance + LOS instead of adjacency. Smart movement — if already have LOS and in range, skip moving closer. At range without ranged abilities, still tries to close distance for melee. Ability selection filters melee abilities when not adjacent. Basic melee attack only fires when adjacent.
+- Spell range enforcement: each spell in the dropdown checks `parseRangeFt(spell.range)` vs Chebyshev distance + LOS to target. Out-of-range or blocked spells show greyed with "(out of range)" or "(no line of sight)" hint. Self/heal spells unaffected. Spell range shown in dropdown description.
 
 ## Working Items
 
@@ -375,3 +358,4 @@ Round 18 in progress: Ranged Combat + Line of Sight. `mapUtils.ts` has new funct
 - Terrain mechanics + movement rules: BFS pathfinding, terrain costs, movement range overlay, pit damage, door toggle, Monk speed bonus
 - Dash mechanics + condition visuals + hidden traps: real Dash doubles movement, condition pips on tokens, 4 trap types, DM trap tools, Perception search
 - Spatial combat engine: map state lifted to context, enemy AI pathfinding + movement, melee adjacency enforcement for players and enemies
+- Ranged combat + line of sight: Bresenham LOS raycasting, weapon/ability/spell range enforcement, DEX for ranged weapons, smart ranged enemy AI, new ranged weapons (Shortbow, Hand Crossbow, Longbow +2, Oathbow)

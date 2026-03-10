@@ -7,7 +7,7 @@ import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
-import { findBestMoveToward, isAdjacent, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
+import { findBestMoveToward, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
 
@@ -439,29 +439,63 @@ export default function Game() {
         target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
       }
 
-      // --- Enemy AI movement: pathfind toward target ---
+      // --- Enemy AI: determine ranged capability, then move + range check ---
+      const enemyAbilities = currentUnit.abilities || [];
+      const hasRangedAbility = enemyAbilities.some((a) => a.isRanged && a.range);
+      const bestRangedRange = hasRangedAbility
+        ? Math.max(...enemyAbilities.filter((a) => a.isRanged && a.range).map((a) => a.range!))
+        : 0;
+
       const enemyPos = mapPositions.find((p) => p.unitId === currentUnit.id);
       const targetPos = mapPositions.find((p) => p.unitId === target.id);
-      let isAdjacentToTarget = true; // default true if no positions (graceful fallback)
+      let canAttack = true; // default true if no positions (graceful fallback)
+      let canRangedAttack = false; // can hit with a ranged ability from current position
       if (enemyPos && targetPos && terrain.length > 0) {
-        isAdjacentToTarget = isAdjacent(enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
-        if (!isAdjacentToTarget) {
+        const dist = chebyshevDistance(enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
+        const los = hasLineOfSight(terrain, enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
+        const adjacent = isAdjacent(enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
+
+        // If ranged enemy already has LOS and is within range, skip movement
+        if (hasRangedAbility && los && dist <= bestRangedRange) {
+          canRangedAttack = true;
+          canAttack = true; // adjacent not required for ranged
+        } else if (adjacent) {
+          canAttack = true;
+        } else {
+          // Move toward target
           const remaining = (currentUnit.speed || 6) - (currentUnit.movementUsed || 0);
           if (remaining > 0) {
             const dest = findBestMoveToward(terrain, enemyPos.col, enemyPos.row, targetPos.col, targetPos.row, remaining, DEFAULT_ROWS, DEFAULT_COLS);
             if (dest && (dest.col !== enemyPos.col || dest.row !== enemyPos.row)) {
               setMapPositions((prev) => prev.map((p) => p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p));
               setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u));
-              isAdjacentToTarget = isAdjacent(dest.col, dest.row, targetPos.col, targetPos.row);
               const moveFt = dest.cost * 5;
               addDmMessage(`${currentUnit.name} moves ${moveFt}ft toward ${target.name}.`);
+              // Re-check from new position
+              const newDist = chebyshevDistance(dest.col, dest.row, targetPos.col, targetPos.row);
+              const newLos = hasLineOfSight(terrain, dest.col, dest.row, targetPos.col, targetPos.row);
+              const newAdj = isAdjacent(dest.col, dest.row, targetPos.col, targetPos.row);
+              if (hasRangedAbility && newLos && newDist <= bestRangedRange) {
+                canRangedAttack = true;
+                canAttack = true;
+              } else {
+                canAttack = newAdj;
+              }
+            } else {
+              // Couldn't move — check ranged from current position
+              canAttack = hasRangedAbility && los && dist <= bestRangedRange;
+              canRangedAttack = canAttack;
             }
+          } else {
+            // No movement left — check ranged from current position
+            canAttack = hasRangedAbility && los && dist <= bestRangedRange;
+            canRangedAttack = canAttack;
           }
         }
       }
 
-      // If not adjacent to target after moving, skip melee attacks (end turn)
-      if (!isAdjacentToTarget) {
+      // If can't reach target with melee or ranged, end turn
+      if (!canAttack) {
         addDmMessage(`${currentUnit.name} can't reach ${target.name} — ends turn.`);
         // Still tick ability cooldowns
         setUnits((prev) => prev.map((u) => {
@@ -495,9 +529,19 @@ export default function Game() {
       }
 
       // Check if an ability is available and should be used
+      // When at range (not adjacent), prefer ranged abilities; skip melee-only abilities
       const abilities = currentUnit.abilities || [];
       const cooldowns = currentUnit.abilityCooldowns || {};
-      const availAbility = abilities.find((a) => (cooldowns[a.name] || 0) <= 0 && Math.random() < 0.6);
+      const needsRanged = canRangedAttack && !isAdjacent(
+        enemyPos?.col ?? 0, enemyPos?.row ?? 0,
+        targetPos?.col ?? 0, targetPos?.row ?? 0,
+      );
+      const availAbility = abilities.find((a) => {
+        if ((cooldowns[a.name] || 0) > 0) return false;
+        // At range: only allow ranged abilities or AoE
+        if (needsRanged && !a.isRanged && a.type !== 'aoe' && a.type !== 'heal') return false;
+        return Math.random() < 0.6;
+      });
 
       if (availAbility) {
         // Use ability
@@ -539,8 +583,8 @@ export default function Game() {
         addDmMessage(abilMsg);
         // Set cooldown
         setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, abilityCooldowns: { ...cooldowns, [availAbility.name]: availAbility.cooldown } } : u));
-      } else {
-        // Basic attack using unit's stat block
+      } else if (!needsRanged) {
+        // Basic melee attack using unit's stat block (only when adjacent)
         const atkBonus = currentUnit.attackBonus ?? 3;
         const dmgBonus = currentUnit.damageBonus ?? 2;
         const dmgDie = currentUnit.damageDie || '1d6';
@@ -1131,7 +1175,7 @@ export default function Game() {
                         );
                       })()}
 
-                      {/* Quick attack — uses equipped weapon stats or STR-based unarmed (disabled when not player's turn or out of range) */}
+                      {/* Quick attack — uses equipped weapon stats, range-aware (melee=adjacency, ranged=distance+LOS) */}
                       {inCombat && selectedUnitId && (() => {
                         const target = units.find((u) => u.id === selectedUnitId);
                         if (!target || target.type === 'player') return null;
@@ -1140,18 +1184,35 @@ export default function Game() {
                         const weaponDie = weapon?.damageDie || '1d4'; // unarmed = 1d4
                         const weaponAtkBonus = weapon?.attackBonus || 0;
                         const weaponDmgBonus = weapon?.damageBonus || 0;
-                        const strMod = selectedCharacter ? Math.floor((selectedCharacter.stats.STR - 10) / 2) : 0;
+                        const weaponIsRanged = weapon?.isRanged || false;
+                        const weaponRange = weapon?.range || 1; // default 1 = melee adjacency
+                        // Ranged weapons use DEX, melee uses STR
+                        const statMod = selectedCharacter
+                          ? Math.floor(((weaponIsRanged ? selectedCharacter.stats.DEX : selectedCharacter.stats.STR) - 10) / 2)
+                          : 0;
                         // Player condition modifiers
                         const playerUnit = selectedCharacter ? units.find((u) => u.characterId === selectedCharacter.id) : null;
                         const condAtkMod = (playerUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
-                        // Adjacency check for melee attacks
+                        // Range + LOS check
                         const attackerPos = playerUnit ? mapPositions.find((p) => p.unitId === playerUnit.id) : null;
                         const targetPos = mapPositions.find((p) => p.unitId === target.id);
-                        const inMeleeRange = !attackerPos || !targetPos || isAdjacent(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
+                        let inRange = true;
+                        let rangeTooltip: string | undefined;
+                        if (attackerPos && targetPos) {
+                          if (weaponIsRanged) {
+                            const dist = chebyshevDistance(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
+                            const los = terrain.length > 0 ? hasLineOfSight(terrain, attackerPos.col, attackerPos.row, targetPos.col, targetPos.row) : true;
+                            if (dist > weaponRange) { inRange = false; rangeTooltip = `Out of range (${dist * 5}ft / ${weaponRange * 5}ft)`; }
+                            else if (!los) { inRange = false; rangeTooltip = 'No line of sight'; }
+                          } else {
+                            inRange = isAdjacent(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
+                            if (!inRange) rangeTooltip = 'Too far — move adjacent to attack';
+                          }
+                        }
                         return (
                            <button
-                            disabled={!isPlayerTurn || !inMeleeRange}
-                            title={!isPlayerTurn ? 'Wait for your turn' : !inMeleeRange ? 'Too far — move adjacent to attack' : undefined}
+                            disabled={!isPlayerTurn || !inRange}
+                            title={!isPlayerTurn ? 'Wait for your turn' : rangeTooltip}
                             onClick={() => {
                               // Extra Attack: martial classes at level 5+ get 2 attacks
                               const hasExtraAttack = selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5;
@@ -1169,22 +1230,23 @@ export default function Game() {
                               let totalDamageDealt = 0;
                               for (let atk = 0; atk < numAttacks; atk++) {
                                 const attackRoll = Math.floor(Math.random() * 20) + 1;
-                                const totalAttack = attackRoll + strMod + weaponAtkBonus + condAtkMod + featAtkBonus;
+                                const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus;
                                 const isHit = attackRoll === 20 || totalAttack >= target.ac;
                                 const isCrit = attackRoll === 20;
-                                const atkLabel = `${attackRoll}+${strMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}=${totalAttack}`;
+                                const atkLabel = `${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}=${totalAttack}`;
                                 const atkPrefix = numAttacks > 1 ? `[Attack ${atk + 1}] ` : '';
+                                const verb = weaponIsRanged ? 'shoots' : 'strikes';
 
                                 if (isHit) {
                                   const baseDmg = rollSpellDamage(weaponDie);
-                                  const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + strMod + weaponDmgBonus + featDmgBonus : baseDmg + strMod + weaponDmgBonus + featDmgBonus);
+                                  const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus : baseDmg + statMod + weaponDmgBonus + featDmgBonus);
                                   totalDamageDealt += finalDmg;
                                   damageUnit(target.id, finalDmg);
                                   playCombatHit();
                                   if (isCrit) playCritical();
                                   const logMsg = isCrit
-                                    ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} strikes ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`
-                                    : `${atkPrefix}${selectedCharacter?.name || 'You'} hits ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`;
+                                    ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`
+                                    : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`;
                                   setCombatLog((prev) => [...prev, logMsg]);
                                   addDmMessage(logMsg);
                                 } else {
@@ -1206,12 +1268,12 @@ export default function Game() {
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           >
-                            {weapon ? `Attack (${weapon.name})` : 'Unarmed Strike'}
+                            {weapon ? `${weaponIsRanged ? 'Shoot' : 'Attack'} (${weapon.name})` : 'Unarmed Strike'}
                             {selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5 && <span className="text-[9px] ml-1 opacity-70">x2</span>}
                           </button>
                         );
                       })()}
-                      {/* Cast Spell — for casters in combat or out */}
+                      {/* Cast Spell — for casters in combat or out, with range + LOS enforcement */}
                       {selectedCharacter && [...FULL_CASTERS, ...HALF_CASTERS].includes(selectedCharacter.class) && (() => {
                         const spells = getClassSpells(selectedCharacter.class, selectedCharacter.level);
                         const slots = getSpellSlots(selectedCharacter.class, selectedCharacter.level);
@@ -1219,6 +1281,10 @@ export default function Game() {
                         if (spells.length === 0) return null;
                         const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
                         const enemyTarget = target && target.type === 'enemy' ? target : null;
+                        // Compute caster + target positions for range checks
+                        const casterUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        const casterPos = casterUnit ? mapPositions.find((p) => p.unitId === casterUnit.id) : null;
+                        const spellTargetPos = enemyTarget ? mapPositions.find((p) => p.unitId === enemyTarget.id) : null;
                         return (
                           <div className="relative group">
                             <button
@@ -1240,11 +1306,23 @@ export default function Game() {
                               </div>
                               {spells.map((spell) => {
                                 const slotsAvail = spell.level === 0 ? Infinity : (slots[spell.level] || 0) - (used[spell.level] || 0);
-                                const disabled = slotsAvail <= 0;
+                                // Range + LOS check for targeted spells (damage or condition spells that need an enemy)
+                                const spellRangeCells = parseRangeFt(spell.range);
+                                const needsTarget = !!(spell.damage || spell.appliesCondition) && spell.range.toLowerCase() !== 'self';
+                                let outOfRange = false;
+                                let noLos = false;
+                                if (needsTarget && enemyTarget && casterPos && spellTargetPos && spellRangeCells > 0) {
+                                  const dist = chebyshevDistance(casterPos.col, casterPos.row, spellTargetPos.col, spellTargetPos.row);
+                                  if (dist > spellRangeCells) outOfRange = true;
+                                  else if (terrain.length > 0 && !hasLineOfSight(terrain, casterPos.col, casterPos.row, spellTargetPos.col, spellTargetPos.row)) noLos = true;
+                                }
+                                const disabled = slotsAvail <= 0 || outOfRange || noLos;
+                                const rangeHint = outOfRange ? ' (out of range)' : noLos ? ' (no line of sight)' : '';
                                 return (
                                   <button
                                     key={spell.id}
                                     disabled={disabled}
+                                    title={outOfRange ? `Out of range (${spell.range})` : noLos ? 'No line of sight' : undefined}
                                     onClick={() => {
                                       const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id);
                                       if (result.success) {
@@ -1264,10 +1342,10 @@ export default function Game() {
                                     className={`w-full text-left px-3 py-1.5 hover:bg-slate-700/50 transition-colors ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className={`text-xs font-semibold ${spell.level === 0 ? 'text-slate-300' : 'text-purple-300'}`}>{spell.name}</span>
+                                      <span className={`text-xs font-semibold ${spell.level === 0 ? 'text-slate-300' : 'text-purple-300'}`}>{spell.name}{rangeHint}</span>
                                       <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
                                     </div>
-                                    <div className="text-[9px] text-slate-500 truncate">{spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)}</div>
+                                    <div className="text-[9px] text-slate-500 truncate">{spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.range}</span></div>
                                   </button>
                                 );
                               })}
