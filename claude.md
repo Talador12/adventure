@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 13 shipped: character progression (ASI/feats at levels 4/8/12/16/19), Extra Attack for martial classes, turn enforcement, and full sound FX wiring. Next: multiplayer map sync, terrain mechanics, journal/notes, or concentration tracking.
+Round 14 shipped: spell concentration tracking (D&D 5e rules), feat bonuses wired into combat (initiative, saves, HP), CharacterSheet feat display + concentration indicator. Next: multiplayer map sync, terrain mechanics, journal/notes, or movement rules.
 
 ## Working Items
 
@@ -214,6 +214,27 @@ Round 13 shipped: character progression (ASI/feats at levels 4/8/12/16/19), Extr
 - Sound FX wiring: `playMagicSpell()` on spell cast, `playLevelUp()` fanfare on level-up, `playHealing()` on heal/rest, `playLootDrop()` jingle on loot drops
   - 3 new synthesized sounds: level-up fanfare (C major rising), healing shimmer (warm rising), loot jingle (metallic)
 
+### Concentration tracking + feat integration
+- **Status:** Done
+- Spell concentration enforcement: casting a new concentration spell drops existing concentration
+  - Conditions applied by the dropped spell are removed from all units
+  - `concentratingOn` field on Unit tracks active concentration spell name
+- Concentration saves on damage: DC = max(10, floor(damage/2))
+  - CON save (d20 + CON mod), War Caster feat adds +2 to concentration saves
+  - Failure: drops concentration, removes sourced conditions
+  - Success: maintains concentration with log message
+  - Messages collected via ref and drained into combat log after attacks
+- Feat bonuses wired into game mechanics:
+  - Alert feat: +5 initiative bonus in rollInitiative
+  - Tough feat: +2 HP per level on future level-ups in grantXP
+  - War Caster feat: +2 to concentration saves in damageUnit
+  - All feat bonuses (attack, damage, initiative, saves, HP) integrated
+- CharacterSheet enhancements:
+  - Feats section with description and color-coded bonus badges
+  - "Ability Score Improvement available!" indicator when ASI pending
+  - Concentration indicator panel showing active concentration spell
+  - Units now exposed from useGame for unit-level data in CharacterSheet
+
 ## Backlog
 
 - Export formats: Pathfinder 2e, Forbidden Lands, Savage Worlds
@@ -262,3 +283,4 @@ Round 13 shipped: character progression (ASI/feats at levels 4/8/12/16/19), Extr
 - Encounter variety + themes + combat log: 16 enemy templates, 12 encounter themes, togglable color-coded combat log panel
 - Turn flow + magic items + epic loot: context-aware End Turn button, turn indicator banner, expanded loot tables, epic loot tier
 - Character progression + combat polish: ASI/feats at levels 4/8/12/16/19, Extra Attack for martial classes, turn enforcement, sound FX wiring
+- Concentration tracking + feat integration: spell concentration D&D 5e rules, feat bonuses in combat, CharacterSheet feats display

@@ -63,6 +63,7 @@ export interface Unit {
   abilities?: EnemyAbility[];
   abilityCooldowns?: Record<string, number>; // ability name -> turns until available
   conditions?: ActiveCondition[];
+  concentratingOn?: string; // spell name if unit is concentrating on a spell
   cr?: number; // challenge rating for XP calculation
   xpValue?: number; // XP reward on kill
 }
@@ -701,6 +702,7 @@ interface GameContextValue {
   setTurnIndex: (i: number) => void;
 
   // Combat helpers
+  concentrationMessages: React.MutableRefObject<string[]>;
   damageUnit: (unitId: string, damage: number) => void;
   healUnit: (unitId: string, amount: number) => void;
   removeUnit: (unitId: string) => void;
@@ -749,6 +751,7 @@ const GameContext = createContext<GameContextValue>({
   setCombatRound: () => {},
   turnIndex: 0,
   setTurnIndex: () => {},
+  concentrationMessages: { current: [] },
   damageUnit: () => {},
   healUnit: () => {},
   removeUnit: () => {},
@@ -798,6 +801,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {}); // backend unavailable — keep DEFAULT_PLAYER
   }, []);
+
+  // Concentration save messages — collected during damageUnit state updates, consumed by Game.tsx
+  const concentrationBreakMessages = useRef<string[]>([]);
 
   // Persist characters to localStorage + server sync on change
   const syncingRef = useRef(false); // prevent save-during-load loops
@@ -872,7 +878,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
           Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
         };
         const conMod = Math.floor((c.stats.CON - 10) / 2);
-        const hpGain = (hitDieAvg[c.class] || 5) + conMod;
+        // Feat HP bonuses: Tough (+2/level), Durable (+1/level)
+        const featHpPerLevel = (c.feats || []).reduce((sum, fid) => {
+          const f = FEATS.find((ft) => ft.id === fid);
+          return sum + (f?.maxHpPerLevel || 0);
+        }, 0);
+        const levelsGained = level - c.level;
+        const hpGain = ((hitDieAvg[c.class] || 5) + conMod + featHpPerLevel) * levelsGained;
         const newMaxHp = c.maxHp + hpGain;
         return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp }; // full heal on level up
       }
@@ -1064,12 +1076,48 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const clearRolls = useCallback(() => setRolls([]), []);
 
-  // Combat: apply damage to a unit (clamp to 0)
+  // Combat: apply damage to a unit (clamp to 0) + concentration check
   const damageUnit = useCallback((unitId: string, damage: number) => {
-    setUnits((prev) => prev.map((u) =>
-      u.id === unitId ? { ...u, hp: Math.max(0, u.hp - damage) } : u
-    ));
-  }, []);
+    setUnits((prev) => {
+      const updated = prev.map((u) =>
+        u.id === unitId ? { ...u, hp: Math.max(0, u.hp - damage) } : u
+      );
+      // Concentration save: DC = max(10, floor(damage/2))
+      const damagedUnit = updated.find((u) => u.id === unitId);
+      if (damagedUnit?.concentratingOn && damagedUnit.hp > 0) {
+        const dc = Math.max(10, Math.floor(damage / 2));
+        // CON save: d20 + CON mod (look up from character if player)
+        const saveRoll = Math.floor(Math.random() * 20) + 1;
+        let conMod = 0;
+        if (damagedUnit.characterId) {
+          const char = characters.find((c) => c.id === damagedUnit.characterId);
+          if (char) {
+            conMod = Math.floor((char.stats.CON - 10) / 2);
+            // War Caster feat: +2 to concentration saves
+            if ((char.feats || []).includes('war-caster')) conMod += 2;
+          }
+        }
+        const totalSave = saveRoll + conMod;
+        if (totalSave < dc) {
+          // Failed concentration save — drop concentration and remove conditions sourced by this caster
+          const casterName = damagedUnit.name;
+          concentrationBreakMessages.current.push(
+            `${casterName} fails concentration save (${saveRoll}+${conMod}=${totalSave} vs DC ${dc})! ${damagedUnit.concentratingOn} ends.`
+          );
+          return updated.map((u) => {
+            if (u.id === unitId) return { ...u, concentratingOn: undefined };
+            // Remove conditions applied by this caster
+            return { ...u, conditions: (u.conditions || []).filter((c) => c.source !== casterName) };
+          });
+        } else {
+          concentrationBreakMessages.current.push(
+            `${damagedUnit.name} maintains concentration (${saveRoll}+${conMod}=${totalSave} vs DC ${dc}).`
+          );
+        }
+      }
+      return updated;
+    });
+  }, [characters]);
 
   // Combat: heal a unit (clamp to maxHp)
   const healUnit = useCallback((unitId: string, amount: number) => {
@@ -1148,6 +1196,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (result.success) {
       const char = characters.find((c) => c.id === charId);
       const casterName = char?.name || 'Caster';
+
+      // Concentration: if this spell requires concentration, drop any existing concentration
+      if (spell.isConcentration) {
+        const casterUnit = units.find((u) => u.characterId === charId);
+        if (casterUnit?.concentratingOn) {
+          // Drop old concentration — remove conditions applied by the old spell
+          const oldSpellName = casterUnit.concentratingOn;
+          // Clear concentration conditions from all units that were sourced by this caster
+          setUnits((prev) => prev.map((u) => ({
+            ...u,
+            conditions: (u.conditions || []).filter((c) => c.source !== casterName),
+            concentratingOn: u.id === casterUnit.id ? undefined : u.concentratingOn,
+          })));
+          result.message = `${casterName} breaks concentration on ${oldSpellName}. `;
+        }
+        // Set new concentration on caster unit
+        if (casterUnit) {
+          setUnits((prev) => prev.map((u) =>
+            u.id === casterUnit.id ? { ...u, concentratingOn: spell.name } : u
+          ));
+        }
+      }
 
       // Saving throw: if spell has saveStat, target rolls to resist
       let targetSaved = false;
@@ -1398,11 +1468,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const withInitiative = prev.map((u) => {
         // DEX mod from character (players) or unit stat (enemies)
         let dexMod = u.dexMod || 0;
+        let featInitBonus = 0;
         if (u.characterId) {
           const char = characters.find((c) => c.id === u.characterId);
-          if (char) dexMod = Math.floor((char.stats.DEX - 10) / 2);
+          if (char) {
+            dexMod = Math.floor((char.stats.DEX - 10) / 2);
+            // Alert feat: +5 initiative
+            featInitBonus = (char.feats || []).reduce((sum, fid) => {
+              const f = FEATS.find((ft) => ft.id === fid);
+              return sum + (f?.initiativeBonus || 0);
+            }, 0);
+          }
         }
-        const roll = Math.floor(Math.random() * 20) + 1 + dexMod;
+        const roll = Math.floor(Math.random() * 20) + 1 + dexMod + featInitBonus;
         return { ...u, initiative: roll, isCurrentTurn: false };
       });
       // Sort descending by initiative (higher goes first)
@@ -1493,6 +1571,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setCombatRound,
         turnIndex,
         setTurnIndex,
+        concentrationMessages: concentrationBreakMessages,
         damageUnit,
         healUnit,
         removeUnit,

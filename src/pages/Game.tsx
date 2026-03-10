@@ -26,7 +26,7 @@ export default function Game() {
     damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
     addItem, useItem, buyItem, sellItem, castSpell, restoreSpellSlots,
     applyCondition, removeCondition, tickConditions, useClassAbility,
-    applyASI, selectFeat,
+    applyASI, selectFeat, concentrationMessages,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -92,6 +92,19 @@ export default function Game() {
   // Derived: is it currently the player's turn? Used to enforce turn-based action restrictions.
   const currentTurnUnit = units.find((u) => u.isCurrentTurn);
   const isPlayerTurn = !inCombat || (currentTurnUnit?.type === 'player');
+
+  // Drain concentration break messages into combat log (collected by damageUnit ref)
+  // Call after any action that triggers damageUnit
+  const drainConcentrationMessages = () => {
+    if (concentrationMessages.current.length > 0) {
+      const msgs = [...concentrationMessages.current];
+      concentrationMessages.current = [];
+      for (const m of msgs) {
+        setCombatLog((prev) => [...prev, m]);
+        setDmHistory((prev) => [...prev, m]);
+      }
+    }
+  };
 
   // Persist DM history + scene to localStorage on every change
   useEffect(() => {
@@ -525,6 +538,9 @@ export default function Game() {
         }
         return { ...u, abilityCooldowns: newCd };
       }));
+
+      // Drain concentration break messages from damage dealt this turn
+      setTimeout(drainConcentrationMessages, 0);
 
       setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
     }, 800);
@@ -1138,6 +1154,8 @@ export default function Game() {
                                 setCombatLog((prev) => [...prev, deathMsg]);
                                 addDmMessage(deathMsg);
                               }
+                              // Drain any concentration break messages
+                              setTimeout(drainConcentrationMessages, 0);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           >

@@ -1,5 +1,5 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility } from '../../contexts/GameContext';
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI } from '../../contexts/GameContext';
 import { useState } from 'react';
 
 interface CharacterSheetProps {
@@ -63,7 +63,7 @@ function itemStatLine(item: Item): string {
 }
 
 export default function CharacterSheet({ character }: CharacterSheetProps) {
-  const { restCharacter, equipItem, unequipItem, useItem, removeItem } = useGame();
+  const { restCharacter, equipItem, unequipItem, useItem, removeItem, units } = useGame();
   const [showInventory, setShowInventory] = useState(false);
   const prof = proficiencyBonus(character.level);
   const saveProficiencies = CLASS_SAVE_PROFICIENCIES[character.class] || [];
@@ -151,6 +151,18 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           </div>
         </div>
       )}
+
+      {/* Concentration indicator */}
+      {(() => {
+        const playerUnit = units.find((u) => u.characterId === character.id);
+        if (!playerUnit?.concentratingOn) return null;
+        return (
+          <div className="rounded-lg px-3 py-2 border border-blue-700/40 bg-blue-900/20 text-center">
+            <div className="text-[9px] text-blue-400/70 uppercase tracking-wider">Concentrating</div>
+            <div className="text-xs font-bold text-blue-300">{playerUnit.concentratingOn}</div>
+          </div>
+        );
+      })()}
 
       {/* Gold + Rest */}
       <div className="flex gap-2">
@@ -362,6 +374,41 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           </div>
         );
       })()}
+
+      {/* Feats */}
+      {(character.feats || []).length > 0 && (
+        <div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Feats</div>
+          <div className="space-y-1.5">
+            {(character.feats || []).map((featId) => {
+              const feat = FEATS.find((f) => f.id === featId);
+              if (!feat) return null;
+              return (
+                <div key={featId} className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-purple-700/30 bg-purple-900/10">
+                  <div>
+                    <div className="text-xs font-semibold text-purple-300">{feat.name}</div>
+                    <div className="text-[9px] text-slate-500">{feat.description}</div>
+                  </div>
+                  <div className="flex gap-1 shrink-0 ml-2">
+                    {feat.initiativeBonus && <span className="text-[8px] px-1 py-0.5 bg-yellow-900/40 text-yellow-300 rounded">+{feat.initiativeBonus} init</span>}
+                    {feat.damageBonus && <span className="text-[8px] px-1 py-0.5 bg-orange-900/40 text-orange-300 rounded">+{feat.damageBonus} dmg</span>}
+                    {feat.maxHpPerLevel && <span className="text-[8px] px-1 py-0.5 bg-red-900/40 text-red-300 rounded">+{feat.maxHpPerLevel} HP/lv</span>}
+                    {feat.attackBonus && <span className="text-[8px] px-1 py-0.5 bg-blue-900/40 text-blue-300 rounded">+{feat.attackBonus} atk</span>}
+                    {feat.savingThrowBonus && <span className="text-[8px] px-1 py-0.5 bg-green-900/40 text-green-300 rounded">+{feat.savingThrowBonus} saves</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ASI pending indicator */}
+      {hasPendingASI(character) && (
+        <div className="px-2 py-1.5 rounded-lg border border-amber-600/40 bg-amber-900/20 text-center">
+          <span className="text-xs font-bold text-amber-300 animate-pulse">Ability Score Improvement available!</span>
+        </div>
+      )}
 
       {/* Spellbook (for casters) */}
       {[...FULL_CASTERS, ...HALF_CASTERS].includes(character.class) && (() => {
