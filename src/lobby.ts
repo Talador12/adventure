@@ -1,12 +1,27 @@
 // Lobby Durable Object — real-time multiplayer room via WebSocket.
-// Handles player sessions, chat, dice rolls (with full metadata), and system events.
+// Handles player sessions, chat, dice rolls (with full metadata), seat management, and system events.
 /// <reference types="@cloudflare/workers-types" />
+
+// --- Seat model: configurable table with human/AI/empty seats ---
+type SeatType = 'human' | 'ai' | 'empty';
+
+interface Seat {
+  id: string;            // stable ID: "seat-0", "seat-1", etc.
+  type: SeatType;
+  playerId?: string;     // only set when type=human and a player has claimed the seat
+  username?: string;
+  avatar?: string;
+  characterId?: string;
+  characterName?: string;
+  ready: boolean;
+}
 
 interface Session {
   id: string;
   username: string;
   avatar?: string;
   joinedAt: number;
+  seatId?: string;       // which seat this player occupies (if any)
   lastGameEvents: number[]; // timestamps for rate limiting (Phase 8.4)
 }
 
@@ -16,6 +31,10 @@ interface PlayerInfo {
   avatar?: string;
   joinedAt: number;
   isDM?: boolean;
+  seatId?: string;
+  ready?: boolean;
+  characterId?: string;
+  characterName?: string;
 }
 
 interface StrokeEntry {
@@ -25,6 +44,8 @@ interface StrokeEntry {
 }
 
 const MAX_STROKE_HISTORY = 5000; // cap memory usage
+const DEFAULT_SEAT_COUNT = 4;    // default player seats (DM is separate)
+const MAX_SEATS = 8;             // hard cap on player seats
 
 // Rate limit: max game_events per second per client
 const RATE_LIMIT_WINDOW_MS = 1000;
@@ -32,6 +53,8 @@ const RATE_LIMIT_MAX_EVENTS = 10;
 
 // DM-only message types that require authorization
 const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action']);
+// DM-only seat management messages (set_dm_type handled separately since it can un-DM the sender)
+const DM_SEAT_MESSAGES = new Set(['set_seat_type', 'add_seat', 'remove_seat']);
 
 export class Lobby {
   state: DurableObjectState;
@@ -39,6 +62,8 @@ export class Lobby {
   sessions: Map<WebSocket, Session>;
   strokeHistory: StrokeEntry[];
   dmPlayerId: string | null; // first joiner becomes DM; reassigned on DM leave
+  dmSeatType: 'human' | 'ai'; // DM can be human or AI-controlled
+  seats: Seat[];               // player seats (DM is separate)
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
@@ -46,6 +71,12 @@ export class Lobby {
     this.sessions = new Map();
     this.strokeHistory = [];
     this.dmPlayerId = null;
+    this.dmSeatType = 'human';
+    // Initialize default player seats — all empty
+    this.seats = [];
+    for (let i = 0; i < DEFAULT_SEAT_COUNT; i++) {
+      this.seats.push({ id: `seat-${i}`, type: 'empty', ready: false });
+    }
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -77,11 +108,26 @@ export class Lobby {
         const session = this.sessions.get(server);
         this.sessions.delete(server);
         if (session) {
+          // Revert seat to empty when player disconnects
+          if (session.seatId) {
+            const seat = this.seats.find((s) => s.id === session.seatId);
+            if (seat && seat.type === 'human') {
+              seat.type = 'empty';
+              seat.playerId = undefined;
+              seat.username = undefined;
+              seat.avatar = undefined;
+              seat.characterId = undefined;
+              seat.characterName = undefined;
+              seat.ready = false;
+            }
+          }
+
           this.broadcast({
             type: 'player_left',
             username: session.username,
             playerId: session.id,
             players: this.getPlayerList(),
+            seats: this.seats,
             timestamp: Date.now(),
           });
 
@@ -108,17 +154,17 @@ export class Lobby {
       return new Response(null, { status: 101, webSocket: client });
     }
 
-    // REST: get player list
+    // REST: get player list + seats
     if (url.pathname.endsWith('/players')) {
-      return Response.json({ players: this.getPlayerList() });
+      return Response.json({ players: this.getPlayerList(), seats: this.seats, dmSeatType: this.dmSeatType });
     }
 
-    return Response.json({ status: 'ok', players: this.sessions.size });
+    return Response.json({ status: 'ok', players: this.sessions.size, seats: this.seats.length });
   }
 
   private handleMessage(server: WebSocket, sessionId: string, data: Record<string, unknown>) {
     // Phase 8.3: DM auth — reject DM-only messages from non-DM players
-    if (DM_MESSAGE_TYPES.has(data.type as string)) {
+    if (DM_MESSAGE_TYPES.has(data.type as string) || DM_SEAT_MESSAGES.has(data.type as string)) {
       const session = this.sessions.get(server);
       if (session && session.id !== this.dmPlayerId) {
         server.send(JSON.stringify({
@@ -163,22 +209,51 @@ export class Lobby {
           }
         }
 
-        this.sessions.set(server, { id: finalId, username, avatar, joinedAt: Date.now(), lastGameEvents: [] });
+        // Auto-assign to a seat: find first empty seat, or reconnect to previous seat
+        let assignedSeatId: string | undefined;
+        if (isReconnect) {
+          // Try to reclaim previous seat (check if a seat still has this playerId)
+          const prevSeat = this.seats.find((s) => s.playerId === finalId);
+          if (prevSeat) {
+            prevSeat.type = 'human';
+            prevSeat.username = username;
+            prevSeat.avatar = avatar;
+            assignedSeatId = prevSeat.id;
+          }
+        }
+        if (!assignedSeatId) {
+          // Claim first empty seat
+          const emptySeat = this.seats.find((s) => s.type === 'empty');
+          if (emptySeat) {
+            emptySeat.type = 'human';
+            emptySeat.playerId = finalId;
+            emptySeat.username = username;
+            emptySeat.avatar = avatar;
+            emptySeat.ready = false;
+            assignedSeatId = emptySeat.id;
+          }
+          // If no empty seats, player joins without a seat (spectator)
+        }
 
-        // DM assignment: first player to join becomes DM
-        if (!this.dmPlayerId) {
+        this.sessions.set(server, { id: finalId, username, avatar, joinedAt: Date.now(), seatId: assignedSeatId, lastGameEvents: [] });
+
+        // DM assignment: first player to join becomes DM (if DM seat is human-type)
+        if (!this.dmPlayerId && this.dmSeatType === 'human') {
           this.dmPlayerId = finalId;
         }
 
-        // Send current player list + stroke history + DM info to the joining player
+        // Send current player list + seats + stroke history + DM info to the joining player
         server.send(
           JSON.stringify({
             type: 'welcome',
             playerId: finalId,
             players: this.getPlayerList(),
+            seats: this.seats,
+            dmSeatType: this.dmSeatType,
             strokeHistory: this.strokeHistory,
             isDM: finalId === this.dmPlayerId,
             dmPlayerId: this.dmPlayerId,
+            seatId: assignedSeatId,
             timestamp: Date.now(),
           })
         );
@@ -189,6 +264,8 @@ export class Lobby {
           username,
           playerId: finalId,
           players: this.getPlayerList(),
+          seats: this.seats,
+          seatId: assignedSeatId,
           timestamp: Date.now(),
         }, server); // exclude sender
         break;
@@ -399,6 +476,146 @@ export class Lobby {
         break;
       }
 
+      // --- Seat management messages ---
+
+      case 'ready': {
+        // Player toggles their ready state
+        const readySession = this.sessions.get(server);
+        if (!readySession?.seatId) {
+          server.send(JSON.stringify({ type: 'error', message: 'You are not in a seat', timestamp: Date.now() }));
+          return;
+        }
+        const readySeat = this.seats.find((s) => s.id === readySession.seatId);
+        if (!readySeat) return;
+        readySeat.ready = !readySeat.ready;
+        this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
+        break;
+      }
+
+      case 'select_character': {
+        // Player selects which character they're playing in this session
+        const charSession = this.sessions.get(server);
+        if (!charSession?.seatId) {
+          server.send(JSON.stringify({ type: 'error', message: 'You are not in a seat', timestamp: Date.now() }));
+          return;
+        }
+        const charSeat = this.seats.find((s) => s.id === charSession.seatId);
+        if (!charSeat) return;
+        charSeat.characterId = (data.characterId as string) || undefined;
+        charSeat.characterName = (data.characterName as string) || undefined;
+        this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
+        break;
+      }
+
+      case 'set_seat_type': {
+        // DM changes a seat's type (empty <-> ai). Can't change occupied human seats.
+        const targetSeatId = data.seatId as string;
+        const newType = data.seatType as SeatType;
+        if (!targetSeatId || !newType || !['empty', 'ai'].includes(newType)) {
+          server.send(JSON.stringify({ type: 'error', message: 'Invalid seat type — must be "empty" or "ai"', timestamp: Date.now() }));
+          return;
+        }
+        const targetSeat = this.seats.find((s) => s.id === targetSeatId);
+        if (!targetSeat) {
+          server.send(JSON.stringify({ type: 'error', message: 'Seat not found', timestamp: Date.now() }));
+          return;
+        }
+        if (targetSeat.type === 'human' && targetSeat.playerId) {
+          server.send(JSON.stringify({ type: 'error', message: 'Cannot change an occupied human seat — player must leave first', timestamp: Date.now() }));
+          return;
+        }
+        targetSeat.type = newType;
+        targetSeat.ready = newType === 'ai'; // AI seats auto-ready
+        if (newType === 'ai') {
+          targetSeat.playerId = undefined;
+          targetSeat.username = 'AI Player';
+          targetSeat.avatar = undefined;
+          targetSeat.characterId = undefined;
+          targetSeat.characterName = undefined;
+        } else {
+          // empty
+          targetSeat.playerId = undefined;
+          targetSeat.username = undefined;
+          targetSeat.avatar = undefined;
+          targetSeat.characterId = undefined;
+          targetSeat.characterName = undefined;
+          targetSeat.ready = false;
+        }
+        this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
+        break;
+      }
+
+      case 'add_seat': {
+        // DM adds a new empty seat
+        if (this.seats.length >= MAX_SEATS) {
+          server.send(JSON.stringify({ type: 'error', message: `Maximum ${MAX_SEATS} seats allowed`, timestamp: Date.now() }));
+          return;
+        }
+        const newSeatId = `seat-${this.seats.length}`;
+        this.seats.push({ id: newSeatId, type: 'empty', ready: false });
+        this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
+        break;
+      }
+
+      case 'remove_seat': {
+        // DM removes the last empty/AI seat (can't remove occupied human seats)
+        if (this.seats.length <= 1) {
+          server.send(JSON.stringify({ type: 'error', message: 'Must have at least 1 seat', timestamp: Date.now() }));
+          return;
+        }
+        const removeSeatId = data.seatId as string;
+        const removeSeat = removeSeatId
+          ? this.seats.find((s) => s.id === removeSeatId)
+          : this.seats[this.seats.length - 1]; // default: last seat
+        if (!removeSeat) {
+          server.send(JSON.stringify({ type: 'error', message: 'Seat not found', timestamp: Date.now() }));
+          return;
+        }
+        if (removeSeat.type === 'human' && removeSeat.playerId) {
+          server.send(JSON.stringify({ type: 'error', message: 'Cannot remove an occupied seat', timestamp: Date.now() }));
+          return;
+        }
+        this.seats = this.seats.filter((s) => s.id !== removeSeat.id);
+        this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
+        break;
+      }
+
+      case 'set_dm_type': {
+        // Toggle DM seat between human and AI.
+        // Auth: current DM can switch to AI. When DM is AI, any player can claim human DM.
+        const dmType = data.dmSeatType as string;
+        if (dmType !== 'human' && dmType !== 'ai') {
+          server.send(JSON.stringify({ type: 'error', message: 'dmSeatType must be "human" or "ai"', timestamp: Date.now() }));
+          return;
+        }
+        const senderSession = this.sessions.get(server);
+        if (!senderSession) return;
+        if (dmType === 'ai') {
+          // Only current human DM can abdicate to AI
+          if (senderSession.id !== this.dmPlayerId) {
+            server.send(JSON.stringify({ type: 'error', message: 'Only the DM can switch to AI DM', timestamp: Date.now() }));
+            return;
+          }
+          this.dmSeatType = 'ai';
+          this.dmPlayerId = null;
+        } else {
+          // Anyone can claim human DM when current DM is AI (or if no DM)
+          if (this.dmSeatType !== 'ai' && this.dmPlayerId && senderSession.id !== this.dmPlayerId) {
+            server.send(JSON.stringify({ type: 'error', message: 'DM seat is already occupied by a human', timestamp: Date.now() }));
+            return;
+          }
+          this.dmSeatType = 'human';
+          this.dmPlayerId = senderSession.id;
+        }
+        this.broadcast({
+          type: 'dm_type_changed',
+          dmSeatType: this.dmSeatType,
+          dmPlayerId: this.dmPlayerId,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
       case 'transfer_dm': {
         // Only current DM can transfer the role
         const transferSession = this.sessions.get(server);
@@ -450,12 +667,19 @@ export class Lobby {
   }
 
   private getPlayerList(): PlayerInfo[] {
-    return Array.from(this.sessions.values()).map((s) => ({
-      id: s.id,
-      username: s.username,
-      avatar: s.avatar,
-      joinedAt: s.joinedAt,
-      isDM: s.id === this.dmPlayerId,
-    }));
+    return Array.from(this.sessions.values()).map((s) => {
+      const seat = s.seatId ? this.seats.find((st) => st.id === s.seatId) : undefined;
+      return {
+        id: s.id,
+        username: s.username,
+        avatar: s.avatar,
+        joinedAt: s.joinedAt,
+        isDM: s.id === this.dmPlayerId,
+        seatId: s.seatId,
+        ready: seat?.ready,
+        characterId: seat?.characterId,
+        characterName: seat?.characterName,
+      };
+    });
   }
 }

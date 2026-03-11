@@ -9,9 +9,32 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 - `staging` — active development
 - `main` — stable releases
 
+## Product Philosophy: Player-First, AI-Optional
+
+Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, not the headline.
+
+**Core principle:** Any table configuration from 0 to N players, where each seat is human, AI, or empty.
+
+| Config | Description |
+|---|---|
+| Solo + AI DM | One human player, AI runs the game |
+| Solo + Human DM | Classic 1-on-1, zero AI involvement |
+| Full party, Human DM | Traditional group play, AI completely off |
+| Mixed party | Some humans, some AI players, human or AI DM |
+| Full AI table | Observer mode — watch AI play (demo/novelty) |
+| Any hybrid | DM toggles AI fill per seat at any time |
+
+**AI features are opt-in per seat, not global:**
+- DM seat: human or AI (toggled by campaign host)
+- Player seats: human, AI-controlled, or empty (waiting for join)
+- AI assistant tools (character builder, rule lookup, encounter balance): togglable in campaign settings
+- Zero AI is a first-class experience — the app works fully without any AI features enabled
+
+**Branding:** Never lead with "AI-powered." Lead with the experience: play D&D your way, with friends or solo, in your browser. AI is mentioned as an optional feature, not the identity.
+
 ## Current Focus
 
-Round 26: D1 Database + Persistent Users + Chat/Roll/DM Persistence + Google OAuth — D1 bindings wired, ensureUser() lazy-upserts users into D1, chat/roll/DM narration/NPC/action persistence, party management with auto-join, Google OAuth alongside Discord, party member avatars on campaign cards. Previous: Phase 8 session robustness (Round 25), Map image persistence, Multiplayer sync (Phases 1-8).
+Round 27: Landing Page + Lobby + Player-First Rebranding — Hero section rewrite (remove AI-forward messaging), lobby seat model (human/AI/empty per seat), ready-up system, campaign management polish. Previous: Round 26 D1 Database + Chat Persistence + Google OAuth. Phase 8 session robustness (Round 25), Multiplayer sync (Phases 1-8).
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -36,13 +59,13 @@ Round 26: D1 Database + Persistent Users + Chat/Roll/DM Persistence + Google OAu
 ### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
-- **Status:** Done — all 133 tests passing (99 player + 34 worker), 2 budget-skipped
+- **Status:** Done — all 143 tests passing (99 player + 44 worker), 2 budget-skipped
 
 **Three test categories:**
 1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 17 describe blocks, 99 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks, condition system (CONDITION_EFFECTS, effectiveAC, rollD20WithProne, CLASS_ABILITIES condition types). **All 99 passing.**
 2. **AI fallback tests** (`tests/ai/fallback.test.ts`) — AI binding `undefined` → all 9 AI endpoints return 503 with helpful message. Non-AI endpoints (campaign save/load) still work. **All 11 passing.**
 3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **All 11 passing, 2 skipped** (live AI tests behind `AI_TESTS=live` gate).
-4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). Phase 8 tests: DM assignment, DM auth rejection, DM transfer, DM reassignment on disconnect, stable reconnect IDs, rate limiting. **All 12 passing.**
+4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). Phase 8 tests: DM assignment, DM auth rejection, DM transfer, DM reassignment on disconnect, stable reconnect IDs, rate limiting. Seat model tests: default seats, auto-claim, ready toggle, character select, AI seat toggle, DM auth on seats, add/remove seats, seat revert on disconnect, DM type toggle, REST seats endpoint. **All 22 passing.**
 
 **Infrastructure:**
 - `vitest.config.ts` — plain vitest for player tests (no Workers runtime)
@@ -540,28 +563,48 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 | Campaign game state (units, terrain, combat) | KV | Large JSON snapshots, no relational queries |
 | Doodle pad strokes | DO memory + D1 archival | Real-time in DO, archived to D1 on session end |
 
-### Round 27: Landing Page + Lobby + Campaign Management Polish
-**Goal:** Make the Home page a proper landing experience, improve the lobby, and flesh out campaign management with party association.
+### Round 27: Landing Page + Lobby + Seat Model + Campaign Management Polish
+**Goal:** Rebrand as player-first, implement the 0-to-N seat model in the lobby, and flesh out campaign management.
 
-**Landing page:**
-- Hero section with game art, tagline, feature highlights
-- "How it works" section (create campaign, invite friends, play)
-- Featured campaigns / recent activity
-- Auth buttons prominent (Discord + Google)
-- Campaign cards show party members with avatars, last played date, character count
+**Landing page (DONE):**
+- [x] Hero section with tagline ("Your table. Your rules."), player-first messaging
+- [x] Feature highlights: Live Dice, Battle Maps, Play Your Way, D&D 5e Combat
+- [x] Inline quick actions (Join, New Campaign, Create Character)
+- [x] Removed "AI-powered" branding from all surfaces
+- [ ] "How it works" section (create campaign, invite friends, play) — deferred
+- [x] Auth buttons (Discord + Google) in header — already done
 
-**Lobby improvements:**
-- Party roster showing which character each player is using
-- Ready-up system before starting the adventure
-- Campaign settings panel (name, description, invite link management)
-- Chat history loaded from D1 on join (no more blank slate)
-- Dice roll history persisted and loaded
+**Seat model (DONE):**
+- [x] `Seat` interface: `{ id, type: human|ai|empty, playerId?, username?, avatar?, characterId?, characterName?, ready }`
+- [x] Default 4 player seats (all empty), DM seat separate (human or AI)
+- [x] Auto-claim: humans claim first empty seat on join, seat reverts on disconnect
+- [x] `ready` toggle per seat, `select_character` per seat
+- [x] `set_seat_type` — DM toggles empty ↔ AI (can't change occupied human seats)
+- [x] `add_seat` / `remove_seat` — DM adds/removes seats (max 8, min 1)
+- [x] `set_dm_type` — DM toggles DM role between human and AI
+- [x] AI seats auto-ready, human seats must manually ready
+- [x] `seats_updated` broadcast on any seat change
+- [x] `welcome` includes `seats`, `dmSeatType`, `seatId` for the joining player
+- [x] All seat operations DM-auth gated (except `set_dm_type` which allows any player to claim human DM when current DM is AI)
+- [x] 10 new tests: default seats, auto-claim, ready toggle, character select, AI toggle, DM auth, add/remove, disconnect revert, DM type toggle, REST endpoint
 
-**Campaign management:**
-- Campaign list on Home shows party members (avatars + names)
-- Campaign settings: rename, change description, manage invites
-- Kick/invite players from campaign party
-- Campaign archive (soft delete, can restore)
+**Lobby UI (DONE):**
+- [x] Seat roster replaces flat player list — card per seat with type badge, avatar, character, ready state
+- [x] DM controls: "+ AI" / "Remove" buttons on empty/AI seats, "→ AI/Human" toggle for DM seat
+- [x] Ready toggle button on your own seat
+- [x] Character select dropdown from your characters list
+- [x] "Start Game" gated: enabled when all occupied seats are ready, or DM can override
+- [x] "All Ready" indicator in header
+- [x] "Make DM" transfer button on human seats (DM only)
+- [x] "+ Seat" / "- Seat" buttons for DM
+
+**Lobby improvements (remaining):**
+- [ ] Campaign settings panel (name, description, invite link management)
+
+**Campaign management (remaining):**
+- [ ] Campaign settings: rename, change description, manage invites
+- [ ] Kick/invite players from campaign party
+- [ ] Campaign archive (soft delete, can restore)
 
 ### Round 28: Character + Game Board + DM Tools Polish
 **Goal:** Enhance the character creation experience, improve the battle map, and give DMs better tools.

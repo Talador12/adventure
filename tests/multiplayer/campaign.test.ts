@@ -492,3 +492,245 @@ describe('Phase 8 — session robustness', () => {
     await Promise.all([closeAndWait(ws), closeAndWait(ws2)]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Seat model — 0-to-N player configuration
+// ---------------------------------------------------------------------------
+describe('Seat model — party configuration', () => {
+  it('welcome includes seats array with default 4 empty seats', async () => {
+    const room = 'seats-default-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'Host' });
+    const welcome = await waitForMessage(ws, 'welcome');
+
+    expect(welcome.seats).toBeTruthy();
+    const seats = welcome.seats as Array<Record<string, unknown>>;
+    expect(seats.length).toBe(4);
+
+    // First player auto-claims seat-0
+    const mySeat = seats.find((s) => s.playerId === (welcome.playerId as string));
+    expect(mySeat).toBeTruthy();
+    expect(mySeat!.type).toBe('human');
+    expect(mySeat!.username).toBe('Host');
+    expect(mySeat!.ready).toBe(false);
+
+    // Remaining seats are empty
+    const emptySeats = seats.filter((s) => s.type === 'empty');
+    expect(emptySeats.length).toBe(3);
+
+    expect(welcome.seatId).toBe(mySeat!.id);
+    expect(welcome.dmSeatType).toBe('human');
+
+    await closeAndWait(ws);
+  });
+
+  it('second player claims next empty seat', async () => {
+    const room = 'seats-claim-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'Player1' });
+    const w1 = await waitForMessage(ws1, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Player2' });
+    const w2 = await waitForMessage(ws2, 'welcome');
+
+    const seats = w2.seats as Array<Record<string, unknown>>;
+    const humanSeats = seats.filter((s) => s.type === 'human');
+    expect(humanSeats.length).toBe(2);
+    expect(humanSeats[0].username).toBe('Player1');
+    expect(humanSeats[1].username).toBe('Player2');
+
+    // Each player got a different seat
+    expect(w1.seatId).not.toBe(w2.seatId);
+
+    await Promise.all([closeAndWait(ws1), closeAndWait(ws2)]);
+  });
+
+  it('ready toggle works and broadcasts seats_updated', async () => {
+    const room = 'seats-ready-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'ReadyPlayer' });
+    await waitForMessage(ws1, 'welcome');
+
+    // Toggle ready on
+    const updatedPromise = waitForMessage(ws1, 'seats_updated');
+    send(ws1, { type: 'ready' });
+    const updated = await updatedPromise;
+
+    const seats = updated.seats as Array<Record<string, unknown>>;
+    const mySeat = seats.find((s) => s.type === 'human');
+    expect(mySeat!.ready).toBe(true);
+
+    // Toggle ready off
+    const updated2Promise = waitForMessage(ws1, 'seats_updated');
+    send(ws1, { type: 'ready' });
+    const updated2 = await updated2Promise;
+    const seats2 = updated2.seats as Array<Record<string, unknown>>;
+    const mySeat2 = seats2.find((s) => s.type === 'human');
+    expect(mySeat2!.ready).toBe(false);
+
+    await closeAndWait(ws1);
+  });
+
+  it('select_character updates seat and broadcasts', async () => {
+    const room = 'seats-char-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'CharPicker' });
+    await waitForMessage(ws, 'welcome');
+
+    const updatedPromise = waitForMessage(ws, 'seats_updated');
+    send(ws, { type: 'select_character', characterId: 'char-123', characterName: 'Aric the Brave' });
+    const updated = await updatedPromise;
+
+    const seats = updated.seats as Array<Record<string, unknown>>;
+    const mySeat = seats.find((s) => s.type === 'human');
+    expect(mySeat!.characterId).toBe('char-123');
+    expect(mySeat!.characterName).toBe('Aric the Brave');
+
+    await closeAndWait(ws);
+  });
+
+  it('DM can set seat type to AI and back to empty', async () => {
+    const room = 'seats-ai-toggle-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'TheDM' });
+    const welcome = await waitForMessage(ws, 'welcome');
+
+    // DM sets seat-1 to AI
+    const seats0 = welcome.seats as Array<Record<string, unknown>>;
+    const emptySeat = seats0.find((s) => s.type === 'empty');
+    expect(emptySeat).toBeTruthy();
+
+    const updatedPromise = waitForMessage(ws, 'seats_updated');
+    send(ws, { type: 'set_seat_type', seatId: emptySeat!.id, seatType: 'ai' });
+    const updated = await updatedPromise;
+
+    const seats1 = updated.seats as Array<Record<string, unknown>>;
+    const aiSeat = seats1.find((s) => s.id === emptySeat!.id);
+    expect(aiSeat!.type).toBe('ai');
+    expect(aiSeat!.username).toBe('AI Player');
+    expect(aiSeat!.ready).toBe(true); // AI seats auto-ready
+
+    // Set it back to empty
+    const updated2Promise = waitForMessage(ws, 'seats_updated');
+    send(ws, { type: 'set_seat_type', seatId: emptySeat!.id, seatType: 'empty' });
+    const updated2 = await updated2Promise;
+
+    const seats2 = updated2.seats as Array<Record<string, unknown>>;
+    const emptied = seats2.find((s) => s.id === emptySeat!.id);
+    expect(emptied!.type).toBe('empty');
+    expect(emptied!.ready).toBe(false);
+
+    await closeAndWait(ws);
+  });
+
+  it('non-DM cannot change seat types', async () => {
+    const room = 'seats-auth-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'DM' });
+    await waitForMessage(ws1, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Player' });
+    const w2 = await waitForMessage(ws2, 'welcome');
+    const seats = w2.seats as Array<Record<string, unknown>>;
+    const emptySeat = seats.find((s) => s.type === 'empty');
+
+    // Non-DM tries to set seat type — should get error
+    const errPromise = waitForMessage(ws2, 'error');
+    send(ws2, { type: 'set_seat_type', seatId: emptySeat!.id, seatType: 'ai' });
+    const err = await errPromise;
+    expect(err.message).toContain('Only the DM');
+
+    await Promise.all([closeAndWait(ws1), closeAndWait(ws2)]);
+  });
+
+  it('DM can add and remove seats', async () => {
+    const room = 'seats-add-remove-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'DM' });
+    const welcome = await waitForMessage(ws, 'welcome');
+    const initialCount = (welcome.seats as unknown[]).length;
+    expect(initialCount).toBe(4);
+
+    // Add a seat
+    const addedPromise = waitForMessage(ws, 'seats_updated');
+    send(ws, { type: 'add_seat' });
+    const added = await addedPromise;
+    expect((added.seats as unknown[]).length).toBe(5);
+
+    // Remove the last seat
+    const removedPromise = waitForMessage(ws, 'seats_updated');
+    send(ws, { type: 'remove_seat' });
+    const removed = await removedPromise;
+    expect((removed.seats as unknown[]).length).toBe(4);
+
+    await closeAndWait(ws);
+  });
+
+  it('seat reverts to empty when player disconnects', async () => {
+    const room = 'seats-disconnect-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'Stayer' });
+    await waitForMessage(ws1, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Leaver' });
+    await waitForMessage(ws2, 'welcome');
+
+    // Leaver disconnects — their seat should revert to empty
+    const leftPromise = waitForMessage(ws1, 'player_left');
+    await closeAndWait(ws2);
+    const left = await leftPromise;
+
+    const seats = left.seats as Array<Record<string, unknown>>;
+    const humanSeats = seats.filter((s) => s.type === 'human');
+    const emptySeats = seats.filter((s) => s.type === 'empty');
+    expect(humanSeats.length).toBe(1); // only Stayer
+    expect(emptySeats.length).toBe(3); // Leaver's seat reverted
+
+    await closeAndWait(ws1);
+  });
+
+  it('DM can toggle DM seat between human and AI', async () => {
+    const room = 'seats-dm-type-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'TheDM' });
+    const welcome = await waitForMessage(ws, 'welcome');
+    expect(welcome.dmSeatType).toBe('human');
+
+    // Switch to AI DM
+    const changedPromise = waitForMessage(ws, 'dm_type_changed');
+    send(ws, { type: 'set_dm_type', dmSeatType: 'ai' });
+    const changed = await changedPromise;
+    expect(changed.dmSeatType).toBe('ai');
+    expect(changed.dmPlayerId).toBeNull();
+
+    // Switch back to human DM
+    const changed2Promise = waitForMessage(ws, 'dm_type_changed');
+    send(ws, { type: 'set_dm_type', dmSeatType: 'human' });
+    const changed2 = await changed2Promise;
+    expect(changed2.dmSeatType).toBe('human');
+    expect(changed2.dmPlayerId).toBeTruthy();
+
+    await closeAndWait(ws);
+  });
+
+  it('REST /players endpoint includes seats and dmSeatType', async () => {
+    const room = 'seats-rest-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'RestTest' });
+    await waitForMessage(ws, 'welcome');
+
+    const id = env.LOBBY.idFromName(room);
+    const stub = env.LOBBY.get(id);
+    const resp = await stub.fetch('http://fake/players');
+    const data = (await resp.json()) as { players: unknown[]; seats: unknown[]; dmSeatType: string };
+
+    expect(data.seats.length).toBe(4);
+    expect(data.dmSeatType).toBe('human');
+    expect(data.players.length).toBe(1);
+
+    await closeAndWait(ws);
+  });
+});

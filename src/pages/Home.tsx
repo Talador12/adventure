@@ -228,32 +228,55 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Hero section */}
+      <section className="w-full bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border-b border-slate-800">
+        <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col items-center text-center gap-6">
+          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+            Your table. <span className="text-[#F38020]">Your rules.</span>
+          </h2>
+          <p className="text-lg text-slate-400 max-w-2xl">
+            D&D 5e virtual tabletop — play with friends or solo, all from your browser.
+            Create characters, roll dice, explore dungeons, and battle monsters in real-time.
+            AI tools available when you want them, invisible when you don't.
+          </p>
+
+          {/* Quick actions */}
+          <div className="flex flex-wrap gap-4 mt-2 justify-center">
+            <div className="flex gap-2 items-center">
+              <input type="text" placeholder="Room code or invite link" className="px-4 py-2.5 w-56 border-2 border-slate-700 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
+              <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow transition-all active:scale-[0.98]" onClick={handleJoinCampaign}>
+                Join
+              </Button>
+            </div>
+            <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
+              New Campaign
+            </Button>
+            <Button variant="default" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-5 rounded-lg shadow transition-all active:scale-[0.98]" onClick={() => navigate('/characters/new')}>
+              Create Character
+            </Button>
+          </div>
+
+          {/* Feature highlights */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 text-center w-full max-w-3xl">
+            {[
+              { icon: '🎲', label: 'Live Dice', desc: 'Server-rolled, synced' },
+              { icon: '🗺️', label: 'Battle Maps', desc: 'Grid, tokens, fog' },
+              { icon: '👥', label: 'Play Your Way', desc: '1 to N players, any mix' },
+              { icon: '⚔️', label: 'D&D 5e Combat', desc: 'Initiative, spells, loot' },
+            ].map((f) => (
+              <div key={f.label} className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                <div className="text-2xl mb-1">{f.icon}</div>
+                <div className="text-sm font-semibold text-white">{f.label}</div>
+                <div className="text-[11px] text-slate-500">{f.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Main content */}
       <main className="flex-1 p-6 flex flex-col items-center gap-8 max-w-6xl mx-auto w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-          {/* Join a Campaign */}
-          <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">
-            <CardContent className="p-8 space-y-4">
-              <h2 className="text-xl font-semibold text-[#F38020]">Join a Campaign</h2>
-              <div className="space-y-4">
-                <input type="text" placeholder="Room code or invite link" className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
-                <Button variant="default" className="w-full bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 rounded-md shadow hover:shadow-md transition-all active:scale-[0.98]" onClick={handleJoinCampaign}>
-                  Join Campaign
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Start a New Campaign */}
-          <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">
-            <CardContent className="p-8 space-y-4">
-              <h2 className="text-xl font-semibold text-[#F38020]">Start a New Campaign</h2>
-              <Button variant="default" className="w-full bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 rounded-md shadow hover:shadow-md transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
-                Create Campaign
-              </Button>
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
           {/* Saved Campaigns */}
           {campaigns.length > 0 && (
             <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">

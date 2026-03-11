@@ -1,4 +1,4 @@
-# Adventure — AI-Enhanced Virtual Tabletop
+# Adventure — D&D 5e Virtual Tabletop
 
 ## Rules
 - Update `claude.md` with every commit.
