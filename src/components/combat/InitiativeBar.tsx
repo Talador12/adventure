@@ -1,11 +1,50 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame, type Unit, CONDITION_EFFECTS } from '../../contexts/GameContext';
+
+const DEFAULT_TURN_TIME = 60; // seconds per turn
 
 interface InitiativeBarProps {
   entries: Unit[];
+  turnTimerEnabled?: boolean;
+  turnTimeSeconds?: number;
+  onTimerExpire?: () => void; // called when turn timer hits 0
 }
 
-export default function InitiativeBar({ entries }: InitiativeBarProps) {
+export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTimeSeconds = DEFAULT_TURN_TIME, onTimerExpire }: InitiativeBarProps) {
   const { players, characters, selectedUnitId, setSelectedUnitId } = useGame();
+
+  // Turn timer
+  const [timeLeft, setTimeLeft] = useState(turnTimeSeconds);
+  const currentTurnId = entries.find((e) => e.isCurrentTurn)?.id ?? null;
+  const prevTurnId = useRef(currentTurnId);
+
+  // Reset timer on turn change
+  useEffect(() => {
+    if (currentTurnId !== prevTurnId.current) {
+      prevTurnId.current = currentTurnId;
+      setTimeLeft(turnTimeSeconds);
+    }
+  }, [currentTurnId, turnTimeSeconds]);
+
+  // Countdown tick
+  useEffect(() => {
+    if (!turnTimerEnabled || !currentTurnId) return;
+    if (timeLeft <= 0) {
+      onTimerExpire?.();
+      return;
+    }
+    const timer = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [turnTimerEnabled, currentTurnId, timeLeft, onTimerExpire]);
+
+  const formatTime = useCallback((s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}:${sec.toString().padStart(2, '0')}` : `${sec}s`;
+  }, []);
+
+  const timerPct = turnTimeSeconds > 0 ? (timeLeft / turnTimeSeconds) * 100 : 100;
+  const timerColor = timeLeft <= 10 ? 'text-red-400' : timeLeft <= 20 ? 'text-yellow-400' : 'text-green-400';
 
   // Look up the player controlling each unit
   const getPlayerLabel = (unit: Unit) => {
@@ -43,8 +82,17 @@ export default function InitiativeBar({ entries }: InitiativeBarProps) {
               } ${entry.type === 'enemy' && !isSelected && !entry.isCurrentTurn ? 'border-red-900/50' : ''}`}
               style={entry.isCurrentTurn && !isSelected ? { boxShadow: '0 0 20px rgba(234,179,8,0.2)' } : undefined}
             >
-              {/* Turn indicator */}
-              {entry.isCurrentTurn && <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">TURN</div>}
+              {/* Turn indicator + timer */}
+              {entry.isCurrentTurn && (
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                  <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">TURN</div>
+                  {turnTimerEnabled && (
+                    <div className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-slate-900/90 border border-slate-700 ${timerColor} ${timeLeft <= 10 ? 'animate-pulse' : ''}`}>
+                      {formatTime(timeLeft)}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Selected for dice indicator */}
               {isSelected && !entry.isCurrentTurn && <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#F38020] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">DICE</div>}
@@ -72,6 +120,16 @@ export default function InitiativeBar({ entries }: InitiativeBarProps) {
               <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all duration-500 ease-out ${isLow ? 'bg-red-500' : isMid ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${hpPct}%` }} />
               </div>
+
+              {/* Turn timer bar (only on current turn unit) */}
+              {entry.isCurrentTurn && turnTimerEnabled && (
+                <div className="w-full h-1 bg-slate-700/50 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ease-linear ${timeLeft <= 10 ? 'bg-red-500' : timeLeft <= 20 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                    style={{ width: `${timerPct}%` }}
+                  />
+                </div>
+              )}
 
               {/* HP text */}
               <span className={`text-[10px] font-mono ${isLow ? 'text-red-400' : isMid ? 'text-yellow-400' : 'text-slate-500'}`}>

@@ -94,6 +94,16 @@ interface StatRoll {
   animating: boolean;
 }
 
+// Wizard step definitions
+const WIZARD_STEPS = [
+  { id: 'identity', label: 'Identity', desc: 'Name, Race & Class' },
+  { id: 'appearance', label: 'Appearance', desc: 'Portrait & Features' },
+  { id: 'background', label: 'Background', desc: 'History & Alignment' },
+  { id: 'personality', label: 'Personality', desc: 'Traits & Backstory' },
+  { id: 'stats', label: 'Stats', desc: 'Ability Scores' },
+  { id: 'review', label: 'Review', desc: 'Finalize & Create' },
+] as const;
+
 export default function CharacterCreate() {
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id: string }>();
@@ -101,6 +111,9 @@ export default function CharacterCreate() {
   const { addCharacter, updateCharacter, characters, currentPlayer } = useGame();
   const editingCharacter = editId ? characters.find((c) => c.id === editId) : null;
   const isEditMode = Boolean(editingCharacter);
+
+  // Wizard step state (0-5)
+  const [step, setStep] = useState(0);
 
   const [name, setName] = useState('');
   const [race, setRace] = useState<Race>('Human');
@@ -171,7 +184,16 @@ export default function CharacterCreate() {
     }
     setStatRolls(rolls);
     setEditLoaded(true);
+    // In edit mode, jump to Review step since all fields are pre-filled
+    setStep(WIZARD_STEPS.length - 1);
   }, [editingCharacter, editLoaded]);
+
+  // Wizard navigation helpers
+  const canGoNext = step < WIZARD_STEPS.length - 1;
+  const canGoBack = step > 0;
+  const goNext = useCallback(() => setStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1)), []);
+  const goBack = useCallback(() => setStep((s) => Math.max(s - 1, 0)), []);
+  const goToStep = useCallback((s: number) => setStep(Math.max(0, Math.min(s, WIZARD_STEPS.length - 1))), []);
 
   // Stat swap state — click one stat, then another, to swap their rolled values
   const [swapSource, setSwapSource] = useState<StatName | null>(null);
@@ -498,6 +520,8 @@ export default function CharacterCreate() {
 
       const concept = data.concept ? ` — ${data.concept}` : '';
       toast(`Character generated!${concept}`, 'success');
+      // Jump to Review step after AI fills everything
+      setStep(WIZARD_STEPS.length - 1);
     } catch {
       toast('Character generation failed — server may be unavailable', 'warning');
     } finally {
@@ -704,15 +728,77 @@ export default function CharacterCreate() {
           </Button>
           <h1 className="text-lg font-bold text-[#F38020]">{isEditMode ? `Edit ${editingCharacter?.name || 'Character'}` : 'Create Character'}</h1>
         </div>
+        {/* AI Build shortcut in header */}
+        <button
+          onClick={generateFullCharacter}
+          disabled={generatingCharacter}
+          className="text-xs bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5"
+        >
+          {generatingCharacter ? (
+            <>
+              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Building...
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 3v4m0 14v-4m9-5h-4M7 12H3m15.364-6.364l-2.828 2.828M9.464 14.536l-2.828 2.828m12.728 0l-2.828-2.828M9.464 9.464L6.636 6.636"/></svg>
+              AI Build
+            </>
+          )}
+        </button>
       </header>
 
-      <main className="relative max-w-4xl mx-auto p-6 space-y-8">
-        {/* AI Build — generate entire character */}
+      {/* Wizard stepper nav */}
+      <nav className="relative bg-[#1e160e]/70 border-b border-amber-900/20 px-6 py-2">
+        <div className="max-w-5xl mx-auto flex items-center gap-1">
+          {WIZARD_STEPS.map((ws, i) => {
+            const isActive = step === i;
+            const isDone = step > i;
+            return (
+              <button
+                key={ws.id}
+                onClick={() => goToStep(i)}
+                className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${
+                  isActive
+                    ? 'bg-[#F38020]/15 border border-[#F38020]/40'
+                    : isDone
+                      ? 'bg-green-900/10 border border-green-500/20 hover:bg-green-900/20'
+                      : 'border border-transparent hover:bg-amber-900/10'
+                }`}
+              >
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                  isActive
+                    ? 'bg-[#F38020] text-white'
+                    : isDone
+                      ? 'bg-green-600 text-white'
+                      : 'bg-amber-900/30 text-amber-700/50'
+                }`}>
+                  {isDone ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : i + 1}
+                </div>
+                <div className="min-w-0">
+                  <div className={`text-xs font-semibold truncate ${isActive ? 'text-[#F38020]' : isDone ? 'text-green-400/80' : 'text-amber-600/50'}`}>{ws.label}</div>
+                  <div className={`text-[10px] truncate ${isActive ? 'text-amber-400/60' : 'text-amber-800/40'}`}>{ws.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      <div className="relative max-w-5xl mx-auto flex gap-6 p-6">
+        {/* Main content — wizard step */}
+        <main className="flex-1 min-w-0 space-y-6">
+
+        {/* Step 0: Identity — Name, Race, Class */}
+        {step === 0 && (<div className="space-y-8">
+        {/* AI Build banner */}
         <div className="rounded-xl border border-purple-500/20 bg-purple-950/20 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-purple-300">AI Build Character</h2>
-              <p className="text-[11px] text-purple-400/50 mt-0.5">Generate an entire character with creative race/class combos, stats, personality, and backstory</p>
+              <p className="text-[11px] text-purple-400/50 mt-0.5">Generate an entire character — fills all steps and jumps to Review</p>
             </div>
             <button
               onClick={generateFullCharacter}
@@ -732,7 +818,6 @@ export default function CharacterCreate() {
               )}
             </button>
           </div>
-          {/* Campaign context — optional, collapses */}
           <details className="group">
             <summary className="text-[11px] text-purple-400/40 cursor-pointer hover:text-purple-400/60 transition-colors select-none">
               Campaign context (optional — helps AI tailor the character)
@@ -740,7 +825,7 @@ export default function CharacterCreate() {
             <textarea
               value={campaignContext}
               onChange={(e) => setCampaignContext(e.target.value)}
-              placeholder="e.g. Curse of Strahd gothic horror campaign, party needs a healer, set in a dark Victorian-inspired land of Barovia..."
+              placeholder="e.g. Curse of Strahd gothic horror campaign, party needs a healer..."
               rows={2}
               className="w-full mt-2 bg-purple-950/30 border border-purple-500/15 rounded-lg px-3 py-2 text-xs text-purple-200/70 placeholder:text-purple-400/25 focus:border-purple-500/30 focus:outline-none resize-y"
             />
@@ -893,7 +978,10 @@ export default function CharacterCreate() {
           </div>
         </div>
 
-        {/* Appearance Customization — BG3-style with live portrait preview */}
+        </div>)}
+
+        {/* Step 1: Appearance */}
+        {step === 1 && (<div className="space-y-6">
         <div className="space-y-3">
           <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Appearance</label>
           <div className="grid grid-cols-[200px_1fr] gap-6">
@@ -1218,7 +1306,10 @@ export default function CharacterCreate() {
           </div>
         </div>
 
-        {/* Background + Alignment */}
+        </div>)}
+
+        {/* Step 2: Background + Alignment */}
+        {step === 2 && (<div className="space-y-6">
         <div className="grid grid-cols-2 gap-6">
           {/* Background */}
           <div className="space-y-2">
@@ -1278,7 +1369,10 @@ export default function CharacterCreate() {
           </div>
         </div>
 
-        {/* Personality & Backstory — full width, proper sizing */}
+        </div>)}
+
+        {/* Step 3: Personality & Backstory */}
+        {step === 3 && (<div className="space-y-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Personality & Backstory</label>
@@ -1387,7 +1481,10 @@ export default function CharacterCreate() {
           </div>
         </div>
 
-        {/* Stats — 4d6 drop lowest */}
+        </div>)}
+
+        {/* Step 4: Stats — 4d6 drop lowest */}
+        {step === 4 && (<div className="space-y-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1493,7 +1590,10 @@ export default function CharacterCreate() {
           )}
         </div>
 
-        {/* Preview + Create */}
+        </div>)}
+
+        {/* Step 5: Review + Create */}
+        {step === 5 && (<div className="space-y-6">
         <div className="rounded-xl border border-amber-900/30 bg-[#1e160e]/90 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Character Preview</h2>
@@ -1538,7 +1638,142 @@ export default function CharacterCreate() {
             Export Character Sheet
           </button>
         </div>
-      </main>
+
+          {/* Review: full character summary */}
+          {finalStats && (
+            <div className="rounded-xl border border-amber-900/20 bg-[#2a1f14]/50 p-4 space-y-3">
+              <h3 className="text-xs font-semibold text-amber-500/70 uppercase tracking-wider">Character Details</h3>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-amber-600/50">Race:</span> <span className="text-amber-100">{race}</span>
+                </div>
+                <div>
+                  <span className="text-amber-600/50">Class:</span> <span className="text-amber-100">{charClass}</span>
+                </div>
+                <div>
+                  <span className="text-amber-600/50">Background:</span> <span className="text-amber-100">{background}</span>
+                </div>
+                <div>
+                  <span className="text-amber-600/50">Alignment:</span> <span className="text-amber-100">{alignment}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-6 gap-2 mt-2">
+                {STAT_NAMES.map((s) => (
+                  <div key={s} className="text-center rounded-lg bg-[#1e160e] p-2 border border-amber-900/20">
+                    <div className="text-[10px] text-amber-600/50 font-bold uppercase">{s}</div>
+                    <div className="text-lg font-bold text-amber-100">{finalStats[s]}</div>
+                    <div className={`text-xs font-semibold ${finalStats[s] >= 14 ? 'text-green-400' : finalStats[s] <= 8 ? 'text-red-400' : 'text-amber-400/60'}`}>
+                      {statModifier(finalStats[s])}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {personalityTraits && (
+                <div>
+                  <div className="text-[10px] text-amber-600/50 font-medium">Personality</div>
+                  <div className="text-xs text-amber-200/70 mt-0.5 line-clamp-2">{personalityTraits}</div>
+                </div>
+              )}
+              {backstory && (
+                <div>
+                  <div className="text-[10px] text-amber-600/50 font-medium">Backstory</div>
+                  <div className="text-xs text-amber-200/70 mt-0.5 line-clamp-3">{backstory}</div>
+                </div>
+              )}
+              {/* Quick edit links */}
+              <div className="flex gap-2 flex-wrap pt-1">
+                {[
+                  { label: 'Edit Identity', step: 0 },
+                  { label: 'Edit Appearance', step: 1 },
+                  { label: 'Edit Background', step: 2 },
+                  { label: 'Edit Personality', step: 3 },
+                  { label: 'Edit Stats', step: 4 },
+                ].map((link) => (
+                  <button
+                    key={link.step}
+                    onClick={() => goToStep(link.step)}
+                    className="text-[10px] text-amber-600/50 hover:text-[#F38020] transition-colors underline underline-offset-2"
+                  >
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {!finalStats && (
+            <div className="rounded-xl border border-amber-900/20 bg-amber-950/20 p-4 text-center">
+              <p className="text-sm text-amber-400/60">Roll your ability scores first!</p>
+              <button onClick={() => goToStep(4)} className="text-xs text-[#F38020] hover:underline mt-1">Go to Stats</button>
+            </div>
+          )}
+          {!name.trim() && (
+            <div className="rounded-xl border border-amber-900/20 bg-amber-950/20 p-4 text-center">
+              <p className="text-sm text-amber-400/60">Your character needs a name!</p>
+              <button onClick={() => goToStep(0)} className="text-xs text-[#F38020] hover:underline mt-1">Go to Identity</button>
+            </div>
+          )}
+        </div>)}
+
+        {/* Wizard navigation — Back / Next / Create */}
+        <div className="flex items-center justify-between pt-4 border-t border-amber-900/20">
+          {canGoBack ? (
+            <button
+              onClick={goBack}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-amber-900/30 text-amber-400/70 hover:text-amber-300 hover:bg-amber-900/10 text-sm font-medium transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg>
+              Back
+            </button>
+          ) : <div />}
+
+          {canGoNext ? (
+            <button
+              onClick={goNext}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#F38020] hover:bg-[#e06a10] text-white text-sm font-semibold transition-all shadow-lg shadow-[#F38020]/20"
+            >
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M5 12h14m0 0l-7-7m7 7l-7 7"/></svg>
+            </button>
+          ) : null}
+        </div>
+
+        </main>
+
+        {/* Live Preview Sidebar — visible from step 1 onward */}
+        {step > 0 && (
+          <aside className="w-64 shrink-0 sticky top-6 self-start space-y-4">
+            <div className="rounded-xl border border-amber-900/30 bg-[#1e160e]/90 p-4 space-y-3">
+              <img
+                src={portrait || illustratedPortrait}
+                alt="Portrait"
+                className="w-full aspect-[4/3] rounded-lg object-cover bg-[#2a1f14] border border-amber-900/30"
+                onError={(e) => { (e.target as HTMLImageElement).src = defaultPortraitSvg; }}
+              />
+              <div className="text-center">
+                <div className="text-lg font-bold text-amber-100 truncate">{name || 'Unnamed Hero'}</div>
+                <div className="text-xs text-amber-400/60">{race} {charClass}</div>
+              </div>
+              {finalStats && (
+                <>
+                  <div className="flex justify-center gap-3 text-xs">
+                    <span className="text-red-400">HP {CLASS_HIT_DIE[charClass] + Math.floor((finalStats.CON - 10) / 2)}</span>
+                    <span className="text-sky-400">AC {10 + Math.floor((finalStats.DEX - 10) / 2)}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {STAT_NAMES.map((s) => (
+                      <div key={s} className="text-center rounded bg-[#2a1f14] p-1">
+                        <div className="text-[9px] text-amber-700/50 uppercase">{s}</div>
+                        <div className="text-sm font-bold text-amber-100">{finalStats[s]}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="text-[10px] text-amber-800/40 text-center">{background} &middot; {alignment}</div>
+            </div>
+          </aside>
+        )}
+      </div>
 
       {/* Export Modal */}
       {showExportModal && (

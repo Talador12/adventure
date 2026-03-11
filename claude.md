@@ -32,9 +32,11 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 **Branding:** Never lead with "AI-powered." Lead with the experience: play D&D your way, with friends or solo, in your browser. AI is mentioned as an optional feature, not the identity.
 
+**In one line:** "AI DM, players, and tools available when you want them, invisible when you don't."
+
 ## Current Focus
 
-Round 27: Landing Page + Lobby + Player-First Rebranding — Hero section rewrite (remove AI-forward messaging), lobby seat model (human/AI/empty per seat), ready-up system, campaign management polish. Previous: Round 26 D1 Database + Chat Persistence + Google OAuth. Phase 8 session robustness (Round 25), Multiplayer sync (Phases 1-8).
+Round 28 (in progress): Character wizard, BattleMap minimap + AoE overlays, turn timer, DM sidebar — all built, needs AoE wiring into Game.tsx and commit. Round 29 (roadmap): Lobby hub with role-based flows (DM/Player/Spectator entry points), public/private lobbies, campaign browser, spectator mode. Previous: Round 27 (complete) landing page + lobby + seat model + campaign settings + kick. Round 26 (complete) D1 + chat persistence + Google OAuth.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -616,71 +618,161 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Game.tsx reads `adventure:seatCharId:{room}` on mount, auto-selects character
 - [x] Falls back to campaign-saved characterId if no seat assignment
 
-**Campaign management (remaining):**
+**Campaign management (remaining — deferred to Round 29/30):**
 - [ ] Campaign archive (soft delete, can restore)
+- [ ] Public/private visibility toggle (Round 29)
+- [ ] Campaign browser API (Round 29)
 
 ### Round 28: Character + Game Board + DM Tools Polish
 **Goal:** Enhance the character creation experience, improve the battle map, and give DMs better tools.
 
 **Character creation:**
-- Step-by-step wizard flow (race -> class -> stats -> appearance -> personality -> review)
-- Preview panel showing character card as you build
-- AI-generated backstory hooks based on party composition
-- Import characters from D&D Beyond / Foundry VTT JSON
+- [x] Step-by-step wizard flow (Identity → Appearance → Background → Personality → Stats → Review)
+- [x] Preview sidebar showing character portrait, stats, background as you build
+- [x] AI Build shortcut (fills all fields, jumps to Review)
+- [x] Edit mode jumps directly to Review (all fields pre-filled)
+- [ ] AI-generated backstory hooks based on party composition
+- [ ] Import characters from D&D Beyond / Foundry VTT JSON
 
 **Game board:**
-- Minimap / overview mode for large maps
-- Fog of war per-player (each player sees only from their token)
-- Animated token movement (smooth pathfinding)
-- Spell effect overlays (AoE templates, line effects)
-- Initiative tracker with turn timer countdown
-- Quick-reference tooltips on hover (enemy stats, condition descriptions)
+- [x] Minimap with click-to-pan (4px/cell, terrain + token dots + viewport rect, toggle button)
+- [x] AoE spell templates in BattleMap (circle/cone/line/cube, hover preview, click confirm, ESC cancel)
+- [x] Initiative tracker with turn timer countdown (60s default, green→yellow→red, pulse at 10s)
+- [ ] **Wire AoE into Game.tsx** — BattleMap side is ready, Game.tsx needs `activeAoE` state + spell casting flow integration
+- [ ] Animated token movement (smooth pathfinding interpolation)
+- [ ] Quick-reference hover tooltips (enemy stats, condition descriptions)
+- [ ] Fog of war per-player (each player sees only from their token — currently global fog)
 
 **DM tools:**
-- DM sidebar panel (collapsible) with encounter management, NPC roster, notes
-- Quick NPC generator (name + personality + stat block)
-- Music/ambiance selector (ambient sound URLs or Web Audio API)
-- Session notes (persistent, DM-only, auto-saved)
-- Encounter difficulty calculator based on party level
+- [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes
+- [x] Encounter tab: difficulty selector (4 levels), spawn button, active unit list with HP, scene name
+- [x] NPC tab: NPC Talk mode toggle, name/role inputs, dialogue history
+- [x] Notes tab: auto-saved textarea (localStorage per room), character counter
+- [ ] Quick NPC generator (name + personality + stat block via AI)
+- [ ] Music/ambiance selector (ambient sound URLs or Web Audio API)
+- [ ] Encounter difficulty calculator (party level vs CR budget, D&D 5e XP thresholds)
 
-### Round 29: Full Persistence + Local Cache
+### Round 29: Lobby Hub + Role-Based Flows + Campaign Discovery
+**Goal:** Restructure the home page and lobby into a role-aware hub. DMs create campaigns, players find games, spectators browse. Public/private lobbies. Everything accessible from within a live lobby session.
+
+**Home page role-based entry points:**
+- **"New Campaign" (DM button)** — create campaign, name it, set public/private, configure seats (human/AI/empty), pick or create a character, land in lobby as DM
+- **"Create Character" (Player button)** — character creation flow, then optionally find a campaign to join
+- **"Find a Campaign" (Player section)** — browse public lobbies looking for a game to join as a player. Filter by open seats, party size, campaign name. Private lobbies listed with lock icon, require password to join
+- **"Find a Party" (DM section)** — DM has a campaign, looking for players to fill seats. Post your campaign as public or share invite link for private. See who's looking for games
+- **"Spectate" (Spectator section)** — browse active public lobbies to watch. Join as spectator (see everything, chat, no game actions). No account required for spectating (stretch goal)
+
+**Public vs Private lobbies:**
+- DM sets visibility on campaign creation (default: private)
+- **Public**: listed in campaign browser, anyone can join an open seat
+- **Private**: listed in browser with lock icon, requires password to join. Password is a simple string set by the DM (e.g. "keith123") — not security theater, just a basic gate to keep randoms out
+- Campaign browser shows: campaign name, DM name, player count, open seats, public/private badge
+- Private lobby invite link still works (bypasses password for direct invites)
+- DM can toggle public/private at any time from lobby settings
+
+**Lobby as a persistent hub (while connected to a session):**
+- Create new characters or edit existing ones (without leaving the lobby)
+- View/preview the game board and campaign state
+- Browse for more players — DM can post "looking for players" from within lobby
+- Configure AI fills — set any empty seat to AI (DM/player/spectator) from the seat roster
+- Character sheet viewer — inspect party members' characters
+- All of this happens in-lobby, no page navigation, no WebSocket disconnect
+
+**Spectator mode:**
+- New role type: `spectator` (alongside DM and player)
+- Spectators can see everything (map, chat, initiative, rolls) but can't take game actions
+- Spectators can chat (distinguished in chat with spectator badge)
+- AI spectator seat — an AI that watches the game and comments in chat (color commentary, reactions, rules clarifications). Fun novelty, fully optional
+- Spectator count shown in lobby header
+- Works with any campaign config including full-AI campaigns (watch AI play D&D)
+
+**Data model changes:**
+- `campaigns` table/KV: add `visibility: 'public' | 'private'`, `password?: string`, `status: 'lobby' | 'active' | 'finished'`
+- `seats`: add `spectator` type alongside `human | ai | empty`
+- New API: `GET /api/campaigns/browse` — list public campaigns with open seats
+- New API: `POST /api/campaigns/:roomId/join` — join with optional password
+- Lobby DO: handle spectator joins (no seat claim, read-only game events, chat allowed)
+
+**Philosophy note:** "AI DM, players, and tools available when you want them, invisible when you don't."
+
+### Round 30: Full Persistence + Local Cache
 **Goal:** Everything persists. Browser cache for instant loads, server for cross-device sync.
 
 **Browser cache strategy:**
-- Service Worker for offline-first static assets
-- IndexedDB for local cache of characters, campaign state, chat
-- Optimistic UI: show cached data immediately, sync in background
-- Cache invalidation via ETags or Last-Modified headers
+- [ ] Service Worker for offline-first static assets
+- [ ] IndexedDB for local cache of characters, campaign state, chat
+- [ ] Optimistic UI: show cached data immediately, sync in background
+- [ ] Cache invalidation via ETags or Last-Modified headers
 
 **Server persistence coverage:**
-| Feature | Currently | Target |
-|---------|-----------|--------|
-| Chat messages | WebSocket only (lost on refresh) | D1 + WebSocket (load from D1 on mount) |
-| Dice roll history | WebSocket only | D1 (roll_log table, queryable) |
-| Doodle pad strokes | DO memory (lost on eviction) | D1 archival + R2 snapshots |
-| Combat state | KV auto-save (2s debounce) | KV auto-save + D1 audit log |
-| Character sheets | KV per user | KV + IndexedDB local cache |
-| Portraits | KV (encrypted) | KV + browser cache (Cache API) |
-| Map images | R2 | R2 + browser cache (24h) |
-| Campaign metadata | KV list | D1 (already migrated in Round 26) |
-| User preferences | localStorage | D1 + localStorage (sync) |
+| Feature | Currently | Target | Status |
+|---------|-----------|--------|--------|
+| Chat messages | D1 + WebSocket (load on mount) | Done | DONE |
+| Dice roll history | D1 (persisted on roll) | Done | DONE |
+| DM narration | D1 (persisted after AI response) | Done | DONE |
+| NPC dialogue | D1 (persisted with NPC metadata) | Done | DONE |
+| Player actions | D1 (persisted at send) | Done | DONE |
+| Doodle pad strokes | DO memory (lost on eviction) | D1 archival + R2 snapshots | TODO |
+| Combat state | KV auto-save (2s debounce) | KV auto-save + D1 audit log | PARTIAL |
+| Character sheets | KV per user | KV + IndexedDB local cache | TODO |
+| Portraits | KV (encrypted) | KV + browser cache (Cache API) | TODO |
+| Map images | R2 (24h cache header) | R2 + browser Cache API | PARTIAL |
+| Campaign metadata | KV list + D1 schema exists | Migrate KV → D1 | TODO |
+| User preferences | localStorage | D1 + localStorage (sync) | TODO |
 
 ### Future rounds
+
+**Infrastructure:**
 - Lobby DO hibernation — migrate to `this.state.acceptWebSocket()` for cost reduction
+- Undo/redo system for DM actions (command pattern, rewindable state stack)
+- Mobile responsive layout (touch-friendly battle map, collapsible panels, swipe navigation)
+- Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
+- Rate limiting + abuse protection on public lobbies (CAPTCHA on join, report system)
+
+**Gameplay depth:**
+- Multiclass support (pick a second class on level-up, shared spell slots, multi-ability tracking)
+- Reaction system expansion (Shield spell, Counterspell, Hellish Rebuke — trigger on enemy turn)
+- Inventory trading between players (drag item to another player's portrait)
+- Dice macros / saved roll shortcuts ("Fireball" macro = 8d6, custom named rolls)
+- Initiative reroll / manual initiative editing (DM can drag-reorder initiative)
+- Weather/lighting effects on battle map (rain, fog, darkness radius, torch light)
+- Random encounter tables (configurable per biome/dungeon level, auto-roll between rests)
+- Downtime activities (crafting, research, carousing — between sessions)
+- Familiar/companion tokens (separate initiative, controllable by player)
+
+**Content & Import/Export:**
+- Import characters from D&D Beyond / Foundry VTT / Roll20 JSON
+- Export formats — Pathfinder 2e, Forbidden Lands, Savage Worlds stat blocks
+- VTT map import (Foundry VTT, Roll20 map files → BattleMap background)
+- Homebrew content editor (custom races, classes, spells, items, monsters)
+- Pre-built adventure modules (starter dungeons, one-shots with scripted encounters)
+- Monster manual browser (search/filter by CR, type, environment)
+
+**Visual & Audio:**
+- Animated token movement (smooth pathfinding interpolation along BFS path)
+- Particle effects for spells and combat (fire, ice, lightning, healing shimmer)
+- Map layers (background, terrain, tokens, effects as separate composited layers)
+- Sound FX expansion — mood music, ambient loops, remaining spell effects, death saves, conditions
+- Music/ambiance system (Web Audio API ambient generator or URL-based audio player, DM controls)
+- Portrait gallery — save/browse generated portraits, remix styles, share with party
+- Dynamic lighting (token-attached light sources, darkvision radius, dim light zones)
+
+**Social & Community:**
+- Session recap / AI session summary (AI reads combat log + chat, generates "last time on...")
+- Campaign timeline / session log (auto-generated, browseable history of sessions)
 - Journal/notes system — shared campaign notes, session summaries, DM-only notes
-- Sound FX expansion — mood music, remaining spell effects, enemy abilities, traps, death saves, conditions
-- Export formats — Pathfinder 2e, Forbidden Lands, Savage Worlds
-- Portrait gallery — save/browse generated portraits, remix styles
+- Discord integration for voice/chat (Discord Activity SDK or webhook notifications)
+- Drop-in/drop-out guest characters (no account needed, temporary session token)
+- Player ratings / reputation (after public games, optional, non-toxic)
+- Campaign templates (share your campaign setup for others to clone)
+
+**AI enhancements:**
+- AI player turn logic (AI seats actually play — move, attack, cast, use abilities)
+- AI DM encounter pacing (dynamically adjusts difficulty mid-combat if TPK imminent)
+- AI rules lawyer (passive — watches play, flags rule violations, suggests corrections in chat)
+- AI session prep (DM describes next session goals, AI generates maps + encounters + NPCs)
+- AI voice narration (TTS for DM narration text, distinct voices per NPC)
 - Dynamic difficulty — auto-scale encounters based on party size/level, death count
-- Particle effects for spells and combat
-- Discord integration for voice/chat
-- Modular engine for homebrew rules and mods
-- Accessibility "Low-FX" mode
-- Drop-in/drop-out guest characters
-- Web-based campaign browser (public game listings)
-- Mobile responsive layout improvements
-- Undo/redo system for DM actions
-- Fog of war multiplayer sync (each player sees only from their token's perspective)
 
 ## Known Technical Debt
 

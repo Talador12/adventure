@@ -104,6 +104,13 @@ export default function Game() {
   const [showSheet, setShowSheet] = useState(false);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
 
+  // DM sidebar + session notes (auto-saved to localStorage)
+  const [showDMSidebar, setShowDMSidebar] = useState(false);
+  const [dmNotes, setDmNotes] = useState(() => {
+    try { return localStorage.getItem(`adventure:dmnotes:${room}`) || ''; } catch { return ''; }
+  });
+  const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
+
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpTab, setLevelUpTab] = useState<'asi' | 'feat'>('asi');
@@ -136,6 +143,11 @@ export default function Game() {
       /* full */
     }
   }, [quests, questStorageKey]);
+
+  // DM notes auto-save
+  useEffect(() => {
+    try { localStorage.setItem(`adventure:dmnotes:${room}`, dmNotes); } catch { /* full */ }
+  }, [dmNotes, room]);
 
   // NPC dialogue state
   const [npcMode, setNpcMode] = useState(false);
@@ -1542,6 +1554,17 @@ export default function Game() {
               </svg>
             )}
           </button>
+          {canUseDMTools && (
+            <button
+              onClick={() => setShowDMSidebar((s) => !s)}
+              className={`text-xs px-2 py-1 rounded transition-colors font-medium ${
+                showDMSidebar ? 'bg-[#F38020]/15 text-[#F38020]' : 'text-slate-500 hover:text-slate-300'
+              }`}
+              title="Toggle DM tools sidebar"
+            >
+              DM Tools
+            </button>
+          )}
           <button onClick={() => setShowCharacterPicker(true)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
             Switch Character
           </button>
@@ -1556,6 +1579,141 @@ export default function Game() {
 
       {/* Main area */}
       <div className="flex-1 flex overflow-hidden">
+        {/* DM Sidebar — collapsible left panel */}
+        {canUseDMTools && showDMSidebar && (
+          <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
+              <span className="text-xs font-semibold text-[#F38020] uppercase tracking-wider">DM Tools</span>
+              <button onClick={() => setShowDMSidebar(false)} className="text-slate-500 hover:text-slate-300 text-xs">&times;</button>
+            </div>
+            {/* Sidebar tabs */}
+            <div className="flex border-b border-slate-800">
+              {(['encounter', 'npc', 'notes'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setDmSidebarTab(tab)}
+                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                    dmSidebarTab === tab ? 'text-[#F38020] border-b-2 border-[#F38020] bg-[#F38020]/5' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {/* Encounter tab */}
+              {dmSidebarTab === 'encounter' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Difficulty</label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {(['easy', 'medium', 'hard', 'deadly'] as const).map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setEncounterDifficulty(d)}
+                          className={`px-2 py-1.5 rounded-lg text-xs font-medium capitalize transition-all border ${
+                            encounterDifficulty === d
+                              ? 'border-[#F38020] bg-[#F38020]/15 text-[#F38020]'
+                              : 'border-slate-700 text-slate-400 hover:border-slate-600'
+                          }`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleGenerateEncounter}
+                    disabled={encounterLoading}
+                    className="w-full py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    {encounterLoading ? (
+                      <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />Spawning...</>
+                    ) : 'Spawn Encounter'}
+                  </button>
+                  {units.length > 0 && inCombat && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-500 font-semibold uppercase">Active Units</label>
+                      {units.filter(u => u.hp > 0).map((u) => (
+                        <div key={u.id} className={`flex items-center gap-2 p-1.5 rounded text-xs ${u.type === 'enemy' ? 'bg-red-950/30' : 'bg-slate-800/50'}`}>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${u.type === 'enemy' ? 'bg-red-900/60 text-red-300' : 'bg-amber-500/20 text-amber-400'}`}>{u.name.charAt(0)}</div>
+                          <span className="flex-1 truncate text-slate-300">{u.name}</span>
+                          <span className={`font-mono text-[10px] ${u.hp <= (u.maxHp || u.hp) * 0.25 ? 'text-red-400' : 'text-slate-500'}`}>{u.hp}/{u.maxHp || u.hp}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Scene</label>
+                    <input
+                      value={sceneName}
+                      onChange={(e) => setSceneName(e.target.value)}
+                      placeholder="Scene name..."
+                      className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder:text-slate-600 focus:border-[#F38020] focus:outline-none"
+                    />
+                  </div>
+                </>
+              )}
+              {/* NPC tab */}
+              {dmSidebarTab === 'npc' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-slate-500 font-semibold uppercase">NPC Talk Mode</label>
+                    <button
+                      onClick={() => { setNpcMode(!npcMode); if (npcMode) { setNpcDialogueHistory([]); } }}
+                      className={`w-full py-2 rounded-lg text-xs font-semibold transition-all ${
+                        npcMode ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-purple-500/50'
+                      }`}
+                    >
+                      {npcMode ? 'End Conversation' : 'Start NPC Talk'}
+                    </button>
+                  </div>
+                  {npcMode && (
+                    <div className="space-y-2">
+                      <input
+                        value={npcName}
+                        onChange={(e) => setNpcName(e.target.value)}
+                        placeholder="NPC Name..."
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-purple-500/30 rounded-lg text-xs text-purple-200 placeholder:text-purple-400/30 focus:border-purple-500 focus:outline-none"
+                      />
+                      <input
+                        value={npcRole}
+                        onChange={(e) => setNpcRole(e.target.value)}
+                        placeholder="Role (e.g. innkeeper, merchant)..."
+                        className="w-full px-2 py-1.5 bg-slate-800 border border-purple-500/30 rounded-lg text-xs text-purple-200 placeholder:text-purple-400/30 focus:border-purple-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                  {npcDialogueHistory.length > 0 && (
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      <label className="text-[10px] text-slate-500 font-semibold uppercase">Dialogue History</label>
+                      {npcDialogueHistory.map((line, i) => (
+                        <div key={i} className="text-[10px] text-purple-300/70 bg-purple-950/20 rounded px-2 py-1">{line}</div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {/* Notes tab */}
+              {dmSidebarTab === 'notes' && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Session Notes</label>
+                    <p className="text-[9px] text-slate-600">Auto-saved to your browser. Only you can see these.</p>
+                  </div>
+                  <textarea
+                    value={dmNotes}
+                    onChange={(e) => setDmNotes(e.target.value)}
+                    placeholder="Track NPCs, plot hooks, secrets, loot tables, reminders..."
+                    className="w-full flex-1 min-h-[300px] bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:border-[#F38020] focus:outline-none resize-y leading-relaxed"
+                  />
+                  <div className="text-[9px] text-slate-600 text-right">{dmNotes.length} chars</div>
+                </>
+              )}
+            </div>
+          </aside>
+        )}
+
         {/* Left: initiative bar + game board / DM area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Initiative bar — only show when units exist */}

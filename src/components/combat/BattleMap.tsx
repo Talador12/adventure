@@ -1,7 +1,7 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
 import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
-import { useGame, type Unit, type ConditionType, CONDITION_EFFECTS, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
+import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 
 const CELL_SIZE = 48;
@@ -9,6 +9,7 @@ const TOKEN_RADIUS = 18;
 const VISION_RADIUS = 6; // cells (30ft in D&D)
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.0;
+const MINIMAP_CELL = 4; // pixels per cell on minimap
 
 const TERRAIN_COLORS: Record<TerrainType, { fill: string; stroke?: string; pattern?: string }> = {
   void:      { fill: '#0f172a' },
@@ -344,8 +345,87 @@ function tokenBorderColor(unit: Unit, isSelected: boolean, isCurrentTurn: boolea
   return 'rgba(255,255,255,0.15)';
 }
 
+// --- AoE cell computation ---
+function computeAoECells(
+  shape: AoEShape,
+  origin: { col: number; row: number },
+  radiusCells: number,
+  casterPos?: { col: number; row: number },
+  cols = DEFAULT_COLS,
+  rows = DEFAULT_ROWS,
+): { col: number; row: number }[] {
+  const cells: { col: number; row: number }[] = [];
+
+  if (shape === 'circle') {
+    // Circle: all cells within Chebyshev distance <= radius
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const dx = c - origin.col;
+        const dy = r - origin.row;
+        if (Math.sqrt(dx * dx + dy * dy) <= radiusCells + 0.5) {
+          cells.push({ col: c, row: r });
+        }
+      }
+    }
+  } else if (shape === 'cube') {
+    // Cube: square centered on origin
+    for (let r = origin.row - radiusCells; r <= origin.row + radiusCells; r++) {
+      for (let c = origin.col - radiusCells; c <= origin.col + radiusCells; c++) {
+        if (r >= 0 && r < rows && c >= 0 && c < cols) {
+          cells.push({ col: c, row: r });
+        }
+      }
+    }
+  } else if (shape === 'cone') {
+    // Cone from caster toward origin, 53-degree spread (D&D cone)
+    if (!casterPos) return cells;
+    const angle = Math.atan2(origin.row - casterPos.row, origin.col - casterPos.col);
+    const halfAngle = Math.PI / 3; // ~60 degrees (D&D 5e cone)
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const dx = c - casterPos.col;
+        const dy = r - casterPos.row;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > radiusCells + 0.5 || dist < 0.5) continue;
+        const cellAngle = Math.atan2(dy, dx);
+        let angleDiff = Math.abs(cellAngle - angle);
+        if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+        if (angleDiff <= halfAngle) {
+          cells.push({ col: c, row: r });
+        }
+      }
+    }
+  } else if (shape === 'line') {
+    // Line from caster toward origin, 1 cell wide
+    if (!casterPos) return cells;
+    const dx = origin.col - casterPos.col;
+    const dy = origin.row - casterPos.row;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.5) return cells;
+    const nx = dx / len;
+    const ny = dy / len;
+    for (let i = 1; i <= radiusCells; i++) {
+      const c = Math.round(casterPos.col + nx * i);
+      const r = Math.round(casterPos.row + ny * i);
+      if (r >= 0 && r < rows && c >= 0 && c < cols) {
+        cells.push({ col: c, row: r });
+      }
+    }
+  }
+  return cells;
+}
+
 // --- Component ---
 type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm';
+
+// AoE overlay state for spell targeting
+export interface ActiveAoE {
+  shape: AoEShape;
+  radiusCells: number;
+  color: string;
+  origin: { col: number; row: number }; // center/origin cell of the AoE
+  casterPos?: { col: number; row: number }; // for cone direction
+}
 
 interface BattleMapProps {
   onTokenMove?: (unitId: string, col: number, row: number) => void;
@@ -353,10 +433,14 @@ interface BattleMapProps {
   onOpportunityAttack?: (attackerName: string, targetName: string, damage: number, hit: boolean) => void;
   onMapImageChange?: (url: string | null) => void;
   canUseDMTools?: boolean; // false hides DM mode toggle, terrain paint, traps, map upload
+  activeAoE?: ActiveAoE | null; // AoE spell placement overlay
+  onAoEConfirm?: (affectedCells: { col: number; row: number }[]) => void; // called when player clicks to confirm AoE
+  onAoECancel?: () => void;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
     terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions, mapImageUrl } = useGame();
@@ -389,6 +473,25 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [dmTool, setDmTool] = useState<DmTool>('select');
   const [dmMode, setDmMode] = useState(false); // DM sees through fog
   const [painting, setPainting] = useState(false); // mouse held for terrain painting
+
+  // Minimap
+  const [showMinimap, setShowMinimap] = useState(true);
+
+  // AoE hover tracking
+  const [aoeHoverCell, setAoeHoverCell] = useState<{ col: number; row: number } | null>(null);
+
+  // ESC key to cancel AoE placement
+  useEffect(() => {
+    if (!activeAoE) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onAoECancel) {
+        onAoECancel();
+        setAoeHoverCell(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeAoE, onAoECancel]);
 
   // Zoom + pan
   const [zoom, setZoom] = useState(1);
@@ -603,6 +706,26 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       });
     }
 
+    // AoE spell template overlay
+    if (activeAoE && aoeHoverCell) {
+      const aoeCells = computeAoECells(
+        activeAoE.shape,
+        aoeHoverCell,
+        activeAoE.radiusCells,
+        activeAoE.casterPos,
+        gridCols,
+        gridRows,
+      );
+      aoeCells.forEach(({ col: ac, row: ar }) => {
+        ctx.fillStyle = activeAoE.color;
+        ctx.fillRect(ac * CELL_SIZE, ar * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        // Bright border
+        ctx.strokeStyle = activeAoE.color.replace(/[\d.]+\)$/, '0.6)');
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(ac * CELL_SIZE + 1, ar * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+      });
+    }
+
     // Grid lines
     ctx.strokeStyle = 'rgba(148,163,184,0.07)';
     ctx.lineWidth = 1;
@@ -716,9 +839,96 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell]);
 
-  useEffect(() => { draw(); }, [draw]);
+  // --- Minimap drawing ---
+  const drawMinimap = useCallback(() => {
+    const canvas = minimapRef.current;
+    if (!canvas || !showMinimap) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const mw = gridCols * MINIMAP_CELL;
+    const mh = gridRows * MINIMAP_CELL;
+    canvas.width = mw;
+    canvas.height = mh;
+
+    // Background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, mw, mh);
+
+    // Terrain cells
+    for (let r = 0; r < gridRows; r++) {
+      for (let c = 0; c < gridCols; c++) {
+        const isVis = visibility[r]?.[c] ?? false;
+        const wasExpl = explored[r]?.[c] ?? false;
+        if (!dmMode && !isVis && !wasExpl) continue;
+
+        const cell = terrain[r][c];
+        if (cell === 'void') continue;
+        const colors = TERRAIN_COLORS[cell];
+        ctx.fillStyle = colors.fill;
+        if (!dmMode && !isVis && wasExpl) {
+          ctx.globalAlpha = 0.4;
+        }
+        ctx.fillRect(c * MINIMAP_CELL, r * MINIMAP_CELL, MINIMAP_CELL, MINIMAP_CELL);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Tokens as colored dots
+    const tokenColor = (u: Unit) => u.type === 'enemy' ? '#ef4444' : u.type === 'npc' ? '#3b82f6' : '#f59e0b';
+    positions.forEach((pos) => {
+      const unit = units.find((u) => u.id === pos.unitId);
+      if (!unit || unit.hp <= 0) return;
+      const isVis = visibility[pos.row]?.[pos.col] ?? dmMode;
+      if (!isVis && !dmMode) return;
+      ctx.fillStyle = tokenColor(unit);
+      ctx.beginPath();
+      ctx.arc(
+        pos.col * MINIMAP_CELL + MINIMAP_CELL / 2,
+        pos.row * MINIMAP_CELL + MINIMAP_CELL / 2,
+        Math.max(2, MINIMAP_CELL * 0.6), 0, Math.PI * 2,
+      );
+      ctx.fill();
+    });
+
+    // Viewport rectangle
+    const container = containerRef.current;
+    if (container && zoom > 0) {
+      const viewW = container.clientWidth / zoom;
+      const viewH = container.clientHeight / zoom;
+      const viewX = -panOffset.x / zoom;
+      const viewY = -panOffset.y / zoom;
+      // Convert from canvas pixels to minimap pixels
+      const scale = MINIMAP_CELL / CELL_SIZE;
+      ctx.strokeStyle = '#F38020';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(viewX * scale, viewY * scale, viewW * scale, viewH * scale);
+    }
+  }, [terrain, positions, units, visibility, explored, dmMode, gridCols, gridRows, zoom, panOffset, showMinimap]);
+
+  useEffect(() => { draw(); drawMinimap(); }, [draw, drawMinimap]);
+
+  // Minimap click-to-pan: click a point on minimap to center the main canvas there
+  const handleMinimapClick = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
+    const canvas = minimapRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    // Convert minimap coords to world coords
+    const worldX = (mx / MINIMAP_CELL) * CELL_SIZE;
+    const worldY = (my / MINIMAP_CELL) * CELL_SIZE;
+    // Center viewport on that world position
+    const viewW = container.clientWidth / zoom;
+    const viewH = container.clientHeight / zoom;
+    setPanOffset({
+      x: -(worldX - viewW / 2) * zoom,
+      y: -(worldY - viewH / 2) * zoom,
+    });
+  }, [zoom]);
 
   // --- Mouse coordinate helpers ---
   const canvasCoords = useCallback((e: ReactMouseEvent<HTMLCanvasElement> | { clientX: number; clientY: number }): { x: number; y: number; col: number; row: number } => {
@@ -790,6 +1000,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
+    // AoE placement confirmation
+    if (activeAoE && aoeHoverCell && onAoEConfirm) {
+      const affectedCells = computeAoECells(
+        activeAoE.shape,
+        aoeHoverCell,
+        activeAoE.radiusCells,
+        activeAoE.casterPos,
+        gridCols,
+        gridRows,
+      );
+      onAoEConfirm(affectedCells);
+      setAoeHoverCell(null);
+      return;
+    }
+
     const { col, row, x, y } = canvasCoords(e);
 
     // DM terrain painting
@@ -836,9 +1061,14 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     } else {
       setSelectedUnitId(null);
     }
-  }, [canvasCoords, tokenAt, dmTool, paintTerrain, units, selectedUnitId, setSelectedUnitId, panOffset, inCombat, terrain, gridRows, gridCols, positions]);
+  }, [canvasCoords, tokenAt, dmTool, paintTerrain, units, selectedUnitId, setSelectedUnitId, panOffset, inCombat, terrain, gridRows, gridCols, positions, activeAoE, aoeHoverCell, onAoEConfirm]);
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
+    // Track AoE hover cell when placing a spell
+    if (activeAoE) {
+      const { col, row } = canvasCoords(e);
+      setAoeHoverCell((prev) => (prev?.col === col && prev?.row === row) ? prev : { col, row });
+    }
     if (panning) {
       setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
       return;
@@ -851,7 +1081,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (!dragging) return;
     const { x, y } = canvasCoords(e);
     setDragPos({ x: x - dragging.offsetX, y: y - dragging.offsetY });
-  }, [panning, panStart, painting, dmTool, canvasCoords, paintTerrain, dragging]);
+  }, [panning, panStart, painting, dmTool, canvasCoords, paintTerrain, dragging, activeAoE]);
 
   const handleMouseUp = useCallback(() => {
     if (panning) { setPanning(false); return; }
@@ -1152,13 +1382,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
           Reset
         </button>
 
+        <button
+          onClick={() => setShowMinimap((s) => !s)}
+          className={`text-[10px] px-1.5 py-1 rounded font-medium transition-colors ${showMinimap ? 'bg-[#F38020]/20 text-[#F38020]' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}
+          title={showMinimap ? 'Hide minimap' : 'Show minimap'}
+        >
+          Map
+        </button>
+
         <span className="text-[9px] text-slate-600">{gridCols}x{gridRows} ({gridCols * 5}x{gridRows * 5}ft)</span>
       </div>
 
       {/* Canvas with zoom/pan */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden bg-slate-950/50"
+        className="flex-1 overflow-hidden bg-slate-950/50 relative"
         onWheel={handleWheel}
         style={{ cursor: dmTool !== 'select' ? 'crosshair' : panning ? 'grabbing' : 'default' }}
       >
@@ -1180,7 +1418,30 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             onContextMenu={(e) => e.preventDefault()}
           />
         </div>
+
+        {/* Minimap overlay — bottom-right corner */}
+        {showMinimap && (
+          <div className="absolute bottom-2 right-2 rounded border border-slate-700/60 bg-slate-950/80 shadow-lg overflow-hidden" style={{ width: gridCols * MINIMAP_CELL + 2, height: gridRows * MINIMAP_CELL + 2 }}>
+            <canvas
+              ref={minimapRef}
+              className="cursor-crosshair"
+              onClick={handleMinimapClick}
+              style={{ width: gridCols * MINIMAP_CELL, height: gridRows * MINIMAP_CELL }}
+            />
+          </div>
+        )}
       </div>
+
+      {/* AoE placement indicator */}
+      {activeAoE && (
+        <div className="flex items-center gap-2 px-3 py-1.5 border-t border-purple-900/40 bg-purple-950/30 shrink-0">
+          <span className="text-[9px] text-purple-400 font-semibold uppercase">AoE Targeting</span>
+          <span className="text-[10px] text-purple-300 flex-1">Click on the map to place the spell area. {activeAoE.shape === 'cone' ? 'Cone emanates from your position.' : ''}</span>
+          {onAoECancel && (
+            <button onClick={onAoECancel} className="text-[9px] text-purple-500/50 hover:text-purple-400 font-medium">ESC to cancel</button>
+          )}
+        </div>
+      )}
 
       {/* Trap messages */}
       {trapMessages.length > 0 && (
