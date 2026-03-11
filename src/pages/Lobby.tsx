@@ -44,6 +44,12 @@ export default function Lobby() {
   const roomLink = `${window.location.origin}/lobby/${room}`;
   const wantsSpectate = searchParams.get('spectate') === '1';
 
+  // Password gate — check if lobby requires a password before connecting
+  const [passwordRequired, setPasswordRequired] = useState<boolean | null>(null); // null = loading
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordVerified, setPasswordVerified] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
   const [players, setPlayers] = useState<LobbyPlayer[]>([]);
   const [seats, setSeats] = useState<Seat[]>([]);
   const [spectators, setSpectators] = useState<{ id: string; username: string; avatar?: string }[]>([]);
@@ -55,12 +61,46 @@ export default function Lobby() {
   const [isDM, setIsDM] = useState(false);
   const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
   const [campaignVisibility, setCampaignVisibility] = useState<'public' | 'private'>('private');
+  const [campaignPassword, setCampaignPassword] = useState('');
   const diceRef = useRef<DiceRollerHandle>(null);
   const doodleRef = useRef<DoodlePadHandle>(null);
   const [drawingPlayer, setDrawingPlayer] = useState<string | null>(null);
   const drawingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
+
+  // Check if lobby requires a password on mount
+  useEffect(() => {
+    fetch(`/api/lobby/${encodeURIComponent(room)}/info`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ hasPassword?: boolean }>) : null))
+      .then((data) => {
+        const needs = !!(data?.hasPassword);
+        setPasswordRequired(needs);
+        if (!needs) setPasswordVerified(true); // no password = auto-verified
+      })
+      .catch(() => {
+        setPasswordRequired(false);
+        setPasswordVerified(true);
+      });
+  }, [room]);
+
+  const handlePasswordSubmit = () => {
+    setPasswordError('');
+    fetch(`/api/lobby/${encodeURIComponent(room)}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: passwordInput }),
+    })
+      .then((r) => r.json() as Promise<{ ok?: boolean; error?: string }>)
+      .then((data) => {
+        if (data.ok) {
+          setPasswordVerified(true);
+        } else {
+          setPasswordError(data.error || 'Wrong password');
+        }
+      })
+      .catch(() => setPasswordError('Could not verify — try again'));
+  };
 
   // Load persistent chat history from D1 on mount
   useEffect(() => {
@@ -264,6 +304,7 @@ export default function Lobby() {
     avatar: currentPlayer.avatar,
     spectate: wantsSpectate,
     onMessage: handleWsMessage,
+    enabled: passwordVerified, // don't connect until password is verified (or not needed)
   });
 
   const handleChatSend = useCallback(
@@ -409,6 +450,44 @@ export default function Lobby() {
   const mySeat = mySeatId ? seats.find((s) => s.id === mySeatId) : undefined;
   const myReady = mySeat?.ready ?? false;
 
+  // Password gate — show prompt before lobby loads
+  if (passwordRequired === null) {
+    // Still checking
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-950 text-slate-100">
+        <div className="w-5 h-5 border-2 border-[#F38020] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (passwordRequired && !passwordVerified) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-slate-100 gap-4">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold text-white">This lobby is password-protected</h2>
+          <p className="text-sm text-slate-400">Enter the password to join.</p>
+        </div>
+        <div className="flex gap-2 items-center">
+          <input
+            type="password"
+            placeholder="Password"
+            className="px-4 py-2.5 w-56 border-2 border-slate-700 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] outline-none text-sm"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+            autoFocus
+          />
+          <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 px-5 rounded-lg shadow" onClick={handlePasswordSubmit}>
+            Join
+          </Button>
+        </div>
+        {passwordError && <p className="text-sm text-red-400">{passwordError}</p>}
+        <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-500 hover:text-slate-300 text-sm mt-2">
+          &larr; Back to Home
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
       {/* Header */}
@@ -536,6 +615,31 @@ export default function Lobby() {
                 }`}
               >
                 {campaignVisibility === 'public' ? 'Public — listed in browser' : 'Private — invite only'}
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-[10px] text-slate-500 uppercase tracking-wider">Password</label>
+              <input
+                type="password"
+                className="w-40 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-sm text-slate-200 outline-none focus:border-[#F38020]/50 placeholder-slate-500"
+                value={campaignPassword}
+                onChange={(e) => setCampaignPassword(e.target.value)}
+                placeholder="No password"
+                maxLength={64}
+              />
+              <button
+                onClick={() => {
+                  fetch(`/api/campaigns/${encodeURIComponent(room)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ password: campaignPassword }),
+                  }).catch(() => {});
+                  toast(campaignPassword ? 'Password set' : 'Password removed', 'info');
+                }}
+                className="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 font-semibold transition-all"
+              >
+                {campaignPassword ? 'Set' : 'Remove'}
               </button>
             </div>
           </div>

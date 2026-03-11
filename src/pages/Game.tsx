@@ -223,8 +223,11 @@ export default function Game() {
 
   // Fire-and-forget server campaign sync — debounced to avoid spamming on rapid updates
   const campaignSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   useEffect(() => {
     if (!adventureStarted) return; // don't save empty campaigns
+    setSaveStatus('saving');
     clearTimeout(campaignSaveTimer.current);
     campaignSaveTimer.current = setTimeout(() => {
       fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`, {
@@ -245,7 +248,14 @@ export default function Game() {
           mapImageUrl,
           quests,
         }),
-      }).catch(() => {}); // server unavailable — localStorage is fallback
+      }).then(() => {
+        setSaveStatus('saved');
+        setLastSavedAt(Date.now());
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      }).catch(() => {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      });
     }, 2000); // debounce 2s
     return () => clearTimeout(campaignSaveTimer.current);
   }, [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted, inCombat, units, combatRound, terrain, mapPositions, mapImageUrl, quests]);
@@ -1937,6 +1947,21 @@ export default function Game() {
                     isSpectating
                       ? <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-sky-900/40 text-sky-400 border border-sky-700/40">Spectating</span>
                       : <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${canUseDMTools ? 'bg-amber-900/40 text-amber-400 border border-amber-700/40' : 'bg-slate-800 text-slate-500 border border-slate-700/40'}`}>{canUseDMTools ? 'DM' : 'Player'}</span>
+                  )}
+
+                  {/* Save indicator */}
+                  {adventureStarted && (
+                    <span className={`text-[9px] px-2 py-1 rounded-md border ${
+                      saveStatus === 'saving' ? 'text-yellow-400 border-yellow-700/40 bg-yellow-900/20' :
+                      saveStatus === 'saved' ? 'text-emerald-400 border-emerald-700/40 bg-emerald-900/20' :
+                      saveStatus === 'error' ? 'text-red-400 border-red-700/40 bg-red-900/20' :
+                      'text-slate-500 border-slate-700/40 bg-slate-800/30'
+                    }`}>
+                      {saveStatus === 'saving' ? 'Saving...' :
+                       saveStatus === 'saved' ? 'Saved' :
+                       saveStatus === 'error' ? 'Save failed' :
+                       lastSavedAt ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                    </span>
                   )}
 
                   {/* DM-only controls: encounter, NPC, scene */}

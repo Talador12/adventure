@@ -1069,7 +1069,7 @@ app.post('/api/party/:roomId/join', async (c) => {
 
   const roomId = c.req.param('roomId');
   try {
-    const body = await c.req.json<{ characterId?: string; role?: string }>().catch(() => ({}));
+    const body = await c.req.json<{ characterId?: string; role?: string }>().catch((): { characterId?: string; role?: string } => ({}));
 
     // Upsert — if already a member, update character/role
     await c.env.DB.prepare(
@@ -1171,6 +1171,13 @@ app.put('/api/campaign/:roomId', async (c) => {
   }
 });
 
+// --- Lobby password helpers ---
+async function hashPassword(password: string): Promise<string> {
+  const data = new TextEncoder().encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 // --- Public campaign index helpers ---
 // The public index is a single KV key `campaigns:public` containing an array of
 // { roomId, name, description, dmName, visibility, playerCount, updatedAt }.
@@ -1268,7 +1275,24 @@ app.patch('/api/campaigns/:roomId', async (c) => {
       const vis = String(body.visibility);
       if (vis === 'public' || vis === 'private') campaign.visibility = vis;
     }
+    // Password: set, change, or remove (empty string removes)
+    if (body.password !== undefined) {
+      const pw = String(body.password);
+      if (pw.length > 0) {
+        campaign.passwordHash = await hashPassword(pw);
+        campaign.hasPassword = true;
+      } else {
+        delete campaign.passwordHash;
+        campaign.hasPassword = false;
+      }
+    }
     await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+    // Also store password hash in a room-level key so non-owners can verify
+    if (campaign.hasPassword && campaign.passwordHash) {
+      await c.env.CAMPAIGNS.put(`room:${roomId}:password`, campaign.passwordHash as string);
+    } else {
+      await c.env.CAMPAIGNS.delete(`room:${roomId}:password`);
+    }
     // Sync public campaign index
     await syncPublicIndex(c.env.CAMPAIGNS, roomId, campaign);
     return c.json({ ok: true, campaign });
@@ -1294,6 +1318,35 @@ app.delete('/api/campaigns/:roomId', async (c) => {
     return c.json({ ok: true });
   } catch {
     return c.json({ error: 'Failed to delete campaign' }, 500);
+  }
+});
+
+// GET /api/lobby/:roomId/info — check if lobby has password (no auth required)
+app.get('/api/lobby/:roomId/info', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ hasPassword: false });
+  try {
+    const roomId = c.req.param('roomId');
+    const pwHash = (await c.env.CAMPAIGNS.get(`room:${roomId}:password`)) as string | null;
+    return c.json({ hasPassword: !!pwHash });
+  } catch {
+    return c.json({ hasPassword: false });
+  }
+});
+
+// POST /api/lobby/:roomId/verify — verify lobby password (no auth required)
+app.post('/api/lobby/:roomId/verify', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const roomId = c.req.param('roomId');
+    const body = await c.req.json<{ password?: string }>();
+    const password = body.password || '';
+    const storedHash = (await c.env.CAMPAIGNS.get(`room:${roomId}:password`)) as string | null;
+    if (!storedHash) return c.json({ ok: true }); // no password set
+    const inputHash = await hashPassword(password);
+    if (inputHash === storedHash) return c.json({ ok: true });
+    return c.json({ ok: false, error: 'Wrong password' }, 403);
+  } catch {
+    return c.json({ error: 'Verification failed' }, 500);
   }
 });
 
