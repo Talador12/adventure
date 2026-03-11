@@ -238,8 +238,8 @@ export default function Home() {
             Your table. <span className="text-[#F38020]">Your rules.</span>
           </h2>
           <p className="text-lg text-slate-400 max-w-2xl">
-            D&D 5e in your browser — finally, a virtual tabletop that doesn't need a manual. Play with friends,
-            go solo, fill seats with AI, or just spectate. Every seat at the table is yours to fill however you want.
+            D&D 5e in your browser. Play with friends, go solo, or just spectate.
+            Every seat at the table is yours to fill however you want.
           </p>
 
           {/* Quick actions */}
