@@ -31,6 +31,31 @@ interface Env {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// AI timeout wrapper — prevents hanging AI calls from blocking indefinitely.
+// Workers AI can occasionally hang; this races the call against a timeout.
+const AI_TIMEOUT_MS = 25_000; // 25s — under the Worker 30s limit on free plan
+const AI_IMAGE_TIMEOUT_MS = 45_000; // 45s — image gen is slower
+
+class AiTimeoutError extends Error {
+  constructor(model: string, ms: number) {
+    super(`AI call to ${model} timed out after ${ms / 1000}s`);
+    this.name = 'AiTimeoutError';
+  }
+}
+
+async function aiRunWithTimeout(
+  ai: Ai,
+  model: string,
+  input: Record<string, unknown>,
+  timeoutMs?: number,
+): Promise<ArrayBuffer | ReadableStream | Record<string, unknown>> {
+  const ms = timeoutMs ?? (model.includes('FLUX') ? AI_IMAGE_TIMEOUT_MS : AI_TIMEOUT_MS);
+  return Promise.race([
+    ai.run(model, input),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new AiTimeoutError(model, ms)), ms)),
+  ]);
+}
+
 // Discord OAuth
 const DISCORD_AUTH_URI = 'https://discord.com/api/oauth2/authorize';
 const DISCORD_TOKEN_URI = 'https://discord.com/api/oauth2/token';
@@ -205,7 +230,7 @@ app.post('/api/portrait/generate', async (c) => {
   const prompt = buildPortraitPrompt(body);
 
   try {
-    const result = await c.env.AI.run('@cf/black-forest-labs/FLUX-1-schnell', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', {
       prompt,
       num_steps: 4,
     });
@@ -300,7 +325,7 @@ app.post('/api/name/translate', async (c) => {
   const prompt = `Translate the meaning of the English word or name "${name}" into ${lang.name}. If the name is a compound word or has a clear meaning (like "Lumberjack" = one who cuts wood), translate that meaning. If it's a proper name with no obvious meaning, transliterate it into ${lang.name} phonetics. Return ONLY the single translated/transliterated word or short phrase in ${lang.name} script or romanized form — nothing else, no quotes, no explanation.`;
 
   try {
-    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         { role: 'system', content: 'You are a precise translator. Return ONLY the translated word. No quotes, no punctuation, no explanation. Just the word.' },
         { role: 'user', content: prompt },
@@ -358,7 +383,7 @@ JSON format:
 {"name":"...","race":"...","class":"...","background":"...","alignment":"...","statPriority":["CHA","DEX","CON","WIS","INT","STR"],"personalityTraits":"...","ideals":"...","bonds":"...","flaws":"...","backstory":"...","appearance":{"hairStyle":"...","scar":"...","faceMarking":"...","facialHair":"..."},"concept":"one sentence pitch for this character"}`;
 
   try {
-    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         { role: 'system', content: 'You are a wildly creative D&D character designer. You hate boring builds. Every character should make a DM grin. Return ONLY valid JSON. No markdown. No explanation. No code fences.' },
         { role: 'user', content: prompt },
@@ -409,7 +434,7 @@ JSON only, no markdown fences:
 {"personalityTraits":"...","ideals":"...","bonds":"...","flaws":"..."}`;
 
   try {
-    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         { role: 'system', content: 'You write vivid, specific D&D character personality details. Return ONLY valid JSON. No markdown. No explanation.' },
         { role: 'user', content: prompt },
@@ -484,7 +509,7 @@ CRITICAL RULES — follow these or the backstory is garbage:
 - Do NOT start with "Born in" or "From a young age" or any cliche opening.`;
 
   try {
-    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         { role: 'system', content: 'You are a fantasy author who writes compelling, original character backstories. You hate cliches. You love specificity, emotional hooks, and stories that make a DM excited to build on them. Never be generic. Every character deserves to be interesting.' },
         { role: 'user', content: prompt },
@@ -553,7 +578,7 @@ ${scene ? `\nCurrent location: ${scene}` : ''}
 ${context ? `\nScene context: ${context}` : ''}`;
 
   try {
-    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: action || 'Set the scene for the beginning of a new adventure. The party gathers at a tavern.' },
@@ -604,7 +629,7 @@ ${scene ? `\nSetting: ${scene}` : ''}
 ${historyStr}`;
 
   try {
-    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: playerMessage || `${playerName} approaches you.` },
@@ -638,7 +663,7 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
 {"enemies":[{"name":"Goblin","hp":7,"maxHp":7,"ac":15,"type":"enemy"},{"name":"Goblin Archer","hp":7,"maxHp":7,"ac":13,"type":"enemy"}],"description":"Two goblins leap from behind the rocks, weapons drawn!"}`;
 
   try {
-    const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         { role: 'system', content: 'You are a D&D encounter designer. Return ONLY valid JSON. No markdown code fences. No extra text.' },
         { role: 'user', content: prompt },
@@ -738,7 +763,7 @@ app.post('/api/portrait/describe', async (c) => {
 
   try {
     // Use Llama Vision model for image understanding
-    const result = await c.env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.2-11b-vision-instruct', {
       messages: [
         { role: 'user', content: prompt },
       ],
@@ -754,7 +779,7 @@ app.post('/api/portrait/describe', async (c) => {
   } catch (err: unknown) {
     // Fallback: try text-only model if vision model isn't available
     try {
-      const fallbackResult = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      const fallbackResult = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
         messages: [
           { role: 'system', content: 'You describe fantasy RPG characters. Be vivid and specific in 2-3 sentences.' },
           { role: 'user', content: `Describe the physical appearance of a typical ${race} ${cls} character in a fantasy setting. Include build, hair, eyes, skin, and notable features. 2-3 sentences only.` },

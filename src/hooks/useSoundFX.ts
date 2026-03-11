@@ -314,7 +314,6 @@ export function playLootDrop() {
 
 // Volume control — global mute state
 let muted = false;
-const originalDestGetter = Object.getOwnPropertyDescriptor(AudioContext.prototype, 'destination');
 
 export function isMuted(): boolean {
   return muted;

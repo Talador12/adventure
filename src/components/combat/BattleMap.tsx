@@ -728,12 +728,6 @@ export default function BattleMap() {
         return;
       }
     }
-    if (dmTool === 'select' && terrain[row]?.[col] === 'floor') {
-      // Check if this was originally a door (adjacent walls on opposite sides suggest a doorway)
-      // For simplicity: allow right-click or double-tap to close? No — just allow placing door via DM tool.
-      // Door open = floor. Only DM tool can re-place door terrain. Toggle is one-way open.
-    }
-
     // Token interaction
     const token = tokenAt(x, y);
     if (token) {

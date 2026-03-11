@@ -10,6 +10,7 @@ import { useGame, type Unit, type DieType, type Character, type StatName, type E
 import { findBestMoveToward, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
+import { fetchWithTimeout } from '../lib/fetchUtils';
 
 // API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
 function apiBase(): string {
@@ -308,7 +309,7 @@ export default function Game() {
     if (!selectedCharacter) return;
     setDmLoading(true);
     try {
-      const res = await fetch(`${apiBase()}/api/dm/narrate`, {
+      const res = await fetchWithTimeout(`${apiBase()}/api/dm/narrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -318,7 +319,7 @@ export default function Game() {
           history: dmHistory.slice(-10),
           scene: sceneName,
         }),
-      });
+      }, 35_000);
       const data = await res.json() as { narration?: string; error?: string };
       if (data.narration) {
         addDmMessage(data.narration);
@@ -339,7 +340,7 @@ export default function Game() {
     if (!selectedCharacter || !npcName) return;
     setNpcLoading(true);
     try {
-      const res = await fetch(`${apiBase()}/api/dm/npc`, {
+      const res = await fetchWithTimeout(`${apiBase()}/api/dm/npc`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -351,7 +352,7 @@ export default function Game() {
           scene: sceneName,
           dialogueHistory: npcDialogueHistory.slice(-8),
         }),
-      });
+      }, 35_000);
       const data = await res.json() as { dialogue?: string; npcName?: string; error?: string };
       if (data.dialogue) {
         const npcText = data.dialogue;
@@ -714,7 +715,7 @@ export default function Game() {
       // Try to get AI encounter — may return both enemies and narration
       let description = '';
       try {
-        const res = await fetch(`${apiBase()}/api/dm/encounter`, {
+        const res = await fetchWithTimeout(`${apiBase()}/api/dm/encounter`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -725,7 +726,7 @@ export default function Game() {
             setting: theme.setting,
             twist: theme.twist,
           }),
-        });
+        }, 45_000);
         const data = await res.json() as { enemies?: { name: string; hp: number; maxHp: number; ac: number; type?: string }[]; description?: string; error?: string };
         if (data.description) description = data.description;
         // Use AI-generated enemies if they have valid stat blocks, merged with template abilities

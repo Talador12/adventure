@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 20: Illustrated Character Portraits (Phase 1). Replace programmatic SVG portraits with illustrated art cropped from reference image (`assets/characters.jpg`). Hand-drawn, anime-influenced character art in all portrait locations — character creation cards, main preview, game page, home page, character sheets.
+Round 21: Dead code cleanup + AI timeout hardening. Remove unused code, wrap all AI calls (backend + frontend) with timeouts to prevent hanging.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -494,10 +494,8 @@ Wire broadcasts at all mutation sites:
 
 ### High priority (next after multiplayer sync)
 - Multiplayer session sync — Phases 1-8 (see plan above)
-- AI fallback hardening — `fetchWithTimeout` utility (created at `src/lib/fetchUtils.ts`), `res.ok` checks before `.json()`, `aiRunWithTimeout` wrapper for backend `c.env.AI.run()` calls. 10 backend AI calls and 10 frontend fetch calls need timeout + graceful fallback. Audit complete, utility created, wiring not started.
 - Opportunity Attacks — melee enemies/players get reaction attack when a unit leaves their threat range
 - Condition system fixes — `prone` should use advantage/disadvantage (not flat -2), `blessed` overloaded for 3 mechanics (Bless spell, Dodge action, Phase Shift), AC modifiers from `CONDITION_EFFECTS` defined but never applied in attack calculations
-- Dead/commented-out code cleanup — BattleMap door-closing dead code, `useSoundFX.ts` unused `originalDestGetter` (line 317)
 
 ### Medium priority
 - Party management — invite/remove players, assign DM role, character visibility settings
@@ -573,3 +571,5 @@ Wire broadcasts at all mutation sites:
 - Test framework: vitest 3.2.4 + @cloudflare/vitest-pool-workers, dual config (plain + workers pool), 4 test files across 3 categories (player/multiplayer/AI), 97 tests passing + 2 budget-skipped, Makefile targets, budget-aware AI_TESTS env var
 - Illustrated portraits (Phase 1): 20 WebP character portraits (8 races + 12 classes) cropped from reference art, wired into all portrait locations (CharacterCreate, Home, Game, CharacterSheet) with cascade fallback
 - Dice rolls in chat: local rolls appear in chat history even offline, CharacterName[PlayerName] format, crit/fumble gradient styling with glow effects, fun default names
+- Dead code cleanup: removed `buildMiniPortraitDataUrl` from portrait.ts, empty door-closing stub from BattleMap.tsx, unused `originalDestGetter` from useSoundFX.ts
+- AI timeout hardening: backend `aiRunWithTimeout` wrapper (25s text / 45s image) for all 10 `c.env.AI.run()` calls in _worker.ts; frontend `fetchWithTimeout` wired into all 10 AI fetch calls in CharacterCreate.tsx (7 calls) and Game.tsx (3 calls, 35s text / 45s encounter)

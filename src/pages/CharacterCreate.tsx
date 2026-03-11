@@ -7,6 +7,7 @@ import { SKIN_PALETTES, HAIR_PALETTES, EYE_PALETTES } from '../lib/palettes';
 import { randomFantasyName } from '../lib/names';
 import { buildRacePortraitSvg } from '../lib/portrait';
 import { EXPORT_FORMATS, runExport, type ExportFormat } from '../lib/export';
+import { fetchWithTimeout } from '../lib/fetchUtils';
 
 
 
@@ -194,7 +195,7 @@ export default function CharacterCreate() {
     }
     setTranslating(true);
     try {
-      const res = await fetch('/api/name/translate', {
+      const res = await fetchWithTimeout('/api/name/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: currentName }),
@@ -250,7 +251,7 @@ export default function CharacterCreate() {
     const stats = getFinalStats();
     setGeneratingPortrait(true);
     try {
-      const res = await fetch('/api/portrait/generate', {
+      const res = await fetchWithTimeout('/api/portrait/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -262,7 +263,7 @@ export default function CharacterCreate() {
           style: portraitStyle,
           appearance,
         }),
-      });
+      }, 45_000); // image gen is slow
       const data = await res.json() as { portrait?: string; error?: string };
       if (data.portrait) {
         setPortrait(data.portrait);
@@ -283,7 +284,7 @@ export default function CharacterCreate() {
   const describeUploadedImage = useCallback(async (dataUrl: string) => {
     setDescribingImage(true);
     try {
-      const res = await fetch('/api/portrait/describe', {
+      const res = await fetchWithTimeout('/api/portrait/describe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: dataUrl, race, class: charClass }),
@@ -318,7 +319,7 @@ export default function CharacterCreate() {
     reader.onload = async () => {
       const dataUrl = reader.result as string;
       try {
-        const res = await fetch('/api/portrait/upload', {
+        const res = await fetchWithTimeout('/api/portrait/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: dataUrl }),
@@ -359,7 +360,7 @@ export default function CharacterCreate() {
   const generateBackstory = useCallback(async () => {
     setGeneratingBackstory(true);
     try {
-      const res = await fetch('/api/backstory/generate', {
+      const res = await fetchWithTimeout('/api/backstory/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -452,7 +453,7 @@ export default function CharacterCreate() {
   const generateFullCharacter = useCallback(async () => {
     setGeneratingCharacter(true);
     try {
-      const res = await fetch('/api/character/generate', {
+      const res = await fetchWithTimeout('/api/character/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaign: campaignContext || undefined }),
@@ -508,7 +509,7 @@ export default function CharacterCreate() {
   const generatePersonality = useCallback(async () => {
     setGeneratingPersonality(true);
     try {
-      const res = await fetch('/api/character/suggest-personality', {
+      const res = await fetchWithTimeout('/api/character/suggest-personality', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

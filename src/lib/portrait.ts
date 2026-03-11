@@ -359,9 +359,3 @@ export function buildRacePortraitSvg(race: Race, charClass: CharacterClass, appe
     c.outfit +
     `</svg>`;
 }
-
-// Convenience: render a mini portrait as a base64 data URL for img src
-export function buildMiniPortraitDataUrl(race: Race, charClass: CharacterClass): string {
-  const svg = buildRacePortraitSvg(race, charClass, DEFAULT_APPEARANCE);
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
-}
