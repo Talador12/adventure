@@ -59,6 +59,13 @@ const DoodlePad = forwardRef<DoodlePadHandle, DoodlePadProps>(function DoodlePad
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }, []);
 
+  const getTouchPos = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  }, []);
+
   const startDraw = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       setDrawing(true);
@@ -127,6 +134,33 @@ const DoodlePad = forwardRef<DoodlePadHandle, DoodlePadProps>(function DoodlePad
     lastPos.current = null;
   }, []);
 
+  // Touch handlers — mirror mouse handlers but use touch coords + prevent scroll
+  const startDrawTouch = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      e.preventDefault(); // prevent scroll while drawing
+      setDrawing(true);
+      lastPos.current = getTouchPos(e);
+    },
+    [getTouchPos]
+  );
+
+  const drawTouch = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      if (!drawing || !lastPos.current) return;
+      const pos = getTouchPos(e);
+      const strokeColor = isEraser ? BG_COLOR : color;
+      drawSegment(lastPos.current.x, lastPos.current.y, pos.x, pos.y, strokeColor, brushSize);
+      onStroke?.({
+        x1: lastPos.current.x, y1: lastPos.current.y,
+        x2: pos.x, y2: pos.y,
+        color: strokeColor, width: brushSize,
+      });
+      lastPos.current = pos;
+    },
+    [drawing, color, brushSize, isEraser, getTouchPos, drawSegment, onStroke]
+  );
+
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -184,7 +218,7 @@ const DoodlePad = forwardRef<DoodlePadHandle, DoodlePadProps>(function DoodlePad
 
       {/* Canvas */}
       <div className="flex-1 relative bg-slate-950 overflow-hidden cursor-crosshair">
-        <canvas ref={canvasRef} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw} className="absolute inset-0" />
+        <canvas ref={canvasRef} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw} onTouchStart={startDrawTouch} onTouchMove={drawTouch} onTouchEnd={stopDraw} onTouchCancel={stopDraw} className="absolute inset-0 touch-none" />
       </div>
     </div>
   );

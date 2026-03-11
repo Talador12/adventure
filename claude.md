@@ -43,7 +43,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 ## Current Focus
 
-Round 33 (complete): Mobile responsive (Home, Lobby, CharacterCreate — stacking layouts, safe areas, tap targets), meta viewport fix (viewport-fit=cover, theme-color, apple-mobile-web-app), CharacterCreate step transition animations (fade-in-up on all 6 wizard steps), mobile CSS (safe-area-inset, text-size-adjust, tap-highlight removal). Round 32 (complete): Error boundary for lazy-loaded routes (catches chunk load failures + render errors with branded recovery UI), 404 page ("maybe it was a mimic all along"), Lobby visual polish (page-enter animation, glass morphism seat cards, staggered reveals, connection badge pill, gradient Start Game button, polished password gate, drawing indicator with pulse dot, settings panel slide-in), Game visual polish (crit-flash on CRITICAL combat log entries, hp-bar-shimmer on character + initiative HP bars), loading skeletons on Home.tsx dashboard (shimmer cards while campaigns fetch), new CSS classes (skeleton, seat-card, seat-ready pulse, connection-badge). Round 31 (complete): Fantasy animation system, hero gradient + shimmer, card hover effects, hono security patch, GameContext decomposition (1896→1082 lines), code splitting (703KB→split chunks), prefers-reduced-motion, error handling overhaul (18 bare catches → logError). Round 30 (complete): Lobby passwords, save indicator, auth gating, dashboard polish. Previous: Rounds 26-29 (D1, chat, OAuth, character wizard, battle map, spectator, animations).
+Round 34 (complete): Game.tsx decomposition — wired LevelUpModal (161 lines) and CharacterPicker (76 lines) as extracted components, removed 209 lines of inline JSX from Game.tsx (3274→3065 lines), removed 4 useState hooks (levelUpTab, asiMode, asiStat1, asiStat2) that moved into LevelUpModal, cleaned unused applyASI/selectFeat from useGame destructuring. Keyboard shortcuts (Escape closes modals in priority order: level-up → DM sidebar → combat log → quests). Toast mobile repositioning (bottom-center on mobile, bottom-right on desktop). DoodlePad touch support (getTouchPos, onTouchStart/Move/End with preventDefault for scroll prevention, touch-none CSS). GitHub repo description + topics set. Round 33 (complete): Mobile responsive (Home, Lobby, CharacterCreate — stacking layouts, safe areas, tap targets), meta viewport fix (viewport-fit=cover, theme-color, apple-mobile-web-app), CharacterCreate step transition animations (fade-in-up on all 6 wizard steps), mobile CSS (safe-area-inset, text-size-adjust, tap-highlight removal). Round 32 (complete): Error boundary for lazy-loaded routes (catches chunk load failures + render errors with branded recovery UI), 404 page ("maybe it was a mimic all along"), Lobby visual polish (page-enter animation, glass morphism seat cards, staggered reveals, connection badge pill, gradient Start Game button, polished password gate, drawing indicator with pulse dot, settings panel slide-in), Game visual polish (crit-flash on CRITICAL combat log entries, hp-bar-shimmer on character + initiative HP bars), loading skeletons on Home.tsx dashboard (shimmer cards while campaigns fetch), new CSS classes (skeleton, seat-card, seat-ready pulse, connection-badge). Round 31 (complete): Fantasy animation system, hero gradient + shimmer, card hover effects, hono security patch, GameContext decomposition (1896→1082 lines), code splitting (703KB→split chunks), prefers-reduced-motion, error handling overhaul (18 bare catches → logError). Round 30 (complete): Lobby passwords, save indicator, auth gating, dashboard polish. Previous: Rounds 26-29 (D1, chat, OAuth, character wizard, battle map, spectator, animations).
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -755,8 +755,15 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] `src/data/enemies.ts` — enemy templates, encounter themes, generateEnemies (~100 lines)
 - [x] `src/data/items.ts` — loot tables, shop items, rollLoot (~100 lines)
 - [x] `src/data/spells.ts` — spell list, spell slots, class abilities, feats (~120 lines)
-- [ ] Wire up imports: GameContext.tsx re-exports from new files (backward compat)
-- [ ] Verify 0 TS errors + all 153 tests pass after rewiring
+- [x] Wire up imports: GameContext.tsx re-exports from new files (backward compat)
+- [x] Verify 0 TS errors + all 153 tests pass after rewiring
+- [x] `src/components/game/LevelUpModal.tsx` — ASI/feat modal (161 lines, uses useGame internally)
+- [x] `src/components/game/CharacterPicker.tsx` — character select screen (76 lines)
+- [ ] Combat Toolbar (631 lines — the biggest extraction target)
+- [ ] Enemy AI Effect (285 lines → useEnemyAI custom hook)
+- [ ] WS Message Handler (308 lines → useGameWebSocket custom hook)
+- [ ] Narration Panel (334 lines)
+- [ ] DM Sidebar (222 lines)
 
 **Bundle optimization:**
 - [x] Hono security patch: 4.12.5 → 4.12.7 (Dependabot CVE fix)

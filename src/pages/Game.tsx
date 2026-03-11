@@ -7,6 +7,8 @@ import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../comp
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES, rollD20WithProne, effectiveAC, calculateEncounterBudget } from '../contexts/GameContext';
+import LevelUpModal from '../components/game/LevelUpModal';
+import CharacterPicker from '../components/game/CharacterPicker';
 import { randomFantasyName } from '../lib/names';
 import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
@@ -55,8 +57,6 @@ export default function Game() {
     removeCondition,
     tickConditions,
     useClassAbility,
-    applyASI,
-    selectFeat,
     concentrationMessages,
     terrain,
     setTerrain,
@@ -125,10 +125,6 @@ export default function Game() {
 
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
-  const [levelUpTab, setLevelUpTab] = useState<'asi' | 'feat'>('asi');
-  const [asiStat1, setAsiStat1] = useState<StatName>('STR');
-  const [asiStat2, setAsiStat2] = useState<StatName | null>(null);
-  const [asiMode, setAsiMode] = useState<'single' | 'split'>('single'); // +2 to one or +1 to two
 
   // Quest tracker
   interface Quest {
@@ -220,6 +216,21 @@ export default function Game() {
       /* full */
     }
   }, [sceneName, room]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape closes modals/panels in priority order (topmost first)
+      if (e.key === 'Escape') {
+        if (showLevelUpModal) { setShowLevelUpModal(false); return; }
+        if (showDMSidebar) { setShowDMSidebar(false); return; }
+        if (showCombatLog) { setShowCombatLog(false); return; }
+        if (showQuests) { setShowQuests(false); return; }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLevelUpModal, showDMSidebar, showCombatLog, showQuests]);
 
   // Fire-and-forget server campaign sync — debounced to avoid spamming on rapid updates
   const campaignSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -1472,79 +1483,9 @@ export default function Game() {
 
   const statusColor = status === 'connected' ? 'bg-green-500' : status === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500';
 
-  // Character picker modal
+  // Character picker — extracted component
   if (showCharacterPicker) {
-    return (
-      <div className="h-screen flex flex-col bg-slate-950 text-slate-100">
-        <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center gap-4 shrink-0">
-          <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white">
-            &larr; Lobby
-          </Button>
-          <h1 className="text-lg font-bold text-[#F38020]">Choose Your Character</h1>
-        </header>
-
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-2xl w-full space-y-6">
-            {characters.length === 0 ? (
-              <div className="text-center space-y-4">
-                <div className="text-6xl opacity-20">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-20 h-20 mx-auto text-slate-600">
-                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-slate-400">No Characters Yet</h2>
-                <p className="text-slate-500">Create a character before entering the game.</p>
-                <Button onClick={() => navigate('/characters/new')} className="bg-[#F38020] hover:bg-[#e06a10] text-white px-6 py-3 text-lg font-bold rounded-xl">
-                  Create Character
-                </Button>
-              </div>
-            ) : (
-              <>
-                <p className="text-center text-slate-500">Select a character to enter the adventure</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {characters.map((char) => (
-                    <button key={char.id} onClick={() => handleSelectCharacter(char)} className="flex items-center gap-4 p-4 rounded-xl border border-slate-700 bg-slate-900 hover:border-[#F38020] hover:bg-[#F38020]/5 transition-all text-left group">
-                      {/* Portrait — illustrated art fallback */}
-                      <img
-                        src={char.portrait || `/portraits/classes/${char.class.toLowerCase()}.webp`}
-                        alt={char.name}
-                        className="w-16 h-16 rounded-xl object-cover border border-slate-600 shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `/portraits/races/${char.race.toLowerCase()}.webp`;
-                        }}
-                      />
-
-                      <div className="flex-1 min-w-0">
-                        <div className="text-lg font-bold text-white group-hover:text-[#F38020] transition-colors truncate">{char.name}</div>
-                        <div className="text-sm text-slate-400">
-                          Level {char.level} {char.race} {char.class}
-                        </div>
-                        <div className="flex gap-3 mt-1">
-                          <span className="text-xs text-red-400">
-                            HP {char.hp}/{char.maxHp}
-                          </span>
-                          <span className="text-xs text-sky-400">AC {char.ac}</span>
-                        </div>
-                      </div>
-
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-slate-600 group-hover:text-[#F38020] transition-colors shrink-0">
-                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="text-center pt-2">
-                  <button onClick={() => navigate('/characters/new')} className="text-sm text-slate-500 hover:text-[#F38020] transition-colors">
-                    + Create New Character
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    return <CharacterPicker characters={characters} room={room} onSelect={handleSelectCharacter} />;
   }
 
   return (
@@ -3125,149 +3066,14 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Level-Up Choice Modal — ASI or Feat */}
+      {/* Level-Up Choice Modal — extracted component */}
       {showLevelUpModal && selectedCharacter && hasPendingASI(selectedCharacter) && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-slate-900 border border-amber-700/60 rounded-2xl shadow-2xl shadow-amber-900/30 w-[480px] max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-amber-800/40 bg-gradient-to-r from-amber-900/30 to-yellow-900/20">
-              <h2 className="text-lg font-bold text-amber-300">Level Up — Ability Score Improvement</h2>
-              <p className="text-xs text-amber-400/70 mt-1">
-                {selectedCharacter.name} reached level {selectedCharacter.level}! Choose an improvement.
-              </p>
-            </div>
-
-            {/* Tab switcher */}
-            <div className="flex border-b border-slate-800">
-              <button onClick={() => setLevelUpTab('asi')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'asi' ? 'border-amber-500 text-amber-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
-                Ability Scores
-              </button>
-              <button onClick={() => setLevelUpTab('feat')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'feat' ? 'border-purple-500 text-purple-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
-                Feats
-              </button>
-            </div>
-
-            <div className="p-6">
-              {levelUpTab === 'asi' ? (
-                <div>
-                  {/* ASI mode toggle */}
-                  <div className="flex gap-2 mb-4">
-                    <button
-                      onClick={() => {
-                        setAsiMode('single');
-                        setAsiStat2(null);
-                      }}
-                      className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${asiMode === 'single' ? 'bg-amber-900/40 border-amber-600/60 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'}`}
-                    >
-                      +2 to one stat
-                    </button>
-                    <button onClick={() => setAsiMode('split')} className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${asiMode === 'split' ? 'bg-amber-900/40 border-amber-600/60 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'}`}>
-                      +1 to two stats
-                    </button>
-                  </div>
-
-                  {/* Stat selection grid */}
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as StatName[]).map((stat) => {
-                      const val = selectedCharacter.stats[stat];
-                      const isMaxed = val >= 20;
-                      const isSelected1 = asiStat1 === stat;
-                      const isSelected2 = asiStat2 === stat;
-                      const wouldExceed = asiMode === 'single' ? val + 2 > 20 : val + 1 > 20;
-                      return (
-                        <button
-                          key={stat}
-                          disabled={isMaxed}
-                          onClick={() => {
-                            if (asiMode === 'single') {
-                              setAsiStat1(stat);
-                              setAsiStat2(null);
-                            } else {
-                              // Split mode: select first then second
-                              if (!isSelected1 && !isSelected2) {
-                                if (asiStat1 === stat) return;
-                                if (!asiStat2) setAsiStat2(stat);
-                                else setAsiStat1(stat);
-                              } else if (isSelected1) {
-                                setAsiStat1(asiStat2 || stat);
-                                setAsiStat2(null);
-                              } else {
-                                setAsiStat2(null);
-                              }
-                            }
-                          }}
-                          className={`px-3 py-3 rounded-lg border text-center transition-all ${isMaxed ? 'opacity-30 cursor-not-allowed bg-slate-800 border-slate-700' : isSelected1 || isSelected2 ? 'bg-amber-900/50 border-amber-500/70 text-amber-200 ring-1 ring-amber-500/30' : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'}`}
-                        >
-                          <div className="text-xs font-bold">{stat}</div>
-                          <div className="text-lg font-bold">{val}</div>
-                          <div className="text-[9px] text-slate-500">{isMaxed ? 'MAX' : wouldExceed && asiMode === 'single' ? 'Cap 20' : isSelected1 && asiMode === 'single' ? `→ ${Math.min(20, val + 2)}` : isSelected1 || isSelected2 ? `→ ${Math.min(20, val + 1)}` : `mod ${val >= 10 ? '+' : ''}${Math.floor((val - 10) / 2)}`}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Confirm ASI */}
-                  <button
-                    disabled={asiMode === 'split' && (!asiStat2 || asiStat1 === asiStat2)}
-                    onClick={() => {
-                      const result = applyASI(selectedCharacter.id, asiStat1, asiMode === 'split' ? asiStat2 || undefined : undefined);
-                      if (result.success) {
-                        addDmMessage(result.message);
-                        setCombatLog((prev) => [...prev, result.message]);
-                        // Check if more pending ASI choices remain
-                        const updated = characters.find((c) => c.id === selectedCharacter.id);
-                        if (!updated || !hasPendingASI(updated)) setShowLevelUpModal(false);
-                      }
-                    }}
-                    className="w-full py-2.5 bg-amber-700/60 hover:bg-amber-700/80 border border-amber-600/60 text-amber-200 text-sm font-bold rounded-xl transition-all disabled:opacity-30"
-                  >
-                    {asiMode === 'single' ? `Apply +2 ${asiStat1}` : asiStat2 ? `Apply +1 ${asiStat1}, +1 ${asiStat2}` : 'Select a second stat'}
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-xs text-slate-400 mb-3">Choose a feat instead of an ability score improvement:</p>
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {FEATS.filter((f) => !(selectedCharacter.feats || []).includes(f.id)).map((feat) => (
-                      <button
-                        key={feat.id}
-                        onClick={() => {
-                          const result = selectFeat(selectedCharacter.id, feat.id);
-                          if (result.success) {
-                            addDmMessage(result.message);
-                            setCombatLog((prev) => [...prev, result.message]);
-                            const updated = characters.find((c) => c.id === selectedCharacter.id);
-                            if (!updated || !hasPendingASI(updated)) setShowLevelUpModal(false);
-                          }
-                        }}
-                        className="w-full text-left px-4 py-3 bg-slate-800 hover:bg-purple-900/30 border border-slate-700 hover:border-purple-600/50 rounded-xl transition-all"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-bold text-purple-300">{feat.name}</span>
-                          <div className="flex gap-1.5">
-                            {feat.statBonuses &&
-                              Object.entries(feat.statBonuses).map(([s, v]) => (
-                                <span key={s} className="text-[9px] px-1.5 py-0.5 bg-amber-900/40 text-amber-300 rounded-full">
-                                  +{v} {s}
-                                </span>
-                              ))}
-                            {feat.maxHpPerLevel && <span className="text-[9px] px-1.5 py-0.5 bg-red-900/40 text-red-300 rounded-full">+{feat.maxHpPerLevel} HP/lv</span>}
-                            {feat.damageBonus && <span className="text-[9px] px-1.5 py-0.5 bg-orange-900/40 text-orange-300 rounded-full">+{feat.damageBonus} dmg</span>}
-                            {feat.initiativeBonus && <span className="text-[9px] px-1.5 py-0.5 bg-yellow-900/40 text-yellow-300 rounded-full">+{feat.initiativeBonus} init</span>}
-                            {feat.attackBonus && <span className="text-[9px] px-1.5 py-0.5 bg-blue-900/40 text-blue-300 rounded-full">+{feat.attackBonus} atk</span>}
-                            {feat.savingThrowBonus && <span className="text-[9px] px-1.5 py-0.5 bg-green-900/40 text-green-300 rounded-full">+{feat.savingThrowBonus} saves</span>}
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-slate-400">{feat.description}</p>
-                      </button>
-                    ))}
-                    {FEATS.filter((f) => !(selectedCharacter.feats || []).includes(f.id)).length === 0 && <p className="text-xs text-slate-500 text-center py-4">All feats already taken!</p>}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <LevelUpModal
+          character={selectedCharacter}
+          onClose={() => setShowLevelUpModal(false)}
+          onMessage={addDmMessage}
+          onCombatLog={(msg) => setCombatLog((prev) => [...prev, msg])}
+        />
       )}
     </div>
   );
