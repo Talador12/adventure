@@ -7,6 +7,7 @@ interface Session {
   username: string;
   avatar?: string;
   joinedAt: number;
+  lastGameEvents: number[]; // timestamps for rate limiting (Phase 8.4)
 }
 
 interface PlayerInfo {
@@ -14,6 +15,7 @@ interface PlayerInfo {
   username: string;
   avatar?: string;
   joinedAt: number;
+  isDM?: boolean;
 }
 
 interface StrokeEntry {
@@ -24,17 +26,26 @@ interface StrokeEntry {
 
 const MAX_STROKE_HISTORY = 5000; // cap memory usage
 
+// Rate limit: max game_events per second per client
+const RATE_LIMIT_WINDOW_MS = 1000;
+const RATE_LIMIT_MAX_EVENTS = 10;
+
+// DM-only message types that require authorization
+const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action']);
+
 export class Lobby {
   state: DurableObjectState;
   env: unknown;
   sessions: Map<WebSocket, Session>;
   strokeHistory: StrokeEntry[];
+  dmPlayerId: string | null; // first joiner becomes DM; reassigned on DM leave
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
     this.env = env;
     this.sessions = new Map();
     this.strokeHistory = [];
+    this.dmPlayerId = null;
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -46,14 +57,17 @@ export class Lobby {
       const [client, server] = Object.values(pair);
 
       server.accept();
-      const sessionId = crypto.randomUUID();
+      // Session is created in the 'join' handler — we need the client's playerId claim first.
+      // Store a temporary placeholder so we can still receive messages.
+      const tempId = crypto.randomUUID();
       const now = Date.now();
-      this.sessions.set(server, { id: sessionId, username: 'Anonymous', joinedAt: now });
+      this.sessions.set(server, { id: tempId, username: 'Anonymous', joinedAt: now, lastGameEvents: [] });
 
       server.addEventListener('message', (event) => {
         try {
           const data = JSON.parse(event.data as string);
-          this.handleMessage(server, sessionId, data);
+          const session = this.sessions.get(server);
+          if (session) this.handleMessage(server, session.id, data);
         } catch {
           server.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
         }
@@ -70,6 +84,24 @@ export class Lobby {
             players: this.getPlayerList(),
             timestamp: Date.now(),
           });
+
+          // DM reassignment: if the DM left, promote the oldest remaining player
+          if (session.id === this.dmPlayerId) {
+            this.dmPlayerId = null;
+            let oldest: Session | null = null;
+            for (const [, s] of this.sessions) {
+              if (!oldest || s.joinedAt < oldest.joinedAt) oldest = s;
+            }
+            if (oldest) {
+              this.dmPlayerId = oldest.id;
+              this.broadcast({
+                type: 'dm_changed',
+                dmPlayerId: oldest.id,
+                dmUsername: oldest.username,
+                timestamp: Date.now(),
+              });
+            }
+          }
         }
       });
 
@@ -85,31 +117,80 @@ export class Lobby {
   }
 
   private handleMessage(server: WebSocket, sessionId: string, data: Record<string, unknown>) {
+    // Phase 8.3: DM auth — reject DM-only messages from non-DM players
+    if (DM_MESSAGE_TYPES.has(data.type as string)) {
+      const session = this.sessions.get(server);
+      if (session && session.id !== this.dmPlayerId) {
+        server.send(JSON.stringify({
+          type: 'error',
+          message: `Only the DM can send ${data.type} messages`,
+          timestamp: Date.now(),
+        }));
+        return;
+      }
+    }
+
     switch (data.type) {
       case 'join': {
         const username = (data.username as string) || 'Anonymous';
         const avatar = (data.avatar as string) || undefined;
-        this.sessions.set(server, { id: sessionId, username, avatar, joinedAt: Date.now() });
+        const claimedId = data.playerId as string | undefined;
 
-        // Send current player list + stroke history to the joining player
+        // Reconnect detection: if the client claims a playerId, check if that ID
+        // existed in a now-dead session. If so, reuse it for continuity.
+        let finalId = sessionId;
+        let isReconnect = false;
+        if (claimedId) {
+          // Check if any existing session has this ID (on a different, possibly dead socket)
+          let existingSocket: WebSocket | null = null;
+          for (const [ws, s] of this.sessions) {
+            if (s.id === claimedId && ws !== server) {
+              existingSocket = ws;
+              break;
+            }
+          }
+          if (existingSocket) {
+            // Old socket exists — remove it and reuse the ID
+            this.sessions.delete(existingSocket);
+            try { existingSocket.close(); } catch { /* already dead */ }
+            finalId = claimedId;
+            isReconnect = true;
+          } else {
+            // No existing socket with this ID — still reuse the claimed ID
+            // (client had it from a previous session that already closed)
+            finalId = claimedId;
+            isReconnect = true;
+          }
+        }
+
+        this.sessions.set(server, { id: finalId, username, avatar, joinedAt: Date.now(), lastGameEvents: [] });
+
+        // DM assignment: first player to join becomes DM
+        if (!this.dmPlayerId) {
+          this.dmPlayerId = finalId;
+        }
+
+        // Send current player list + stroke history + DM info to the joining player
         server.send(
           JSON.stringify({
             type: 'welcome',
-            playerId: sessionId,
+            playerId: finalId,
             players: this.getPlayerList(),
             strokeHistory: this.strokeHistory,
+            isDM: finalId === this.dmPlayerId,
+            dmPlayerId: this.dmPlayerId,
             timestamp: Date.now(),
           })
         );
 
-        // Broadcast join to everyone else
+        // Broadcast join/reconnect to everyone else
         this.broadcast({
-          type: 'player_joined',
+          type: isReconnect ? 'player_reconnected' : 'player_joined',
           username,
-          playerId: sessionId,
+          playerId: finalId,
           players: this.getPlayerList(),
           timestamp: Date.now(),
-        });
+        }, server); // exclude sender
         break;
       }
 
@@ -250,6 +331,22 @@ export class Lobby {
         // The DO is a dumb pipe — it doesn't parse event subtypes.
         const geSession = this.sessions.get(server);
         if (!geSession) return;
+
+        // Phase 8.4: Rate limiting — max RATE_LIMIT_MAX_EVENTS per RATE_LIMIT_WINDOW_MS
+        const now = Date.now();
+        geSession.lastGameEvents = geSession.lastGameEvents.filter(
+          (t) => now - t < RATE_LIMIT_WINDOW_MS
+        );
+        if (geSession.lastGameEvents.length >= RATE_LIMIT_MAX_EVENTS) {
+          server.send(JSON.stringify({
+            type: 'error',
+            message: 'Rate limit exceeded — too many game events',
+            timestamp: now,
+          }));
+          return;
+        }
+        geSession.lastGameEvents.push(now);
+
         const gePayload = JSON.stringify({
           type: 'game_event',
           playerId: geSession.id,
@@ -312,9 +409,10 @@ export class Lobby {
     }
   }
 
-  private broadcast(message: object) {
+  private broadcast(message: object, exclude?: WebSocket) {
     const payload = JSON.stringify(message);
     for (const [ws] of this.sessions) {
+      if (ws === exclude) continue;
       try {
         ws.send(payload);
       } catch {
@@ -329,6 +427,7 @@ export class Lobby {
       username: s.username,
       avatar: s.avatar,
       joinedAt: s.joinedAt,
+      isDM: s.id === this.dmPlayerId,
     }));
   }
 }

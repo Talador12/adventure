@@ -13,6 +13,7 @@ interface LobbyPlayer {
   username: string;
   avatar?: string;
   joinedAt: number;
+  isDM?: boolean;
 }
 
 export default function Lobby() {
@@ -26,6 +27,8 @@ export default function Lobby() {
   const [players, setPlayers] = useState<LobbyPlayer[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
+  const [isDM, setIsDM] = useState(false);
+  const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const doodleRef = useRef<DoodlePadHandle>(null);
   const [drawingPlayer, setDrawingPlayer] = useState<string | null>(null);
@@ -39,6 +42,8 @@ export default function Lobby() {
       case 'welcome':
         setWsPlayerId(msg.playerId as string);
         setPlayers(msg.players as LobbyPlayer[]);
+        setIsDM(msg.isDM as boolean ?? false);
+        if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
         setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
         // Replay doodle pad stroke history from server (late-join catch-up)
         if (Array.isArray(msg.strokeHistory) && msg.strokeHistory.length > 0) {
@@ -54,9 +59,20 @@ export default function Lobby() {
         setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} joined the lobby`, timestamp: msg.timestamp as number }]);
         break;
 
+      case 'player_reconnected':
+        setPlayers(msg.players as LobbyPlayer[]);
+        setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} reconnected`, timestamp: msg.timestamp as number }]);
+        break;
+
       case 'player_left':
         setPlayers(msg.players as LobbyPlayer[]);
         setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'leave', username: msg.username as string, text: `${msg.username} left the lobby`, timestamp: msg.timestamp as number }]);
+        break;
+
+      case 'dm_changed':
+        setDmPlayerId(msg.dmPlayerId as string);
+        setIsDM(msg.dmPlayerId === wsPlayerId);
+        setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: `${msg.dmUsername} is now the DM`, timestamp: msg.timestamp as number }]);
         break;
 
       case 'chat': {
@@ -270,6 +286,7 @@ export default function Lobby() {
                       <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">{p.username.charAt(0).toUpperCase()}</div>
                     )}
                     <span className="font-medium text-slate-200">{p.username}</span>
+                    {p.isDM && <span className="text-[9px] text-amber-400 font-bold">DM</span>}
                     {p.id === wsPlayerId && <span className="text-[9px] text-[#F38020]">(you)</span>}
                   </div>
                 ))}

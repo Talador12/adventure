@@ -28,6 +28,9 @@ const MAX_RECONNECT_DELAY = 10000;
 const BASE_RECONNECT_DELAY = 1000;
 const PING_INTERVAL = 25000; // 25s keepalive
 
+// Session storage key for stable player ID across reconnects
+const PLAYER_ID_KEY = 'adventure:playerId';
+
 export function useWebSocket({ roomId, username, avatar, onMessage, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
@@ -35,6 +38,12 @@ export function useWebSocket({ roomId, username, avatar, onMessage, enabled = tr
   const pingTimer = useRef<ReturnType<typeof setInterval>>(undefined);
   const reconnectAttempt = useRef(0);
   const intentionalClose = useRef(false);
+  // Stable player ID — persisted to sessionStorage so reconnects reuse the same ID
+  const playerIdRef = useRef<string | null>(
+    (() => { try { return sessionStorage.getItem(`${PLAYER_ID_KEY}:${roomId}`); } catch { return null; } })()
+  );
+  // Offline message queue — buffered sends when socket is not OPEN (Phase 8.5)
+  const messageQueue = useRef<WSMessage[]>([]);
   // Keep latest values in refs so connect() doesn't need them as deps
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
@@ -71,8 +80,20 @@ export function useWebSocket({ roomId, username, avatar, onMessage, enabled = tr
       setStatus('connected');
       reconnectAttempt.current = 0;
 
-      // Send join message with current username + avatar
-      ws.send(JSON.stringify({ type: 'join', username: usernameRef.current, avatar: avatarRef.current }));
+      // Send join message with current username + avatar + stable playerId (for reconnect)
+      const joinMsg: Record<string, unknown> = {
+        type: 'join',
+        username: usernameRef.current,
+        avatar: avatarRef.current,
+      };
+      if (playerIdRef.current) joinMsg.playerId = playerIdRef.current;
+      ws.send(JSON.stringify(joinMsg));
+
+      // Flush offline message queue (Phase 8.5)
+      while (messageQueue.current.length > 0) {
+        const queued = messageQueue.current.shift()!;
+        ws.send(JSON.stringify(queued));
+      }
 
       // Start keepalive ping
       stopPing();
@@ -88,6 +109,11 @@ export function useWebSocket({ roomId, username, avatar, onMessage, enabled = tr
         const data = JSON.parse(event.data) as WSMessage;
         // Silently consume pong responses
         if (data.type === 'pong') return;
+        // Capture stable playerId from welcome (Phase 8.1)
+        if (data.type === 'welcome' && typeof data.playerId === 'string') {
+          playerIdRef.current = data.playerId;
+          try { sessionStorage.setItem(`${PLAYER_ID_KEY}:${roomId}`, data.playerId); } catch { /* quota */ }
+        }
         onMessageRef.current?.(data);
       } catch {
         // ignore malformed messages
@@ -117,6 +143,11 @@ export function useWebSocket({ roomId, username, avatar, onMessage, enabled = tr
   const send = useCallback((msg: WSMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
+    } else {
+      // Phase 8.5: Queue message for delivery on reconnect (cap at 100 to prevent memory leak)
+      if (messageQueue.current.length < 100) {
+        messageQueue.current.push(msg);
+      }
     }
   }, []);
 

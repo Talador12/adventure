@@ -167,16 +167,17 @@ describe('multiplayer campaign - 3-player party', () => {
     expect(npc2.npcName).toBe('Bartender Grim');
     expect(npc3.dialogue).toBe('Ye look like trouble. What do ye want?');
 
-    // --- Player Action: Player 3 acts, everyone hears ---
-    const p1Action = waitForMessage(ws1, 'dm_action');
+    // --- Player Action: DM (Player 1) describes Thorne's action, everyone hears ---
+    // Only the DM can send dm_action messages (Phase 8.3 auth)
     const p2Action = waitForMessage(ws2, 'dm_action');
+    const p3Action = waitForMessage(ws3, 'dm_action');
 
-    send(ws3, { type: 'dm_action', characterName: 'Thorne', action: 'casts Healing Word on Aric' });
+    send(ws1, { type: 'dm_action', characterName: 'Thorne', action: 'casts Healing Word on Aric' });
 
-    const action1 = await p1Action;
     const action2 = await p2Action;
-    expect(action1.characterName).toBe('Thorne');
-    expect(action2.action).toBe('casts Healing Word on Aric');
+    const action3 = await p3Action;
+    expect(action2.characterName).toBe('Thorne');
+    expect(action3.action).toBe('casts Healing Word on Aric');
 
     // --- Draw: Player 2 draws, only others see it (not sender) ---
     const p1Draw = waitForMessage(ws1, 'draw');

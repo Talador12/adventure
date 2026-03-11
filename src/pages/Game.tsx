@@ -35,6 +35,8 @@ export default function Game() {
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
+  const [isDM, setIsDM] = useState(false);
+  const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
@@ -911,6 +913,8 @@ export default function Game() {
     switch (msg.type) {
       case 'welcome':
         setWsPlayerId(msg.playerId as string);
+        setIsDM(msg.isDM as boolean ?? false);
+        if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
         // Request game state from existing players (late join sync)
         sendRef.current({ type: 'state_request' });
         break;
@@ -979,6 +983,19 @@ export default function Game() {
         ]);
         break;
 
+      case 'player_reconnected':
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            type: 'join',
+            username: msg.username as string,
+            text: `${msg.username} reconnected`,
+            timestamp: msg.timestamp as number,
+          },
+        ]);
+        break;
+
       case 'player_left':
         setChatMessages((prev) => [
           ...prev,
@@ -987,6 +1004,21 @@ export default function Game() {
             type: 'leave',
             username: msg.username as string,
             text: `${msg.username} left the game`,
+            timestamp: msg.timestamp as number,
+          },
+        ]);
+        break;
+
+      case 'dm_changed':
+        setDmPlayerId(msg.dmPlayerId as string);
+        setIsDM(msg.dmPlayerId === wsPlayerId);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            type: 'system' as const,
+            username: 'System',
+            text: `${msg.dmUsername} is now the DM`,
             timestamp: msg.timestamp as number,
           },
         ]);
