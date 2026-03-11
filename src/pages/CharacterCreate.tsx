@@ -792,7 +792,7 @@ export default function CharacterCreate() {
         <main className="flex-1 min-w-0 space-y-6">
 
         {/* Step 0: Identity — Name, Race, Class */}
-        {step === 0 && (<div className="space-y-8">
+        {step === 0 && (<div className="space-y-8 animate-fade-in-up">
         {/* AI Build banner */}
         <div className="rounded-xl border border-purple-500/20 bg-purple-950/20 p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -981,7 +981,7 @@ export default function CharacterCreate() {
         </div>)}
 
         {/* Step 1: Appearance */}
-        {step === 1 && (<div className="space-y-6">
+        {step === 1 && (<div className="space-y-6 animate-fade-in-up">
         <div className="space-y-3">
           <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Appearance</label>
           <div className="grid grid-cols-[200px_1fr] gap-6">
@@ -1309,7 +1309,7 @@ export default function CharacterCreate() {
         </div>)}
 
         {/* Step 2: Background + Alignment */}
-        {step === 2 && (<div className="space-y-6">
+        {step === 2 && (<div className="space-y-6 animate-fade-in-up">
         <div className="grid grid-cols-2 gap-6">
           {/* Background */}
           <div className="space-y-2">
@@ -1372,7 +1372,7 @@ export default function CharacterCreate() {
         </div>)}
 
         {/* Step 3: Personality & Backstory */}
-        {step === 3 && (<div className="space-y-6">
+        {step === 3 && (<div className="space-y-6 animate-fade-in-up">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Personality & Backstory</label>
@@ -1484,7 +1484,7 @@ export default function CharacterCreate() {
         </div>)}
 
         {/* Step 4: Stats — 4d6 drop lowest */}
-        {step === 4 && (<div className="space-y-6">
+        {step === 4 && (<div className="space-y-6 animate-fade-in-up">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1593,7 +1593,7 @@ export default function CharacterCreate() {
         </div>)}
 
         {/* Step 5: Review + Create */}
-        {step === 5 && (<div className="space-y-6">
+        {step === 5 && (<div className="space-y-6 animate-fade-in-up">
         <div className="rounded-xl border border-amber-900/30 bg-[#1e160e]/90 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Character Preview</h2>

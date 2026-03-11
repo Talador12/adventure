@@ -497,10 +497,10 @@ export default function Lobby() {
   return (
     <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden page-enter">
       {/* Header */}
-      <header className="bg-slate-900/90 border-b border-slate-800/80 px-6 py-3 flex justify-between items-center shrink-0 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors">
-            &larr; Home
+      <header className="bg-slate-900/90 border-b border-slate-800/80 px-3 sm:px-6 py-2 sm:py-3 flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 shrink-0 backdrop-blur-sm">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors shrink-0 text-sm sm:text-base">
+            &larr;
           </Button>
           {/* Campaign name — click to edit (DM only) */}
           {editingName ? (
@@ -531,7 +531,7 @@ export default function Lobby() {
               {campaignName}
             </h1>
           )}
-          <span className="text-[10px] font-mono bg-slate-800/80 px-2 py-1 rounded-md text-slate-500 border border-slate-700/50">{room}</span>
+          <span className="text-[10px] font-mono bg-slate-800/80 px-2 py-1 rounded-md text-slate-500 border border-slate-700/50 hidden sm:inline">{room}</span>
           {isDM && (
             <button
               onClick={() => setShowSettings(!showSettings)}
@@ -659,9 +659,9 @@ export default function Lobby() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
         {/* Left side: seat roster + activity area (doodle/dice) */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           {/* Seat roster + invite bar */}
           <div className="bg-slate-900/40 border-b border-slate-800/60 px-4 py-3 shrink-0 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-3">
@@ -687,9 +687,9 @@ export default function Lobby() {
                 </div>
               </div>
               <button onClick={copyLink} className="flex items-center gap-2 cursor-pointer group" title="Click to copy invite link">
-                <span className="text-xs text-slate-600">Invite:</span>
-                <code className="text-[10px] bg-slate-800 px-2 py-1 rounded text-[#F38020] group-hover:text-[#f9a05f] transition-colors select-all">{roomLink}</code>
-                <span className="text-sm group-hover:scale-110 transition-transform">&#x1F4CB;</span>
+                <span className="text-xs text-slate-600 hidden sm:inline">Invite:</span>
+                <code className="text-[10px] bg-slate-800 px-2 py-1 rounded text-[#F38020] group-hover:text-[#f9a05f] transition-colors select-all truncate max-w-[120px] sm:max-w-none">{roomLink}</code>
+                <span className="text-sm group-hover:scale-110 transition-transform shrink-0">&#x1F4CB;</span>
               </button>
             </div>
 
@@ -887,9 +887,9 @@ export default function Lobby() {
           </div>
 
           {/* Dice + Doodle Pad side by side */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Dice roller — left */}
-            <div className="w-64 shrink-0 border-r border-slate-800/60 p-4 flex flex-col items-center overflow-y-auto bg-slate-900/20">
+          <div className="flex-1 flex overflow-hidden min-h-0">
+            {/* Dice roller — left (hidden on mobile, dice available via chat) */}
+            <div className="hidden sm:flex w-64 shrink-0 border-r border-slate-800/60 p-4 flex-col items-center overflow-y-auto bg-slate-900/20">
               <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Dice</h3>
               <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} compact />
             </div>
@@ -906,8 +906,8 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Right sidebar: chat */}
-        <div className="w-80 border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-4 shrink-0 overflow-hidden backdrop-blur-sm">
+        {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
+        <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
           <ChatPanel messages={chatMessages} onSend={handleChatSend} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>

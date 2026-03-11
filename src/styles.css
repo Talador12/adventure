@@ -22,10 +22,25 @@
   --animate-duration-slow: 0.8s;
 }
 
-/* Font smoothing */
+/* Font smoothing + mobile safe areas */
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Respect safe areas on notched devices */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Prevent text size adjustment on orientation change */
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Smooth scroll for mobile */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tap highlight removal for iOS */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Selection color — warm ember glow */

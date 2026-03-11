@@ -186,10 +186,10 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0c0f1a] text-slate-900 dark:text-slate-100 transition-colors">
       {/* Header */}
-      <header className="w-full bg-gradient-to-r from-[#F38020] via-[#e87818] to-[#d06010] shadow-lg shadow-orange-900/20 py-2 px-6 flex justify-between items-center relative overflow-hidden">
+      <header className="w-full bg-gradient-to-r from-[#F38020] via-[#e87818] to-[#d06010] shadow-lg shadow-orange-900/20 py-2 px-3 sm:px-6 flex justify-between items-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.06)_50%,transparent_70%)] pointer-events-none" />
-        <div className="flex items-baseline gap-2 relative z-10">
-          <h1 className="text-xl font-extrabold tracking-tight drop-shadow-md text-white">Adventure</h1>
+        <div className="flex items-baseline gap-2 relative z-10 min-w-0">
+          <h1 className="text-lg sm:text-xl font-extrabold tracking-tight drop-shadow-md text-white shrink-0">Adventure</h1>
           <span className="text-[11px] text-white/50 font-medium hidden sm:inline">your table, your rules</span>
         </div>
         <div className="flex gap-3 items-center">
@@ -262,29 +262,31 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#F38020]/[0.04] rounded-full blur-[100px]" />
           <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-purple-500/[0.03] rounded-full blur-[80px]" />
         </div>
-        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col items-center text-center gap-5 relative z-10">
-          <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight animate-fade-in-up">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col items-center text-center gap-4 sm:gap-5 relative z-10">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight animate-fade-in-up">
             <span className="text-white">Your table. </span><span className="text-shimmer text-[#F38020]">Your rules.</span>
           </h2>
-          <p className="text-lg text-slate-400 max-w-2xl animate-fade-in-up" style={{ animationDelay: '80ms' }}>
+          <p className="text-base sm:text-lg text-slate-400 max-w-2xl animate-fade-in-up" style={{ animationDelay: '80ms' }}>
             An accessible D&D 5e tabletop in your browser. Play with friends, go solo, or just spectate.
             Every seat at the table is yours to fill however you want.
           </p>
 
           {/* Quick actions */}
-          <div className="flex flex-wrap gap-4 mt-2 justify-center animate-fade-in-up" style={{ animationDelay: '160ms' }}>
-            <div className="flex gap-2 items-center">
-              <input type="text" placeholder="Room code or invite link" className="input-glow px-4 py-2.5 w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
-              <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleJoinCampaign}>
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-2 justify-center w-full sm:w-auto animate-fade-in-up" style={{ animationDelay: '160ms' }}>
+            <div className="flex gap-2 items-center w-full sm:w-auto">
+              <input type="text" placeholder="Room code or invite link" className="input-glow flex-1 sm:flex-none px-4 py-2.5 sm:w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
+              <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97] shrink-0" onClick={handleJoinCampaign}>
                 Join
               </Button>
             </div>
-            <Button variant="default" className="btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
-              New Campaign
-            </Button>
-            <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
-              Create Character
-            </Button>
+            <div className="flex gap-3 w-full sm:w-auto">
+              <Button variant="default" className="btn-glow flex-1 sm:flex-none bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
+                New Campaign
+              </Button>
+              <Button variant="default" className="flex-1 sm:flex-none bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
+                Create Character
+              </Button>
+            </div>
           </div>
 
           {/* Feature highlights */}
@@ -308,7 +310,7 @@ export default function Home() {
       </section>
 
       {/* Main content */}
-      <main className="flex-1 p-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
+      <main className="flex-1 px-4 sm:px-6 py-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
 
         {/* Public campaign browser — only show if there are public games */}
         {publicCampaigns.length > 0 && (
