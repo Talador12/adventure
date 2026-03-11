@@ -26,6 +26,8 @@ import {
   randomEncounterTheme,
   rollD20WithProne,
   effectiveAC,
+  calculateEncounterBudget,
+  ENCOUNTER_THRESHOLDS,
   STAT_NAMES,
   RACES,
   CLASSES,
@@ -731,6 +733,49 @@ describe('condition system', () => {
       // No class ability should apply blessed — it's only for the Bless spell
       const blessed = CLASS_ABILITIES.filter((a) => a.appliesCondition === 'blessed');
       expect(blessed).toHaveLength(0);
+    });
+  });
+
+  // --- Encounter difficulty calculator ---
+  describe('encounter difficulty calculator', () => {
+    it('ENCOUNTER_THRESHOLDS covers all 20 levels', () => {
+      for (let lvl = 1; lvl <= 20; lvl++) {
+        const t = ENCOUNTER_THRESHOLDS[lvl];
+        expect(t).toBeDefined();
+        expect(t).toHaveLength(4);
+        // Each tier should be strictly increasing: easy < medium < hard < deadly
+        expect(t[0]).toBeLessThan(t[1]);
+        expect(t[1]).toBeLessThan(t[2]);
+        expect(t[2]).toBeLessThan(t[3]);
+      }
+    });
+
+    it('calculateEncounterBudget sums XP thresholds for party', () => {
+      // Single level 1 character
+      const solo = calculateEncounterBudget([1]);
+      expect(solo).toEqual({ easy: 25, medium: 50, hard: 75, deadly: 100 });
+
+      // Party of 4 level 5 characters
+      const party = calculateEncounterBudget([5, 5, 5, 5]);
+      expect(party).toEqual({ easy: 1000, medium: 2000, hard: 3000, deadly: 4400 });
+    });
+
+    it('calculateEncounterBudget handles mixed levels', () => {
+      const mixed = calculateEncounterBudget([1, 3, 5]);
+      // Level 1: [25,50,75,100], Level 3: [75,150,225,400], Level 5: [250,500,750,1100]
+      expect(mixed).toEqual({ easy: 350, medium: 700, hard: 1050, deadly: 1600 });
+    });
+
+    it('calculateEncounterBudget clamps out-of-range levels', () => {
+      // Level 0 and level 25 should clamp to valid range
+      const clamped = calculateEncounterBudget([0, 25]);
+      expect(clamped.easy).toBeGreaterThan(0);
+      expect(clamped.deadly).toBeGreaterThan(0);
+    });
+
+    it('calculateEncounterBudget returns zeros for empty party', () => {
+      const empty = calculateEncounterBudget([]);
+      expect(empty).toEqual({ easy: 0, medium: 0, hard: 0, deadly: 0 });
     });
   });
 });

@@ -146,6 +146,52 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                   ))}
                 </div>
               )}
+
+              {/* Hover tooltip — detailed stat block */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 bg-slate-900 border border-slate-600 rounded-xl shadow-2xl p-3 z-50 hidden group-hover:block pointer-events-none">
+                <div className="text-xs font-bold text-slate-200 mb-1.5 truncate">{entry.name}</div>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] mb-2">
+                  <div><span className="text-slate-500">HP</span> <span className={isLow ? 'text-red-400' : isMid ? 'text-yellow-400' : 'text-green-400'}>{entry.hp}/{maxHp}</span></div>
+                  <div><span className="text-slate-500">AC</span> <span className="text-sky-400">{entry.ac}</span></div>
+                  <div><span className="text-slate-500">Init</span> <span className="text-amber-400">{entry.initiative}</span></div>
+                  {entry.speed != null && <div><span className="text-slate-500">Speed</span> <span className="text-emerald-400">{entry.speed * 5}ft</span></div>}
+                  {entry.attackBonus != null && <div><span className="text-slate-500">Atk</span> <span className="text-orange-400">+{entry.attackBonus}</span></div>}
+                  {entry.dexMod != null && <div><span className="text-slate-500">DEX</span> <span className="text-slate-300">{entry.dexMod >= 0 ? '+' : ''}{entry.dexMod}</span></div>}
+                  {entry.cr != null && <div><span className="text-slate-500">CR</span> <span className="text-yellow-400">{entry.cr}</span></div>}
+                  {entry.xpValue != null && <div><span className="text-slate-500">XP</span> <span className="text-yellow-400">{entry.xpValue}</span></div>}
+                  {entry.damageDie && <div><span className="text-slate-500">Dmg</span> <span className="text-red-400">{entry.damageDie}{entry.damageBonus ? `+${entry.damageBonus}` : ''}</span></div>}
+                </div>
+                {entry.concentratingOn && (
+                  <div className="text-[9px] text-purple-400 mb-1.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />Concentrating: {entry.concentratingOn}
+                  </div>
+                )}
+                {entry.abilities && entry.abilities.length > 0 && (
+                  <div className="border-t border-slate-700 pt-1.5 mt-1">
+                    <div className="text-[9px] text-slate-500 font-semibold uppercase mb-1">Abilities</div>
+                    {entry.abilities.map((a, i) => {
+                      const cd = entry.abilityCooldowns?.[a.name] || 0;
+                      return (
+                        <div key={i} className="text-[9px] text-slate-400 flex items-center justify-between">
+                          <span>{a.name} <span className="text-slate-600">({a.damageDie}{a.isRanged ? `, ${(a.range || 0) * 5}ft` : ''})</span></span>
+                          {cd > 0 ? <span className="text-red-500 text-[8px]">CD {cd}</span> : <span className="text-green-500 text-[8px]">Ready</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {entry.conditions && entry.conditions.length > 0 && (
+                  <div className="border-t border-slate-700 pt-1.5 mt-1">
+                    <div className="text-[9px] text-slate-500 font-semibold uppercase mb-1">Conditions</div>
+                    {entry.conditions.map((c, i) => (
+                      <div key={i} className="text-[9px] flex items-center justify-between">
+                        <span className={CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'}>{c.type}</span>
+                        <span className="text-slate-600">{c.duration > 0 ? `${c.duration} rounds` : 'permanent'} {c.source ? `(${c.source})` : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </button>
           );
         })}

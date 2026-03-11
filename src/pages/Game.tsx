@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import InitiativeBar from '../components/combat/InitiativeBar';
-import BattleMap from '../components/combat/BattleMap';
+import BattleMap, { type ActiveAoE } from '../components/combat/BattleMap';
 import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES, rollD20WithProne, effectiveAC } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES, rollD20WithProne, effectiveAC, calculateEncounterBudget } from '../contexts/GameContext';
+import { randomFantasyName } from '../lib/names';
 import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
@@ -103,6 +104,10 @@ export default function Game() {
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
+
+  // AoE spell targeting state
+  const [activeAoE, setActiveAoE] = useState<ActiveAoE | null>(null);
+  const [pendingAoESpell, setPendingAoESpell] = useState<{ spell: Spell; charId: string } | null>(null);
 
   // DM sidebar + session notes (auto-saved to localStorage)
   const [showDMSidebar, setShowDMSidebar] = useState(false);
@@ -1622,6 +1627,46 @@ export default function Game() {
                       ))}
                     </div>
                   </div>
+                  {/* Encounter difficulty calculator */}
+                  {(() => {
+                    const playerUnits = units.filter((u) => u.characterId);
+                    const partyLevels = playerUnits.map((u) => {
+                      const c = characters.find((ch) => ch.id === u.characterId);
+                      return c?.level || 1;
+                    });
+                    if (partyLevels.length === 0 && selectedCharacter) {
+                      partyLevels.push(selectedCharacter.level || 1);
+                    }
+                    if (partyLevels.length > 0) {
+                      const budget = calculateEncounterBudget(partyLevels);
+                      const enemyXP = units.filter((u) => u.type === 'enemy' && u.hp > 0).reduce((sum, u) => sum + (u.xpValue || 0), 0);
+                      const diffLabel = enemyXP >= budget.deadly ? 'Deadly' : enemyXP >= budget.hard ? 'Hard' : enemyXP >= budget.medium ? 'Medium' : enemyXP > 0 ? 'Easy' : '—';
+                      const diffColor = enemyXP >= budget.deadly ? 'text-red-400' : enemyXP >= budget.hard ? 'text-orange-400' : enemyXP >= budget.medium ? 'text-yellow-400' : 'text-green-400';
+                      return (
+                        <div className="bg-slate-800/60 rounded-lg p-2 space-y-1.5 border border-slate-700/50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-500 font-semibold uppercase">XP Budget</span>
+                            <span className="text-[9px] text-slate-400">{partyLevels.length} PC{partyLevels.length > 1 ? 's' : ''} · Avg Lv{Math.round(partyLevels.reduce((a, b) => a + b, 0) / partyLevels.length)}</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1 text-center">
+                            {(['easy', 'medium', 'hard', 'deadly'] as const).map((d) => (
+                              <div key={d} className="text-[8px]">
+                                <div className={`font-semibold capitalize ${d === 'easy' ? 'text-green-400' : d === 'medium' ? 'text-yellow-400' : d === 'hard' ? 'text-orange-400' : 'text-red-400'}`}>{d}</div>
+                                <div className="text-slate-500 font-mono">{budget[d]}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {enemyXP > 0 && (
+                            <div className="flex items-center justify-between pt-1 border-t border-slate-700/50">
+                              <span className="text-[9px] text-slate-400">Current: <span className="font-mono text-slate-300">{enemyXP} XP</span></span>
+                              <span className={`text-[9px] font-bold ${diffColor}`}>{diffLabel}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   <button
                     onClick={handleGenerateEncounter}
                     disabled={encounterLoading}
@@ -1657,6 +1702,34 @@ export default function Game() {
               {/* NPC tab */}
               {dmSidebarTab === 'npc' && (
                 <>
+                  {/* Quick NPC Generator */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Quick NPC Generator</label>
+                    <button
+                      onClick={() => {
+                        const races = ['Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Orc', 'Tiefling', 'Dragonborn'];
+                        const roles = ['innkeeper', 'merchant', 'blacksmith', 'guard captain', 'herbalist', 'bard', 'scholar', 'priest', 'beggar', 'noble', 'bounty hunter', 'sailor', 'farmer', 'mystic', 'alchemist', 'thieves guild contact', 'retired adventurer', 'traveling performer'];
+                        const personalities = ['gruff but kind', 'nervous and twitchy', 'overly cheerful', 'deeply suspicious', 'perpetually drunk', 'wise and patient', 'sarcastic and dry', 'warm and maternal', 'cold and calculating', 'boisterous and loud', 'quiet and observant', 'melodramatic', 'absentminded but brilliant', 'fiercely loyal', 'secretive and evasive', 'flirtatious and charming'];
+                        const quirks = ['missing an eye', 'speaks in rhyme when nervous', 'always eating something', 'has a pet rat on their shoulder', 'collects odd trinkets', 'hums while thinking', 'refuses to make eye contact', 'excessively polite', 'tells the same story repeatedly', 'laughs at inappropriate times', 'whispers secrets to no one', 'covered in strange tattoos'];
+                        const race = races[Math.floor(Math.random() * races.length)];
+                        const name = randomFantasyName(race);
+                        const role = roles[Math.floor(Math.random() * roles.length)];
+                        const personality = personalities[Math.floor(Math.random() * personalities.length)];
+                        const quirk = quirks[Math.floor(Math.random() * quirks.length)];
+                        setNpcName(name);
+                        setNpcRole(role);
+                        if (!npcMode) setNpcMode(true);
+                        // Add personality + quirk to dialogue history as a DM note
+                        setNpcDialogueHistory((prev) => [
+                          ...prev,
+                          `[Generated] ${name} — ${race} ${role}. ${personality}, ${quirk}.`,
+                        ]);
+                      }}
+                      className="w-full py-2 rounded-lg text-xs font-semibold transition-all bg-emerald-900/40 text-emerald-400 border border-emerald-700/50 hover:bg-emerald-800/40 hover:border-emerald-600/50"
+                    >
+                      Random NPC
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     <label className="text-[10px] text-slate-500 font-semibold uppercase">NPC Talk Mode</label>
                     <button
@@ -1795,6 +1868,27 @@ export default function Game() {
                     </button>
                   )}
                 </div>
+
+                {/* AoE targeting banner */}
+                {activeAoE && pendingAoESpell && (
+                  <div className="flex items-center justify-between px-4 py-2 bg-purple-900/40 border-b border-purple-700/50 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                      <span className="text-xs font-semibold text-purple-300">
+                        Targeting: {pendingAoESpell.spell.name}
+                      </span>
+                      <span className="text-[10px] text-purple-400/70">
+                        {pendingAoESpell.spell.aoe?.shape} · {(pendingAoESpell.spell.aoe?.radiusCells || 0) * 5}ft — click on the map to place
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => { setActiveAoE(null); setPendingAoESpell(null); }}
+                      className="text-[10px] px-2 py-0.5 rounded bg-purple-800/60 text-purple-300 hover:bg-purple-700/60 transition-colors"
+                    >
+                      Cancel (ESC)
+                    </button>
+                  </div>
+                )}
 
                 {/* DM + Combat toolbar */}
                 <div className="flex items-center gap-2 p-3 border-b border-slate-800 flex-wrap">
@@ -2044,9 +2138,11 @@ export default function Game() {
                                 </div>
                                 {spells.map((spell) => {
                                   const slotsAvail = spell.level === 0 ? Infinity : (slots[spell.level] || 0) - (used[spell.level] || 0);
+                                  // AoE spells target a location, not a unit — skip range/LOS checks (handled during placement)
+                                  const isAoE = !!spell.aoe;
                                   // Range + LOS check for targeted spells (damage or condition spells that need an enemy)
                                   const spellRangeCells = parseRangeFt(spell.range);
-                                  const needsTarget = !!(spell.damage || spell.appliesCondition) && spell.range.toLowerCase() !== 'self';
+                                  const needsTarget = !isAoE && !!(spell.damage || spell.appliesCondition) && spell.range.toLowerCase() !== 'self';
                                   let outOfRange = false;
                                   let noLos = false;
                                   if (needsTarget && enemyTarget && casterPos && spellTargetPos && spellRangeCells > 0) {
@@ -2062,6 +2158,21 @@ export default function Game() {
                                       disabled={disabled}
                                       title={outOfRange ? `Out of range (${spell.range})` : noLos ? 'No line of sight' : undefined}
                                       onClick={() => {
+                                        // AoE spells: enter targeting mode on the battle map
+                                        if (spell.aoe && selectedCharacter) {
+                                          const casterUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                                          const casterMapPos = casterUnit ? mapPositions.find((p) => p.unitId === casterUnit.id) : undefined;
+                                          setActiveAoE({
+                                            shape: spell.aoe.shape,
+                                            radiusCells: spell.aoe.radiusCells,
+                                            color: spell.aoe.color,
+                                            origin: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : { col: 0, row: 0 },
+                                            casterPos: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : undefined,
+                                          });
+                                          setPendingAoESpell({ spell, charId: selectedCharacter.id });
+                                          setActiveView('map'); // switch to map so player can place the AoE
+                                          return;
+                                        }
                                         const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id);
                                         if (result.success) {
                                           playMagicSpell();
@@ -2085,10 +2196,13 @@ export default function Game() {
                                           {spell.name}
                                           {rangeHint}
                                         </span>
-                                        <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
+                                         <span className="flex items-center gap-1">
+                                          {spell.aoe && <span className="text-[8px] px-1 py-0 rounded bg-orange-900/50 text-orange-300 font-bold uppercase">AoE</span>}
+                                          <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
+                                        </span>
                                       </div>
                                       <div className="text-[9px] text-slate-500 truncate">
-                                        {spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.range}</span>
+                                        {spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.aoe ? `${spell.aoe.shape} ${spell.aoe.radiusCells * 5}ft` : spell.range}</span>
                                       </div>
                                     </button>
                                   );
@@ -2822,6 +2936,78 @@ export default function Game() {
                       setCombatLog((prev) => [...prev, msg]);
                       addDmMessage(msg);
                       setTimeout(broadcastCombatSyncLatest, 50);
+                    }}
+                    activeAoE={activeAoE}
+                    onAoEConfirm={(affectedCells) => {
+                      if (!pendingAoESpell) { setActiveAoE(null); return; }
+                      const { spell, charId } = pendingAoESpell;
+                      // Cast the spell (consumes slot, handles concentration)
+                      const slotResult = castSpell(charId, spell.id);
+                      if (!slotResult.success) {
+                        setShopMessage(slotResult.message);
+                        setTimeout(() => setShopMessage(null), 2500);
+                        setActiveAoE(null);
+                        setPendingAoESpell(null);
+                        return;
+                      }
+                      playMagicSpell();
+                      const char = characters.find((c) => c.id === charId);
+                      const casterName = char?.name || 'Caster';
+                      // Find all units standing in affected cells
+                      const affectedSet = new Set(affectedCells.map((c) => `${c.col},${c.row}`));
+                      const hitUnits = units.filter((u) => {
+                        const pos = mapPositions.find((p) => p.unitId === u.id);
+                        return pos && affectedSet.has(`${pos.col},${pos.row}`);
+                      });
+                      // Only damage enemies (not friendly units) for offensive AoE
+                      const targets = spell.damage ? hitUnits.filter((u) => !u.characterId) : hitUnits;
+                      const messages: string[] = [];
+                      if (targets.length === 0) {
+                        messages.push(`${casterName} casts ${spell.name} but hits no targets!`);
+                      } else {
+                        // Spell save DC
+                        let spellDC = 13;
+                        if (char) {
+                          const castingStatMap: Record<string, StatName> = { Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS', Bard: 'CHA', Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS' };
+                          const castingStat = castingStatMap[char.class] || 'INT';
+                          const castMod = Math.floor((char.stats[castingStat] - 10) / 2);
+                          const profBonus = Math.ceil(char.level / 4) + 1;
+                          spellDC = 8 + profBonus + castMod;
+                        }
+                        for (const target of targets) {
+                          // Each target rolls a save
+                          const saveRoll = Math.floor(Math.random() * 20) + 1;
+                          const targetSaveMod = spell.saveStat === 'DEX' ? target.dexMod || 0 : 0;
+                          const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
+                          const saved = (saveRoll + targetSaveMod + condSaveMod) >= spellDC;
+                          if (spell.damage) {
+                            let dmg = rollSpellDamage(spell.damage);
+                            if (saved) dmg = Math.floor(dmg / 2);
+                            damageUnit(target.id, dmg);
+                            messages.push(saved
+                              ? `${target.name} saves — ${dmg} damage (half).`
+                              : `${target.name} takes ${dmg} damage!`);
+                            if (target.hp - dmg <= 0) {
+                              playEnemyDeath();
+                              messages.push(`${target.name} falls!`);
+                            }
+                          }
+                          if (spell.appliesCondition && !saved) {
+                            applyCondition(target.id, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+                            messages.push(`${target.name} is ${spell.appliesCondition}!`);
+                          }
+                        }
+                      }
+                      const fullMsg = `${casterName} casts ${spell.name}! ${messages.join(' ')}${spell.level > 0 ? ` (Level ${spell.level} slot used)` : ''}`;
+                      setCombatLog((prev) => [...prev, fullMsg]);
+                      addDmMessage(fullMsg);
+                      setActiveAoE(null);
+                      setPendingAoESpell(null);
+                      setTimeout(broadcastCombatSyncLatest, 50);
+                    }}
+                    onAoECancel={() => {
+                      setActiveAoE(null);
+                      setPendingAoESpell(null);
                     }}
                   />
                 )}

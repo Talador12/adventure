@@ -371,8 +371,31 @@ export const DEFAULT_APPEARANCE: Appearance = {
   facialHair: 'none',
 };
 
-// XP thresholds per level (D&D 5e)
+// XP thresholds per level (D&D 5e) — for leveling up
 export const XP_THRESHOLDS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000] as const;
+
+// Encounter XP difficulty thresholds per character level (DMG p.82)
+// Each entry: [easy, medium, hard, deadly] XP per character at that level
+export const ENCOUNTER_THRESHOLDS: Record<number, [number, number, number, number]> = {
+  1: [25, 50, 75, 100], 2: [50, 100, 150, 200], 3: [75, 150, 225, 400],
+  4: [125, 250, 375, 500], 5: [250, 500, 750, 1100], 6: [300, 600, 900, 1400],
+  7: [350, 750, 1100, 1700], 8: [450, 900, 1400, 2100], 9: [550, 1100, 1600, 2400],
+  10: [600, 1200, 1900, 2800], 11: [800, 1600, 2400, 3600], 12: [1000, 2000, 3000, 4500],
+  13: [1100, 2200, 3400, 5100], 14: [1250, 2500, 3800, 5700], 15: [1400, 2800, 4300, 6400],
+  16: [1600, 3200, 4800, 7200], 17: [2000, 3900, 5900, 8800], 18: [2100, 4200, 6300, 9500],
+  19: [2400, 4900, 7300, 10900], 20: [2800, 5700, 8500, 12700],
+};
+
+// Calculate party encounter XP thresholds (sum per member)
+export function calculateEncounterBudget(partyLevels: number[]): { easy: number; medium: number; hard: number; deadly: number } {
+  return partyLevels.reduce(
+    (acc, lvl) => {
+      const t = ENCOUNTER_THRESHOLDS[Math.min(20, Math.max(1, lvl))] || ENCOUNTER_THRESHOLDS[1];
+      return { easy: acc.easy + t[0], medium: acc.medium + t[1], hard: acc.hard + t[2], deadly: acc.deadly + t[3] };
+    },
+    { easy: 0, medium: 0, hard: 0, deadly: 0 }
+  );
+}
 
 export type Condition = 'normal' | 'unconscious' | 'dead' | 'stabilized';
 

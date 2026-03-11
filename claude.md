@@ -61,7 +61,7 @@ Round 28 (in progress): Character wizard, BattleMap minimap + AoE overlays, turn
 ### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
-- **Status:** Done — all 144 tests passing (99 player + 45 worker), 2 budget-skipped
+- **Status:** Done — all 149 tests passing (104 player + 45 worker), 2 budget-skipped
 
 **Three test categories:**
 1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 17 describe blocks, 99 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks, condition system (CONDITION_EFFECTS, effectiveAC, rollD20WithProne, CLASS_ABILITIES condition types). **All 99 passing.**
@@ -638,19 +638,19 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Minimap with click-to-pan (4px/cell, terrain + token dots + viewport rect, toggle button)
 - [x] AoE spell templates in BattleMap (circle/cone/line/cube, hover preview, click confirm, ESC cancel)
 - [x] Initiative tracker with turn timer countdown (60s default, green→yellow→red, pulse at 10s)
-- [ ] **Wire AoE into Game.tsx** — BattleMap side is ready, Game.tsx needs `activeAoE` state + spell casting flow integration
+- [x] **AoE wired into Game.tsx** — `activeAoE`/`pendingAoESpell` state, spell click enters targeting mode + switches to map view, `onAoEConfirm` applies multi-target damage with per-unit saves, AoE badge on spell list, targeting banner with cancel
 - [ ] Animated token movement (smooth pathfinding interpolation)
-- [ ] Quick-reference hover tooltips (enemy stats, condition descriptions)
+- [x] Hover tooltips on initiative bar (HP, AC, abilities with cooldowns, conditions with durations, speed, CR, concentration)
 - [ ] Fog of war per-player (each player sees only from their token — currently global fog)
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes
 - [x] Encounter tab: difficulty selector (4 levels), spawn button, active unit list with HP, scene name
+- [x] Encounter difficulty calculator: D&D 5e DMG p.82 XP thresholds per party level, live XP budget display, current encounter rating
 - [x] NPC tab: NPC Talk mode toggle, name/role inputs, dialogue history
+- [x] Quick NPC generator: random race + name (from names.ts) + role + personality + quirk, auto-fills NPC name/role, adds character note to dialogue history
 - [x] Notes tab: auto-saved textarea (localStorage per room), character counter
-- [ ] Quick NPC generator (name + personality + stat block via AI)
 - [ ] Music/ambiance selector (ambient sound URLs or Web Audio API)
-- [ ] Encounter difficulty calculator (party level vs CR budget, D&D 5e XP thresholds)
 
 ### Round 29: Lobby Hub + Role-Based Flows + Campaign Discovery
 **Goal:** Restructure the home page and lobby into a role-aware hub. DMs create campaigns, players find games, spectators browse. Public/private lobbies. Everything accessible from within a live lobby session.
