@@ -19,6 +19,18 @@ Round 20: Illustrated Character Portraits (Phase 1). Replace programmatic SVG po
 - **Phase 2 (future):** Illustrated overlay assets — transparent PNG layers for facial hair, hair styles, scars, face markings, eye/skin/hair color variations that match the art style. Canvas composite system to layer overlays on base portraits.
 - **Assets:** `assets/portraits/races/` (8 files), `assets/portraits/classes/` (12 files, Druid sourced from tavern scene since it's missing from the class grid). Vite copies these to `public/` during build (publicDir: 'assets').
 - **Modified files:** `CharacterCreate.tsx` (race/class card portraits + main preview), `Home.tsx` (character list thumbnails), `Game.tsx` (character select, narration header, toolbar), `CharacterSheet.tsx` (header portrait)
+
+### Dice rolls in chat (offline + online)
+- **Status:** Done
+- Local (offline) dice rolls now appear in chat history even without WebSocket connection
+- Format: `CharacterName [PlayerName]` — shows character name prominently, player name in brackets if different
+- Crit hit: golden gradient background, glowing "CRITICAL HIT!" text, gold die badge
+- Crit fail: red gradient background, glowing "CRITICAL FAIL!" text, red die badge
+- Fun fallback names when player/character info missing: "The Dice Gremlin", "The Innkeeper's Cat", "Definitely Not a Mimic", etc.
+- `DiceRoller` gained `onRollComplete` callback prop (`LocalRollResult`) — fires after local roll animation
+- Both `Game.tsx` and `Lobby.tsx` wire the callback to inject `ChatMessage` with type `'roll'`
+- `ChatMessage` interface extended with `sides`, `characterName` fields
+- Sound FX (dice roll, crit, fumble) play for local rolls too
 - **Reference image note:** `assets/characters.jpg` (1296x830) is a UI mockup with text labels baked into illustrations, requiring tight face-focused crops to avoid text overlap
 
 ### Multiplayer session sync + test framework (Round 19)
@@ -560,3 +572,4 @@ Wire broadcasts at all mutation sites:
 - Ranged combat + line of sight: Bresenham LOS raycasting, weapon/ability/spell range enforcement, DEX for ranged weapons, smart ranged enemy AI, new ranged weapons (Shortbow, Hand Crossbow, Longbow +2, Oathbow)
 - Test framework: vitest 3.2.4 + @cloudflare/vitest-pool-workers, dual config (plain + workers pool), 4 test files across 3 categories (player/multiplayer/AI), 97 tests passing + 2 budget-skipped, Makefile targets, budget-aware AI_TESTS env var
 - Illustrated portraits (Phase 1): 20 WebP character portraits (8 races + 12 classes) cropped from reference art, wired into all portrait locations (CharacterCreate, Home, Game, CharacterSheet) with cascade fallback
+- Dice rolls in chat: local rolls appear in chat history even offline, CharacterName[PlayerName] format, crit/fumble gradient styling with glow effects, fun default names

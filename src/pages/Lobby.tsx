@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useToast } from '../components/ui/toast';
 import { Button } from '../components/ui/button';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
-import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
+import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
 import DoodlePad, { type DoodlePadHandle, type DoodleStroke } from '../components/lobby/DoodlePad';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { useGame, type DieType } from '../contexts/GameContext';
@@ -90,6 +90,7 @@ export default function Lobby() {
             text: '',
             timestamp: msg.timestamp as number,
             die: msg.die as string,
+            sides: msg.sides as number,
             value: msg.value as number,
             isCritical: msg.isCritical as boolean,
             isFumble: msg.isFumble as boolean,
@@ -160,6 +161,35 @@ export default function Lobby() {
       send({ type: 'roll', die, sides: sides });
     },
     [send]
+  );
+
+  // Fun default names for lobby (no character selected yet)
+  const LOBBY_DEFAULTS = ['A Curious Onlooker', 'Someone at the Bar', 'The Innkeeper\'s Cat', 'A Dice-Obsessed Patron', 'Definitely Not a Mimic'];
+  const funDefault = () => LOBBY_DEFAULTS[Math.floor(Math.random() * LOBBY_DEFAULTS.length)];
+
+  // Handle local (offline) roll — add to chat history even without WebSocket
+  const handleRollComplete = useCallback(
+    (roll: LocalRollResult) => {
+      const playerName = currentPlayer.username || funDefault();
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: 'roll',
+          playerId: currentPlayer.id,
+          username: playerName,
+          text: '',
+          timestamp: Date.now(),
+          die: roll.die,
+          sides: roll.sides,
+          value: roll.value,
+          isCritical: roll.isCritical,
+          isFumble: roll.isFumble,
+          unitName: roll.unitName,
+        },
+      ]);
+    },
+    [currentPlayer]
   );
 
   const handleDoodleStroke = useCallback(
@@ -237,7 +267,7 @@ export default function Lobby() {
             {/* Dice roller — left */}
             <div className="w-64 shrink-0 border-r border-slate-800 p-4 flex flex-col items-center overflow-y-auto">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Dice</h3>
-              <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} useServerRolls={status === 'connected'} compact />
+              <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} compact />
             </div>
             {/* Doodle pad — fills remaining space, synced via WebSocket */}
             <div className="flex-1 overflow-hidden">

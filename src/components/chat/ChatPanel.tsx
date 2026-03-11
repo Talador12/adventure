@@ -13,10 +13,12 @@ export interface ChatMessage {
   avatar?: string; // Discord avatar URL
   // Roll-specific fields
   die?: string;
+  sides?: number;
   value?: number;
   isCritical?: boolean;
   isFumble?: boolean;
   unitName?: string;
+  characterName?: string; // In-game character name (distinct from player username)
 }
 
 interface ChatPanelProps {
@@ -53,18 +55,42 @@ function DmMessage({ msg }: { msg: ChatMessage }) {
 function RollMessage({ msg }: { msg: ChatMessage }) {
   const isCrit = msg.isCritical;
   const isFumble = msg.isFumble;
+  const displayName = msg.characterName || msg.unitName || msg.username;
+  const showPlayer = msg.characterName && msg.username && msg.characterName !== msg.username;
 
   return (
-    <div className={`rounded-lg px-3 py-2 text-xs border ${isCrit ? 'bg-yellow-500/10 border-yellow-500/30' : isFumble ? 'bg-red-500/10 border-red-500/30' : 'bg-slate-800/60 border-slate-700/50'}`}>
-      <div className="flex items-center gap-2">
-        <span className="font-semibold text-slate-300">{msg.username}</span>
-        <span className="text-slate-600">rolled</span>
-        <span className={`font-bold text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{msg.value}</span>
-        <span className="text-slate-500">({msg.die})</span>
-        {msg.unitName && <span className="text-slate-600">for {msg.unitName}</span>}
+    <div className={`rounded-lg px-3 py-2.5 text-xs border ${
+      isCrit
+        ? 'bg-gradient-to-r from-yellow-500/15 to-amber-500/10 border-yellow-500/40 shadow-sm shadow-yellow-500/10'
+        : isFumble
+          ? 'bg-gradient-to-r from-red-500/15 to-red-900/10 border-red-500/40 shadow-sm shadow-red-500/10'
+          : 'bg-slate-800/60 border-slate-700/50'
+    }`}>
+      {/* Attribution line */}
+      <div className="flex items-center gap-1 mb-1">
+        <span className={`font-bold ${isCrit ? 'text-yellow-300' : isFumble ? 'text-red-300' : 'text-amber-200'}`}>{displayName}</span>
+        {showPlayer && <span className="text-slate-500 text-[10px]">[{msg.username}]</span>}
       </div>
-      {isCrit && <div className="text-yellow-400 font-bold text-[10px] uppercase tracking-wider mt-0.5">Critical Hit!</div>}
-      {isFumble && <div className="text-red-400 font-bold text-[10px] uppercase tracking-wider mt-0.5">Critical Fail!</div>}
+      {/* Roll result */}
+      <div className="flex items-center gap-2">
+        <span className="text-slate-500">rolled</span>
+        <span className={`font-mono font-bold px-1.5 py-0.5 rounded ${
+          isCrit ? 'text-yellow-300 bg-yellow-500/20' : isFumble ? 'text-red-300 bg-red-500/20' : 'text-white bg-slate-700/50'
+        }`}>{msg.die?.toUpperCase()}</span>
+        <span className="text-slate-500">for</span>
+        <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{msg.value}</span>
+      </div>
+      {/* Crit/fumble flair */}
+      {isCrit && (
+        <div className="mt-1 text-yellow-400 font-black text-[11px] uppercase tracking-widest" style={{ textShadow: '0 0 8px rgba(250,204,21,0.4)' }}>
+          CRITICAL HIT!
+        </div>
+      )}
+      {isFumble && (
+        <div className="mt-1 text-red-400 font-black text-[11px] uppercase tracking-widest" style={{ textShadow: '0 0 8px rgba(239,68,68,0.4)' }}>
+          CRITICAL FAIL!
+        </div>
+      )}
     </div>
   );
 }

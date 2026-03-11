@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import InitiativeBar from '../components/combat/InitiativeBar';
 import BattleMap from '../components/combat/BattleMap';
 import CharacterSheet from '../components/combat/CharacterSheet';
-import DiceRoller, { type DiceRollerHandle } from '../components/dice/DiceRoller';
+import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
@@ -815,10 +815,12 @@ export default function Game() {
             text: '',
             timestamp: msg.timestamp as number,
             die: msg.die as string,
+            sides: msg.sides as number,
             value: msg.value as number,
             isCritical: msg.isCritical as boolean,
             isFumble: msg.isFumble as boolean,
             unitName: msg.unitName as string | undefined,
+            characterName: msg.unitName as string | undefined,
           },
         ]);
         // Sound FX
@@ -936,6 +938,41 @@ export default function Game() {
       });
     },
     [send, selectedUnitId, selectedUnit]
+  );
+
+  // Fun default names when character/player info is missing
+  const MYSTERY_NAMES = ['A Mysterious Stranger', 'Someone in the Shadows', 'An Unknown Adventurer', 'A Passing Wanderer', 'The Dice Gremlin'];
+  const funDefault = () => MYSTERY_NAMES[Math.floor(Math.random() * MYSTERY_NAMES.length)];
+
+  // Handle local (offline) roll — add to chat history even without WebSocket
+  const handleRollComplete = useCallback(
+    (roll: LocalRollResult) => {
+      const charName = selectedCharacter?.name || '';
+      const playerName = currentPlayer.username || '';
+      const displayUsername = playerName || funDefault();
+      playDiceRoll();
+      if (roll.isCritical) setTimeout(playCritical, 400);
+      if (roll.isFumble) setTimeout(playFumble, 400);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: 'roll',
+          playerId: currentPlayer.id,
+          username: displayUsername,
+          characterName: charName || undefined,
+          text: '',
+          timestamp: Date.now(),
+          die: roll.die,
+          sides: roll.sides,
+          value: roll.value,
+          isCritical: roll.isCritical,
+          isFumble: roll.isFumble,
+          unitName: roll.unitName,
+        },
+      ]);
+    },
+    [selectedCharacter, currentPlayer]
   );
 
   const statusColor = status === 'connected' ? 'bg-green-500' : status === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500';
@@ -2133,7 +2170,7 @@ export default function Game() {
           ) : (
             <>
               <div className="p-4 border-b border-slate-800 overflow-y-auto">
-                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} useServerRolls={status === 'connected'} />
+                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} />
               </div>
               <div className="flex-1 flex flex-col p-4 overflow-hidden">
                 <ChatPanel messages={chatMessages} onSend={handleChatSend} currentPlayerId={wsPlayerId || currentPlayer.id} />

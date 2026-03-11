@@ -34,16 +34,28 @@ export interface DiceRollerHandle {
   playRemoteRoll: (roll: RemoteRoll) => void;
 }
 
+export interface LocalRollResult {
+  die: DieType;
+  sides: number;
+  value: number;
+  isCritical: boolean;
+  isFumble: boolean;
+  playerName: string;
+  unitName?: string;
+}
+
 interface DiceRollerProps {
-  /** Called when the local user clicks a die �� parent should send to WebSocket */
+  /** Called when the local user clicks a die — parent should send to WebSocket */
   onLocalRoll?: (die: DieType, sides: number) => void;
+  /** Called when a local (offline) roll finishes — parent can add to chat */
+  onRollComplete?: (roll: LocalRollResult) => void;
   /** If true, local rolls use onLocalRoll instead of generating a result locally */
   useServerRolls?: boolean;
   /** Compact mode for lobby sidebar */
   compact?: boolean;
 }
 
-const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, useServerRolls = false, compact = false }, ref) {
+const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, onRollComplete, useServerRolls = false, compact = false }, ref) {
   const { currentPlayer, addRoll, rolls, clearRolls, selectedUnitId, units } = useGame();
   const [rolling, setRolling] = useState<DieType | null>(null);
   const [displayValue, setDisplayValue] = useState<number | null>(null);
@@ -55,6 +67,9 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
   // Queue for remote rolls that arrive while an animation is playing
   const pendingRemoteRef = useRef<RemoteRoll[]>([]);
   const animatingRef = useRef(false);
+  // Ref for onRollComplete callback to avoid stale closures
+  const onRollCompleteRef = useRef(onRollComplete);
+  onRollCompleteRef.current = onRollComplete;
 
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
@@ -97,6 +112,19 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
             unitId: isLocal ? selectedUnitId || undefined : undefined,
             unitName: isLocal ? selectedUnit?.name : unitName,
           });
+
+          // Notify parent of local roll result so it can add to chat
+          if (isLocal && onRollCompleteRef.current) {
+            onRollCompleteRef.current({
+              die,
+              sides,
+              value: finalValue,
+              isCritical: isCrit,
+              isFumble,
+              playerName: playerName || currentPlayer.username,
+              unitName: isLocal ? selectedUnit?.name : unitName,
+            });
+          }
 
           // Persistent crit/fumble color — stays until next roll starts
           if (isCrit) setCritState('crit');
