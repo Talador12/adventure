@@ -10,7 +10,7 @@ import { useGame, type Unit, type DieType, type Character, type StatName, type E
 import { randomFantasyName } from '../lib/names';
 import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
-import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
+import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute, setAmbientMood, getAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 
@@ -66,6 +66,9 @@ export default function Game() {
     setMapImageUrl,
   } = useGame();
 
+  // Ref for BattleMap animated token movement
+  const animateMoveRef = useRef<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>(null);
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const [isDM, setIsDM] = useState(false);
@@ -115,6 +118,7 @@ export default function Game() {
     try { return localStorage.getItem(`adventure:dmnotes:${room}`) || ''; } catch { return ''; }
   });
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
+  const [currentAmbient, setCurrentAmbient] = useState<AmbientMood>(getAmbientMood());
 
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
@@ -352,6 +356,8 @@ export default function Game() {
   turnIndexRef.current = turnIndex;
   const inCombatRef = useRef(inCombat);
   inCombatRef.current = inCombat;
+  const mapPositionsRef = useRef(mapPositions);
+  mapPositionsRef.current = mapPositions;
 
   // Delayed broadcast — reads from refs after React processes state batches.
   // Use this when you can't easily capture return values (e.g. player UI actions).
@@ -733,6 +739,8 @@ export default function Game() {
                 setCombatLog((prev) => [...prev, oaMsg]);
                 addDmMessage(oaMsg);
               }
+              // Animate the token movement before updating position
+              animateMoveRef.current?.(currentUnit.id, enemyPos.col, enemyPos.row, dest.col, dest.row);
               setMapPositions((prev) => prev.map((p) => (p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p)));
               setUnits((prev) => prev.map((u) => (u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u)));
               broadcastGameEvent('token_move', { unitId: currentUnit.id, col: dest.col, row: dest.row });
@@ -1038,6 +1046,8 @@ export default function Game() {
       const fallback = `In ${theme.setting}, ${enemyNames} ${enemyUnits.length > 1 ? 'appear' : 'appears'}! ${theme.twist}.`;
       addDmMessage(description || fallback);
       playEncounterStart();
+      // Auto-switch to combat ambiance
+      if (currentAmbient !== 'combat') { setAmbientMood('combat'); setCurrentAmbient('combat'); }
 
       // Add enemy units to existing units (keep player units)
       setUnits((prev: Unit[]) => [...prev.filter((u) => u.type === 'player'), ...enemyUnits]);
@@ -1268,11 +1278,16 @@ export default function Game() {
                 break;
               }
               case 'token_move': {
-                // Single token position update (smooth drag sync)
+                // Single token position update with animation
                 const unitId = eventData.unitId as string;
                 const col = eventData.col as number;
                 const row = eventData.row as number;
                 if (unitId && typeof col === 'number' && typeof row === 'number') {
+                  // Animate from current position to new position
+                  const oldPos = mapPositionsRef.current?.find((p: TokenPosition) => p.unitId === unitId);
+                  if (oldPos && (oldPos.col !== col || oldPos.row !== row)) {
+                    animateMoveRef.current?.(unitId, oldPos.col, oldPos.row, col, row);
+                  }
                   setMapPositions((prev) => prev.map((p) => (p.unitId === unitId ? { ...p, col, row } : p)));
                 }
                 break;
@@ -1783,6 +1798,27 @@ export default function Game() {
                   <div className="text-[9px] text-slate-600 text-right">{dmNotes.length} chars</div>
                 </>
               )}
+
+              {/* Ambiance — always visible at bottom of sidebar */}
+              <div className="border-t border-slate-700 pt-3 mt-auto space-y-2">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Ambiance</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {AMBIENT_MOODS.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setAmbientMood(m.id); setCurrentAmbient(m.id); }}
+                      title={m.description}
+                      className={`px-1.5 py-1 rounded text-[9px] font-medium transition-all border ${
+                        currentAmbient === m.id
+                          ? 'border-amber-500/60 bg-amber-900/20 text-amber-400'
+                          : 'border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </aside>
         )}
@@ -2937,6 +2973,7 @@ export default function Game() {
                       addDmMessage(msg);
                       setTimeout(broadcastCombatSyncLatest, 50);
                     }}
+                    animateMoveRef={animateMoveRef}
                     activeAoE={activeAoE}
                     onAoEConfirm={(affectedCells) => {
                       if (!pendingAoESpell) { setActiveAoE(null); return; }

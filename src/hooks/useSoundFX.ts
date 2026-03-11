@@ -332,3 +332,187 @@ export function toggleMute(): boolean {
   setMuted(!muted);
   return muted;
 }
+
+// --- Ambient sound system ---
+// Procedural ambient loops using Web Audio API oscillators and filtered noise.
+// Each mood creates a layered soundscape that loops continuously.
+
+export type AmbientMood = 'tavern' | 'dungeon' | 'forest' | 'combat' | 'mystery' | 'none';
+
+interface AmbientLayer { nodes: (AudioNode | AudioBufferSourceNode | OscillatorNode)[]; gains: GainNode[] }
+
+let currentMood: AmbientMood = 'none';
+let ambientLayers: AmbientLayer | null = null;
+let ambientMasterGain: GainNode | null = null;
+let ambientInterval: ReturnType<typeof setInterval> | null = null;
+
+// Low-frequency rumble — cave/dungeon bass
+function createDrone(ctx: AudioContext, freq: number, vol: number, type: OscillatorType = 'sine'): { osc: OscillatorNode; gain: GainNode } {
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  osc.connect(gain);
+  return { osc, gain };
+}
+
+// Filtered noise loop — wind, fire crackle, crowd murmur
+function createFilteredNoise(ctx: AudioContext, lowFreq: number, highFreq: number, vol: number): { src: AudioBufferSourceNode; gain: GainNode } {
+  const len = ctx.sampleRate * 4; // 4 second buffer, looped
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = 'bandpass';
+  bandpass.frequency.setValueAtTime((lowFreq + highFreq) / 2, ctx.currentTime);
+  bandpass.Q.setValueAtTime(0.5, ctx.currentTime);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  src.connect(bandpass).connect(gain);
+  return { src, gain };
+}
+
+// LFO modulation on a gain node — subtle volume wavering
+function addLFO(ctx: AudioContext, targetGain: GainNode, rate: number, depth: number) {
+  const lfo = ctx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.setValueAtTime(rate, ctx.currentTime);
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.setValueAtTime(depth, ctx.currentTime);
+  lfo.connect(lfoGain).connect(targetGain.gain);
+  lfo.start();
+  return lfo;
+}
+
+function buildMoodLayers(ctx: AudioContext, mood: AmbientMood, master: GainNode): AmbientLayer {
+  const nodes: (AudioNode | AudioBufferSourceNode | OscillatorNode)[] = [];
+  const gains: GainNode[] = [];
+  const connect = (g: GainNode) => { g.connect(master); gains.push(g); };
+
+  if (mood === 'tavern') {
+    // Warm low hum (fireplace)
+    const fire = createDrone(ctx, 80, 0.04, 'sawtooth');
+    connect(fire.gain); fire.osc.start(); nodes.push(fire.osc);
+    // Crowd murmur (filtered noise, mid-range)
+    const crowd = createFilteredNoise(ctx, 200, 800, 0.03);
+    connect(crowd.gain); crowd.src.start(); nodes.push(crowd.src);
+    const lfo = addLFO(ctx, crowd.gain, 0.15, 0.01);
+    nodes.push(lfo);
+    // Gentle high shimmer (glasses clinking vibe)
+    const shimmer = createDrone(ctx, 2400, 0.006, 'sine');
+    connect(shimmer.gain); shimmer.osc.start(); nodes.push(shimmer.osc);
+    const lfo2 = addLFO(ctx, shimmer.gain, 0.3, 0.003);
+    nodes.push(lfo2);
+  } else if (mood === 'dungeon') {
+    // Deep bass drone
+    const bass = createDrone(ctx, 40, 0.06, 'sine');
+    connect(bass.gain); bass.osc.start(); nodes.push(bass.osc);
+    const lfo = addLFO(ctx, bass.gain, 0.08, 0.02);
+    nodes.push(lfo);
+    // Dripping water (filtered high noise, very quiet)
+    const drip = createFilteredNoise(ctx, 1000, 4000, 0.008);
+    connect(drip.gain); drip.src.start(); nodes.push(drip.src);
+    // Low rumble
+    const rumble = createFilteredNoise(ctx, 20, 100, 0.03);
+    connect(rumble.gain); rumble.src.start(); nodes.push(rumble.src);
+  } else if (mood === 'forest') {
+    // Wind (low filtered noise)
+    const wind = createFilteredNoise(ctx, 100, 600, 0.025);
+    connect(wind.gain); wind.src.start(); nodes.push(wind.src);
+    const lfo = addLFO(ctx, wind.gain, 0.1, 0.01);
+    nodes.push(lfo);
+    // Bird-like high tones (very subtle)
+    const bird = createDrone(ctx, 1800, 0.004, 'sine');
+    connect(bird.gain); bird.osc.start(); nodes.push(bird.osc);
+    bird.osc.frequency.setValueAtTime(1800, ctx.currentTime);
+    const lfo2 = addLFO(ctx, bird.gain, 2.5, 0.003);
+    nodes.push(lfo2);
+    // Rustling leaves (high filtered noise)
+    const leaves = createFilteredNoise(ctx, 2000, 6000, 0.006);
+    connect(leaves.gain); leaves.src.start(); nodes.push(leaves.src);
+  } else if (mood === 'combat') {
+    // Intense low pulse
+    const pulse = createDrone(ctx, 55, 0.07, 'sawtooth');
+    connect(pulse.gain); pulse.osc.start(); nodes.push(pulse.osc);
+    const lfo = addLFO(ctx, pulse.gain, 1.2, 0.03);
+    nodes.push(lfo);
+    // Mid-range tension
+    const tension = createDrone(ctx, 220, 0.02, 'triangle');
+    connect(tension.gain); tension.osc.start(); nodes.push(tension.osc);
+    // Rumbling chaos noise
+    const chaos = createFilteredNoise(ctx, 60, 300, 0.025);
+    connect(chaos.gain); chaos.src.start(); nodes.push(chaos.src);
+  } else if (mood === 'mystery') {
+    // Eerie pad
+    const pad = createDrone(ctx, 130, 0.03, 'sine');
+    connect(pad.gain); pad.osc.start(); nodes.push(pad.osc);
+    const lfo = addLFO(ctx, pad.gain, 0.05, 0.015);
+    nodes.push(lfo);
+    // Dissonant shimmer
+    const shimmer = createDrone(ctx, 277, 0.015, 'sine');
+    connect(shimmer.gain); shimmer.osc.start(); nodes.push(shimmer.osc);
+    // Whispery high noise
+    const whisper = createFilteredNoise(ctx, 3000, 8000, 0.005);
+    connect(whisper.gain); whisper.src.start(); nodes.push(whisper.src);
+    const lfo2 = addLFO(ctx, whisper.gain, 0.2, 0.003);
+    nodes.push(lfo2);
+  }
+
+  return { nodes, gains };
+}
+
+export function setAmbientMood(mood: AmbientMood) {
+  if (mood === currentMood) return;
+  stopAmbient();
+  currentMood = mood;
+  if (mood === 'none' || muted) return;
+
+  const ctx = getCtx();
+  ambientMasterGain = ctx.createGain();
+  ambientMasterGain.gain.setValueAtTime(0, ctx.currentTime);
+  ambientMasterGain.gain.linearRampToValueAtTime(1, ctx.currentTime + 2); // 2s fade in
+  ambientMasterGain.connect(ctx.destination);
+  ambientLayers = buildMoodLayers(ctx, mood, ambientMasterGain);
+}
+
+export function stopAmbient() {
+  if (ambientLayers) {
+    const ctx = audioCtx;
+    if (ctx && ambientMasterGain) {
+      // Fade out over 1 second
+      const now = ctx.currentTime;
+      ambientMasterGain.gain.cancelScheduledValues(now);
+      ambientMasterGain.gain.setValueAtTime(ambientMasterGain.gain.value, now);
+      ambientMasterGain.gain.linearRampToValueAtTime(0, now + 1);
+      // Stop all nodes after fade
+      setTimeout(() => {
+        ambientLayers?.nodes.forEach((n) => { try { if ('stop' in n) (n as OscillatorNode).stop(); } catch {} });
+        ambientLayers = null;
+        ambientMasterGain?.disconnect();
+        ambientMasterGain = null;
+      }, 1100);
+    } else {
+      ambientLayers.nodes.forEach((n) => { try { if ('stop' in n) (n as OscillatorNode).stop(); } catch {} });
+      ambientLayers = null;
+    }
+  }
+  if (ambientInterval) { clearInterval(ambientInterval); ambientInterval = null; }
+  currentMood = 'none';
+}
+
+export function getAmbientMood(): AmbientMood {
+  return currentMood;
+}
+
+export const AMBIENT_MOODS: { id: AmbientMood; label: string; description: string }[] = [
+  { id: 'none', label: 'Off', description: 'No ambient sound' },
+  { id: 'tavern', label: 'Tavern', description: 'Warm fireplace, crowd murmur' },
+  { id: 'dungeon', label: 'Dungeon', description: 'Deep rumble, dripping water' },
+  { id: 'forest', label: 'Forest', description: 'Wind, rustling leaves, birds' },
+  { id: 'combat', label: 'Combat', description: 'Intense pulse, tension' },
+  { id: 'mystery', label: 'Mystery', description: 'Eerie pads, whispers' },
+];

@@ -432,13 +432,14 @@ interface BattleMapProps {
   onTerrainChange?: (terrain: TerrainType[][]) => void;
   onOpportunityAttack?: (attackerName: string, targetName: string, damage: number, hit: boolean) => void;
   onMapImageChange?: (url: string | null) => void;
-  canUseDMTools?: boolean; // false hides DM mode toggle, terrain paint, traps, map upload
-  activeAoE?: ActiveAoE | null; // AoE spell placement overlay
-  onAoEConfirm?: (affectedCells: { col: number; row: number }[]) => void; // called when player clicks to confirm AoE
+  canUseDMTools?: boolean;
+  activeAoE?: ActiveAoE | null;
+  onAoEConfirm?: (affectedCells: { col: number; row: number }[]) => void;
   onAoECancel?: () => void;
+  animateMoveRef?: React.MutableRefObject<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -479,6 +480,31 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   // AoE hover tracking
   const [aoeHoverCell, setAoeHoverCell] = useState<{ col: number; row: number } | null>(null);
+
+  // Token animation state — smooth movement between grid cells
+  interface TokenAnim { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }
+  const animatingTokensRef = useRef<Map<string, TokenAnim>>(new Map());
+  const animFrameRef = useRef<number>(0);
+  const [, forceRender] = useState(0); // trigger re-draw during animation
+
+  // Start a smooth token animation from one grid cell to another (exposed via animateMoveRef)
+  const animateToken = useCallback((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number, durationMs = 300) => {
+    animatingTokensRef.current.set(unitId, {
+      fromX: fromCol * CELL_SIZE + CELL_SIZE / 2,
+      fromY: fromRow * CELL_SIZE + CELL_SIZE / 2,
+      toX: toCol * CELL_SIZE + CELL_SIZE / 2,
+      toY: toRow * CELL_SIZE + CELL_SIZE / 2,
+      startTime: performance.now(),
+      duration: durationMs,
+    });
+    forceRender((n) => n + 1); // kick the animation loop
+  }, []);
+
+  // Expose animateToken to parent via ref
+  useEffect(() => {
+    if (animateMoveRef) animateMoveRef.current = animateToken;
+    return () => { if (animateMoveRef) animateMoveRef.current = null; };
+  }, [animateMoveRef, animateToken]);
 
   // ESC key to cancel AoE placement
   useEffect(() => {
@@ -749,8 +775,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       if (!dmMode && !visibility[pos.row]?.[pos.col]) return; // hidden in fog
 
       const isDrag = dragging?.unitId === pos.unitId && dragPos;
-      const cx = isDrag ? dragPos!.x : pos.col * CELL_SIZE + CELL_SIZE / 2;
-      const cy = isDrag ? dragPos!.y : pos.row * CELL_SIZE + CELL_SIZE / 2;
+      // Animated position: lerp between from/to during animation
+      const anim = animatingTokensRef.current.get(pos.unitId);
+      let cx: number, cy: number;
+      if (isDrag) {
+        cx = dragPos!.x;
+        cy = dragPos!.y;
+      } else if (anim) {
+        const t = Math.min(1, (performance.now() - anim.startTime) / anim.duration);
+        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // easeInOutQuad
+        cx = anim.fromX + (anim.toX - anim.fromX) * ease;
+        cy = anim.fromY + (anim.toY - anim.fromY) * ease;
+      } else {
+        cx = pos.col * CELL_SIZE + CELL_SIZE / 2;
+        cy = pos.row * CELL_SIZE + CELL_SIZE / 2;
+      }
 
       const isSelected = selectedUnitId === unit.id;
       const isCurrentTurn = unit.isCurrentTurn;
@@ -908,7 +947,34 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     }
   }, [terrain, positions, units, visibility, explored, dmMode, gridCols, gridRows, zoom, panOffset, showMinimap]);
 
-  useEffect(() => { draw(); drawMinimap(); }, [draw, drawMinimap]);
+  // Animation loop: run requestAnimationFrame while any token is animating
+  useEffect(() => {
+    const tick = () => {
+      const now = performance.now();
+      const anims = animatingTokensRef.current;
+      let active = false;
+      for (const [id, anim] of anims) {
+        const elapsed = now - anim.startTime;
+        if (elapsed >= anim.duration) {
+          anims.delete(id);
+        } else {
+          active = true;
+        }
+      }
+      draw();
+      drawMinimap();
+      if (active) {
+        animFrameRef.current = requestAnimationFrame(tick);
+      }
+    };
+    if (animatingTokensRef.current.size > 0) {
+      animFrameRef.current = requestAnimationFrame(tick);
+    } else {
+      draw();
+      drawMinimap();
+    }
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+  }, [draw, drawMinimap]);
 
   // Minimap click-to-pan: click a point on minimap to center the main canvas there
   const handleMinimapClick = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {

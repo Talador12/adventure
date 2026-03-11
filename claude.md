@@ -639,7 +639,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AoE spell templates in BattleMap (circle/cone/line/cube, hover preview, click confirm, ESC cancel)
 - [x] Initiative tracker with turn timer countdown (60s default, green→yellow→red, pulse at 10s)
 - [x] **AoE wired into Game.tsx** — `activeAoE`/`pendingAoESpell` state, spell click enters targeting mode + switches to map view, `onAoEConfirm` applies multi-target damage with per-unit saves, AoE badge on spell list, targeting banner with cancel
-- [ ] Animated token movement (smooth pathfinding interpolation)
+- [x] Animated token movement — easeInOutQuad interpolation between grid cells, requestAnimationFrame loop during animation, `animateMoveRef` callback for Game.tsx to trigger enemy AI animations, remote `token_move` events also animate
 - [x] Hover tooltips on initiative bar (HP, AC, abilities with cooldowns, conditions with durations, speed, CR, concentration)
 - [ ] Fog of war per-player (each player sees only from their token — currently global fog)
 
@@ -650,7 +650,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] NPC tab: NPC Talk mode toggle, name/role inputs, dialogue history
 - [x] Quick NPC generator: random race + name (from names.ts) + role + personality + quirk, auto-fills NPC name/role, adds character note to dialogue history
 - [x] Notes tab: auto-saved textarea (localStorage per room), character counter
-- [ ] Music/ambiance selector (ambient sound URLs or Web Audio API)
+- [x] Music/ambiance system — 5 procedural mood presets (tavern, dungeon, forest, combat, mystery) via Web Audio API oscillators + filtered noise. Fade in/out, LFO modulation, auto-switch to combat on encounter spawn. DM sidebar selector (always visible at bottom)
 
 ### Round 29: Lobby Hub + Role-Based Flows + Campaign Discovery
 **Goal:** Restructure the home page and lobby into a role-aware hub. DMs create campaigns, players find games, spectators browse. Public/private lobbies. Everything accessible from within a live lobby session.
