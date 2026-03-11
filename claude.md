@@ -13,7 +13,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, not the headline.
 
-**Core principle:** Any table configuration from 0 to N players, where each seat is human, AI, or empty.
+**Core principle:** Any table configuration from 0 to N participants, where each seat is human, AI, or empty — and anyone can spectate.
 
 | Config | Description |
 |---|---|
@@ -21,18 +21,23 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 | Solo + Human DM | Classic 1-on-1, zero AI involvement |
 | Full party, Human DM | Traditional group play, AI completely off |
 | Mixed party | Some humans, some AI players, human or AI DM |
-| Full AI table | Observer mode — watch AI play (demo/novelty) |
-| Any hybrid | DM toggles AI fill per seat at any time |
+| Full AI table | Watch AI play D&D — spectate the chaos (demo/novelty) |
+| Spectator-only | Join to watch and chat, no character needed |
+| Any hybrid | DM toggles AI fill per seat at any time, spectators welcome |
 
-**AI features are opt-in per seat, not global:**
+**Every seat is a choice, not a default:**
 - DM seat: human or AI (toggled by campaign host)
 - Player seats: human, AI-controlled, or empty (waiting for join)
-- AI assistant tools (character builder, rule lookup, encounter balance): togglable in campaign settings
+- Spectator seats: watch everything, chat with the table, no game actions — human or AI
+- Assistant tools (character builder, encounter balance, NPC generator): available if you want them, invisible if you don't
 - Zero AI is a first-class experience — the app works fully without any AI features enabled
+- Full AI is also first-class — watch a complete AI party run a campaign as a spectator
 
-**Branding:** Never lead with "AI-powered." Lead with the experience: play D&D your way, with friends or solo, in your browser. AI is mentioned as an optional feature, not the identity.
+**Branding:** Never lead with "AI-powered." Never center AI as the subject. Lead with the experience: play D&D your way, with friends or solo, in your browser. AI is one option among equals — sitting right next to "your friends" and "solo" with no special treatment. The product works identically well with zero AI or full AI. Neither is the default. Neither is privileged.
 
-**In one line:** "AI DM, players, and tools available when you want them, invisible when you don't."
+**In one line:** "Every seat at the table is yours to fill however you want."
+
+**The balance:** People who love AI should feel empowered to use it everywhere. People who dislike AI should never feel pressured, nudged, or like they're missing out. Both groups should look at the same landing page and think "this is for me." The way to achieve this: frame everything as *choice per seat*, not as an AI feature. AI is a fill option, not a headline.
 
 ## Current Focus
 
@@ -568,13 +573,19 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### Round 27: Landing Page + Lobby + Seat Model + Campaign Management Polish
 **Goal:** Rebrand as player-first, implement the 0-to-N seat model in the lobby, and flesh out campaign management.
 
-**Landing page (DONE):**
+**Landing page (DONE — updated Round 28):**
 - [x] Hero section with tagline ("Your table. Your rules."), player-first messaging
-- [x] Feature highlights: Live Dice, Battle Maps, Play Your Way, D&D 5e Combat
+- [x] Hero copy updated: "AI DM, players, and tools available when you want them, invisible when you don't" — not just "tools"
+- [x] Hero mentions spectators: "or just watch the chaos unfold as a spectator"
+- [x] Feature highlights: 6 cards (Any Party Size, Full 5e Combat, Tactical Maps, Live Dice, Every Seat Your Call, Spectate)
 - [x] Inline quick actions (Join, New Campaign, Create Character)
+- [x] Campaign dashboard cards: grid layout, DM name, player count, party avatars, Lobby/Play split buttons
+- [x] Character dashboard cards: portrait, HP bar, AC/gold/items, stat modifier row (STR/DEX/CON/INT/WIS/CHA), Edit button
+- [x] Campaigns always show Lobby link (navigates to /lobby/:id — creates lobby session on connect if none exists)
+- [x] Empty states with calls-to-action for both campaigns and characters
 - [x] Removed "AI-powered" branding from all surfaces
-- [ ] "How it works" section (create campaign, invite friends, play) — deferred
 - [x] Auth buttons (Discord + Google) in header — already done
+- [ ] "How it works" section (create campaign, invite friends, play) — deferred
 
 **Seat model (DONE):**
 - [x] `Seat` interface: `{ id, type: human|ai|empty, playerId?, username?, avatar?, characterId?, characterName?, ready }`
@@ -656,6 +667,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Goal:** Restructure the home page and lobby into a role-aware hub. DMs create campaigns, players find games, spectators browse. Public/private lobbies. Everything accessible from within a live lobby session.
 
 **Home page role-based entry points:**
+*Groundwork done: Home.tsx already has New Campaign + Create Character buttons, campaign dashboard cards with Lobby/Play, character cards with stat overview. Round 29 adds the discovery/browse layer and explicit role entry points.*
 - **"New Campaign" (DM button)** — create campaign, name it, set public/private, configure seats (human/AI/empty), pick or create a character, land in lobby as DM
 - **"Create Character" (Player button)** — character creation flow, then optionally find a campaign to join
 - **"Find a Campaign" (Player section)** — browse public lobbies looking for a game to join as a player. Filter by open seats, party size, campaign name. Private lobbies listed with lock icon, require password to join

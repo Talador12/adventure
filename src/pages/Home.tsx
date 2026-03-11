@@ -235,9 +235,9 @@ export default function Home() {
             Your table. <span className="text-[#F38020]">Your rules.</span>
           </h2>
           <p className="text-lg text-slate-400 max-w-2xl">
-            D&D 5e virtual tabletop — play with friends or solo, all from your browser.
-            Create characters, roll dice, explore dungeons, and battle monsters in real-time.
-            AI tools available when you want them, invisible when you don't.
+            D&D 5e in your browser — any party, any size. Play with friends, go solo, fill seats with AI, or just
+            spectate. Every seat at the table is yours to fill however you want. Works just as well with zero AI
+            as it does with a full AI party.
           </p>
 
           {/* Quick actions */}
@@ -257,12 +257,14 @@ export default function Home() {
           </div>
 
           {/* Feature highlights */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 text-center w-full max-w-3xl">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-8 text-center w-full max-w-4xl">
             {[
-              { icon: '🎲', label: 'Live Dice', desc: 'Server-rolled, synced' },
-              { icon: '🗺️', label: 'Battle Maps', desc: 'Grid, tokens, fog' },
-              { icon: '👥', label: 'Play Your Way', desc: '1 to N players, any mix' },
-              { icon: '⚔️', label: 'D&D 5e Combat', desc: 'Initiative, spells, loot' },
+              { icon: '👥', label: 'Any Party Size', desc: 'Solo, co-op, full table, or spectate — humans and AI in any seat' },
+              { icon: '⚔️', label: 'Full 5e Combat', desc: 'Initiative, AoE spells, saving throws, death saves, opportunity attacks' },
+              { icon: '🗺️', label: 'Tactical Maps', desc: 'Fog of war, terrain, pathfinding, traps, animated tokens' },
+              { icon: '🎲', label: 'Live Dice', desc: 'Server-authoritative rolls synced across all players in real-time' },
+              { icon: '🎭', label: 'Every Seat, Your Call', desc: 'Human or AI for any seat — DM, players, spectators. Or no AI at all' },
+              { icon: '👁️', label: 'Spectate', desc: 'Watch any game, chat with the table — no character required' },
             ].map((f) => (
               <div key={f.label} className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
                 <div className="text-2xl mb-1">{f.icon}</div>
@@ -276,104 +278,159 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex-1 p-6 flex flex-col items-center gap-8 max-w-6xl mx-auto w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-          {/* Saved Campaigns */}
-          {campaigns.length > 0 && (
-            <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">
-              <CardContent className="p-8 space-y-4">
-                <h2 className="text-xl font-semibold text-[#F38020]">Your Campaigns</h2>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {campaigns.map((c) => (
-                    <div key={c.roomId} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                      <div className="w-9 h-9 rounded-lg bg-amber-900/30 flex items-center justify-center shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-amber-500">
-                          <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => navigate(`/game/${c.roomId}`)}>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white truncate hover:text-[#F38020] transition-colors">{c.name}</div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(c.createdAt).toLocaleDateString()}</span>
-                          {/* Party member avatars */}
-                          {partyMembers[c.roomId] && partyMembers[c.roomId].length > 0 && (
-                            <div className="flex -space-x-1.5 ml-1">
-                              {partyMembers[c.roomId].slice(0, 5).map((m, i) =>
-                                m.avatar_url ? (
-                                  <img key={i} src={m.avatar_url} alt={m.display_name} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-600" />
-                                ) : (
-                                  <div key={i} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300">
-                                    {m.display_name.charAt(0).toUpperCase()}
-                                  </div>
-                                )
-                              )}
-                              {partyMembers[c.roomId].length > 5 && <div className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-400">+{partyMembers[c.roomId].length - 5}</div>}
-                            </div>
-                          )}
+
+        {/* Campaigns section — full width */}
+        <div className="w-full space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-[#F38020]">Your Campaigns</h2>
+            <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
+              + New Campaign
+            </Button>
+          </div>
+          {campaigns.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {campaigns.map((c) => {
+                const members = partyMembers[c.roomId] || [];
+                const dmMember = members.find((m) => m.role === 'dm');
+                const playerCount = members.filter((m) => m.role !== 'dm').length;
+                return (
+                  <div key={c.roomId} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-all overflow-hidden">
+                    {/* Campaign header */}
+                    <div className="px-4 pt-4 pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{c.name}</h3>
+                          <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span>{new Date(c.createdAt).toLocaleDateString()}</span>
+                            {dmMember && <span className="text-amber-500">DM: {dmMember.display_name}</span>}
+                            {playerCount > 0 && <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>}
+                          </div>
                         </div>
+                        <button onClick={() => handleDeleteCampaign(c.roomId, c.name)} className="text-slate-500 hover:text-red-400 transition-colors p-1 -mt-1 -mr-1" title="Delete campaign">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 000 1.5h.3l.815 8.15A1.5 1.5 0 005.357 15h5.285a1.5 1.5 0 001.493-1.35l.815-8.15h.3a.75.75 0 000-1.5H11v-.75A2.25 2.25 0 008.75 1h-1.5A2.25 2.25 0 005 3.25zm2.25-.75a.75.75 0 00-.75.75V4h3v-.75a.75.75 0 00-.75-.75h-1.5z" clipRule="evenodd" /></svg>
+                        </button>
                       </div>
-                      <button onClick={() => navigate(`/lobby/${c.roomId}`)} className="text-xs text-sky-400 hover:text-sky-300 shrink-0" title="Open lobby">
+                      {/* Party member avatars */}
+                      {members.length > 0 && (
+                        <div className="flex -space-x-2 mt-2.5">
+                          {members.slice(0, 6).map((m, i) =>
+                            m.avatar_url ? (
+                              <img key={i} src={m.avatar_url} alt={m.display_name} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900" />
+                            ) : (
+                              <div key={i} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-300">
+                                {m.display_name.charAt(0).toUpperCase()}
+                              </div>
+                            )
+                          )}
+                          {members.length > 6 && <div className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-400">+{members.length - 6}</div>}
+                        </div>
+                      )}
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex border-t border-slate-200 dark:border-slate-800">
+                      <button onClick={() => navigate(`/lobby/${c.roomId}`)} className="flex-1 py-2.5 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 transition-colors text-center border-r border-slate-200 dark:border-slate-800">
                         Lobby
                       </button>
-                      <button onClick={() => navigate(`/game/${c.roomId}`)} className="text-xs text-amber-500 hover:text-amber-300 shrink-0" title="Resume game">
+                      <button onClick={() => navigate(`/game/${c.roomId}`)} className="flex-1 py-2.5 text-xs font-semibold text-amber-500 hover:bg-amber-500/10 transition-colors text-center">
                         Play
                       </button>
-                      <button onClick={() => handleDeleteCampaign(c.roomId, c.name)} className="text-xs text-red-400 hover:text-red-300 shrink-0" title="Delete campaign">
-                        ✕
-                      </button>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 text-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No campaigns yet. Create one to get started, or join with a room code above.</p>
+            </div>
           )}
+        </div>
 
-          {/* Characters */}
-          <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-shadow">
-            <CardContent className="p-8 space-y-4">
-              <h2 className="text-xl font-semibold text-[#F38020]">Characters</h2>
-              {characters.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {characters.map((c) => (
-                    <div key={c.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                      {/* Portrait thumbnail — illustrated art fallback */}
+        {/* Characters section — full width */}
+        <div className="w-full space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-[#F38020]">Your Characters</h2>
+            <Button variant="default" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={() => navigate('/characters/new')}>
+              + New Character
+            </Button>
+          </div>
+          {characters.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {characters.map((c) => {
+                const hpPct = c.maxHp > 0 ? Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100)) : 100;
+                const hpColor = hpPct <= 25 ? 'bg-red-500' : hpPct <= 50 ? 'bg-yellow-500' : 'bg-green-500';
+                const strMod = Math.floor((c.stats.STR - 10) / 2);
+                const dexMod = Math.floor((c.stats.DEX - 10) / 2);
+                const conMod = Math.floor((c.stats.CON - 10) / 2);
+                const intMod = Math.floor((c.stats.INT - 10) / 2);
+                const wisMod = Math.floor((c.stats.WIS - 10) / 2);
+                const chaMod = Math.floor((c.stats.CHA - 10) / 2);
+                const fmtMod = (v: number) => v >= 0 ? `+${v}` : `${v}`;
+                return (
+                  <div key={c.id} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-all overflow-hidden">
+                    <div className="flex gap-3 p-4">
+                      {/* Portrait */}
                       <img
                         src={c.portrait || `/portraits/classes/${c.class.toLowerCase()}.webp`}
                         alt=""
-                        className="w-9 h-9 rounded-lg object-cover shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `/portraits/races/${c.race.toLowerCase()}.webp`;
-                        }}
+                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                        onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${c.race.toLowerCase()}.webp`; }}
                       />
-                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => navigate(`/characters/${c.id}/edit`)}>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white truncate hover:text-[#F38020] transition-colors">{c.name}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          Lv{c.level} {c.race} {c.class}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{c.name}</h3>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">Lv{c.level} {c.race} {c.class}</div>
+                          </div>
+                          <button
+                            onClick={() => { removeCharacter(c.id); toast(`${c.name} deleted`, 'info'); }}
+                            className="text-slate-500 hover:text-red-400 transition-colors p-1 -mt-1 -mr-1" title="Delete character"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 000 1.5h.3l.815 8.15A1.5 1.5 0 005.357 15h5.285a1.5 1.5 0 001.493-1.35l.815-8.15h.3a.75.75 0 000-1.5H11v-.75A2.25 2.25 0 008.75 1h-1.5A2.25 2.25 0 005 3.25zm2.25-.75a.75.75 0 00-.75.75V4h3v-.75a.75.75 0 00-.75-.75h-1.5z" clipRule="evenodd" /></svg>
+                          </button>
+                        </div>
+                        {/* HP bar */}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${hpColor}`} style={{ width: `${hpPct}%` }} />
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 shrink-0">{c.hp}/{c.maxHp}</span>
+                        </div>
+                        {/* Quick stats */}
+                        <div className="flex items-center gap-2 mt-1.5 text-[9px] font-mono text-slate-500 dark:text-slate-400">
+                          <span className="text-sky-400">AC {c.ac}</span>
+                          <span className="text-amber-400">{c.gold}g</span>
+                          {c.inventory.length > 0 && <span>{c.inventory.length} items</span>}
                         </div>
                       </div>
-                      <button onClick={() => navigate(`/characters/${c.id}/edit`)} className="text-xs text-amber-500 hover:text-amber-300 ml-1 shrink-0" title="Edit character">
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => {
-                          removeCharacter(c.id);
-                          toast(`${c.name} deleted`, 'info');
-                        }}
-                        className="text-xs text-red-400 hover:text-red-300 ml-1 shrink-0"
-                        title="Delete character"
-                      >
-                        ✕
+                    </div>
+                    {/* Stat mods row */}
+                    <div className="grid grid-cols-6 gap-0 border-t border-slate-200 dark:border-slate-800 text-center">
+                      {([['STR', strMod], ['DEX', dexMod], ['CON', conMod], ['INT', intMod], ['WIS', wisMod], ['CHA', chaMod]] as [string, number][]).map(([stat, mod]) => (
+                        <div key={stat} className="py-1.5 border-r border-slate-200 dark:border-slate-800 last:border-r-0">
+                          <div className="text-[8px] text-slate-400 uppercase">{stat}</div>
+                          <div className={`text-[10px] font-bold ${mod > 0 ? 'text-green-400' : mod < 0 ? 'text-red-400' : 'text-slate-500'}`}>{fmtMod(mod)}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Action button */}
+                    <div className="border-t border-slate-200 dark:border-slate-800">
+                      <button onClick={() => navigate(`/characters/${c.id}/edit`)} className="w-full py-2.5 text-xs font-semibold text-amber-500 hover:bg-amber-500/10 transition-colors text-center">
+                        Edit Character
                       </button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No characters yet. Create one to get started!</p>
-              )}
-              <Button variant="default" className="w-full bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 rounded-md shadow hover:shadow-md transition-all active:scale-[0.98]" onClick={() => navigate('/characters/new')}>
-                + New Character
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 text-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No characters yet. Create one to join a campaign!</p>
+              <Button variant="default" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={() => navigate('/characters/new')}>
+                Create Your First Character
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </div>
 
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-6 opacity-80 flex items-center gap-1">
