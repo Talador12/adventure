@@ -69,6 +69,8 @@ export interface Unit {
   concentratingOn?: string; // spell name if unit is concentrating on a spell
   speed: number; // movement speed in cells (default 6 = 30ft)
   movementUsed: number; // cells moved this turn
+  reactionUsed: boolean; // D&D 5e: one reaction per round, resets at start of turn
+  disengaged: boolean; // D&D 5e Disengage: no opportunity attacks triggered this turn
   cr?: number; // challenge rating for XP calculation
   xpValue?: number; // XP reward on kill
 }
@@ -201,6 +203,8 @@ export function generateEnemies(difficulty: string, partyLevel: number, count?: 
       conditions: [],
       speed: 6, // 30ft default
       movementUsed: 0,
+      reactionUsed: false,
+      disengaged: false,
       cr: template.cr,
       xpValue: template.xpValue,
     } satisfies Unit;
@@ -1571,7 +1575,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
             speed = 6 + Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0);
           }
         }
-        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, speed };
+        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, reactionUsed: false, disengaged: false, speed };
       });
       // Sort descending by initiative (higher goes first)
       withInitiative.sort((a, b) => b.initiative - a.initiative);
@@ -1614,6 +1618,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       cleared[nextIdx].isCurrentTurn = true;
       cleared[nextIdx].movementUsed = 0; // reset movement for new turn
+      cleared[nextIdx].reactionUsed = false; // reset reaction for new turn
+      cleared[nextIdx].disengaged = false; // reset disengage for new turn
 
       const isNewRound = wrapped || nextIdx <= currentIdx;
       if (isNewRound) {

@@ -7,7 +7,7 @@ import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../comp
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
-import { findBestMoveToward, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
+import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
@@ -314,6 +314,8 @@ export default function Game() {
       characterId: char.id,
       speed: 6 + monkSpeedBonus, // 6 cells = 30ft base
       movementUsed: 0,
+      reactionUsed: false,
+      disengaged: false,
     };
     setUnits([unit]);
     setShowCharacterPicker(false);
@@ -558,6 +560,41 @@ export default function Game() {
           if (remaining > 0) {
             const dest = findBestMoveToward(terrain, enemyPos.col, enemyPos.row, targetPos.col, targetPos.row, remaining, DEFAULT_ROWS, DEFAULT_COLS);
             if (dest && (dest.col !== enemyPos.col || dest.row !== enemyPos.row)) {
+              // Player Opportunity Attacks on enemy movement
+              const oaAttackers = findOpportunityAttackers(
+                currentUnit.id, 'enemy', enemyPos.col, enemyPos.row, dest.col, dest.row, units, mapPositions,
+              );
+              for (const atk of oaAttackers) {
+                // Player OA: find character's weapon stats
+                const atkUnit = units.find((u) => u.id === atk.unitId);
+                const atkChar = atkUnit?.characterId ? characters.find((c) => c.id === atkUnit.characterId) : null;
+                const weapon = atkChar?.equipment?.weapon;
+                const atkBonus = weapon?.attackBonus || 0;
+                const dieDmg = weapon?.damageDie || '1d4';
+                const dmgBonus = weapon?.damageBonus || 0;
+                const strMod = atkChar ? Math.floor((atkChar.stats.STR - 10) / 2) : 0;
+                const roll = Math.floor(Math.random() * 20) + 1;
+                const totalAtk = roll + atkBonus + strMod;
+                const hit = roll === 20 || (roll !== 1 && totalAtk >= currentUnit.ac);
+                let dmg = 0;
+                if (hit) {
+                  const dieMatch = dieDmg.match(/(\d+)d(\d+)/);
+                  if (dieMatch) {
+                    const [, count, sides] = dieMatch;
+                    for (let i = 0; i < Number(count); i++) dmg += Math.floor(Math.random() * Number(sides)) + 1;
+                  }
+                  dmg += dmgBonus + strMod;
+                  dmg = Math.max(1, dmg);
+                  if (roll === 20) dmg *= 2;
+                  damageUnit(currentUnit.id, dmg);
+                }
+                setUnits((prev) => prev.map((u) => u.id === atk.unitId ? { ...u, reactionUsed: true } : u));
+                const oaMsg = hit
+                  ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!`
+                  : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!`;
+                setCombatLog((prev) => [...prev, oaMsg]);
+                addDmMessage(oaMsg);
+              }
               setMapPositions((prev) => prev.map((p) => p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p));
               setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u));
               broadcastGameEvent('token_move', { unitId: currentUnit.id, col: dest.col, row: dest.row });
@@ -820,6 +857,8 @@ export default function Game() {
               conditions: [],
               speed: 6,
               movementUsed: 0,
+              reactionUsed: false,
+              disengaged: false,
               cr: templateMatch?.cr ?? 1,
               xpValue: templateMatch?.xpValue ?? 200,
             } satisfies Unit;
@@ -1743,6 +1782,31 @@ export default function Game() {
                         );
                       })()}
 
+                      {/* Disengage action — prevents opportunity attacks this turn */}
+                      {inCombat && selectedCharacter && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        return (
+                          <button
+                            disabled={!isPlayerTurn || playerUnit.disengaged}
+                            title={!isPlayerTurn ? 'Wait for your turn' : playerUnit.disengaged ? 'Already disengaged' : 'Move without triggering opportunity attacks'}
+                            onClick={() => {
+                              setUnits((prev: Unit[]) => prev.map((u) =>
+                                u.id === playerUnit.id ? { ...u, disengaged: true } : u
+                              ));
+                              const msg = `${selectedCharacter.name} takes the Disengage action! (No opportunity attacks this turn)`;
+                              setCombatLog((prev) => [...prev, msg]);
+                              addDmMessage(msg);
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-900/40 hover:bg-violet-900/60 border border-violet-700/50 text-violet-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" /></svg>
+                            Disengage
+                          </button>
+                        );
+                      })()}
+
                       {/* End Combat button */}
                       {inCombat && (
                         <button
@@ -2332,6 +2396,14 @@ export default function Game() {
                   <BattleMap
                     onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                     onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
+                    onOpportunityAttack={(attackerName, targetName, damage, hit) => {
+                      const msg = hit
+                        ? `Opportunity Attack! ${attackerName} strikes ${targetName} for ${damage} damage as they flee!`
+                        : `Opportunity Attack! ${attackerName} swings at ${targetName} but misses!`;
+                      setCombatLog((prev) => [...prev, msg]);
+                      addDmMessage(msg);
+                      setTimeout(broadcastCombatSyncLatest, 50);
+                    }}
                   />
                 )}
               </div>

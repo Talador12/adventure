@@ -2,7 +2,7 @@
 // vision-based fog of war, DM tools, and zoom/pan support.
 import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit, type ConditionType } from '../../contexts/GameContext';
-import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells } from '../../lib/mapUtils';
+import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 
 const CELL_SIZE = 48;
 const TOKEN_RADIUS = 18;
@@ -347,9 +347,10 @@ type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pi
 interface BattleMapProps {
   onTokenMove?: (unitId: string, col: number, row: number) => void;
   onTerrainChange?: (terrain: TerrainType[][]) => void;
+  onOpportunityAttack?: (attackerName: string, targetName: string, damage: number, hit: boolean) => void;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
@@ -811,6 +812,39 @@ export default function BattleMap({ onTokenMove, onTerrainChange }: BattleMapPro
       ));
     }
 
+    // Opportunity Attacks: check if moving unit leaves any enemy's melee reach
+    if (inCombat) {
+      const movingUnit = units.find((u) => u.id === dragging.unitId);
+      const oldPos = positions.find((p) => p.unitId === dragging.unitId);
+      if (movingUnit && oldPos && (oldPos.col !== col || oldPos.row !== row)) {
+        const attackers = findOpportunityAttackers(
+          dragging.unitId, movingUnit.type, oldPos.col, oldPos.row, col, row, units, positions,
+        );
+        for (const atk of attackers) {
+          // Roll attack: d20 + attackBonus vs moving unit's AC
+          const roll = Math.floor(Math.random() * 20) + 1;
+          const totalAtk = roll + atk.attackBonus;
+          const hit = roll === 20 || (roll !== 1 && totalAtk >= movingUnit.ac);
+          let dmg = 0;
+          if (hit) {
+            // Roll damage from damageDie (e.g. "1d8")
+            const dieMatch = atk.damageDie.match(/(\d+)d(\d+)/);
+            if (dieMatch) {
+              const [, count, sides] = dieMatch;
+              for (let i = 0; i < Number(count); i++) dmg += Math.floor(Math.random() * Number(sides)) + 1;
+            }
+            dmg += atk.damageBonus;
+            dmg = Math.max(1, dmg);
+            if (roll === 20) dmg *= 2; // crit
+            damageUnit(dragging.unitId, dmg);
+          }
+          // Mark reaction as used
+          setUnits((prev) => prev.map((u) => u.id === atk.unitId ? { ...u, reactionUsed: true } : u));
+          onOpportunityAttack?.(atk.name, movingUnit.name, dmg, hit);
+        }
+      }
+    }
+
     // Move the token
     setPositions((prev) =>
       prev.map((p) => (p.unitId === dragging.unitId ? { ...p, col, row } : p))
@@ -847,7 +881,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange }: BattleMapPro
     setDragging(null);
     setDragPos(null);
     setReachableCells(null);
-  }, [panning, painting, dragging, dragPos, gridCols, gridRows, terrain, inCombat, reachableCells, setUnits, damageUnit, traps, units, applyCondition]);
+  }, [panning, painting, dragging, dragPos, gridCols, gridRows, terrain, inCombat, reachableCells, setUnits, damageUnit, traps, units, applyCondition, positions, onOpportunityAttack]);
 
   // --- Zoom ---
   const handleWheel = useCallback((e: ReactWheelEvent<HTMLDivElement>) => {

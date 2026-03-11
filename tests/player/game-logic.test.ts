@@ -4,12 +4,14 @@ import { describe, it, expect } from 'vitest';
 import {
   computeReachableCells,
   findBestMoveToward,
+  findOpportunityAttackers,
   isAdjacent,
   chebyshevDistance,
   hasLineOfSight,
   parseRangeFt,
   TERRAIN_COST,
   type TerrainType,
+  type TokenPosition,
 } from '../../src/lib/mapUtils';
 import {
   calculateAC,
@@ -478,5 +480,103 @@ describe('data integrity', () => {
     expect(ENEMY_TEMPLATES.medium.length).toBeGreaterThan(0);
     expect(ENEMY_TEMPLATES.hard.length).toBeGreaterThan(0);
     expect(ENEMY_TEMPLATES.deadly.length).toBeGreaterThan(0);
+  });
+});
+
+describe('opportunity attacks', () => {
+  const makeUnit = (id: string, name: string, type: 'player' | 'enemy', overrides?: Partial<{ hp: number; reactionUsed: boolean; disengaged: boolean; attackBonus: number; damageDie: string; damageBonus: number; conditions: { type: string }[] }>) => ({
+    id, name, type, hp: 20, reactionUsed: false, disengaged: false,
+    attackBonus: 3, damageDie: '1d8', damageBonus: 1, conditions: [] as { type: string }[],
+    ...overrides,
+  });
+
+  const makePos = (unitId: string, col: number, row: number): TokenPosition => ({ unitId, col, row });
+
+  it('enemy triggers OA when player moves away from adjacency', () => {
+    const units = [
+      makeUnit('p1', 'Fighter', 'player'),
+      makeUnit('e1', 'Goblin', 'enemy'),
+    ];
+    const positions = [makePos('p1', 5, 5), makePos('e1', 5, 6)]; // adjacent
+    // Player at (5,5) moves to (5,3) — leaves goblin's reach
+    const attackers = findOpportunityAttackers('p1', 'player', 5, 5, 5, 3, units, positions);
+    expect(attackers).toHaveLength(1);
+    expect(attackers[0].unitId).toBe('e1');
+    expect(attackers[0].name).toBe('Goblin');
+  });
+
+  it('no OA when moving within adjacency', () => {
+    const units = [
+      makeUnit('p1', 'Fighter', 'player'),
+      makeUnit('e1', 'Goblin', 'enemy'),
+    ];
+    const positions = [makePos('p1', 5, 5), makePos('e1', 5, 6)];
+    // Player at (5,5) moves to (6,6) — still adjacent to goblin at (5,6)
+    const attackers = findOpportunityAttackers('p1', 'player', 5, 5, 6, 6, units, positions);
+    expect(attackers).toHaveLength(0);
+  });
+
+  it('no OA from dead enemies', () => {
+    const units = [
+      makeUnit('p1', 'Fighter', 'player'),
+      makeUnit('e1', 'Dead Goblin', 'enemy', { hp: 0 }),
+    ];
+    const positions = [makePos('p1', 5, 5), makePos('e1', 5, 6)];
+    const attackers = findOpportunityAttackers('p1', 'player', 5, 5, 5, 3, units, positions);
+    expect(attackers).toHaveLength(0);
+  });
+
+  it('no OA if reaction already used', () => {
+    const units = [
+      makeUnit('p1', 'Fighter', 'player'),
+      makeUnit('e1', 'Goblin', 'enemy', { reactionUsed: true }),
+    ];
+    const positions = [makePos('p1', 5, 5), makePos('e1', 5, 6)];
+    const attackers = findOpportunityAttackers('p1', 'player', 5, 5, 5, 3, units, positions);
+    expect(attackers).toHaveLength(0);
+  });
+
+  it('no OA if stunned', () => {
+    const units = [
+      makeUnit('p1', 'Fighter', 'player'),
+      makeUnit('e1', 'Goblin', 'enemy', { conditions: [{ type: 'stunned' }] }),
+    ];
+    const positions = [makePos('p1', 5, 5), makePos('e1', 5, 6)];
+    const attackers = findOpportunityAttackers('p1', 'player', 5, 5, 5, 3, units, positions);
+    expect(attackers).toHaveLength(0);
+  });
+
+  it('no OA when disengaged', () => {
+    const units = [
+      makeUnit('p1', 'Fighter', 'player', { disengaged: true }),
+      makeUnit('e1', 'Goblin', 'enemy'),
+    ];
+    const positions = [makePos('p1', 5, 5), makePos('e1', 5, 6)];
+    const attackers = findOpportunityAttackers('p1', 'player', 5, 5, 5, 3, units, positions);
+    expect(attackers).toHaveLength(0);
+  });
+
+  it('multiple enemies can trigger OAs from different units', () => {
+    const units = [
+      makeUnit('p1', 'Fighter', 'player'),
+      makeUnit('e1', 'Goblin A', 'enemy'),
+      makeUnit('e2', 'Goblin B', 'enemy'),
+    ];
+    // Both goblins adjacent to player at (5,5)
+    const positions = [makePos('p1', 5, 5), makePos('e1', 4, 5), makePos('e2', 6, 5)];
+    // Player moves to (5,2) — leaves both goblins' reach
+    const attackers = findOpportunityAttackers('p1', 'player', 5, 5, 5, 2, units, positions);
+    expect(attackers).toHaveLength(2);
+  });
+
+  it('same-type units do not trigger OAs against each other', () => {
+    const units = [
+      makeUnit('e1', 'Goblin A', 'enemy'),
+      makeUnit('e2', 'Goblin B', 'enemy'),
+    ];
+    const positions = [makePos('e1', 5, 5), makePos('e2', 5, 6)];
+    // Enemy moves away from another enemy — no OA
+    const attackers = findOpportunityAttackers('e1', 'enemy', 5, 5, 5, 3, units, positions);
+    expect(attackers).toHaveLength(0);
   });
 });

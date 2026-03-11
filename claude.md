@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 22: Multiplayer session sync — Phases 1-7 complete. Full game state now broadcasts over WebSocket: combat state, token movement, terrain, encounters, character stats, scene names, and quests. Late-join state recovery via request/response protocol. DoodlePad now has late-join stroke replay and "X is drawing..." attribution indicator.
+Round 22: Multiplayer sync (Phases 1-7), Opportunity Attacks, Disengage action. Full game state syncs over WebSocket. DoodlePad late-join replay. D&D 5e opportunity attacks when leaving enemy threat range + Disengage action to avoid them.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -36,10 +36,10 @@ Round 22: Multiplayer session sync — Phases 1-7 complete. Full game state now 
 ### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
-- **Status:** Done — all 97 tests passing (69 player + 28 worker), 2 budget-skipped
+- **Status:** Done — all 105 tests passing (77 player + 28 worker), 2 budget-skipped
 
 **Three test categories:**
-1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 15 describe blocks, 69 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity. **All 69 passing.**
+1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 16 describe blocks, 77 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks. **All 77 passing.**
 2. **AI fallback tests** (`tests/ai/fallback.test.ts`) — AI binding `undefined` → all 9 AI endpoints return 503 with helpful message. Non-AI endpoints (campaign save/load) still work. **All 11 passing.**
 3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **All 11 passing, 2 skipped** (live AI tests behind `AI_TESTS=live` gate).
 4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). **All 6 passing.**
@@ -487,7 +487,6 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### High priority (next)
 - Multiplayer session sync — Phase 8 (session robustness — deferred)
 - Map image persistence — R2-backed DM map uploads
-- Opportunity Attacks — melee enemies/players get reaction attack when a unit leaves their threat range
 - Condition system fixes — `prone` should use advantage/disadvantage (not flat -2), `blessed` overloaded for 3 mechanics (Bless spell, Dodge action, Phase Shift), AC modifiers from `CONDITION_EFFECTS` defined but never applied in attack calculations
 
 ### Medium priority
@@ -567,3 +566,4 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Dead code cleanup: removed `buildMiniPortraitDataUrl` from portrait.ts, empty door-closing stub from BattleMap.tsx, unused `originalDestGetter` from useSoundFX.ts
 - AI timeout hardening: backend `aiRunWithTimeout` wrapper (25s text / 45s image) for all 10 `c.env.AI.run()` calls in _worker.ts; frontend `fetchWithTimeout` wired into all 10 AI fetch calls in CharacterCreate.tsx (7 calls) and Game.tsx (3 calls, 35s text / 45s encounter)
 - Multiplayer session sync (Phases 1-7): Result-broadcasting with suppression flag architecture. Lobby DO relays `game_event`/`state_request`/`state_response`. GameContext functions return computed results via closure capture. Game.tsx sync infrastructure: `broadcastGameEvent`, `broadcastCombatSync`, ref-based delayed broadcasts. 10 event types: `game_sync`, `encounter_spawn`, `token_move`, `terrain_update`, `map_positions`, `character_update`, `scene_sync`, `quest_sync`, `state_request`, `state_response`. Late-join recovery via state request/response. All combat actions, enemy AI, map interactions, character stats, scenes, and quests now sync across players. DoodlePad late-join replay (stroke history in DO memory, capped 5000), "X is drawing..." attribution indicator.
+- Opportunity Attacks + Disengage: D&D 5e reaction system — `reactionUsed` and `disengaged` fields on Unit, reset each turn. `findOpportunityAttackers()` pure function in mapUtils.ts checks adjacency transitions, reaction availability, stun immunity, disengage bypass. Enemy OA on player movement (BattleMap handleMouseUp), player OA on enemy movement (Game.tsx enemy AI useEffect). Disengage combat action button (violet themed). 8 new OA tests (105 total). Synced via broadcastCombatSyncLatest.

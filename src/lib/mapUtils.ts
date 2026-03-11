@@ -151,3 +151,58 @@ export function parseRangeFt(rangeStr: string): number {
   if (match) return Math.max(1, Math.floor(parseInt(match[1], 10) / 5));
   return 0;
 }
+
+// D&D 5e Opportunity Attack: find units that can make an OA against a moving unit.
+// A unit triggers an OA when it leaves an enemy's melee reach (adjacency) without Disengaging.
+// Returns array of { unitId, unitName } for units that were adjacent at old position but not at new position,
+// that are alive (hp > 0), have not used their reaction, and are not stunned.
+export interface OACandidate {
+  unitId: string;
+  name: string;
+  attackBonus: number;
+  damageDie: string;
+  damageBonus: number;
+}
+
+export function findOpportunityAttackers(
+  movingUnitId: string,
+  movingUnitType: 'player' | 'enemy' | 'npc',
+  oldCol: number, oldRow: number,
+  newCol: number, newRow: number,
+  allUnits: { id: string; name: string; type: string; hp: number; reactionUsed: boolean; disengaged: boolean; attackBonus?: number; damageDie?: string; damageBonus?: number; conditions?: { type: string }[] }[],
+  allPositions: TokenPosition[],
+): OACandidate[] {
+  // Disengaged units don't trigger OAs
+  const movingUnit = allUnits.find((u) => u.id === movingUnitId);
+  if (movingUnit?.disengaged) return [];
+
+  // Only opposing units can make OAs
+  const opposingType = movingUnitType === 'player' ? 'enemy' : 'player';
+  const candidates: OACandidate[] = [];
+
+  for (const unit of allUnits) {
+    if (unit.id === movingUnitId) continue;
+    if (unit.type !== opposingType) continue;
+    if (unit.hp <= 0) continue;
+    if (unit.reactionUsed) continue;
+    // Stunned creatures can't take reactions
+    if (unit.conditions?.some((c) => c.type === 'stunned')) continue;
+
+    const pos = allPositions.find((p) => p.unitId === unit.id);
+    if (!pos) continue;
+
+    // Was adjacent at old position, NOT adjacent at new position
+    const wasAdj = isAdjacent(oldCol, oldRow, pos.col, pos.row);
+    const stillAdj = isAdjacent(newCol, newRow, pos.col, pos.row);
+    if (wasAdj && !stillAdj) {
+      candidates.push({
+        unitId: unit.id,
+        name: unit.name,
+        attackBonus: unit.attackBonus || 0,
+        damageDie: unit.damageDie || '1d4',
+        damageBonus: unit.damageBonus || 0,
+      });
+    }
+  }
+  return candidates;
+}
