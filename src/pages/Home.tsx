@@ -165,8 +165,11 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       {/* Header */}
-      <header className="w-full bg-gradient-to-r from-[#F38020] to-[#e06a10] shadow-lg py-4 px-6 flex justify-between items-center">
-        <h1 className="text-2xl font-extrabold tracking-tight drop-shadow text-white">Adventure</h1>
+      <header className="w-full bg-gradient-to-r from-[#F38020] to-[#e06a10] shadow-lg py-2 px-6 flex justify-between items-center">
+        <div className="flex items-baseline gap-2">
+          <h1 className="text-xl font-extrabold tracking-tight drop-shadow text-white">Adventure</h1>
+          <span className="text-[11px] text-white/60 font-medium hidden sm:inline">your table, your rules</span>
+        </div>
         <div className="flex gap-3 items-center">
           {/* Theme toggle */}
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white">
@@ -230,14 +233,13 @@ export default function Home() {
 
       {/* Hero section */}
       <section className="w-full bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border-b border-slate-800">
-        <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col items-center text-center gap-6">
+        <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col items-center text-center gap-5">
           <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight">
             Your table. <span className="text-[#F38020]">Your rules.</span>
           </h2>
           <p className="text-lg text-slate-400 max-w-2xl">
-            D&D 5e in your browser — any party, any size. Play with friends, go solo, fill seats with AI, or just
-            spectate. Every seat at the table is yours to fill however you want. Works just as well with zero AI
-            as it does with a full AI party.
+            D&D 5e in your browser — finally, a virtual tabletop that doesn't need a manual. Play with friends,
+            go solo, fill seats with AI, or just spectate. Every seat at the table is yours to fill however you want.
           </p>
 
           {/* Quick actions */}
@@ -257,14 +259,14 @@ export default function Home() {
           </div>
 
           {/* Feature highlights */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-8 text-center w-full max-w-4xl">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-center w-full max-w-4xl">
             {[
               { icon: '👥', label: 'Any Party Size', desc: 'Solo, co-op, full table, or spectate — humans and AI in any seat' },
               { icon: '⚔️', label: 'Full 5e Combat', desc: 'Initiative, AoE spells, saving throws, death saves, opportunity attacks' },
               { icon: '🗺️', label: 'Tactical Maps', desc: 'Fog of war, terrain, pathfinding, traps, animated tokens' },
               { icon: '🎲', label: 'Live Dice', desc: 'Server-authoritative rolls synced across all players in real-time' },
+              { icon: '✨', label: 'Just Works', desc: 'No plugins, no install, no PDF imports — open a browser and play in minutes' },
               { icon: '🎭', label: 'Every Seat, Your Call', desc: 'Human or AI for any seat — DM, players, spectators. Or no AI at all' },
-              { icon: '👁️', label: 'Spectate', desc: 'Watch any game, chat with the table — no character required' },
             ].map((f) => (
               <div key={f.label} className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
                 <div className="text-2xl mb-1">{f.icon}</div>
@@ -276,11 +278,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Main content */}
-      <main className="flex-1 p-6 flex flex-col items-center gap-8 max-w-6xl mx-auto w-full">
+      {/* Main content — 2-column layout on desktop */}
+      <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* Campaigns section — full width */}
-        <div className="w-full space-y-4">
+        {/* Campaigns column */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-[#F38020]">Your Campaigns</h2>
             <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
@@ -288,7 +291,7 @@ export default function Home() {
             </Button>
           </div>
           {campaigns.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {campaigns.map((c) => {
                 const members = partyMembers[c.roomId] || [];
                 const dmMember = members.find((m) => m.role === 'dm');
@@ -346,8 +349,8 @@ export default function Home() {
           )}
         </div>
 
-        {/* Characters section — full width */}
-        <div className="w-full space-y-4">
+        {/* Characters column */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-[#F38020]">Your Characters</h2>
             <Button variant="default" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={() => navigate('/characters/new')}>
@@ -355,7 +358,7 @@ export default function Home() {
             </Button>
           </div>
           {characters.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {characters.map((c) => {
                 const hpPct = c.maxHp > 0 ? Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100)) : 100;
                 const hpColor = hpPct <= 25 ? 'bg-red-500' : hpPct <= 50 ? 'bg-yellow-500' : 'bg-green-500';
@@ -433,7 +436,9 @@ export default function Home() {
           )}
         </div>
 
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-6 opacity-80 flex items-center gap-1">
+        </div>{/* end 2-column grid */}
+
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-6 opacity-80 flex items-center gap-1 justify-center">
           Built by{' '}
           <a href="https://github.com/Talador12" target="_blank" rel="noreferrer" className="underline hover:text-[#F38020]">
             Keith Adler (@talador12)

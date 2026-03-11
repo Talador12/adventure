@@ -39,9 +39,11 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 **The balance:** People who love AI should feel empowered to use it everywhere. People who dislike AI should never feel pressured, nudged, or like they're missing out. Both groups should look at the same landing page and think "this is for me." The way to achieve this: frame everything as *choice per seat*, not as an AI feature. AI is a fill option, not a headline.
 
+**Accessibility idealism:** Virtual tabletops today are powerful but hard to use — even experienced players spend hours learning the UI before they can play a session. Adventure should lower that barrier dramatically. No plugins, no installs, no PDF imports — open a browser and you're at the table in minutes. This isn't a criticism of existing VTTs (Roll20, Fantasy Grounds, Foundry — those communities are wholesome and tight-knit). It's a belief that the bar can be lower without sacrificing depth. Frame as "making VTT more accessible" not "better than X."
+
 ## Current Focus
 
-Round 28 (in progress): Character wizard, BattleMap minimap + AoE overlays, turn timer, DM sidebar — all built, needs AoE wiring into Game.tsx and commit. Round 29 (roadmap): Lobby hub with role-based flows (DM/Player/Spectator entry points), public/private lobbies, campaign browser, spectator mode. Previous: Round 27 (complete) landing page + lobby + seat model + campaign settings + kick. Round 26 (complete) D1 + chat persistence + Google OAuth.
+Round 28 (complete): Character wizard, BattleMap minimap + AoE overlays, turn timer, DM sidebar, AoE spell targeting, encounter calculator, NPC generator, animated tokens, ambient sound system, landing page overhaul (dashboard cards, balanced AI messaging, condensed header/hero, 2-column layout, VTT accessibility copy). Round 29 (next): Lobby hub with role-based flows (DM/Player/Spectator entry points), public/private lobbies, campaign browser, spectator mode. Previous: Round 27 (complete) landing page + lobby + seat model + campaign settings + kick. Round 26 (complete) D1 + chat persistence + Google OAuth.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
