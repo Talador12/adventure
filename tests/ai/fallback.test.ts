@@ -29,7 +29,7 @@ async function post(path: string, body: Record<string, unknown> = {}, overrideEn
 // All AI endpoints should return 503 when AI binding is missing
 // These are NON-BLOCKING errors — the client shows a fallback, game continues
 // ---------------------------------------------------------------------------
-describe('AI unavailable — graceful 503 responses (non-blocking)', () => {
+describe('AI unavailable - graceful 503 responses (non-blocking)', () => {
   it('POST /api/portrait/generate returns 503 with helpful message', async () => {
     const res = await post('/api/portrait/generate', {
       name: 'Aric', race: 'Human', class: 'Fighter',

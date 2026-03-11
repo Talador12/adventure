@@ -1,4 +1,4 @@
-// Multiplayer campaign tests — 3-player WebSocket session via Miniflare's Lobby DO
+// Multiplayer campaign tests - 3-player WebSocket session via Miniflare's Lobby DO
 // Tests the full player lifecycle, message relay, server-authoritative dice, and broadcast patterns
 import { describe, it, expect, beforeEach } from 'vitest';
 import { env } from 'cloudflare:test';
@@ -18,25 +18,6 @@ async function connectPlayer(roomId: string): Promise<WebSocket> {
 // Helper: send a JSON message
 function send(ws: WebSocket, msg: Record<string, unknown>) {
   ws.send(JSON.stringify(msg));
-}
-
-// Helper: collect messages from a WebSocket until a condition is met or timeout
-function collectMessages(
-  ws: WebSocket,
-  count: number,
-  timeoutMs = 2000,
-): Promise<Record<string, unknown>[]> {
-  return new Promise((resolve, reject) => {
-    const msgs: Record<string, unknown>[] = [];
-    const timer = setTimeout(() => resolve(msgs), timeoutMs);
-    ws.addEventListener('message', (event) => {
-      msgs.push(JSON.parse(event.data as string));
-      if (msgs.length >= count) {
-        clearTimeout(timer);
-        resolve(msgs);
-      }
-    });
-  });
 }
 
 // Helper: wait for a single message of a specific type
@@ -59,16 +40,30 @@ function waitForMessage(
   });
 }
 
+// Helper: close a WebSocket and wait for the close event to fully propagate.
+// This prevents the Miniflare isolated storage frame error that occurs when the
+// DO's close handler fires after the test suite's storage frame has already popped.
+function closeAndWait(ws: WebSocket, timeoutMs = 2000): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    ws.addEventListener('close', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    ws.close();
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Multi-member campaign
 // ---------------------------------------------------------------------------
-describe('multiplayer campaign — 3-player party', () => {
+describe('multiplayer campaign - 3-player party', () => {
   const ROOM = 'test-campaign-' + Date.now();
 
   // The party:
-  // Player 1: Aric the Brave (Fighter) — arrives first
-  // Player 2: Lyra Starweaver (Wizard) — arrives second
-  // Player 3: Thorne Ironheart (Cleric) — arrives last
+  // Player 1: Aric the Brave (Fighter) - arrives first
+  // Player 2: Lyra Starweaver (Wizard) - arrives second
+  // Player 3: Thorne Ironheart (Cleric) - arrives last
 
   it('full campaign session lifecycle', async () => {
     // --- Player 1 joins ---
@@ -193,8 +188,6 @@ describe('multiplayer campaign — 3-player party', () => {
     const draw3 = await p3Draw;
     expect(draw1.x1).toBe(10);
     expect(draw3.color).toBe('#ff0000');
-    // Player 2 should NOT receive their own draw back (Lobby DO excludes sender)
-    // We can't easily assert "did NOT receive" without a timeout, so we trust the DO logic
 
     // --- Player 2 disconnects ---
     const p1Left = waitForMessage(ws1, 'player_left');
@@ -214,9 +207,9 @@ describe('multiplayer campaign — 3-player party', () => {
     const chat3b = await p3Chat2;
     expect(chat3b.message).toBe('Lyra has fallen! We press on.');
 
-    // Cleanup
-    ws1.close();
-    ws3.close();
+    // Cleanup: close remaining sockets and wait for DO close handlers to finish.
+    // This prevents the Miniflare isolated storage frame pop error.
+    await Promise.all([closeAndWait(ws1), closeAndWait(ws3)]);
   });
 });
 
@@ -229,7 +222,7 @@ describe('multiplayer edge cases', () => {
     send(ws, { type: 'join', username: 'Test' });
     await waitForMessage(ws, 'welcome');
 
-    // Send empty message — should NOT produce a chat broadcast
+    // Send empty message - should NOT produce a chat broadcast
     send(ws, { type: 'chat', message: '   ' });
 
     // Send a valid message to confirm the socket is still working
@@ -237,29 +230,35 @@ describe('multiplayer edge cases', () => {
     send(ws, { type: 'chat', message: 'hello' });
     const msg = await chatPromise;
     expect(msg.message).toBe('hello');
-    ws.close();
+    await closeAndWait(ws);
   });
 
-  it('dice sides are clamped to 2-100', async () => {
+  it('dice sides are clamped to 2-100, falsy defaults to d20', async () => {
     const ws = await connectPlayer('edge-dice-clamp-' + Date.now());
     send(ws, { type: 'join', username: 'Roller' });
     await waitForMessage(ws, 'welcome');
 
-    // Try sides=0 — should clamp to 2
+    // sides=0 is falsy -> defaults to 20 (d20), then clamped to [2,100]
     const rollPromise = waitForMessage(ws, 'roll_result');
     send(ws, { type: 'roll', sides: 0 });
     const roll = await rollPromise;
-    expect(roll.sides).toBe(2);
+    expect(roll.sides).toBe(20); // Number(0) || 20 = 20
     expect(roll.value as number).toBeGreaterThanOrEqual(1);
-    expect(roll.value as number).toBeLessThanOrEqual(2);
+    expect(roll.value as number).toBeLessThanOrEqual(20);
 
-    // Try sides=999 — should clamp to 100
+    // sides=1 is truthy -> clamps to min 2
+    const rollPromise1b = waitForMessage(ws, 'roll_result');
+    send(ws, { type: 'roll', sides: 1 });
+    const roll1b = await rollPromise1b;
+    expect(roll1b.sides).toBe(2);
+
+    // sides=999 -> clamps to max 100
     const rollPromise2 = waitForMessage(ws, 'roll_result');
     send(ws, { type: 'roll', sides: 999 });
     const roll2 = await rollPromise2;
     expect(roll2.sides).toBe(100);
 
-    ws.close();
+    await closeAndWait(ws);
   });
 
   it('unknown message type returns error to sender', async () => {
@@ -271,7 +270,7 @@ describe('multiplayer edge cases', () => {
     send(ws, { type: 'totally_bogus_type' });
     const err = await errPromise;
     expect(err.message).toContain('Unknown message type');
-    ws.close();
+    await closeAndWait(ws);
   });
 
   it('ping responds with pong', async () => {
@@ -284,7 +283,7 @@ describe('multiplayer edge cases', () => {
     const pong = await pongPromise;
     expect(pong.type).toBe('pong');
     expect(pong.timestamp).toBeTruthy();
-    ws.close();
+    await closeAndWait(ws);
   });
 
   it('REST /players endpoint returns player list', async () => {
@@ -301,6 +300,6 @@ describe('multiplayer edge cases', () => {
 
     expect(data.players.length).toBe(1);
     expect((data.players[0] as Record<string, string>).username).toBe('RestTest');
-    ws.close();
+    await closeAndWait(ws);
   });
 });

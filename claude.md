@@ -14,29 +14,24 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 Round 19: Multiplayer Session Sync + Test Framework. The game currently has solid social sync (chat, dice, doodle strokes, DM narration) but zero game-mechanical sync — units, combat, HP, initiative, turns, terrain, tokens, and characters are all local-only. The goal is a hybrid AI/real player experience with flawless socket session management for all shared features. The test framework validates existing game logic and multiplayer behavior before sync work begins.
 
 ### Test framework
-- **Status:** In progress — player tests passing, worker tests mostly passing, Makefile targets next
+- **Status:** Done — all 97 tests passing (69 player + 28 worker), 2 budget-skipped
 
 **Three test categories:**
 1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 15 describe blocks, 69 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity. **All 69 passing.**
 2. **AI fallback tests** (`tests/ai/fallback.test.ts`) — AI binding `undefined` → all 9 AI endpoints return 503 with helpful message. Non-AI endpoints (campaign save/load) still work. **All 11 passing.**
-3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **10 of 11 passing** (1 failure: `/api/name/translate` returns 500 on empty AI response instead of graceful fallback — the endpoint's try/catch doesn't handle empty `.response` field).
-4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare. **Tests pass but hit isolated storage frame warning** from Miniflare (WebSocket connections not fully disposed — known `@cloudflare/vitest-pool-workers` issue with DO WebSocket tests).
+3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **All 11 passing, 2 skipped** (live AI tests behind `AI_TESTS=live` gate).
+4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). **All 6 passing.**
 
 **Infrastructure:**
 - `vitest.config.ts` — plain vitest for player tests (no Workers runtime)
-- `vitest.workers.config.ts` — `@cloudflare/vitest-pool-workers` for multiplayer + AI tests (Miniflare)
+- `vitest.workers.config.ts` — `@cloudflare/vitest-pool-workers` for multiplayer + AI tests (Miniflare, `isolatedStorage: false` for DO WebSocket compat)
 - `wrangler.test.toml` — test-only wrangler config (DO + KV bindings, no AI binding to avoid remote proxy login)
-- vitest downgraded to 3.2.4 (pool-workers requires `2.0.x - 3.2.x`, vitest 4 removed `test.poolOptions`)
+- vitest 3.2.4 (pool-workers requires `2.0.x - 3.2.x`, vitest 4 removed `test.poolOptions`)
 - Budget-aware: `AI_TESTS` env var → `__TEST_AI_MODE__` define in vitest config. `describe.skipIf(AI_TESTS !== 'live')` guards live AI tests.
-
-**Remaining test work:**
-- Fix 1 failing AI error test (`/api/name/translate` empty response handling)
-- Fix multiplayer test isolated storage warning (await WebSocket close or use `using` keyword)
-- Add Makefile targets: `make test`, `make test-player`, `make test-ai`, `make test-multiplayer`
-- Remove em-dash (—) from describe block names to avoid Miniflare header encoding warnings
+- Makefile targets: `make test` (all), `make test-player`, `make test-worker`, `make test-multiplayer`, `make test-ai`, `make test-ai-live`, `make test-watch`
 
 ### Multiplayer session sync — full game state over WebSocket
-- **Status:** Planned (audit complete, implementation planned, blocked on test framework completion)
+- **Status:** Planned (audit complete, implementation planned, ready to begin)
 
 #### What's already synced (working)
 | Feature | Mechanism | Quality |
@@ -476,7 +471,7 @@ Wire broadcasts at all mutation sites:
 ## Backlog
 
 ### High priority (next after multiplayer sync)
-- Test framework completion — fix remaining 1 AI error test, multiplayer isolated storage warning, Makefile targets, em-dash header warnings
+- Multiplayer session sync — Phases 1-8 (see plan above)
 - AI fallback hardening — `fetchWithTimeout` utility (created at `src/lib/fetchUtils.ts`), `res.ok` checks before `.json()`, `aiRunWithTimeout` wrapper for backend `c.env.AI.run()` calls. 10 backend AI calls and 10 frontend fetch calls need timeout + graceful fallback. Audit complete, utility created, wiring not started.
 - Opportunity Attacks — melee enemies/players get reaction attack when a unit leaves their threat range
 - Condition system fixes — `prone` should use advantage/disadvantage (not flat -2), `blessed` overloaded for 3 mechanics (Bless spell, Dodge action, Phase Shift), AC modifiers from `CONDITION_EFFECTS` defined but never applied in attack calculations
@@ -553,4 +548,4 @@ Wire broadcasts at all mutation sites:
 - Dash mechanics + condition visuals + hidden traps: real Dash doubles movement, condition pips on tokens, 4 trap types, DM trap tools, Perception search
 - Spatial combat engine: map state lifted to context, enemy AI pathfinding + movement, melee adjacency enforcement for players and enemies
 - Ranged combat + line of sight: Bresenham LOS raycasting, weapon/ability/spell range enforcement, DEX for ranged weapons, smart ranged enemy AI, new ranged weapons (Shortbow, Hand Crossbow, Longbow +2, Oathbow)
-- Test framework infrastructure: vitest 3.2.4 + @cloudflare/vitest-pool-workers, dual config (plain + workers pool), 4 test files across 3 categories (player/multiplayer/AI), 90 of 91 tests passing, budget-aware AI_TESTS env var
+- Test framework: vitest 3.2.4 + @cloudflare/vitest-pool-workers, dual config (plain + workers pool), 4 test files across 3 categories (player/multiplayer/AI), 97 tests passing + 2 budget-skipped, Makefile targets, budget-aware AI_TESTS env var

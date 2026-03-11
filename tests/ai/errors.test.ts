@@ -50,7 +50,7 @@ async function post(path: string, body: Record<string, unknown>, ai: unknown) {
 // ---------------------------------------------------------------------------
 // AI throws exceptions — should return 500 with error message, not crash
 // ---------------------------------------------------------------------------
-describe('AI available but throws — real errors (500)', () => {
+describe('AI available but throws - real errors (500)', () => {
   it('POST /api/dm/narrate catches AI exception', async () => {
     const res = await post('/api/dm/narrate', {
       characters: [{ name: 'Aric', class: 'Fighter', race: 'Human', hp: 30, maxHp: 30, ac: 16, stats: {} }],
@@ -127,7 +127,7 @@ describe('AI available but throws — real errors (500)', () => {
 // ---------------------------------------------------------------------------
 // AI returns empty responses — should handle gracefully
 // ---------------------------------------------------------------------------
-describe('AI returns empty responses — handled without crash', () => {
+describe('AI returns empty responses - handled without crash', () => {
   it('POST /api/dm/narrate with empty response returns narration (may be empty string)', async () => {
     const res = await post('/api/dm/narrate', {
       characters: [], context: '', action: 'look around',
@@ -136,9 +136,11 @@ describe('AI returns empty responses — handled without crash', () => {
     expect(res.status).toBeLessThan(500);
   });
 
-  it('POST /api/name/translate with empty response handles gracefully', async () => {
+  it('POST /api/name/translate with empty response returns 500 (empty translation is a real error)', async () => {
     const res = await post('/api/name/translate', { name: 'Test' }, emptyAI);
-    expect(res.status).toBeLessThan(500);
+    expect(res.status).toBe(500);
+    const data = await res.json() as Record<string, string>;
+    expect(data.error).toContain('empty');
   });
 });
 

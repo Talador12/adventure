@@ -44,6 +44,32 @@ endef
 Makefile: makeinfo ;
 
 ################################################################################
+#                             Test Commands                                     #
+################################################################################
+
+test: makeinfo ## [Test] Run all tests (player + worker)
+	@$(MAKE) test-player
+	@$(MAKE) test-worker
+
+test-player: makeinfo ## [Test] Run player mode tests (pure game logic, no network)
+	npx vitest run --config vitest.config.ts
+
+test-worker: makeinfo ## [Test] Run worker tests (multiplayer + AI via Miniflare)
+	npx vitest run --config vitest.workers.config.ts
+
+test-multiplayer: makeinfo ## [Test] Run multiplayer tests only
+	npx vitest run --config vitest.workers.config.ts tests/multiplayer/
+
+test-ai: makeinfo ## [Test] Run AI tests only (fallback + error)
+	npx vitest run --config vitest.workers.config.ts tests/ai/
+
+test-ai-live: makeinfo ## [Test] Run AI tests with live Workers AI (costs money)
+	AI_TESTS=live npx vitest run --config vitest.workers.config.ts tests/ai/
+
+test-watch: makeinfo ## [Test] Run all tests in watch mode
+	npx vitest --config vitest.config.ts & npx vitest --config vitest.workers.config.ts
+
+################################################################################
 #                           Development Commands                               #
 ################################################################################
 
