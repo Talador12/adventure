@@ -28,6 +28,12 @@ preview_id = "characters-dev-preview"
 binding = "CAMPAIGNS"
 id = "campaigns-dev"
 preview_id = "campaigns-dev-preview"
+[[env.development.d1_databases]]
+binding = "DB"
+database_name = "adventure-db-dev"
+database_id = "adventure-db-dev"
+migrations_dir = "migrations"
+
 [[env.development.r2_buckets]]
 binding = "MAP_IMAGES"
 bucket_name = "adventure-maps-dev"
@@ -52,6 +58,12 @@ id = "characters-staging"
 [[env.staging.kv_namespaces]]
 binding = "CAMPAIGNS"
 id = "campaigns-staging"
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "adventure-db-staging"
+database_id = "adventure-db-staging"
+migrations_dir = "migrations"
+
 [[env.staging.r2_buckets]]
 binding = "MAP_IMAGES"
 bucket_name = "adventure-maps-staging"
@@ -75,6 +87,12 @@ id = "characters-prod"
 [[env.production.kv_namespaces]]
 binding = "CAMPAIGNS"
 id = "campaigns-prod"
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "adventure-db-prod"
+database_id = "adventure-db-prod"
+migrations_dir = "migrations"
+
 [[env.production.r2_buckets]]
 binding = "MAP_IMAGES"
 bucket_name = "adventure-maps-prod"

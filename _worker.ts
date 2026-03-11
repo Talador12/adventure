@@ -24,6 +24,28 @@ interface R2Bucket {
   head(key: string): Promise<{ httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string>; size: number } | null>;
 }
 
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+  exec(query: string): Promise<D1ExecResult>;
+}
+interface D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement;
+  first<T = Record<string, unknown>>(column?: string): Promise<T | null>;
+  all<T = Record<string, unknown>>(): Promise<D1Result<T>>;
+  run(): Promise<D1Result>;
+  raw<T = unknown[]>(): Promise<T[]>;
+}
+interface D1Result<T = unknown> {
+  results: T[];
+  success: boolean;
+  meta: Record<string, unknown>;
+}
+interface D1ExecResult {
+  count: number;
+  duration: number;
+}
+
 interface Env {
   LOBBY: DurableObjectNamespace;
   AI?: Ai;
@@ -32,6 +54,7 @@ interface Env {
   CHARACTERS?: KVNamespace;
   CAMPAIGNS?: KVNamespace;
   MAP_IMAGES?: R2Bucket;
+  DB?: D1Database;
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
   JWT_SECRET?: string;
@@ -51,17 +74,9 @@ class AiTimeoutError extends Error {
   }
 }
 
-async function aiRunWithTimeout(
-  ai: Ai,
-  model: string,
-  input: Record<string, unknown>,
-  timeoutMs?: number,
-): Promise<ArrayBuffer | ReadableStream | Record<string, unknown>> {
+async function aiRunWithTimeout(ai: Ai, model: string, input: Record<string, unknown>, timeoutMs?: number): Promise<ArrayBuffer | ReadableStream | Record<string, unknown>> {
   const ms = timeoutMs ?? (model.includes('FLUX') ? AI_IMAGE_TIMEOUT_MS : AI_TIMEOUT_MS);
-  return Promise.race([
-    ai.run(model, input),
-    new Promise<never>((_, reject) => setTimeout(() => reject(new AiTimeoutError(model, ms)), ms)),
-  ]);
+  return Promise.race([ai.run(model, input), new Promise<never>((_, reject) => setTimeout(() => reject(new AiTimeoutError(model, ms)), ms))]);
 }
 
 // Discord OAuth
@@ -146,13 +161,13 @@ app.get('/api/auth/signout', (c) => {
 // Art style prompts — matched to frontend PORTRAIT_STYLES ids
 const ART_STYLE_PROMPTS: Record<string, string> = {
   'classic-fantasy': 'Detailed oil painting, medieval fantasy illustration, rich earth tones, dramatic chiaroscuro lighting, high fantasy RPG art',
-  'watercolor': 'Soft watercolor painting with gentle washes, flowing lines, muted pastel palette, delicate brushwork, fantasy illustration',
+  watercolor: 'Soft watercolor painting with gentle washes, flowing lines, muted pastel palette, delicate brushwork, fantasy illustration',
   'anime-fantasy': 'Anime-inspired fantasy art, vibrant saturated colors, expressive features, clean lines, dynamic composition, light cel-shading',
   'dark-gothic': 'Dark gothic illustration, heavy shadows, dramatic contrast, muted desaturated palette, ornate details, grim and foreboding atmosphere',
-  'storybook': 'Whimsical hand-drawn storybook illustration, warm soft lighting, cozy atmosphere, rounded shapes, gentle color palette',
+  storybook: 'Whimsical hand-drawn storybook illustration, warm soft lighting, cozy atmosphere, rounded shapes, gentle color palette',
   'cel-shaded': 'Bold cel-shaded art, clean sharp outlines, flat vibrant colors, graphic novel style, strong silhouettes',
-  'realistic': 'Photorealistic digital portrait, cinematic lighting, subsurface scattering on skin, sharp detail, studio photography feel',
-  'painterly': 'Loose impressionist brushwork, rich textures, dramatic palette knife strokes, visible paint texture, expressive color mixing',
+  realistic: 'Photorealistic digital portrait, cinematic lighting, subsurface scattering on skin, sharp detail, studio photography feel',
+  painterly: 'Loose impressionist brushwork, rich textures, dramatic palette knife strokes, visible paint texture, expressive color mixing',
 };
 
 function buildPortraitPrompt(char: Record<string, unknown>): string {
@@ -326,9 +341,7 @@ app.post('/api/name/translate', async (c) => {
   if (!name) return c.json({ error: 'Name is required' }, 400);
 
   // Pick a random language or use the one specified
-  const lang = body.language
-    ? NAME_LANGUAGES.find((l) => l.name.toLowerCase() === body.language!.toLowerCase()) || NAME_LANGUAGES[Math.floor(Math.random() * NAME_LANGUAGES.length)]
-    : NAME_LANGUAGES[Math.floor(Math.random() * NAME_LANGUAGES.length)];
+  const lang = body.language ? NAME_LANGUAGES.find((l) => l.name.toLowerCase() === body.language!.toLowerCase()) || NAME_LANGUAGES[Math.floor(Math.random() * NAME_LANGUAGES.length)] : NAME_LANGUAGES[Math.floor(Math.random() * NAME_LANGUAGES.length)];
 
   const prompt = `Translate the meaning of the English word or name "${name}" into ${lang.name}. If the name is a compound word or has a clear meaning (like "Lumberjack" = one who cuts wood), translate that meaning. If it's a proper name with no obvious meaning, transliterate it into ${lang.name} phonetics. Return ONLY the single translated/transliterated word or short phrase in ${lang.name} script or romanized form — nothing else, no quotes, no explanation.`;
 
@@ -341,9 +354,12 @@ app.post('/api/name/translate', async (c) => {
       max_tokens: 50,
     });
 
-    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
     // Clean up: remove quotes, periods, extra whitespace, "Translation:" prefixes
-    const translated = raw.replace(/^["'`]+|["'`.,!]+$/g, '').replace(/^(translation|answer|result)[:\s]*/i, '').trim();
+    const translated = raw
+      .replace(/^["'`]+|["'`.,!]+$/g, '')
+      .replace(/^(translation|answer|result)[:\s]*/i, '')
+      .trim();
     if (!translated) return c.json({ error: 'Translation returned empty' }, 500);
 
     return c.json({ translated, language: lang.name, flag: lang.flag, original: name });
@@ -362,9 +378,7 @@ app.post('/api/character/generate', async (c) => {
   const body = await c.req.json<{ campaign?: string }>();
   const campaign = String(body.campaign || '').trim();
 
-  const campaignCtx = campaign
-    ? `\nCAMPAIGN CONTEXT (tailor the character to fit this setting):\n${campaign}\n`
-    : '';
+  const campaignCtx = campaign ? `\nCAMPAIGN CONTEXT (tailor the character to fit this setting):\n${campaign}\n` : '';
 
   const prompt = `Generate a COMPLETE, UNIQUE D&D 5e character concept. Return ONLY valid JSON, no markdown fences.
 ${campaignCtx}
@@ -399,7 +413,7 @@ JSON format:
       max_tokens: 1200,
     });
 
-    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -450,7 +464,7 @@ JSON only, no markdown fences:
       max_tokens: 400,
     });
 
-    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -493,12 +507,7 @@ app.post('/api/backstory/generate', async (c) => {
   if (stats.CON >= 16) statHints.push('unnaturally resilient');
   else if (stats.CON <= 8) statHints.push('sickly or frail');
 
-  const traitContext = [
-    personalityTraits && `Personality: ${personalityTraits}`,
-    ideals && `Ideals: ${ideals}`,
-    bonds && `Bonds: ${bonds}`,
-    flaws && `Flaws: ${flaws}`,
-  ].filter(Boolean).join('\n');
+  const traitContext = [personalityTraits && `Personality: ${personalityTraits}`, ideals && `Ideals: ${ideals}`, bonds && `Bonds: ${bonds}`, flaws && `Flaws: ${flaws}`].filter(Boolean).join('\n');
 
   const prompt = `Write a backstory for a D&D character. 2-4 paragraphs, vivid and specific.
 
@@ -525,7 +534,7 @@ CRITICAL RULES — follow these or the backstory is garbage:
       max_tokens: 800,
     });
 
-    const backstory = ((result as Record<string, unknown>).response as string || '').trim();
+    const backstory = (((result as Record<string, unknown>).response as string) || '').trim();
     if (!backstory) {
       return c.json({ error: 'AI returned empty backstory' }, 500);
     }
@@ -550,21 +559,19 @@ app.post('/api/dm/narrate', async (c) => {
   const scene = String(body.scene || '');
 
   // Build rich character descriptions with personality and backstory
-  const charDescriptions = characters.map((ch) => {
-    const stats = (ch.stats || {}) as Record<string, number>;
-    const lines = [
-      `${ch.name} — Level ${ch.level} ${ch.race} ${ch.class} (${ch.alignment || 'Neutral'}, ${ch.background || 'Unknown'} background)`,
-      `  HP ${ch.hp}/${ch.maxHp}, AC ${ch.ac}, STR ${stats.STR || 10} DEX ${stats.DEX || 10} CON ${stats.CON || 10} INT ${stats.INT || 10} WIS ${stats.WIS || 10} CHA ${stats.CHA || 10}`,
-      `  Condition: ${ch.condition || 'normal'}`,
-    ];
-    if (ch.appearanceDescription) lines.push(`  Appearance: ${ch.appearanceDescription}`);
-    if (ch.personalityTraits) lines.push(`  Personality: ${ch.personalityTraits}`);
-    if (ch.ideals) lines.push(`  Ideals: ${ch.ideals}`);
-    if (ch.bonds) lines.push(`  Bonds: ${ch.bonds}`);
-    if (ch.flaws) lines.push(`  Flaws: ${ch.flaws}`);
-    if (ch.backstory) lines.push(`  Backstory (brief): ${String(ch.backstory).slice(0, 200)}`);
-    return lines.join('\n');
-  }).join('\n\n');
+  const charDescriptions = characters
+    .map((ch) => {
+      const stats = (ch.stats || {}) as Record<string, number>;
+      const lines = [`${ch.name} — Level ${ch.level} ${ch.race} ${ch.class} (${ch.alignment || 'Neutral'}, ${ch.background || 'Unknown'} background)`, `  HP ${ch.hp}/${ch.maxHp}, AC ${ch.ac}, STR ${stats.STR || 10} DEX ${stats.DEX || 10} CON ${stats.CON || 10} INT ${stats.INT || 10} WIS ${stats.WIS || 10} CHA ${stats.CHA || 10}`, `  Condition: ${ch.condition || 'normal'}`];
+      if (ch.appearanceDescription) lines.push(`  Appearance: ${ch.appearanceDescription}`);
+      if (ch.personalityTraits) lines.push(`  Personality: ${ch.personalityTraits}`);
+      if (ch.ideals) lines.push(`  Ideals: ${ch.ideals}`);
+      if (ch.bonds) lines.push(`  Bonds: ${ch.bonds}`);
+      if (ch.flaws) lines.push(`  Flaws: ${ch.flaws}`);
+      if (ch.backstory) lines.push(`  Backstory (brief): ${String(ch.backstory).slice(0, 200)}`);
+      return lines.join('\n');
+    })
+    .join('\n\n');
 
   const historyStr = history.length > 0 ? `\nRecent events:\n${history.slice(-10).join('\n')}` : '';
 
@@ -594,7 +601,7 @@ ${context ? `\nScene context: ${context}` : ''}`;
       max_tokens: 400,
     });
 
-    const response = (result as Record<string, unknown>).response as string || '';
+    const response = ((result as Record<string, unknown>).response as string) || '';
     return c.json({ narration: response.trim() });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'DM narration failed';
@@ -618,13 +625,11 @@ app.post('/api/dm/npc', async (c) => {
   const scene = String(body.scene || '');
   const history = (body.dialogueHistory as string[]) || [];
 
-  const historyStr = history.length > 0
-    ? `\nConversation so far:\n${history.slice(-8).join('\n')}`
-    : '';
+  const historyStr = history.length > 0 ? `\nConversation so far:\n${history.slice(-8).join('\n')}` : '';
 
   const systemPrompt = `You are ${npcName}, ${npcRole} in a D&D 5e world. Stay completely in character.
 
-YOUR PERSONALITY: ${npcPersonality || 'Guarded but not hostile. You know things you don\'t share freely.'}
+YOUR PERSONALITY: ${npcPersonality || "Guarded but not hostile. You know things you don't share freely."}
 
 RULES:
 - Speak ONLY as ${npcName}. No narration, no stage directions, no quotation marks around your speech.
@@ -645,7 +650,7 @@ ${historyStr}`;
       max_tokens: 200,
     });
 
-    const response = (result as Record<string, unknown>).response as string || '';
+    const response = ((result as Record<string, unknown>).response as string) || '';
     return c.json({ dialogue: response.trim(), npcName });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'NPC dialogue failed';
@@ -679,7 +684,7 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
       max_tokens: 500,
     });
 
-    const raw = ((result as Record<string, unknown>).response as string || '').trim();
+    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
     // Try to extract JSON from the response
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -696,13 +701,7 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
 // Portrait upload — encrypt with AES-256-GCM and store in KV
 async function deriveEncryptionKey(secret: string): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: new TextEncoder().encode('adventure-portraits'), iterations: 100000, hash: 'SHA-256' },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: new TextEncoder().encode('adventure-portraits'), iterations: 100000, hash: 'SHA-256' }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
 
 app.post('/api/portrait/upload', async (c) => {
@@ -772,14 +771,12 @@ app.post('/api/portrait/describe', async (c) => {
   try {
     // Use Llama Vision model for image understanding
     const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.2-11b-vision-instruct', {
-      messages: [
-        { role: 'user', content: prompt },
-      ],
+      messages: [{ role: 'user', content: prompt }],
       image: base64Match[1],
       max_tokens: 200,
     });
 
-    const description = ((result as Record<string, unknown>).response as string || '').trim();
+    const description = (((result as Record<string, unknown>).response as string) || '').trim();
     if (!description) {
       return c.json({ error: 'AI returned empty description' }, 500);
     }
@@ -794,11 +791,13 @@ app.post('/api/portrait/describe', async (c) => {
         ],
         max_tokens: 200,
       });
-      const description = ((fallbackResult as Record<string, unknown>).response as string || '').trim();
+      const description = (((fallbackResult as Record<string, unknown>).response as string) || '').trim();
       if (description) {
         return c.json({ description, fallback: true });
       }
-    } catch { /* ignore fallback errors */ }
+    } catch {
+      /* ignore fallback errors */
+    }
 
     const msg = err instanceof Error ? err.message : 'Image analysis failed';
     return c.json({ error: msg }, 500);
@@ -851,6 +850,212 @@ async function getUserId(c: { req: { raw: Request }; env: Env }): Promise<string
   }
 }
 
+// ── JWT payload helper — returns full user + provider from cookie ──
+async function getJwtPayload(c: { req: { raw: Request }; env: Env }): Promise<{ user: Record<string, string>; provider: string } | null> {
+  const cookie = c.req.raw.headers.get('Cookie') || '';
+  const match = cookie.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
+  if (!match) return null;
+  try {
+    const { payload } = await jwtVerify(match[1], getJwtKey(c.env));
+    const user = payload.user as Record<string, string> | undefined;
+    const provider = (payload.provider as string) || 'discord';
+    if (!user?.id) return null;
+    return { user, provider };
+  } catch {
+    return null;
+  }
+}
+
+// ── D1 user management — lazy-upsert on authenticated requests ──
+// Returns internal user UUID. Creates user + auth_provider rows on first visit.
+// On subsequent visits, updates display_name/avatar if changed.
+async function ensureUser(c: { req: { raw: Request }; env: Env }): Promise<string | null> {
+  const jwt = await getJwtPayload(c);
+  if (!jwt) return null;
+  if (!c.env.DB) return `${jwt.provider}:${jwt.user.id}`; // fallback if D1 not available
+
+  const { user, provider } = jwt;
+  const providerUserId = user.id;
+  const displayName = user.global_name || user.username || 'Adventurer';
+  const avatarUrl = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.webp` : null;
+
+  try {
+    // Check if this auth provider is already linked to a user
+    const existing = await c.env.DB.prepare('SELECT user_id FROM auth_providers WHERE provider = ? AND provider_user_id = ?').bind(provider, providerUserId).first<{ user_id: string }>();
+
+    if (existing) {
+      // Update display name + avatar on the user row (in case they changed)
+      await c.env.DB.prepare('UPDATE users SET display_name = ?, avatar_url = ?, updated_at = unixepoch() WHERE id = ?').bind(displayName, avatarUrl, existing.user_id).run();
+      return existing.user_id;
+    }
+
+    // New user — create user + auth_provider rows
+    const userId = crypto.randomUUID();
+    await c.env.DB.batch([c.env.DB.prepare('INSERT INTO users (id, display_name, avatar_url) VALUES (?, ?, ?)').bind(userId, displayName, avatarUrl), c.env.DB.prepare('INSERT INTO auth_providers (provider, provider_user_id, user_id, provider_username, provider_email, provider_avatar) VALUES (?, ?, ?, ?, ?, ?)').bind(provider, providerUserId, userId, user.username || null, user.email || null, avatarUrl)]);
+    return userId;
+  } catch {
+    // If D1 fails, fall back to provider:id format so auth isn't blocked
+    return `${provider}:${providerUserId}`;
+  }
+}
+
+// ── Chat persistence (D1-backed) ──
+
+// GET /api/chat/:roomId — load recent chat messages for a campaign
+app.get('/api/chat/:roomId', async (c) => {
+  const internalUserId = await ensureUser(c);
+  if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.DB) return c.json({ messages: [] }); // graceful fallback
+
+  const roomId = c.req.param('roomId');
+  const limit = Math.min(parseInt(c.req.query('limit') || '100'), 500);
+  const before = c.req.query('before'); // ISO timestamp for pagination
+
+  try {
+    let stmt;
+    if (before) {
+      stmt = c.env.DB.prepare('SELECT id, campaign_id, user_id, username, type, text, avatar_url, metadata, created_at FROM chat_messages WHERE campaign_id = ? AND created_at < ? ORDER BY created_at DESC LIMIT ?').bind(roomId, Math.floor(new Date(before).getTime() / 1000), limit);
+    } else {
+      stmt = c.env.DB.prepare('SELECT id, campaign_id, user_id, username, type, text, avatar_url, metadata, created_at FROM chat_messages WHERE campaign_id = ? ORDER BY created_at DESC LIMIT ?').bind(roomId, limit);
+    }
+    const { results } = await stmt.all<Record<string, unknown>>();
+    // Return in chronological order (oldest first)
+    const messages = results.reverse().map((row) => ({
+      ...row,
+      metadata: row.metadata ? JSON.parse(row.metadata as string) : null,
+    }));
+    return c.json({ messages });
+  } catch {
+    return c.json({ messages: [] });
+  }
+});
+
+// POST /api/chat/:roomId — save a chat message
+app.post('/api/chat/:roomId', async (c) => {
+  const internalUserId = await ensureUser(c);
+  if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.DB) return c.json({ error: 'Chat storage not available' }, 503);
+
+  const roomId = c.req.param('roomId');
+  try {
+    const body = await c.req.json<{
+      username: string;
+      type?: string;
+      text: string;
+      avatarUrl?: string;
+      metadata?: Record<string, unknown>;
+    }>();
+    if (!body.text?.trim()) return c.json({ error: 'Empty message' }, 400);
+
+    const msgId = crypto.randomUUID();
+    await c.env.DB.prepare('INSERT INTO chat_messages (id, campaign_id, user_id, username, type, text, avatar_url, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(
+        msgId,
+        roomId,
+        internalUserId,
+        body.username || 'Unknown',
+        body.type || 'chat',
+        body.text.slice(0, 4000), // cap message length
+        body.avatarUrl || null,
+        body.metadata ? JSON.stringify(body.metadata) : null
+      )
+      .run();
+    return c.json({ ok: true, id: msgId });
+  } catch {
+    return c.json({ error: 'Failed to save message' }, 500);
+  }
+});
+
+// ── Party management (D1-backed) ──
+
+// GET /api/party/:roomId — list party members for a campaign
+app.get('/api/party/:roomId', async (c) => {
+  const internalUserId = await ensureUser(c);
+  if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.DB) return c.json({ members: [] }); // graceful fallback
+
+  const roomId = c.req.param('roomId');
+  try {
+    const { results } = await c.env.DB.prepare(
+      `SELECT pm.user_id, pm.character_id, pm.role, pm.joined_at,
+              u.display_name, u.avatar_url
+       FROM party_members pm
+       JOIN users u ON u.id = pm.user_id
+       WHERE pm.campaign_id = ?
+       ORDER BY pm.joined_at ASC`
+    )
+      .bind(roomId)
+      .all<Record<string, unknown>>();
+    return c.json({ members: results });
+  } catch {
+    return c.json({ members: [] });
+  }
+});
+
+// POST /api/party/:roomId/join — join a campaign party
+app.post('/api/party/:roomId/join', async (c) => {
+  const internalUserId = await ensureUser(c);
+  if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.DB) return c.json({ error: 'Party management not available' }, 503);
+
+  const roomId = c.req.param('roomId');
+  try {
+    const body = await c.req.json<{ characterId?: string; role?: string }>().catch(() => ({}));
+
+    // Upsert — if already a member, update character/role
+    await c.env.DB.prepare(
+      `INSERT INTO party_members (campaign_id, user_id, character_id, role)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(campaign_id, user_id)
+       DO UPDATE SET character_id = excluded.character_id, role = excluded.role`
+    )
+      .bind(roomId, internalUserId, body.characterId || null, body.role || 'player')
+      .run();
+    return c.json({ ok: true });
+  } catch {
+    return c.json({ error: 'Failed to join party' }, 500);
+  }
+});
+
+// DELETE /api/party/:roomId/leave — leave a campaign party
+app.delete('/api/party/:roomId/leave', async (c) => {
+  const internalUserId = await ensureUser(c);
+  if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.DB) return c.json({ error: 'Party management not available' }, 503);
+
+  const roomId = c.req.param('roomId');
+  try {
+    await c.env.DB.prepare('DELETE FROM party_members WHERE campaign_id = ? AND user_id = ?').bind(roomId, internalUserId).run();
+    return c.json({ ok: true });
+  } catch {
+    return c.json({ error: 'Failed to leave party' }, 500);
+  }
+});
+
+// ── User profile (D1-backed) ──
+
+// GET /api/user/me — full user profile from D1 with linked auth providers
+app.get('/api/user/me', async (c) => {
+  const internalUserId = await ensureUser(c);
+  if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.DB) {
+    // Fallback: return basic info from JWT
+    const jwt = await getJwtPayload(c);
+    return c.json({ user: jwt?.user || null, providers: [] });
+  }
+
+  try {
+    const user = await c.env.DB.prepare('SELECT id, display_name, avatar_url, created_at FROM users WHERE id = ?').bind(internalUserId).first<Record<string, unknown>>();
+
+    const { results: providers } = await c.env.DB.prepare('SELECT provider, provider_user_id, provider_username, provider_email, created_at FROM auth_providers WHERE user_id = ?').bind(internalUserId).all<Record<string, unknown>>();
+
+    return c.json({ user, providers });
+  } catch {
+    const jwt = await getJwtPayload(c);
+    return c.json({ user: jwt?.user || null, providers: [] });
+  }
+});
+
 // Campaign persistence — save/load full game state per room
 
 // GET /api/campaign/:roomId — load campaign state
@@ -859,7 +1064,7 @@ app.get('/api/campaign/:roomId', async (c) => {
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
-    const raw = await c.env.CAMPAIGNS.get(`campaign:${c.req.param('roomId')}`) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(`campaign:${c.req.param('roomId')}`)) as string | null;
     if (!raw) return c.json({ campaign: null });
     return c.json({ campaign: JSON.parse(raw) });
   } catch {
@@ -903,7 +1108,7 @@ app.get('/api/campaigns', async (c) => {
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
-    const raw = await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     return c.json({ campaigns });
   } catch {
@@ -922,7 +1127,7 @@ app.post('/api/campaigns', async (c) => {
     const name = String(body.name || roomId);
     if (!roomId) return c.json({ error: 'roomId is required' }, 400);
 
-    const raw = await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
 
     // Don't duplicate
@@ -943,7 +1148,7 @@ app.delete('/api/campaigns/:roomId', async (c) => {
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
     const roomId = c.req.param('roomId');
-    const raw = await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     const filtered = campaigns.filter((c) => c.roomId !== roomId);
     await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(filtered));
@@ -961,7 +1166,7 @@ app.get('/api/characters', async (c) => {
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
   try {
-    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`) as string | null;
+    const raw = (await c.env.CHARACTERS.get(`user:${userId}:chars`)) as string | null;
     const characters = raw ? JSON.parse(raw) : [];
     return c.json({ characters });
   } catch {
@@ -975,7 +1180,7 @@ app.put('/api/characters', async (c) => {
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
   try {
-    const { characters } = await c.req.raw.json() as { characters: unknown[] };
+    const { characters } = (await c.req.raw.json()) as { characters: unknown[] };
     if (!Array.isArray(characters)) return c.json({ error: 'characters must be an array' }, 400);
     // Strip portrait data URLs to save KV space (portraits stored separately in PORTRAITS KV)
     const lean = (characters as Record<string, unknown>[]).map((ch) => {
@@ -996,7 +1201,7 @@ app.delete('/api/characters/:charId', async (c) => {
   if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
   const charId = c.req.param('charId');
   try {
-    const raw = await c.env.CHARACTERS.get(`user:${userId}:chars`) as string | null;
+    const raw = (await c.env.CHARACTERS.get(`user:${userId}:chars`)) as string | null;
     const characters: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     const filtered = characters.filter((ch) => ch.id !== charId);
     if (filtered.length === characters.length) return c.json({ error: 'Character not found' }, 404);

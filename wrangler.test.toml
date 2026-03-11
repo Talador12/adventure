@@ -22,6 +22,12 @@ id = "characters-test"
 binding = "CAMPAIGNS"
 id = "campaigns-test"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "adventure-db-test"
+database_id = "adventure-db-test"
+migrations_dir = "migrations"
+
 [[migrations]]
 tag = "v1"
 new_classes = ["Lobby"]

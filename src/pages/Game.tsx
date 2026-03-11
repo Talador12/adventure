@@ -11,6 +11,7 @@ import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDist
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
+import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 
 // API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
 function apiBase(): string {
@@ -22,15 +23,46 @@ export default function Game() {
   const navigate = useNavigate();
   const room = roomId || 'default';
   const {
-    setPlayers, setUnits, units, setCurrentPlayer, currentPlayer,
-    rolls, selectedUnitId, characters,
-    inCombat, setInCombat, rollInitiative, nextTurn, combatRound, setCombatRound, turnIndex, setTurnIndex,
-    damageUnit, removeUnit, grantXP, restCharacter, updateCharacter,
-    addItem, useItem, buyItem, sellItem, castSpell, restoreSpellSlots,
-    applyCondition, removeCondition, tickConditions, useClassAbility,
-    applyASI, selectFeat, concentrationMessages,
-    terrain, setTerrain, mapPositions, setMapPositions,
-    mapImageUrl, setMapImageUrl,
+    setPlayers,
+    setUnits,
+    units,
+    setCurrentPlayer,
+    currentPlayer,
+    rolls,
+    selectedUnitId,
+    characters,
+    inCombat,
+    setInCombat,
+    rollInitiative,
+    nextTurn,
+    combatRound,
+    setCombatRound,
+    turnIndex,
+    setTurnIndex,
+    damageUnit,
+    removeUnit,
+    grantXP,
+    restCharacter,
+    updateCharacter,
+    addItem,
+    useItem,
+    buyItem,
+    sellItem,
+    castSpell,
+    restoreSpellSlots,
+    applyCondition,
+    removeCondition,
+    tickConditions,
+    useClassAbility,
+    applyASI,
+    selectFeat,
+    concentrationMessages,
+    terrain,
+    setTerrain,
+    mapPositions,
+    setMapPositions,
+    mapImageUrl,
+    setMapImageUrl,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -47,7 +79,7 @@ export default function Game() {
   // Game state — derive selectedCharacter from characters array so it stays reactive
   // to GameContext updates (grantXP, restCharacter, updateCharacter, damageUnit, etc.)
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-  const selectedCharacter = selectedCharacterId ? characters.find((c) => c.id === selectedCharacterId) ?? null : null;
+  const selectedCharacter = selectedCharacterId ? (characters.find((c) => c.id === selectedCharacterId) ?? null) : null;
   const [showCharacterPicker, setShowCharacterPicker] = useState(true);
   const [dmLoading, setDmLoading] = useState(false);
   const [encounterLoading, setEncounterLoading] = useState(false);
@@ -57,7 +89,9 @@ export default function Game() {
     try {
       const saved = localStorage.getItem(dmStorageKey);
       return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   });
   const [adventureStarted] = [dmHistory.length > 0]; // auto-detect from history
   const [actionInput, setActionInput] = useState('');
@@ -78,15 +112,29 @@ export default function Game() {
   const [asiMode, setAsiMode] = useState<'single' | 'split'>('single'); // +2 to one or +1 to two
 
   // Quest tracker
-  interface Quest { id: string; title: string; description: string; completed: boolean; }
+  interface Quest {
+    id: string;
+    title: string;
+    description: string;
+    completed: boolean;
+  }
   const questStorageKey = `adventure:quests:${room}`;
   const [quests, setQuests] = useState<Quest[]>(() => {
-    try { const s = localStorage.getItem(questStorageKey); return s ? JSON.parse(s) : []; } catch { return []; }
+    try {
+      const s = localStorage.getItem(questStorageKey);
+      return s ? JSON.parse(s) : [];
+    } catch {
+      return [];
+    }
   });
   const [showQuests, setShowQuests] = useState(false);
   const [newQuestTitle, setNewQuestTitle] = useState('');
   useEffect(() => {
-    try { localStorage.setItem(questStorageKey, JSON.stringify(quests)); } catch { /* full */ }
+    try {
+      localStorage.setItem(questStorageKey, JSON.stringify(quests));
+    } catch {
+      /* full */
+    }
   }, [quests, questStorageKey]);
 
   // NPC dialogue state
@@ -96,12 +144,29 @@ export default function Game() {
   const [npcLoading, setNpcLoading] = useState(false);
   const [npcDialogueHistory, setNpcDialogueHistory] = useState<string[]>([]);
   const [sceneName, setSceneName] = useState(() => {
-    try { return localStorage.getItem(`adventure:scene:${room}`) || ''; } catch { return ''; }
+    try {
+      return localStorage.getItem(`adventure:scene:${room}`) || '';
+    } catch {
+      return '';
+    }
   });
+
+  // Load persistent chat history from D1 on mount
+  useEffect(() => {
+    loadChatHistory(room).then((history) => {
+      if (history.length > 0) {
+        setChatMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMsgs = history.filter((m) => !existingIds.has(m.id));
+          return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
+        });
+      }
+    });
+  }, [room]);
 
   // Derived: is it currently the player's turn? Used to enforce turn-based action restrictions.
   const currentTurnUnit = units.find((u) => u.isCurrentTurn);
-  const isPlayerTurn = !inCombat || (currentTurnUnit?.type === 'player');
+  const isPlayerTurn = !inCombat || currentTurnUnit?.type === 'player';
 
   // Drain concentration break messages into combat log (collected by damageUnit ref)
   // Call after any action that triggers damageUnit
@@ -118,10 +183,18 @@ export default function Game() {
 
   // Persist DM history + scene to localStorage on every change
   useEffect(() => {
-    try { localStorage.setItem(dmStorageKey, JSON.stringify(dmHistory)); } catch { /* full */ }
+    try {
+      localStorage.setItem(dmStorageKey, JSON.stringify(dmHistory));
+    } catch {
+      /* full */
+    }
   }, [dmHistory, dmStorageKey]);
   useEffect(() => {
-    try { localStorage.setItem(`adventure:scene:${room}`, sceneName); } catch { /* full */ }
+    try {
+      localStorage.setItem(`adventure:scene:${room}`, sceneName);
+    } catch {
+      /* full */
+    }
   }, [sceneName, room]);
 
   // Fire-and-forget server campaign sync — debounced to avoid spamming on rapid updates
@@ -159,7 +232,7 @@ export default function Game() {
     if (campaignLoadedRef.current) return;
     campaignLoadedRef.current = true;
     fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`)
-      .then((r) => r.ok ? r.json() as Promise<{ campaign?: Record<string, unknown> }> : null)
+      .then((r) => (r.ok ? (r.json() as Promise<{ campaign?: Record<string, unknown> }>) : null))
       .then((data) => {
         if (data?.campaign) {
           const c = data.campaign;
@@ -205,7 +278,7 @@ export default function Game() {
         }
       })
       .catch(() => {}); // server unavailable
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room]);
 
   // Register campaign on first adventure start
@@ -233,14 +306,17 @@ export default function Game() {
   }, []);
 
   // Broadcast full combat state snapshot — used after most mutations (with explicit state)
-  const broadcastCombatSync = useCallback((syncUnits: Unit[], syncInCombat?: boolean, syncRound?: number, syncTurnIdx?: number) => {
-    broadcastGameEvent('game_sync', {
-      units: syncUnits,
-      inCombat: syncInCombat ?? inCombat,
-      combatRound: syncRound ?? combatRound,
-      turnIndex: syncTurnIdx ?? turnIndex,
-    });
-  }, [broadcastGameEvent, inCombat, combatRound, turnIndex]);
+  const broadcastCombatSync = useCallback(
+    (syncUnits: Unit[], syncInCombat?: boolean, syncRound?: number, syncTurnIdx?: number) => {
+      broadcastGameEvent('game_sync', {
+        units: syncUnits,
+        inCombat: syncInCombat ?? inCombat,
+        combatRound: syncRound ?? combatRound,
+        turnIndex: syncTurnIdx ?? turnIndex,
+      });
+    },
+    [broadcastGameEvent, inCombat, combatRound, turnIndex]
+  );
 
   // Refs that always track latest state — for delayed broadcasts after React batches
   const unitsRef = useRef(units);
@@ -269,10 +345,16 @@ export default function Game() {
   useEffect(() => {
     if (!selectedCharacter || isRemoteEventRef.current) return;
     const visible = {
-      id: selectedCharacter.id, hp: selectedCharacter.hp, maxHp: selectedCharacter.maxHp,
-      ac: selectedCharacter.ac, level: selectedCharacter.level, condition: selectedCharacter.condition,
-      deathSaves: selectedCharacter.deathSaves, gold: selectedCharacter.gold,
-      name: selectedCharacter.name, class: selectedCharacter.class,
+      id: selectedCharacter.id,
+      hp: selectedCharacter.hp,
+      maxHp: selectedCharacter.maxHp,
+      ac: selectedCharacter.ac,
+      level: selectedCharacter.level,
+      condition: selectedCharacter.condition,
+      deathSaves: selectedCharacter.deathSaves,
+      gold: selectedCharacter.gold,
+      name: selectedCharacter.name,
+      class: selectedCharacter.class,
     };
     const json = JSON.stringify(visible);
     if (json !== prevCharJsonRef.current) {
@@ -300,38 +382,37 @@ export default function Game() {
   // Keep the player unit in sync with character stats (HP, maxHp, AC change from rest/level-up/damage)
   useEffect(() => {
     if (!selectedCharacter) return;
-    setUnits((prev: Unit[]) => prev.map((u) =>
-      u.characterId === selectedCharacter.id
-        ? { ...u, name: selectedCharacter.name, hp: selectedCharacter.hp, maxHp: selectedCharacter.maxHp, ac: selectedCharacter.ac }
-        : u
-    ));
+    setUnits((prev: Unit[]) => prev.map((u) => (u.characterId === selectedCharacter.id ? { ...u, name: selectedCharacter.name, hp: selectedCharacter.hp, maxHp: selectedCharacter.maxHp, ac: selectedCharacter.ac } : u)));
   }, [selectedCharacter?.hp, selectedCharacter?.maxHp, selectedCharacter?.ac, selectedCharacter?.name, selectedCharacter?.id, setUnits]);
 
   // When a character is selected, create a unit for them
-  const handleSelectCharacter = useCallback((char: Character) => {
-    setSelectedCharacterId(char.id);
+  const handleSelectCharacter = useCallback(
+    (char: Character) => {
+      setSelectedCharacterId(char.id);
 
-    // Monk gets bonus speed at higher levels (5e: +10 at 2, +15 at 6, +20 at 10, etc.)
-    const monkSpeedBonus = char.class === 'Monk' ? Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0) : 0;
-    const unit: Unit = {
-      id: `unit-${char.id}`,
-      name: char.name,
-      hp: char.hp,
-      maxHp: char.maxHp,
-      ac: char.ac,
-      initiative: -1,
-      isCurrentTurn: false,
-      type: 'player',
-      playerId: currentPlayer.id,
-      characterId: char.id,
-      speed: 6 + monkSpeedBonus, // 6 cells = 30ft base
-      movementUsed: 0,
-      reactionUsed: false,
-      disengaged: false,
-    };
-    setUnits([unit]);
-    setShowCharacterPicker(false);
-  }, [currentPlayer.id, setUnits]);
+      // Monk gets bonus speed at higher levels (5e: +10 at 2, +15 at 6, +20 at 10, etc.)
+      const monkSpeedBonus = char.class === 'Monk' ? Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0) : 0;
+      const unit: Unit = {
+        id: `unit-${char.id}`,
+        name: char.name,
+        hp: char.hp,
+        maxHp: char.maxHp,
+        ac: char.ac,
+        initiative: -1,
+        isCurrentTurn: false,
+        type: 'player',
+        playerId: currentPlayer.id,
+        characterId: char.id,
+        speed: 6 + monkSpeedBonus, // 6 cells = 30ft base
+        movementUsed: 0,
+        reactionUsed: false,
+        disengaged: false,
+      };
+      setUnits([unit]);
+      setShowCharacterPicker(false);
+    },
+    [currentPlayer.id, setUnits]
+  );
 
   // Add a DM narration to chat
   const addDmMessage = useCallback((text: string) => {
@@ -378,81 +459,95 @@ export default function Game() {
   }, [selectedCharacter, characters]);
 
   // Call the DM narration endpoint
-  const callDmNarrate = useCallback(async (action?: string) => {
-    if (!selectedCharacter) return;
-    setDmLoading(true);
-    try {
-      const res = await fetchWithTimeout(`${apiBase()}/api/dm/narrate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          characters: buildPartyPayload(),
-          context: adventureStarted ? 'The adventure is underway.' : '',
-          action: action || '',
-          history: dmHistory.slice(-10),
-          scene: sceneName,
-        }),
-      }, 35_000);
-      const data = await res.json() as { narration?: string; error?: string };
-      if (data.narration) {
-        addDmMessage(data.narration);
-        // Broadcast narration to all players via WebSocket
-        sendRef.current({ type: 'dm_narrate', narration: data.narration });
-      } else {
-        addDmMessage(data.error || 'The DM pauses, lost in thought...');
+  const callDmNarrate = useCallback(
+    async (action?: string) => {
+      if (!selectedCharacter) return;
+      setDmLoading(true);
+      try {
+        const res = await fetchWithTimeout(
+          `${apiBase()}/api/dm/narrate`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              characters: buildPartyPayload(),
+              context: adventureStarted ? 'The adventure is underway.' : '',
+              action: action || '',
+              history: dmHistory.slice(-10),
+              scene: sceneName,
+            }),
+          },
+          35_000
+        );
+        const data = (await res.json()) as { narration?: string; error?: string };
+        if (data.narration) {
+          addDmMessage(data.narration);
+          // Broadcast narration to all players via WebSocket
+          sendRef.current({ type: 'dm_narrate', narration: data.narration });
+        } else {
+          addDmMessage(data.error || 'The DM pauses, lost in thought...');
+        }
+      } catch {
+        addDmMessage('*The DM\u2019s connection to the ethereal plane wavers...*');
+      } finally {
+        setDmLoading(false);
       }
-    } catch {
-      addDmMessage('*The DM\u2019s connection to the ethereal plane wavers...*');
-    } finally {
-      setDmLoading(false);
-    }
-  }, [selectedCharacter, adventureStarted, dmHistory, addDmMessage, buildPartyPayload, sceneName]);
+    },
+    [selectedCharacter, adventureStarted, dmHistory, addDmMessage, buildPartyPayload, sceneName]
+  );
 
   // Call the NPC dialogue endpoint
-  const callNpcDialogue = useCallback(async (playerMessage: string) => {
-    if (!selectedCharacter || !npcName) return;
-    setNpcLoading(true);
-    try {
-      const res = await fetchWithTimeout(`${apiBase()}/api/dm/npc`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          npcName,
-          npcRole,
-          playerMessage,
-          playerName: selectedCharacter.name,
-          playerClass: selectedCharacter.class,
-          scene: sceneName,
-          dialogueHistory: npcDialogueHistory.slice(-8),
-        }),
-      }, 35_000);
-      const data = await res.json() as { dialogue?: string; npcName?: string; error?: string };
-      if (data.dialogue) {
-        const npcText = data.dialogue;
-        // Add NPC message to chat
-        setChatMessages((prev) => [
-          ...prev,
+  const callNpcDialogue = useCallback(
+    async (playerMessage: string) => {
+      if (!selectedCharacter || !npcName) return;
+      setNpcLoading(true);
+      try {
+        const res = await fetchWithTimeout(
+          `${apiBase()}/api/dm/npc`,
           {
-            id: crypto.randomUUID(),
-            type: 'dm' as const,
-            username: npcName,
-            text: npcText,
-            timestamp: Date.now(),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              npcName,
+              npcRole,
+              playerMessage,
+              playerName: selectedCharacter.name,
+              playerClass: selectedCharacter.class,
+              scene: sceneName,
+              dialogueHistory: npcDialogueHistory.slice(-8),
+            }),
           },
-        ]);
-        setDmHistory((prev) => [...prev, `${npcName}: "${npcText}"`]);
-        setNpcDialogueHistory((prev) => [...prev, `${selectedCharacter.name}: ${playerMessage}`, `${npcName}: ${npcText}`]);
-        // Broadcast NPC dialogue to all players
-        sendRef.current({ type: 'dm_npc', npcName, dialogue: npcText });
-      } else {
-        addDmMessage(data.error || `${npcName} stares at you blankly.`);
+          35_000
+        );
+        const data = (await res.json()) as { dialogue?: string; npcName?: string; error?: string };
+        if (data.dialogue) {
+          const npcText = data.dialogue;
+          // Add NPC message to chat
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'dm' as const,
+              username: npcName,
+              text: npcText,
+              timestamp: Date.now(),
+            },
+          ]);
+          setDmHistory((prev) => [...prev, `${npcName}: "${npcText}"`]);
+          setNpcDialogueHistory((prev) => [...prev, `${selectedCharacter.name}: ${playerMessage}`, `${npcName}: ${npcText}`]);
+          // Broadcast NPC dialogue to all players
+          sendRef.current({ type: 'dm_npc', npcName, dialogue: npcText });
+        } else {
+          addDmMessage(data.error || `${npcName} stares at you blankly.`);
+        }
+      } catch {
+        addDmMessage(`*${npcName} mutters something unintelligible...*`);
+      } finally {
+        setNpcLoading(false);
       }
-    } catch {
-      addDmMessage(`*${npcName} mutters something unintelligible...*`);
-    } finally {
-      setNpcLoading(false);
-    }
-  }, [selectedCharacter, npcName, npcRole, sceneName, npcDialogueHistory, addDmMessage]);
+    },
+    [selectedCharacter, npcName, npcRole, sceneName, npcDialogueHistory, addDmMessage]
+  );
 
   // Detect when selected character drops to 0 HP — set unconscious, announce
   useEffect(() => {
@@ -523,7 +618,11 @@ export default function Game() {
         // Tick conditions before passing
         const { messages: msgs } = tickConditions(currentUnit.id);
         msgs.forEach((m) => addDmMessage(m));
-        setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 400);
+        setTimeout(() => {
+          const tr = nextTurn();
+          playTurnChange();
+          broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
+        }, 400);
       }, 600);
       return () => clearTimeout(timer);
     }
@@ -547,9 +646,7 @@ export default function Game() {
       // --- Enemy AI: determine ranged capability, then move + range check ---
       const enemyAbilities = currentUnit.abilities || [];
       const hasRangedAbility = enemyAbilities.some((a) => a.isRanged && a.range);
-      const bestRangedRange = hasRangedAbility
-        ? Math.max(...enemyAbilities.filter((a) => a.isRanged && a.range).map((a) => a.range!))
-        : 0;
+      const bestRangedRange = hasRangedAbility ? Math.max(...enemyAbilities.filter((a) => a.isRanged && a.range).map((a) => a.range!)) : 0;
 
       const enemyPos = mapPositions.find((p) => p.unitId === currentUnit.id);
       const targetPos = mapPositions.find((p) => p.unitId === target.id);
@@ -573,9 +670,7 @@ export default function Game() {
             const dest = findBestMoveToward(terrain, enemyPos.col, enemyPos.row, targetPos.col, targetPos.row, remaining, DEFAULT_ROWS, DEFAULT_COLS);
             if (dest && (dest.col !== enemyPos.col || dest.row !== enemyPos.row)) {
               // Player Opportunity Attacks on enemy movement
-              const oaAttackers = findOpportunityAttackers(
-                currentUnit.id, 'enemy', enemyPos.col, enemyPos.row, dest.col, dest.row, units, mapPositions,
-              );
+              const oaAttackers = findOpportunityAttackers(currentUnit.id, 'enemy', enemyPos.col, enemyPos.row, dest.col, dest.row, units, mapPositions);
               for (const atk of oaAttackers) {
                 // Player OA: find character's weapon stats + condition modifiers
                 const atkUnit = units.find((u) => u.id === atk.unitId);
@@ -603,16 +698,14 @@ export default function Game() {
                   if (roll === 20) dmg *= 2;
                   damageUnit(currentUnit.id, dmg);
                 }
-                setUnits((prev) => prev.map((u) => u.id === atk.unitId ? { ...u, reactionUsed: true } : u));
+                setUnits((prev) => prev.map((u) => (u.id === atk.unitId ? { ...u, reactionUsed: true } : u)));
                 const advTag = hadAdvantage ? ' (advantage)' : hadDisadvantage ? ' (disadvantage)' : '';
-                const oaMsg = hit
-                  ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!${advTag}`
-                  : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!${advTag}`;
+                const oaMsg = hit ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!${advTag}` : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!${advTag}`;
                 setCombatLog((prev) => [...prev, oaMsg]);
                 addDmMessage(oaMsg);
               }
-              setMapPositions((prev) => prev.map((p) => p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p));
-              setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u));
+              setMapPositions((prev) => prev.map((p) => (p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p)));
+              setUnits((prev) => prev.map((u) => (u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u)));
               broadcastGameEvent('token_move', { unitId: currentUnit.id, col: dest.col, row: dest.row });
               const moveFt = dest.cost * 5;
               addDmMessage(`${currentUnit.name} moves ${moveFt}ft toward ${target.name}.`);
@@ -643,15 +736,21 @@ export default function Game() {
       if (!canAttack) {
         addDmMessage(`${currentUnit.name} can't reach ${target.name} — ends turn.`);
         // Still tick ability cooldowns
-        setUnits((prev) => prev.map((u) => {
-          if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
-          const newCd: Record<string, number> = {};
-          for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
-            if (cd > 0) newCd[name] = cd - 1;
-          }
-          return { ...u, abilityCooldowns: newCd };
-        }));
-        setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 600);
+        setUnits((prev) =>
+          prev.map((u) => {
+            if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
+            const newCd: Record<string, number> = {};
+            for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
+              if (cd > 0) newCd[name] = cd - 1;
+            }
+            return { ...u, abilityCooldowns: newCd };
+          })
+        );
+        setTimeout(() => {
+          const tr = nextTurn();
+          playTurnChange();
+          broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
+        }, 600);
         return;
       }
 
@@ -669,7 +768,11 @@ export default function Game() {
           updateCharacter(targetChar.id, { deathSaves: ds });
           addDmMessage(`${currentUnit.name} strikes the fallen ${target.name}! (2 death save failures — ${ds.successes} successes, ${ds.failures} failures)`);
         }
-        setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 600);
+        setTimeout(() => {
+          const tr = nextTurn();
+          playTurnChange();
+          broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
+        }, 600);
         return;
       }
 
@@ -677,10 +780,7 @@ export default function Game() {
       // When at range (not adjacent), prefer ranged abilities; skip melee-only abilities
       const abilities = currentUnit.abilities || [];
       const cooldowns = currentUnit.abilityCooldowns || {};
-      const needsRanged = canRangedAttack && !isAdjacent(
-        enemyPos?.col ?? 0, enemyPos?.row ?? 0,
-        targetPos?.col ?? 0, targetPos?.row ?? 0,
-      );
+      const needsRanged = canRangedAttack && !isAdjacent(enemyPos?.col ?? 0, enemyPos?.row ?? 0, targetPos?.col ?? 0, targetPos?.row ?? 0);
       const availAbility = abilities.find((a) => {
         if ((cooldowns[a.name] || 0) > 0) return false;
         // At range: only allow ranged abilities or AoE
@@ -725,13 +825,13 @@ export default function Game() {
           const heal = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 10;
           // Heal self or lowest-HP ally
           const healTarget = currentUnit;
-          setUnits((prev) => prev.map((u) => u.id === healTarget.id ? { ...u, hp: Math.min(u.maxHp, u.hp + heal) } : u));
+          setUnits((prev) => prev.map((u) => (u.id === healTarget.id ? { ...u, hp: Math.min(u.maxHp, u.hp + heal) } : u)));
           abilMsg += ` Heals for ${heal} HP!`;
         }
 
         addDmMessage(abilMsg);
         // Set cooldown
-        setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, abilityCooldowns: { ...cooldowns, [availAbility.name]: availAbility.cooldown } } : u));
+        setUnits((prev) => prev.map((u) => (u.id === currentUnit.id ? { ...u, abilityCooldowns: { ...cooldowns, [availAbility.name]: availAbility.cooldown } } : u)));
       } else if (!needsRanged) {
         // Basic melee attack using unit's stat block (only when adjacent)
         const atkBonus = currentUnit.attackBonus ?? 3;
@@ -752,9 +852,7 @@ export default function Game() {
           damageUnit(target.id, finalDmg);
           playCombatHit();
           if (isCrit) playCritical();
-          addDmMessage(isCrit
-            ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`
-            : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
+          addDmMessage(isCrit ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}` : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
           // Check if target died
           if (target.hp - finalDmg <= 0) {
             playEnemyDeath();
@@ -767,19 +865,25 @@ export default function Game() {
       }
 
       // Tick ability cooldowns
-      setUnits((prev) => prev.map((u) => {
-        if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
-        const newCd: Record<string, number> = {};
-        for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
-          if (cd > 0) newCd[name] = cd - 1;
-        }
-        return { ...u, abilityCooldowns: newCd };
-      }));
+      setUnits((prev) =>
+        prev.map((u) => {
+          if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
+          const newCd: Record<string, number> = {};
+          for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
+            if (cd > 0) newCd[name] = cd - 1;
+          }
+          return { ...u, abilityCooldowns: newCd };
+        })
+      );
 
       // Drain concentration break messages from damage dealt this turn
       setTimeout(drainConcentrationMessages, 0);
 
-      setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 600);
+      setTimeout(() => {
+        const tr = nextTurn();
+        playTurnChange();
+        broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
+      }, 600);
     }, 800);
 
     return () => clearTimeout(timer);
@@ -833,19 +937,23 @@ export default function Game() {
       // Try to get AI encounter — may return both enemies and narration
       let description = '';
       try {
-        const res = await fetchWithTimeout(`${apiBase()}/api/dm/encounter`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            partyLevel: selectedCharacter.level,
-            partySize: 1,
-            difficulty: encounterDifficulty,
-            context: dmHistory.length > 0 ? dmHistory[dmHistory.length - 1] : 'a dark dungeon corridor',
-            setting: theme.setting,
-            twist: theme.twist,
-          }),
-        }, 45_000);
-        const data = await res.json() as { enemies?: { name: string; hp: number; maxHp: number; ac: number; type?: string }[]; description?: string; error?: string };
+        const res = await fetchWithTimeout(
+          `${apiBase()}/api/dm/encounter`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              partyLevel: selectedCharacter.level,
+              partySize: 1,
+              difficulty: encounterDifficulty,
+              context: dmHistory.length > 0 ? dmHistory[dmHistory.length - 1] : 'a dark dungeon corridor',
+              setting: theme.setting,
+              twist: theme.twist,
+            }),
+          },
+          45_000
+        );
+        const data = (await res.json()) as { enemies?: { name: string; hp: number; maxHp: number; ac: number; type?: string }[]; description?: string; error?: string };
         if (data.description) description = data.description;
         // Use AI-generated enemies if they have valid stat blocks, merged with template abilities
         if (data.enemies?.length && data.enemies.every((e) => e.name && e.hp > 0 && e.ac > 0)) {
@@ -885,7 +993,9 @@ export default function Game() {
             } satisfies Unit;
           });
         }
-      } catch { /* AI narration/encounter is optional — template enemies already generated */ }
+      } catch {
+        /* AI narration/encounter is optional — template enemies already generated */
+      }
 
       // Announce the encounter with theme fallback
       const enemyNames = enemyUnits.map((e) => e.name).join(', ');
@@ -913,289 +1023,290 @@ export default function Game() {
   }, [selectedCharacter, dmHistory, addDmMessage, setUnits, encounterDifficulty, broadcastGameEvent, terrain, mapPositions]);
 
   // Handle incoming WebSocket messages
-  const handleWsMessage = useCallback((msg: WSMessage) => {
-    switch (msg.type) {
-      case 'welcome':
-        setWsPlayerId(msg.playerId as string);
-        setIsDM(msg.isDM as boolean ?? false);
-        if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
-        // Request game state from existing players (late join sync)
-        sendRef.current({ type: 'state_request' });
-        break;
+  const handleWsMessage = useCallback(
+    (msg: WSMessage) => {
+      switch (msg.type) {
+        case 'welcome':
+          setWsPlayerId(msg.playerId as string);
+          setIsDM((msg.isDM as boolean) ?? false);
+          if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
+          // Request game state from existing players (late join sync)
+          sendRef.current({ type: 'state_request' });
+          break;
 
-      case 'chat':
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'chat',
-            playerId: msg.playerId as string,
-            username: msg.username as string,
-            avatar: msg.avatar as string | undefined,
-            text: msg.message as string,
-            timestamp: msg.timestamp as number,
-          },
-        ]);
-        break;
-
-      case 'roll_result': {
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'roll',
-            playerId: msg.playerId as string,
-            username: msg.username as string,
-            avatar: msg.avatar as string | undefined,
-            text: '',
-            timestamp: msg.timestamp as number,
-            die: msg.die as string,
-            sides: msg.sides as number,
-            value: msg.value as number,
-            isCritical: msg.isCritical as boolean,
-            isFumble: msg.isFumble as boolean,
-            unitName: msg.unitName as string | undefined,
-            characterName: msg.unitName as string | undefined,
-          },
-        ]);
-        // Sound FX
-        playDiceRoll();
-        if (msg.isCritical) setTimeout(playCritical, 400);
-        if (msg.isFumble) setTimeout(playFumble, 400);
-
-        diceRef.current?.playRemoteRoll({
-          die: msg.die as DieType,
-          sides: msg.sides as number,
-          value: msg.value as number,
-          playerName: msg.username as string,
-          unitName: msg.unitName as string | undefined,
-        });
-        break;
-      }
-
-      case 'player_joined':
-        playPlayerJoin();
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'join',
-            username: msg.username as string,
-            text: `${msg.username} joined the game`,
-            timestamp: msg.timestamp as number,
-          },
-        ]);
-        break;
-
-      case 'player_reconnected':
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'join',
-            username: msg.username as string,
-            text: `${msg.username} reconnected`,
-            timestamp: msg.timestamp as number,
-          },
-        ]);
-        break;
-
-      case 'player_left':
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'leave',
-            username: msg.username as string,
-            text: `${msg.username} left the game`,
-            timestamp: msg.timestamp as number,
-          },
-        ]);
-        break;
-
-      case 'dm_changed':
-        setDmPlayerId(msg.dmPlayerId as string);
-        setIsDM(msg.dmPlayerId === wsPlayerId);
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'system' as const,
-            username: 'System',
-            text: `${msg.dmUsername} is now the DM`,
-            timestamp: msg.timestamp as number,
-          },
-        ]);
-        break;
-
-      case 'dm_narrate':
-        // DM narration broadcast from another player — only add if we didn't trigger it
-        if (msg.playerId !== wsPlayerId) {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'dm',
-              username: 'Dungeon Master',
-              text: msg.narration as string,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
-          setDmHistory((prev) => [...prev, msg.narration as string]);
-        }
-        break;
-
-      case 'dm_npc':
-        // NPC dialogue broadcast from another player
-        if (msg.playerId !== wsPlayerId) {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'dm',
-              username: msg.npcName as string,
-              text: msg.dialogue as string,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
-          setDmHistory((prev) => [...prev, `${msg.npcName}: "${msg.dialogue}"`]);
-        }
-        break;
-
-      case 'dm_action':
-        // Another player's action broadcast — show it in chat
-        if (msg.playerId !== wsPlayerId) {
+        case 'chat':
           setChatMessages((prev) => [
             ...prev,
             {
               id: crypto.randomUUID(),
               type: 'chat',
               playerId: msg.playerId as string,
-              username: msg.characterName as string || msg.username as string,
-              text: `*${msg.action}*`,
+              username: msg.username as string,
+              avatar: msg.avatar as string | undefined,
+              text: msg.message as string,
               timestamp: msg.timestamp as number,
             },
           ]);
-        }
-        break;
+          break;
 
-      case 'game_event': {
-        // Apply remote game state event — set suppression flag to prevent rebroadcast
-        const eventType = msg.event as string;
-        const eventData = msg.data as Record<string, unknown>;
-        isRemoteEventRef.current = true;
-        try {
-          switch (eventType) {
-            case 'game_sync': {
-              // Full combat state snapshot — units, combat flags
-              if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
-              if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
-              if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
-              if (typeof eventData.turnIndex === 'number') setTurnIndex(eventData.turnIndex);
-              break;
-            }
-            case 'encounter_spawn': {
-              // New encounter — units + terrain + positions + combat state
-              if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
-              if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
-              if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
-              if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
-              if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
-              break;
-            }
-            case 'token_move': {
-              // Single token position update (smooth drag sync)
-              const unitId = eventData.unitId as string;
-              const col = eventData.col as number;
-              const row = eventData.row as number;
-              if (unitId && typeof col === 'number' && typeof row === 'number') {
-                setMapPositions((prev) => prev.map((p) =>
-                  p.unitId === unitId ? { ...p, col, row } : p
-                ));
-              }
-              break;
-            }
-            case 'terrain_update': {
-              if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
-              break;
-            }
-            case 'map_positions': {
-              if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
-              break;
-            }
-            case 'character_update': {
-              // Partial character update — visible stats only (HP, conditions, level, etc.)
-              const charUpdate = eventData.character as Partial<Character> & { id: string };
-              if (charUpdate?.id) {
-                updateCharacter(charUpdate.id, charUpdate);
-              }
-              break;
-            }
-            case 'scene_sync': {
-              if (typeof eventData.sceneName === 'string') setSceneName(eventData.sceneName);
-              break;
-            }
-            case 'quest_sync': {
-              if (Array.isArray(eventData.quests)) setQuests(eventData.quests as Quest[]);
-              break;
-            }
-            case 'map_image': {
-              const url = eventData.mapImageUrl as string | null;
-              setMapImageUrl(url ?? null);
-              break;
-            }
+        case 'roll_result': {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'roll',
+              playerId: msg.playerId as string,
+              username: msg.username as string,
+              avatar: msg.avatar as string | undefined,
+              text: '',
+              timestamp: msg.timestamp as number,
+              die: msg.die as string,
+              sides: msg.sides as number,
+              value: msg.value as number,
+              isCritical: msg.isCritical as boolean,
+              isFumble: msg.isFumble as boolean,
+              unitName: msg.unitName as string | undefined,
+              characterName: msg.unitName as string | undefined,
+            },
+          ]);
+          // Sound FX
+          playDiceRoll();
+          if (msg.isCritical) setTimeout(playCritical, 400);
+          if (msg.isFumble) setTimeout(playFumble, 400);
+
+          diceRef.current?.playRemoteRoll({
+            die: msg.die as DieType,
+            sides: msg.sides as number,
+            value: msg.value as number,
+            playerName: msg.username as string,
+            unitName: msg.unitName as string | undefined,
+          });
+          break;
+        }
+
+        case 'player_joined':
+          playPlayerJoin();
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'join',
+              username: msg.username as string,
+              text: `${msg.username} joined the game`,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+          break;
+
+        case 'player_reconnected':
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'join',
+              username: msg.username as string,
+              text: `${msg.username} reconnected`,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+          break;
+
+        case 'player_left':
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'leave',
+              username: msg.username as string,
+              text: `${msg.username} left the game`,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+          break;
+
+        case 'dm_changed':
+          setDmPlayerId(msg.dmPlayerId as string);
+          setIsDM(msg.dmPlayerId === wsPlayerId);
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'system' as const,
+              username: 'System',
+              text: `${msg.dmUsername} is now the DM`,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+          break;
+
+        case 'dm_narrate':
+          // DM narration broadcast from another player — only add if we didn't trigger it
+          if (msg.playerId !== wsPlayerId) {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                type: 'dm',
+                username: 'Dungeon Master',
+                text: msg.narration as string,
+                timestamp: msg.timestamp as number,
+              },
+            ]);
+            setDmHistory((prev) => [...prev, msg.narration as string]);
           }
-        } finally {
-          isRemoteEventRef.current = false;
-        }
-        break;
-      }
+          break;
 
-      case 'state_request': {
-        // Another client wants full state (late joiner). Send our current state.
-        sendRef.current({
-          type: 'state_response',
-          targetPlayerId: msg.playerId as string,
-          data: {
-            units,
-            inCombat,
-            combatRound,
-            turnIndex,
-            terrain,
-            mapPositions,
-            mapImageUrl,
-            sceneName,
-            quests,
-            dmHistory,
-          },
-        });
-        break;
-      }
+        case 'dm_npc':
+          // NPC dialogue broadcast from another player
+          if (msg.playerId !== wsPlayerId) {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                type: 'dm',
+                username: msg.npcName as string,
+                text: msg.dialogue as string,
+                timestamp: msg.timestamp as number,
+              },
+            ]);
+            setDmHistory((prev) => [...prev, `${msg.npcName}: "${msg.dialogue}"`]);
+          }
+          break;
 
-      case 'state_response': {
-        // Full state from another client — apply it all
-        const stateData = msg.data as Record<string, unknown>;
-        if (!stateData) break;
-        isRemoteEventRef.current = true;
-        try {
-          if (Array.isArray(stateData.units)) setUnits(stateData.units as Unit[]);
-          if (typeof stateData.inCombat === 'boolean') setInCombat(stateData.inCombat);
-          if (typeof stateData.combatRound === 'number') setCombatRound(stateData.combatRound);
-          if (typeof stateData.turnIndex === 'number') setTurnIndex(stateData.turnIndex);
-          if (Array.isArray(stateData.terrain)) setTerrain(stateData.terrain as TerrainType[][]);
-          if (Array.isArray(stateData.mapPositions)) setMapPositions(stateData.mapPositions as TokenPosition[]);
-          if (typeof stateData.mapImageUrl === 'string') setMapImageUrl(stateData.mapImageUrl);
-          else if (stateData.mapImageUrl === null) setMapImageUrl(null);
-          if (typeof stateData.sceneName === 'string') setSceneName(stateData.sceneName);
-          if (Array.isArray(stateData.quests)) setQuests(stateData.quests as Quest[]);
-          if (Array.isArray(stateData.dmHistory)) setDmHistory(stateData.dmHistory as string[]);
-        } finally {
-          isRemoteEventRef.current = false;
+        case 'dm_action':
+          // Another player's action broadcast — show it in chat
+          if (msg.playerId !== wsPlayerId) {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                type: 'chat',
+                playerId: msg.playerId as string,
+                username: (msg.characterName as string) || (msg.username as string),
+                text: `*${msg.action}*`,
+                timestamp: msg.timestamp as number,
+              },
+            ]);
+          }
+          break;
+
+        case 'game_event': {
+          // Apply remote game state event — set suppression flag to prevent rebroadcast
+          const eventType = msg.event as string;
+          const eventData = msg.data as Record<string, unknown>;
+          isRemoteEventRef.current = true;
+          try {
+            switch (eventType) {
+              case 'game_sync': {
+                // Full combat state snapshot — units, combat flags
+                if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
+                if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
+                if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
+                if (typeof eventData.turnIndex === 'number') setTurnIndex(eventData.turnIndex);
+                break;
+              }
+              case 'encounter_spawn': {
+                // New encounter — units + terrain + positions + combat state
+                if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
+                if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
+                if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
+                if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
+                if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
+                break;
+              }
+              case 'token_move': {
+                // Single token position update (smooth drag sync)
+                const unitId = eventData.unitId as string;
+                const col = eventData.col as number;
+                const row = eventData.row as number;
+                if (unitId && typeof col === 'number' && typeof row === 'number') {
+                  setMapPositions((prev) => prev.map((p) => (p.unitId === unitId ? { ...p, col, row } : p)));
+                }
+                break;
+              }
+              case 'terrain_update': {
+                if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
+                break;
+              }
+              case 'map_positions': {
+                if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
+                break;
+              }
+              case 'character_update': {
+                // Partial character update — visible stats only (HP, conditions, level, etc.)
+                const charUpdate = eventData.character as Partial<Character> & { id: string };
+                if (charUpdate?.id) {
+                  updateCharacter(charUpdate.id, charUpdate);
+                }
+                break;
+              }
+              case 'scene_sync': {
+                if (typeof eventData.sceneName === 'string') setSceneName(eventData.sceneName);
+                break;
+              }
+              case 'quest_sync': {
+                if (Array.isArray(eventData.quests)) setQuests(eventData.quests as Quest[]);
+                break;
+              }
+              case 'map_image': {
+                const url = eventData.mapImageUrl as string | null;
+                setMapImageUrl(url ?? null);
+                break;
+              }
+            }
+          } finally {
+            isRemoteEventRef.current = false;
+          }
+          break;
         }
-        break;
+
+        case 'state_request': {
+          // Another client wants full state (late joiner). Send our current state.
+          sendRef.current({
+            type: 'state_response',
+            targetPlayerId: msg.playerId as string,
+            data: {
+              units,
+              inCombat,
+              combatRound,
+              turnIndex,
+              terrain,
+              mapPositions,
+              mapImageUrl,
+              sceneName,
+              quests,
+              dmHistory,
+            },
+          });
+          break;
+        }
+
+        case 'state_response': {
+          // Full state from another client — apply it all
+          const stateData = msg.data as Record<string, unknown>;
+          if (!stateData) break;
+          isRemoteEventRef.current = true;
+          try {
+            if (Array.isArray(stateData.units)) setUnits(stateData.units as Unit[]);
+            if (typeof stateData.inCombat === 'boolean') setInCombat(stateData.inCombat);
+            if (typeof stateData.combatRound === 'number') setCombatRound(stateData.combatRound);
+            if (typeof stateData.turnIndex === 'number') setTurnIndex(stateData.turnIndex);
+            if (Array.isArray(stateData.terrain)) setTerrain(stateData.terrain as TerrainType[][]);
+            if (Array.isArray(stateData.mapPositions)) setMapPositions(stateData.mapPositions as TokenPosition[]);
+            if (typeof stateData.mapImageUrl === 'string') setMapImageUrl(stateData.mapImageUrl);
+            else if (stateData.mapImageUrl === null) setMapImageUrl(null);
+            if (typeof stateData.sceneName === 'string') setSceneName(stateData.sceneName);
+            if (Array.isArray(stateData.quests)) setQuests(stateData.quests as Quest[]);
+            if (Array.isArray(stateData.dmHistory)) setDmHistory(stateData.dmHistory as string[]);
+          } finally {
+            isRemoteEventRef.current = false;
+          }
+          break;
+        }
       }
-    }
-  }, [wsPlayerId, units, inCombat, combatRound, turnIndex, terrain, mapPositions, sceneName, quests, dmHistory, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, updateCharacter]);
+    },
+    [wsPlayerId, units, inCombat, combatRound, turnIndex, terrain, mapPositions, sceneName, quests, dmHistory, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, updateCharacter]
+  );
 
   const { status, send } = useWebSocket({
     roomId: room,
@@ -1204,9 +1315,23 @@ export default function Game() {
   });
   sendRef.current = send;
   // Track connection status for canUseDMTools (must be after hook call)
-  useEffect(() => { setWsConnected(status === 'connected'); }, [status]);
+  useEffect(() => {
+    setWsConnected(status === 'connected');
+  }, [status]);
 
-  const handleChatSend = useCallback((text: string) => send({ type: 'chat', message: text }), [send]);
+  const handleChatSend = useCallback(
+    (text: string) => {
+      send({ type: 'chat', message: text });
+      // Persist to D1 (fire-and-forget)
+      persistChatMessage(room, {
+        username: selectedCharacter?.name || currentPlayer.username,
+        type: 'chat',
+        text,
+        avatarUrl: currentPlayer.avatar,
+      });
+    },
+    [send, room, selectedCharacter?.name, currentPlayer.username, currentPlayer.avatar]
+  );
 
   const handleLocalRoll = useCallback(
     (die: DieType, sides: number) => {
@@ -1289,24 +1414,26 @@ export default function Game() {
                 <p className="text-center text-slate-500">Select a character to enter the adventure</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {characters.map((char) => (
-                    <button
-                      key={char.id}
-                      onClick={() => handleSelectCharacter(char)}
-                      className="flex items-center gap-4 p-4 rounded-xl border border-slate-700 bg-slate-900 hover:border-[#F38020] hover:bg-[#F38020]/5 transition-all text-left group"
-                    >
+                    <button key={char.id} onClick={() => handleSelectCharacter(char)} className="flex items-center gap-4 p-4 rounded-xl border border-slate-700 bg-slate-900 hover:border-[#F38020] hover:bg-[#F38020]/5 transition-all text-left group">
                       {/* Portrait — illustrated art fallback */}
                       <img
                         src={char.portrait || `/portraits/classes/${char.class.toLowerCase()}.webp`}
                         alt={char.name}
                         className="w-16 h-16 rounded-xl object-cover border border-slate-600 shrink-0"
-                        onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${char.race.toLowerCase()}.webp`; }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `/portraits/races/${char.race.toLowerCase()}.webp`;
+                        }}
                       />
 
                       <div className="flex-1 min-w-0">
                         <div className="text-lg font-bold text-white group-hover:text-[#F38020] transition-colors truncate">{char.name}</div>
-                        <div className="text-sm text-slate-400">Level {char.level} {char.race} {char.class}</div>
+                        <div className="text-sm text-slate-400">
+                          Level {char.level} {char.race} {char.class}
+                        </div>
                         <div className="flex gap-3 mt-1">
-                          <span className="text-xs text-red-400">HP {char.hp}/{char.maxHp}</span>
+                          <span className="text-xs text-red-400">
+                            HP {char.hp}/{char.maxHp}
+                          </span>
                           <span className="text-xs text-sky-400">AC {char.ac}</span>
                         </div>
                       </div>
@@ -1354,27 +1481,28 @@ export default function Game() {
         <div className="flex items-center gap-3">
           {/* Sound toggle */}
           <button
-            onClick={() => { toggleMute(); setSoundMuted(!soundMuted); }}
+            onClick={() => {
+              toggleMute();
+              setSoundMuted(!soundMuted);
+            }}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
             title={soundMuted ? 'Unmute sounds' : 'Mute sounds'}
           >
             {soundMuted ? (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M9.547 3.062A.75.75 0 0110 3.75v12.5a.75.75 0 01-1.264.546L5.203 13H3.75A.75.75 0 013 12.25v-4.5A.75.75 0 013.75 7h1.453l3.533-3.796a.75.75 0 01.811-.142zM13.78 7.22a.75.75 0 10-1.06 1.06L14.44 10l-1.72 1.72a.75.75 0 001.06 1.06L15.5 11.06l1.72 1.72a.75.75 0 101.06-1.06L16.56 10l1.72-1.72a.75.75 0 00-1.06-1.06L15.5 8.94l-1.72-1.72z" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path d="M9.547 3.062A.75.75 0 0110 3.75v12.5a.75.75 0 01-1.264.546L5.203 13H3.75A.75.75 0 013 12.25v-4.5A.75.75 0 013.75 7h1.453l3.533-3.796a.75.75 0 01.811-.142zM13.78 7.22a.75.75 0 10-1.06 1.06L14.44 10l-1.72 1.72a.75.75 0 001.06 1.06L15.5 11.06l1.72 1.72a.75.75 0 101.06-1.06L16.56 10l1.72-1.72a.75.75 0 00-1.06-1.06L15.5 8.94l-1.72-1.72z" />
+              </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10 3.75a.75.75 0 00-1.264-.546L5.203 7H3.75A.75.75 0 003 7.75v4.5a.75.75 0 00.75.75h1.453l3.533 3.796A.75.75 0 0010 16.25V3.75zM15.95 5.05a.75.75 0 00-1.06 1.06 5.5 5.5 0 010 7.78.75.75 0 001.06 1.06 7 7 0 000-9.9z" /><path d="M13.829 7.172a.75.75 0 00-1.06 1.06 2.5 2.5 0 010 3.536.75.75 0 001.06 1.06 4 4 0 000-5.656z" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path d="M10 3.75a.75.75 0 00-1.264-.546L5.203 7H3.75A.75.75 0 003 7.75v4.5a.75.75 0 00.75.75h1.453l3.533 3.796A.75.75 0 0010 16.25V3.75zM15.95 5.05a.75.75 0 00-1.06 1.06 5.5 5.5 0 010 7.78.75.75 0 001.06 1.06 7 7 0 000-9.9z" />
+                <path d="M13.829 7.172a.75.75 0 00-1.06 1.06 2.5 2.5 0 010 3.536.75.75 0 001.06 1.06 4 4 0 000-5.656z" />
+              </svg>
             )}
           </button>
-          <button
-            onClick={() => setShowCharacterPicker(true)}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-          >
+          <button onClick={() => setShowCharacterPicker(true)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
             Switch Character
           </button>
-          {inCombat && (
-            <span className="text-xs text-red-400 font-semibold">
-              Round {combatRound}
-            </span>
-          )}
+          {inCombat && <span className="text-xs text-red-400 font-semibold">Round {combatRound}</span>}
           {rolls.length > 0 && (
             <span className="text-xs text-slate-500">
               {rolls.length} roll{rolls.length !== 1 ? 's' : ''}
@@ -1405,13 +1533,19 @@ export default function Game() {
                       src={selectedCharacter.portrait || `/portraits/classes/${selectedCharacter.class.toLowerCase()}.webp`}
                       alt={selectedCharacter.name}
                       className="w-20 h-20 rounded-xl object-cover border-2 border-amber-600/30"
-                      onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${selectedCharacter.race.toLowerCase()}.webp`; }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `/portraits/races/${selectedCharacter.race.toLowerCase()}.webp`;
+                      }}
                     />
                     <div>
                       <div className="text-2xl font-bold text-white">{selectedCharacter.name}</div>
-                      <div className="text-sm text-slate-400">Level {selectedCharacter.level} {selectedCharacter.race} {selectedCharacter.class}</div>
+                      <div className="text-sm text-slate-400">
+                        Level {selectedCharacter.level} {selectedCharacter.race} {selectedCharacter.class}
+                      </div>
                       <div className="flex gap-3 mt-1">
-                        <span className="text-xs text-red-400">HP {selectedCharacter.hp}/{selectedCharacter.maxHp}</span>
+                        <span className="text-xs text-red-400">
+                          HP {selectedCharacter.hp}/{selectedCharacter.maxHp}
+                        </span>
                         <span className="text-xs text-sky-400">AC {selectedCharacter.ac}</span>
                       </div>
                     </div>
@@ -1420,31 +1554,25 @@ export default function Game() {
 
                 <div className="text-center space-y-2 max-w-md">
                   <h2 className="text-xl font-bold text-amber-400">Your Adventure Awaits</h2>
-                  <p className="text-sm text-slate-500">
-                    The AI Dungeon Master will set the scene and guide your journey. Make choices, explore, fight, and forge your legend.
-                  </p>
+                  <p className="text-sm text-slate-500">The AI Dungeon Master will set the scene and guide your journey. Make choices, explore, fight, and forge your legend.</p>
                 </div>
 
                 {canUseDMTools ? (
-                <button
-                  onClick={handleBeginAdventure}
-                  disabled={dmLoading}
-                  className="px-8 py-4 bg-gradient-to-br from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 disabled:opacity-40 text-white font-bold rounded-xl shadow-lg shadow-amber-900/30 transition-all active:scale-[0.98] text-lg flex items-center gap-2"
-                >
-                  {dmLoading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      The DM prepares...
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                        <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
-                      </svg>
-                      Begin Adventure
-                    </>
-                  )}
-                </button>
+                  <button onClick={handleBeginAdventure} disabled={dmLoading} className="px-8 py-4 bg-gradient-to-br from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 disabled:opacity-40 text-white font-bold rounded-xl shadow-lg shadow-amber-900/30 transition-all active:scale-[0.98] text-lg flex items-center gap-2">
+                    {dmLoading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        The DM prepares...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                          <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
+                        </svg>
+                        Begin Adventure
+                      </>
+                    )}
+                  </button>
                 ) : (
                   <p className="text-sm text-slate-500 italic">Waiting for the DM to begin the adventure...</p>
                 )}
@@ -1454,23 +1582,14 @@ export default function Game() {
               <div className="rounded-xl border border-slate-800 bg-slate-900 flex flex-col h-full">
                 {/* View tabs */}
                 <div className="flex items-center border-b border-slate-800 shrink-0">
-                  <button
-                    onClick={() => setActiveView('narration')}
-                    className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'narration' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-                  >
+                  <button onClick={() => setActiveView('narration')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'narration' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Narration
                   </button>
-                  <button
-                    onClick={() => setActiveView('map')}
-                    className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'map' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-                  >
+                  <button onClick={() => setActiveView('map')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'map' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Battle Map
                   </button>
                   {!inCombat && (
-                    <button
-                      onClick={() => setActiveView('shop')}
-                      className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'shop' ? 'border-yellow-500 text-yellow-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-                    >
+                    <button onClick={() => setActiveView('shop')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'shop' ? 'border-yellow-500 text-yellow-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                       Shop
                     </button>
                   )}
@@ -1479,34 +1598,25 @@ export default function Game() {
                 {/* DM + Combat toolbar */}
                 <div className="flex items-center gap-2 p-3 border-b border-slate-800 flex-wrap">
                   {/* DM role indicator */}
-                  {wsConnected && (
-                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${canUseDMTools ? 'bg-amber-900/40 text-amber-400 border border-amber-700/40' : 'bg-slate-800 text-slate-500 border border-slate-700/40'}`}>
-                      {canUseDMTools ? 'DM' : 'Player'}
-                    </span>
-                  )}
+                  {wsConnected && <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${canUseDMTools ? 'bg-amber-900/40 text-amber-400 border border-amber-700/40' : 'bg-slate-800 text-slate-500 border border-slate-700/40'}`}>{canUseDMTools ? 'DM' : 'Player'}</span>}
 
                   {/* DM-only controls: encounter, NPC, scene */}
                   {canUseDMTools && (
                     <>
-                      <button
-                        onClick={handleGenerateEncounter}
-                        disabled={encounterLoading || dmLoading}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/40 hover:bg-red-900/60 border border-red-800/50 disabled:opacity-30 text-red-300 text-xs font-semibold rounded-lg transition-all"
-                      >
+                      <button onClick={handleGenerateEncounter} disabled={encounterLoading || dmLoading} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/40 hover:bg-red-900/60 border border-red-800/50 disabled:opacity-30 text-red-300 text-xs font-semibold rounded-lg transition-all">
                         {encounterLoading ? (
                           <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M9.944 3.143a.75.75 0 01.112 1.056l-2.4 3h2.594a.75.75 0 01.59 1.213l-3.75 4.5a.75.75 0 11-1.152-.96l2.4-3H5.744a.75.75 0 01-.59-1.213l3.75-4.5a.75.75 0 011.04-.096z" clipRule="evenodd" /><path fillRule="evenodd" d="M13.944 6.143a.75.75 0 01.112 1.056l-1.2 1.5h1.394a.75.75 0 01.59 1.213l-2.25 2.7a.75.75 0 11-1.152-.96l1.2-1.5h-1.394a.75.75 0 01-.59-1.213l2.25-2.7a.75.75 0 011.04-.096z" clipRule="evenodd" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path fillRule="evenodd" d="M9.944 3.143a.75.75 0 01.112 1.056l-2.4 3h2.594a.75.75 0 01.59 1.213l-3.75 4.5a.75.75 0 11-1.152-.96l2.4-3H5.744a.75.75 0 01-.59-1.213l3.75-4.5a.75.75 0 011.04-.096z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M13.944 6.143a.75.75 0 01.112 1.056l-1.2 1.5h1.394a.75.75 0 01.59 1.213l-2.25 2.7a.75.75 0 11-1.152-.96l1.2-1.5h-1.394a.75.75 0 01-.59-1.213l2.25-2.7a.75.75 0 011.04-.096z" clipRule="evenodd" />
+                          </svg>
                         )}
                         Encounter
                       </button>
 
                       {/* Difficulty selector */}
-                      <select
-                        value={encounterDifficulty}
-                        onChange={(e) => setEncounterDifficulty(e.target.value as typeof encounterDifficulty)}
-                        className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 outline-none"
-                      >
+                      <select value={encounterDifficulty} onChange={(e) => setEncounterDifficulty(e.target.value as typeof encounterDifficulty)} className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 outline-none">
                         <option value="easy">Easy</option>
                         <option value="medium">Medium</option>
                         <option value="hard">Hard</option>
@@ -1525,7 +1635,9 @@ export default function Game() {
                         }}
                         className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all ${npcMode ? 'bg-purple-600/40 border-purple-500/50 text-purple-200' : 'bg-purple-900/40 hover:bg-purple-900/60 border-purple-800/50 text-purple-300'}`}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 3.976 1 5.365v2.171c0 1.388.993 2.61 2.43 2.841A41.587 41.587 0 0010 11c2.233 0 4.412-.187 6.57-.623C18.007 10.146 19 8.924 19 7.536V5.365c0-1.389-.993-2.61-2.43-2.841A41.587 41.587 0 0010 2zM1 13.694v-1.358C2.32 13.107 4.106 13.5 6 13.695v.705A4.5 4.5 0 011.5 18H1v-4.306zM14 14.4v-.705c1.894-.196 3.68-.588 5-1.36v1.359L19 18h-.5A4.5 4.5 0 0114 14.4z" clipRule="evenodd" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                          <path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 3.976 1 5.365v2.171c0 1.388.993 2.61 2.43 2.841A41.587 41.587 0 0010 11c2.233 0 4.412-.187 6.57-.623C18.007 10.146 19 8.924 19 7.536V5.365c0-1.389-.993-2.61-2.43-2.841A41.587 41.587 0 0010 2zM1 13.694v-1.358C2.32 13.107 4.106 13.5 6 13.695v.705A4.5 4.5 0 011.5 18H1v-4.306zM14 14.4v-.705c1.894-.196 3.68-.588 5-1.36v1.359L19 18h-.5A4.5 4.5 0 0114 14.4z" clipRule="evenodd" />
+                        </svg>
                         {npcMode ? 'End Talk' : 'Talk NPC'}
                       </button>
 
@@ -1533,7 +1645,10 @@ export default function Game() {
                       <input
                         type="text"
                         value={sceneName}
-                        onChange={(e) => { setSceneName(e.target.value); broadcastGameEvent('scene_sync', { sceneName: e.target.value }); }}
+                        onChange={(e) => {
+                          setSceneName(e.target.value);
+                          broadcastGameEvent('scene_sync', { sceneName: e.target.value });
+                        }}
                         placeholder="Scene..."
                         className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 placeholder-slate-600 outline-none w-24 focus:w-40 transition-all focus:ring-1 focus:ring-amber-600/50"
                       />
@@ -1545,347 +1660,379 @@ export default function Game() {
                     <>
                       {!inCombat ? (
                         <button
-                          onClick={() => { const sorted = rollInitiative(); playTurnChange(); setCombatLog((prev) => [...prev, 'Initiative rolled! Combat begins.']); addDmMessage('Roll for initiative!'); broadcastCombatSync(sorted, true, 1, 0); }}
+                          onClick={() => {
+                            const sorted = rollInitiative();
+                            playTurnChange();
+                            setCombatLog((prev) => [...prev, 'Initiative rolled! Combat begins.']);
+                            addDmMessage('Roll for initiative!');
+                            broadcastCombatSync(sorted, true, 1, 0);
+                          }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-900/40 hover:bg-yellow-900/60 border border-yellow-700/50 text-yellow-300 text-xs font-semibold rounded-lg transition-all"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 1a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1zM5.05 3.05a.75.75 0 011.06 0l1.062 1.06a.75.75 0 11-1.06 1.061L5.05 4.11a.75.75 0 010-1.06zm9.9 0a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 01-1.061-1.06l1.06-1.06a.75.75 0 011.06 0zM10 7a3 3 0 100 6 3 3 0 000-6zm-6.25 3a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm11 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75z" clipRule="evenodd" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path fillRule="evenodd" d="M10 1a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1zM5.05 3.05a.75.75 0 011.06 0l1.062 1.06a.75.75 0 11-1.06 1.061L5.05 4.11a.75.75 0 010-1.06zm9.9 0a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 01-1.061-1.06l1.06-1.06a.75.75 0 011.06 0zM10 7a3 3 0 100 6 3 3 0 000-6zm-6.25 3a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm11 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75z" clipRule="evenodd" />
+                          </svg>
                           Roll Initiative
                         </button>
-                      ) : (() => {
-                        const currentUnit = units.find((u) => u.isCurrentTurn);
-                        const isPlayerTurn = currentUnit?.type === 'player';
-                        return (
-                          <button
-                             onClick={() => {
-                              const msg = currentUnit ? `${currentUnit.name}'s turn ends.` : '';
-                              if (msg) setCombatLog((prev) => [...prev, msg]);
-                              const tr = nextTurn();
-                              playTurnChange();
-                              broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
-                            }}
-                            className={`flex items-center gap-1.5 px-4 py-1.5 border text-xs font-bold rounded-lg transition-all ${
-                              isPlayerTurn
-                                ? 'bg-green-900/50 hover:bg-green-800/60 border-green-600/60 text-green-300 shadow-green-900/30 shadow-sm'
-                                : 'bg-slate-700/40 hover:bg-slate-700/60 border-slate-600/50 text-slate-400'
-                            }`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" /></svg>
-                            {isPlayerTurn ? 'End Turn' : 'Next Turn'}
-                          </button>
-                        );
-                      })()}
+                      ) : (
+                        (() => {
+                          const currentUnit = units.find((u) => u.isCurrentTurn);
+                          const isPlayerTurn = currentUnit?.type === 'player';
+                          return (
+                            <button
+                              onClick={() => {
+                                const msg = currentUnit ? `${currentUnit.name}'s turn ends.` : '';
+                                if (msg) setCombatLog((prev) => [...prev, msg]);
+                                const tr = nextTurn();
+                                playTurnChange();
+                                broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
+                              }}
+                              className={`flex items-center gap-1.5 px-4 py-1.5 border text-xs font-bold rounded-lg transition-all ${isPlayerTurn ? 'bg-green-900/50 hover:bg-green-800/60 border-green-600/60 text-green-300 shadow-green-900/30 shadow-sm' : 'bg-slate-700/40 hover:bg-slate-700/60 border-slate-600/50 text-slate-400'}`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
+                              </svg>
+                              {isPlayerTurn ? 'End Turn' : 'Next Turn'}
+                            </button>
+                          );
+                        })()
+                      )}
 
                       {/* Quick attack — uses equipped weapon stats, range-aware (melee=adjacency, ranged=distance+LOS) */}
-                      {inCombat && selectedUnitId && (() => {
-                        const target = units.find((u) => u.id === selectedUnitId);
-                        if (!target || target.type === 'player') return null;
-                        // Use equipped weapon if available
-                        const weapon = selectedCharacter?.equipment?.weapon;
-                        const weaponDie = weapon?.damageDie || '1d4'; // unarmed = 1d4
-                        const weaponAtkBonus = weapon?.attackBonus || 0;
-                        const weaponDmgBonus = weapon?.damageBonus || 0;
-                        const weaponIsRanged = weapon?.isRanged || false;
-                        const weaponRange = weapon?.range || 1; // default 1 = melee adjacency
-                        // Ranged weapons use DEX, melee uses STR
-                        const statMod = selectedCharacter
-                          ? Math.floor(((weaponIsRanged ? selectedCharacter.stats.DEX : selectedCharacter.stats.STR) - 10) / 2)
-                          : 0;
-                        // Player condition modifiers
-                        const playerUnit = selectedCharacter ? units.find((u) => u.characterId === selectedCharacter.id) : null;
-                        const condAtkMod = (playerUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
-                        // Range + LOS check
-                        const attackerPos = playerUnit ? mapPositions.find((p) => p.unitId === playerUnit.id) : null;
-                        const targetPos = mapPositions.find((p) => p.unitId === target.id);
-                        let inRange = true;
-                        let rangeTooltip: string | undefined;
-                        if (attackerPos && targetPos) {
-                          if (weaponIsRanged) {
-                            const dist = chebyshevDistance(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
-                            const los = terrain.length > 0 ? hasLineOfSight(terrain, attackerPos.col, attackerPos.row, targetPos.col, targetPos.row) : true;
-                            if (dist > weaponRange) { inRange = false; rangeTooltip = `Out of range (${dist * 5}ft / ${weaponRange * 5}ft)`; }
-                            else if (!los) { inRange = false; rangeTooltip = 'No line of sight'; }
-                          } else {
-                            inRange = isAdjacent(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
-                            if (!inRange) rangeTooltip = 'Too far — move adjacent to attack';
+                      {inCombat &&
+                        selectedUnitId &&
+                        (() => {
+                          const target = units.find((u) => u.id === selectedUnitId);
+                          if (!target || target.type === 'player') return null;
+                          // Use equipped weapon if available
+                          const weapon = selectedCharacter?.equipment?.weapon;
+                          const weaponDie = weapon?.damageDie || '1d4'; // unarmed = 1d4
+                          const weaponAtkBonus = weapon?.attackBonus || 0;
+                          const weaponDmgBonus = weapon?.damageBonus || 0;
+                          const weaponIsRanged = weapon?.isRanged || false;
+                          const weaponRange = weapon?.range || 1; // default 1 = melee adjacency
+                          // Ranged weapons use DEX, melee uses STR
+                          const statMod = selectedCharacter ? Math.floor(((weaponIsRanged ? selectedCharacter.stats.DEX : selectedCharacter.stats.STR) - 10) / 2) : 0;
+                          // Player condition modifiers
+                          const playerUnit = selectedCharacter ? units.find((u) => u.characterId === selectedCharacter.id) : null;
+                          const condAtkMod = (playerUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
+                          // Range + LOS check
+                          const attackerPos = playerUnit ? mapPositions.find((p) => p.unitId === playerUnit.id) : null;
+                          const targetPos = mapPositions.find((p) => p.unitId === target.id);
+                          let inRange = true;
+                          let rangeTooltip: string | undefined;
+                          if (attackerPos && targetPos) {
+                            if (weaponIsRanged) {
+                              const dist = chebyshevDistance(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
+                              const los = terrain.length > 0 ? hasLineOfSight(terrain, attackerPos.col, attackerPos.row, targetPos.col, targetPos.row) : true;
+                              if (dist > weaponRange) {
+                                inRange = false;
+                                rangeTooltip = `Out of range (${dist * 5}ft / ${weaponRange * 5}ft)`;
+                              } else if (!los) {
+                                inRange = false;
+                                rangeTooltip = 'No line of sight';
+                              }
+                            } else {
+                              inRange = isAdjacent(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
+                              if (!inRange) rangeTooltip = 'Too far — move adjacent to attack';
+                            }
                           }
-                        }
-                        return (
-                           <button
-                            disabled={!isPlayerTurn || !inRange}
-                            title={!isPlayerTurn ? 'Wait for your turn' : rangeTooltip}
-                            onClick={() => {
-                              // Extra Attack: martial classes at level 5+ get 2 attacks
-                              const hasExtraAttack = selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5;
-                              const numAttacks = hasExtraAttack ? 2 : 1;
-                              // Feat bonuses
-                              const featDmgBonus = (selectedCharacter?.feats || []).reduce((sum, fid) => {
-                                const f = FEATS.find((ft) => ft.id === fid);
-                                return sum + (f?.damageBonus || 0);
-                              }, 0);
-                              const featAtkBonus = (selectedCharacter?.feats || []).reduce((sum, fid) => {
-                                const f = FEATS.find((ft) => ft.id === fid);
-                                return sum + (f?.attackBonus || 0);
-                              }, 0);
-
-                              const targetAC = effectiveAC(target.ac, target.conditions || []);
-                              const isMeleeAttack = !weaponIsRanged;
-                              let totalDamageDealt = 0;
-                              for (let atk = 0; atk < numAttacks; atk++) {
-                                const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack);
-                                const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus;
-                                const isHit = attackRoll === 20 || totalAttack >= targetAC;
-                                const isCrit = attackRoll === 20;
-                                const atkLabel = `${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}=${totalAttack}`;
-                                const atkPrefix = numAttacks > 1 ? `[Attack ${atk + 1}] ` : '';
-                                const verb = weaponIsRanged ? 'shoots' : 'strikes';
-                                const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
-
-                                if (isHit) {
-                                  const baseDmg = rollSpellDamage(weaponDie);
-                                  const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus : baseDmg + statMod + weaponDmgBonus + featDmgBonus);
-                                  totalDamageDealt += finalDmg;
-                                  damageUnit(target.id, finalDmg);
-                                  playCombatHit();
-                                  if (isCrit) playCritical();
-                                  const logMsg = isCrit
-                                    ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`
-                                    : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`;
-                                  setCombatLog((prev) => [...prev, logMsg]);
-                                  addDmMessage(logMsg);
-                                } else {
-                                  playCombatMiss();
-                                  const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${targetAC})${advTag}`;
-                                  setCombatLog((prev) => [...prev, missMsg]);
-                                  addDmMessage(missMsg);
-                                }
-                              }
-                              // Check for enemy death after all attacks
-                              if (target.hp - totalDamageDealt <= 0) {
-                                playEnemyDeath();
-                                const deathMsg = `${target.name} falls!`;
-                                setCombatLog((prev) => [...prev, deathMsg]);
-                                addDmMessage(deathMsg);
-                              }
-                              // Drain any concentration break messages
-                              setTimeout(drainConcentrationMessages, 0);
-                              // Broadcast combat state after React processes the batch
-                              setTimeout(broadcastCombatSyncLatest, 50);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            {weapon ? `${weaponIsRanged ? 'Shoot' : 'Attack'} (${weapon.name})` : 'Unarmed Strike'}
-                            {selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5 && <span className="text-[9px] ml-1 opacity-70">x2</span>}
-                          </button>
-                        );
-                      })()}
-                      {/* Cast Spell — for casters in combat or out, with range + LOS enforcement */}
-                      {selectedCharacter && [...FULL_CASTERS, ...HALF_CASTERS].includes(selectedCharacter.class) && (() => {
-                        const spells = getClassSpells(selectedCharacter.class, selectedCharacter.level);
-                        const slots = getSpellSlots(selectedCharacter.class, selectedCharacter.level);
-                        const used = selectedCharacter.spellSlotsUsed || {};
-                        if (spells.length === 0) return null;
-                        const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
-                        const enemyTarget = target && target.type === 'enemy' ? target : null;
-                        // Compute caster + target positions for range checks
-                        const casterUnit = units.find((u) => u.characterId === selectedCharacter.id);
-                        const casterPos = casterUnit ? mapPositions.find((p) => p.unitId === casterUnit.id) : null;
-                        const spellTargetPos = enemyTarget ? mapPositions.find((p) => p.unitId === enemyTarget.id) : null;
-                        return (
-                          <div className="relative group">
+                          return (
                             <button
-                              disabled={!isPlayerTurn}
-                              title={!isPlayerTurn ? 'Wait for your turn' : undefined}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/40 hover:bg-purple-900/60 border border-purple-700/50 text-purple-300 text-xs font-semibold rounded-lg transition-all ${!isPlayerTurn ? 'opacity-30 cursor-not-allowed' : ''}`}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path d="M15.98 1.804a1 1 0 00-1.96 0l-.24 1.192a1 1 0 01-.784.785l-1.192.238a1 1 0 000 1.962l1.192.238a1 1 0 01.785.785l.238 1.192a1 1 0 001.962 0l.238-1.192a1 1 0 01.785-.785l1.192-.238a1 1 0 000-1.962l-1.192-.238a1 1 0 01-.785-.785l-.238-1.192zM6.949 5.684a1 1 0 00-1.898 0l-.683 2.051a1 1 0 01-.633.633l-2.051.683a1 1 0 000 1.898l2.051.684a1 1 0 01.633.632l.683 2.051a1 1 0 001.898 0l.683-2.051a1 1 0 01.633-.633l2.051-.683a1 1 0 000-1.898l-2.051-.683a1 1 0 01-.633-.633L6.95 5.684z" /></svg>
-                              Cast Spell
-                            </button>
-                            {/* Dropdown spell list */}
-                            <div className="absolute left-0 top-full mt-1 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 hidden group-hover:block max-h-72 overflow-y-auto">
-                              {/* Slot summary */}
-                              <div className="px-3 py-2 border-b border-slate-700 text-[9px] text-slate-400">
-                                {Object.keys(slots).length > 0 ? Object.entries(slots).map(([lvl, max]) => {
-                                  const usedCount = used[Number(lvl)] || 0;
-                                  return <span key={lvl} className="mr-2">Lv{lvl}: {max - usedCount}/{max}</span>;
-                                }) : 'Cantrips only'}
-                              </div>
-                              {spells.map((spell) => {
-                                const slotsAvail = spell.level === 0 ? Infinity : (slots[spell.level] || 0) - (used[spell.level] || 0);
-                                // Range + LOS check for targeted spells (damage or condition spells that need an enemy)
-                                const spellRangeCells = parseRangeFt(spell.range);
-                                const needsTarget = !!(spell.damage || spell.appliesCondition) && spell.range.toLowerCase() !== 'self';
-                                let outOfRange = false;
-                                let noLos = false;
-                                if (needsTarget && enemyTarget && casterPos && spellTargetPos && spellRangeCells > 0) {
-                                  const dist = chebyshevDistance(casterPos.col, casterPos.row, spellTargetPos.col, spellTargetPos.row);
-                                  if (dist > spellRangeCells) outOfRange = true;
-                                  else if (terrain.length > 0 && !hasLineOfSight(terrain, casterPos.col, casterPos.row, spellTargetPos.col, spellTargetPos.row)) noLos = true;
+                              disabled={!isPlayerTurn || !inRange}
+                              title={!isPlayerTurn ? 'Wait for your turn' : rangeTooltip}
+                              onClick={() => {
+                                // Extra Attack: martial classes at level 5+ get 2 attacks
+                                const hasExtraAttack = selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5;
+                                const numAttacks = hasExtraAttack ? 2 : 1;
+                                // Feat bonuses
+                                const featDmgBonus = (selectedCharacter?.feats || []).reduce((sum, fid) => {
+                                  const f = FEATS.find((ft) => ft.id === fid);
+                                  return sum + (f?.damageBonus || 0);
+                                }, 0);
+                                const featAtkBonus = (selectedCharacter?.feats || []).reduce((sum, fid) => {
+                                  const f = FEATS.find((ft) => ft.id === fid);
+                                  return sum + (f?.attackBonus || 0);
+                                }, 0);
+
+                                const targetAC = effectiveAC(target.ac, target.conditions || []);
+                                const isMeleeAttack = !weaponIsRanged;
+                                let totalDamageDealt = 0;
+                                for (let atk = 0; atk < numAttacks; atk++) {
+                                  const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack);
+                                  const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus;
+                                  const isHit = attackRoll === 20 || totalAttack >= targetAC;
+                                  const isCrit = attackRoll === 20;
+                                  const atkLabel = `${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}=${totalAttack}`;
+                                  const atkPrefix = numAttacks > 1 ? `[Attack ${atk + 1}] ` : '';
+                                  const verb = weaponIsRanged ? 'shoots' : 'strikes';
+                                  const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
+
+                                  if (isHit) {
+                                    const baseDmg = rollSpellDamage(weaponDie);
+                                    const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus : baseDmg + statMod + weaponDmgBonus + featDmgBonus);
+                                    totalDamageDealt += finalDmg;
+                                    damageUnit(target.id, finalDmg);
+                                    playCombatHit();
+                                    if (isCrit) playCritical();
+                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`;
+                                    setCombatLog((prev) => [...prev, logMsg]);
+                                    addDmMessage(logMsg);
+                                  } else {
+                                    playCombatMiss();
+                                    const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${targetAC})${advTag}`;
+                                    setCombatLog((prev) => [...prev, missMsg]);
+                                    addDmMessage(missMsg);
+                                  }
                                 }
-                                const disabled = slotsAvail <= 0 || outOfRange || noLos;
-                                const rangeHint = outOfRange ? ' (out of range)' : noLos ? ' (no line of sight)' : '';
-                                return (
-                                  <button
-                                    key={spell.id}
-                                    disabled={disabled}
-                                    title={outOfRange ? `Out of range (${spell.range})` : noLos ? 'No line of sight' : undefined}
-                                    onClick={() => {
-                                      const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id);
-                                      if (result.success) {
-                                        playMagicSpell();
-                                        setCombatLog((prev) => [...prev, result.message]);
-                                        addDmMessage(result.message);
-                                        if (spell.damage && enemyTarget && enemyTarget.hp <= 0) {
-                                          playEnemyDeath();
-                                          addDmMessage(`${enemyTarget.name} falls!`);
-                                        }
-                                        if (spell.healAmount) playHealing();
-                                        setTimeout(broadcastCombatSyncLatest, 50);
-                                      } else {
-                                        setShopMessage(result.message);
-                                        setTimeout(() => setShopMessage(null), 2500);
-                                      }
-                                    }}
-                                    className={`w-full text-left px-3 py-1.5 hover:bg-slate-700/50 transition-colors ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className={`text-xs font-semibold ${spell.level === 0 ? 'text-slate-300' : 'text-purple-300'}`}>{spell.name}{rangeHint}</span>
-                                      <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
-                                    </div>
-                                    <div className="text-[9px] text-slate-500 truncate">{spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.range}</span></div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      {/* Class ability — unique per class, 1/rest */}
-                      {selectedCharacter && (() => {
-                        const ability = getClassAbility(selectedCharacter.class);
-                        if (!ability) return null;
-                        const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
-                        const enemyTarget = target && target.type === 'enemy' ? target : null;
-                        const isUsed = selectedCharacter.classAbilityUsed;
-                        const needsTarget = (ability.type === 'attack') || (ability.type === 'buff' && !ability.selfOnly);
-                        const colorMap: Record<string, string> = {
-                          red: 'bg-red-900/40 hover:bg-red-900/60 border-red-700/50 text-red-300',
-                          slate: 'bg-slate-700/40 hover:bg-slate-700/60 border-slate-600/50 text-slate-300',
-                          yellow: 'bg-yellow-900/40 hover:bg-yellow-900/60 border-yellow-700/50 text-yellow-300',
-                          green: 'bg-green-900/40 hover:bg-green-900/60 border-green-700/50 text-green-300',
-                          cyan: 'bg-cyan-900/40 hover:bg-cyan-900/60 border-cyan-700/50 text-cyan-300',
-                          pink: 'bg-pink-900/40 hover:bg-pink-900/60 border-pink-700/50 text-pink-300',
-                          fuchsia: 'bg-fuchsia-900/40 hover:bg-fuchsia-900/60 border-fuchsia-700/50 text-fuchsia-300',
-                          blue: 'bg-blue-900/40 hover:bg-blue-900/60 border-blue-700/50 text-blue-300',
-                          amber: 'bg-amber-900/40 hover:bg-amber-900/60 border-amber-700/50 text-amber-300',
-                        };
-                        const colors = colorMap[ability.color] || colorMap.slate;
-                        return (
-                          <button
-                            disabled={isUsed || (needsTarget && !enemyTarget) || !isPlayerTurn}
-                            onClick={() => {
-                              const result = useClassAbility(selectedCharacter.id, enemyTarget?.id);
-                              if (result.success) {
-                                setCombatLog((prev) => [...prev, result.message]);
-                                addDmMessage(result.message);
-                                if (ability.type === 'attack' && enemyTarget && enemyTarget.hp <= 0) {
+                                // Check for enemy death after all attacks
+                                if (target.hp - totalDamageDealt <= 0) {
                                   playEnemyDeath();
-                                  addDmMessage(`${enemyTarget.name} falls!`);
+                                  const deathMsg = `${target.name} falls!`;
+                                  setCombatLog((prev) => [...prev, deathMsg]);
+                                  addDmMessage(deathMsg);
                                 }
-                                if (ability.type === 'heal') playHealing();
-                              if (ability.type === 'attack') playCombatHit();
+                                // Drain any concentration break messages
+                                setTimeout(drainConcentrationMessages, 0);
+                                // Broadcast combat state after React processes the batch
                                 setTimeout(broadcastCombatSyncLatest, 50);
-                              } else {
-                                setShopMessage(result.message);
-                                setTimeout(() => setShopMessage(null), 2500);
-                              }
-                            }}
-                            title={!isPlayerTurn ? 'Wait for your turn' : `${ability.description} (Resets on ${ability.resetsOn} rest)`}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all disabled:opacity-30 ${colors}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" /></svg>
-                            {ability.name}{isUsed ? ' (Used)' : ''}
-                          </button>
-                        );
-                      })()}
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              {weapon ? `${weaponIsRanged ? 'Shoot' : 'Attack'} (${weapon.name})` : 'Unarmed Strike'}
+                              {selectedCharacter && EXTRA_ATTACK_CLASSES.includes(selectedCharacter.class) && selectedCharacter.level >= 5 && <span className="text-[9px] ml-1 opacity-70">x2</span>}
+                            </button>
+                          );
+                        })()}
+                      {/* Cast Spell — for casters in combat or out, with range + LOS enforcement */}
+                      {selectedCharacter &&
+                        [...FULL_CASTERS, ...HALF_CASTERS].includes(selectedCharacter.class) &&
+                        (() => {
+                          const spells = getClassSpells(selectedCharacter.class, selectedCharacter.level);
+                          const slots = getSpellSlots(selectedCharacter.class, selectedCharacter.level);
+                          const used = selectedCharacter.spellSlotsUsed || {};
+                          if (spells.length === 0) return null;
+                          const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                          const enemyTarget = target && target.type === 'enemy' ? target : null;
+                          // Compute caster + target positions for range checks
+                          const casterUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                          const casterPos = casterUnit ? mapPositions.find((p) => p.unitId === casterUnit.id) : null;
+                          const spellTargetPos = enemyTarget ? mapPositions.find((p) => p.unitId === enemyTarget.id) : null;
+                          return (
+                            <div className="relative group">
+                              <button disabled={!isPlayerTurn} title={!isPlayerTurn ? 'Wait for your turn' : undefined} className={`flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/40 hover:bg-purple-900/60 border border-purple-700/50 text-purple-300 text-xs font-semibold rounded-lg transition-all ${!isPlayerTurn ? 'opacity-30 cursor-not-allowed' : ''}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                  <path d="M15.98 1.804a1 1 0 00-1.96 0l-.24 1.192a1 1 0 01-.784.785l-1.192.238a1 1 0 000 1.962l1.192.238a1 1 0 01.785.785l.238 1.192a1 1 0 001.962 0l.238-1.192a1 1 0 01.785-.785l1.192-.238a1 1 0 000-1.962l-1.192-.238a1 1 0 01-.785-.785l-.238-1.192zM6.949 5.684a1 1 0 00-1.898 0l-.683 2.051a1 1 0 01-.633.633l-2.051.683a1 1 0 000 1.898l2.051.684a1 1 0 01.633.632l.683 2.051a1 1 0 001.898 0l.683-2.051a1 1 0 01.633-.633l2.051-.683a1 1 0 000-1.898l-2.051-.683a1 1 0 01-.633-.633L6.95 5.684z" />
+                                </svg>
+                                Cast Spell
+                              </button>
+                              {/* Dropdown spell list */}
+                              <div className="absolute left-0 top-full mt-1 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 hidden group-hover:block max-h-72 overflow-y-auto">
+                                {/* Slot summary */}
+                                <div className="px-3 py-2 border-b border-slate-700 text-[9px] text-slate-400">
+                                  {Object.keys(slots).length > 0
+                                    ? Object.entries(slots).map(([lvl, max]) => {
+                                        const usedCount = used[Number(lvl)] || 0;
+                                        return (
+                                          <span key={lvl} className="mr-2">
+                                            Lv{lvl}: {max - usedCount}/{max}
+                                          </span>
+                                        );
+                                      })
+                                    : 'Cantrips only'}
+                                </div>
+                                {spells.map((spell) => {
+                                  const slotsAvail = spell.level === 0 ? Infinity : (slots[spell.level] || 0) - (used[spell.level] || 0);
+                                  // Range + LOS check for targeted spells (damage or condition spells that need an enemy)
+                                  const spellRangeCells = parseRangeFt(spell.range);
+                                  const needsTarget = !!(spell.damage || spell.appliesCondition) && spell.range.toLowerCase() !== 'self';
+                                  let outOfRange = false;
+                                  let noLos = false;
+                                  if (needsTarget && enemyTarget && casterPos && spellTargetPos && spellRangeCells > 0) {
+                                    const dist = chebyshevDistance(casterPos.col, casterPos.row, spellTargetPos.col, spellTargetPos.row);
+                                    if (dist > spellRangeCells) outOfRange = true;
+                                    else if (terrain.length > 0 && !hasLineOfSight(terrain, casterPos.col, casterPos.row, spellTargetPos.col, spellTargetPos.row)) noLos = true;
+                                  }
+                                  const disabled = slotsAvail <= 0 || outOfRange || noLos;
+                                  const rangeHint = outOfRange ? ' (out of range)' : noLos ? ' (no line of sight)' : '';
+                                  return (
+                                    <button
+                                      key={spell.id}
+                                      disabled={disabled}
+                                      title={outOfRange ? `Out of range (${spell.range})` : noLos ? 'No line of sight' : undefined}
+                                      onClick={() => {
+                                        const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id);
+                                        if (result.success) {
+                                          playMagicSpell();
+                                          setCombatLog((prev) => [...prev, result.message]);
+                                          addDmMessage(result.message);
+                                          if (spell.damage && enemyTarget && enemyTarget.hp <= 0) {
+                                            playEnemyDeath();
+                                            addDmMessage(`${enemyTarget.name} falls!`);
+                                          }
+                                          if (spell.healAmount) playHealing();
+                                          setTimeout(broadcastCombatSyncLatest, 50);
+                                        } else {
+                                          setShopMessage(result.message);
+                                          setTimeout(() => setShopMessage(null), 2500);
+                                        }
+                                      }}
+                                      className={`w-full text-left px-3 py-1.5 hover:bg-slate-700/50 transition-colors ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className={`text-xs font-semibold ${spell.level === 0 ? 'text-slate-300' : 'text-purple-300'}`}>
+                                          {spell.name}
+                                          {rangeHint}
+                                        </span>
+                                        <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
+                                      </div>
+                                      <div className="text-[9px] text-slate-500 truncate">
+                                        {spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.range}</span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      {/* Class ability — unique per class, 1/rest */}
+                      {selectedCharacter &&
+                        (() => {
+                          const ability = getClassAbility(selectedCharacter.class);
+                          if (!ability) return null;
+                          const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                          const enemyTarget = target && target.type === 'enemy' ? target : null;
+                          const isUsed = selectedCharacter.classAbilityUsed;
+                          const needsTarget = ability.type === 'attack' || (ability.type === 'buff' && !ability.selfOnly);
+                          const colorMap: Record<string, string> = {
+                            red: 'bg-red-900/40 hover:bg-red-900/60 border-red-700/50 text-red-300',
+                            slate: 'bg-slate-700/40 hover:bg-slate-700/60 border-slate-600/50 text-slate-300',
+                            yellow: 'bg-yellow-900/40 hover:bg-yellow-900/60 border-yellow-700/50 text-yellow-300',
+                            green: 'bg-green-900/40 hover:bg-green-900/60 border-green-700/50 text-green-300',
+                            cyan: 'bg-cyan-900/40 hover:bg-cyan-900/60 border-cyan-700/50 text-cyan-300',
+                            pink: 'bg-pink-900/40 hover:bg-pink-900/60 border-pink-700/50 text-pink-300',
+                            fuchsia: 'bg-fuchsia-900/40 hover:bg-fuchsia-900/60 border-fuchsia-700/50 text-fuchsia-300',
+                            blue: 'bg-blue-900/40 hover:bg-blue-900/60 border-blue-700/50 text-blue-300',
+                            amber: 'bg-amber-900/40 hover:bg-amber-900/60 border-amber-700/50 text-amber-300',
+                          };
+                          const colors = colorMap[ability.color] || colorMap.slate;
+                          return (
+                            <button
+                              disabled={isUsed || (needsTarget && !enemyTarget) || !isPlayerTurn}
+                              onClick={() => {
+                                const result = useClassAbility(selectedCharacter.id, enemyTarget?.id);
+                                if (result.success) {
+                                  setCombatLog((prev) => [...prev, result.message]);
+                                  addDmMessage(result.message);
+                                  if (ability.type === 'attack' && enemyTarget && enemyTarget.hp <= 0) {
+                                    playEnemyDeath();
+                                    addDmMessage(`${enemyTarget.name} falls!`);
+                                  }
+                                  if (ability.type === 'heal') playHealing();
+                                  if (ability.type === 'attack') playCombatHit();
+                                  setTimeout(broadcastCombatSyncLatest, 50);
+                                } else {
+                                  setShopMessage(result.message);
+                                  setTimeout(() => setShopMessage(null), 2500);
+                                }
+                              }}
+                              title={!isPlayerTurn ? 'Wait for your turn' : `${ability.description} (Resets on ${ability.resetsOn} rest)`}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all disabled:opacity-30 ${colors}`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" />
+                              </svg>
+                              {ability.name}
+                              {isUsed ? ' (Used)' : ''}
+                            </button>
+                          );
+                        })()}
 
                       {/* Dodge action — +2 AC until next turn */}
-                      {inCombat && selectedCharacter && (() => {
-                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
-                        if (!playerUnit) return null;
-                        const isDodging = playerUnit.conditions?.some((c) => c.type === 'dodging');
-                        return (
-                          <button
-                            disabled={!!isDodging || !isPlayerTurn}
-                            title={!isPlayerTurn ? 'Wait for your turn' : undefined}
-                            onClick={() => {
-                              applyCondition(playerUnit.id, { type: 'dodging', duration: 1, source: 'Dodge' });
-                              const msg = `${selectedCharacter.name} takes the Dodge action! (+2 AC until next turn)`;
-                              setCombatLog((prev) => [...prev, msg]);
-                              addDmMessage(msg);
-                              setTimeout(broadcastCombatSyncLatest, 50);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-700/50 text-sky-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" /></svg>
-                            Dodge
-                          </button>
-                        );
-                      })()}
+                      {inCombat &&
+                        selectedCharacter &&
+                        (() => {
+                          const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                          if (!playerUnit) return null;
+                          const isDodging = playerUnit.conditions?.some((c) => c.type === 'dodging');
+                          return (
+                            <button
+                              disabled={!!isDodging || !isPlayerTurn}
+                              title={!isPlayerTurn ? 'Wait for your turn' : undefined}
+                              onClick={() => {
+                                applyCondition(playerUnit.id, { type: 'dodging', duration: 1, source: 'Dodge' });
+                                const msg = `${selectedCharacter.name} takes the Dodge action! (+2 AC until next turn)`;
+                                setCombatLog((prev) => [...prev, msg]);
+                                addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-700/50 text-sky-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                              </svg>
+                              Dodge
+                            </button>
+                          );
+                        })()}
 
                       {/* Dash action — doubles remaining movement for the turn */}
-                      {inCombat && selectedCharacter && (() => {
-                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
-                        if (!playerUnit) return null;
-                        const hasDashed = (playerUnit.movementUsed || 0) < 0; // sentinel: negative means dashed
-                        return (
-                          <button
-                            disabled={!isPlayerTurn || hasDashed}
-                            title={!isPlayerTurn ? 'Wait for your turn' : hasDashed ? 'Already dashed this turn' : 'Double your remaining movement this turn'}
-                            onClick={() => {
-                              // Grant extra movement equal to speed (D&D 5e Dash = double movement)
-                              setUnits((prev: Unit[]) => prev.map((u) =>
-                                u.id === playerUnit.id
-                                  ? { ...u, movementUsed: Math.max(0, u.movementUsed) - u.speed }
-                                  : u
-                              ));
-                              const extraFt = (playerUnit.speed || 6) * 5;
-                              const msg = `${selectedCharacter.name} takes the Dash action! (+${extraFt}ft movement this turn)`;
-                              setCombatLog((prev) => [...prev, msg]);
-                              addDmMessage(msg);
-                              setTimeout(broadcastCombatSyncLatest, 50);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clipRule="evenodd" /></svg>
-                            Dash
-                          </button>
-                        );
-                      })()}
+                      {inCombat &&
+                        selectedCharacter &&
+                        (() => {
+                          const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                          if (!playerUnit) return null;
+                          const hasDashed = (playerUnit.movementUsed || 0) < 0; // sentinel: negative means dashed
+                          return (
+                            <button
+                              disabled={!isPlayerTurn || hasDashed}
+                              title={!isPlayerTurn ? 'Wait for your turn' : hasDashed ? 'Already dashed this turn' : 'Double your remaining movement this turn'}
+                              onClick={() => {
+                                // Grant extra movement equal to speed (D&D 5e Dash = double movement)
+                                setUnits((prev: Unit[]) => prev.map((u) => (u.id === playerUnit.id ? { ...u, movementUsed: Math.max(0, u.movementUsed) - u.speed } : u)));
+                                const extraFt = (playerUnit.speed || 6) * 5;
+                                const msg = `${selectedCharacter.name} takes the Dash action! (+${extraFt}ft movement this turn)`;
+                                setCombatLog((prev) => [...prev, msg]);
+                                addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-4.158a.75.75 0 011.08-1.04l5.25 5.5a.75.75 0 010 1.04l-5.25 5.5a.75.75 0 11-1.08-1.04l3.96-4.158H3.75A.75.75 0 013 10z" clipRule="evenodd" />
+                              </svg>
+                              Dash
+                            </button>
+                          );
+                        })()}
 
                       {/* Disengage action — prevents opportunity attacks this turn */}
-                      {inCombat && selectedCharacter && (() => {
-                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
-                        if (!playerUnit) return null;
-                        return (
-                          <button
-                            disabled={!isPlayerTurn || playerUnit.disengaged}
-                            title={!isPlayerTurn ? 'Wait for your turn' : playerUnit.disengaged ? 'Already disengaged' : 'Move without triggering opportunity attacks'}
-                            onClick={() => {
-                              setUnits((prev: Unit[]) => prev.map((u) =>
-                                u.id === playerUnit.id ? { ...u, disengaged: true } : u
-                              ));
-                              const msg = `${selectedCharacter.name} takes the Disengage action! (No opportunity attacks this turn)`;
-                              setCombatLog((prev) => [...prev, msg]);
-                              addDmMessage(msg);
-                              setTimeout(broadcastCombatSyncLatest, 50);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-900/40 hover:bg-violet-900/60 border border-violet-700/50 text-violet-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" /></svg>
-                            Disengage
-                          </button>
-                        );
-                      })()}
+                      {inCombat &&
+                        selectedCharacter &&
+                        (() => {
+                          const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                          if (!playerUnit) return null;
+                          return (
+                            <button
+                              disabled={!isPlayerTurn || playerUnit.disengaged}
+                              title={!isPlayerTurn ? 'Wait for your turn' : playerUnit.disengaged ? 'Already disengaged' : 'Move without triggering opportunity attacks'}
+                              onClick={() => {
+                                setUnits((prev: Unit[]) => prev.map((u) => (u.id === playerUnit.id ? { ...u, disengaged: true } : u)));
+                                const msg = `${selectedCharacter.name} takes the Disengage action! (No opportunity attacks this turn)`;
+                                setCombatLog((prev) => [...prev, msg]);
+                                addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-900/40 hover:bg-violet-900/60 border border-violet-700/50 text-violet-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
+                              </svg>
+                              Disengage
+                            </button>
+                          );
+                        })()}
 
                       {/* End Combat button */}
                       {inCombat && (
@@ -1898,9 +2045,7 @@ export default function Game() {
 
                             setInCombat(false);
                             // Remove dead enemies, reset initiative and conditions
-                            setUnits((prev: Unit[]) => prev
-                              .filter((u) => u.type === 'player' || u.hp > 0)
-                              .map((u) => ({ ...u, isCurrentTurn: false, initiative: -1, conditions: [] })));
+                            setUnits((prev: Unit[]) => prev.filter((u) => u.type === 'player' || u.hp > 0).map((u) => ({ ...u, isCurrentTurn: false, initiative: -1, conditions: [] })));
 
                             // Award XP and gold to the selected character
                             if (selectedCharacter && totalXP > 0) {
@@ -1947,13 +2092,12 @@ export default function Game() {
                     </>
                   )}
 
-                   {/* Level Up indicator — show when character has pending ASI/feat choice */}
+                  {/* Level Up indicator — show when character has pending ASI/feat choice */}
                   {selectedCharacter && hasPendingASI(selectedCharacter) && (
-                    <button
-                      onClick={() => setShowLevelUpModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-800/50 hover:bg-amber-700/60 border border-amber-500/60 text-amber-200 text-xs font-bold rounded-lg transition-all animate-pulse"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" /></svg>
+                    <button onClick={() => setShowLevelUpModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-800/50 hover:bg-amber-700/60 border border-amber-500/60 text-amber-200 text-xs font-bold rounded-lg transition-all animate-pulse">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                        <path fillRule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clipRule="evenodd" />
+                      </svg>
                       Level Up!
                     </button>
                   )}
@@ -1962,49 +2106,58 @@ export default function Game() {
                   {selectedCharacter && !inCombat && (
                     <>
                       <button
-                         onClick={() => {
+                        onClick={() => {
                           restCharacter(selectedCharacter.id, 'short');
                           playHealing();
                           addDmMessage(`${selectedCharacter.name} takes a short rest, tending wounds and catching their breath.`);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-800/50 text-sky-300 text-xs font-semibold rounded-lg transition-all"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+                        </svg>
                         Short Rest
                       </button>
                       <button
-                         onClick={() => {
+                        onClick={() => {
                           restCharacter(selectedCharacter.id, 'long');
                           playHealing();
                           addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored.`);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-800/50 text-indigo-300 text-xs font-semibold rounded-lg transition-all"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.061l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.06-1.061a.75.75 0 10-1.06 1.06l1.06 1.06zM5.404 6.464a.75.75 0 001.06-1.06l-1.06-1.06a.75.75 0 10-1.061 1.06l1.06 1.06z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                          <path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.061l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 15.657a.75.75 0 001.06-1.06l-1.06-1.061a.75.75 0 10-1.06 1.06l1.06 1.06zM5.404 6.464a.75.75 0 001.06-1.06l-1.06-1.06a.75.75 0 10-1.061 1.06l1.06 1.06z" />
+                        </svg>
                         Long Rest
                       </button>
                     </>
                   )}
 
                   {/* Use Potion button — show when character has healing potions and is hurt */}
-                  {selectedCharacter && selectedCharacter.hp < selectedCharacter.maxHp && (() => {
-                    const potions = (selectedCharacter.inventory || []).filter((i: Item) => i.type === 'potion' && i.healAmount);
-                    if (potions.length === 0) return null;
-                    const potion = potions[0]; // use first available potion
-                    return (
-                      <button
-                        onClick={() => {
-                          const { message } = useItem(selectedCharacter.id, potion.id);
-                          if (message) addDmMessage(message);
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-800/50 text-emerald-300 text-xs font-semibold rounded-lg transition-all"
-                        title={`${potion.name} — restores ${potion.healAmount} HP`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>
-                        {potion.name}{potion.quantity && potion.quantity > 1 ? ` (${potion.quantity})` : ''}
-                      </button>
-                    );
-                  })()}
+                  {selectedCharacter &&
+                    selectedCharacter.hp < selectedCharacter.maxHp &&
+                    (() => {
+                      const potions = (selectedCharacter.inventory || []).filter((i: Item) => i.type === 'potion' && i.healAmount);
+                      if (potions.length === 0) return null;
+                      const potion = potions[0]; // use first available potion
+                      return (
+                        <button
+                          onClick={() => {
+                            const { message } = useItem(selectedCharacter.id, potion.id);
+                            if (message) addDmMessage(message);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-800/50 text-emerald-300 text-xs font-semibold rounded-lg transition-all"
+                          title={`${potion.name} — restores ${potion.healAmount} HP`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" />
+                          </svg>
+                          {potion.name}
+                          {potion.quantity && potion.quantity > 1 ? ` (${potion.quantity})` : ''}
+                        </button>
+                      );
+                    })()}
 
                   {/* Clear history button */}
                   {dmHistory.length > 0 && (
@@ -2018,7 +2171,9 @@ export default function Game() {
                       className="flex items-center gap-1.5 px-2 py-1.5 text-slate-600 hover:text-red-400 text-[10px] transition-colors"
                       title="Clear narration history"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5z" clipRule="evenodd" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                        <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5z" clipRule="evenodd" />
+                      </svg>
                       Clear
                     </button>
                   )}
@@ -2027,7 +2182,9 @@ export default function Game() {
 
                   {/* Status indicators */}
                   <span className="text-[10px] text-slate-600">
-                    {dmHistory.length} narration{dmHistory.length !== 1 ? 's' : ''}{inCombat ? ` | Round ${combatRound}` : ''}{selectedCharacter ? ` | ${selectedCharacter.hp}/${selectedCharacter.maxHp} HP | ${selectedCharacter.gold || 0}g` : ''}
+                    {dmHistory.length} narration{dmHistory.length !== 1 ? 's' : ''}
+                    {inCombat ? ` | Round ${combatRound}` : ''}
+                    {selectedCharacter ? ` | ${selectedCharacter.hp}/${selectedCharacter.maxHp} HP | ${selectedCharacter.gold || 0}g` : ''}
                   </span>
                 </div>
 
@@ -2040,28 +2197,23 @@ export default function Game() {
                           src={selectedCharacter.portrait || `/portraits/classes/${selectedCharacter.class.toLowerCase()}.webp`}
                           alt={selectedCharacter.name}
                           className="w-8 h-8 rounded-lg object-cover border border-slate-600 shrink-0"
-                          onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${selectedCharacter.race.toLowerCase()}.webp`; }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `/portraits/races/${selectedCharacter.race.toLowerCase()}.webp`;
+                          }}
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-white truncate">{selectedCharacter.name}</span>
-                            <span className="text-[10px] text-slate-500">Lv{selectedCharacter.level} {selectedCharacter.class}</span>
+                            <span className="text-[10px] text-slate-500">
+                              Lv{selectedCharacter.level} {selectedCharacter.class}
+                            </span>
                           </div>
                           {/* HP bar */}
                           <div className="flex items-center gap-2 mt-0.5">
                             <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'bg-green-500' :
-                                  selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'bg-yellow-500' : 'bg-red-500'
-                                }`}
-                                style={{ width: `${Math.max(0, (selectedCharacter.hp / selectedCharacter.maxHp) * 100)}%` }}
-                              />
+                              <div className={`h-full rounded-full transition-all duration-500 ${selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'bg-green-500' : selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.max(0, (selectedCharacter.hp / selectedCharacter.maxHp) * 100)}%` }} />
                             </div>
-                            <span className={`text-[10px] font-mono font-bold tabular-nums ${
-                              selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'text-green-400' :
-                              selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'text-yellow-400' : 'text-red-400'
-                            }`}>
+                            <span className={`text-[10px] font-mono font-bold tabular-nums ${selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'text-green-400' : selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'text-yellow-400' : 'text-red-400'}`}>
                               {selectedCharacter.hp}/{selectedCharacter.maxHp}
                             </span>
                           </div>
@@ -2071,62 +2223,44 @@ export default function Game() {
                           <span className="text-[10px] text-purple-400 font-mono">{selectedCharacter.xp} XP</span>
                           <span className="text-[10px] text-yellow-400 font-mono">{selectedCharacter.gold || 0}g</span>
                         </div>
-                        {selectedCharacter.condition !== 'normal' && (
-                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                            selectedCharacter.condition === 'dead' ? 'bg-red-900/40 text-red-400' :
-                            selectedCharacter.condition === 'unconscious' ? 'bg-red-900/30 text-red-400' :
-                            'bg-yellow-900/30 text-yellow-400'
-                          }`}>
-                            {selectedCharacter.condition}
-                          </span>
-                        )}
+                        {selectedCharacter.condition !== 'normal' && <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${selectedCharacter.condition === 'dead' ? 'bg-red-900/40 text-red-400' : selectedCharacter.condition === 'unconscious' ? 'bg-red-900/30 text-red-400' : 'bg-yellow-900/30 text-yellow-400'}`}>{selectedCharacter.condition}</span>}
                       </div>
                     )}
 
                     {/* Turn indicator — shown during combat */}
-                    {inCombat && (() => {
-                      const currentUnit = units.find((u) => u.isCurrentTurn);
-                      if (!currentUnit) return null;
-                      const isPlayer = currentUnit.type === 'player';
-                      return (
-                        <div className={`flex items-center justify-between px-4 py-2 border-b ${
-                          isPlayer
-                            ? 'border-green-800/30 bg-green-950/20'
-                            : 'border-red-800/30 bg-red-950/20'
-                        }`}>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full animate-pulse ${isPlayer ? 'bg-green-400' : 'bg-red-400'}`} />
-                            <span className={`text-xs font-bold ${isPlayer ? 'text-green-400' : 'text-red-400'}`}>
-                              {currentUnit.name}&apos;s Turn
-                            </span>
-                            {currentUnit.conditions && currentUnit.conditions.length > 0 && (
-                              <div className="flex gap-1">
-                                {currentUnit.conditions.map((c, i) => (
-                                  <span key={i} className={`text-[8px] px-1 py-0.5 rounded ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'} bg-slate-800/60`}>
-                                    {c.type} ({c.duration})
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                    {inCombat &&
+                      (() => {
+                        const currentUnit = units.find((u) => u.isCurrentTurn);
+                        if (!currentUnit) return null;
+                        const isPlayer = currentUnit.type === 'player';
+                        return (
+                          <div className={`flex items-center justify-between px-4 py-2 border-b ${isPlayer ? 'border-green-800/30 bg-green-950/20' : 'border-red-800/30 bg-red-950/20'}`}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full animate-pulse ${isPlayer ? 'bg-green-400' : 'bg-red-400'}`} />
+                              <span className={`text-xs font-bold ${isPlayer ? 'text-green-400' : 'text-red-400'}`}>{currentUnit.name}&apos;s Turn</span>
+                              {currentUnit.conditions && currentUnit.conditions.length > 0 && (
+                                <div className="flex gap-1">
+                                  {currentUnit.conditions.map((c, i) => (
+                                    <span key={i} className={`text-[8px] px-1 py-0.5 rounded ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'} bg-slate-800/60`}>
+                                      {c.type} ({c.duration})
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-600">Round {combatRound}</span>
                           </div>
-                          <span className="text-[10px] text-slate-600">Round {combatRound}</span>
-                        </div>
-                      );
-                    })()}
+                        );
+                      })()}
 
                     {/* Quest tracker — collapsible panel */}
                     <div className="border-b border-slate-800">
-                      <button
-                        onClick={() => setShowQuests(!showQuests)}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showQuests ? 'rotate-90' : ''}`}><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
+                      <button onClick={() => setShowQuests(!showQuests)} className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showQuests ? 'rotate-90' : ''}`}>
+                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                        </svg>
                         Quests
-                        {quests.filter((q) => !q.completed).length > 0 && (
-                          <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-900/50 text-amber-400 rounded-full">
-                            {quests.filter((q) => !q.completed).length}
-                          </span>
-                        )}
+                        {quests.filter((q) => !q.completed).length > 0 && <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-900/50 text-amber-400 rounded-full">{quests.filter((q) => !q.completed).length}</span>}
                       </button>
                       {showQuests && (
                         <div className="px-4 pb-3 space-y-2">
@@ -2141,7 +2275,11 @@ export default function Game() {
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && newQuestTitle.trim()) {
                                   const q = { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false };
-                                  setQuests((prev) => { const next = [...prev, q]; broadcastGameEvent('quest_sync', { quests: next }); return next; });
+                                  setQuests((prev) => {
+                                    const next = [...prev, q];
+                                    broadcastGameEvent('quest_sync', { quests: next });
+                                    return next;
+                                  });
                                   setNewQuestTitle('');
                                 }
                               }}
@@ -2150,7 +2288,11 @@ export default function Game() {
                               onClick={() => {
                                 if (newQuestTitle.trim()) {
                                   const q = { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false };
-                                  setQuests((prev) => { const next = [...prev, q]; broadcastGameEvent('quest_sync', { quests: next }); return next; });
+                                  setQuests((prev) => {
+                                    const next = [...prev, q];
+                                    broadcastGameEvent('quest_sync', { quests: next });
+                                    return next;
+                                  });
                                   setNewQuestTitle('');
                                 }
                               }}
@@ -2165,41 +2307,69 @@ export default function Game() {
                             <p className="text-[10px] text-slate-600 italic">No quests yet. Add one above or let the DM narrate objectives.</p>
                           ) : (
                             <div className="space-y-1">
-                              {quests.filter((q) => !q.completed).map((quest) => (
-                                <div key={quest.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 group">
-                                  <button
-                                    onClick={() => setQuests((prev) => { const next = prev.map((q) => q.id === quest.id ? { ...q, completed: true } : q); broadcastGameEvent('quest_sync', { quests: next }); return next; })}
-                                    className="w-3.5 h-3.5 rounded border border-slate-600 hover:border-green-500 hover:bg-green-900/30 transition-colors shrink-0"
-                                    title="Mark complete"
-                                  />
-                                  <span className="flex-1 text-xs text-slate-300 truncate">{quest.title}</span>
-                                  <button
-                                    onClick={() => setQuests((prev) => { const next = prev.filter((q) => q.id !== quest.id); broadcastGameEvent('quest_sync', { quests: next }); return next; })}
-                                    className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                                    title="Remove quest"
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3"><path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" /></svg>
-                                  </button>
-                                </div>
-                              ))}
+                              {quests
+                                .filter((q) => !q.completed)
+                                .map((quest) => (
+                                  <div key={quest.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 group">
+                                    <button
+                                      onClick={() =>
+                                        setQuests((prev) => {
+                                          const next = prev.map((q) => (q.id === quest.id ? { ...q, completed: true } : q));
+                                          broadcastGameEvent('quest_sync', { quests: next });
+                                          return next;
+                                        })
+                                      }
+                                      className="w-3.5 h-3.5 rounded border border-slate-600 hover:border-green-500 hover:bg-green-900/30 transition-colors shrink-0"
+                                      title="Mark complete"
+                                    />
+                                    <span className="flex-1 text-xs text-slate-300 truncate">{quest.title}</span>
+                                    <button
+                                      onClick={() =>
+                                        setQuests((prev) => {
+                                          const next = prev.filter((q) => q.id !== quest.id);
+                                          broadcastGameEvent('quest_sync', { quests: next });
+                                          return next;
+                                        })
+                                      }
+                                      className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                      title="Remove quest"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+                                        <path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                ))}
                               {quests.filter((q) => q.completed).length > 0 && (
                                 <div className="pt-1 border-t border-slate-800 mt-1">
                                   <div className="text-[9px] text-slate-600 uppercase tracking-wider mb-1">Completed</div>
-                                  {quests.filter((q) => q.completed).map((quest) => (
-                                    <div key={quest.id} className="flex items-center gap-2 px-2 py-1 rounded-lg group">
-                                      <div className="w-3.5 h-3.5 rounded border border-green-700 bg-green-900/30 flex items-center justify-center shrink-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-2.5 h-2.5 text-green-500"><path fillRule="evenodd" d="M12.416 3.376a.75.75 0 01.208 1.04l-5 7.5a.75.75 0 01-1.154.114l-3-3a.75.75 0 011.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 011.04-.207z" clipRule="evenodd" /></svg>
+                                  {quests
+                                    .filter((q) => q.completed)
+                                    .map((quest) => (
+                                      <div key={quest.id} className="flex items-center gap-2 px-2 py-1 rounded-lg group">
+                                        <div className="w-3.5 h-3.5 rounded border border-green-700 bg-green-900/30 flex items-center justify-center shrink-0">
+                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-2.5 h-2.5 text-green-500">
+                                            <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 01.208 1.04l-5 7.5a.75.75 0 01-1.154.114l-3-3a.75.75 0 011.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 011.04-.207z" clipRule="evenodd" />
+                                          </svg>
+                                        </div>
+                                        <span className="flex-1 text-xs text-slate-600 line-through truncate">{quest.title}</span>
+                                        <button
+                                          onClick={() =>
+                                            setQuests((prev) => {
+                                              const next = prev.filter((q) => q.id !== quest.id);
+                                              broadcastGameEvent('quest_sync', { quests: next });
+                                              return next;
+                                            })
+                                          }
+                                          className="text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                          title="Remove"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+                                            <path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" />
+                                          </svg>
+                                        </button>
                                       </div>
-                                      <span className="flex-1 text-xs text-slate-600 line-through truncate">{quest.title}</span>
-                                      <button
-                                        onClick={() => setQuests((prev) => { const next = prev.filter((q) => q.id !== quest.id); broadcastGameEvent('quest_sync', { quests: next }); return next; })}
-                                        className="text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                                        title="Remove"
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3"><path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" /></svg>
-                                      </button>
-                                    </div>
-                                  ))}
+                                    ))}
                                 </div>
                               )}
                             </div>
@@ -2225,10 +2395,7 @@ export default function Game() {
                               ))}
                             </div>
                           </div>
-                          <button
-                            onClick={handleDeathSave}
-                            className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-red-900/30"
-                          >
+                          <button onClick={handleDeathSave} className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-red-900/30">
                             Roll Death Save
                           </button>
                         </div>
@@ -2238,18 +2405,14 @@ export default function Game() {
                     {/* Stabilized notice */}
                     {selectedCharacter && selectedCharacter.condition === 'stabilized' && (
                       <div className="p-3 border-b border-yellow-800/30 bg-yellow-950/20 flex items-center justify-between">
-                        <span className="text-yellow-400 text-xs font-semibold">
-                          {selectedCharacter.name} is stabilized but unconscious. Needs healing to regain consciousness.
-                        </span>
+                        <span className="text-yellow-400 text-xs font-semibold">{selectedCharacter.name} is stabilized but unconscious. Needs healing to regain consciousness.</span>
                       </div>
                     )}
 
                     {/* Dead notice */}
                     {selectedCharacter && selectedCharacter.condition === 'dead' && (
                       <div className="p-3 border-b border-red-800/30 bg-red-950/30 flex items-center justify-between">
-                        <span className="text-red-400 text-xs font-bold">
-                          {selectedCharacter.name} has fallen. Their adventure ends here.
-                        </span>
+                        <span className="text-red-400 text-xs font-bold">{selectedCharacter.name} has fallen. Their adventure ends here.</span>
                       </div>
                     )}
 
@@ -2257,20 +2420,8 @@ export default function Game() {
                     {npcMode && (
                       <div className="p-3 border-b border-purple-800/30 bg-purple-950/20 flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Talking to:</span>
-                        <input
-                          type="text"
-                          value={npcName}
-                          onChange={(e) => setNpcName(e.target.value)}
-                          placeholder="NPC name..."
-                          className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none w-32 focus:ring-1 focus:ring-purple-500/50"
-                        />
-                        <input
-                          type="text"
-                          value={npcRole}
-                          onChange={(e) => setNpcRole(e.target.value)}
-                          placeholder="Role (e.g., tavern keeper, guard captain)..."
-                          className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none flex-1 min-w-40 focus:ring-1 focus:ring-purple-500/50"
-                        />
+                        <input type="text" value={npcName} onChange={(e) => setNpcName(e.target.value)} placeholder="NPC name..." className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none w-32 focus:ring-1 focus:ring-purple-500/50" />
+                        <input type="text" value={npcRole} onChange={(e) => setNpcRole(e.target.value)} placeholder="Role (e.g., tavern keeper, guard captain)..." className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none flex-1 min-w-40 focus:ring-1 focus:ring-purple-500/50" />
                       </div>
                     )}
 
@@ -2315,11 +2466,10 @@ export default function Game() {
                     {/* Combat log — togglable during combat */}
                     {inCombat && combatLog.length > 0 && (
                       <div className="border-t border-slate-800">
-                        <button
-                          onClick={() => setShowCombatLog(!showCombatLog)}
-                          className="w-full flex items-center gap-2 px-4 py-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-300 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showCombatLog ? 'rotate-90' : ''}`}><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
+                        <button onClick={() => setShowCombatLog(!showCombatLog)} className="w-full flex items-center gap-2 px-4 py-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-300 transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showCombatLog ? 'rotate-90' : ''}`}>
+                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                          </svg>
                           Combat Log
                           <span className="px-1 py-0.5 text-[8px] bg-slate-800 rounded text-slate-600">{combatLog.length}</span>
                         </button>
@@ -2331,13 +2481,7 @@ export default function Game() {
                               const isDeath = entry.includes('falls!');
                               const isCondition = entry.includes('stunned') || entry.includes('poisoned') || entry.includes('frightened') || entry.includes('burning') || entry.includes('hexed') || entry.includes('blessed') || entry.includes('prone') || entry.includes('dodging') || entry.includes('raging') || entry.includes('inspired');
                               return (
-                                <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                                  isDeath ? 'text-red-400 bg-red-950/30' :
-                                  isHit ? 'text-orange-300 bg-orange-950/20' :
-                                  isMiss ? 'text-slate-500' :
-                                  isCondition ? 'text-purple-300 bg-purple-950/20' :
-                                  'text-slate-400'
-                                }`}>
+                                <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded ${isDeath ? 'text-red-400 bg-red-950/30' : isHit ? 'text-orange-300 bg-orange-950/20' : isMiss ? 'text-slate-500' : isCondition ? 'text-purple-300 bg-purple-950/20' : 'text-slate-400'}`}>
                                   {entry}
                                 </div>
                               );
@@ -2349,30 +2493,26 @@ export default function Game() {
 
                     {/* Player action input — DM can narrate/speak, players see read-only hint */}
                     {canUseDMTools ? (
-                    <div className="p-4 border-t border-slate-800">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={actionInput}
-                          onChange={(e) => setActionInput(e.target.value)}
-                          placeholder={npcMode ? `Say something to ${npcName || 'the NPC'}...` : "What do you do? (e.g., 'I search the room for traps')"}
-                          className={`flex-1 px-4 py-3 bg-slate-800 border rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none transition-all ${npcMode ? 'border-purple-700/50 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-600' : 'border-slate-700 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-600'}`}
-                          onKeyDown={(e) => e.key === 'Enter' && handlePlayerAction()}
-                          disabled={dmLoading || npcLoading}
-                        />
-                        <button
-                          onClick={handlePlayerAction}
-                          disabled={!actionInput.trim() || dmLoading || npcLoading}
-                          className={`px-5 py-3 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${npcMode ? 'bg-purple-600 hover:bg-purple-500' : 'bg-amber-600 hover:bg-amber-500'}`}
-                        >
-                          {npcMode ? 'Speak' : 'Act'}
-                        </button>
+                      <div className="p-4 border-t border-slate-800">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={actionInput}
+                            onChange={(e) => setActionInput(e.target.value)}
+                            placeholder={npcMode ? `Say something to ${npcName || 'the NPC'}...` : "What do you do? (e.g., 'I search the room for traps')"}
+                            className={`flex-1 px-4 py-3 bg-slate-800 border rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none transition-all ${npcMode ? 'border-purple-700/50 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-600' : 'border-slate-700 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-600'}`}
+                            onKeyDown={(e) => e.key === 'Enter' && handlePlayerAction()}
+                            disabled={dmLoading || npcLoading}
+                          />
+                          <button onClick={handlePlayerAction} disabled={!actionInput.trim() || dmLoading || npcLoading} className={`px-5 py-3 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${npcMode ? 'bg-purple-600 hover:bg-purple-500' : 'bg-amber-600 hover:bg-amber-500'}`}>
+                            {npcMode ? 'Speak' : 'Act'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
                     ) : (
-                    <div className="px-4 py-3 border-t border-slate-800">
-                      <p className="text-[10px] text-slate-600 italic text-center">The DM controls narration. Use chat to describe your actions.</p>
-                    </div>
+                      <div className="px-4 py-3 border-t border-slate-800">
+                        <p className="text-[10px] text-slate-600 italic text-center">The DM controls narration. Use chat to describe your actions.</p>
+                      </div>
                     )}
                   </>
                 ) : activeView === 'shop' ? (
@@ -2393,20 +2533,12 @@ export default function Game() {
                         </div>
 
                         {/* Shop message toast */}
-                        {shopMessage && (
-                          <div className="text-xs text-center py-1.5 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 animate-pulse">
-                            {shopMessage}
-                          </div>
-                        )}
+                        {shopMessage && <div className="text-xs text-center py-1.5 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 animate-pulse">{shopMessage}</div>}
 
                         {/* Category tabs */}
                         <div className="flex gap-1">
                           {SHOP_CATEGORIES.map((cat) => (
-                            <button
-                              key={cat}
-                              onClick={() => setShopCategory(cat)}
-                              className={`px-3 py-1 text-[10px] font-semibold rounded-lg transition-all ${shopCategory === cat ? 'bg-yellow-900/40 text-yellow-400 border border-yellow-700/50' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
-                            >
+                            <button key={cat} onClick={() => setShopCategory(cat)} className={`px-3 py-1 text-[10px] font-semibold rounded-lg transition-all ${shopCategory === cat ? 'bg-yellow-900/40 text-yellow-400 border border-yellow-700/50' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
                               {cat}
                             </button>
                           ))}
@@ -2485,9 +2617,7 @@ export default function Game() {
                     onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
                     onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}
                     onOpportunityAttack={(attackerName, targetName, damage, hit) => {
-                      const msg = hit
-                        ? `Opportunity Attack! ${attackerName} strikes ${targetName} for ${damage} damage as they flee!`
-                        : `Opportunity Attack! ${attackerName} swings at ${targetName} but misses!`;
+                      const msg = hit ? `Opportunity Attack! ${attackerName} strikes ${targetName} for ${damage} damage as they flee!` : `Opportunity Attack! ${attackerName} swings at ${targetName} but misses!`;
                       setCombatLog((prev) => [...prev, msg]);
                       addDmMessage(msg);
                       setTimeout(broadcastCombatSyncLatest, 50);
@@ -2504,16 +2634,10 @@ export default function Game() {
           {/* Sidebar tabs */}
           {selectedCharacter && (
             <div className="flex border-b border-slate-800 shrink-0">
-              <button
-                onClick={() => setShowSheet(false)}
-                className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${!showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-              >
+              <button onClick={() => setShowSheet(false)} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${!showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                 Dice & Chat
               </button>
-              <button
-                onClick={() => setShowSheet(true)}
-                className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-              >
+              <button onClick={() => setShowSheet(true)} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                 Character
               </button>
             </div>
@@ -2543,21 +2667,17 @@ export default function Game() {
             {/* Header */}
             <div className="px-6 py-4 border-b border-amber-800/40 bg-gradient-to-r from-amber-900/30 to-yellow-900/20">
               <h2 className="text-lg font-bold text-amber-300">Level Up — Ability Score Improvement</h2>
-              <p className="text-xs text-amber-400/70 mt-1">{selectedCharacter.name} reached level {selectedCharacter.level}! Choose an improvement.</p>
+              <p className="text-xs text-amber-400/70 mt-1">
+                {selectedCharacter.name} reached level {selectedCharacter.level}! Choose an improvement.
+              </p>
             </div>
 
             {/* Tab switcher */}
             <div className="flex border-b border-slate-800">
-              <button
-                onClick={() => setLevelUpTab('asi')}
-                className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'asi' ? 'border-amber-500 text-amber-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-              >
+              <button onClick={() => setLevelUpTab('asi')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'asi' ? 'border-amber-500 text-amber-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                 Ability Scores
               </button>
-              <button
-                onClick={() => setLevelUpTab('feat')}
-                className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'feat' ? 'border-purple-500 text-purple-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-              >
+              <button onClick={() => setLevelUpTab('feat')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'feat' ? 'border-purple-500 text-purple-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                 Feats
               </button>
             </div>
@@ -2568,15 +2688,15 @@ export default function Game() {
                   {/* ASI mode toggle */}
                   <div className="flex gap-2 mb-4">
                     <button
-                      onClick={() => { setAsiMode('single'); setAsiStat2(null); }}
+                      onClick={() => {
+                        setAsiMode('single');
+                        setAsiStat2(null);
+                      }}
                       className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${asiMode === 'single' ? 'bg-amber-900/40 border-amber-600/60 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'}`}
                     >
                       +2 to one stat
                     </button>
-                    <button
-                      onClick={() => setAsiMode('split')}
-                      className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${asiMode === 'split' ? 'bg-amber-900/40 border-amber-600/60 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'}`}
-                    >
+                    <button onClick={() => setAsiMode('split')} className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${asiMode === 'split' ? 'bg-amber-900/40 border-amber-600/60 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'}`}>
                       +1 to two stats
                     </button>
                   </div>
@@ -2611,17 +2731,11 @@ export default function Game() {
                               }
                             }
                           }}
-                          className={`px-3 py-3 rounded-lg border text-center transition-all ${
-                            isMaxed ? 'opacity-30 cursor-not-allowed bg-slate-800 border-slate-700' :
-                            (isSelected1 || isSelected2) ? 'bg-amber-900/50 border-amber-500/70 text-amber-200 ring-1 ring-amber-500/30' :
-                            'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
-                          }`}
+                          className={`px-3 py-3 rounded-lg border text-center transition-all ${isMaxed ? 'opacity-30 cursor-not-allowed bg-slate-800 border-slate-700' : isSelected1 || isSelected2 ? 'bg-amber-900/50 border-amber-500/70 text-amber-200 ring-1 ring-amber-500/30' : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'}`}
                         >
                           <div className="text-xs font-bold">{stat}</div>
                           <div className="text-lg font-bold">{val}</div>
-                          <div className="text-[9px] text-slate-500">
-                            {isMaxed ? 'MAX' : wouldExceed && asiMode === 'single' ? 'Cap 20' : isSelected1 && asiMode === 'single' ? `→ ${Math.min(20, val + 2)}` : (isSelected1 || isSelected2) ? `→ ${Math.min(20, val + 1)}` : `mod ${val >= 10 ? '+' : ''}${Math.floor((val - 10) / 2)}`}
-                          </div>
+                          <div className="text-[9px] text-slate-500">{isMaxed ? 'MAX' : wouldExceed && asiMode === 'single' ? 'Cap 20' : isSelected1 && asiMode === 'single' ? `→ ${Math.min(20, val + 2)}` : isSelected1 || isSelected2 ? `→ ${Math.min(20, val + 1)}` : `mod ${val >= 10 ? '+' : ''}${Math.floor((val - 10) / 2)}`}</div>
                         </button>
                       );
                     })}
@@ -2666,9 +2780,12 @@ export default function Game() {
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-bold text-purple-300">{feat.name}</span>
                           <div className="flex gap-1.5">
-                            {feat.statBonuses && Object.entries(feat.statBonuses).map(([s, v]) => (
-                              <span key={s} className="text-[9px] px-1.5 py-0.5 bg-amber-900/40 text-amber-300 rounded-full">+{v} {s}</span>
-                            ))}
+                            {feat.statBonuses &&
+                              Object.entries(feat.statBonuses).map(([s, v]) => (
+                                <span key={s} className="text-[9px] px-1.5 py-0.5 bg-amber-900/40 text-amber-300 rounded-full">
+                                  +{v} {s}
+                                </span>
+                              ))}
                             {feat.maxHpPerLevel && <span className="text-[9px] px-1.5 py-0.5 bg-red-900/40 text-red-300 rounded-full">+{feat.maxHpPerLevel} HP/lv</span>}
                             {feat.damageBonus && <span className="text-[9px] px-1.5 py-0.5 bg-orange-900/40 text-orange-300 rounded-full">+{feat.damageBonus} dmg</span>}
                             {feat.initiativeBonus && <span className="text-[9px] px-1.5 py-0.5 bg-yellow-900/40 text-yellow-300 rounded-full">+{feat.initiativeBonus} init</span>}
@@ -2679,9 +2796,7 @@ export default function Game() {
                         <p className="text-[10px] text-slate-400">{feat.description}</p>
                       </button>
                     ))}
-                    {FEATS.filter((f) => !(selectedCharacter.feats || []).includes(f.id)).length === 0 && (
-                      <p className="text-xs text-slate-500 text-center py-4">All feats already taken!</p>
-                    )}
+                    {FEATS.filter((f) => !(selectedCharacter.feats || []).includes(f.id)).length === 0 && <p className="text-xs text-slate-500 text-center py-4">All feats already taken!</p>}
                   </div>
                 </div>
               )}

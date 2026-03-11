@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../components/ui/toast';
 import { Button } from '../components/ui/button';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
@@ -7,6 +7,7 @@ import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../comp
 import DoodlePad, { type DoodlePadHandle, type DoodleStroke } from '../components/lobby/DoodlePad';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { useGame, type DieType } from '../contexts/GameContext';
+import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 
 interface LobbyPlayer {
   id: string;
@@ -36,123 +37,143 @@ export default function Lobby() {
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
 
-  // WebSocket message handler
-  const handleWsMessage = useCallback((msg: WSMessage) => {
-    switch (msg.type) {
-      case 'welcome':
-        setWsPlayerId(msg.playerId as string);
-        setPlayers(msg.players as LobbyPlayer[]);
-        setIsDM(msg.isDM as boolean ?? false);
-        if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
-        setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
-        // Replay doodle pad stroke history from server (late-join catch-up)
-        if (Array.isArray(msg.strokeHistory) && msg.strokeHistory.length > 0) {
-          // Small delay to ensure canvas is mounted and sized
-          setTimeout(() => {
-            doodleRef.current?.replayStrokes(msg.strokeHistory as DoodleStroke[]);
-          }, 100);
-        }
-        break;
-
-      case 'player_joined':
-        setPlayers(msg.players as LobbyPlayer[]);
-        setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} joined the lobby`, timestamp: msg.timestamp as number }]);
-        break;
-
-      case 'player_reconnected':
-        setPlayers(msg.players as LobbyPlayer[]);
-        setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} reconnected`, timestamp: msg.timestamp as number }]);
-        break;
-
-      case 'player_left':
-        setPlayers(msg.players as LobbyPlayer[]);
-        setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'leave', username: msg.username as string, text: `${msg.username} left the lobby`, timestamp: msg.timestamp as number }]);
-        break;
-
-      case 'dm_changed':
-        setDmPlayerId(msg.dmPlayerId as string);
-        setIsDM(msg.dmPlayerId === wsPlayerId);
-        setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: `${msg.dmUsername} is now the DM`, timestamp: msg.timestamp as number }]);
-        break;
-
-      case 'chat': {
-        const incomingPlayerId = msg.playerId as string;
-        // If this is the server echo of our own optimistic message, skip it
-        if (incomingPlayerId === wsPlayerId) {
-          // Check if we have a pending optimistic message with the same text
-          const msgText = msg.message as string;
-          const matchKey = `${incomingPlayerId}:${msgText}`;
-          if (pendingChatIds.current.has(matchKey)) {
-            pendingChatIds.current.delete(matchKey);
-            return; // deduplicated — already shown optimistically
-          }
-        }
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'chat',
-            playerId: incomingPlayerId,
-            username: msg.username as string,
-            avatar: msg.avatar as string | undefined,
-            text: msg.message as string,
-            timestamp: msg.timestamp as number,
-          },
-        ]);
-        break;
+  // Load persistent chat history from D1 on mount
+  useEffect(() => {
+    loadChatHistory(room).then((history) => {
+      if (history.length > 0) {
+        setChatMessages((prev) => {
+          // Deduplicate: only add messages not already in state (by id)
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMsgs = history.filter((m) => !existingIds.has(m.id));
+          return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
+        });
       }
+    });
+  }, [room]);
 
-      case 'roll_result': {
-        // Show roll in chat
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            type: 'roll',
-            playerId: msg.playerId as string,
-            username: msg.username as string,
-            avatar: msg.avatar as string | undefined,
-            text: '',
-            timestamp: msg.timestamp as number,
-            die: msg.die as string,
+  // WebSocket message handler
+  const handleWsMessage = useCallback(
+    (msg: WSMessage) => {
+      switch (msg.type) {
+        case 'welcome':
+          setWsPlayerId(msg.playerId as string);
+          setPlayers(msg.players as LobbyPlayer[]);
+          setIsDM((msg.isDM as boolean) ?? false);
+          if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
+          // Replay doodle pad stroke history from server (late-join catch-up)
+          if (Array.isArray(msg.strokeHistory) && msg.strokeHistory.length > 0) {
+            // Small delay to ensure canvas is mounted and sized
+            setTimeout(() => {
+              doodleRef.current?.replayStrokes(msg.strokeHistory as DoodleStroke[]);
+            }, 100);
+          }
+          break;
+
+        case 'player_joined':
+          setPlayers(msg.players as LobbyPlayer[]);
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} joined the lobby`, timestamp: msg.timestamp as number }]);
+          break;
+
+        case 'player_reconnected':
+          setPlayers(msg.players as LobbyPlayer[]);
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} reconnected`, timestamp: msg.timestamp as number }]);
+          break;
+
+        case 'player_left':
+          setPlayers(msg.players as LobbyPlayer[]);
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'leave', username: msg.username as string, text: `${msg.username} left the lobby`, timestamp: msg.timestamp as number }]);
+          break;
+
+        case 'dm_changed':
+          setDmPlayerId(msg.dmPlayerId as string);
+          setIsDM(msg.dmPlayerId === wsPlayerId);
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: `${msg.dmUsername} is now the DM`, timestamp: msg.timestamp as number }]);
+          break;
+
+        case 'chat': {
+          const incomingPlayerId = msg.playerId as string;
+          // If this is the server echo of our own optimistic message, skip it
+          if (incomingPlayerId === wsPlayerId) {
+            // Check if we have a pending optimistic message with the same text
+            const msgText = msg.message as string;
+            const matchKey = `${incomingPlayerId}:${msgText}`;
+            if (pendingChatIds.current.has(matchKey)) {
+              pendingChatIds.current.delete(matchKey);
+              return; // deduplicated — already shown optimistically
+            }
+          }
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'chat',
+              playerId: incomingPlayerId,
+              username: msg.username as string,
+              avatar: msg.avatar as string | undefined,
+              text: msg.message as string,
+              timestamp: msg.timestamp as number,
+            },
+          ]);
+          break;
+        }
+
+        case 'roll_result': {
+          // Show roll in chat
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'roll',
+              playerId: msg.playerId as string,
+              username: msg.username as string,
+              avatar: msg.avatar as string | undefined,
+              text: '',
+              timestamp: msg.timestamp as number,
+              die: msg.die as string,
+              sides: msg.sides as number,
+              value: msg.value as number,
+              isCritical: msg.isCritical as boolean,
+              isFumble: msg.isFumble as boolean,
+              unitName: msg.unitName as string | undefined,
+            },
+          ]);
+          // Play dice animation for everyone
+          diceRef.current?.playRemoteRoll({
+            die: msg.die as DieType,
             sides: msg.sides as number,
             value: msg.value as number,
-            isCritical: msg.isCritical as boolean,
-            isFumble: msg.isFumble as boolean,
+            playerName: msg.username as string,
             unitName: msg.unitName as string | undefined,
-          },
-        ]);
-        // Play dice animation for everyone
-        diceRef.current?.playRemoteRoll({
-          die: msg.die as DieType,
-          sides: msg.sides as number,
-          value: msg.value as number,
-          playerName: msg.username as string,
-          unitName: msg.unitName as string | undefined,
-        });
-        break;
-      }
-
-      case 'draw':
-        // Remote doodle stroke from another player
-        doodleRef.current?.drawRemote({
-          x1: msg.x1 as number, y1: msg.y1 as number,
-          x2: msg.x2 as number, y2: msg.y2 as number,
-          color: msg.color as string, width: msg.width as number,
-        });
-        // Show "X is drawing..." indicator (debounced — clears after 1s of no strokes)
-        if (msg.username) {
-          setDrawingPlayer(msg.username as string);
-          if (drawingTimerRef.current) clearTimeout(drawingTimerRef.current);
-          drawingTimerRef.current = setTimeout(() => setDrawingPlayer(null), 1000);
+          });
+          break;
         }
-        break;
 
-      case 'clear_canvas':
-        doodleRef.current?.clearRemote();
-        break;
-    }
-  }, [wsPlayerId]);
+        case 'draw':
+          // Remote doodle stroke from another player
+          doodleRef.current?.drawRemote({
+            x1: msg.x1 as number,
+            y1: msg.y1 as number,
+            x2: msg.x2 as number,
+            y2: msg.y2 as number,
+            color: msg.color as string,
+            width: msg.width as number,
+          });
+          // Show "X is drawing..." indicator (debounced — clears after 1s of no strokes)
+          if (msg.username) {
+            setDrawingPlayer(msg.username as string);
+            if (drawingTimerRef.current) clearTimeout(drawingTimerRef.current);
+            drawingTimerRef.current = setTimeout(() => setDrawingPlayer(null), 1000);
+          }
+          break;
+
+        case 'clear_canvas':
+          doodleRef.current?.clearRemote();
+          break;
+      }
+    },
+    [wsPlayerId]
+  );
 
   const { status, send } = useWebSocket({
     roomId: room,
@@ -181,10 +202,12 @@ export default function Lobby() {
       ]);
       // Send to server (if connected, it'll broadcast to others + echo back, which we deduplicate)
       send({ type: 'chat', message: text });
+      // Persist to D1 (fire-and-forget)
+      persistChatMessage(room, { username: currentPlayer.username, type: 'chat', text, avatarUrl: currentPlayer.avatar });
       // Clean up stale dedup keys after 5s (in case server never echoes)
       setTimeout(() => pendingChatIds.current.delete(dedupKey), 5000);
     },
-    [send, wsPlayerId, currentPlayer.id, currentPlayer.username]
+    [send, wsPlayerId, currentPlayer.id, currentPlayer.username, currentPlayer.avatar, room]
   );
 
   const handleLocalRoll = useCallback(
@@ -195,7 +218,7 @@ export default function Lobby() {
   );
 
   // Fun default names for lobby (no character selected yet)
-  const LOBBY_DEFAULTS = ['A Curious Onlooker', 'Someone at the Bar', 'The Innkeeper\'s Cat', 'A Dice-Obsessed Patron', 'Definitely Not a Mimic'];
+  const LOBBY_DEFAULTS = ['A Curious Onlooker', 'Someone at the Bar', "The Innkeeper's Cat", 'A Dice-Obsessed Patron', 'Definitely Not a Mimic'];
   const funDefault = () => LOBBY_DEFAULTS[Math.floor(Math.random() * LOBBY_DEFAULTS.length)];
 
   // Handle local (offline) roll — add to chat history even without WebSocket
@@ -280,21 +303,13 @@ export default function Lobby() {
               <div className="flex gap-3 overflow-x-auto">
                 {players.map((p) => (
                   <div key={p.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs ${p.id === wsPlayerId ? 'border-[#F38020]/50 bg-[#F38020]/10' : 'border-slate-700 bg-slate-800/50'}`}>
-                    {p.avatar ? (
-                      <img src={p.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">{p.username.charAt(0).toUpperCase()}</div>
-                    )}
+                    {p.avatar ? <img src={p.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" /> : <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">{p.username.charAt(0).toUpperCase()}</div>}
                     <span className="font-medium text-slate-200">{p.username}</span>
                     {p.isDM && <span className="text-[9px] text-amber-400 font-bold">DM</span>}
                     {p.id === wsPlayerId && <span className="text-[9px] text-[#F38020]">(you)</span>}
                     {/* Transfer DM button — shown to current DM on non-DM players */}
                     {isDM && !p.isDM && p.id !== wsPlayerId && (
-                      <button
-                        onClick={() => send({ type: 'transfer_dm', targetPlayerId: p.id })}
-                        className="text-[8px] px-1.5 py-0.5 rounded bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700/40 text-amber-400 font-semibold transition-all ml-1"
-                        title={`Make ${p.username} the DM`}
-                      >
+                      <button onClick={() => send({ type: 'transfer_dm', targetPlayerId: p.id })} className="text-[8px] px-1.5 py-0.5 rounded bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700/40 text-amber-400 font-semibold transition-all ml-1" title={`Make ${p.username} the DM`}>
                         Make DM
                       </button>
                     )}
@@ -314,11 +329,7 @@ export default function Lobby() {
             {/* Doodle pad — fills remaining space, synced via WebSocket */}
             <div className="flex-1 overflow-hidden relative">
               <DoodlePad ref={doodleRef} onStroke={handleDoodleStroke} onClear={handleDoodleClear} />
-              {drawingPlayer && (
-                <div className="absolute bottom-2 left-3 px-2 py-1 bg-slate-800/80 border border-slate-700/50 rounded-lg text-[10px] text-slate-400 pointer-events-none animate-pulse">
-                  {drawingPlayer} is drawing...
-                </div>
-              )}
+              {drawingPlayer && <div className="absolute bottom-2 left-3 px-2 py-1 bg-slate-800/80 border border-slate-700/50 rounded-lg text-[10px] text-slate-400 pointer-events-none animate-pulse">{drawingPlayer} is drawing...</div>}
             </div>
           </div>
         </div>

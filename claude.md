@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 25: Phase 8 session robustness + DM role UI — stable reconnect IDs, DM authorization, rate limiting, message queue, DM role UI gating, DM transfer. Previous: Map image persistence, Condition system overhaul, Multiplayer sync (Phases 1-7), Opportunity Attacks, Disengage action.
+Round 26: D1 Database + Persistent Users + Chat Persistence — D1 bindings wired, ensureUser() lazy-upserts Discord users into D1, chat persistence (GET/POST /api/chat/:roomId), party management (GET/POST/DELETE /api/party/:roomId), user profile endpoint, frontend loads chat history on mount. Previous: Phase 8 session robustness (Round 25), Map image persistence, Multiplayer sync (Phases 1-8).
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -484,24 +484,128 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
   - Graceful fallback: if positions don't exist (e.g. before map renders), adjacency defaults to true
 - Architecture: BattleMap still owns rendering, drag/drop, fog, DM tools, traps; GameContext now owns terrain grid and token positions
 
-## Backlog
+## Backlog / Roadmap
 
-### High priority (next)
-- Lobby DO hibernation — migrate to `this.state.acceptWebSocket()` for cost reduction (Phase 8 deferred item)
-- Map image persistence — DONE (Round 24)
-- Condition system fixes — DONE (Round 23)
-- Session robustness + DM role UI — DONE (Round 25)
+### Round 26: D1 Database + Persistent Users + Chat Persistence (PARTIAL — Phase 1 done)
+**Goal:** Move from ephemeral/KV-only storage to a relational D1 database for structured data. Enable persistent user identity across auth providers, campaign party management, and chat history that survives page refreshes.
 
-### Medium priority
-- Party management — invite/remove players, assign DM role, character visibility settings
+**Phase 1 — DONE (this commit):**
+- D1 bindings in `wrangler.toml` (dev/staging/prod) + `wrangler.test.toml`
+- `D1Database` interface + `DB` binding in Env (`_worker.ts`)
+- `ensureUser()` — lazy-upserts Discord user into D1 `users` + `auth_providers` tables on every authenticated request. Falls back to `provider:id` format if D1 unavailable.
+- `getJwtPayload()` — extracts full JWT payload (user + provider) from cookie
+- `GET /api/chat/:roomId` — load recent chat messages from D1 (supports `limit` + `before` pagination)
+- `POST /api/chat/:roomId` — save a chat message to D1
+- `GET /api/party/:roomId` — list party members with user details (JOIN query)
+- `POST /api/party/:roomId/join` — join/update party membership (upsert)
+- `DELETE /api/party/:roomId/leave` — leave a campaign party
+- `GET /api/user/me` — full user profile from D1 with linked auth providers
+- `src/lib/chatApi.ts` — frontend helper: `loadChatHistory()` + `persistChatMessage()` (fire-and-forget)
+- Lobby.tsx: loads chat history from D1 on mount, persists outgoing chat messages
+- Game.tsx: loads chat history from D1 on mount, persists outgoing chat messages
+- Makefile targets: `d1-dev`, `d1-staging`, `d1-prod`, `d1-migrate-dev`, `d1-migrate-staging`, `d1-migrate-prod`
+
+**Phase 2 — NOT YET STARTED:**
+- Google OAuth (`GET /api/auth/google` + callback) — needs `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`
+- Migrate campaign list from KV to D1 `campaigns` table
+- Persist dice rolls and DM narration to D1 (currently only user-sent chat persists)
+- Auto-join party on campaign creation / WebSocket join
+- Home.tsx: party member avatars on campaign cards, Google auth button
+
+**D1 schema:**
+- `users` — persistent identity (UUID, display name, avatar). One row per human, linked to one or more auth providers.
+- `auth_providers` — links Discord/Google/future providers to a user. Primary key: (provider, provider_user_id).
+- `campaigns` — campaign metadata (name, owner, settings). Replaces the KV-based campaign list.
+- `party_members` — who's in each campaign, which character they're playing, their role (DM/player).
+- `chat_messages` — persistent chat per campaign. Real-time via WebSocket, persisted to D1 on send, loaded on page mount.
+
+**Storage strategy:**
+| Data | Storage | Reason |
+|------|---------|--------|
+| Users, campaigns, party, chat | D1 (SQL) | Relational queries, joins, indexes |
+| Characters (full JSON blobs) | KV | Large unstructured blobs, no joins needed |
+| Portraits (encrypted binary) | KV | Binary data, simple key lookup |
+| Map images (PNG/JPG/WebP) | R2 | Large binary, CDN-cacheable |
+| Campaign game state (units, terrain, combat) | KV | Large JSON snapshots, no relational queries |
+| Doodle pad strokes | DO memory + D1 archival | Real-time in DO, archived to D1 on session end |
+
+### Round 27: Landing Page + Lobby + Campaign Management Polish
+**Goal:** Make the Home page a proper landing experience, improve the lobby, and flesh out campaign management with party association.
+
+**Landing page:**
+- Hero section with game art, tagline, feature highlights
+- "How it works" section (create campaign, invite friends, play)
+- Featured campaigns / recent activity
+- Auth buttons prominent (Discord + Google)
+- Campaign cards show party members with avatars, last played date, character count
+
+**Lobby improvements:**
+- Party roster showing which character each player is using
+- Ready-up system before starting the adventure
+- Campaign settings panel (name, description, invite link management)
+- Chat history loaded from D1 on join (no more blank slate)
+- Dice roll history persisted and loaded
+
+**Campaign management:**
+- Campaign list on Home shows party members (avatars + names)
+- Campaign settings: rename, change description, manage invites
+- Kick/invite players from campaign party
+- Campaign archive (soft delete, can restore)
+
+### Round 28: Character + Game Board + DM Tools Polish
+**Goal:** Enhance the character creation experience, improve the battle map, and give DMs better tools.
+
+**Character creation:**
+- Step-by-step wizard flow (race -> class -> stats -> appearance -> personality -> review)
+- Preview panel showing character card as you build
+- AI-generated backstory hooks based on party composition
+- Import characters from D&D Beyond / Foundry VTT JSON
+
+**Game board:**
+- Minimap / overview mode for large maps
+- Fog of war per-player (each player sees only from their token)
+- Animated token movement (smooth pathfinding)
+- Spell effect overlays (AoE templates, line effects)
+- Initiative tracker with turn timer countdown
+- Quick-reference tooltips on hover (enemy stats, condition descriptions)
+
+**DM tools:**
+- DM sidebar panel (collapsible) with encounter management, NPC roster, notes
+- Quick NPC generator (name + personality + stat block)
+- Music/ambiance selector (ambient sound URLs or Web Audio API)
+- Session notes (persistent, DM-only, auto-saved)
+- Encounter difficulty calculator based on party level
+
+### Round 29: Full Persistence + Local Cache
+**Goal:** Everything persists. Browser cache for instant loads, server for cross-device sync.
+
+**Browser cache strategy:**
+- Service Worker for offline-first static assets
+- IndexedDB for local cache of characters, campaign state, chat
+- Optimistic UI: show cached data immediately, sync in background
+- Cache invalidation via ETags or Last-Modified headers
+
+**Server persistence coverage:**
+| Feature | Currently | Target |
+|---------|-----------|--------|
+| Chat messages | WebSocket only (lost on refresh) | D1 + WebSocket (load from D1 on mount) |
+| Dice roll history | WebSocket only | D1 (roll_log table, queryable) |
+| Doodle pad strokes | DO memory (lost on eviction) | D1 archival + R2 snapshots |
+| Combat state | KV auto-save (2s debounce) | KV auto-save + D1 audit log |
+| Character sheets | KV per user | KV + IndexedDB local cache |
+| Portraits | KV (encrypted) | KV + browser cache (Cache API) |
+| Map images | R2 | R2 + browser cache (24h) |
+| Campaign metadata | KV list | D1 (already migrated in Round 26) |
+| User preferences | localStorage | D1 + localStorage (sync) |
+
+### Future rounds
+- Lobby DO hibernation — migrate to `this.state.acceptWebSocket()` for cost reduction
 - Journal/notes system — shared campaign notes, session summaries, DM-only notes
 - Sound FX expansion — mood music, remaining spell effects, enemy abilities, traps, death saves, conditions
 - Export formats — Pathfinder 2e, Forbidden Lands, Savage Worlds
 - Portrait gallery — save/browse generated portraits, remix styles
 - Dynamic difficulty — auto-scale encounters based on party size/level, death count
 - Particle effects for spells and combat
-
-### Low priority / nice to have
 - Discord integration for voice/chat
 - Modular engine for homebrew rules and mods
 - Accessibility "Low-FX" mode
@@ -573,3 +677,4 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Map image persistence (R2): DM can upload battle map background images (PNG/JPG/WebP/GIF, max 10MB) via DM Mode toolbar. Images stored in Cloudflare R2 (`MAP_IMAGES` binding, `adventure-maps-{env}` buckets). API: `POST /api/map/upload` (base64 data URL → R2), `GET /api/map/:id` (stream from R2, 24h cache), `DELETE /api/map/:id`. BattleMap draws uploaded image as canvas background layer — floor/void cells become transparent when image present, special terrain (walls, water, etc.) still renders on top. Fog of war, tokens, traps all layer correctly. `mapImageUrl` state in GameContext, persisted in campaign save/load. Multiplayer sync via `map_image` game event + `state_response` late-join recovery. Upload/Clear buttons in DM tools (emerald themed). Makefile targets: `r2-dev`, `r2-staging`, `r2-prod` for bucket creation.
 - Condition system overhaul: Split overloaded `blessed` condition into distinct types — `dodging` (Dodge action +2 AC), `raging` (Barbarian Rage +2 atk), `inspired` (Bardic Inspiration +2 atk/saves). `blessed` reserved for Bless spell only. Wired `effectiveAC()` into all 5 attack roll sites (enemy basic melee, enemy abilities, player quick attack, player OA, enemy OA in BattleMap). Implemented D&D 5e prone advantage/disadvantage via `rollD20WithProne()` helper (melee vs prone = advantage, ranged vs prone = disadvantage, prone attacker = disadvantage, adv+disadv cancel per 5e rules). Combat log shows [adv]/[disadv] tags. CONDITION_COLORS in BattleMap updated for new types. Combat log highlighting includes all 10 condition types. 22 new condition tests (127 total).
 - Phase 8 session robustness + DM role UI: Stable reconnect IDs (sessionStorage + Lobby DO reuse), DM authorization (first joiner = DM, server-enforced DM-only messages, reassignment on disconnect), DM transfer (`transfer_dm` message type), rate limiting (10 game_events/sec per client), message queue (100-cap offline buffer), DM role UI gating (`canUseDMTools` = `isDM || !wsConnected` — gates encounter, NPC talk, scene name, narration input, Begin Adventure in Game.tsx; DM mode toggle, terrain paint, traps, map upload in BattleMap.tsx; "Make DM" transfer button in Lobby.tsx). DM/Player badge in toolbar. 6 new Phase 8 tests (133 total).
+- D1 Database Phase 1: D1 bindings in wrangler.toml (all envs) + wrangler.test.toml. `D1Database` interface + `DB` binding in Env. `ensureUser()` lazy-upserts Discord users into D1 `users`/`auth_providers` tables (graceful fallback if D1 unavailable). `getJwtPayload()` helper. Chat persistence: `GET/POST /api/chat/:roomId` (D1). Party management: `GET/POST/DELETE /api/party/:roomId` with JOIN queries. `GET /api/user/me` full user profile with auth providers. Frontend `chatApi.ts` helper (loadChatHistory + persistChatMessage). Lobby.tsx + Game.tsx load chat history on mount, persist outgoing messages. Makefile: d1-dev/staging/prod + d1-migrate-dev/staging/prod targets. Migration SQL: `users`, `auth_providers`, `campaigns`, `party_members`, `chat_messages` tables with indexes.

@@ -186,6 +186,26 @@ r2-prod: makeinfo ## [Storage] Create R2 bucket for production (gated)
 	$(require_production_release)
 	$(WRANGLER) r2 bucket create adventure-maps-prod
 
+d1-dev: makeinfo ## [Storage] Create D1 database for development
+	$(WRANGLER) d1 create adventure-db-dev
+
+d1-staging: makeinfo ## [Storage] Create D1 database for staging
+	$(WRANGLER) d1 create adventure-db-staging
+
+d1-prod: makeinfo ## [Storage] Create D1 database for production (gated)
+	$(require_production_release)
+	$(WRANGLER) d1 create adventure-db-prod
+
+d1-migrate-dev: makeinfo ## [Storage] Run D1 migrations for development (local)
+	$(WRANGLER) d1 migrations apply adventure-db-dev --local
+
+d1-migrate-staging: makeinfo ## [Storage] Run D1 migrations for staging (remote)
+	$(WRANGLER) d1 migrations apply adventure-db-staging --remote
+
+d1-migrate-prod: makeinfo ## [Storage] Run D1 migrations for production (gated, remote)
+	$(require_production_release)
+	$(WRANGLER) d1 migrations apply adventure-db-prod --remote
+
 ################################################################################
 #                          Monitoring Commands                                 #
 ################################################################################
