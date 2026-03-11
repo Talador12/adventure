@@ -11,10 +11,11 @@ import LevelUpModal from '../components/game/LevelUpModal';
 import CharacterPicker from '../components/game/CharacterPicker';
 import { type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
-import { playDiceRoll, playCritical, playFumble, playEncounterStart, playPlayerJoin, playMagicSpell, playEnemyDeath, isMuted, toggleMute, setAmbientMood, getAmbientMood, type AmbientMood } from '../hooks/useSoundFX';
+import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, setAmbientMood, getAmbientMood, type AmbientMood } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
+import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import type { Quest } from '../types/game';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
@@ -74,16 +75,6 @@ export default function Game() {
   const animateMoveRef = useRef<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>(null);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
-  const [isDM, setIsDM] = useState(false);
-  const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
-  const [isSpectating, setIsSpectating] = useState(false);
-  // DM tool access: DM gets full controls, non-DM gets read-only narration.
-  // Offline/single-player (not connected) defaults to full access.
-  // Spectators get no game controls at all.
-  const [wsConnected, setWsConnected] = useState(false);
-  const canUseDMTools = !isSpectating && (isDM || !wsConnected);
-  const canAct = !isSpectating; // players + DM can act, spectators cannot
   const diceRef = useRef<DiceRollerHandle>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
@@ -128,6 +119,8 @@ export default function Game() {
 
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  // Keyboard shortcut help overlay
+  const [showHelpOverlay, setShowHelpOverlay] = useState(false);
 
    // Quest tracker
    const questStorageKey = `adventure:quests:${room}`;
@@ -213,21 +206,6 @@ export default function Game() {
       /* full */
     }
   }, [sceneName, room]);
-
-  // Global keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape closes modals/panels in priority order (topmost first)
-      if (e.key === 'Escape') {
-        if (showLevelUpModal) { setShowLevelUpModal(false); return; }
-        if (showDMSidebar) { setShowDMSidebar(false); return; }
-        if (showCombatLog) { setShowCombatLog(false); return; }
-        if (showQuests) { setShowQuests(false); return; }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showLevelUpModal, showDMSidebar, showCombatLog, showQuests]);
 
   // Fire-and-forget server campaign sync — debounced to avoid spamming on rapid updates
   const campaignSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -379,6 +357,85 @@ export default function Game() {
   inCombatRef.current = inCombat;
   const mapPositionsRef = useRef(mapPositions);
   mapPositionsRef.current = mapPositions;
+
+  // Provide current state for late-join state_request responses (uses refs for freshness)
+  const getStateForResponse = useCallback(() => ({
+    units: unitsRef.current,
+    inCombat: inCombatRef.current,
+    combatRound: combatRoundRef.current,
+    turnIndex: turnIndexRef.current,
+    terrain,
+    mapPositions: mapPositionsRef.current,
+    mapImageUrl,
+    sceneName,
+    quests,
+    dmHistory,
+  }), [terrain, mapImageUrl, sceneName, quests, dmHistory]);
+
+  // --- WebSocket message handling (extracted hook) ---
+  const { wsPlayerId, isDM, isSpectating, wsConnected, setWsConnected, handleWsMessage } = useGameWebSocket({
+    room,
+    sendRef,
+    isRemoteEventRef,
+    animateMoveRef,
+    diceRef,
+    mapPositionsRef,
+    setChatMessages,
+    setDmHistory,
+    setSceneName,
+    setQuests,
+    setUnits,
+    setInCombat,
+    setCombatRound,
+    setTurnIndex,
+    setTerrain,
+    setMapPositions,
+    setMapImageUrl,
+    updateCharacter,
+    getStateForResponse,
+    selectedCharacterId,
+  });
+
+  // DM tool access: DM gets full controls, non-DM gets read-only narration.
+  // Offline/single-player (not connected) defaults to full access.
+  // Spectators get no game controls at all.
+  const canUseDMTools = !isSpectating && (isDM || !wsConnected);
+
+  // Global keyboard shortcuts (must be after canUseDMTools is defined)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't capture when typing in inputs/textareas
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // Escape closes modals/panels in priority order (topmost first)
+      if (e.key === 'Escape') {
+        if (showHelpOverlay) { setShowHelpOverlay(false); return; }
+        if (showLevelUpModal) { setShowLevelUpModal(false); return; }
+        if (showDMSidebar) { setShowDMSidebar(false); return; }
+        if (showCombatLog) { setShowCombatLog(false); return; }
+        if (showQuests) { setShowQuests(false); return; }
+      }
+      // ? — toggle keyboard shortcut help
+      if (e.key === '?') { setShowHelpOverlay((s) => !s); return; }
+      // M — toggle mute
+      if (e.key === 'm' || e.key === 'M') { toggleMute(); setSoundMuted(!soundMuted); return; }
+      // D — toggle DM sidebar (if DM)
+      if ((e.key === 'd' || e.key === 'D') && canUseDMTools) { setShowDMSidebar((s) => !s); return; }
+      // C — toggle character sheet
+      if (e.key === 'c' || e.key === 'C') { setShowSheet((s) => !s); return; }
+      // Q — toggle quests
+      if (e.key === 'q' || e.key === 'Q') { setShowQuests((s) => !s); return; }
+      // L — toggle combat log
+      if (e.key === 'l' || e.key === 'L') { setShowCombatLog((s) => !s); return; }
+      // 1/2/3 — switch views (narration/map/shop)
+      if (e.key === '1') { setActiveView('narration'); return; }
+      if (e.key === '2') { setActiveView('map'); return; }
+      if (e.key === '3' && !inCombat) { setActiveView('shop'); return; }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLevelUpModal, showDMSidebar, showCombatLog, showQuests, showHelpOverlay, soundMuted, canUseDMTools, inCombat]);
 
   // Delayed broadcast — reads from refs after React processes state batches.
   // Use this when you can't easily capture return values (e.g. player UI actions).
@@ -806,315 +863,6 @@ export default function Game() {
     }
   }, [selectedCharacter, dmHistory, addDmMessage, setUnits, encounterDifficulty, broadcastGameEvent, terrain, mapPositions]);
 
-  // Handle incoming WebSocket messages
-  const handleWsMessage = useCallback(
-    (msg: WSMessage) => {
-      switch (msg.type) {
-        case 'welcome':
-          setWsPlayerId(msg.playerId as string);
-          setIsDM((msg.isDM as boolean) ?? false);
-          setIsSpectating(!!(msg.isSpectating));
-          if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
-          // Auto-join campaign party in D1 (fire-and-forget)
-          fetch(`/api/party/${encodeURIComponent(room)}/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ characterId: selectedCharacterId, role: msg.isDM ? 'dm' : 'player' }),
-          }).catch(() => {});
-          // Request game state from existing players (late join sync)
-          sendRef.current({ type: 'state_request' });
-          break;
-
-        case 'chat':
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'chat',
-              playerId: msg.playerId as string,
-              username: msg.username as string,
-              avatar: msg.avatar as string | undefined,
-              text: msg.message as string,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
-          break;
-
-        case 'roll_result': {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'roll',
-              playerId: msg.playerId as string,
-              username: msg.username as string,
-              avatar: msg.avatar as string | undefined,
-              text: '',
-              timestamp: msg.timestamp as number,
-              die: msg.die as string,
-              sides: msg.sides as number,
-              value: msg.value as number,
-              isCritical: msg.isCritical as boolean,
-              isFumble: msg.isFumble as boolean,
-              unitName: msg.unitName as string | undefined,
-              characterName: msg.unitName as string | undefined,
-            },
-          ]);
-          // Persist roll to D1 — only the roller persists (avoid duplicates)
-          if (msg.playerId === wsPlayerId) {
-            persistChatMessage(room, {
-              username: msg.username as string,
-              type: 'roll',
-              text: `rolled ${(msg.die as string)?.toUpperCase()} for ${msg.value}`,
-              avatarUrl: msg.avatar as string | undefined,
-              metadata: { die: msg.die, sides: msg.sides, value: msg.value, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName, characterName: msg.unitName },
-            });
-          }
-          // Sound FX
-          playDiceRoll();
-          if (msg.isCritical) setTimeout(playCritical, 400);
-          if (msg.isFumble) setTimeout(playFumble, 400);
-
-          diceRef.current?.playRemoteRoll({
-            die: msg.die as DieType,
-            sides: msg.sides as number,
-            value: msg.value as number,
-            playerName: msg.username as string,
-            unitName: msg.unitName as string | undefined,
-          });
-          break;
-        }
-
-        case 'player_joined':
-          playPlayerJoin();
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'join',
-              username: msg.username as string,
-              text: `${msg.username} joined the game`,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
-          break;
-
-        case 'player_reconnected':
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'join',
-              username: msg.username as string,
-              text: `${msg.username} reconnected`,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
-          break;
-
-        case 'player_left':
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'leave',
-              username: msg.username as string,
-              text: `${msg.username} left the game`,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
-          break;
-
-        case 'dm_changed':
-          setDmPlayerId(msg.dmPlayerId as string);
-          setIsDM(msg.dmPlayerId === wsPlayerId);
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'system' as const,
-              username: 'System',
-              text: `${msg.dmUsername} is now the DM`,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
-          break;
-
-        case 'dm_narrate':
-          // DM narration broadcast from another player — only add if we didn't trigger it
-          if (msg.playerId !== wsPlayerId) {
-            setChatMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                type: 'dm',
-                username: 'Dungeon Master',
-                text: msg.narration as string,
-                timestamp: msg.timestamp as number,
-              },
-            ]);
-            setDmHistory((prev) => [...prev, msg.narration as string]);
-          }
-          break;
-
-        case 'dm_npc':
-          // NPC dialogue broadcast from another player
-          if (msg.playerId !== wsPlayerId) {
-            setChatMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                type: 'dm',
-                username: msg.npcName as string,
-                text: msg.dialogue as string,
-                timestamp: msg.timestamp as number,
-              },
-            ]);
-            setDmHistory((prev) => [...prev, `${msg.npcName}: "${msg.dialogue}"`]);
-          }
-          break;
-
-        case 'dm_action':
-          // Another player's action broadcast — show it in chat
-          if (msg.playerId !== wsPlayerId) {
-            setChatMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                type: 'chat',
-                playerId: msg.playerId as string,
-                username: (msg.characterName as string) || (msg.username as string),
-                text: `*${msg.action}*`,
-                timestamp: msg.timestamp as number,
-              },
-            ]);
-          }
-          break;
-
-        case 'game_event': {
-          // Apply remote game state event — set suppression flag to prevent rebroadcast
-          const eventType = msg.event as string;
-          const eventData = msg.data as Record<string, unknown>;
-          isRemoteEventRef.current = true;
-          try {
-            switch (eventType) {
-              case 'game_sync': {
-                // Full combat state snapshot — units, combat flags
-                if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
-                if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
-                if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
-                if (typeof eventData.turnIndex === 'number') setTurnIndex(eventData.turnIndex);
-                break;
-              }
-              case 'encounter_spawn': {
-                // New encounter — units + terrain + positions + combat state
-                if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
-                if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
-                if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
-                if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
-                if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
-                break;
-              }
-              case 'token_move': {
-                // Single token position update with animation
-                const unitId = eventData.unitId as string;
-                const col = eventData.col as number;
-                const row = eventData.row as number;
-                if (unitId && typeof col === 'number' && typeof row === 'number') {
-                  // Animate from current position to new position
-                  const oldPos = mapPositionsRef.current?.find((p: TokenPosition) => p.unitId === unitId);
-                  if (oldPos && (oldPos.col !== col || oldPos.row !== row)) {
-                    animateMoveRef.current?.(unitId, oldPos.col, oldPos.row, col, row);
-                  }
-                  setMapPositions((prev) => prev.map((p) => (p.unitId === unitId ? { ...p, col, row } : p)));
-                }
-                break;
-              }
-              case 'terrain_update': {
-                if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
-                break;
-              }
-              case 'map_positions': {
-                if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
-                break;
-              }
-              case 'character_update': {
-                // Partial character update — visible stats only (HP, conditions, level, etc.)
-                const charUpdate = eventData.character as Partial<Character> & { id: string };
-                if (charUpdate?.id) {
-                  updateCharacter(charUpdate.id, charUpdate);
-                }
-                break;
-              }
-              case 'scene_sync': {
-                if (typeof eventData.sceneName === 'string') setSceneName(eventData.sceneName);
-                break;
-              }
-              case 'quest_sync': {
-                if (Array.isArray(eventData.quests)) setQuests(eventData.quests as Quest[]);
-                break;
-              }
-              case 'map_image': {
-                const url = eventData.mapImageUrl as string | null;
-                setMapImageUrl(url ?? null);
-                break;
-              }
-            }
-          } finally {
-            isRemoteEventRef.current = false;
-          }
-          break;
-        }
-
-        case 'state_request': {
-          // Another client wants full state (late joiner). Send our current state.
-          sendRef.current({
-            type: 'state_response',
-            targetPlayerId: msg.playerId as string,
-            data: {
-              units,
-              inCombat,
-              combatRound,
-              turnIndex,
-              terrain,
-              mapPositions,
-              mapImageUrl,
-              sceneName,
-              quests,
-              dmHistory,
-            },
-          });
-          break;
-        }
-
-        case 'state_response': {
-          // Full state from another client — apply it all
-          const stateData = msg.data as Record<string, unknown>;
-          if (!stateData) break;
-          isRemoteEventRef.current = true;
-          try {
-            if (Array.isArray(stateData.units)) setUnits(stateData.units as Unit[]);
-            if (typeof stateData.inCombat === 'boolean') setInCombat(stateData.inCombat);
-            if (typeof stateData.combatRound === 'number') setCombatRound(stateData.combatRound);
-            if (typeof stateData.turnIndex === 'number') setTurnIndex(stateData.turnIndex);
-            if (Array.isArray(stateData.terrain)) setTerrain(stateData.terrain as TerrainType[][]);
-            if (Array.isArray(stateData.mapPositions)) setMapPositions(stateData.mapPositions as TokenPosition[]);
-            if (typeof stateData.mapImageUrl === 'string') setMapImageUrl(stateData.mapImageUrl);
-            else if (stateData.mapImageUrl === null) setMapImageUrl(null);
-            if (typeof stateData.sceneName === 'string') setSceneName(stateData.sceneName);
-            if (Array.isArray(stateData.quests)) setQuests(stateData.quests as Quest[]);
-            if (Array.isArray(stateData.dmHistory)) setDmHistory(stateData.dmHistory as string[]);
-          } finally {
-            isRemoteEventRef.current = false;
-          }
-          break;
-        }
-      }
-    },
-    [wsPlayerId, units, inCombat, combatRound, turnIndex, terrain, mapPositions, sceneName, quests, dmHistory, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, updateCharacter]
-  );
-
   const { status, send } = useWebSocket({
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
@@ -1243,13 +991,20 @@ export default function Game() {
               </svg>
             )}
           </button>
+          <button
+            onClick={() => setShowHelpOverlay((s) => !s)}
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors w-5 h-5 flex items-center justify-center rounded border border-slate-700 hover:border-slate-500"
+            title="Keyboard shortcuts (?)"
+          >
+            ?
+          </button>
           {canUseDMTools && (
             <button
               onClick={() => setShowDMSidebar((s) => !s)}
               className={`text-xs px-2 py-1 rounded transition-colors font-medium ${
                 showDMSidebar ? 'bg-[#F38020]/15 text-[#F38020]' : 'text-slate-500 hover:text-slate-300'
               }`}
-              title="Toggle DM tools sidebar"
+              title="Toggle DM tools sidebar (D)"
             >
               DM Tools
             </button>
@@ -1595,6 +1350,38 @@ export default function Game() {
           )}
         </div>
       </div>
+
+      {/* Keyboard Shortcut Help Overlay */}
+      {showHelpOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowHelpOverlay(false)}>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-amber-400">Keyboard Shortcuts</h2>
+              <button onClick={() => setShowHelpOverlay(false)} className="text-slate-500 hover:text-white transition-colors text-xl leading-none">&times;</button>
+            </div>
+            <div className="space-y-1 text-sm">
+              {[
+                ['?', 'Toggle this help'],
+                ['Esc', 'Close topmost panel/modal'],
+                ['M', 'Toggle sound mute'],
+                ['C', 'Toggle character sheet'],
+                ['Q', 'Toggle quest tracker'],
+                ['L', 'Toggle combat log'],
+                ['D', 'Toggle DM sidebar (DM only)'],
+                ['1', 'Narration view'],
+                ['2', 'Battle map view'],
+                ['3', 'Shop view (out of combat)'],
+              ].map(([key, desc]) => (
+                <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
+                  <kbd className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-md text-xs font-mono text-slate-300 shadow-sm">{key}</kbd>
+                  <span className="text-slate-400">{desc}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[10px] text-slate-600 text-center">Shortcuts are disabled when typing in input fields</p>
+          </div>
+        </div>
+      )}
 
       {/* Level-Up Choice Modal — extracted component */}
       {showLevelUpModal && selectedCharacter && hasPendingASI(selectedCharacter) && (
