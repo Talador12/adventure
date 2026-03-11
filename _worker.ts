@@ -81,6 +81,12 @@ async function aiRunWithTimeout(ai: Ai, model: string, input: Record<string, unk
   return Promise.race([ai.run(model, input), new Promise<never>((_, reject) => setTimeout(() => reject(new AiTimeoutError(model, ms)), ms))]);
 }
 
+// Error logging helper — ensures all catch blocks leave a trace
+function logError(context: string, err: unknown): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`[adventure] ${context}: ${msg}`);
+}
+
 // Discord OAuth
 const DISCORD_AUTH_URI = 'https://discord.com/api/oauth2/authorize';
 const DISCORD_TOKEN_URI = 'https://discord.com/api/oauth2/token';
@@ -962,7 +968,8 @@ async function ensureUser(c: { req: { raw: Request }; env: Env }): Promise<strin
     const userId = crypto.randomUUID();
     await c.env.DB.batch([c.env.DB.prepare('INSERT INTO users (id, display_name, avatar_url) VALUES (?, ?, ?)').bind(userId, displayName, avatarUrl), c.env.DB.prepare('INSERT INTO auth_providers (provider, provider_user_id, user_id, provider_username, provider_email, provider_avatar) VALUES (?, ?, ?, ?, ?, ?)').bind(provider, providerUserId, userId, user.username || null, user.email || null, avatarUrl)]);
     return userId;
-  } catch {
+  } catch (err) {
+    logError('ensureUser D1 upsert', err);
     // If D1 fails, fall back to provider:id format so auth isn't blocked
     return `${provider}:${providerUserId}`;
   }
@@ -994,7 +1001,8 @@ app.get('/api/chat/:roomId', async (c) => {
       metadata: row.metadata ? JSON.parse(row.metadata as string) : null,
     }));
     return c.json({ messages });
-  } catch {
+  } catch (err) {
+    logError('GET /api/chat/:roomId', err);
     return c.json({ messages: [] });
   }
 });
@@ -1030,7 +1038,8 @@ app.post('/api/chat/:roomId', async (c) => {
       )
       .run();
     return c.json({ ok: true, id: msgId });
-  } catch {
+  } catch (err) {
+    logError('POST /api/chat/:roomId', err);
     return c.json({ error: 'Failed to save message' }, 500);
   }
 });
@@ -1056,7 +1065,8 @@ app.get('/api/party/:roomId', async (c) => {
       .bind(roomId)
       .all<Record<string, unknown>>();
     return c.json({ members: results });
-  } catch {
+  } catch (err) {
+    logError('GET /api/party/:roomId', err);
     return c.json({ members: [] });
   }
 });
@@ -1081,7 +1091,8 @@ app.post('/api/party/:roomId/join', async (c) => {
       .bind(roomId, internalUserId, body.characterId || null, body.role || 'player')
       .run();
     return c.json({ ok: true });
-  } catch {
+  } catch (err) {
+    logError('POST /api/party/:roomId/join', err);
     return c.json({ error: 'Failed to join party' }, 500);
   }
 });
@@ -1096,7 +1107,8 @@ app.delete('/api/party/:roomId/leave', async (c) => {
   try {
     await c.env.DB.prepare('DELETE FROM party_members WHERE campaign_id = ? AND user_id = ?').bind(roomId, internalUserId).run();
     return c.json({ ok: true });
-  } catch {
+  } catch (err) {
+    logError('DELETE /api/party/:roomId/leave', err);
     return c.json({ error: 'Failed to leave party' }, 500);
   }
 });
@@ -1119,7 +1131,8 @@ app.get('/api/user/me', async (c) => {
     const { results: providers } = await c.env.DB.prepare('SELECT provider, provider_user_id, provider_username, provider_email, created_at FROM auth_providers WHERE user_id = ?').bind(internalUserId).all<Record<string, unknown>>();
 
     return c.json({ user, providers });
-  } catch {
+  } catch (err) {
+    logError('GET /api/user/me D1 query', err);
     const jwt = await getJwtPayload(c);
     return c.json({ user: jwt?.user || null, providers: [] });
   }
@@ -1136,7 +1149,8 @@ app.get('/api/campaign/:roomId', async (c) => {
     const raw = (await c.env.CAMPAIGNS.get(`campaign:${c.req.param('roomId')}`)) as string | null;
     if (!raw) return c.json({ campaign: null });
     return c.json({ campaign: JSON.parse(raw) });
-  } catch {
+  } catch (err) {
+    logError('GET /api/campaign/:roomId', err);
     return c.json({ campaign: null });
   }
 });
@@ -1166,7 +1180,8 @@ app.put('/api/campaign/:roomId', async (c) => {
     };
     await c.env.CAMPAIGNS.put(`campaign:${c.req.param('roomId')}`, JSON.stringify(state));
     return c.json({ ok: true });
-  } catch {
+  } catch (err) {
+    logError('PUT /api/campaign/:roomId', err);
     return c.json({ error: 'Failed to save campaign' }, 500);
   }
 });
@@ -1213,7 +1228,8 @@ app.get('/api/campaigns/public', async (c) => {
     // Sort by most recently updated
     campaigns.sort((a, b) => ((b.updatedAt as number) || 0) - ((a.updatedAt as number) || 0));
     return c.json({ campaigns });
-  } catch {
+  } catch (err) {
+    logError('GET /api/campaigns/public', err);
     return c.json({ campaigns: [] });
   }
 });
@@ -1227,7 +1243,8 @@ app.get('/api/campaigns', async (c) => {
     const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     return c.json({ campaigns });
-  } catch {
+  } catch (err) {
+    logError('GET /api/campaigns', err);
     return c.json({ campaigns: [] });
   }
 });
@@ -1252,7 +1269,8 @@ app.post('/api/campaigns', async (c) => {
       await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
     }
     return c.json({ ok: true });
-  } catch {
+  } catch (err) {
+    logError('POST /api/campaigns', err);
     return c.json({ error: 'Failed to register campaign' }, 500);
   }
 });
@@ -1296,7 +1314,8 @@ app.patch('/api/campaigns/:roomId', async (c) => {
     // Sync public campaign index
     await syncPublicIndex(c.env.CAMPAIGNS, roomId, campaign);
     return c.json({ ok: true, campaign });
-  } catch {
+  } catch (err) {
+    logError('PATCH /api/campaigns/:roomId', err);
     return c.json({ error: 'Failed to update campaign' }, 500);
   }
 });
@@ -1316,7 +1335,8 @@ app.delete('/api/campaigns/:roomId', async (c) => {
     await c.env.CAMPAIGNS.delete(`campaign:${roomId}`);
     await syncPublicIndex(c.env.CAMPAIGNS, roomId, { visibility: 'private' });
     return c.json({ ok: true });
-  } catch {
+  } catch (err) {
+    logError('DELETE /api/campaigns/:roomId', err);
     return c.json({ error: 'Failed to delete campaign' }, 500);
   }
 });
@@ -1328,7 +1348,8 @@ app.get('/api/lobby/:roomId/info', async (c) => {
     const roomId = c.req.param('roomId');
     const pwHash = (await c.env.CAMPAIGNS.get(`room:${roomId}:password`)) as string | null;
     return c.json({ hasPassword: !!pwHash });
-  } catch {
+  } catch (err) {
+    logError('GET /api/lobby/:roomId/info', err);
     return c.json({ hasPassword: false });
   }
 });
@@ -1345,7 +1366,8 @@ app.post('/api/lobby/:roomId/verify', async (c) => {
     const inputHash = await hashPassword(password);
     if (inputHash === storedHash) return c.json({ ok: true });
     return c.json({ ok: false, error: 'Wrong password' }, 403);
-  } catch {
+  } catch (err) {
+    logError('POST /api/lobby/:roomId/verify', err);
     return c.json({ error: 'Verification failed' }, 500);
   }
 });
@@ -1359,7 +1381,8 @@ app.get('/api/characters', async (c) => {
     const raw = (await c.env.CHARACTERS.get(`user:${userId}:chars`)) as string | null;
     const characters = raw ? JSON.parse(raw) : [];
     return c.json({ characters });
-  } catch {
+  } catch (err) {
+    logError('GET /api/characters', err);
     return c.json({ characters: [] });
   }
 });
@@ -1379,7 +1402,8 @@ app.put('/api/characters', async (c) => {
     });
     await c.env.CHARACTERS.put(`user:${userId}:chars`, JSON.stringify(lean));
     return c.json({ ok: true, count: lean.length });
-  } catch (e) {
+  } catch (err) {
+    logError('PUT /api/characters', err);
     return c.json({ error: 'Failed to save characters' }, 500);
   }
 });
@@ -1397,7 +1421,8 @@ app.delete('/api/characters/:charId', async (c) => {
     if (filtered.length === characters.length) return c.json({ error: 'Character not found' }, 404);
     await c.env.CHARACTERS.put(`user:${userId}:chars`, JSON.stringify(filtered));
     return c.json({ ok: true });
-  } catch {
+  } catch (err) {
+    logError('DELETE /api/characters/:charId', err);
     return c.json({ error: 'Failed to delete character' }, 500);
   }
 });

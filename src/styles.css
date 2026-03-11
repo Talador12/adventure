@@ -288,3 +288,28 @@ a:hover {
 .page-enter {
   animation: fadeInUp 0.4s ease-out both;
 }
+
+/* ============================================================
+   ACCESSIBILITY — Reduced motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-gradient {
+    background-size: 100% 100%;
+    animation: none;
+  }
+  .text-shimmer {
+    animation: none;
+    -webkit-text-fill-color: currentColor;
+    background: none;
+  }
+  .animate-float { animation: none; }
+  .btn-glow { animation: none; }
+  .hp-bar-shimmer::after { animation: none; }
+}
