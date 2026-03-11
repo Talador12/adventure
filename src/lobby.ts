@@ -16,15 +16,25 @@ interface PlayerInfo {
   joinedAt: number;
 }
 
+interface StrokeEntry {
+  x1: number; y1: number; x2: number; y2: number;
+  color: string; width: number;
+  playerId: string; username: string;
+}
+
+const MAX_STROKE_HISTORY = 5000; // cap memory usage
+
 export class Lobby {
   state: DurableObjectState;
   env: unknown;
   sessions: Map<WebSocket, Session>;
+  strokeHistory: StrokeEntry[];
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
     this.env = env;
     this.sessions = new Map();
+    this.strokeHistory = [];
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -81,12 +91,13 @@ export class Lobby {
         const avatar = (data.avatar as string) || undefined;
         this.sessions.set(server, { id: sessionId, username, avatar, joinedAt: Date.now() });
 
-        // Send current player list to the joining player
+        // Send current player list + stroke history to the joining player
         server.send(
           JSON.stringify({
             type: 'welcome',
             playerId: sessionId,
             players: this.getPlayerList(),
+            strokeHistory: this.strokeHistory,
             timestamp: Date.now(),
           })
         );
@@ -150,9 +161,21 @@ export class Lobby {
         // Broadcast draw stroke to all OTHER clients (not back to sender)
         const drawSession = this.sessions.get(server);
         if (!drawSession) return;
+        // Store for late-join replay
+        const stroke: StrokeEntry = {
+          x1: data.x1 as number, y1: data.y1 as number,
+          x2: data.x2 as number, y2: data.y2 as number,
+          color: data.color as string, width: data.width as number,
+          playerId: drawSession.id, username: drawSession.username,
+        };
+        this.strokeHistory.push(stroke);
+        if (this.strokeHistory.length > MAX_STROKE_HISTORY) {
+          this.strokeHistory = this.strokeHistory.slice(-MAX_STROKE_HISTORY);
+        }
         const payload = JSON.stringify({
           type: 'draw',
           playerId: drawSession.id,
+          username: drawSession.username,
           x1: data.x1,
           y1: data.y1,
           x2: data.x2,
@@ -168,7 +191,8 @@ export class Lobby {
       }
 
       case 'clear_canvas': {
-        // Broadcast canvas clear to all OTHER clients
+        // Clear stroke history and broadcast canvas clear to all OTHER clients
+        this.strokeHistory = [];
         const clearPayload = JSON.stringify({ type: 'clear_canvas' });
         for (const [ws] of this.sessions) {
           if (ws === server) continue;

@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 22: Multiplayer session sync — Phases 1-6 complete. Full game state now broadcasts over WebSocket: combat state, token movement, terrain, encounters, character stats, scene names, and quests. Late-join state recovery via request/response protocol.
+Round 22: Multiplayer session sync — Phases 1-7 complete. Full game state now broadcasts over WebSocket: combat state, token movement, terrain, encounters, character stats, scene names, and quests. Late-join state recovery via request/response protocol. DoodlePad now has late-join stroke replay and "X is drawing..." attribution indicator.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -53,7 +53,7 @@ Round 22: Multiplayer session sync — Phases 1-6 complete. Full game state now 
 - Makefile targets: `make test` (all), `make test-player`, `make test-worker`, `make test-multiplayer`, `make test-ai`, `make test-ai-live`, `make test-watch`
 
 ### Multiplayer session sync — full game state over WebSocket
-- **Status:** Done (Phases 1-6 complete, Phases 7-8 deferred)
+- **Status:** Done (Phases 1-7 complete, Phase 8 deferred)
 
 #### What's already synced (working)
 | Feature | Mechanism | Quality |
@@ -167,6 +167,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 **Phase 6: Character + story sync — DONE**
 `useEffect` watches `selectedCharacter` and broadcasts `character_update` (HP, AC, conditions, gold, level, class, name) on change with JSON dedup. Scene name input broadcasts `scene_sync`. All 5 quest mutation sites broadcast `quest_sync`.
+
+**Phase 7: DoodlePad improvements — DONE**
+- Lobby DO stores `strokeHistory` array (capped at 5000 strokes) with `playerId`/`username` attribution per stroke
+- `welcome` message now includes `strokeHistory` — late joiners replay existing canvas art on connect
+- `clear_canvas` resets `strokeHistory`
+- `DoodlePadHandle.replayStrokes(strokes[])` batch-draws strokes without re-sending to server
+- Lobby.tsx replays history on `welcome` (100ms delay for canvas mount)
+- "X is drawing..." indicator: debounced 1s indicator when receiving remote draw strokes, positioned bottom-left of doodle pad
 
 **Phase 7: DoodlePad improvements**
 - Late-join canvas replay: store stroke history in Lobby DO memory, send to new joiners on `welcome`
@@ -477,7 +485,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ## Backlog
 
 ### High priority (next)
-- Multiplayer session sync — Phases 7-8 (DoodlePad improvements, session robustness — deferred)
+- Multiplayer session sync — Phase 8 (session robustness — deferred)
 - Map image persistence — R2-backed DM map uploads
 - Opportunity Attacks — melee enemies/players get reaction attack when a unit leaves their threat range
 - Condition system fixes — `prone` should use advantage/disadvantage (not flat -2), `blessed` overloaded for 3 mechanics (Bless spell, Dodge action, Phase Shift), AC modifiers from `CONDITION_EFFECTS` defined but never applied in attack calculations
@@ -558,4 +566,4 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Dice rolls in chat: local rolls appear in chat history even offline, CharacterName[PlayerName] format, crit/fumble gradient styling with glow effects, fun default names
 - Dead code cleanup: removed `buildMiniPortraitDataUrl` from portrait.ts, empty door-closing stub from BattleMap.tsx, unused `originalDestGetter` from useSoundFX.ts
 - AI timeout hardening: backend `aiRunWithTimeout` wrapper (25s text / 45s image) for all 10 `c.env.AI.run()` calls in _worker.ts; frontend `fetchWithTimeout` wired into all 10 AI fetch calls in CharacterCreate.tsx (7 calls) and Game.tsx (3 calls, 35s text / 45s encounter)
-- Multiplayer session sync (Phases 1-6): Result-broadcasting with suppression flag architecture. Lobby DO relays `game_event`/`state_request`/`state_response`. GameContext functions return computed results via closure capture. Game.tsx sync infrastructure: `broadcastGameEvent`, `broadcastCombatSync`, ref-based delayed broadcasts. 10 event types: `game_sync`, `encounter_spawn`, `token_move`, `terrain_update`, `map_positions`, `character_update`, `scene_sync`, `quest_sync`, `state_request`, `state_response`. Late-join recovery via state request/response. All combat actions, enemy AI, map interactions, character stats, scenes, and quests now sync across players.
+- Multiplayer session sync (Phases 1-7): Result-broadcasting with suppression flag architecture. Lobby DO relays `game_event`/`state_request`/`state_response`. GameContext functions return computed results via closure capture. Game.tsx sync infrastructure: `broadcastGameEvent`, `broadcastCombatSync`, ref-based delayed broadcasts. 10 event types: `game_sync`, `encounter_spawn`, `token_move`, `terrain_update`, `map_positions`, `character_update`, `scene_sync`, `quest_sync`, `state_request`, `state_response`. Late-join recovery via state request/response. All combat actions, enemy AI, map interactions, character stats, scenes, and quests now sync across players. DoodlePad late-join replay (stroke history in DO memory, capped 5000), "X is drawing..." attribution indicator.

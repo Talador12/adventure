@@ -28,6 +28,8 @@ export default function Lobby() {
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const doodleRef = useRef<DoodlePadHandle>(null);
+  const [drawingPlayer, setDrawingPlayer] = useState<string | null>(null);
+  const drawingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
 
@@ -38,6 +40,13 @@ export default function Lobby() {
         setWsPlayerId(msg.playerId as string);
         setPlayers(msg.players as LobbyPlayer[]);
         setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
+        // Replay doodle pad stroke history from server (late-join catch-up)
+        if (Array.isArray(msg.strokeHistory) && msg.strokeHistory.length > 0) {
+          // Small delay to ensure canvas is mounted and sized
+          setTimeout(() => {
+            doodleRef.current?.replayStrokes(msg.strokeHistory as DoodleStroke[]);
+          }, 100);
+        }
         break;
 
       case 'player_joined':
@@ -115,6 +124,12 @@ export default function Lobby() {
           x2: msg.x2 as number, y2: msg.y2 as number,
           color: msg.color as string, width: msg.width as number,
         });
+        // Show "X is drawing..." indicator (debounced — clears after 1s of no strokes)
+        if (msg.username) {
+          setDrawingPlayer(msg.username as string);
+          if (drawingTimerRef.current) clearTimeout(drawingTimerRef.current);
+          drawingTimerRef.current = setTimeout(() => setDrawingPlayer(null), 1000);
+        }
         break;
 
       case 'clear_canvas':
@@ -270,8 +285,13 @@ export default function Lobby() {
               <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} compact />
             </div>
             {/* Doodle pad — fills remaining space, synced via WebSocket */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden relative">
               <DoodlePad ref={doodleRef} onStroke={handleDoodleStroke} onClear={handleDoodleClear} />
+              {drawingPlayer && (
+                <div className="absolute bottom-2 left-3 px-2 py-1 bg-slate-800/80 border border-slate-700/50 rounded-lg text-[10px] text-slate-400 pointer-events-none animate-pulse">
+                  {drawingPlayer} is drawing...
+                </div>
+              )}
             </div>
           </div>
         </div>

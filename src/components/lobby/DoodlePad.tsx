@@ -19,6 +19,7 @@ interface DoodlePadProps {
 export interface DoodlePadHandle {
   drawRemote: (stroke: DoodleStroke) => void;
   clearRemote: () => void;
+  replayStrokes: (strokes: DoodleStroke[]) => void;
 }
 
 const DoodlePad = forwardRef<DoodlePadHandle, DoodlePadProps>(function DoodlePad({ onStroke, onClear }, ref) {
@@ -114,6 +115,13 @@ const DoodlePad = forwardRef<DoodlePadHandle, DoodlePadProps>(function DoodlePad
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
+  // Imperative: replay an array of strokes (late-join catch-up)
+  const replayStrokes = useCallback((strokes: DoodleStroke[]) => {
+    for (const s of strokes) {
+      drawSegment(s.x1, s.y1, s.x2, s.y2, s.color, s.width);
+    }
+  }, [drawSegment]);
+
   const stopDraw = useCallback(() => {
     setDrawing(false);
     lastPos.current = null;
@@ -128,7 +136,7 @@ const DoodlePad = forwardRef<DoodlePadHandle, DoodlePadProps>(function DoodlePad
   }, [onClear]);
 
   // Expose imperative methods for parent to call on remote WebSocket events
-  useImperativeHandle(ref, () => ({ drawRemote, clearRemote }), [drawRemote, clearRemote]);
+  useImperativeHandle(ref, () => ({ drawRemote, clearRemote, replayStrokes }), [drawRemote, clearRemote, replayStrokes]);
 
   return (
     <div className="flex flex-col h-full">
