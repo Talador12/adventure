@@ -17,12 +17,20 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
   const [timeLeft, setTimeLeft] = useState(turnTimeSeconds);
   const currentTurnId = entries.find((e) => e.isCurrentTurn)?.id ?? null;
   const prevTurnId = useRef(currentTurnId);
+  // Track turn change for entrance animation
+  const [animatingTurnId, setAnimatingTurnId] = useState<string | null>(null);
 
-  // Reset timer on turn change
+  // Reset timer + trigger entrance animation on turn change
   useEffect(() => {
     if (currentTurnId !== prevTurnId.current) {
       prevTurnId.current = currentTurnId;
       setTimeLeft(turnTimeSeconds);
+      // Trigger entrance animation
+      if (currentTurnId) {
+        setAnimatingTurnId(currentTurnId);
+        const timer = setTimeout(() => setAnimatingTurnId(null), 600);
+        return () => clearTimeout(timer);
+      }
     }
   }, [currentTurnId, turnTimeSeconds]);
 
@@ -61,8 +69,19 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
     return char?.portrait || null;
   };
 
+  // Auto-scroll to current turn unit
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const turnCardRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  useEffect(() => {
+    if (!currentTurnId) return;
+    const card = turnCardRefs.current.get(currentTurnId);
+    if (card && scrollRef.current) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentTurnId]);
+
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto" ref={scrollRef}>
       <div className="flex gap-3 p-3 min-w-max">
         {entries.map((entry) => {
           const maxHp = entry.maxHp || entry.hp;
@@ -73,19 +92,22 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
           const playerLabel = getPlayerLabel(entry);
           const portrait = getPortrait(entry);
 
+          const isEntering = animatingTurnId === entry.id;
+
           return (
             <button
               key={entry.id}
+              ref={(el) => { if (el) turnCardRefs.current.set(entry.id, el); else turnCardRefs.current.delete(entry.id); }}
               onClick={() => setSelectedUnitId(isSelected ? null : entry.id)}
               className={`relative flex flex-col items-center gap-1.5 rounded-xl px-4 py-3 min-w-[100px] border transition-all duration-300 cursor-pointer group ${
                 isSelected ? 'border-[#F38020] bg-[#F38020]/10 shadow-lg ring-1 ring-[#F38020]/50' : entry.isCurrentTurn ? 'border-yellow-500/80 bg-yellow-500/10 shadow-lg scale-105' : 'border-slate-700 bg-slate-800/80 hover:border-slate-600 hover:bg-slate-800'
-              } ${entry.type === 'enemy' && !isSelected && !entry.isCurrentTurn ? 'border-red-900/50' : ''}`}
+              } ${entry.type === 'enemy' && !isSelected && !entry.isCurrentTurn ? 'border-red-900/50' : ''} ${isEntering ? 'animate-turn-enter' : ''}`}
               style={entry.isCurrentTurn && !isSelected ? { boxShadow: '0 0 20px rgba(234,179,8,0.2)' } : undefined}
             >
               {/* Turn indicator + timer */}
               {entry.isCurrentTurn && (
-                <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
-                  <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">TURN</div>
+                <div className={`absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 ${isEntering ? 'animate-turn-badge' : ''}`}>
+                  <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md shadow-yellow-500/30">TURN</div>
                   {turnTimerEnabled && (
                     <div className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-slate-900/90 border border-slate-700 ${timerColor} ${timeLeft <= 10 ? 'animate-pulse' : ''}`}>
                       {formatTime(timeLeft)}

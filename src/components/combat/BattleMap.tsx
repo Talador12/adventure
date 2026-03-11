@@ -1,6 +1,6 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
-import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
+import React, { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 
@@ -524,6 +524,12 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  // --- Touch support refs (handlers defined after mouse handlers) ---
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const pinchStartRef = useRef<{ dist: number; zoom: number; midX: number; midY: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchDragging = useRef(false);
 
   // Map image upload
   const mapFileInputRef = useRef<HTMLInputElement>(null);
@@ -1265,6 +1271,116 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
   }, []);
 
+  // --- Touch handlers: pinch zoom, tap select, long-press drag ---
+  const LONG_PRESS_MS = 300;
+  const touchDistance = useCallback((t1: { clientX: number; clientY: number }, t2: { clientX: number; clientY: number }) =>
+    Math.sqrt((t2.clientX - t1.clientX) ** 2 + (t2.clientY - t1.clientY) ** 2), []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const d = touchDistance(e.touches[0], e.touches[1]);
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      pinchStartRef.current = { dist: d, zoom, midX, midY };
+      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+      return;
+    }
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const { col, row, x, y } = canvasCoords({ clientX: touch.clientX, clientY: touch.clientY });
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+    touchDragging.current = false;
+
+    // AoE placement
+    if (activeAoE && onAoEConfirm) {
+      const affectedCells = computeAoECells(activeAoE.shape, { col, row }, activeAoE.radiusCells, activeAoE.casterPos, gridCols, gridRows);
+      onAoEConfirm(affectedCells);
+      setAoeHoverCell(null);
+      return;
+    }
+
+    // Check for token under finger
+    const token = tokenAt(x, y);
+    if (token) {
+      e.preventDefault();
+      const unit = units.find((u) => u.id === token.unitId);
+      if (unit) setSelectedUnitId(unit.id === selectedUnitId ? null : unit.id);
+      // Start long-press timer to begin drag
+      longPressTimer.current = setTimeout(() => {
+        touchDragging.current = true;
+        const cx = token.col * CELL_SIZE + CELL_SIZE / 2;
+        const cy = token.row * CELL_SIZE + CELL_SIZE / 2;
+        setDragging({ unitId: token.unitId, offsetX: x - cx, offsetY: y - cy });
+        setDragPos({ x: cx, y: cy });
+        if (inCombat && unit) {
+          const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
+          setReachableCells(remaining > 0
+            ? computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols)
+            : new Map()
+          );
+        } else {
+          setReachableCells(null);
+        }
+      }, LONG_PRESS_MS);
+    } else {
+      setSelectedUnitId(null);
+    }
+  }, [canvasCoords, tokenAt, units, selectedUnitId, setSelectedUnitId, activeAoE, onAoEConfirm, gridCols, gridRows, inCombat, terrain, zoom, touchDistance]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Pinch zoom
+    if (e.touches.length === 2 && pinchStartRef.current) {
+      e.preventDefault();
+      const d = touchDistance(e.touches[0], e.touches[1]);
+      const scale = d / pinchStartRef.current.dist;
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartRef.current.zoom * scale));
+      setZoom(newZoom);
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const dx = midX - pinchStartRef.current.midX;
+      const dy = midY - pinchStartRef.current.midY;
+      setPanOffset((p) => ({ x: p.x + dx, y: p.y + dy }));
+      pinchStartRef.current = { ...pinchStartRef.current, midX, midY };
+      return;
+    }
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const start = touchStartRef.current;
+    if (!start) return;
+
+    const movedDist = Math.sqrt((touch.clientX - start.x) ** 2 + (touch.clientY - start.y) ** 2);
+    if (!touchDragging.current && movedDist > 10) {
+      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+      // Pan mode — single finger swipe
+      setPanOffset((p) => ({
+        x: p.x + (touch.clientX - start.x),
+        y: p.y + (touch.clientY - start.y),
+      }));
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: start.time };
+      return;
+    }
+
+    // Token dragging after long-press
+    if (touchDragging.current && dragging) {
+      e.preventDefault();
+      const { x, y } = canvasCoords({ clientX: touch.clientX, clientY: touch.clientY });
+      setDragPos({ x: x - dragging.offsetX, y: y - dragging.offsetY });
+    }
+  }, [dragging, canvasCoords, touchDistance]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    pinchStartRef.current = null;
+    if (touchDragging.current && dragging) {
+      handleMouseUp();
+      touchDragging.current = false;
+    }
+    touchStartRef.current = null;
+  }, [dragging, handleMouseUp]);
+
   // --- Generate new dungeon ---
   const regenerate = useCallback(() => {
     const newTerrain = generateDungeon(gridCols, gridRows);
@@ -1462,7 +1578,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       {/* Canvas with zoom/pan */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden bg-slate-950/50 relative"
+        className="flex-1 overflow-hidden bg-slate-950/50 relative touch-none"
         onWheel={handleWheel}
         style={{ cursor: dmTool !== 'select' ? 'crosshair' : panning ? 'grabbing' : 'default' }}
       >
@@ -1481,6 +1597,10 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
             onContextMenu={(e) => e.preventDefault()}
           />
         </div>
@@ -1542,7 +1662,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             </span>
           );
         })()}
-        <span className="text-[9px] text-slate-600 ml-auto">Scroll to zoom | Alt+drag to pan | Drag tokens to move</span>
+        <span className="text-[9px] text-slate-600 ml-auto hidden sm:inline">Scroll to zoom | Alt+drag to pan | Drag tokens to move</span>
+        <span className="text-[9px] text-slate-600 ml-auto sm:hidden">Pinch to zoom | Swipe to pan | Long-press to drag</span>
       </div>
     </div>
   );

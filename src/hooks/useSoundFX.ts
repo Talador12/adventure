@@ -1,12 +1,39 @@
 // useSoundFX — lightweight sound effects using Web Audio API. Zero dependencies.
 // Synthesizes dice rolls, combat hits, magic, and ambient sounds procedurally.
+// Master volume via GainNode between all audio and the hardware output.
 
 let audioCtx: AudioContext | null = null;
+let masterGain: GainNode | null = null;
+let volume = parseFloat(localStorage.getItem('adventure:volume') ?? '0.7');
 
 function getCtx(): AudioContext {
   if (!audioCtx) audioCtx = new AudioContext();
   if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (!masterGain) {
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    masterGain.connect(audioCtx.destination);
+  }
   return audioCtx;
+}
+
+/** Master output node — all audio routes through this for volume control */
+function dest(): GainNode {
+  getCtx(); // ensure masterGain is initialized
+  return masterGain!;
+}
+
+export function getVolume(): number {
+  return volume;
+}
+
+export function setVolume(v: number) {
+  volume = Math.max(0, Math.min(1, v));
+  localStorage.setItem('adventure:volume', String(volume));
+  if (masterGain && audioCtx && !muted) {
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
+  }
 }
 
 // Short noise burst — used for dice impacts
@@ -33,7 +60,7 @@ export function playDiceRoll() {
   for (let i = 0; i < 6; i++) {
     const t = now + i * 0.06 + Math.random() * 0.02;
     const { node, gainNode } = noise(ctx, 0.03, 0.15 - i * 0.02);
-    gainNode.connect(ctx.destination);
+    gainNode.connect(dest());
     node.start(t);
     node.stop(t + 0.03);
   }
@@ -46,7 +73,7 @@ export function playDiceRoll() {
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.3, now + 0.4);
   g.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-  osc.connect(g).connect(ctx.destination);
+  osc.connect(g).connect(dest());
   osc.start(now + 0.4);
   osc.stop(now + 0.55);
 }
@@ -66,7 +93,7 @@ export function playCritical() {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(0.2, t + 0.03);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(dest());
     osc.start(t);
     osc.stop(t + 0.4);
   });
@@ -84,7 +111,7 @@ export function playFumble() {
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.15, now);
   g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-  osc.connect(g).connect(ctx.destination);
+  osc.connect(g).connect(dest());
   osc.start(now);
   osc.stop(now + 0.5);
 }
@@ -96,7 +123,7 @@ export function playCombatHit() {
 
   // Impact noise
   const { node, gainNode } = noise(ctx, 0.08, 0.4);
-  gainNode.connect(ctx.destination);
+  gainNode.connect(dest());
   node.start(now);
   node.stop(now + 0.08);
 
@@ -108,7 +135,7 @@ export function playCombatHit() {
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.12, now);
   g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-  osc.connect(g).connect(ctx.destination);
+  osc.connect(g).connect(dest());
   osc.start(now);
   osc.stop(now + 0.15);
 }
@@ -125,7 +152,7 @@ export function playCombatMiss() {
   filter.frequency.setValueAtTime(2000, now);
   filter.frequency.exponentialRampToValueAtTime(500, now + 0.2);
   filter.Q.value = 2;
-  gainNode.connect(filter).connect(ctx.destination);
+  gainNode.connect(filter).connect(dest());
   node.start(now);
   node.stop(now + 0.2);
 }
@@ -143,13 +170,13 @@ export function playEnemyDeath() {
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.35, now);
   g.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-  osc.connect(g).connect(ctx.destination);
+  osc.connect(g).connect(dest());
   osc.start(now);
   osc.stop(now + 0.6);
 
   // Noise scatter
   const { node, gainNode } = noise(ctx, 0.3, 0.2);
-  gainNode.connect(ctx.destination);
+  gainNode.connect(dest());
   node.start(now);
   node.stop(now + 0.3);
 }
@@ -177,7 +204,7 @@ export function playMagicSpell() {
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(0.1, now + 0.1);
     g.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(dest());
     osc.start(now);
     osc.stop(now + 0.6);
   });
@@ -197,7 +224,7 @@ export function playTurnChange() {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(0.15, t + 0.02);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(dest());
     osc.start(t);
     osc.stop(t + 0.3);
   });
@@ -215,7 +242,7 @@ export function playPlayerJoin() {
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.1, now);
   g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-  osc.connect(g).connect(ctx.destination);
+  osc.connect(g).connect(dest());
   osc.start(now);
   osc.stop(now + 0.3);
 }
@@ -233,7 +260,7 @@ export function playEncounterStart() {
   g.gain.setValueAtTime(0, now);
   g.gain.linearRampToValueAtTime(0.2, now + 0.3);
   g.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-  osc.connect(g).connect(ctx.destination);
+  osc.connect(g).connect(dest());
   osc.start(now);
   osc.stop(now + 0.8);
 
@@ -246,7 +273,7 @@ export function playEncounterStart() {
     og.gain.setValueAtTime(0, now + 0.3);
     og.gain.linearRampToValueAtTime(0.1, now + 0.35);
     og.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-    o.connect(og).connect(ctx.destination);
+    o.connect(og).connect(dest());
     o.start(now + 0.3);
     o.stop(now + 0.8);
   });
@@ -267,7 +294,7 @@ export function playLevelUp() {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(0.18, t + 0.04);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(dest());
     osc.start(t);
     osc.stop(t + 0.5);
   });
@@ -287,7 +314,7 @@ export function playHealing() {
     g.gain.setValueAtTime(0, now + i * 0.08);
     g.gain.linearRampToValueAtTime(0.12, now + i * 0.08 + 0.05);
     g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.4);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(dest());
     osc.start(now + i * 0.08);
     osc.stop(now + i * 0.08 + 0.4);
   });
@@ -306,14 +333,14 @@ export function playLootDrop() {
     const t = now + i * 0.06;
     g.gain.setValueAtTime(0.06, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    osc.connect(g).connect(ctx.destination);
+    osc.connect(g).connect(dest());
     osc.start(t);
     osc.stop(t + 0.12);
   });
 }
 
 // Volume control — global mute state
-let muted = false;
+let muted = localStorage.getItem('adventure:muted') === 'true';
 
 export function isMuted(): boolean {
   return muted;
@@ -321,10 +348,11 @@ export function isMuted(): boolean {
 
 export function setMuted(m: boolean) {
   muted = m;
-  if (audioCtx) {
-    // Mute by suspending the context, unmute by resuming
-    if (m) audioCtx.suspend();
-    else audioCtx.resume();
+  localStorage.setItem('adventure:muted', String(m));
+  if (masterGain && audioCtx) {
+    // Mute by zeroing master gain, unmute by restoring volume
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.setValueAtTime(m ? 0 : volume, audioCtx.currentTime);
   }
 }
 
@@ -475,7 +503,7 @@ export function setAmbientMood(mood: AmbientMood) {
   ambientMasterGain = ctx.createGain();
   ambientMasterGain.gain.setValueAtTime(0, ctx.currentTime);
   ambientMasterGain.gain.linearRampToValueAtTime(1, ctx.currentTime + 2); // 2s fade in
-  ambientMasterGain.connect(ctx.destination);
+  ambientMasterGain.connect(dest());
   ambientLayers = buildMoodLayers(ctx, mood, ambientMasterGain);
 }
 

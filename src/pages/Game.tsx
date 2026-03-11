@@ -11,7 +11,7 @@ import LevelUpModal from '../components/game/LevelUpModal';
 import CharacterPicker from '../components/game/CharacterPicker';
 import { type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
-import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, setAmbientMood, getAmbientMood, type AmbientMood } from '../hooks/useSoundFX';
+import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, getVolume, setVolume, setAmbientMood, getAmbientMood, type AmbientMood } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
@@ -100,6 +100,8 @@ export default function Game() {
   const [adventureStarted] = [dmHistory.length > 0]; // auto-detect from history
   const [actionInput, setActionInput] = useState('');
   const [soundMuted, setSoundMuted] = useState(isMuted());
+  const [soundVolume, setSoundVolume] = useState(getVolume());
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop'>('narration');
@@ -884,10 +886,28 @@ export default function Game() {
     return <CharacterPicker characters={characters} room={room} onSelect={handleSelectCharacter} />;
   }
 
+  // Ambient mood → subtle visual tint overlay
+  const MOOD_TINTS: Record<AmbientMood, string> = {
+    none: '',
+    tavern: 'from-amber-900/5 via-transparent to-orange-900/5',
+    dungeon: 'from-slate-900/10 via-transparent to-indigo-950/8',
+    forest: 'from-emerald-950/6 via-transparent to-green-900/5',
+    combat: 'from-red-950/8 via-transparent to-red-900/6',
+    mystery: 'from-purple-950/8 via-transparent to-indigo-900/6',
+  };
+  const moodTint = MOOD_TINTS[currentAmbient];
+
   return (
-    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
+    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden relative">
+      {/* Ambient mood tint overlay */}
+      {moodTint && (
+        <div
+          className={`absolute inset-0 bg-gradient-to-br ${moodTint} pointer-events-none z-0 transition-opacity duration-1000`}
+          aria-hidden="true"
+        />
+      )}
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center shrink-0">
+      <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center shrink-0 relative z-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white">
             &larr; Lobby
@@ -905,26 +925,57 @@ export default function Game() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {/* Sound toggle */}
-          <button
-            onClick={() => {
-              toggleMute();
-              setSoundMuted(!soundMuted);
-            }}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-            title={soundMuted ? 'Unmute sounds' : 'Mute sounds'}
-          >
-            {soundMuted ? (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                <path d="M9.547 3.062A.75.75 0 0110 3.75v12.5a.75.75 0 01-1.264.546L5.203 13H3.75A.75.75 0 013 12.25v-4.5A.75.75 0 013.75 7h1.453l3.533-3.796a.75.75 0 01.811-.142zM13.78 7.22a.75.75 0 10-1.06 1.06L14.44 10l-1.72 1.72a.75.75 0 001.06 1.06L15.5 11.06l1.72 1.72a.75.75 0 101.06-1.06L16.56 10l1.72-1.72a.75.75 0 00-1.06-1.06L15.5 8.94l-1.72-1.72z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                <path d="M10 3.75a.75.75 0 00-1.264-.546L5.203 7H3.75A.75.75 0 003 7.75v4.5a.75.75 0 00.75.75h1.453l3.533 3.796A.75.75 0 0010 16.25V3.75zM15.95 5.05a.75.75 0 00-1.06 1.06 5.5 5.5 0 010 7.78.75.75 0 001.06 1.06 7 7 0 000-9.9z" />
-                <path d="M13.829 7.172a.75.75 0 00-1.06 1.06 2.5 2.5 0 010 3.536.75.75 0 001.06 1.06 4 4 0 000-5.656z" />
-              </svg>
+          {/* Sound controls — mute toggle + volume slider */}
+          <div className="relative flex items-center">
+            <button
+              onClick={() => {
+                toggleMute();
+                setSoundMuted(!soundMuted);
+              }}
+              onMouseEnter={() => setShowVolumeSlider(true)}
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              title={soundMuted ? 'Unmute sounds (M)' : 'Mute sounds (M)'}
+            >
+              {soundMuted ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path d="M9.547 3.062A.75.75 0 0110 3.75v12.5a.75.75 0 01-1.264.546L5.203 13H3.75A.75.75 0 013 12.25v-4.5A.75.75 0 013.75 7h1.453l3.533-3.796a.75.75 0 01.811-.142zM13.78 7.22a.75.75 0 10-1.06 1.06L14.44 10l-1.72 1.72a.75.75 0 001.06 1.06L15.5 11.06l1.72 1.72a.75.75 0 101.06-1.06L16.56 10l1.72-1.72a.75.75 0 00-1.06-1.06L15.5 8.94l-1.72-1.72z" />
+                </svg>
+              ) : soundVolume < 0.3 ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path d="M10 3.75a.75.75 0 00-1.264-.546L5.203 7H3.75A.75.75 0 003 7.75v4.5a.75.75 0 00.75.75h1.453l3.533 3.796A.75.75 0 0010 16.25V3.75z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path d="M10 3.75a.75.75 0 00-1.264-.546L5.203 7H3.75A.75.75 0 003 7.75v4.5a.75.75 0 00.75.75h1.453l3.533 3.796A.75.75 0 0010 16.25V3.75zM15.95 5.05a.75.75 0 00-1.06 1.06 5.5 5.5 0 010 7.78.75.75 0 001.06 1.06 7 7 0 000-9.9z" />
+                  <path d="M13.829 7.172a.75.75 0 00-1.06 1.06 2.5 2.5 0 010 3.536.75.75 0 001.06 1.06 4 4 0 000-5.656z" />
+                </svg>
+              )}
+            </button>
+            {showVolumeSlider && (
+              <div
+                className="absolute top-full right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg p-2 flex items-center gap-2 shadow-lg z-50"
+                onMouseLeave={() => setShowVolumeSlider(false)}
+              >
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={soundVolume}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setVolume(v);
+                    setSoundVolume(v);
+                    if (v > 0 && soundMuted) { toggleMute(); setSoundMuted(false); }
+                    if (v === 0 && !soundMuted) { toggleMute(); setSoundMuted(true); }
+                  }}
+                  className="w-20 h-1 accent-amber-500 cursor-pointer"
+                  title={`Volume: ${Math.round(soundVolume * 100)}%`}
+                />
+                <span className="text-[10px] text-slate-400 w-7 text-right">{Math.round(soundVolume * 100)}%</span>
+              </div>
             )}
-          </button>
+          </div>
           <button
             onClick={() => setShowHelpOverlay((s) => !s)}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors w-5 h-5 flex items-center justify-center rounded border border-slate-700 hover:border-slate-500"
@@ -956,7 +1007,7 @@ export default function Game() {
       </header>
 
       {/* Main area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative z-10">
         {/* DM Sidebar — collapsible left panel */}
         {canUseDMTools && showDMSidebar && (
           <DMSidebar
