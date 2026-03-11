@@ -17,6 +17,13 @@ interface KVNamespace {
   delete(key: string): Promise<void>;
 }
 
+interface R2Bucket {
+  put(key: string, value: ArrayBuffer | ReadableStream | string, options?: { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }): Promise<unknown>;
+  get(key: string): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string>; size: number } | null>;
+  delete(key: string): Promise<void>;
+  head(key: string): Promise<{ httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string>; size: number } | null>;
+}
+
 interface Env {
   LOBBY: DurableObjectNamespace;
   AI?: Ai;
@@ -24,6 +31,7 @@ interface Env {
   PORTRAITS?: KVNamespace;
   CHARACTERS?: KVNamespace;
   CAMPAIGNS?: KVNamespace;
+  MAP_IMAGES?: R2Bucket;
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
   JWT_SECRET?: string;
@@ -996,6 +1004,100 @@ app.delete('/api/characters/:charId', async (c) => {
     return c.json({ ok: true });
   } catch {
     return c.json({ error: 'Failed to delete character' }, 500);
+  }
+});
+
+// --- Map image upload/serve/delete (R2-backed) ---
+
+const MAX_MAP_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
+// POST /api/map/upload — upload a map image (base64 data URL in JSON body)
+app.post('/api/map/upload', async (c) => {
+  if (!c.env.MAP_IMAGES) {
+    return c.json({ error: 'Map image storage not available' }, 503);
+  }
+
+  const body = await c.req.json<{ image: string; roomId?: string }>();
+  const image = String(body.image || '');
+  if (!image || !image.startsWith('data:image/')) {
+    return c.json({ error: 'Invalid image data URL — must start with data:image/' }, 400);
+  }
+
+  // Parse content type and base64 data
+  const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
+  if (!match) {
+    return c.json({ error: 'Invalid base64 image data URL' }, 400);
+  }
+  const contentType = match[1];
+  if (!ALLOWED_IMAGE_TYPES.includes(contentType)) {
+    return c.json({ error: `Unsupported image type: ${contentType}` }, 400);
+  }
+
+  // Decode base64 to binary
+  const base64 = match[2];
+  const binaryStr = atob(base64);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+  if (bytes.byteLength > MAX_MAP_IMAGE_SIZE) {
+    return c.json({ error: `Image too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)}MB, max 10MB)` }, 400);
+  }
+
+  const imageId = crypto.randomUUID();
+  const roomId = body.roomId || 'unknown';
+
+  try {
+    await c.env.MAP_IMAGES.put(`map:${imageId}`, bytes.buffer, {
+      httpMetadata: { contentType },
+      customMetadata: { roomId, uploadedAt: new Date().toISOString() },
+    });
+    return c.json({ imageId, url: `/api/map/${imageId}` });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Upload failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// GET /api/map/:id — serve map image directly from R2
+app.get('/api/map/:id', async (c) => {
+  if (!c.env.MAP_IMAGES) {
+    return c.json({ error: 'Map image storage not available' }, 503);
+  }
+
+  const imageId = c.req.param('id');
+  try {
+    const obj = await c.env.MAP_IMAGES.get(`map:${imageId}`);
+    if (!obj) {
+      return c.json({ error: 'Map image not found' }, 404);
+    }
+    const contentType = obj.httpMetadata?.contentType || 'image/png';
+    return new Response(obj.body, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=86400', // cache 24h — images are immutable
+        'Content-Length': String(obj.size),
+      },
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to retrieve image';
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// DELETE /api/map/:id — delete a map image from R2
+app.delete('/api/map/:id', async (c) => {
+  if (!c.env.MAP_IMAGES) {
+    return c.json({ error: 'Map image storage not available' }, 503);
+  }
+
+  const imageId = c.req.param('id');
+  try {
+    await c.env.MAP_IMAGES.delete(`map:${imageId}`);
+    return c.json({ ok: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Delete failed';
+    return c.json({ error: msg }, 500);
   }
 });
 

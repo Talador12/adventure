@@ -30,6 +30,7 @@ export default function Game() {
     applyCondition, removeCondition, tickConditions, useClassAbility,
     applyASI, selectFeat, concentrationMessages,
     terrain, setTerrain, mapPositions, setMapPositions,
+    mapImageUrl, setMapImageUrl,
   } = useGame();
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -138,12 +139,13 @@ export default function Game() {
           turnIndex: inCombat ? units.findIndex((u) => u.isCurrentTurn) : 0,
           terrain,
           mapPositions,
+          mapImageUrl,
           quests,
         }),
       }).catch(() => {}); // server unavailable — localStorage is fallback
     }, 2000); // debounce 2s
     return () => clearTimeout(campaignSaveTimer.current);
-  }, [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted, inCombat, units, combatRound, terrain, mapPositions, quests]);
+  }, [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted, inCombat, units, combatRound, terrain, mapPositions, mapImageUrl, quests]);
 
   // Load campaign from server on mount — merge with localStorage (server wins for newer data)
   const campaignLoadedRef = useRef(false);
@@ -181,6 +183,10 @@ export default function Game() {
           }
           if (c.mapPositions && Array.isArray(c.mapPositions)) {
             setMapPositions(c.mapPositions as TokenPosition[]);
+          }
+          // Restore map background image
+          if (c.mapImageUrl && typeof c.mapImageUrl === 'string') {
+            setMapImageUrl(c.mapImageUrl as string);
           }
           // Restore quests
           if (c.quests && Array.isArray(c.quests)) {
@@ -1097,6 +1103,11 @@ export default function Game() {
               if (Array.isArray(eventData.quests)) setQuests(eventData.quests as Quest[]);
               break;
             }
+            case 'map_image': {
+              const url = eventData.mapImageUrl as string | null;
+              setMapImageUrl(url ?? null);
+              break;
+            }
           }
         } finally {
           isRemoteEventRef.current = false;
@@ -1116,6 +1127,7 @@ export default function Game() {
             turnIndex,
             terrain,
             mapPositions,
+            mapImageUrl,
             sceneName,
             quests,
             dmHistory,
@@ -1136,6 +1148,8 @@ export default function Game() {
           if (typeof stateData.turnIndex === 'number') setTurnIndex(stateData.turnIndex);
           if (Array.isArray(stateData.terrain)) setTerrain(stateData.terrain as TerrainType[][]);
           if (Array.isArray(stateData.mapPositions)) setMapPositions(stateData.mapPositions as TokenPosition[]);
+          if (typeof stateData.mapImageUrl === 'string') setMapImageUrl(stateData.mapImageUrl);
+          else if (stateData.mapImageUrl === null) setMapImageUrl(null);
           if (typeof stateData.sceneName === 'string') setSceneName(stateData.sceneName);
           if (Array.isArray(stateData.quests)) setQuests(stateData.quests as Quest[]);
           if (Array.isArray(stateData.dmHistory)) setDmHistory(stateData.dmHistory as string[]);
@@ -2408,6 +2422,7 @@ export default function Game() {
                   <BattleMap
                     onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                     onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
+                    onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}
                     onOpportunityAttack={(attackerName, targetName, damage, hit) => {
                       const msg = hit
                         ? `Opportunity Attack! ${attackerName} strikes ${targetName} for ${damage} damage as they flee!`

@@ -1,7 +1,7 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
 import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
-import { useGame, type Unit, type ConditionType, CONDITION_EFFECTS, rollD20WithProne, effectiveAC } from '../../contexts/GameContext';
+import { useGame, type Unit, type ConditionType, CONDITION_EFFECTS, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 
 const CELL_SIZE = 48;
@@ -351,13 +351,14 @@ interface BattleMapProps {
   onTokenMove?: (unitId: string, col: number, row: number) => void;
   onTerrainChange?: (terrain: TerrainType[][]) => void;
   onOpportunityAttack?: (attackerName: string, targetName: string, damage: number, hit: boolean) => void;
+  onMapImageChange?: (url: string | null) => void;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
-    terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions } = useGame();
+    terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions, mapImageUrl } = useGame();
 
   const [gridCols] = useState(DEFAULT_COLS);
   const [gridRows] = useState(DEFAULT_ROWS);
@@ -393,6 +394,27 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  // Map image upload
+  const mapFileInputRef = useRef<HTMLInputElement>(null);
+  const [mapUploading, setMapUploading] = useState(false);
+
+  // Background map image (loaded from R2 URL)
+  const bgImageRef = useRef<HTMLImageElement | null>(null);
+  const bgImageUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (mapImageUrl && mapImageUrl !== bgImageUrlRef.current) {
+      bgImageUrlRef.current = mapImageUrl;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { bgImageRef.current = img; };
+      img.onerror = () => { bgImageRef.current = null; };
+      img.src = mapImageUrl;
+    } else if (!mapImageUrl) {
+      bgImageRef.current = null;
+      bgImageUrlRef.current = null;
+    }
+  }, [mapImageUrl]);
 
   // Explored cells (persist what players have seen — stays revealed even after moving away)
   const [explored, setExplored] = useState<boolean[][]>(() =>
@@ -447,6 +469,42 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     });
   }, [visibility]);
 
+  // --- Map image upload handler ---
+  const { setMapImageUrl } = useGame();
+  const handleMapUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 10 * 1024 * 1024) { alert('Image too large (max 10MB)'); return; }
+    setMapUploading(true);
+    try {
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const resp = await fetch('/api/map/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = await resp.json() as { url?: string; error?: string };
+      if (data.url) {
+        setMapImageUrl(data.url);
+        onMapImageChange?.(data.url);
+      } else {
+        alert(data.error || 'Upload failed');
+      }
+    } catch { alert('Map image upload failed'); }
+    finally { setMapUploading(false); }
+  }, [setMapImageUrl, onMapImageChange]);
+
+  const handleClearMapImage = useCallback(() => {
+    setMapImageUrl(null);
+    bgImageRef.current = null;
+    bgImageUrlRef.current = null;
+    onMapImageChange?.(null);
+  }, [setMapImageUrl, onMapImageChange]);
+
   // --- Drawing ---
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -463,14 +521,27 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, w, h);
 
-    // Draw terrain
+    // Draw background map image (if uploaded by DM) — covers entire grid area
+    const hasBgImage = bgImageRef.current?.complete && bgImageRef.current.naturalWidth > 0;
+    if (hasBgImage) {
+      ctx.drawImage(bgImageRef.current!, 0, 0, w, h);
+    }
+
+    // Draw terrain — when bg image is present, floor cells are transparent (image shows through)
     for (let r = 0; r < gridRows; r++) {
       for (let c = 0; c < gridCols; c++) {
         const isVisible = visibility[r]?.[c] ?? false;
         const wasExplored = explored[r]?.[c] ?? false;
 
         if (!dmMode && !isVisible && !wasExplored) continue; // completely unknown
-        drawTerrainCell(ctx, c, r, terrain[r][c], CELL_SIZE);
+
+        const cellType = terrain[r][c];
+        // With bg image: skip floor/void draws (show image), still draw special terrain on top
+        if (hasBgImage && (cellType === 'floor' || cellType === 'void')) {
+          // just skip — the background image is already there
+        } else {
+          drawTerrainCell(ctx, c, r, cellType, CELL_SIZE);
+        }
 
         // Dim explored but not currently visible cells
         if (!dmMode && !isVisible && wasExplored) {
@@ -644,7 +715,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl]);
 
   useEffect(() => { draw(); }, [draw]);
 
@@ -1009,6 +1080,32 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             ))}
             {traps.filter((t) => !t.triggered).length > 0 && (
               <span className="text-[9px] text-red-400/60 font-mono">{traps.filter((t) => !t.triggered).length} set</span>
+            )}
+            <div className="w-px h-4 bg-slate-700 mx-1" />
+            <span className="text-[9px] text-emerald-500/70 uppercase tracking-wider font-semibold">Map</span>
+            <input
+              ref={mapFileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMapUpload(f); e.target.value = ''; }}
+            />
+            <button
+              onClick={() => mapFileInputRef.current?.click()}
+              disabled={mapUploading}
+              className="text-[10px] px-2 py-1 rounded bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 font-semibold transition-all disabled:opacity-50"
+              title="Upload a battle map background image (PNG/JPG/WebP, max 10MB)"
+            >
+              {mapUploading ? 'Uploading...' : 'Upload'}
+            </button>
+            {mapImageUrl && (
+              <button
+                onClick={handleClearMapImage}
+                className="text-[10px] px-2 py-1 rounded bg-slate-800/60 hover:bg-red-900/40 border border-slate-600/50 text-slate-400 hover:text-red-300 font-semibold transition-all"
+                title="Remove map background image"
+              >
+                Clear
+              </button>
             )}
           </>
         )}

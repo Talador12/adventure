@@ -176,6 +176,16 @@ secrets-prod: makeinfo ## [Auth] Promote secrets to production (gated)
 	$(WRANGLER) secret put DISCORD_CLIENT_ID
 	$(WRANGLER) secret put DISCORD_CLIENT_SECRET
 
+r2-dev: makeinfo ## [Storage] Create R2 bucket for development
+	$(WRANGLER) r2 bucket create adventure-maps-dev
+
+r2-staging: makeinfo ## [Storage] Create R2 bucket for staging
+	$(WRANGLER) r2 bucket create adventure-maps-staging
+
+r2-prod: makeinfo ## [Storage] Create R2 bucket for production (gated)
+	$(require_production_release)
+	$(WRANGLER) r2 bucket create adventure-maps-prod
+
 ################################################################################
 #                          Monitoring Commands                                 #
 ################################################################################

@@ -805,6 +805,8 @@ interface GameContextValue {
   setTerrain: (t: TerrainType[][] | ((prev: TerrainType[][]) => TerrainType[][])) => void;
   mapPositions: TokenPosition[];
   setMapPositions: (p: TokenPosition[] | ((prev: TokenPosition[]) => TokenPosition[])) => void;
+  mapImageUrl: string | null;
+  setMapImageUrl: (url: string | null) => void;
 
   // Combat helpers (return updated units array for multiplayer sync)
   concentrationMessages: React.MutableRefObject<string[]>;
@@ -860,6 +862,8 @@ const GameContext = createContext<GameContextValue>({
   setTerrain: () => {},
   mapPositions: [],
   setMapPositions: () => {},
+  mapImageUrl: null,
+  setMapImageUrl: () => {},
   concentrationMessages: { current: [] },
   damageUnit: () => [],
   healUnit: () => [],
@@ -895,6 +899,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     Array.from({ length: DEFAULT_ROWS }, () => Array<TerrainType>(DEFAULT_COLS).fill('void'))
   );
   const [mapPositions, setMapPositions] = useState<TokenPosition[]>([]);
+  const [mapImageUrl, setMapImageUrl] = useState<string | null>(null); // R2-backed DM map background
 
   // Fetch Discord identity on mount — populate currentPlayer with real user data
   useEffect(() => {
@@ -1714,6 +1719,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setTerrain,
         mapPositions,
         setMapPositions,
+        mapImageUrl,
+        setMapImageUrl,
         concentrationMessages: concentrationBreakMessages,
         damageUnit,
         healUnit,
