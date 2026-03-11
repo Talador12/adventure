@@ -737,10 +737,10 @@ interface GameContextValue {
   applyASI: (charId: string, stat1: StatName, stat2?: StatName) => { success: boolean; message: string };
   selectFeat: (charId: string, featId: string) => { success: boolean; message: string };
 
-  // Conditions
-  applyCondition: (unitId: string, condition: ActiveCondition) => void;
-  removeCondition: (unitId: string, conditionType: ConditionType) => void;
-  tickConditions: (unitId: string) => string[]; // returns messages for expired conditions
+  // Conditions (all return updated units array for multiplayer sync)
+  applyCondition: (unitId: string, condition: ActiveCondition) => Unit[];
+  removeCondition: (unitId: string, conditionType: ConditionType) => Unit[];
+  tickConditions: (unitId: string) => { messages: string[]; units: Unit[] };
 
   // Dice roll log (most recent first)
   rolls: DiceRoll[];
@@ -765,13 +765,13 @@ interface GameContextValue {
   mapPositions: TokenPosition[];
   setMapPositions: (p: TokenPosition[] | ((prev: TokenPosition[]) => TokenPosition[])) => void;
 
-  // Combat helpers
+  // Combat helpers (return updated units array for multiplayer sync)
   concentrationMessages: React.MutableRefObject<string[]>;
-  damageUnit: (unitId: string, damage: number) => void;
-  healUnit: (unitId: string, amount: number) => void;
-  removeUnit: (unitId: string) => void;
-  rollInitiative: () => void; // roll initiative for all units, sort, start combat
-  nextTurn: () => void; // advance to next unit in initiative order
+  damageUnit: (unitId: string, damage: number) => Unit[];
+  healUnit: (unitId: string, amount: number) => Unit[];
+  removeUnit: (unitId: string) => Unit[];
+  rollInitiative: () => Unit[];
+  nextTurn: () => { units: Unit[]; turnIndex: number; newRound: boolean };
 }
 
 const DEFAULT_PLAYER: Player = { id: 'local', username: 'You', controllerType: 'human' };
@@ -801,9 +801,9 @@ const GameContext = createContext<GameContextValue>({
   useClassAbility: () => ({ success: false, message: '' }),
   applyASI: () => ({ success: false, message: '' }),
   selectFeat: () => ({ success: false, message: '' }),
-  applyCondition: () => {},
-  removeCondition: () => {},
-  tickConditions: () => [],
+  applyCondition: () => [],
+  removeCondition: () => [],
+  tickConditions: () => ({ messages: [], units: [] }),
   rolls: [],
   addRoll: () => ({}) as DiceRoll,
   clearRolls: () => {},
@@ -820,11 +820,11 @@ const GameContext = createContext<GameContextValue>({
   mapPositions: [],
   setMapPositions: () => {},
   concentrationMessages: { current: [] },
-  damageUnit: () => {},
-  healUnit: () => {},
-  removeUnit: () => {},
-  rollInitiative: () => {},
-  nextTurn: () => {},
+  damageUnit: () => [],
+  healUnit: () => [],
+  removeUnit: () => [],
+  rollInitiative: () => [],
+  nextTurn: () => ({ units: [], turnIndex: 0, newRound: false }),
 });
 
 export function useGame() {
@@ -1127,8 +1127,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const clearRolls = useCallback(() => setRolls([]), []);
 
-  // Combat: apply damage to a unit (clamp to 0) + concentration check
-  const damageUnit = useCallback((unitId: string, damage: number) => {
+  // Combat: apply damage to a unit (clamp to 0) + concentration check. Returns updated units for sync.
+  const damageUnit = useCallback((unitId: string, damage: number): Unit[] => {
+    let result: Unit[] = [];
     setUnits((prev) => {
       const updated = prev.map((u) =>
         u.id === unitId ? { ...u, hp: Math.max(0, u.hp - damage) } : u
@@ -1155,69 +1156,92 @@ export function GameProvider({ children }: { children: ReactNode }) {
           concentrationBreakMessages.current.push(
             `${casterName} fails concentration save (${saveRoll}+${conMod}=${totalSave} vs DC ${dc})! ${damagedUnit.concentratingOn} ends.`
           );
-          return updated.map((u) => {
+          result = updated.map((u) => {
             if (u.id === unitId) return { ...u, concentratingOn: undefined };
             // Remove conditions applied by this caster
             return { ...u, conditions: (u.conditions || []).filter((c) => c.source !== casterName) };
           });
+          return result;
         } else {
           concentrationBreakMessages.current.push(
             `${damagedUnit.name} maintains concentration (${saveRoll}+${conMod}=${totalSave} vs DC ${dc}).`
           );
         }
       }
+      result = updated;
       return updated;
     });
+    return result;
   }, [characters]);
 
-  // Combat: heal a unit (clamp to maxHp)
-  const healUnit = useCallback((unitId: string, amount: number) => {
-    setUnits((prev) => prev.map((u) =>
-      u.id === unitId ? { ...u, hp: Math.min(u.maxHp, u.hp + amount) } : u
-    ));
+  // Combat: heal a unit (clamp to maxHp). Returns updated units for sync.
+  const healUnit = useCallback((unitId: string, amount: number): Unit[] => {
+    let result: Unit[] = [];
+    setUnits((prev) => {
+      result = prev.map((u) =>
+        u.id === unitId ? { ...u, hp: Math.min(u.maxHp, u.hp + amount) } : u
+      );
+      return result;
+    });
+    return result;
   }, []);
 
-  // Conditions: apply a condition to a unit
-  const applyCondition = useCallback((unitId: string, condition: ActiveCondition) => {
-    setUnits((prev) => prev.map((u) => {
-      if (u.id !== unitId) return u;
-      const conditions = (u.conditions || []).filter((c) => c.type !== condition.type); // replace existing
-      return { ...u, conditions: [...conditions, condition] };
-    }));
+  // Conditions: apply a condition to a unit. Returns updated units for sync.
+  const applyCondition = useCallback((unitId: string, condition: ActiveCondition): Unit[] => {
+    let result: Unit[] = [];
+    setUnits((prev) => {
+      result = prev.map((u) => {
+        if (u.id !== unitId) return u;
+        const conditions = (u.conditions || []).filter((c) => c.type !== condition.type); // replace existing
+        return { ...u, conditions: [...conditions, condition] };
+      });
+      return result;
+    });
+    return result;
   }, []);
 
-  // Conditions: remove a specific condition from a unit
-  const removeCondition = useCallback((unitId: string, conditionType: ConditionType) => {
-    setUnits((prev) => prev.map((u) => {
-      if (u.id !== unitId) return u;
-      return { ...u, conditions: (u.conditions || []).filter((c) => c.type !== conditionType) };
-    }));
+  // Conditions: remove a specific condition from a unit. Returns updated units for sync.
+  const removeCondition = useCallback((unitId: string, conditionType: ConditionType): Unit[] => {
+    let result: Unit[] = [];
+    setUnits((prev) => {
+      result = prev.map((u) => {
+        if (u.id !== unitId) return u;
+        return { ...u, conditions: (u.conditions || []).filter((c) => c.type !== conditionType) };
+      });
+      return result;
+    });
+    return result;
   }, []);
 
-  // Conditions: tick durations at start of turn, return messages for expired/triggered conditions
-  const tickConditions = useCallback((unitId: string): string[] => {
+  // Conditions: tick durations at start of turn. Returns messages + updated units for sync.
+  const tickConditions = useCallback((unitId: string): { messages: string[]; units: Unit[] } => {
     const messages: string[] = [];
-    setUnits((prev) => prev.map((u) => {
-      if (u.id !== unitId || !u.conditions?.length) return u;
-      const remaining: ActiveCondition[] = [];
-      for (const cond of u.conditions) {
-        // Burning deals damage at start of turn
-        if (cond.type === 'burning') {
-          const burnDmg = Math.floor(Math.random() * 6) + 1;
-          messages.push(`${u.name} takes ${burnDmg} fire damage from burning!`);
-          u = { ...u, hp: Math.max(0, u.hp - burnDmg) };
+    let result: Unit[] = [];
+    setUnits((prev) => {
+      result = prev.map((u) => {
+        if (u.id !== unitId || !u.conditions?.length) return u;
+        const remaining: ActiveCondition[] = [];
+        let mutated = u;
+        for (const cond of u.conditions) {
+          // Burning deals damage at start of turn
+          if (cond.type === 'burning') {
+            const burnDmg = Math.floor(Math.random() * 6) + 1;
+            messages.push(`${mutated.name} takes ${burnDmg} fire damage from burning!`);
+            mutated = { ...mutated, hp: Math.max(0, mutated.hp - burnDmg) };
+          }
+          if (cond.duration === -1) {
+            remaining.push(cond); // permanent until cured
+          } else if (cond.duration > 1) {
+            remaining.push({ ...cond, duration: cond.duration - 1 });
+          } else {
+            messages.push(`${mutated.name} is no longer ${cond.type}.`);
+          }
         }
-        if (cond.duration === -1) {
-          remaining.push(cond); // permanent until cured
-        } else if (cond.duration > 1) {
-          remaining.push({ ...cond, duration: cond.duration - 1 });
-        } else {
-          messages.push(`${u.name} is no longer ${cond.type}.`);
-        }
-      }
-      return { ...u, conditions: remaining };
-    }));
-    return messages;
+        return { ...mutated, conditions: remaining };
+      });
+      return result;
+    });
+    return { messages, units: result };
   }, []);
 
   // Spells: cast a spell (check slots, apply damage/healing, consume slot)
@@ -1508,13 +1532,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return { success: true, message: `${char.name} gains the ${feat.name} feat!` };
   }, [characters]);
 
-  // Combat: remove a unit (dead enemy, etc)
-  const removeUnit = useCallback((unitId: string) => {
-    setUnits((prev) => prev.filter((u) => u.id !== unitId));
+  // Combat: remove a unit (dead enemy, etc). Returns updated units for sync.
+  const removeUnit = useCallback((unitId: string): Unit[] => {
+    let result: Unit[] = [];
+    setUnits((prev) => {
+      result = prev.filter((u) => u.id !== unitId);
+      return result;
+    });
+    return result;
   }, []);
 
-  // Roll initiative for all units, sort by result (descending), mark first as current turn
-  const rollInitiative = useCallback(() => {
+  // Roll initiative for all units, sort by result (descending), mark first as current turn.
+  // Returns sorted units for multiplayer sync.
+  const rollInitiative = useCallback((): Unit[] => {
+    let result: Unit[] = [];
     setUnits((prev) => {
       const withInitiative = prev.map((u) => {
         // DEX mod from character (players) or unit stat (enemies)
@@ -1548,18 +1579,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (withInitiative.length > 0) {
         withInitiative[0].isCurrentTurn = true;
       }
+      result = withInitiative;
       return withInitiative;
     });
     setInCombat(true);
     setCombatRound(1);
     setTurnIndex(0);
+    return result;
   }, [characters]);
 
-  // Advance to next turn in initiative order
-  const nextTurn = useCallback(() => {
+  // Advance to next turn in initiative order. Returns units + turn info for sync.
+  const nextTurn = useCallback((): { units: Unit[]; turnIndex: number; newRound: boolean } => {
+    let turnResult = { units: [] as Unit[], turnIndex: 0, newRound: false };
     setUnits((prev) => {
       const alive = prev.filter((u) => u.hp > 0);
-      if (alive.length === 0) return prev;
+      if (alive.length === 0) { turnResult = { units: prev, turnIndex: 0, newRound: false }; return prev; }
 
       // Find current turn unit
       const currentIdx = prev.findIndex((u) => u.isCurrentTurn);
@@ -1581,13 +1615,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
       cleared[nextIdx].isCurrentTurn = true;
       cleared[nextIdx].movementUsed = 0; // reset movement for new turn
 
-      // Advance round if we wrapped
-      if (wrapped || nextIdx <= currentIdx) {
+      const isNewRound = wrapped || nextIdx <= currentIdx;
+      if (isNewRound) {
         setCombatRound((r) => r + 1);
       }
       setTurnIndex(nextIdx);
+      turnResult = { units: cleared, turnIndex: nextIdx, newRound: isNewRound };
       return cleared;
     });
+    return turnResult;
   }, []);
 
   return (

@@ -221,6 +221,63 @@ export class Lobby {
         break;
       }
 
+      case 'game_event': {
+        // Relay game state events to all OTHER clients (sender already applied locally).
+        // The DO is a dumb pipe — it doesn't parse event subtypes.
+        const geSession = this.sessions.get(server);
+        if (!geSession) return;
+        const gePayload = JSON.stringify({
+          type: 'game_event',
+          playerId: geSession.id,
+          event: data.event,
+          data: data.data,
+          timestamp: Date.now(),
+        });
+        for (const [ws] of this.sessions) {
+          if (ws === server) continue;
+          try { ws.send(gePayload); } catch { /* dead socket */ }
+        }
+        break;
+      }
+
+      case 'state_request': {
+        // A client (usually a late joiner) wants the current game state.
+        // Relay to all OTHER clients — whichever has state will respond with state_response.
+        const srSession = this.sessions.get(server);
+        if (!srSession) return;
+        const srPayload = JSON.stringify({
+          type: 'state_request',
+          playerId: srSession.id,
+          timestamp: Date.now(),
+        });
+        for (const [ws] of this.sessions) {
+          if (ws === server) continue;
+          try { ws.send(srPayload); } catch { /* dead socket */ }
+        }
+        break;
+      }
+
+      case 'state_response': {
+        // A client responding to a state_request. Route to the requester only.
+        const respSession = this.sessions.get(server);
+        if (!respSession) return;
+        const targetPlayerId = data.targetPlayerId as string;
+        if (!targetPlayerId) return;
+        const responsePayload = JSON.stringify({
+          type: 'state_response',
+          playerId: respSession.id,
+          data: data.data,
+          timestamp: Date.now(),
+        });
+        for (const [ws, session] of this.sessions) {
+          if (session.id === targetPlayerId) {
+            try { ws.send(responsePayload); } catch { /* dead socket */ }
+            break;
+          }
+        }
+        break;
+      }
+
       case 'ping': {
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
         break;

@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 21: Dead code cleanup + AI timeout hardening. Remove unused code, wrap all AI calls (backend + frontend) with timeouts to prevent hanging.
+Round 22: Multiplayer session sync — Phases 1-6 complete. Full game state now broadcasts over WebSocket: combat state, token movement, terrain, encounters, character stats, scene names, and quests. Late-join state recovery via request/response protocol.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -53,7 +53,7 @@ Round 21: Dead code cleanup + AI timeout hardening. Remove unused code, wrap all
 - Makefile targets: `make test` (all), `make test-player`, `make test-worker`, `make test-multiplayer`, `make test-ai`, `make test-ai-live`, `make test-watch`
 
 ### Multiplayer session sync — full game state over WebSocket
-- **Status:** Planned (audit complete, implementation planned, ready to begin)
+- **Status:** Done (Phases 1-6 complete, Phases 7-8 deferred)
 
 #### What's already synced (working)
 | Feature | Mechanism | Quality |
@@ -150,39 +150,23 @@ Round 21: Dead code cleanup + AI timeout hardening. Remove unused code, wrap all
 - The Lobby DO gets a single `game_event` passthrough relay (exclude sender, like `draw`)
 - Two event granularity levels: `game_sync` (full combat state snapshot) for correctness, `token_move` (single position) for smooth drag UX
 
-**Phase 1: Lobby DO expansion**
-Add `game_event` case to lobby.ts — relay to all OTHER clients (exclude sender). The DO doesn't need to understand game state; it's a dumb pipe. Single case handles all sub-events.
+**Phase 1: Lobby DO expansion — DONE**
+Added `game_event` relay (exclude sender), `state_request` relay, `state_response` targeted routing to `lobby.ts`. DO is a dumb pipe.
 
-**Phase 2: GameContext return values**
-Modify `rollInitiative`, `nextTurn`, `damageUnit`, `healUnit` to return their results via a closure variable captured inside the `setUnits` functional updater. The updater runs synchronously within `setUnits`, so the result is available immediately after the call returns.
+**Phase 2: GameContext return values — DONE**
+7 functions return computed results via closure capture: `damageUnit`, `healUnit`, `removeUnit`, `applyCondition`, `removeCondition`, `rollInitiative`, `nextTurn`. `tickConditions` returns `{ messages, units }`.
 
-**Phase 3: Game.tsx sync infrastructure**
-- `broadcastGameEvent(event, data)` helper using `sendRef`
-- `isRemoteEventRef` flag to prevent echo loops
-- `handleGameEvent(event, data)` receiver in `handleWsMessage`
-- Ref-based state snapshots (`unitsRef`, `terrainRef`, etc.) for reading latest state in timeouts
+**Phase 3: Game.tsx sync infrastructure — DONE**
+`isRemoteEventRef`, `broadcastGameEvent`, `broadcastCombatSync`, `broadcastCombatSyncLatest` (ref-based delayed), `unitsRef`/`combatRoundRef`/`turnIndexRef`/`inCombatRef`, full `game_event` handler in `handleWsMessage`, `state_request`/`state_response` handlers, late-join `state_request` on `welcome`.
 
-**Phase 4: Combat state sync**
-Wire broadcasts at all mutation sites:
-- `encounter_spawn` — after `handleGenerateEncounter` (line 776): full enemies + terrain + mapPositions
-- `initiative_rolled` — after `rollInitiative` (line 1216): full sorted units + combatRound + turnIndex
-- `turn_advance` — after all `nextTurn` calls (lines 452, 540, 558, 663, 1230): updated units
-- `unit_damage` — after `damageUnit` calls (lines 585, 594, 633, 1311): affected unit state
-- `combat_end` — after End Combat (line 1534): cleaned units array
-- `spell_cast` / `ability_use` — after `castSpell` (1394) and `useClassAbility` (1447): affected units
-- `condition_apply` — after `applyCondition` (597, 1481): affected unit
+**Phase 4: Combat state sync — DONE**
+All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack, Cast Spell, Class Ability, Dodge, Dash, encounter spawn, End Combat — all wired with broadcast.
 
-**Phase 5: Map state sync**
-- Add `onTokenMove` and `onTerrainChange` callback props to BattleMap (currently takes zero props)
-- `token_move` event — after drag-drop in BattleMap (line 814): single `{unitId, col, row}`
-- `terrain_update` event — after paint/door toggle: full terrain grid
-- `map_positions` event — after enemy AI movement (line 501): full positions array
+**Phase 5: Map state sync — DONE**
+`BattleMapProps` with `onTokenMove`/`onTerrainChange` callbacks. Token drag-drop, terrain paint, regenerate wired. Enemy AI movement broadcasts `token_move`.
 
-**Phase 6: Character + story sync**
-- `character_visible` — broadcast HP, maxHp, AC, level, conditions, class, name after updateCharacter changes
-- `scene_sync` — broadcast sceneName when changed
-- `quest_sync` — broadcast quests array on add/complete/delete
-- `dm_history_sync` — ensure dmHistory array is consistent across clients (text already broadcasts but array rebuild differs)
+**Phase 6: Character + story sync — DONE**
+`useEffect` watches `selectedCharacter` and broadcasts `character_update` (HP, AC, conditions, gold, level, class, name) on change with JSON dedup. Scene name input broadcasts `scene_sync`. All 5 quest mutation sites broadcast `quest_sync`.
 
 **Phase 7: DoodlePad improvements**
 - Late-join canvas replay: store stroke history in Lobby DO memory, send to new joiners on `welcome`
@@ -492,8 +476,9 @@ Wire broadcasts at all mutation sites:
 
 ## Backlog
 
-### High priority (next after multiplayer sync)
-- Multiplayer session sync — Phases 1-8 (see plan above)
+### High priority (next)
+- Multiplayer session sync — Phases 7-8 (DoodlePad improvements, session robustness — deferred)
+- Map image persistence — R2-backed DM map uploads
 - Opportunity Attacks — melee enemies/players get reaction attack when a unit leaves their threat range
 - Condition system fixes — `prone` should use advantage/disadvantage (not flat -2), `blessed` overloaded for 3 mechanics (Bless spell, Dodge action, Phase Shift), AC modifiers from `CONDITION_EFFECTS` defined but never applied in attack calculations
 
@@ -518,15 +503,15 @@ Wire broadcasts at all mutation sites:
 
 ## Known Technical Debt
 
-- `damageUnit` has randomness in concentration saves (d20 roll) — broadcasting action+replaying will diverge between clients. Fix: broadcast the resolved result (new HP + concentration status) rather than the action.
-- `rollInitiative` has randomness (d20 per unit) — must broadcast sorted result, not re-roll on each client.
-- `tickConditions` has randomness (1d6 burning damage) — same treatment: broadcast result.
-- BattleMap takes zero props and pulls everything from `useGame()` context — need to add callback props (`onTokenMove`, `onTerrainChange`) or wrap context setters to intercept for broadcasting.
-- React `setUnits` is async (batched) — can't read updated state immediately after calling mutation functions. Workaround: capture result via closure variable inside the functional updater (updater runs synchronously within `setUnits`).
-- `useWebSocket` assigns new UUID on every reconnect — brief "left then joined" flash for other players. No session resume protocol.
-- Lobby DO uses no persistent storage — all state lost on eviction/hibernation. Strokes, player list, etc. are ephemeral.
-- No auth on DM-only actions — any connected player can send `dm_narrate`, `dm_npc`, `dm_action`, terrain edits.
-- `send()` silently drops messages when socket not OPEN — no outbound queue or retry.
+- `damageUnit` has randomness in concentration saves (d20 roll) — RESOLVED: we broadcast the resolved result (full unit state via `game_sync`) rather than replaying the action.
+- `rollInitiative` has randomness (d20 per unit) — RESOLVED: broadcasts sorted result array.
+- `tickConditions` has randomness (1d6 burning damage) — RESOLVED: broadcasts result state.
+- BattleMap takes zero props — RESOLVED: added `BattleMapProps` with `onTokenMove`/`onTerrainChange` callbacks.
+- React `setUnits` is async (batched) — RESOLVED: closure capture + ref-based delayed broadcasts.
+- `useWebSocket` assigns new UUID on every reconnect — brief "left then joined" flash for other players. No session resume protocol. (Phase 8)
+- Lobby DO uses no persistent storage — all state lost on eviction/hibernation. Strokes, player list, etc. are ephemeral. (Phase 8)
+- No auth on DM-only actions — any connected player can send `dm_narrate`, `dm_npc`, `dm_action`, terrain edits. (Phase 8)
+- `send()` silently drops messages when socket not OPEN — no outbound queue or retry. (Phase 8)
 
 ## Completed
 
@@ -573,3 +558,4 @@ Wire broadcasts at all mutation sites:
 - Dice rolls in chat: local rolls appear in chat history even offline, CharacterName[PlayerName] format, crit/fumble gradient styling with glow effects, fun default names
 - Dead code cleanup: removed `buildMiniPortraitDataUrl` from portrait.ts, empty door-closing stub from BattleMap.tsx, unused `originalDestGetter` from useSoundFX.ts
 - AI timeout hardening: backend `aiRunWithTimeout` wrapper (25s text / 45s image) for all 10 `c.env.AI.run()` calls in _worker.ts; frontend `fetchWithTimeout` wired into all 10 AI fetch calls in CharacterCreate.tsx (7 calls) and Game.tsx (3 calls, 35s text / 45s encounter)
+- Multiplayer session sync (Phases 1-6): Result-broadcasting with suppression flag architecture. Lobby DO relays `game_event`/`state_request`/`state_response`. GameContext functions return computed results via closure capture. Game.tsx sync infrastructure: `broadcastGameEvent`, `broadcastCombatSync`, ref-based delayed broadcasts. 10 event types: `game_sync`, `encounter_spawn`, `token_move`, `terrain_update`, `map_positions`, `character_update`, `scene_sync`, `quest_sync`, `state_request`, `state_response`. Late-join recovery via state request/response. All combat actions, enemy AI, map interactions, character stats, scenes, and quests now sync across players.

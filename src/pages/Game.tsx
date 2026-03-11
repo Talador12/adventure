@@ -210,6 +210,65 @@ export default function Game() {
   // Ref for WebSocket send — avoids circular deps between callbacks and useWebSocket
   const sendRef = useRef<(msg: WSMessage) => void>(() => {});
 
+  // --- Multiplayer sync infrastructure ---
+  // When true, we're applying a remote game event — suppress rebroadcast
+  const isRemoteEventRef = useRef(false);
+
+  // Broadcast a game state event to all other players via WebSocket
+  const broadcastGameEvent = useCallback((event: string, data: Record<string, unknown>) => {
+    if (isRemoteEventRef.current) return; // don't echo remote events back
+    sendRef.current({ type: 'game_event', event, data });
+  }, []);
+
+  // Broadcast full combat state snapshot — used after most mutations (with explicit state)
+  const broadcastCombatSync = useCallback((syncUnits: Unit[], syncInCombat?: boolean, syncRound?: number, syncTurnIdx?: number) => {
+    broadcastGameEvent('game_sync', {
+      units: syncUnits,
+      inCombat: syncInCombat ?? inCombat,
+      combatRound: syncRound ?? combatRound,
+      turnIndex: syncTurnIdx ?? turnIndex,
+    });
+  }, [broadcastGameEvent, inCombat, combatRound, turnIndex]);
+
+  // Refs that always track latest state — for delayed broadcasts after React batches
+  const unitsRef = useRef(units);
+  unitsRef.current = units;
+  const combatRoundRef = useRef(combatRound);
+  combatRoundRef.current = combatRound;
+  const turnIndexRef = useRef(turnIndex);
+  turnIndexRef.current = turnIndex;
+  const inCombatRef = useRef(inCombat);
+  inCombatRef.current = inCombat;
+
+  // Delayed broadcast — reads from refs after React processes state batches.
+  // Use this when you can't easily capture return values (e.g. player UI actions).
+  const broadcastCombatSyncLatest = useCallback(() => {
+    broadcastGameEvent('game_sync', {
+      units: unitsRef.current,
+      inCombat: inCombatRef.current,
+      combatRound: combatRoundRef.current,
+      turnIndex: turnIndexRef.current,
+    });
+  }, [broadcastGameEvent]);
+
+  // Broadcast visible character stats whenever selected character changes
+  // (HP, condition, death saves, gold, level, class, name) — syncs party health to other players
+  const prevCharJsonRef = useRef('');
+  useEffect(() => {
+    if (!selectedCharacter || isRemoteEventRef.current) return;
+    const visible = {
+      id: selectedCharacter.id, hp: selectedCharacter.hp, maxHp: selectedCharacter.maxHp,
+      ac: selectedCharacter.ac, level: selectedCharacter.level, condition: selectedCharacter.condition,
+      deathSaves: selectedCharacter.deathSaves, gold: selectedCharacter.gold,
+      name: selectedCharacter.name, class: selectedCharacter.class,
+    };
+    const json = JSON.stringify(visible);
+    if (json !== prevCharJsonRef.current) {
+      prevCharJsonRef.current = json;
+      broadcastGameEvent('character_update', { character: visible });
+    }
+  }, [selectedCharacter, broadcastGameEvent]);
+
   // Initialize — no demo data, real data from character selection
   useEffect(() => {
     setCurrentPlayer({ id: currentPlayer.id, username: currentPlayer.username, controllerType: 'human' });
@@ -448,9 +507,9 @@ export default function Game() {
       const timer = setTimeout(() => {
         addDmMessage(`${currentUnit.name} is stunned and cannot act!`);
         // Tick conditions before passing
-        const msgs = tickConditions(currentUnit.id);
+        const { messages: msgs } = tickConditions(currentUnit.id);
         msgs.forEach((m) => addDmMessage(m));
-        setTimeout(() => { nextTurn(); playTurnChange(); }, 400);
+        setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 400);
       }, 600);
       return () => clearTimeout(timer);
     }
@@ -460,7 +519,7 @@ export default function Game() {
 
     const timer = setTimeout(() => {
       // Tick conditions at start of turn (burning damage, duration countdown)
-      const condMsgs = tickConditions(currentUnit.id);
+      const { messages: condMsgs } = tickConditions(currentUnit.id);
       condMsgs.forEach((m) => addDmMessage(m));
 
       // Smart target selection: prefer low-HP targets, 30% chance to target lowest
@@ -501,6 +560,7 @@ export default function Game() {
             if (dest && (dest.col !== enemyPos.col || dest.row !== enemyPos.row)) {
               setMapPositions((prev) => prev.map((p) => p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p));
               setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u));
+              broadcastGameEvent('token_move', { unitId: currentUnit.id, col: dest.col, row: dest.row });
               const moveFt = dest.cost * 5;
               addDmMessage(`${currentUnit.name} moves ${moveFt}ft toward ${target.name}.`);
               // Re-check from new position
@@ -538,7 +598,7 @@ export default function Game() {
           }
           return { ...u, abilityCooldowns: newCd };
         }));
-        setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
+        setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 600);
         return;
       }
 
@@ -556,7 +616,7 @@ export default function Game() {
           updateCharacter(targetChar.id, { deathSaves: ds });
           addDmMessage(`${currentUnit.name} strikes the fallen ${target.name}! (2 death save failures — ${ds.successes} successes, ${ds.failures} failures)`);
         }
-        setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
+        setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 600);
         return;
       }
 
@@ -661,11 +721,11 @@ export default function Game() {
       // Drain concentration break messages from damage dealt this turn
       setTimeout(drainConcentrationMessages, 0);
 
-      setTimeout(() => { nextTurn(); playTurnChange(); }, 600);
+      setTimeout(() => { const tr = nextTurn(); playTurnChange(); broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex); }, 600);
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn, tickConditions, applyCondition, setUnits, terrain, mapPositions, setMapPositions]);
+  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn, tickConditions, applyCondition, setUnits, terrain, mapPositions, setMapPositions, broadcastCombatSync, combatRound]);
 
   // Begin Adventure — first DM narration
   // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
@@ -775,18 +835,30 @@ export default function Game() {
 
       // Add enemy units to existing units (keep player units)
       setUnits((prev: Unit[]) => [...prev.filter((u) => u.type === 'player'), ...enemyUnits]);
+      // Broadcast encounter to all players — include units, terrain, and positions
+      setTimeout(() => {
+        broadcastGameEvent('encounter_spawn', {
+          units: unitsRef.current,
+          terrain: terrain,
+          positions: mapPositions,
+          inCombat: inCombatRef.current,
+          combatRound: combatRoundRef.current,
+        });
+      }, 100);
     } catch {
       addDmMessage('*The encounter fades before it can materialize...*');
     } finally {
       setEncounterLoading(false);
     }
-  }, [selectedCharacter, dmHistory, addDmMessage, setUnits, encounterDifficulty]);
+  }, [selectedCharacter, dmHistory, addDmMessage, setUnits, encounterDifficulty, broadcastGameEvent, terrain, mapPositions]);
 
   // Handle incoming WebSocket messages
   const handleWsMessage = useCallback((msg: WSMessage) => {
     switch (msg.type) {
       case 'welcome':
         setWsPlayerId(msg.playerId as string);
+        // Request game state from existing players (late join sync)
+        sendRef.current({ type: 'state_request' });
         break;
 
       case 'chat':
@@ -916,8 +988,116 @@ export default function Game() {
           ]);
         }
         break;
+
+      case 'game_event': {
+        // Apply remote game state event — set suppression flag to prevent rebroadcast
+        const eventType = msg.event as string;
+        const eventData = msg.data as Record<string, unknown>;
+        isRemoteEventRef.current = true;
+        try {
+          switch (eventType) {
+            case 'game_sync': {
+              // Full combat state snapshot — units, combat flags
+              if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
+              if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
+              if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
+              if (typeof eventData.turnIndex === 'number') setTurnIndex(eventData.turnIndex);
+              break;
+            }
+            case 'encounter_spawn': {
+              // New encounter — units + terrain + positions + combat state
+              if (Array.isArray(eventData.units)) setUnits(eventData.units as Unit[]);
+              if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
+              if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
+              if (typeof eventData.inCombat === 'boolean') setInCombat(eventData.inCombat);
+              if (typeof eventData.combatRound === 'number') setCombatRound(eventData.combatRound);
+              break;
+            }
+            case 'token_move': {
+              // Single token position update (smooth drag sync)
+              const unitId = eventData.unitId as string;
+              const col = eventData.col as number;
+              const row = eventData.row as number;
+              if (unitId && typeof col === 'number' && typeof row === 'number') {
+                setMapPositions((prev) => prev.map((p) =>
+                  p.unitId === unitId ? { ...p, col, row } : p
+                ));
+              }
+              break;
+            }
+            case 'terrain_update': {
+              if (Array.isArray(eventData.terrain)) setTerrain(eventData.terrain as TerrainType[][]);
+              break;
+            }
+            case 'map_positions': {
+              if (Array.isArray(eventData.positions)) setMapPositions(eventData.positions as TokenPosition[]);
+              break;
+            }
+            case 'character_update': {
+              // Partial character update — visible stats only (HP, conditions, level, etc.)
+              const charUpdate = eventData.character as Partial<Character> & { id: string };
+              if (charUpdate?.id) {
+                updateCharacter(charUpdate.id, charUpdate);
+              }
+              break;
+            }
+            case 'scene_sync': {
+              if (typeof eventData.sceneName === 'string') setSceneName(eventData.sceneName);
+              break;
+            }
+            case 'quest_sync': {
+              if (Array.isArray(eventData.quests)) setQuests(eventData.quests as Quest[]);
+              break;
+            }
+          }
+        } finally {
+          isRemoteEventRef.current = false;
+        }
+        break;
+      }
+
+      case 'state_request': {
+        // Another client wants full state (late joiner). Send our current state.
+        sendRef.current({
+          type: 'state_response',
+          targetPlayerId: msg.playerId as string,
+          data: {
+            units,
+            inCombat,
+            combatRound,
+            turnIndex,
+            terrain,
+            mapPositions,
+            sceneName,
+            quests,
+            dmHistory,
+          },
+        });
+        break;
+      }
+
+      case 'state_response': {
+        // Full state from another client — apply it all
+        const stateData = msg.data as Record<string, unknown>;
+        if (!stateData) break;
+        isRemoteEventRef.current = true;
+        try {
+          if (Array.isArray(stateData.units)) setUnits(stateData.units as Unit[]);
+          if (typeof stateData.inCombat === 'boolean') setInCombat(stateData.inCombat);
+          if (typeof stateData.combatRound === 'number') setCombatRound(stateData.combatRound);
+          if (typeof stateData.turnIndex === 'number') setTurnIndex(stateData.turnIndex);
+          if (Array.isArray(stateData.terrain)) setTerrain(stateData.terrain as TerrainType[][]);
+          if (Array.isArray(stateData.mapPositions)) setMapPositions(stateData.mapPositions as TokenPosition[]);
+          if (typeof stateData.sceneName === 'string') setSceneName(stateData.sceneName);
+          if (Array.isArray(stateData.quests)) setQuests(stateData.quests as Quest[]);
+          if (Array.isArray(stateData.dmHistory)) setDmHistory(stateData.dmHistory as string[]);
+        } finally {
+          isRemoteEventRef.current = false;
+        }
+        break;
+      }
     }
-  }, [wsPlayerId]);
+  }, [wsPlayerId, units, inCombat, combatRound, turnIndex, terrain, mapPositions, sceneName, quests, dmHistory, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, updateCharacter]);
 
   const { status, send } = useWebSocket({
     roomId: room,
@@ -1239,7 +1419,7 @@ export default function Game() {
                   <input
                     type="text"
                     value={sceneName}
-                    onChange={(e) => setSceneName(e.target.value)}
+                    onChange={(e) => { setSceneName(e.target.value); broadcastGameEvent('scene_sync', { sceneName: e.target.value }); }}
                     placeholder="Scene..."
                     className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 placeholder-slate-600 outline-none w-24 focus:w-40 transition-all focus:ring-1 focus:ring-amber-600/50"
                   />
@@ -1249,7 +1429,7 @@ export default function Game() {
                     <>
                       {!inCombat ? (
                         <button
-                          onClick={() => { rollInitiative(); playTurnChange(); setCombatLog((prev) => [...prev, 'Initiative rolled! Combat begins.']); addDmMessage('Roll for initiative!'); }}
+                          onClick={() => { const sorted = rollInitiative(); playTurnChange(); setCombatLog((prev) => [...prev, 'Initiative rolled! Combat begins.']); addDmMessage('Roll for initiative!'); broadcastCombatSync(sorted, true, 1, 0); }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-900/40 hover:bg-yellow-900/60 border border-yellow-700/50 text-yellow-300 text-xs font-semibold rounded-lg transition-all"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 1a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1zM5.05 3.05a.75.75 0 011.06 0l1.062 1.06a.75.75 0 11-1.06 1.061L5.05 4.11a.75.75 0 010-1.06zm9.9 0a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 01-1.061-1.06l1.06-1.06a.75.75 0 011.06 0zM10 7a3 3 0 100 6 3 3 0 000-6zm-6.25 3a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm11 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75z" clipRule="evenodd" /></svg>
@@ -1260,11 +1440,12 @@ export default function Game() {
                         const isPlayerTurn = currentUnit?.type === 'player';
                         return (
                           <button
-                            onClick={() => {
+                             onClick={() => {
                               const msg = currentUnit ? `${currentUnit.name}'s turn ends.` : '';
                               if (msg) setCombatLog((prev) => [...prev, msg]);
-                              nextTurn();
+                              const tr = nextTurn();
                               playTurnChange();
+                              broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
                             }}
                             className={`flex items-center gap-1.5 px-4 py-1.5 border text-xs font-bold rounded-lg transition-all ${
                               isPlayerTurn
@@ -1368,6 +1549,8 @@ export default function Game() {
                               }
                               // Drain any concentration break messages
                               setTimeout(drainConcentrationMessages, 0);
+                              // Broadcast combat state after React processes the batch
+                              setTimeout(broadcastCombatSyncLatest, 50);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           >
@@ -1437,6 +1620,7 @@ export default function Game() {
                                           addDmMessage(`${enemyTarget.name} falls!`);
                                         }
                                         if (spell.healAmount) playHealing();
+                                        setTimeout(broadcastCombatSyncLatest, 50);
                                       } else {
                                         setShopMessage(result.message);
                                         setTimeout(() => setShopMessage(null), 2500);
@@ -1490,6 +1674,7 @@ export default function Game() {
                                 }
                                 if (ability.type === 'heal') playHealing();
                               if (ability.type === 'attack') playCombatHit();
+                                setTimeout(broadcastCombatSyncLatest, 50);
                               } else {
                                 setShopMessage(result.message);
                                 setTimeout(() => setShopMessage(null), 2500);
@@ -1518,6 +1703,7 @@ export default function Game() {
                               const msg = `${selectedCharacter.name} takes the Dodge action! (+2 AC until next turn)`;
                               setCombatLog((prev) => [...prev, msg]);
                               addDmMessage(msg);
+                              setTimeout(broadcastCombatSyncLatest, 50);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-700/50 text-sky-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30"
                           >
@@ -1547,6 +1733,7 @@ export default function Game() {
                               const msg = `${selectedCharacter.name} takes the Dash action! (+${extraFt}ft movement this turn)`;
                               setCombatLog((prev) => [...prev, msg]);
                               addDmMessage(msg);
+                              setTimeout(broadcastCombatSyncLatest, 50);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           >
@@ -1600,6 +1787,9 @@ export default function Game() {
                             } else {
                               addDmMessage('The battle ends. You catch your breath.');
                             }
+
+                            // Broadcast combat end to all players
+                            setTimeout(broadcastCombatSyncLatest, 100);
 
                             // Ask the DM to narrate the aftermath
                             const lootContext = selectedCharacter ? ` The party found some items among the remains.` : '';
@@ -1806,7 +1996,8 @@ export default function Game() {
                               className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-600 outline-none focus:ring-1 focus:ring-amber-500/50"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && newQuestTitle.trim()) {
-                                  setQuests((prev) => [...prev, { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false }]);
+                                  const q = { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false };
+                                  setQuests((prev) => { const next = [...prev, q]; broadcastGameEvent('quest_sync', { quests: next }); return next; });
                                   setNewQuestTitle('');
                                 }
                               }}
@@ -1814,7 +2005,8 @@ export default function Game() {
                             <button
                               onClick={() => {
                                 if (newQuestTitle.trim()) {
-                                  setQuests((prev) => [...prev, { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false }]);
+                                  const q = { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false };
+                                  setQuests((prev) => { const next = [...prev, q]; broadcastGameEvent('quest_sync', { quests: next }); return next; });
                                   setNewQuestTitle('');
                                 }
                               }}
@@ -1832,13 +2024,13 @@ export default function Game() {
                               {quests.filter((q) => !q.completed).map((quest) => (
                                 <div key={quest.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 group">
                                   <button
-                                    onClick={() => setQuests((prev) => prev.map((q) => q.id === quest.id ? { ...q, completed: true } : q))}
+                                    onClick={() => setQuests((prev) => { const next = prev.map((q) => q.id === quest.id ? { ...q, completed: true } : q); broadcastGameEvent('quest_sync', { quests: next }); return next; })}
                                     className="w-3.5 h-3.5 rounded border border-slate-600 hover:border-green-500 hover:bg-green-900/30 transition-colors shrink-0"
                                     title="Mark complete"
                                   />
                                   <span className="flex-1 text-xs text-slate-300 truncate">{quest.title}</span>
                                   <button
-                                    onClick={() => setQuests((prev) => prev.filter((q) => q.id !== quest.id))}
+                                    onClick={() => setQuests((prev) => { const next = prev.filter((q) => q.id !== quest.id); broadcastGameEvent('quest_sync', { quests: next }); return next; })}
                                     className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
                                     title="Remove quest"
                                   >
@@ -1856,7 +2048,7 @@ export default function Game() {
                                       </div>
                                       <span className="flex-1 text-xs text-slate-600 line-through truncate">{quest.title}</span>
                                       <button
-                                        onClick={() => setQuests((prev) => prev.filter((q) => q.id !== quest.id))}
+                                        onClick={() => setQuests((prev) => { const next = prev.filter((q) => q.id !== quest.id); broadcastGameEvent('quest_sync', { quests: next }); return next; })}
                                         className="text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
                                         title="Remove"
                                       >
@@ -2137,7 +2329,10 @@ export default function Game() {
                   </div>
                 ) : (
                   /* Battle Map view */
-                  <BattleMap />
+                  <BattleMap
+                    onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
+                    onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
+                  />
                 )}
               </div>
             )}

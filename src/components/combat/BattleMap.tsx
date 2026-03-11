@@ -344,7 +344,12 @@ function tokenBorderColor(unit: Unit, isSelected: boolean, isCurrentTurn: boolea
 // --- Component ---
 type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm';
 
-export default function BattleMap() {
+interface BattleMapProps {
+  onTokenMove?: (unitId: string, col: number, row: number) => void;
+  onTerrainChange?: (terrain: TerrainType[][]) => void;
+}
+
+export default function BattleMap({ onTokenMove, onTerrainChange }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
@@ -693,9 +698,11 @@ export default function BattleMap() {
       if (prev[row][col] === target) return prev;
       const next = prev.map((r) => [...r]);
       next[row][col] = target;
+      // Notify parent for multiplayer sync
+      onTerrainChange?.(next);
       return next;
     });
-  }, [dmTool, gridCols, gridRows, terrain, traps]);
+  }, [dmTool, gridCols, gridRows, terrain, traps, onTerrainChange]);
 
   // --- Mouse handlers ---
   const handleMouseDown = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
@@ -808,6 +815,8 @@ export default function BattleMap() {
     setPositions((prev) =>
       prev.map((p) => (p.unitId === dragging.unitId ? { ...p, col, row } : p))
     );
+    // Notify parent for multiplayer sync
+    onTokenMove?.(dragging.unitId, col, row);
 
     // Pit damage: 1d6 when landing on a pit
     if (targetTerrain === 'pit') {
@@ -856,7 +865,9 @@ export default function BattleMap() {
     setPositions([]);
     setTraps([]);
     setTrapMessages([]);
-  }, [gridCols, gridRows]);
+    // Notify parent for multiplayer sync
+    onTerrainChange?.(newTerrain);
+  }, [gridCols, gridRows, onTerrainChange]);
 
   // Search for traps: d20 Perception check (DC 13) reveals nearby hidden traps
   const searchForTraps = useCallback(() => {
