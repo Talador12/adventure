@@ -370,6 +370,13 @@ export function hasPendingASI(character: Character): boolean {
   return asiLevelsReached > choicesMade;
 }
 
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+}
+
 export function rollSpellDamage(die: string): number {
   const match = die.match(/^(\d+)d(\d+)(?:\+(\d+))?$/);
   if (!match) return 0;

@@ -43,6 +43,8 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 ## Current Focus
 
+Round 35 (complete): Game.tsx decomposition round — three major extractions. (1) `useEnemyAI` hook (285 lines): enemy AI combat useEffect extracted to `src/hooks/useEnemyAI.ts`, consumes `useGame()` directly, takes callback props for parent-owned functions. (2) `DMSidebar` component (277 lines): DM tools sidebar extracted to `src/components/game/DMSidebar.tsx` with Encounter/NPC/Notes tabs + Ambiance selector, owns `dmSidebarTab` state internally. (3) `NarrationPanel` component (308 lines): character status bar, turn indicator, quest tracker, death saves, DM history scroll, combat log, and action input extracted to `src/components/game/NarrationPanel.tsx`. Also: `Quest` interface moved from inline in Game.tsx to `src/types/game.ts` for reuse. Game.tsx reduced from 3065→2288 lines (777 lines removed, 25% reduction). All 153 tests pass, zero TS errors.
+
 Round 34 (complete): Game.tsx decomposition — wired LevelUpModal (161 lines) and CharacterPicker (76 lines) as extracted components, removed 209 lines of inline JSX from Game.tsx (3274→3065 lines), removed 4 useState hooks (levelUpTab, asiMode, asiStat1, asiStat2) that moved into LevelUpModal, cleaned unused applyASI/selectFeat from useGame destructuring. Keyboard shortcuts (Escape closes modals in priority order: level-up → DM sidebar → combat log → quests). Toast mobile repositioning (bottom-center on mobile, bottom-right on desktop). DoodlePad touch support (getTouchPos, onTouchStart/Move/End with preventDefault for scroll prevention, touch-none CSS). GitHub repo description + topics set. Round 33 (complete): Mobile responsive (Home, Lobby, CharacterCreate — stacking layouts, safe areas, tap targets), meta viewport fix (viewport-fit=cover, theme-color, apple-mobile-web-app), CharacterCreate step transition animations (fade-in-up on all 6 wizard steps), mobile CSS (safe-area-inset, text-size-adjust, tap-highlight removal). Round 32 (complete): Error boundary for lazy-loaded routes (catches chunk load failures + render errors with branded recovery UI), 404 page ("maybe it was a mimic all along"), Lobby visual polish (page-enter animation, glass morphism seat cards, staggered reveals, connection badge pill, gradient Start Game button, polished password gate, drawing indicator with pulse dot, settings panel slide-in), Game visual polish (crit-flash on CRITICAL combat log entries, hp-bar-shimmer on character + initiative HP bars), loading skeletons on Home.tsx dashboard (shimmer cards while campaigns fetch), new CSS classes (skeleton, seat-card, seat-ready pulse, connection-badge). Round 31 (complete): Fantasy animation system, hero gradient + shimmer, card hover effects, hono security patch, GameContext decomposition (1896→1082 lines), code splitting (703KB→split chunks), prefers-reduced-motion, error handling overhaul (18 bare catches → logError). Round 30 (complete): Lobby passwords, save indicator, auth gating, dashboard polish. Previous: Rounds 26-29 (D1, chat, OAuth, character wizard, battle map, spectator, animations).
 
 ### Illustrated portrait system
@@ -759,11 +761,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Verify 0 TS errors + all 153 tests pass after rewiring
 - [x] `src/components/game/LevelUpModal.tsx` — ASI/feat modal (161 lines, uses useGame internally)
 - [x] `src/components/game/CharacterPicker.tsx` — character select screen (76 lines)
-- [ ] Combat Toolbar (631 lines — the biggest extraction target)
-- [ ] Enemy AI Effect (285 lines → useEnemyAI custom hook)
-- [ ] WS Message Handler (308 lines → useGameWebSocket custom hook)
-- [ ] Narration Panel (334 lines)
-- [ ] DM Sidebar (222 lines)
+- [x] `src/hooks/useEnemyAI.ts` — enemy AI combat hook (285 lines, consumes useGame)
+- [x] `src/components/game/DMSidebar.tsx` — DM tools sidebar (277 lines, owns dmSidebarTab state)
+- [x] `src/components/game/NarrationPanel.tsx` — narration view (308 lines, character status + quest tracker + DM history + combat log + action input)
+- [x] `src/types/game.ts` — Quest interface moved from inline Game.tsx definition
+- [ ] Combat Toolbar (~630 lines — the biggest extraction target)
+- [ ] WS Message Handler (~308 lines → useGameWebSocket custom hook)
+- [ ] Campaign Persistence (~128 lines → useCampaignPersistence custom hook)
+- [ ] Shop View (~94 lines)
 
 **Bundle optimization:**
 - [x] Hono security patch: 4.12.5 → 4.12.7 (Dependabot CVE fix)

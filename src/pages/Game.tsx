@@ -15,6 +15,10 @@ import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute, setAmbientMood, getAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
+import { useEnemyAI } from '../hooks/useEnemyAI';
+import type { Quest } from '../types/game';
+import DMSidebar from '../components/game/DMSidebar';
+import NarrationPanel from '../components/game/NarrationPanel';
 
 // API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
 function apiBase(): string {
@@ -120,20 +124,13 @@ export default function Game() {
   const [dmNotes, setDmNotes] = useState(() => {
     try { return localStorage.getItem(`adventure:dmnotes:${room}`) || ''; } catch { return ''; }
   });
-  const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
   const [currentAmbient, setCurrentAmbient] = useState<AmbientMood>(getAmbientMood());
 
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
 
-  // Quest tracker
-  interface Quest {
-    id: string;
-    title: string;
-    description: string;
-    completed: boolean;
-  }
-  const questStorageKey = `adventure:quests:${room}`;
+   // Quest tracker
+   const questStorageKey = `adventure:quests:${room}`;
   const [quests, setQuests] = useState<Quest[]>(() => {
     try {
       const s = localStorage.getItem(questStorageKey);
@@ -664,291 +661,8 @@ export default function Game() {
     }
   }, [selectedCharacter, updateCharacter, addDmMessage]);
 
-  // Auto-execute enemy turns: stat-block-driven AI with abilities, conditions, and smart targeting
-  useEffect(() => {
-    if (!inCombat) return;
-    const currentUnit = units.find((u) => u.isCurrentTurn);
-    if (!currentUnit || currentUnit.type !== 'enemy' || currentUnit.hp <= 0) return;
-
-    // Stunned enemies skip their turn
-    if (currentUnit.conditions?.some((c) => c.type === 'stunned')) {
-      const timer = setTimeout(() => {
-        addDmMessage(`${currentUnit.name} is stunned and cannot act!`);
-        // Tick conditions before passing
-        const { messages: msgs } = tickConditions(currentUnit.id);
-        msgs.forEach((m) => addDmMessage(m));
-        setTimeout(() => {
-          const tr = nextTurn();
-          playTurnChange();
-          broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
-        }, 400);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-
-    const playerTargets = units.filter((u) => u.type === 'player' && u.hp > 0);
-    if (playerTargets.length === 0) return;
-
-    const timer = setTimeout(() => {
-      // Tick conditions at start of turn (burning damage, duration countdown)
-      const { messages: condMsgs } = tickConditions(currentUnit.id);
-      condMsgs.forEach((m) => addDmMessage(m));
-
-      // Smart target selection: prefer low-HP targets, 30% chance to target lowest
-      let target: Unit;
-      if (Math.random() < 0.3) {
-        target = [...playerTargets].sort((a, b) => a.hp - b.hp)[0];
-      } else {
-        target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
-      }
-
-      // --- Enemy AI: determine ranged capability, then move + range check ---
-      const enemyAbilities = currentUnit.abilities || [];
-      const hasRangedAbility = enemyAbilities.some((a) => a.isRanged && a.range);
-      const bestRangedRange = hasRangedAbility ? Math.max(...enemyAbilities.filter((a) => a.isRanged && a.range).map((a) => a.range!)) : 0;
-
-      const enemyPos = mapPositions.find((p) => p.unitId === currentUnit.id);
-      const targetPos = mapPositions.find((p) => p.unitId === target.id);
-      let canAttack = true; // default true if no positions (graceful fallback)
-      let canRangedAttack = false; // can hit with a ranged ability from current position
-      if (enemyPos && targetPos && terrain.length > 0) {
-        const dist = chebyshevDistance(enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
-        const los = hasLineOfSight(terrain, enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
-        const adjacent = isAdjacent(enemyPos.col, enemyPos.row, targetPos.col, targetPos.row);
-
-        // If ranged enemy already has LOS and is within range, skip movement
-        if (hasRangedAbility && los && dist <= bestRangedRange) {
-          canRangedAttack = true;
-          canAttack = true; // adjacent not required for ranged
-        } else if (adjacent) {
-          canAttack = true;
-        } else {
-          // Move toward target
-          const remaining = (currentUnit.speed || 6) - (currentUnit.movementUsed || 0);
-          if (remaining > 0) {
-            const dest = findBestMoveToward(terrain, enemyPos.col, enemyPos.row, targetPos.col, targetPos.row, remaining, DEFAULT_ROWS, DEFAULT_COLS);
-            if (dest && (dest.col !== enemyPos.col || dest.row !== enemyPos.row)) {
-              // Player Opportunity Attacks on enemy movement
-              const oaAttackers = findOpportunityAttackers(currentUnit.id, 'enemy', enemyPos.col, enemyPos.row, dest.col, dest.row, units, mapPositions);
-              for (const atk of oaAttackers) {
-                // Player OA: find character's weapon stats + condition modifiers
-                const atkUnit = units.find((u) => u.id === atk.unitId);
-                const atkChar = atkUnit?.characterId ? characters.find((c) => c.id === atkUnit.characterId) : null;
-                const weapon = atkChar?.equipment?.weapon;
-                const atkBonus = weapon?.attackBonus || 0;
-                const dieDmg = weapon?.damageDie || '1d4';
-                const dmgBonus = weapon?.damageBonus || 0;
-                const strMod = atkChar ? Math.floor((atkChar.stats.STR - 10) / 2) : 0;
-                const condAtkMod = (atkUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
-                const targetAC = effectiveAC(currentUnit.ac, currentUnit.conditions || []);
-                // OA is always melee (triggered by leaving melee range)
-                const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(atkUnit?.conditions || [], currentUnit.conditions || [], true);
-                const totalAtk = roll + atkBonus + strMod + condAtkMod;
-                const hit = roll === 20 || (roll !== 1 && totalAtk >= targetAC);
-                let dmg = 0;
-                if (hit) {
-                  const dieMatch = dieDmg.match(/(\d+)d(\d+)/);
-                  if (dieMatch) {
-                    const [, count, sides] = dieMatch;
-                    for (let i = 0; i < Number(count); i++) dmg += Math.floor(Math.random() * Number(sides)) + 1;
-                  }
-                  dmg += dmgBonus + strMod;
-                  dmg = Math.max(1, dmg);
-                  if (roll === 20) dmg *= 2;
-                  damageUnit(currentUnit.id, dmg);
-                }
-                setUnits((prev) => prev.map((u) => (u.id === atk.unitId ? { ...u, reactionUsed: true } : u)));
-                const advTag = hadAdvantage ? ' (advantage)' : hadDisadvantage ? ' (disadvantage)' : '';
-                const oaMsg = hit ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!${advTag}` : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!${advTag}`;
-                setCombatLog((prev) => [...prev, oaMsg]);
-                addDmMessage(oaMsg);
-              }
-              // Animate the token movement before updating position
-              animateMoveRef.current?.(currentUnit.id, enemyPos.col, enemyPos.row, dest.col, dest.row);
-              setMapPositions((prev) => prev.map((p) => (p.unitId === currentUnit.id ? { ...p, col: dest.col, row: dest.row } : p)));
-              setUnits((prev) => prev.map((u) => (u.id === currentUnit.id ? { ...u, movementUsed: (u.movementUsed || 0) + dest.cost } : u)));
-              broadcastGameEvent('token_move', { unitId: currentUnit.id, col: dest.col, row: dest.row });
-              const moveFt = dest.cost * 5;
-              addDmMessage(`${currentUnit.name} moves ${moveFt}ft toward ${target.name}.`);
-              // Re-check from new position
-              const newDist = chebyshevDistance(dest.col, dest.row, targetPos.col, targetPos.row);
-              const newLos = hasLineOfSight(terrain, dest.col, dest.row, targetPos.col, targetPos.row);
-              const newAdj = isAdjacent(dest.col, dest.row, targetPos.col, targetPos.row);
-              if (hasRangedAbility && newLos && newDist <= bestRangedRange) {
-                canRangedAttack = true;
-                canAttack = true;
-              } else {
-                canAttack = newAdj;
-              }
-            } else {
-              // Couldn't move — check ranged from current position
-              canAttack = hasRangedAbility && los && dist <= bestRangedRange;
-              canRangedAttack = canAttack;
-            }
-          } else {
-            // No movement left — check ranged from current position
-            canAttack = hasRangedAbility && los && dist <= bestRangedRange;
-            canRangedAttack = canAttack;
-          }
-        }
-      }
-
-      // If can't reach target with melee or ranged, end turn
-      if (!canAttack) {
-        addDmMessage(`${currentUnit.name} can't reach ${target.name} — ends turn.`);
-        // Still tick ability cooldowns
-        setUnits((prev) =>
-          prev.map((u) => {
-            if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
-            const newCd: Record<string, number> = {};
-            for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
-              if (cd > 0) newCd[name] = cd - 1;
-            }
-            return { ...u, abilityCooldowns: newCd };
-          })
-        );
-        setTimeout(() => {
-          const tr = nextTurn();
-          playTurnChange();
-          broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
-        }, 600);
-        return;
-      }
-
-      // Check unconscious target — auto-crit for death saves
-      const targetChar = target.characterId ? characters.find((c) => c.id === target.characterId) : null;
-      if (targetChar && targetChar.condition === 'unconscious') {
-        playCombatHit();
-        playCritical();
-        const ds = { ...targetChar.deathSaves };
-        ds.failures = Math.min(3, ds.failures + 2);
-        if (ds.failures >= 3) {
-          updateCharacter(targetChar.id, { condition: 'dead', deathSaves: ds });
-          addDmMessage(`${currentUnit.name} strikes the fallen ${target.name} — a killing blow! ${target.name} has died.`);
-        } else {
-          updateCharacter(targetChar.id, { deathSaves: ds });
-          addDmMessage(`${currentUnit.name} strikes the fallen ${target.name}! (2 death save failures — ${ds.successes} successes, ${ds.failures} failures)`);
-        }
-        setTimeout(() => {
-          const tr = nextTurn();
-          playTurnChange();
-          broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
-        }, 600);
-        return;
-      }
-
-      // Check if an ability is available and should be used
-      // When at range (not adjacent), prefer ranged abilities; skip melee-only abilities
-      const abilities = currentUnit.abilities || [];
-      const cooldowns = currentUnit.abilityCooldowns || {};
-      const needsRanged = canRangedAttack && !isAdjacent(enemyPos?.col ?? 0, enemyPos?.row ?? 0, targetPos?.col ?? 0, targetPos?.row ?? 0);
-      const availAbility = abilities.find((a) => {
-        if ((cooldowns[a.name] || 0) > 0) return false;
-        // At range: only allow ranged abilities or AoE
-        if (needsRanged && !a.isRanged && a.type !== 'aoe' && a.type !== 'heal') return false;
-        return Math.random() < 0.6;
-      });
-
-      if (availAbility) {
-        // Use ability
-        const atkBonus = availAbility.attackBonus ?? currentUnit.attackBonus ?? 3;
-        let abilMsg = `${currentUnit.name} uses ${availAbility.name}!`;
-
-        if (availAbility.type === 'aoe') {
-          // AoE hits all players
-          const dmg = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 0;
-          playerTargets.forEach((pt) => damageUnit(pt.id, dmg));
-          abilMsg += ` All players take ${dmg} damage!`;
-          playCombatHit();
-        } else if (availAbility.type === 'attack' || availAbility.type === 'condition') {
-          const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
-          const targetAC = effectiveAC(target.ac, target.conditions || []);
-          const isMelee = !availAbility.isRanged;
-          const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], isMelee);
-          const total = roll + atkBonus + condAtkMod;
-          const hit = roll === 20 || total >= targetAC;
-          const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
-          if (hit) {
-            const dmg = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 0;
-            if (dmg > 0) damageUnit(target.id, roll === 20 ? dmg * 2 : dmg);
-            abilMsg += ` Hits ${target.name} for ${roll === 20 ? dmg * 2 : dmg} damage! (${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
-            if (availAbility.condition) {
-              applyCondition(target.id, { type: availAbility.condition, duration: availAbility.conditionDuration || 2, source: currentUnit.name });
-              abilMsg += ` ${target.name} is ${availAbility.condition}!`;
-            }
-            playCombatHit();
-            if (roll === 20) playCritical();
-          } else {
-            abilMsg += ` Misses ${target.name}! (${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
-            playCombatMiss();
-          }
-        } else if (availAbility.type === 'heal') {
-          const heal = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 10;
-          // Heal self or lowest-HP ally
-          const healTarget = currentUnit;
-          setUnits((prev) => prev.map((u) => (u.id === healTarget.id ? { ...u, hp: Math.min(u.maxHp, u.hp + heal) } : u)));
-          abilMsg += ` Heals for ${heal} HP!`;
-        }
-
-        addDmMessage(abilMsg);
-        // Set cooldown
-        setUnits((prev) => prev.map((u) => (u.id === currentUnit.id ? { ...u, abilityCooldowns: { ...cooldowns, [availAbility.name]: availAbility.cooldown } } : u)));
-      } else if (!needsRanged) {
-        // Basic melee attack using unit's stat block (only when adjacent)
-        const atkBonus = currentUnit.attackBonus ?? 3;
-        const dmgBonus = currentUnit.damageBonus ?? 2;
-        const dmgDie = currentUnit.damageDie || '1d6';
-        // Condition modifiers (attacker attack mod + target AC mod + prone advantage/disadvantage)
-        const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
-        const targetAC = effectiveAC(target.ac, target.conditions || []);
-        const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], true);
-        const totalAttack = attackRoll + atkBonus + condAtkMod;
-        const isHit = attackRoll === 20 || totalAttack >= targetAC;
-        const isCrit = attackRoll === 20;
-        const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
-
-        if (isHit) {
-          const baseDmg = rollSpellDamage(dmgDie);
-          const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + dmgBonus : baseDmg + dmgBonus);
-          damageUnit(target.id, finalDmg);
-          playCombatHit();
-          if (isCrit) playCritical();
-          addDmMessage(isCrit ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}` : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
-          // Check if target died
-          if (target.hp - finalDmg <= 0) {
-            playEnemyDeath();
-            addDmMessage(`${target.name} falls!`);
-          }
-        } else {
-          playCombatMiss();
-          addDmMessage(`${currentUnit.name} misses ${target.name}! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
-        }
-      }
-
-      // Tick ability cooldowns
-      setUnits((prev) =>
-        prev.map((u) => {
-          if (u.id !== currentUnit.id || !u.abilityCooldowns) return u;
-          const newCd: Record<string, number> = {};
-          for (const [name, cd] of Object.entries(u.abilityCooldowns)) {
-            if (cd > 0) newCd[name] = cd - 1;
-          }
-          return { ...u, abilityCooldowns: newCd };
-        })
-      );
-
-      // Drain concentration break messages from damage dealt this turn
-      setTimeout(drainConcentrationMessages, 0);
-
-      setTimeout(() => {
-        const tr = nextTurn();
-        playTurnChange();
-        broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
-      }, 600);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn, tickConditions, applyCondition, setUnits, terrain, mapPositions, setMapPositions, broadcastCombatSync, combatRound]);
+  // Auto-execute enemy turns — extracted to useEnemyAI hook
+  useEnemyAI({ addDmMessage, setCombatLog, broadcastCombatSync, broadcastGameEvent, animateMoveRef, drainConcentrationMessages });
 
   // Begin Adventure — first DM narration
   // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
@@ -1556,226 +1270,28 @@ export default function Game() {
       <div className="flex-1 flex overflow-hidden">
         {/* DM Sidebar — collapsible left panel */}
         {canUseDMTools && showDMSidebar && (
-          <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-              <span className="text-xs font-semibold text-[#F38020] uppercase tracking-wider">DM Tools</span>
-              <button onClick={() => setShowDMSidebar(false)} className="text-slate-500 hover:text-slate-300 text-xs">&times;</button>
-            </div>
-            {/* Sidebar tabs */}
-            <div className="flex border-b border-slate-800">
-              {(['encounter', 'npc', 'notes'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setDmSidebarTab(tab)}
-                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-                    dmSidebarTab === tab ? 'text-[#F38020] border-b-2 border-[#F38020] bg-[#F38020]/5' : 'text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {/* Encounter tab */}
-              {dmSidebarTab === 'encounter' && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Difficulty</label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {(['easy', 'medium', 'hard', 'deadly'] as const).map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setEncounterDifficulty(d)}
-                          className={`px-2 py-1.5 rounded-lg text-xs font-medium capitalize transition-all border ${
-                            encounterDifficulty === d
-                              ? 'border-[#F38020] bg-[#F38020]/15 text-[#F38020]'
-                              : 'border-slate-700 text-slate-400 hover:border-slate-600'
-                          }`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Encounter difficulty calculator */}
-                  {(() => {
-                    const playerUnits = units.filter((u) => u.characterId);
-                    const partyLevels = playerUnits.map((u) => {
-                      const c = characters.find((ch) => ch.id === u.characterId);
-                      return c?.level || 1;
-                    });
-                    if (partyLevels.length === 0 && selectedCharacter) {
-                      partyLevels.push(selectedCharacter.level || 1);
-                    }
-                    if (partyLevels.length > 0) {
-                      const budget = calculateEncounterBudget(partyLevels);
-                      const enemyXP = units.filter((u) => u.type === 'enemy' && u.hp > 0).reduce((sum, u) => sum + (u.xpValue || 0), 0);
-                      const diffLabel = enemyXP >= budget.deadly ? 'Deadly' : enemyXP >= budget.hard ? 'Hard' : enemyXP >= budget.medium ? 'Medium' : enemyXP > 0 ? 'Easy' : '—';
-                      const diffColor = enemyXP >= budget.deadly ? 'text-red-400' : enemyXP >= budget.hard ? 'text-orange-400' : enemyXP >= budget.medium ? 'text-yellow-400' : 'text-green-400';
-                      return (
-                        <div className="bg-slate-800/60 rounded-lg p-2 space-y-1.5 border border-slate-700/50">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] text-slate-500 font-semibold uppercase">XP Budget</span>
-                            <span className="text-[9px] text-slate-400">{partyLevels.length} PC{partyLevels.length > 1 ? 's' : ''} · Avg Lv{Math.round(partyLevels.reduce((a, b) => a + b, 0) / partyLevels.length)}</span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-1 text-center">
-                            {(['easy', 'medium', 'hard', 'deadly'] as const).map((d) => (
-                              <div key={d} className="text-[8px]">
-                                <div className={`font-semibold capitalize ${d === 'easy' ? 'text-green-400' : d === 'medium' ? 'text-yellow-400' : d === 'hard' ? 'text-orange-400' : 'text-red-400'}`}>{d}</div>
-                                <div className="text-slate-500 font-mono">{budget[d]}</div>
-                              </div>
-                            ))}
-                          </div>
-                          {enemyXP > 0 && (
-                            <div className="flex items-center justify-between pt-1 border-t border-slate-700/50">
-                              <span className="text-[9px] text-slate-400">Current: <span className="font-mono text-slate-300">{enemyXP} XP</span></span>
-                              <span className={`text-[9px] font-bold ${diffColor}`}>{diffLabel}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                  <button
-                    onClick={handleGenerateEncounter}
-                    disabled={encounterLoading}
-                    className="w-full py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    {encounterLoading ? (
-                      <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />Spawning...</>
-                    ) : 'Spawn Encounter'}
-                  </button>
-                  {units.length > 0 && inCombat && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 font-semibold uppercase">Active Units</label>
-                      {units.filter(u => u.hp > 0).map((u) => (
-                        <div key={u.id} className={`flex items-center gap-2 p-1.5 rounded text-xs ${u.type === 'enemy' ? 'bg-red-950/30' : 'bg-slate-800/50'}`}>
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${u.type === 'enemy' ? 'bg-red-900/60 text-red-300' : 'bg-amber-500/20 text-amber-400'}`}>{u.name.charAt(0)}</div>
-                          <span className="flex-1 truncate text-slate-300">{u.name}</span>
-                          <span className={`font-mono text-[10px] ${u.hp <= (u.maxHp || u.hp) * 0.25 ? 'text-red-400' : 'text-slate-500'}`}>{u.hp}/{u.maxHp || u.hp}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Scene</label>
-                    <input
-                      value={sceneName}
-                      onChange={(e) => setSceneName(e.target.value)}
-                      placeholder="Scene name..."
-                      className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder:text-slate-600 focus:border-[#F38020] focus:outline-none"
-                    />
-                  </div>
-                </>
-              )}
-              {/* NPC tab */}
-              {dmSidebarTab === 'npc' && (
-                <>
-                  {/* Quick NPC Generator */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Quick NPC Generator</label>
-                    <button
-                      onClick={() => {
-                        const races = ['Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Orc', 'Tiefling', 'Dragonborn'];
-                        const roles = ['innkeeper', 'merchant', 'blacksmith', 'guard captain', 'herbalist', 'bard', 'scholar', 'priest', 'beggar', 'noble', 'bounty hunter', 'sailor', 'farmer', 'mystic', 'alchemist', 'thieves guild contact', 'retired adventurer', 'traveling performer'];
-                        const personalities = ['gruff but kind', 'nervous and twitchy', 'overly cheerful', 'deeply suspicious', 'perpetually drunk', 'wise and patient', 'sarcastic and dry', 'warm and maternal', 'cold and calculating', 'boisterous and loud', 'quiet and observant', 'melodramatic', 'absentminded but brilliant', 'fiercely loyal', 'secretive and evasive', 'flirtatious and charming'];
-                        const quirks = ['missing an eye', 'speaks in rhyme when nervous', 'always eating something', 'has a pet rat on their shoulder', 'collects odd trinkets', 'hums while thinking', 'refuses to make eye contact', 'excessively polite', 'tells the same story repeatedly', 'laughs at inappropriate times', 'whispers secrets to no one', 'covered in strange tattoos'];
-                        const race = races[Math.floor(Math.random() * races.length)];
-                        const name = randomFantasyName(race);
-                        const role = roles[Math.floor(Math.random() * roles.length)];
-                        const personality = personalities[Math.floor(Math.random() * personalities.length)];
-                        const quirk = quirks[Math.floor(Math.random() * quirks.length)];
-                        setNpcName(name);
-                        setNpcRole(role);
-                        if (!npcMode) setNpcMode(true);
-                        // Add personality + quirk to dialogue history as a DM note
-                        setNpcDialogueHistory((prev) => [
-                          ...prev,
-                          `[Generated] ${name} — ${race} ${role}. ${personality}, ${quirk}.`,
-                        ]);
-                      }}
-                      className="w-full py-2 rounded-lg text-xs font-semibold transition-all bg-emerald-900/40 text-emerald-400 border border-emerald-700/50 hover:bg-emerald-800/40 hover:border-emerald-600/50"
-                    >
-                      Random NPC
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] text-slate-500 font-semibold uppercase">NPC Talk Mode</label>
-                    <button
-                      onClick={() => { setNpcMode(!npcMode); if (npcMode) { setNpcDialogueHistory([]); } }}
-                      className={`w-full py-2 rounded-lg text-xs font-semibold transition-all ${
-                        npcMode ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-purple-500/50'
-                      }`}
-                    >
-                      {npcMode ? 'End Conversation' : 'Start NPC Talk'}
-                    </button>
-                  </div>
-                  {npcMode && (
-                    <div className="space-y-2">
-                      <input
-                        value={npcName}
-                        onChange={(e) => setNpcName(e.target.value)}
-                        placeholder="NPC Name..."
-                        className="w-full px-2 py-1.5 bg-slate-800 border border-purple-500/30 rounded-lg text-xs text-purple-200 placeholder:text-purple-400/30 focus:border-purple-500 focus:outline-none"
-                      />
-                      <input
-                        value={npcRole}
-                        onChange={(e) => setNpcRole(e.target.value)}
-                        placeholder="Role (e.g. innkeeper, merchant)..."
-                        className="w-full px-2 py-1.5 bg-slate-800 border border-purple-500/30 rounded-lg text-xs text-purple-200 placeholder:text-purple-400/30 focus:border-purple-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-                  {npcDialogueHistory.length > 0 && (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                      <label className="text-[10px] text-slate-500 font-semibold uppercase">Dialogue History</label>
-                      {npcDialogueHistory.map((line, i) => (
-                        <div key={i} className="text-[10px] text-purple-300/70 bg-purple-950/20 rounded px-2 py-1">{line}</div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-              {/* Notes tab */}
-              {dmSidebarTab === 'notes' && (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-500 font-semibold uppercase">Session Notes</label>
-                    <p className="text-[9px] text-slate-600">Auto-saved to your browser. Only you can see these.</p>
-                  </div>
-                  <textarea
-                    value={dmNotes}
-                    onChange={(e) => setDmNotes(e.target.value)}
-                    placeholder="Track NPCs, plot hooks, secrets, loot tables, reminders..."
-                    className="w-full flex-1 min-h-[300px] bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:border-[#F38020] focus:outline-none resize-y leading-relaxed"
-                  />
-                  <div className="text-[9px] text-slate-600 text-right">{dmNotes.length} chars</div>
-                </>
-              )}
-
-              {/* Ambiance — always visible at bottom of sidebar */}
-              <div className="border-t border-slate-700 pt-3 mt-auto space-y-2">
-                <label className="text-[10px] text-slate-500 font-semibold uppercase">Ambiance</label>
-                <div className="grid grid-cols-3 gap-1">
-                  {AMBIENT_MOODS.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => { setAmbientMood(m.id); setCurrentAmbient(m.id); }}
-                      title={m.description}
-                      className={`px-1.5 py-1 rounded text-[9px] font-medium transition-all border ${
-                        currentAmbient === m.id
-                          ? 'border-amber-500/60 bg-amber-900/20 text-amber-400'
-                          : 'border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-400'
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
+          <DMSidebar
+            onClose={() => setShowDMSidebar(false)}
+            encounterDifficulty={encounterDifficulty}
+            setEncounterDifficulty={setEncounterDifficulty}
+            encounterLoading={encounterLoading}
+            onGenerateEncounter={handleGenerateEncounter}
+            sceneName={sceneName}
+            setSceneName={setSceneName}
+            npcMode={npcMode}
+            setNpcMode={setNpcMode}
+            npcName={npcName}
+            setNpcName={setNpcName}
+            npcRole={npcRole}
+            setNpcRole={setNpcRole}
+            npcDialogueHistory={npcDialogueHistory}
+            setNpcDialogueHistory={setNpcDialogueHistory}
+            currentAmbient={currentAmbient}
+            setCurrentAmbient={setCurrentAmbient}
+            dmNotes={dmNotes}
+            setDmNotes={setDmNotes}
+            selectedCharacter={selectedCharacter}
+          />
         )}
 
         {/* Left: initiative bar + game board / DM area */}
@@ -2514,340 +2030,32 @@ export default function Game() {
                 </div>
 
                 {activeView === 'narration' ? (
-                  <>
-                    {/* Character status bar — always visible during adventure */}
-                    {selectedCharacter && (
-                      <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-800 bg-slate-900/60">
-                        <img
-                          src={selectedCharacter.portrait || `/portraits/classes/${selectedCharacter.class.toLowerCase()}.webp`}
-                          alt={selectedCharacter.name}
-                          className="w-8 h-8 rounded-lg object-cover border border-slate-600 shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = `/portraits/races/${selectedCharacter.race.toLowerCase()}.webp`;
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white truncate">{selectedCharacter.name}</span>
-                            <span className="text-[10px] text-slate-500">
-                              Lv{selectedCharacter.level} {selectedCharacter.class}
-                            </span>
-                          </div>
-                          {/* HP bar */}
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden hp-bar-shimmer">
-                              <div className={`h-full rounded-full transition-all duration-500 ${selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'bg-green-500' : selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.max(0, (selectedCharacter.hp / selectedCharacter.maxHp) * 100)}%` }} />
-                            </div>
-                            <span className={`text-[10px] font-mono font-bold tabular-nums ${selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'text-green-400' : selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'text-yellow-400' : 'text-red-400'}`}>
-                              {selectedCharacter.hp}/{selectedCharacter.maxHp}
-                            </span>
-                          </div>
-                        </div>
-                        {/* XP + Gold compact */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] text-purple-400 font-mono">{selectedCharacter.xp} XP</span>
-                          <span className="text-[10px] text-yellow-400 font-mono">{selectedCharacter.gold || 0}g</span>
-                        </div>
-                        {selectedCharacter.condition !== 'normal' && <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${selectedCharacter.condition === 'dead' ? 'bg-red-900/40 text-red-400' : selectedCharacter.condition === 'unconscious' ? 'bg-red-900/30 text-red-400' : 'bg-yellow-900/30 text-yellow-400'}`}>{selectedCharacter.condition}</span>}
-                      </div>
-                    )}
-
-                    {/* Turn indicator — shown during combat */}
-                    {inCombat &&
-                      (() => {
-                        const currentUnit = units.find((u) => u.isCurrentTurn);
-                        if (!currentUnit) return null;
-                        const isPlayer = currentUnit.type === 'player';
-                        return (
-                          <div className={`flex items-center justify-between px-4 py-2 border-b ${isPlayer ? 'border-green-800/30 bg-green-950/20' : 'border-red-800/30 bg-red-950/20'}`}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full animate-pulse ${isPlayer ? 'bg-green-400' : 'bg-red-400'}`} />
-                              <span className={`text-xs font-bold ${isPlayer ? 'text-green-400' : 'text-red-400'}`}>{currentUnit.name}&apos;s Turn</span>
-                              {currentUnit.conditions && currentUnit.conditions.length > 0 && (
-                                <div className="flex gap-1">
-                                  {currentUnit.conditions.map((c, i) => (
-                                    <span key={i} className={`text-[8px] px-1 py-0.5 rounded ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'} bg-slate-800/60`}>
-                                      {c.type} ({c.duration})
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-slate-600">Round {combatRound}</span>
-                          </div>
-                        );
-                      })()}
-
-                    {/* Quest tracker — collapsible panel */}
-                    <div className="border-b border-slate-800">
-                      <button onClick={() => setShowQuests(!showQuests)} className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showQuests ? 'rotate-90' : ''}`}>
-                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                        </svg>
-                        Quests
-                        {quests.filter((q) => !q.completed).length > 0 && <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-amber-900/50 text-amber-400 rounded-full">{quests.filter((q) => !q.completed).length}</span>}
-                      </button>
-                      {showQuests && (
-                        <div className="px-4 pb-3 space-y-2">
-                          {/* Add quest form */}
-                          <div className="flex gap-1.5">
-                            <input
-                              type="text"
-                              value={newQuestTitle}
-                              onChange={(e) => setNewQuestTitle(e.target.value)}
-                              placeholder="New quest..."
-                              className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-600 outline-none focus:ring-1 focus:ring-amber-500/50"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && newQuestTitle.trim()) {
-                                  const q = { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false };
-                                  setQuests((prev) => {
-                                    const next = [...prev, q];
-                                    broadcastGameEvent('quest_sync', { quests: next });
-                                    return next;
-                                  });
-                                  setNewQuestTitle('');
-                                }
-                              }}
-                            />
-                            <button
-                              onClick={() => {
-                                if (newQuestTitle.trim()) {
-                                  const q = { id: crypto.randomUUID(), title: newQuestTitle.trim(), description: '', completed: false };
-                                  setQuests((prev) => {
-                                    const next = [...prev, q];
-                                    broadcastGameEvent('quest_sync', { quests: next });
-                                    return next;
-                                  });
-                                  setNewQuestTitle('');
-                                }
-                              }}
-                              disabled={!newQuestTitle.trim()}
-                              className="px-2 py-1 text-[10px] font-bold bg-amber-900/40 hover:bg-amber-900/60 border border-amber-800/50 text-amber-400 rounded-lg disabled:opacity-30 transition-all"
-                            >
-                              Add
-                            </button>
-                          </div>
-                          {/* Quest list */}
-                          {quests.length === 0 ? (
-                            <p className="text-[10px] text-slate-600 italic">No quests yet. Add one above or let the DM narrate objectives.</p>
-                          ) : (
-                            <div className="space-y-1">
-                              {quests
-                                .filter((q) => !q.completed)
-                                .map((quest) => (
-                                  <div key={quest.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 group">
-                                    <button
-                                      onClick={() =>
-                                        setQuests((prev) => {
-                                          const next = prev.map((q) => (q.id === quest.id ? { ...q, completed: true } : q));
-                                          broadcastGameEvent('quest_sync', { quests: next });
-                                          return next;
-                                        })
-                                      }
-                                      className="w-3.5 h-3.5 rounded border border-slate-600 hover:border-green-500 hover:bg-green-900/30 transition-colors shrink-0"
-                                      title="Mark complete"
-                                    />
-                                    <span className="flex-1 text-xs text-slate-300 truncate">{quest.title}</span>
-                                    <button
-                                      onClick={() =>
-                                        setQuests((prev) => {
-                                          const next = prev.filter((q) => q.id !== quest.id);
-                                          broadcastGameEvent('quest_sync', { quests: next });
-                                          return next;
-                                        })
-                                      }
-                                      className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                                      title="Remove quest"
-                                    >
-                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
-                                        <path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                ))}
-                              {quests.filter((q) => q.completed).length > 0 && (
-                                <div className="pt-1 border-t border-slate-800 mt-1">
-                                  <div className="text-[9px] text-slate-600 uppercase tracking-wider mb-1">Completed</div>
-                                  {quests
-                                    .filter((q) => q.completed)
-                                    .map((quest) => (
-                                      <div key={quest.id} className="flex items-center gap-2 px-2 py-1 rounded-lg group">
-                                        <div className="w-3.5 h-3.5 rounded border border-green-700 bg-green-900/30 flex items-center justify-center shrink-0">
-                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-2.5 h-2.5 text-green-500">
-                                            <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 01.208 1.04l-5 7.5a.75.75 0 01-1.154.114l-3-3a.75.75 0 011.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 011.04-.207z" clipRule="evenodd" />
-                                          </svg>
-                                        </div>
-                                        <span className="flex-1 text-xs text-slate-600 line-through truncate">{quest.title}</span>
-                                        <button
-                                          onClick={() =>
-                                            setQuests((prev) => {
-                                              const next = prev.filter((q) => q.id !== quest.id);
-                                              broadcastGameEvent('quest_sync', { quests: next });
-                                              return next;
-                                            })
-                                          }
-                                          className="text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                                          title="Remove"
-                                        >
-                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
-                                            <path d="M5.28 4.22a.75.75 0 00-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 101.06 1.06L8 9.06l2.72 2.72a.75.75 0 101.06-1.06L9.06 8l2.72-2.72a.75.75 0 00-1.06-1.06L8 6.94 5.28 4.22z" />
-                                          </svg>
-                                        </button>
-                                      </div>
-                                    ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Death saving throw panel — shown when character is unconscious in combat */}
-                    {selectedCharacter && inCombat && selectedCharacter.condition === 'unconscious' && (
-                      <div className="p-4 border-b border-red-800/30 bg-red-950/20">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="text-red-400 font-bold text-sm">Death Saving Throws</div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-slate-400">Saves:</span>
-                              {[0, 1, 2].map((i) => (
-                                <div key={`ds-s${i}`} className={`w-3 h-3 rounded-full border transition-all ${i < (selectedCharacter.deathSaves?.successes || 0) ? 'bg-green-500 border-green-400 shadow-green-500/50 shadow-sm' : 'border-slate-600'}`} />
-                              ))}
-                              <span className="text-[10px] text-slate-400 ml-2">Fails:</span>
-                              {[0, 1, 2].map((i) => (
-                                <div key={`ds-f${i}`} className={`w-3 h-3 rounded-full border transition-all ${i < (selectedCharacter.deathSaves?.failures || 0) ? 'bg-red-500 border-red-400 shadow-red-500/50 shadow-sm' : 'border-slate-600'}`} />
-                              ))}
-                            </div>
-                          </div>
-                          <button onClick={handleDeathSave} className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-red-900/30">
-                            Roll Death Save
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Stabilized notice */}
-                    {selectedCharacter && selectedCharacter.condition === 'stabilized' && (
-                      <div className="p-3 border-b border-yellow-800/30 bg-yellow-950/20 flex items-center justify-between">
-                        <span className="text-yellow-400 text-xs font-semibold">{selectedCharacter.name} is stabilized but unconscious. Needs healing to regain consciousness.</span>
-                      </div>
-                    )}
-
-                    {/* Dead notice */}
-                    {selectedCharacter && selectedCharacter.condition === 'dead' && (
-                      <div className="p-3 border-b border-red-800/30 bg-red-950/30 flex items-center justify-between">
-                        <span className="text-red-400 text-xs font-bold">{selectedCharacter.name} has fallen. Their adventure ends here.</span>
-                      </div>
-                    )}
-
-                    {/* NPC setup panel — shown when NPC mode is active */}
-                    {npcMode && (
-                      <div className="p-3 border-b border-purple-800/30 bg-purple-950/20 flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Talking to:</span>
-                        <input type="text" value={npcName} onChange={(e) => setNpcName(e.target.value)} placeholder="NPC name..." className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none w-32 focus:ring-1 focus:ring-purple-500/50" />
-                        <input type="text" value={npcRole} onChange={(e) => setNpcRole(e.target.value)} placeholder="Role (e.g., tavern keeper, guard captain)..." className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none flex-1 min-w-40 focus:ring-1 focus:ring-purple-500/50" />
-                      </div>
-                    )}
-
-                    {/* Narration display — shows recent DM messages prominently */}
-                    <div className="flex-1 p-6 overflow-auto space-y-4">
-                      {dmHistory.length === 0 && (
-                        <div className="text-center text-slate-600 py-12">
-                          <p className="text-sm">The adventure unfolds here...</p>
-                        </div>
-                      )}
-
-                      {dmHistory.map((text, i) => {
-                        // NPC dialogue lines (format: "NpcName: "dialogue"")
-                        const npcMatch = text.match(/^(.+?):\s*"(.+)"$/);
-                        if (npcMatch) {
-                          return (
-                            <div key={i} className="rounded-xl px-5 py-4 border border-purple-600/20 bg-gradient-to-br from-purple-950/30 to-slate-900/40">
-                              <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-1">{npcMatch[1]}</div>
-                              <p className="text-purple-100/90 leading-relaxed">&ldquo;{npcMatch[2]}&rdquo;</p>
-                            </div>
-                          );
-                        }
-                        // Combat log entries (attacks, initiative) use a different style
-                        const isCombatEntry = text.includes('hits ') || text.includes('misses ') || text.includes('CRITICAL') || text.includes('falls!') || text.includes('Initiative');
-                        return (
-                          <div key={i} className={`rounded-xl px-5 py-4 border ${isCombatEntry ? 'border-slate-700/50 bg-slate-800/40' : 'border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40'}`}>
-                            <p className={`leading-relaxed ${isCombatEntry ? 'text-slate-300 text-sm font-mono' : 'text-amber-100/90 italic'}`}>{text}</p>
-                          </div>
-                        );
-                      })}
-
-                      {(dmLoading || npcLoading) && (
-                        <div className={`rounded-xl px-5 py-4 border animate-pulse ${npcLoading ? 'border-purple-600/20 bg-gradient-to-br from-purple-950/30 to-slate-900/40' : 'border-amber-600/20 bg-gradient-to-br from-amber-950/30 to-stone-900/40'}`}>
-                          <div className={`flex items-center gap-2 ${npcLoading ? 'text-purple-500/60' : 'text-amber-500/60'}`}>
-                            <div className={`w-4 h-4 border-2 border-t-transparent rounded-full animate-spin ${npcLoading ? 'border-purple-500/60' : 'border-amber-500/60'}`} />
-                            <span className="text-sm italic">{npcLoading ? `${npcName || 'The NPC'} considers their words...` : 'The Dungeon Master weaves the tale...'}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Combat log — togglable during combat */}
-                    {inCombat && combatLog.length > 0 && (
-                      <div className="border-t border-slate-800">
-                        <button onClick={() => setShowCombatLog(!showCombatLog)} className="w-full flex items-center gap-2 px-4 py-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-300 transition-colors">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3 h-3 transition-transform ${showCombatLog ? 'rotate-90' : ''}`}>
-                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                          </svg>
-                          Combat Log
-                          <span className="px-1 py-0.5 text-[8px] bg-slate-800 rounded text-slate-600">{combatLog.length}</span>
-                        </button>
-                        {showCombatLog && (
-                          <div className="max-h-40 overflow-y-auto px-4 pb-2 space-y-0.5">
-                            {combatLog.map((entry, i) => {
-                              const isCrit = entry.includes('CRITICAL');
-                              const isHit = entry.includes('hits ') || isCrit || entry.includes('damage');
-                              const isMiss = entry.includes('misses ') || entry.includes('resists');
-                              const isDeath = entry.includes('falls!');
-                              const isCondition = entry.includes('stunned') || entry.includes('poisoned') || entry.includes('frightened') || entry.includes('burning') || entry.includes('hexed') || entry.includes('blessed') || entry.includes('prone') || entry.includes('dodging') || entry.includes('raging') || entry.includes('inspired');
-                              return (
-                                <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded transition-all ${
-                                  isCrit ? 'text-amber-300 bg-amber-950/30 font-bold crit-flash' :
-                                  isDeath ? 'text-red-400 bg-red-950/30' :
-                                  isHit ? 'text-orange-300 bg-orange-950/20' :
-                                  isMiss ? 'text-slate-500' :
-                                  isCondition ? 'text-purple-300 bg-purple-950/20' :
-                                  'text-slate-400'
-                                }`}>
-                                  {entry}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Player action input — DM can narrate/speak, players see read-only hint */}
-                    {canUseDMTools ? (
-                      <div className="p-4 border-t border-slate-800">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={actionInput}
-                            onChange={(e) => setActionInput(e.target.value)}
-                            placeholder={npcMode ? `Say something to ${npcName || 'the NPC'}...` : "What do you do? (e.g., 'I search the room for traps')"}
-                            className={`flex-1 px-4 py-3 bg-slate-800 border rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none transition-all ${npcMode ? 'border-purple-700/50 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-600' : 'border-slate-700 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-600'}`}
-                            onKeyDown={(e) => e.key === 'Enter' && handlePlayerAction()}
-                            disabled={dmLoading || npcLoading}
-                          />
-                          <button onClick={handlePlayerAction} disabled={!actionInput.trim() || dmLoading || npcLoading} className={`px-5 py-3 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors ${npcMode ? 'bg-purple-600 hover:bg-purple-500' : 'bg-amber-600 hover:bg-amber-500'}`}>
-                            {npcMode ? 'Speak' : 'Act'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="px-4 py-3 border-t border-slate-800">
-                        <p className="text-[10px] text-slate-600 italic text-center">The DM controls narration. Use chat to describe your actions.</p>
-                      </div>
-                    )}
-                  </>
+                  <NarrationPanel
+                    selectedCharacter={selectedCharacter}
+                    canUseDMTools={canUseDMTools}
+                    dmHistory={dmHistory}
+                    dmLoading={dmLoading}
+                    npcLoading={npcLoading}
+                    npcName={npcName}
+                    npcRole={npcRole}
+                    npcMode={npcMode}
+                    setNpcName={setNpcName}
+                    setNpcRole={setNpcRole}
+                    quests={quests}
+                    setQuests={setQuests}
+                    showQuests={showQuests}
+                    setShowQuests={setShowQuests}
+                    newQuestTitle={newQuestTitle}
+                    setNewQuestTitle={setNewQuestTitle}
+                    combatLog={combatLog}
+                    showCombatLog={showCombatLog}
+                    setShowCombatLog={setShowCombatLog}
+                    actionInput={actionInput}
+                    setActionInput={setActionInput}
+                    handleDeathSave={handleDeathSave}
+                    handlePlayerAction={handlePlayerAction}
+                    broadcastGameEvent={broadcastGameEvent}
+                  />
                 ) : activeView === 'shop' ? (
                   /* Shop view */
                   <div className="flex-1 overflow-y-auto">
