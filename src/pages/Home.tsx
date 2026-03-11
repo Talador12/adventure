@@ -36,6 +36,7 @@ export default function Home() {
   const { toast } = useToast();
   const { characters, removeCharacter } = useGame();
   const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number }>>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
   const [partyMembers, setPartyMembers] = useState<Record<string, Array<{ display_name: string; avatar_url: string | null; role: string }>>>({});
 
@@ -46,7 +47,8 @@ export default function Home() {
       .then((data) => {
         if (data?.campaigns?.length) setCampaigns(data.campaigns);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setCampaignsLoading(false));
     fetch('/api/campaigns/public')
       .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }> }>) : null))
       .then((data) => {
@@ -348,7 +350,25 @@ export default function Home() {
               + New Campaign
             </Button>
           </div>
-          {campaigns.length > 0 ? (
+          {campaignsLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
+              {[1, 2].map((i) => (
+                <div key={i} className="rounded-xl bg-slate-900/80 border border-slate-700/50 overflow-hidden animate-card-reveal">
+                  <div className="p-4 space-y-3">
+                    <div className="skeleton skeleton-text w-3/4 h-3.5" />
+                    <div className="skeleton skeleton-text w-1/2 h-2.5" />
+                    <div className="flex gap-1.5 mt-2">
+                      {[1, 2, 3].map((j) => <div key={j} className="skeleton skeleton-circle w-7 h-7" />)}
+                    </div>
+                  </div>
+                  <div className="flex border-t border-slate-700/50 h-10">
+                    <div className="flex-1 border-r border-slate-700/50" />
+                    <div className="flex-1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : campaigns.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
               {campaigns.map((c) => {
                 const members = partyMembers[c.roomId] || [];

@@ -2594,7 +2594,7 @@ export default function Game() {
                           </div>
                           {/* HP bar */}
                           <div className="flex items-center gap-2 mt-0.5">
-                            <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden hp-bar-shimmer">
                               <div className={`h-full rounded-full transition-all duration-500 ${selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'bg-green-500' : selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.max(0, (selectedCharacter.hp / selectedCharacter.maxHp) * 100)}%` }} />
                             </div>
                             <span className={`text-[10px] font-mono font-bold tabular-nums ${selectedCharacter.hp / selectedCharacter.maxHp > 0.5 ? 'text-green-400' : selectedCharacter.hp / selectedCharacter.maxHp > 0.25 ? 'text-yellow-400' : 'text-red-400'}`}>
@@ -2860,12 +2860,20 @@ export default function Game() {
                         {showCombatLog && (
                           <div className="max-h-40 overflow-y-auto px-4 pb-2 space-y-0.5">
                             {combatLog.map((entry, i) => {
-                              const isHit = entry.includes('hits ') || entry.includes('CRITICAL') || entry.includes('damage');
+                              const isCrit = entry.includes('CRITICAL');
+                              const isHit = entry.includes('hits ') || isCrit || entry.includes('damage');
                               const isMiss = entry.includes('misses ') || entry.includes('resists');
                               const isDeath = entry.includes('falls!');
                               const isCondition = entry.includes('stunned') || entry.includes('poisoned') || entry.includes('frightened') || entry.includes('burning') || entry.includes('hexed') || entry.includes('blessed') || entry.includes('prone') || entry.includes('dodging') || entry.includes('raging') || entry.includes('inspired');
                               return (
-                                <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded ${isDeath ? 'text-red-400 bg-red-950/30' : isHit ? 'text-orange-300 bg-orange-950/20' : isMiss ? 'text-slate-500' : isCondition ? 'text-purple-300 bg-purple-950/20' : 'text-slate-400'}`}>
+                                <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded transition-all ${
+                                  isCrit ? 'text-amber-300 bg-amber-950/30 font-bold crit-flash' :
+                                  isDeath ? 'text-red-400 bg-red-950/30' :
+                                  isHit ? 'text-orange-300 bg-orange-950/20' :
+                                  isMiss ? 'text-slate-500' :
+                                  isCondition ? 'text-purple-300 bg-purple-950/20' :
+                                  'text-slate-400'
+                                }`}>
                                   {entry}
                                 </div>
                               );

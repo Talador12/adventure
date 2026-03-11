@@ -117,7 +117,7 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
               </div>
 
               {/* HP bar */}
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden hp-bar-shimmer">
                 <div className={`h-full rounded-full transition-all duration-500 ease-out ${isLow ? 'bg-red-500' : isMid ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${hpPct}%` }} />
               </div>
 

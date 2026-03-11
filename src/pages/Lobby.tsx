@@ -455,52 +455,58 @@ export default function Lobby() {
     // Still checking
     return (
       <div className="h-screen flex items-center justify-center bg-slate-950 text-slate-100">
-        <div className="w-5 h-5 border-2 border-[#F38020] border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-3 animate-fade-in-up">
+          <div className="w-6 h-6 border-2 border-[#F38020] border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-slate-500">Checking lobby...</span>
+        </div>
       </div>
     );
   }
   if (passwordRequired && !passwordVerified) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-slate-100 gap-4">
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-white">This lobby is password-protected</h2>
-          <p className="text-sm text-slate-400">Enter the password to join.</p>
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-slate-100 gap-5 page-enter">
+        <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-slate-900/80 border border-slate-700/50 backdrop-blur-sm shadow-2xl max-w-sm w-full mx-4">
+          <div className="w-12 h-12 rounded-full bg-[#F38020]/10 border border-[#F38020]/20 flex items-center justify-center text-xl">&#x1F512;</div>
+          <div className="text-center space-y-1">
+            <h2 className="text-lg font-bold text-white">Password Required</h2>
+            <p className="text-xs text-slate-400">This lobby is password-protected.</p>
+          </div>
+          <div className="flex gap-2 items-center w-full">
+            <input
+              type="password"
+              placeholder="Enter password"
+              className="input-glow flex-1 px-4 py-2.5 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              autoFocus
+            />
+            <Button variant="default" className="bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handlePasswordSubmit}>
+              Join
+            </Button>
+          </div>
+          {passwordError && <p className="text-xs text-red-400 animate-fade-in-up">{passwordError}</p>}
+          <button onClick={() => navigate('/')} className="text-xs text-slate-500 hover:text-slate-300 transition-colors mt-1">
+            &larr; Back to Home
+          </button>
         </div>
-        <div className="flex gap-2 items-center">
-          <input
-            type="password"
-            placeholder="Password"
-            className="px-4 py-2.5 w-56 border-2 border-slate-700 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] outline-none text-sm"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-            autoFocus
-          />
-          <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2.5 px-5 rounded-lg shadow" onClick={handlePasswordSubmit}>
-            Join
-          </Button>
-        </div>
-        {passwordError && <p className="text-sm text-red-400">{passwordError}</p>}
-        <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-500 hover:text-slate-300 text-sm mt-2">
-          &larr; Back to Home
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
+    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden page-enter">
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center shrink-0">
+      <header className="bg-slate-900/90 border-b border-slate-800/80 px-6 py-3 flex justify-between items-center shrink-0 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-400 hover:text-white">
+          <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors">
             &larr; Home
           </Button>
           {/* Campaign name — click to edit (DM only) */}
           {editingName ? (
             <input
               ref={nameInputRef}
-              className="text-lg font-bold text-[#F38020] bg-slate-800 border border-[#F38020]/50 rounded px-2 py-0.5 outline-none w-48"
+              className="input-glow text-lg font-bold text-[#F38020] bg-slate-800 border border-[#F38020]/50 rounded-lg px-3 py-0.5 outline-none w-48 transition-all"
               value={campaignName}
               onChange={(e) => setCampaignName(e.target.value)}
               onBlur={() => {
@@ -518,58 +524,64 @@ export default function Lobby() {
             />
           ) : (
             <h1
-              className={`text-lg font-bold text-[#F38020] ${isDM ? 'cursor-pointer hover:text-[#f9a05f]' : ''}`}
+              className={`text-lg font-bold text-[#F38020] transition-colors ${isDM ? 'cursor-pointer hover:text-[#f9a05f]' : ''}`}
               onClick={() => { if (isDM) { setEditingName(true); setTimeout(() => nameInputRef.current?.select(), 0); } }}
               title={isDM ? 'Click to rename campaign' : campaignName}
             >
               {campaignName}
             </h1>
           )}
-          <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-slate-400">Room: {room}</span>
+          <span className="text-[10px] font-mono bg-slate-800/80 px-2 py-1 rounded-md text-slate-500 border border-slate-700/50">{room}</span>
           {isDM && (
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 transition-all"
+              className="text-[10px] px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 text-slate-400 hover:text-slate-200 transition-all"
               title="Campaign settings"
             >
               Settings
             </button>
           )}
-          <div className="flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${statusColor}`} />
-            <span className="text-[10px] text-slate-500">{status}</span>
+          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] transition-all ${
+            status === 'connected' ? 'bg-emerald-900/30 text-emerald-400' : status === 'connecting' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-red-900/30 text-red-400'
+          }`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
+            <span className="font-medium">{status}</span>
           </div>
           {isSpectating && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-900/40 border border-sky-700/40 text-sky-400 font-semibold">
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-900/30 border border-sky-700/30 text-sky-400 font-semibold animate-fade-in-up">
               Spectating
             </span>
           )}
         </div>
         <div className="flex items-center gap-3">
-          {allReady && <span className="text-[10px] text-emerald-400 font-semibold animate-pulse">All Ready</span>}
-          <Button
-            variant="default"
+          {allReady && (
+            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              All Ready
+            </span>
+          )}
+          <button
             onClick={handleStartGame}
-            className={`font-semibold py-2 px-5 rounded-lg shadow transition-all active:scale-[0.98] ${
+            className={`font-semibold py-2 px-6 rounded-lg shadow-lg text-sm transition-all active:scale-[0.97] ${
               allReady || isDM
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white hover:shadow-emerald-500/20 hover:shadow-xl'
+                : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
             }`}
             disabled={!allReady && !isDM}
             title={allReady ? 'Everyone is ready!' : isDM ? 'DM override — start anyway' : 'Waiting for all players to ready up'}
           >
             Start Game &rarr;
-          </Button>
+          </button>
         </div>
       </header>
 
       {/* Campaign settings panel — collapsible, DM only */}
       {showSettings && isDM && (
-        <div className="bg-slate-900 border-b border-slate-800 px-6 py-3 shrink-0">
+        <div className="bg-slate-900/80 border-b border-slate-800/80 px-6 py-3 shrink-0 backdrop-blur-sm animate-slide-in">
           <div className="max-w-2xl mx-auto space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Campaign Settings</h3>
-              <button onClick={() => setShowSettings(false)} className="text-xs text-slate-500 hover:text-slate-300">Close</button>
+              <button onClick={() => setShowSettings(false)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Close</button>
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
@@ -651,7 +663,7 @@ export default function Lobby() {
         {/* Left side: seat roster + activity area (doodle/dice) */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Seat roster + invite bar */}
-          <div className="bg-slate-900/50 border-b border-slate-800 px-4 py-3 shrink-0">
+          <div className="bg-slate-900/40 border-b border-slate-800/60 px-4 py-3 shrink-0 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Party</h2>
@@ -682,18 +694,20 @@ export default function Lobby() {
             </div>
 
             {/* Seat grid */}
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-2.5 overflow-x-auto pb-1 stagger-children">
               {seats.map((seat) => (
                 <div
                   key={seat.id}
-                  className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-lg border min-w-[120px] transition-all ${
+                  className={`seat-card flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl border min-w-[130px] transition-all backdrop-blur-sm animate-card-reveal ${
+                    seat.ready ? 'seat-ready' : ''
+                  } ${
                     seat.type === 'human' && seat.playerId === wsPlayerId
-                      ? 'border-[#F38020]/50 bg-[#F38020]/10'
+                      ? 'border-[#F38020]/40 bg-[#F38020]/[0.08] shadow-lg shadow-orange-900/10'
                       : seat.type === 'ai'
-                        ? 'border-violet-700/40 bg-violet-900/10'
+                        ? 'border-violet-700/30 bg-violet-900/[0.08] shadow-lg shadow-violet-900/10'
                         : seat.type === 'human'
-                          ? 'border-slate-700 bg-slate-800/50'
-                          : 'border-slate-700/30 bg-slate-800/20 border-dashed'
+                          ? 'border-slate-700/50 bg-slate-800/40 shadow-md'
+                          : 'border-slate-700/20 bg-slate-800/20 border-dashed'
                   }`}
                 >
                   {/* Seat header: avatar + name */}
@@ -875,20 +889,25 @@ export default function Lobby() {
           {/* Dice + Doodle Pad side by side */}
           <div className="flex-1 flex overflow-hidden">
             {/* Dice roller — left */}
-            <div className="w-64 shrink-0 border-r border-slate-800 p-4 flex flex-col items-center overflow-y-auto">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Dice</h3>
+            <div className="w-64 shrink-0 border-r border-slate-800/60 p-4 flex flex-col items-center overflow-y-auto bg-slate-900/20">
+              <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Dice</h3>
               <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} compact />
             </div>
             {/* Doodle pad — fills remaining space, synced via WebSocket */}
             <div className="flex-1 overflow-hidden relative">
               <DoodlePad ref={doodleRef} onStroke={handleDoodleStroke} onClear={handleDoodleClear} />
-              {drawingPlayer && <div className="absolute bottom-2 left-3 px-2 py-1 bg-slate-800/80 border border-slate-700/50 rounded-lg text-[10px] text-slate-400 pointer-events-none animate-pulse">{drawingPlayer} is drawing...</div>}
+              {drawingPlayer && (
+                <div className="absolute bottom-2 left-3 px-2.5 py-1 bg-slate-800/90 border border-slate-700/50 rounded-lg text-[10px] text-slate-400 pointer-events-none backdrop-blur-sm animate-fade-in-up">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5" />
+                  {drawingPlayer} is drawing...
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Right sidebar: chat */}
-        <div className="w-80 border-l border-slate-800 bg-slate-900 flex flex-col p-4 shrink-0 overflow-hidden">
+        <div className="w-80 border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-4 shrink-0 overflow-hidden backdrop-blur-sm">
           <ChatPanel messages={chatMessages} onSend={handleChatSend} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
