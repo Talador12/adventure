@@ -11,7 +11,17 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 19: Multiplayer Session Sync + Test Framework. The game currently has solid social sync (chat, dice, doodle strokes, DM narration) but zero game-mechanical sync — units, combat, HP, initiative, turns, terrain, tokens, and characters are all local-only. The goal is a hybrid AI/real player experience with flawless socket session management for all shared features. The test framework validates existing game logic and multiplayer behavior before sync work begins.
+Round 20: Illustrated Character Portraits (Phase 1). Replace programmatic SVG portraits with illustrated art cropped from reference image (`assets/characters.jpg`). Hand-drawn, anime-influenced character art in all portrait locations — character creation cards, main preview, game page, home page, character sheets.
+
+### Illustrated portrait system
+- **Status:** Done (Phase 1 — base images + wiring)
+- **Phase 1 (complete):** 20 WebP portraits (8 races + 12 classes) cropped from reference image, upscaled to 256px wide via Lanczos, total 184KB. Wired into all 4 UI files with cascade fallback: `char.portrait || /portraits/classes/{class}.webp` with `onError` fallback to `/portraits/races/{race}.webp`, then SVG as last resort in CharacterCreate.
+- **Phase 2 (future):** Illustrated overlay assets — transparent PNG layers for facial hair, hair styles, scars, face markings, eye/skin/hair color variations that match the art style. Canvas composite system to layer overlays on base portraits.
+- **Assets:** `assets/portraits/races/` (8 files), `assets/portraits/classes/` (12 files, Druid sourced from tavern scene since it's missing from the class grid). Vite copies these to `public/` during build (publicDir: 'assets').
+- **Modified files:** `CharacterCreate.tsx` (race/class card portraits + main preview), `Home.tsx` (character list thumbnails), `Game.tsx` (character select, narration header, toolbar), `CharacterSheet.tsx` (header portrait)
+- **Reference image note:** `assets/characters.jpg` (1296x830) is a UI mockup with text labels baked into illustrations, requiring tight face-focused crops to avoid text overlap
+
+### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
 - **Status:** Done — all 97 tests passing (69 player + 28 worker), 2 budget-skipped
@@ -549,3 +559,4 @@ Wire broadcasts at all mutation sites:
 - Spatial combat engine: map state lifted to context, enemy AI pathfinding + movement, melee adjacency enforcement for players and enemies
 - Ranged combat + line of sight: Bresenham LOS raycasting, weapon/ability/spell range enforcement, DEX for ranged weapons, smart ranged enemy AI, new ranged weapons (Shortbow, Hand Crossbow, Longbow +2, Oathbow)
 - Test framework: vitest 3.2.4 + @cloudflare/vitest-pool-workers, dual config (plain + workers pool), 4 test files across 3 categories (player/multiplayer/AI), 97 tests passing + 2 budget-skipped, Makefile targets, budget-aware AI_TESTS env var
+- Illustrated portraits (Phase 1): 20 WebP character portraits (8 races + 12 classes) cropped from reference art, wired into all portrait locations (CharacterCreate, Home, Game, CharacterSheet) with cascade fallback

@@ -82,13 +82,12 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
     <div className="space-y-4 text-sm">
       {/* Header */}
       <div className="flex items-center gap-3">
-        {character.portrait ? (
-          <img src={character.portrait} alt={character.name} className="w-14 h-14 rounded-xl object-cover border border-slate-600" />
-        ) : (
-          <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center text-2xl font-bold text-slate-500 border border-slate-700">
-            {character.name.charAt(0)}
-          </div>
-        )}
+        <img
+          src={character.portrait || `/portraits/classes/${character.class.toLowerCase()}.webp`}
+          alt={character.name}
+          className="w-14 h-14 rounded-xl object-cover border border-slate-600"
+          onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${character.race.toLowerCase()}.webp`; }}
+        />
         <div>
           <div className="font-bold text-white text-lg">{character.name}</div>
           <div className="text-slate-400 text-xs">Level {character.level} {character.race} {character.class}</div>

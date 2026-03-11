@@ -5,7 +5,7 @@ import { useToast } from '../components/ui/toast';
 import { useGame, STAT_NAMES, RACES, CLASSES, BACKGROUNDS, ALIGNMENTS, HAIR_STYLES, SCAR_TYPES, FACE_MARKING_TYPES, FACIAL_HAIR_TYPES, DEFAULT_APPEARANCE, type Stats, type Race, type CharacterClass, type StatName, type Background, type Alignment, type Appearance, type HairStyle, type ScarType, type FaceMarkingType, type FacialHairType } from '../contexts/GameContext';
 import { SKIN_PALETTES, HAIR_PALETTES, EYE_PALETTES } from '../lib/palettes';
 import { randomFantasyName } from '../lib/names';
-import { buildRacePortraitSvg, buildMiniPortraitDataUrl } from '../lib/portrait';
+import { buildRacePortraitSvg } from '../lib/portrait';
 import { EXPORT_FORMATS, runExport, type ExportFormat } from '../lib/export';
 
 
@@ -240,7 +240,7 @@ export default function CharacterCreate() {
   }, [swapSource, statRolls, rollingAll, toast]);
 
   // Build the default SVG portrait as a data URL ��� original copyrightless vector art
-  // Reacts to both race AND class for class-specific outfits/weapons
+  // SVG fallback kept for edge cases; illustrated art used as primary
   const defaultPortraitSvg = useMemo(() => {
     const svg = buildRacePortraitSvg(race, charClass, appearance);
     return `data:image/svg+xml;base64,${btoa(svg)}`;
@@ -678,15 +678,13 @@ export default function CharacterCreate() {
     navigate('/');
   };
 
-  // Memoize mini portraits for race cards (one per race, using Fighter as default class)
-  const raceMiniPortraits = useMemo(() => {
-    return Object.fromEntries(RACES.map((r) => [r, buildMiniPortraitDataUrl(r, 'Fighter')])) as Record<Race, string>;
-  }, []);
+  // Illustrated portrait paths — hand-drawn art from /portraits/
+  const racePortraitPath = (r: Race) => `/portraits/races/${r.toLowerCase()}.webp`;
+  const classPortraitPath = (c: CharacterClass) => `/portraits/classes/${c.toLowerCase()}.webp`;
 
-  // Memoize mini portraits for class cards (one per class, using current race)
-  const classMiniPortraits = useMemo(() => {
-    return Object.fromEntries(CLASSES.map((c) => [c, buildMiniPortraitDataUrl(race, c)])) as Record<CharacterClass, string>;
-  }, [race]);
+  // Illustrated portrait for the main preview — shows the class portrait (defines gear/outfit look)
+  // Falls back to race portrait if no class selected, then to SVG as last resort
+  const illustratedPortrait = classPortraitPath(charClass);
 
   return (
     <div className="min-h-screen text-slate-100" style={{
@@ -832,10 +830,10 @@ export default function CharacterCreate() {
                       <div className={`text-sm font-bold leading-tight ${isSelected ? 'text-[#F38020]' : 'text-amber-100/90'}`}>{r}</div>
                       <div className={`text-[10px] mt-0.5 leading-tight ${isSelected ? 'text-amber-400/70' : 'text-amber-600/60'}`}>{bonusStr}</div>
                     </div>
-                    {/* Portrait */}
+                    {/* Portrait — illustrated art */}
                     <div className="w-14 h-full shrink-0 relative">
                       <img
-                        src={raceMiniPortraits[r]}
+                        src={racePortraitPath(r)}
                         alt={r}
                         className="absolute inset-0 w-full h-full object-cover object-top"
                         style={{ borderRadius: '0 0.65rem 0.65rem 0' }}
@@ -874,10 +872,10 @@ export default function CharacterCreate() {
                       <div className={`text-sm font-bold leading-tight ${isSelected ? 'text-[#F38020]' : 'text-amber-100/90'}`}>{c}</div>
                       <div className={`text-[10px] mt-0.5 leading-tight ${isSelected ? 'text-amber-400/70' : 'text-amber-600/60'}`}>d{CLASS_HIT_DIE[c]} HP</div>
                     </div>
-                    {/* Portrait */}
+                    {/* Portrait — illustrated art */}
                     <div className="w-14 h-full shrink-0 relative">
                       <img
-                        src={classMiniPortraits[c]}
+                        src={classPortraitPath(c)}
                         alt={c}
                         className="absolute inset-0 w-full h-full object-cover object-top"
                         style={{ borderRadius: '0 0.65rem 0.65rem 0' }}
@@ -902,9 +900,10 @@ export default function CharacterCreate() {
             <div className="space-y-2">
               <div className="relative">
                 <img
-                  src={portrait || defaultPortraitSvg}
+                  src={portrait || illustratedPortrait}
                   alt={`${race} ${charClass} portrait`}
                   className="w-[200px] h-[156px] rounded-xl border-2 border-amber-900/40 object-cover bg-[#1e160e]"
+                  onError={(e) => { (e.target as HTMLImageElement).src = defaultPortraitSvg; }}
                 />
                 {(generatingPortrait || uploadingPortrait) && (
                   <div className="absolute inset-0 rounded-xl bg-slate-950/80 flex items-center justify-center">
@@ -913,7 +912,7 @@ export default function CharacterCreate() {
                 )}
               </div>
               <p className="text-[10px] text-amber-800/50 text-center">
-                {portrait ? (portraitSource === 'ai' ? 'AI portrait' : 'Uploaded') : 'Live SVG preview'}
+                {portrait ? (portraitSource === 'ai' ? 'AI portrait' : 'Uploaded') : `${charClass} portrait`}
               </p>
             </div>
 
@@ -1501,9 +1500,10 @@ export default function CharacterCreate() {
           <div className="flex items-start gap-6">
             {/* Portrait thumbnail */}
             <img
-              src={portrait || defaultPortraitSvg}
+              src={portrait || illustratedPortrait}
               alt="Portrait"
               className="w-20 h-20 rounded-xl object-cover bg-[#2a1f14] shrink-0 border border-amber-900/30"
+              onError={(e) => { (e.target as HTMLImageElement).src = defaultPortraitSvg; }}
             />
             <div className="flex-1 space-y-1">
               <div className="text-xl font-bold text-amber-100">{name || 'Unnamed Hero'}</div>

@@ -976,14 +976,13 @@ export default function Game() {
                       onClick={() => handleSelectCharacter(char)}
                       className="flex items-center gap-4 p-4 rounded-xl border border-slate-700 bg-slate-900 hover:border-[#F38020] hover:bg-[#F38020]/5 transition-all text-left group"
                     >
-                      {/* Portrait */}
-                      {char.portrait ? (
-                        <img src={char.portrait} alt={char.name} className="w-16 h-16 rounded-xl object-cover border border-slate-600 shrink-0" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-xl bg-slate-800 flex items-center justify-center text-2xl font-bold text-slate-500 border border-slate-700 shrink-0">
-                          {char.name.charAt(0)}
-                        </div>
-                      )}
+                      {/* Portrait — illustrated art fallback */}
+                      <img
+                        src={char.portrait || `/portraits/classes/${char.class.toLowerCase()}.webp`}
+                        alt={char.name}
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-600 shrink-0"
+                        onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${char.race.toLowerCase()}.webp`; }}
+                      />
 
                       <div className="flex-1 min-w-0">
                         <div className="text-lg font-bold text-white group-hover:text-[#F38020] transition-colors truncate">{char.name}</div>
@@ -1084,13 +1083,12 @@ export default function Game() {
               <div className="rounded-xl border border-slate-800 bg-slate-900 flex flex-col items-center justify-center h-full gap-6 p-8">
                 {selectedCharacter && (
                   <div className="flex items-center gap-4">
-                    {selectedCharacter.portrait ? (
-                      <img src={selectedCharacter.portrait} alt={selectedCharacter.name} className="w-20 h-20 rounded-xl object-cover border-2 border-amber-600/30" />
-                    ) : (
-                      <div className="w-20 h-20 rounded-xl bg-slate-800 flex items-center justify-center text-3xl font-bold text-slate-500 border-2 border-slate-700">
-                        {selectedCharacter.name.charAt(0)}
-                      </div>
-                    )}
+                    <img
+                      src={selectedCharacter.portrait || `/portraits/classes/${selectedCharacter.class.toLowerCase()}.webp`}
+                      alt={selectedCharacter.name}
+                      className="w-20 h-20 rounded-xl object-cover border-2 border-amber-600/30"
+                      onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${selectedCharacter.race.toLowerCase()}.webp`; }}
+                    />
                     <div>
                       <div className="text-2xl font-bold text-white">{selectedCharacter.name}</div>
                       <div className="text-sm text-slate-400">Level {selectedCharacter.level} {selectedCharacter.race} {selectedCharacter.class}</div>
@@ -1666,13 +1664,12 @@ export default function Game() {
                     {/* Character status bar — always visible during adventure */}
                     {selectedCharacter && (
                       <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-800 bg-slate-900/60">
-                        {selectedCharacter.portrait ? (
-                          <img src={selectedCharacter.portrait} alt={selectedCharacter.name} className="w-8 h-8 rounded-lg object-cover border border-slate-600 shrink-0" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-500 border border-slate-700 shrink-0">
-                            {selectedCharacter.name.charAt(0)}
-                          </div>
-                        )}
+                        <img
+                          src={selectedCharacter.portrait || `/portraits/classes/${selectedCharacter.class.toLowerCase()}.webp`}
+                          alt={selectedCharacter.name}
+                          className="w-8 h-8 rounded-lg object-cover border border-slate-600 shrink-0"
+                          onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${selectedCharacter.race.toLowerCase()}.webp`; }}
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-white truncate">{selectedCharacter.name}</span>
