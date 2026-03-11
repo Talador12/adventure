@@ -8,6 +8,18 @@
   --color-accent: #f38020;
   --color-cloudflare: #f38020;
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  /* Fantasy palette */
+  --color-ember: #f38020;
+  --color-ember-dark: #c46010;
+  --color-gold: #fbbf24;
+  --color-mystic: #a78bfa;
+  --color-arcane: #818cf8;
+  --color-dragon: #ef4444;
+  --color-forest: #10b981;
+  /* Animation durations */
+  --animate-duration-fast: 0.2s;
+  --animate-duration-normal: 0.4s;
+  --animate-duration-slow: 0.8s;
 }
 
 /* Font smoothing */
@@ -16,22 +28,27 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Selection color */
+/* Selection color — warm ember glow */
 ::selection {
-  background-color: #f3802033;
+  background-color: #f3802044;
+  color: #fff;
 }
 
-/* Custom scrollbar for dark mode */
+/* Custom scrollbar — dark fantasy */
 html.dark ::-webkit-scrollbar {
-  width: 12px;
-  background: #0f172a;
+  width: 10px;
+  background: #0c0f1a;
 }
 html.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 6px;
+  background: linear-gradient(180deg, #334155, #1e293b);
+  border-radius: 5px;
+  border: 2px solid #0c0f1a;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #475569, #334155);
 }
 
-/* Focus ring */
+/* Focus ring — ember glow */
 :focus-visible {
   outline: 2px solid #f38020;
   outline-offset: 2px;
@@ -39,8 +56,235 @@ html.dark ::-webkit-scrollbar-thumb {
 
 /* Link transitions */
 a {
-  transition: color 0.2s;
+  transition: color 0.2s ease;
 }
 a:hover {
   color: #f38020;
+}
+
+/* ============================================================
+   ANIMATION KEYFRAMES — Fantasy VTT
+   ============================================================ */
+
+/* Fade in + slight upward float */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Staggered card entrance */
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Shimmer sweep — for text highlights and loading states */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Gentle float — for hero elements */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Glow pulse — for CTAs and important elements */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(243, 128, 32, 0); }
+  50% { box-shadow: 0 0 20px 2px rgba(243, 128, 32, 0.25); }
+}
+
+/* Gradient shift — for hero background */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Dropdown/menu slide in */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Scale pop for buttons/clicks */
+@keyframes popIn {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Ember particle float (decorative) */
+@keyframes emberRise {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-60px) scale(0) rotate(180deg); }
+}
+
+/* Border shimmer for cards */
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(243, 128, 32, 0.1); }
+  50% { border-color: rgba(243, 128, 32, 0.3); }
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+/* Apply to any element for entrance animation */
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+.animate-card-reveal {
+  animation: cardReveal 0.45s ease-out both;
+}
+.animate-slide-in {
+  animation: slideIn 0.15s ease-out both;
+}
+.animate-pop-in {
+  animation: popIn 0.3s ease-out both;
+}
+
+/* Stagger delays for card grids — apply parent class, children auto-stagger */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+
+/* Text shimmer — golden fantasy shimmer on headings */
+.text-shimmer {
+  background: linear-gradient(
+    110deg,
+    currentColor 35%,
+    #fbbf24 50%,
+    currentColor 65%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Card hover glow — add to any card for ember border glow on hover */
+.card-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+}
+.card-glow:hover {
+  box-shadow: 0 0 24px -4px rgba(243, 128, 32, 0.15), 0 8px 32px -8px rgba(0, 0, 0, 0.4);
+  border-color: rgba(243, 128, 32, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Hero animated gradient background */
+.hero-gradient {
+  background: linear-gradient(
+    135deg,
+    #0c0f1a 0%,
+    #111827 20%,
+    #1a1030 40%,
+    #1c1020 60%,
+    #111827 80%,
+    #0c0f1a 100%
+  );
+  background-size: 300% 300%;
+  animation: gradientShift 12s ease infinite;
+}
+
+/* CTA button glow pulse */
+.btn-glow {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+.btn-glow:hover {
+  animation: none;
+  box-shadow: 0 0 24px 2px rgba(243, 128, 32, 0.35);
+}
+
+/* Gentle float for decorative elements */
+.animate-float {
+  animation: gentleFloat 3s ease-in-out infinite;
+}
+
+/* Feature card — subtle hover lift with color tint */
+.feature-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(circle at 50% 0%, rgba(243, 128, 32, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
+}
+.feature-card:hover::after {
+  opacity: 1;
+}
+
+/* Campaign/character cards — glass morphism + smooth hover */
+.game-card {
+  transition: transform 0.25s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+.game-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(243, 128, 32, 0.1),
+    0 8px 24px -4px rgba(0, 0, 0, 0.3),
+    0 0 16px -4px rgba(243, 128, 32, 0.08);
+}
+
+/* HP bar shimmer animation */
+.hp-bar-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.hp-bar-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: shimmer 2s linear infinite;
+}
+
+/* Stat badge subtle pulse on hover */
+.stat-badge {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-badge:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 8px rgba(243, 128, 32, 0.2);
+}
+
+/* Input focus glow */
+.input-glow:focus {
+  box-shadow: 0 0 0 3px rgba(243, 128, 32, 0.15), 0 0 16px -4px rgba(243, 128, 32, 0.2);
+}
+
+/* Dice roll result flash */
+@keyframes critFlash {
+  0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6); }
+  50% { box-shadow: 0 0 32px 8px rgba(251, 191, 36, 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+}
+.crit-flash {
+  animation: critFlash 0.6s ease-out;
+}
+
+/* Smooth page transition — apply to page root */
+.page-enter {
+  animation: fadeInUp 0.4s ease-out both;
 }

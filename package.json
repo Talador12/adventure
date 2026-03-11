@@ -24,7 +24,7 @@
     "@fortawesome/react-fontawesome": "0.2.2",
     "@tailwindcss/vite": "4.2.1",
     "clsx": "2.1.1",
-    "hono": "4.12.5",
+    "hono": "4.12.7",
     "jose": "6.2.1",
     "lucide-react": "0.577.0",
     "react": "^19.1.0",

@@ -1,0 +1,124 @@
+// Enemy templates, encounter themes, and enemy generation.
+// Extracted from GameContext.tsx for maintainability.
+
+import type { EnemyTemplate, Unit } from '../types/game';
+
+export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
+  easy: [
+    { names: ['Goblin', 'Kobold', 'Giant Rat', 'Skeleton'], cr: 0.25, hp: [7, 12], ac: 12, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 2, xpValue: 50, abilities: [] },
+    { names: ['Zombie', 'Wolf', 'Bandit'], cr: 0.25, hp: [10, 16], ac: 11, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 0, xpValue: 50, abilities: [] },
+    { names: ['Stirge', 'Crawling Claw', 'Twig Blight'], cr: 0.25, hp: [5, 9], ac: 13, attackBonus: 4, damageDie: '1d4', damageBonus: 2, dexMod: 3, xpValue: 50, abilities: [] },
+    { names: ['Cultist', 'Tribal Warrior', 'Thug'], cr: 0.5, hp: [12, 18], ac: 12, attackBonus: 3, damageDie: '1d8', damageBonus: 1, dexMod: 1, xpValue: 100, abilities: [{ name: 'Pack Tactics', type: 'attack', damageDie: '1d8', attackBonus: 4, cooldown: 2, description: 'Coordinates with allies for a precise strike.' }] },
+  ],
+  medium: [
+    { names: ['Orc', 'Gnoll', 'Bugbear', 'Hobgoblin'], cr: 1, hp: [15, 25], ac: 13, attackBonus: 5, damageDie: '1d10', damageBonus: 3, dexMod: 1, xpValue: 200, abilities: [{ name: 'Aggressive Charge', type: 'attack', damageDie: '2d6', attackBonus: 5, cooldown: 3, description: 'Rushes forward and strikes with extra force.' }] },
+    { names: ['Dire Wolf', 'Ghoul', 'Shadow'], cr: 1, hp: [18, 28], ac: 14, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 2, xpValue: 200, abilities: [{ name: 'Paralyzing Touch', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'On hit, the target is stunned until the end of its next turn.' }] },
+    { names: ['Fire Beetle', 'Giant Spider', 'Vine Blight'], cr: 1, hp: [14, 22], ac: 13, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 1, xpValue: 200, abilities: [{ name: 'Venomous Bite', type: 'condition', condition: 'poisoned', conditionDuration: 2, cooldown: 3, description: 'Injects venom that saps strength and focus.' }] },
+    { names: ['Specter', 'Wight', 'Animated Armor'], cr: 1, hp: [20, 30], ac: 15, attackBonus: 4, damageDie: '1d8', damageBonus: 3, dexMod: 2, xpValue: 200, abilities: [{ name: 'Necrotic Touch', type: 'attack', damageDie: '2d6', attackBonus: 4, condition: 'hexed', conditionDuration: 1, cooldown: 3, description: 'Drains the warmth from living flesh.' }] },
+  ],
+  hard: [
+    {
+      names: ['Ogre', 'Minotaur', 'Owlbear', 'Troll'], cr: 2, hp: [30, 50], ac: 14,
+      attackBonus: 6, damageDie: '2d8', damageBonus: 4, dexMod: 0, xpValue: 450,
+      abilities: [
+        { name: 'Crushing Blow', type: 'attack', damageDie: '3d8', attackBonus: 6, cooldown: 3, description: 'A devastating overhead strike.' },
+        { name: 'Frightening Roar', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 5, description: 'A terrifying bellow that shakes your resolve.' },
+      ],
+    },
+    { names: ['Wraith', 'Basilisk', 'Manticore'], cr: 3, hp: [35, 55], ac: 15, attackBonus: 6, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [{ name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' }] },
+    {
+      names: ['Hell Hound', 'Phase Spider', 'Displacer Beast'], cr: 3, hp: [32, 48], ac: 14,
+      attackBonus: 5, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700,
+      abilities: [
+        { name: 'Fire Breath', type: 'aoe', damageDie: '3d6', cooldown: 4, description: 'Exhales a cone of searing flame.', isRanged: true, range: 6 },
+        { name: 'Phase Shift', type: 'condition', condition: 'blessed', conditionDuration: 1, cooldown: 4, description: 'Blinks between planes, becoming harder to hit.' },
+      ],
+    },
+    {
+      names: ['Ettin', 'Flesh Golem', 'Gelatinous Cube'], cr: 2, hp: [40, 60], ac: 13,
+      attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: -1, xpValue: 450,
+      abilities: [
+        { name: 'Double Strike', type: 'attack', damageDie: '2d10', attackBonus: 7, cooldown: 2, description: 'Two heads swing in unison — or the mass engulfs its prey.' },
+        { name: 'Stunning Slam', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'A blow so heavy it rattles your skull.' },
+      ],
+    },
+  ],
+  deadly: [
+    {
+      names: ['Young Dragon', 'Beholder Zombie', 'Hydra', 'Lich Apprentice'], cr: 5, hp: [60, 90], ac: 17,
+      attackBonus: 8, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800,
+      abilities: [
+        { name: 'Breath Weapon', type: 'aoe', damageDie: '6d6', cooldown: 4, description: 'A torrent of elemental fury engulfs the area.', isRanged: true, range: 12 },
+        { name: 'Multiattack', type: 'attack', damageDie: '2d8', attackBonus: 8, cooldown: 0, description: 'Strikes twice in rapid succession.' },
+        { name: 'Terrifying Presence', type: 'condition', condition: 'frightened', conditionDuration: 3, cooldown: 6, description: 'An aura of dread forces a WIS save or be frightened.' },
+      ],
+    },
+    {
+      names: ['Mind Flayer', 'Vampire Spawn', 'Flameskull Trio'], cr: 4, hp: [50, 75], ac: 16,
+      attackBonus: 7, damageDie: '2d8', damageBonus: 4, dexMod: 3, xpValue: 1100,
+      abilities: [
+        { name: 'Mind Blast', type: 'aoe', damageDie: '4d8', cooldown: 5, description: 'A cone of psychic energy stuns all who fail their save.', isRanged: true, range: 12 },
+        { name: 'Psychic Grasp', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 3, description: 'Seizes the mind of a target, paralyzing them.' },
+      ],
+    },
+    {
+      names: ['Shambling Mound', 'Elemental', 'Chimera'], cr: 4, hp: [55, 80], ac: 15,
+      attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: 1, xpValue: 1100,
+      abilities: [
+        { name: 'Engulf', type: 'attack', damageDie: '3d8', attackBonus: 7, condition: 'prone', conditionDuration: 1, cooldown: 3, description: 'Wraps around a target, crushing and smothering.' },
+        { name: 'Lightning Absorption', type: 'heal', cooldown: 5, description: 'Absorbs elemental energy to regenerate.' },
+      ],
+    },
+    {
+      names: ['Death Knight', 'Oni', 'Night Hag'], cr: 5, hp: [65, 95], ac: 18,
+      attackBonus: 9, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800,
+      abilities: [
+        { name: 'Hellfire Orb', type: 'aoe', damageDie: '5d8', cooldown: 5, description: 'Hurls a sphere of searing hellfire that detonates on impact.', isRanged: true, range: 24 },
+        { name: 'Soul Rend', type: 'attack', damageDie: '3d10', attackBonus: 9, condition: 'hexed', conditionDuration: 3, cooldown: 4, description: 'Tears at the soul, leaving the target cursed and weakened.' },
+        { name: 'Dark Command', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 4, description: 'Issues a command laced with dark power. Obey or tremble.' },
+      ],
+    },
+  ],
+};
+
+export const ENCOUNTER_THEMES: { setting: string; twist: string }[] = [
+  { setting: 'a narrow ravine choked with fog', twist: 'The ground is slick with ice — footing is treacherous' },
+  { setting: 'the ruins of a collapsed watchtower', twist: 'Rubble shifts underfoot, and something glints in the debris' },
+  { setting: 'a moonlit clearing in a dead forest', twist: 'The trees whisper warnings that only the druid can hear' },
+  { setting: 'a flooded crypt reeking of decay', twist: 'The water hides something that moves beneath the surface' },
+  { setting: 'a merchant caravan under siege', twist: 'The merchants are not what they seem' },
+  { setting: 'an ancient stone bridge over a chasm', twist: 'The bridge groans — it will not hold forever' },
+  { setting: 'a burning village, smoke blotting out the sky', twist: 'Survivors are trapped in the chapel' },
+  { setting: 'a dark cavern lit by bioluminescent fungi', twist: 'The spores cause hallucinations if inhaled too deeply' },
+  { setting: 'a crossroads shrine defiled by dark magic', twist: 'The shrine pulses with residual power that could be harnessed' },
+  { setting: 'the deck of a wrecked ship half-buried in sand', twist: 'The cargo hold still has something alive in it' },
+  { setting: 'an overgrown arena from a forgotten civilization', twist: 'Spectral crowds cheer from the crumbling stands' },
+  { setting: 'a frozen lake with something moving beneath the ice', twist: 'Cracks spread with every heavy impact' },
+];
+
+export function randomEncounterTheme(): { setting: string; twist: string } {
+  return ENCOUNTER_THEMES[Math.floor(Math.random() * ENCOUNTER_THEMES.length)];
+}
+
+export function generateEnemies(difficulty: string, partyLevel: number, count?: number): Unit[] {
+  const templates = ENEMY_TEMPLATES[difficulty] || ENEMY_TEMPLATES.medium;
+  const template = templates[Math.floor(Math.random() * templates.length)];
+  const enemyCount = count || (difficulty === 'easy' ? 2 + Math.floor(Math.random() * 2) : difficulty === 'deadly' ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 3));
+  const levelScale = 1 + (partyLevel - 1) * 0.15;
+
+  return Array.from({ length: enemyCount }, (_, i) => {
+    const name = template.names[Math.floor(Math.random() * template.names.length)];
+    const baseHp = template.hp[0] + Math.floor(Math.random() * (template.hp[1] - template.hp[0] + 1));
+    const scaledHp = Math.round(baseHp * levelScale);
+    return {
+      id: `enemy-${crypto.randomUUID().slice(0, 8)}-${i}`,
+      name: enemyCount > 1 && template.names.length <= enemyCount ? `${name} ${String.fromCharCode(65 + i)}` : name,
+      hp: scaledHp, maxHp: scaledHp, ac: template.ac, initiative: -1, isCurrentTurn: false,
+      type: 'enemy' as const, playerId: 'ai-dm',
+      attackBonus: template.attackBonus, damageDie: template.damageDie, damageBonus: template.damageBonus,
+      dexMod: template.dexMod, abilities: template.abilities.map((a) => ({ ...a })),
+      abilityCooldowns: {}, conditions: [], speed: 6, movementUsed: 0,
+      reactionUsed: false, disengaged: false, cr: template.cr, xpValue: template.xpValue,
+    } satisfies Unit;
+  });
+}

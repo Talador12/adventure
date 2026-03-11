@@ -182,12 +182,13 @@ export default function Home() {
   const avatarUrl = user?.picture || (user?.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png');
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0c0f1a] text-slate-900 dark:text-slate-100 transition-colors">
       {/* Header */}
-      <header className="w-full bg-gradient-to-r from-[#F38020] to-[#e06a10] shadow-lg py-2 px-6 flex justify-between items-center">
-        <div className="flex items-baseline gap-2">
-          <h1 className="text-xl font-extrabold tracking-tight drop-shadow text-white">Adventure</h1>
-          <span className="text-[11px] text-white/60 font-medium hidden sm:inline">your table, your rules</span>
+      <header className="w-full bg-gradient-to-r from-[#F38020] via-[#e87818] to-[#d06010] shadow-lg shadow-orange-900/20 py-2 px-6 flex justify-between items-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.06)_50%,transparent_70%)] pointer-events-none" />
+        <div className="flex items-baseline gap-2 relative z-10">
+          <h1 className="text-xl font-extrabold tracking-tight drop-shadow-md text-white">Adventure</h1>
+          <span className="text-[11px] text-white/50 font-medium hidden sm:inline">your table, your rules</span>
         </div>
         <div className="flex gap-3 items-center">
           {/* Theme toggle */}
@@ -253,34 +254,39 @@ export default function Home() {
       </header>
 
       {/* Hero section */}
-      <section className="w-full bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border-b border-slate-800">
-        <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col items-center text-center gap-5">
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-            Your table. <span className="text-[#F38020]">Your rules.</span>
+      <section className="w-full hero-gradient border-b border-slate-800/50 relative overflow-hidden">
+        {/* Subtle radial glow behind hero text */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#F38020]/[0.04] rounded-full blur-[100px]" />
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-purple-500/[0.03] rounded-full blur-[80px]" />
+        </div>
+        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col items-center text-center gap-5 relative z-10">
+          <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight animate-fade-in-up">
+            <span className="text-white">Your table. </span><span className="text-shimmer text-[#F38020]">Your rules.</span>
           </h2>
-          <p className="text-lg text-slate-400 max-w-2xl">
+          <p className="text-lg text-slate-400 max-w-2xl animate-fade-in-up" style={{ animationDelay: '80ms' }}>
             An accessible D&D 5e tabletop in your browser. Play with friends, go solo, or just spectate.
             Every seat at the table is yours to fill however you want.
           </p>
 
           {/* Quick actions */}
-          <div className="flex flex-wrap gap-4 mt-2 justify-center">
+          <div className="flex flex-wrap gap-4 mt-2 justify-center animate-fade-in-up" style={{ animationDelay: '160ms' }}>
             <div className="flex gap-2 items-center">
-              <input type="text" placeholder="Room code or invite link" className="px-4 py-2.5 w-56 border-2 border-slate-700 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
-              <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow transition-all active:scale-[0.98]" onClick={handleJoinCampaign}>
+              <input type="text" placeholder="Room code or invite link" className="input-glow px-4 py-2.5 w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
+              <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleJoinCampaign}>
                 Join
               </Button>
             </div>
-            <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
+            <Button variant="default" className="btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
               New Campaign
             </Button>
-            <Button variant="default" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-5 rounded-lg shadow transition-all active:scale-[0.98]" onClick={handleCreateCharacter}>
+            <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
               Create Character
             </Button>
           </div>
 
           {/* Feature highlights */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-center w-full max-w-4xl">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-center w-full max-w-4xl stagger-children">
             {[
               { icon: '👥', label: 'Any Party Size', desc: 'Solo, co-op, full table, or spectate — humans and AI in any seat' },
               { icon: '⚔️', label: 'Full 5e Combat', desc: 'Initiative, AoE spells, saving throws, death saves, opportunity attacks' },
@@ -289,10 +295,10 @@ export default function Home() {
               { icon: '✨', label: 'Just Works', desc: 'No plugins, no install, no PDF imports — open a browser and play in minutes' },
               { icon: '🎭', label: 'Every Seat, Your Call', desc: 'Human or AI for any seat — DM, players, spectators. Or no AI at all' },
             ].map((f) => (
-              <div key={f.label} className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                <div className="text-2xl mb-1">{f.icon}</div>
+              <div key={f.label} className="feature-card p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 backdrop-blur-sm animate-card-reveal">
+                <div className="text-2xl mb-1 animate-float" style={{ animationDelay: `${Math.random() * 2}s` }}>{f.icon}</div>
                 <div className="text-sm font-semibold text-white">{f.label}</div>
-                <div className="text-[11px] text-slate-500">{f.desc}</div>
+                <div className="text-[11px] text-slate-400">{f.desc}</div>
               </div>
             ))}
           </div>
@@ -300,15 +306,15 @@ export default function Home() {
       </section>
 
       {/* Main content */}
-      <main className="flex-1 p-6 max-w-6xl mx-auto w-full space-y-6">
+      <main className="flex-1 p-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
 
         {/* Public campaign browser — only show if there are public games */}
         {publicCampaigns.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in-up">
             <h2 className="text-lg font-semibold text-slate-400">Public Games</h2>
-            <div className="flex gap-3 overflow-x-auto pb-1">
+            <div className="flex gap-3 overflow-x-auto pb-1 stagger-children">
               {publicCampaigns.filter((pc) => !campaigns.some((c) => c.roomId === pc.roomId)).slice(0, 8).map((pc) => (
-                <div key={pc.roomId} className="shrink-0 w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow hover:shadow-lg transition-all overflow-hidden">
+                <div key={pc.roomId} className="game-card shrink-0 w-56 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow hover:shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
                   <div className="px-3 pt-3 pb-2">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{pc.name}</h3>
                     {pc.description && <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{pc.description}</p>}
@@ -317,8 +323,8 @@ export default function Home() {
                       {typeof pc.playerCount === 'number' && <span>{pc.playerCount} player{pc.playerCount !== 1 ? 's' : ''}</span>}
                     </div>
                   </div>
-                  <div className="flex border-t border-slate-200 dark:border-slate-800">
-                    <button onClick={() => navigate(`/lobby/${pc.roomId}`)} className="flex-1 py-2 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 transition-colors text-center border-r border-slate-200 dark:border-slate-800">
+                  <div className="flex border-t border-slate-200 dark:border-slate-700/50">
+                    <button onClick={() => navigate(`/lobby/${pc.roomId}`)} className="flex-1 py-2 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 transition-colors text-center border-r border-slate-200 dark:border-slate-700/50">
                       Join
                     </button>
                     <button onClick={() => navigate(`/lobby/${pc.roomId}?spectate=1`)} className="flex-1 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-500/10 transition-colors text-center">
@@ -335,21 +341,21 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
 
         {/* Campaigns column */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 animate-fade-in-up">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#F38020]">Your Campaigns</h2>
-            <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-[#F38020] to-amber-400 bg-clip-text text-transparent">Your Campaigns</h2>
+            <Button variant="default" className="bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
               + New Campaign
             </Button>
           </div>
           {campaigns.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
               {campaigns.map((c) => {
                 const members = partyMembers[c.roomId] || [];
                 const dmMember = members.find((m) => m.role === 'dm');
                 const playerCount = members.filter((m) => m.role !== 'dm').length;
                 return (
-                  <div key={c.roomId} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-all overflow-hidden">
+                  <div key={c.roomId} className="game-card rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
                     {/* Campaign header */}
                     <div className="px-4 pt-4 pb-3">
                       <div className="flex items-start justify-between gap-2">
@@ -361,7 +367,7 @@ export default function Home() {
                             {playerCount > 0 && <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>}
                           </div>
                         </div>
-                        <button onClick={() => handleDeleteCampaign(c.roomId, c.name)} className="text-slate-500 hover:text-red-400 transition-colors p-1 -mt-1 -mr-1" title="Delete campaign">
+                        <button onClick={() => handleDeleteCampaign(c.roomId, c.name)} className="text-slate-500 hover:text-red-400 transition-colors p-1 -mt-1 -mr-1 hover:scale-110" title="Delete campaign">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 000 1.5h.3l.815 8.15A1.5 1.5 0 005.357 15h5.285a1.5 1.5 0 001.493-1.35l.815-8.15h.3a.75.75 0 000-1.5H11v-.75A2.25 2.25 0 008.75 1h-1.5A2.25 2.25 0 005 3.25zm2.25-.75a.75.75 0 00-.75.75V4h3v-.75a.75.75 0 00-.75-.75h-1.5z" clipRule="evenodd" /></svg>
                         </button>
                       </div>
@@ -370,9 +376,9 @@ export default function Home() {
                         <div className="flex -space-x-2 mt-2.5">
                           {members.slice(0, 6).map((m, i) =>
                             m.avatar_url ? (
-                              <img key={i} src={m.avatar_url} alt={m.display_name} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900" />
+                              <img key={i} src={m.avatar_url} alt={m.display_name} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 transition-transform hover:scale-110 hover:z-10" />
                             ) : (
-                              <div key={i} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-300">
+                              <div key={i} title={`${m.display_name}${m.role === 'dm' ? ' (DM)' : ''}`} className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-300 transition-transform hover:scale-110 hover:z-10">
                                 {m.display_name.charAt(0).toUpperCase()}
                               </div>
                             )
@@ -382,11 +388,11 @@ export default function Home() {
                       )}
                     </div>
                     {/* Action buttons */}
-                    <div className="flex border-t border-slate-200 dark:border-slate-800">
-                      <button onClick={() => navigate(`/lobby/${c.roomId}`)} className="flex-1 py-2.5 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 transition-colors text-center border-r border-slate-200 dark:border-slate-800">
+                    <div className="flex border-t border-slate-200 dark:border-slate-700/50">
+                      <button onClick={() => navigate(`/lobby/${c.roomId}`)} className="flex-1 py-2.5 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 hover:text-sky-300 transition-all text-center border-r border-slate-200 dark:border-slate-700/50">
                         Lobby
                       </button>
-                      <button onClick={() => navigate(`/game/${c.roomId}`)} className="flex-1 py-2.5 text-xs font-semibold text-amber-500 hover:bg-amber-500/10 transition-colors text-center">
+                      <button onClick={() => navigate(`/game/${c.roomId}`)} className="flex-1 py-2.5 text-xs font-semibold text-amber-500 hover:bg-amber-500/10 hover:text-amber-400 transition-all text-center">
                         Play
                       </button>
                     </div>
@@ -395,22 +401,22 @@ export default function Home() {
               })}
             </div>
           ) : (
-            <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 text-center">
+            <div className="rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 p-8 text-center backdrop-blur-sm">
               <p className="text-sm text-slate-500 dark:text-slate-400">{user ? 'No campaigns yet. Create one to get started, or join with a room code above.' : 'Sign in to create and manage campaigns.'}</p>
             </div>
           )}
         </div>
 
         {/* Characters column */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#F38020]">Your Characters</h2>
-            <Button variant="default" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={handleCreateCharacter}>
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">Your Characters</h2>
+            <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
               + New Character
             </Button>
           </div>
           {characters.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
               {characters.map((c) => {
                 const hpPct = c.maxHp > 0 ? Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100)) : 100;
                 const hpColor = hpPct <= 25 ? 'bg-red-500' : hpPct <= 50 ? 'bg-yellow-500' : 'bg-green-500';
@@ -422,13 +428,13 @@ export default function Home() {
                 const chaMod = Math.floor((c.stats.CHA - 10) / 2);
                 const fmtMod = (v: number) => v >= 0 ? `+${v}` : `${v}`;
                 return (
-                  <div key={c.id} className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-xl transition-all overflow-hidden">
+                  <div key={c.id} className="game-card rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
                     <div className="flex gap-3 p-4">
                       {/* Portrait */}
                       <img
                         src={c.portrait || `/portraits/classes/${c.class.toLowerCase()}.webp`}
                         alt=""
-                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-600/50 shadow-md transition-transform hover:scale-105"
                         onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${c.race.toLowerCase()}.webp`; }}
                       />
                       <div className="min-w-0 flex-1">
@@ -439,15 +445,15 @@ export default function Home() {
                           </div>
                           <button
                             onClick={() => { removeCharacter(c.id); toast(`${c.name} deleted`, 'info'); }}
-                            className="text-slate-500 hover:text-red-400 transition-colors p-1 -mt-1 -mr-1" title="Delete character"
+                            className="text-slate-500 hover:text-red-400 transition-all p-1 -mt-1 -mr-1 hover:scale-110" title="Delete character"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 000 1.5h.3l.815 8.15A1.5 1.5 0 005.357 15h5.285a1.5 1.5 0 001.493-1.35l.815-8.15h.3a.75.75 0 000-1.5H11v-.75A2.25 2.25 0 008.75 1h-1.5A2.25 2.25 0 005 3.25zm2.25-.75a.75.75 0 00-.75.75V4h3v-.75a.75.75 0 00-.75-.75h-1.5z" clipRule="evenodd" /></svg>
                           </button>
                         </div>
                         {/* HP bar */}
                         <div className="flex items-center gap-2 mt-1.5">
-                          <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all ${hpColor}`} style={{ width: `${hpPct}%` }} />
+                          <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden hp-bar-shimmer">
+                            <div className={`h-full rounded-full transition-all duration-500 ${hpColor}`} style={{ width: `${hpPct}%` }} />
                           </div>
                           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 shrink-0">{c.hp}/{c.maxHp}</span>
                         </div>
@@ -460,17 +466,17 @@ export default function Home() {
                       </div>
                     </div>
                     {/* Stat mods row */}
-                    <div className="grid grid-cols-6 gap-0 border-t border-slate-200 dark:border-slate-800 text-center">
+                    <div className="grid grid-cols-6 gap-0 border-t border-slate-200 dark:border-slate-700/50 text-center">
                       {([['STR', strMod], ['DEX', dexMod], ['CON', conMod], ['INT', intMod], ['WIS', wisMod], ['CHA', chaMod]] as [string, number][]).map(([stat, mod]) => (
-                        <div key={stat} className="py-1.5 border-r border-slate-200 dark:border-slate-800 last:border-r-0">
+                        <div key={stat} className="stat-badge py-1.5 border-r border-slate-200 dark:border-slate-700/50 last:border-r-0 cursor-default">
                           <div className="text-[8px] text-slate-400 uppercase">{stat}</div>
                           <div className={`text-[10px] font-bold ${mod > 0 ? 'text-green-400' : mod < 0 ? 'text-red-400' : 'text-slate-500'}`}>{fmtMod(mod)}</div>
                         </div>
                       ))}
                     </div>
                     {/* Action button */}
-                    <div className="border-t border-slate-200 dark:border-slate-800">
-                      <button onClick={() => navigate(`/characters/${c.id}/edit`)} className="w-full py-2.5 text-xs font-semibold text-amber-500 hover:bg-amber-500/10 transition-colors text-center">
+                    <div className="border-t border-slate-200 dark:border-slate-700/50">
+                      <button onClick={() => navigate(`/characters/${c.id}/edit`)} className="w-full py-2.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-all text-center">
                         Edit Character
                       </button>
                     </div>
@@ -479,11 +485,11 @@ export default function Home() {
               })}
             </div>
           ) : (
-            <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 text-center">
+            <div className="rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 p-8 text-center backdrop-blur-sm">
               {user ? (
                 <>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No characters yet. Create one to join a campaign!</p>
-                  <Button variant="default" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={handleCreateCharacter}>
+                  <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
                     Create Your First Character
                   </Button>
                 </>
@@ -496,13 +502,13 @@ export default function Home() {
 
         </div>{/* end 2-column grid */}
 
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-6 opacity-80 flex items-center gap-1 justify-center">
+        <p className="text-slate-500 dark:text-slate-500 text-sm mt-8 mb-2 flex items-center gap-1.5 justify-center animate-fade-in-up" style={{ animationDelay: '300ms' }}>
           Built by{' '}
-          <a href="https://github.com/Talador12" target="_blank" rel="noreferrer" className="underline hover:text-[#F38020]">
-            Keith Adler (@talador12)
+          <a href="https://github.com/Talador12" target="_blank" rel="noreferrer" className="underline decoration-slate-600 hover:decoration-[#F38020] hover:text-[#F38020] transition-all">
+            Keith Adler
           </a>{' '}
-          running on Cloudflare
-          <FontAwesomeIcon icon={faCloudflare} style={{ color: '#F38020', fontSize: '1.2em' }} />
+          on
+          <FontAwesomeIcon icon={faCloudflare} className="text-[#F38020] transition-transform hover:scale-110" style={{ fontSize: '1.2em' }} />
         </p>
       </main>
     </div>

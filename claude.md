@@ -43,7 +43,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 ## Current Focus
 
-Round 30 (complete): Lobby password protection (SHA-256 hash in KV, verify endpoint, password gate UI), save state indicator in Game.tsx toolbar (saving/saved/error + timestamp), auth gating (create campaign/character requires login, spectate does not), prominent login buttons with labels, dashboard column height fix (equal-height flex columns), fixed pre-existing TS errors (_worker.ts party join body typing). Round 31 (in progress): Mobile-responsive lobby, code cleanup, performance improvements. Round 29 (complete): Spectator mode (full stack), campaign visibility (public/private), public campaign browser, role-based entry. Round 28 (complete): Character wizard, BattleMap minimap + AoE overlays, turn timer, DM sidebar, AoE spell targeting, encounter calculator, NPC generator, animated tokens, ambient sound system, landing page overhaul. Previous: Round 27 (complete) landing page + lobby + seat model + campaign settings + kick. Round 26 (complete) D1 + chat persistence + Google OAuth.
+Round 31 (in progress): Visual polish (fantasy animation system, card hover effects, hero gradient, shimmer text, staggered card reveals), codebase decomposition (types/game.ts, data/enemies.ts, data/items.ts, data/spells.ts extracted from GameContext — wiring pending), hono security patch (4.12.5 → 4.12.7), bundle optimization (code splitting planned, currently 703KB). Round 30 (complete): Lobby password protection (SHA-256 hash in KV, verify endpoint, password gate UI), save state indicator in Game.tsx toolbar, auth gating (create campaign/character requires login), prominent login buttons, dashboard column height fix, fixed pre-existing TS errors. Round 29 (complete): Spectator mode, campaign visibility (public/private), public campaign browser, role-based entry. Round 28 (complete): Character wizard, BattleMap minimap + AoE overlays, turn timer, DM sidebar, AoE spell targeting, encounter calculator, NPC generator, animated tokens, ambient sound system, landing page overhaul. Previous: Round 27 (complete) landing page + lobby + seat model + campaign settings + kick. Round 26 (complete) D1 + chat persistence + Google OAuth.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -734,59 +734,110 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 | Campaign metadata | KV list + D1 schema exists | Migrate KV → D1 | TODO |
 | User preferences | localStorage | D1 + localStorage (sync) | TODO |
 
+### Round 31: Visual Polish + Codebase Health (IN PROGRESS)
+**Goal:** Make the app feel premium — slick animations, fantasy color palette, smooth transitions. Simultaneously decompose bloated files and optimize the bundle.
+
+**Visual polish (IN PROGRESS):**
+- [x] Fantasy CSS animation system: 10 keyframes (fadeInUp, cardReveal, shimmer, gentleFloat, glowPulse, gradientShift, slideIn, popIn, emberRise, borderGlow)
+- [x] Utility classes: `.animate-fade-in-up`, `.animate-card-reveal`, `.stagger-children`, `.text-shimmer`, `.card-glow`, `.hero-gradient`, `.btn-glow`, `.animate-float`, `.feature-card`, `.game-card`, `.hp-bar-shimmer`, `.stat-badge`, `.input-glow`, `.crit-flash`, `.page-enter`
+- [x] Fantasy color palette tokens: ember, gold, mystic, arcane, dragon, forest
+- [x] Polished scrollbar (gradient thumb, thinner)
+- [ ] Hero section: animated gradient background, shimmer on tagline
+- [ ] Feature cards: `.feature-card` class, staggered entrance, subtle hover glow
+- [ ] Campaign/character cards: `.game-card` class, staggered entrance, hover lift
+- [ ] CTA buttons: `.btn-glow` pulse on primary actions
+- [ ] Page entrance animation on Home, Lobby, Game
+- [ ] Lobby UI: card hover effects, seat card animations
+- [ ] Game UI: crit flash on dice rolls, HP bar shimmer, smoother transitions
+
+**Codebase decomposition (IN PROGRESS):**
+- [x] `src/types/game.ts` — all shared interfaces and type definitions (~300 lines extracted)
+- [x] `src/data/enemies.ts` — enemy templates, encounter themes, generateEnemies (~100 lines)
+- [x] `src/data/items.ts` — loot tables, shop items, rollLoot (~100 lines)
+- [x] `src/data/spells.ts` — spell list, spell slots, class abilities, feats (~120 lines)
+- [ ] Wire up imports: GameContext.tsx re-exports from new files (backward compat)
+- [ ] Verify 0 TS errors + all 153 tests pass after rewiring
+
+**Bundle optimization:**
+- [x] Hono security patch: 4.12.5 → 4.12.7 (Dependabot CVE fix)
+- [ ] Lazy load routes: `React.lazy()` for Game, CharacterCreate, Lobby (heavy pages)
+- [ ] Manual chunks: split vendor (react, react-dom) from app code
+- [ ] Target: 703KB → under 400KB initial load
+
+**Error handling improvements (from code review):**
+- [ ] Add `console.error` to all bare `catch {}` blocks in _worker.ts
+- [ ] Standardize error response shape: `{ error: string }` everywhere
+- [ ] Add AbortController timeout to client-side AI fetch calls
+
+### Round 32: Mobile + Accessibility (PLANNED)
+**Goal:** Touch-friendly on phones/tablets, accessible to all players.
+
+- [ ] Mobile-responsive lobby (collapsible panels, touch-friendly seat cards)
+- [ ] Mobile-responsive game (swipeable views: narration/map/chat/sheet)
+- [ ] Touch-friendly battle map (pinch zoom, tap to select, long-press to move)
+- [ ] Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
+- [ ] `prefers-reduced-motion` media query: disable all animations automatically
+- [ ] Keyboard navigation for combat actions
+- [ ] ARIA labels on interactive elements
+
+### Round 33: Cloudflare Access/IDP + Campaign Invites (PLANNED)
+**Goal:** Corporate/team login, campaign sharing via Discord DM.
+
+- [ ] Cloudflare Access login (waiting on external setup)
+- [ ] Campaign invite links via Discord DM (bot or webhook)
+- [ ] Lobby chat reactions (emoji reactions on messages)
+- [ ] Campaign archive (soft delete, can restore)
+
 ### Future rounds
 
 **Infrastructure:**
-- Lobby DO hibernation — migrate to `this.state.acceptWebSocket()` for cost reduction
-- Undo/redo system for DM actions (command pattern, rewindable state stack)
-- Mobile responsive layout (touch-friendly battle map, collapsible panels, swipe navigation)
-- Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
-- Rate limiting + abuse protection on public lobbies (CAPTCHA on join, report system)
+- Lobby DO hibernation — `this.state.acceptWebSocket()` for cost reduction
+- Undo/redo for DM actions (command pattern, rewindable state stack)
+- Rate limiting + abuse protection on public lobbies
+- Service Worker for offline-first static assets
+- IndexedDB local cache for characters, campaign state, chat
 
 **Gameplay depth:**
-- Multiclass support (pick a second class on level-up, shared spell slots, multi-ability tracking)
-- Reaction system expansion (Shield spell, Counterspell, Hellish Rebuke — trigger on enemy turn)
-- Inventory trading between players (drag item to another player's portrait)
-- Dice macros / saved roll shortcuts ("Fireball" macro = 8d6, custom named rolls)
-- Initiative reroll / manual initiative editing (DM can drag-reorder initiative)
-- Weather/lighting effects on battle map (rain, fog, darkness radius, torch light)
-- Random encounter tables (configurable per biome/dungeon level, auto-roll between rests)
-- Downtime activities (crafting, research, carousing — between sessions)
-- Familiar/companion tokens (separate initiative, controllable by player)
+- Multiclass support (second class on level-up, shared spell slots)
+- Reaction system expansion (Shield, Counterspell, Hellish Rebuke on enemy turn)
+- Inventory trading between players (drag to portrait)
+- Dice macros / saved roll shortcuts
+- Initiative reroll / manual editing (DM drag-reorder)
+- Weather/lighting effects on battle map (rain, fog, darkness, torch light)
+- Random encounter tables (per biome/dungeon level, auto-roll between rests)
+- Downtime activities (crafting, research, carousing)
+- Familiar/companion tokens (separate initiative, player-controlled)
 
 **Content & Import/Export:**
-- Import characters from D&D Beyond / Foundry VTT / Roll20 JSON
-- Export formats — Pathfinder 2e, Forbidden Lands, Savage Worlds stat blocks
-- VTT map import (Foundry VTT, Roll20 map files → BattleMap background)
+- Import from D&D Beyond / Foundry VTT / Roll20 JSON
+- Export to Pathfinder 2e, Forbidden Lands, Savage Worlds
+- VTT map import (Foundry, Roll20 map files → BattleMap background)
 - Homebrew content editor (custom races, classes, spells, items, monsters)
-- Pre-built adventure modules (starter dungeons, one-shots with scripted encounters)
-- Monster manual browser (search/filter by CR, type, environment)
+- Pre-built adventure modules (starter dungeons, one-shots)
+- Monster manual browser (CR, type, environment filters)
 
 **Visual & Audio:**
-- Animated token movement (smooth pathfinding interpolation along BFS path)
-- Particle effects for spells and combat (fire, ice, lightning, healing shimmer)
-- Map layers (background, terrain, tokens, effects as separate composited layers)
-- Sound FX expansion — mood music, ambient loops, remaining spell effects, death saves, conditions
-- Music/ambiance system (Web Audio API ambient generator or URL-based audio player, DM controls)
-- Portrait gallery — save/browse generated portraits, remix styles, share with party
-- Dynamic lighting (token-attached light sources, darkvision radius, dim light zones)
+- Particle effects for spells (fire, ice, lightning, healing shimmer)
+- Map layers (background, terrain, tokens, effects — separate composited layers)
+- Sound FX expansion — remaining spell effects, death saves, conditions
+- Portrait gallery — save/browse AI portraits, remix styles, share with party
+- Dynamic lighting (token light sources, darkvision, dim light zones)
 
 **Social & Community:**
-- Session recap / AI session summary (AI reads combat log + chat, generates "last time on...")
-- Campaign timeline / session log (auto-generated, browseable history of sessions)
-- Journal/notes system — shared campaign notes, session summaries, DM-only notes
-- Discord integration for voice/chat (Discord Activity SDK or webhook notifications)
-- Drop-in/drop-out guest characters (no account needed, temporary session token)
-- Player ratings / reputation (after public games, optional, non-toxic)
-- Campaign templates (share your campaign setup for others to clone)
+- AI session recap ("last time on..." from combat log + chat)
+- Campaign timeline / session log (auto-generated, browseable)
+- Journal/notes — shared campaign notes, session summaries, DM-only notes
+- Discord integration for voice/chat (Activity SDK or webhook)
+- Drop-in/drop-out guest characters (no account, temporary token)
+- Campaign templates (share setup for others to clone)
 
 **AI enhancements:**
-- AI player turn logic (AI seats actually play — move, attack, cast, use abilities)
-- AI DM encounter pacing (dynamically adjusts difficulty mid-combat if TPK imminent)
-- AI rules lawyer (passive — watches play, flags rule violations, suggests corrections in chat)
-- AI session prep (DM describes next session goals, AI generates maps + encounters + NPCs)
-- AI voice narration (TTS for DM narration text, distinct voices per NPC)
-- Dynamic difficulty — auto-scale encounters based on party size/level, death count
+- AI player turn logic (AI seats actually play — move, attack, cast)
+- AI DM encounter pacing (dynamic difficulty mid-combat)
+- AI rules lawyer (passive — flags rule violations in chat)
+- AI session prep (DM goals → generated maps + encounters + NPCs)
+- AI voice narration (TTS with distinct NPC voices)
+- Dynamic difficulty auto-scaling
 
 ## Known Technical Debt
 
