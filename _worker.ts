@@ -1210,6 +1210,27 @@ app.post('/api/campaigns', async (c) => {
   }
 });
 
+// PATCH /api/campaigns/:roomId — update campaign metadata (name, description)
+app.patch('/api/campaigns/:roomId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const roomId = c.req.param('roomId');
+    const body = await c.req.json<Record<string, unknown>>();
+    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
+    const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+    const campaign = campaigns.find((cp) => cp.roomId === roomId);
+    if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
+    if (body.name !== undefined) campaign.name = String(body.name).slice(0, 100);
+    if (body.description !== undefined) campaign.description = String(body.description).slice(0, 500);
+    await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+    return c.json({ ok: true, campaign });
+  } catch {
+    return c.json({ error: 'Failed to update campaign' }, 500);
+  }
+});
+
 // DELETE /api/campaigns/:roomId — remove a campaign from user's list
 app.delete('/api/campaigns/:roomId', async (c) => {
   const userId = await getUserId(c);

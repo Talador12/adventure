@@ -54,7 +54,7 @@ const RATE_LIMIT_MAX_EVENTS = 10;
 // DM-only message types that require authorization
 const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action']);
 // DM-only seat management messages (set_dm_type handled separately since it can un-DM the sender)
-const DM_SEAT_MESSAGES = new Set(['set_seat_type', 'add_seat', 'remove_seat']);
+const DM_SEAT_MESSAGES = new Set(['set_seat_type', 'add_seat', 'remove_seat', 'kick_player']);
 
 export class Lobby {
   state: DurableObjectState;
@@ -577,6 +577,60 @@ export class Lobby {
         }
         this.seats = this.seats.filter((s) => s.id !== removeSeat.id);
         this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
+        break;
+      }
+
+      case 'kick_player': {
+        // DM kicks a player from their seat (vacates seat, closes their WebSocket)
+        const kickPlayerId = data.playerId as string;
+        if (!kickPlayerId) {
+          server.send(JSON.stringify({ type: 'error', message: 'playerId is required', timestamp: Date.now() }));
+          return;
+        }
+        // Can't kick yourself
+        const kickerSession = this.sessions.get(server);
+        if (kickerSession && kickerSession.id === kickPlayerId) {
+          server.send(JSON.stringify({ type: 'error', message: 'Cannot kick yourself', timestamp: Date.now() }));
+          return;
+        }
+        // Find the target player's WebSocket and seat
+        let targetWs: WebSocket | null = null;
+        let targetSession: Session | null = null;
+        for (const [ws, s] of this.sessions) {
+          if (s.id === kickPlayerId) { targetWs = ws; targetSession = s; break; }
+        }
+        if (!targetSession) {
+          server.send(JSON.stringify({ type: 'error', message: 'Player not found', timestamp: Date.now() }));
+          return;
+        }
+        // Vacate their seat
+        if (targetSession.seatId) {
+          const seat = this.seats.find((s) => s.id === targetSession!.seatId);
+          if (seat) {
+            seat.type = 'empty';
+            seat.playerId = undefined;
+            seat.username = undefined;
+            seat.avatar = undefined;
+            seat.characterId = undefined;
+            seat.characterName = undefined;
+            seat.ready = false;
+          }
+        }
+        // Remove session and close socket
+        this.sessions.delete(targetWs!);
+        try {
+          targetWs!.send(JSON.stringify({ type: 'kicked', message: 'You have been kicked by the DM', timestamp: Date.now() }));
+          targetWs!.close();
+        } catch { /* already dead */ }
+        // Broadcast updated state
+        this.broadcast({
+          type: 'player_kicked',
+          username: targetSession.username,
+          playerId: kickPlayerId,
+          players: this.getPlayerList(),
+          seats: this.seats,
+          timestamp: Date.now(),
+        });
         break;
       }
 

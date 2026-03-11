@@ -716,6 +716,35 @@ describe('Seat model — party configuration', () => {
     await closeAndWait(ws);
   });
 
+  it('DM can kick a player from their seat', async () => {
+    const room = 'seats-kick-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'DM' });
+    await waitForMessage(ws1, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Kicked' });
+    const w2 = await waitForMessage(ws2, 'welcome');
+    const kickedId = w2.playerId as string;
+
+    // Kick player 2
+    const kickedPromise = waitForMessage(ws2, 'kicked');
+    const kickBroadcast = waitForMessage(ws1, 'player_kicked');
+    send(ws1, { type: 'kick_player', playerId: kickedId });
+
+    const kicked = await kickedPromise;
+    expect(kicked.message).toContain('kicked');
+
+    const broadcast = await kickBroadcast;
+    expect(broadcast.username).toBe('Kicked');
+    const seats = broadcast.seats as Array<Record<string, unknown>>;
+    const humanSeats = seats.filter((s) => s.type === 'human');
+    expect(humanSeats.length).toBe(1); // only DM's seat remains
+
+    await closeAndWait(ws1);
+    // ws2 was already closed by the kick
+  });
+
   it('REST /players endpoint includes seats and dmSeatType', async () => {
     const room = 'seats-rest-' + Date.now();
     const ws = await connectPlayer(room);

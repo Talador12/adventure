@@ -59,7 +59,7 @@ Round 27: Landing Page + Lobby + Player-First Rebranding — Hero section rewrit
 ### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
-- **Status:** Done — all 143 tests passing (99 player + 44 worker), 2 budget-skipped
+- **Status:** Done — all 144 tests passing (99 player + 45 worker), 2 budget-skipped
 
 **Three test categories:**
 1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 17 describe blocks, 99 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks, condition system (CONDITION_EFFECTS, effectiveAC, rollD20WithProne, CLASS_ABILITIES condition types). **All 99 passing.**
@@ -586,7 +586,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] `seats_updated` broadcast on any seat change
 - [x] `welcome` includes `seats`, `dmSeatType`, `seatId` for the joining player
 - [x] All seat operations DM-auth gated (except `set_dm_type` which allows any player to claim human DM when current DM is AI)
-- [x] 10 new tests: default seats, auto-claim, ready toggle, character select, AI toggle, DM auth, add/remove, disconnect revert, DM type toggle, REST endpoint
+- [x] 11 new tests: default seats, auto-claim, ready toggle, character select, AI toggle, DM auth, add/remove, disconnect revert, DM type toggle, kick player, REST endpoint
 
 **Lobby UI (DONE):**
 - [x] Seat roster replaces flat player list — card per seat with type badge, avatar, character, ready state
@@ -598,12 +598,25 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] "Make DM" transfer button on human seats (DM only)
 - [x] "+ Seat" / "- Seat" buttons for DM
 
-**Lobby improvements (remaining):**
-- [ ] Campaign settings panel (name, description, invite link management)
+**Campaign settings (DONE):**
+- [x] `PATCH /api/campaigns/:roomId` — rename + description update
+- [x] Campaign name editable inline in lobby header (click to edit, DM only)
+- [x] Collapsible "Settings" panel with name, description, invite link + copy
+- [x] Campaign name loaded from server on lobby mount
+
+**Kick player (DONE):**
+- [x] `kick_player` message type in lobby.ts — DM-auth gated
+- [x] Vacates player's seat, sends `kicked` message, closes their WebSocket
+- [x] `player_kicked` broadcast to remaining players
+- [x] Kicked player gets redirected to Home with toast notification
+- [x] Kick button on human seats (DM only, can't kick yourself)
+
+**Seat-to-game bridge (DONE):**
+- [x] "Start Game" stores seat's characterId in sessionStorage
+- [x] Game.tsx reads `adventure:seatCharId:{room}` on mount, auto-selects character
+- [x] Falls back to campaign-saved characterId if no seat assignment
 
 **Campaign management (remaining):**
-- [ ] Campaign settings: rename, change description, manage invites
-- [ ] Kick/invite players from campaign party
 - [ ] Campaign archive (soft delete, can restore)
 
 ### Round 28: Character + Game Board + DM Tools Polish

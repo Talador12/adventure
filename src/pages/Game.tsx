@@ -244,8 +244,16 @@ export default function Game() {
           if (c.sceneName && !sceneName) {
             setSceneName(c.sceneName as string);
           }
-          // Auto-select character if we had one saved
-          if (c.selectedCharacterId && !selectedCharacterId) {
+          // Auto-select character: prefer seat assignment from lobby, then saved campaign state
+          let autoCharId: string | null = null;
+          try { autoCharId = sessionStorage.getItem(`adventure:seatCharId:${room}`); } catch { /* ok */ }
+          if (autoCharId && !selectedCharacterId) {
+            const seatChar = characters.find((ch) => ch.id === autoCharId);
+            if (seatChar) {
+              handleSelectCharacter(seatChar);
+              try { sessionStorage.removeItem(`adventure:seatCharId:${room}`); } catch { /* ok */ }
+            }
+          } else if (c.selectedCharacterId && !selectedCharacterId) {
             const found = characters.find((ch) => ch.id === c.selectedCharacterId);
             if (found) handleSelectCharacter(found);
           }

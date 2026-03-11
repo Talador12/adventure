@@ -134,6 +134,17 @@ export default function Lobby() {
           setIsDM(!!msg.dmPlayerId && msg.dmPlayerId === wsPlayerId);
           break;
 
+        case 'kicked':
+          toast('You have been kicked by the DM', 'warning');
+          navigate('/');
+          break;
+
+        case 'player_kicked':
+          setPlayers(msg.players as LobbyPlayer[]);
+          if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'leave', username: msg.username as string, text: `${msg.username} was kicked by the DM`, timestamp: msg.timestamp as number }]);
+          break;
+
         case 'chat': {
           const incomingPlayerId = msg.playerId as string;
           // If this is the server echo of our own optimistic message, skip it
@@ -320,6 +331,50 @@ export default function Lobby() {
     navigator.clipboard.writeText(roomLink).then(() => toast('Link copied!', 'success'));
   };
 
+  // Campaign settings state
+  const [campaignName, setCampaignName] = useState(room);
+  const [campaignDescription, setCampaignDescription] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Load campaign metadata on mount
+  useEffect(() => {
+    fetch('/api/campaigns', { credentials: 'include' })
+      .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; description?: string }> }>) : null))
+      .then((data) => {
+        const campaign = data?.campaigns?.find((c) => c.roomId === room);
+        if (campaign) {
+          setCampaignName(campaign.name || room);
+          setCampaignDescription(campaign.description || '');
+        }
+      })
+      .catch(() => {});
+  }, [room]);
+
+  const saveCampaignSettings = useCallback(
+    (name: string, description: string) => {
+      fetch(`/api/campaigns/${encodeURIComponent(room)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, description }),
+      }).catch(() => {});
+    },
+    [room]
+  );
+
+  // Start game: store seat character assignment in sessionStorage for Game.tsx to pick up
+  const handleStartGame = useCallback(() => {
+    if (mySeatId) {
+      const seat = seats.find((s) => s.id === mySeatId);
+      if (seat?.characterId) {
+        try { sessionStorage.setItem(`adventure:seatCharId:${room}`, seat.characterId); } catch { /* ok */ }
+      }
+    }
+    navigate(`/game/${room}`);
+  }, [mySeatId, seats, room, navigate]);
+
   const statusColor = status === 'connected' ? 'bg-green-500' : status === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500';
 
   // Compute ready-to-start: all occupied seats (human + AI) are ready
@@ -338,8 +393,45 @@ export default function Lobby() {
           <Button variant="ghost" onClick={() => navigate('/')} className="text-slate-400 hover:text-white">
             &larr; Home
           </Button>
-          <h1 className="text-lg font-bold text-[#F38020]">Lobby</h1>
+          {/* Campaign name — click to edit (DM only) */}
+          {editingName ? (
+            <input
+              ref={nameInputRef}
+              className="text-lg font-bold text-[#F38020] bg-slate-800 border border-[#F38020]/50 rounded px-2 py-0.5 outline-none w-48"
+              value={campaignName}
+              onChange={(e) => setCampaignName(e.target.value)}
+              onBlur={() => {
+                setEditingName(false);
+                if (campaignName.trim()) saveCampaignSettings(campaignName.trim(), campaignDescription);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setEditingName(false);
+                  if (campaignName.trim()) saveCampaignSettings(campaignName.trim(), campaignDescription);
+                }
+                if (e.key === 'Escape') setEditingName(false);
+              }}
+              autoFocus
+            />
+          ) : (
+            <h1
+              className={`text-lg font-bold text-[#F38020] ${isDM ? 'cursor-pointer hover:text-[#f9a05f]' : ''}`}
+              onClick={() => { if (isDM) { setEditingName(true); setTimeout(() => nameInputRef.current?.select(), 0); } }}
+              title={isDM ? 'Click to rename campaign' : campaignName}
+            >
+              {campaignName}
+            </h1>
+          )}
           <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-slate-400">Room: {room}</span>
+          {isDM && (
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 transition-all"
+              title="Campaign settings"
+            >
+              Settings
+            </button>
+          )}
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${statusColor}`} />
             <span className="text-[10px] text-slate-500">{status}</span>
@@ -349,7 +441,7 @@ export default function Lobby() {
           {allReady && <span className="text-[10px] text-emerald-400 font-semibold animate-pulse">All Ready</span>}
           <Button
             variant="default"
-            onClick={() => navigate(`/game/${room}`)}
+            onClick={handleStartGame}
             className={`font-semibold py-2 px-5 rounded-lg shadow transition-all active:scale-[0.98] ${
               allReady || isDM
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
@@ -362,6 +454,46 @@ export default function Lobby() {
           </Button>
         </div>
       </header>
+
+      {/* Campaign settings panel — collapsible, DM only */}
+      {showSettings && isDM && (
+        <div className="bg-slate-900 border-b border-slate-800 px-6 py-3 shrink-0">
+          <div className="max-w-2xl mx-auto space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Campaign Settings</h3>
+              <button onClick={() => setShowSettings(false)} className="text-xs text-slate-500 hover:text-slate-300">Close</button>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Name</label>
+                <input
+                  className="w-full mt-1 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-sm text-slate-200 outline-none focus:border-[#F38020]/50"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  onBlur={() => { if (campaignName.trim()) saveCampaignSettings(campaignName.trim(), campaignDescription); }}
+                  maxLength={100}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Description</label>
+                <input
+                  className="w-full mt-1 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-sm text-slate-200 outline-none focus:border-[#F38020]/50"
+                  value={campaignDescription}
+                  onChange={(e) => setCampaignDescription(e.target.value)}
+                  onBlur={() => saveCampaignSettings(campaignName.trim() || room, campaignDescription)}
+                  placeholder="Optional campaign description..."
+                  maxLength={500}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-[10px] text-slate-500 uppercase tracking-wider">Invite Link</label>
+              <code className="text-[11px] bg-slate-800 px-3 py-1 rounded text-[#F38020] select-all flex-1">{roomLink}</code>
+              <button onClick={copyLink} className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded border border-slate-700">Copy</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
@@ -498,15 +630,24 @@ export default function Lobby() {
                       </button>
                     )}
 
-                    {/* DM: transfer DM to this human player */}
+                    {/* DM: transfer DM / kick — on other human players */}
                     {isDM && seat.type === 'human' && seat.playerId && seat.playerId !== wsPlayerId && (
-                      <button
-                        onClick={() => send({ type: 'transfer_dm', targetPlayerId: seat.playerId })}
-                        className="text-[8px] px-1.5 py-0.5 rounded bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700/40 text-amber-400 font-semibold transition-all"
-                        title={`Make ${seat.username} the DM`}
-                      >
-                        Make DM
-                      </button>
+                      <>
+                        <button
+                          onClick={() => send({ type: 'transfer_dm', targetPlayerId: seat.playerId })}
+                          className="text-[8px] px-1.5 py-0.5 rounded bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700/40 text-amber-400 font-semibold transition-all"
+                          title={`Make ${seat.username} the DM`}
+                        >
+                          Make DM
+                        </button>
+                        <button
+                          onClick={() => send({ type: 'kick_player', playerId: seat.playerId })}
+                          className="text-[8px] px-1.5 py-0.5 rounded bg-red-900/30 hover:bg-red-900/50 border border-red-700/30 text-red-400 font-semibold transition-all"
+                          title={`Kick ${seat.username}`}
+                        >
+                          Kick
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
