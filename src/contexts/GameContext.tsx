@@ -19,33 +19,29 @@ export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
-  source?: string;  // who/what applied it
+  source?: string; // who/what applied it
 }
 
 // Condition effects on combat rolls
 // attackMod: bonus/penalty to attack rolls. acMod: bonus/penalty to AC. saveMod: bonus/penalty to saves.
 // prone is special: uses advantage/disadvantage (handled in attack roll logic, not flat mod)
 export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod: number; saveMod: number; description: string; color: string }> = {
-  poisoned:   { attackMod: -2, acMod: 0, saveMod: -2, description: 'Disadvantage on attacks and saves', color: 'text-green-400' },
-  stunned:    { attackMod: -99, acMod: -2, saveMod: -99, description: 'Cannot act, auto-fail STR/DEX saves', color: 'text-yellow-300' },
+  poisoned: { attackMod: -2, acMod: 0, saveMod: -2, description: 'Disadvantage on attacks and saves', color: 'text-green-400' },
+  stunned: { attackMod: -99, acMod: -2, saveMod: -99, description: 'Cannot act, auto-fail STR/DEX saves', color: 'text-yellow-300' },
   frightened: { attackMod: -2, acMod: 0, saveMod: 0, description: 'Disadvantage on attacks while source is visible', color: 'text-purple-400' },
-  blessed:    { attackMod: 2, acMod: 0, saveMod: 2, description: '+1d4 to attacks and saves', color: 'text-sky-400' },
-  hexed:      { attackMod: 0, acMod: 0, saveMod: -2, description: 'Disadvantage on ability checks', color: 'text-fuchsia-400' },
-  burning:    { attackMod: 0, acMod: 0, saveMod: 0, description: 'Takes 1d6 fire damage at start of turn', color: 'text-orange-400' },
-  prone:      { attackMod: 0, acMod: 0, saveMod: 0, description: 'Melee advantage, ranged disadvantage against this target', color: 'text-amber-600' },
-  dodging:    { attackMod: 0, acMod: 2, saveMod: 0, description: 'Dodging — +2 AC until next turn', color: 'text-sky-300' },
-  raging:     { attackMod: 2, acMod: 0, saveMod: 0, description: 'Raging — +2 to melee attacks', color: 'text-red-400' },
-  inspired:   { attackMod: 2, acMod: 0, saveMod: 2, description: 'Inspired — +2 to attacks and saves', color: 'text-indigo-400' },
+  blessed: { attackMod: 2, acMod: 0, saveMod: 2, description: '+1d4 to attacks and saves', color: 'text-sky-400' },
+  hexed: { attackMod: 0, acMod: 0, saveMod: -2, description: 'Disadvantage on ability checks', color: 'text-fuchsia-400' },
+  burning: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Takes 1d6 fire damage at start of turn', color: 'text-orange-400' },
+  prone: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Melee advantage, ranged disadvantage against this target', color: 'text-amber-600' },
+  dodging: { attackMod: 0, acMod: 2, saveMod: 0, description: 'Dodging — +2 AC until next turn', color: 'text-sky-300' },
+  raging: { attackMod: 2, acMod: 0, saveMod: 0, description: 'Raging — +2 to melee attacks', color: 'text-red-400' },
+  inspired: { attackMod: 2, acMod: 0, saveMod: 2, description: 'Inspired — +2 to attacks and saves', color: 'text-indigo-400' },
 };
 
 // --- Combat roll helpers ---
 
 /** Roll a d20 with advantage/disadvantage from prone. Returns { roll, hadAdvantage, hadDisadvantage }. */
-export function rollD20WithProne(
-  attackerConditions: ActiveCondition[],
-  targetConditions: ActiveCondition[],
-  isMelee: boolean,
-): { roll: number; hadAdvantage: boolean; hadDisadvantage: boolean } {
+export function rollD20WithProne(attackerConditions: ActiveCondition[], targetConditions: ActiveCondition[], isMelee: boolean): { roll: number; hadAdvantage: boolean; hadDisadvantage: boolean } {
   const attackerProne = attackerConditions.some((c) => c.type === 'prone');
   const targetProne = targetConditions.some((c) => c.type === 'prone');
   // Prone attacker: disadvantage on all attacks
@@ -57,7 +53,10 @@ export function rollD20WithProne(
   if (targetProne && isMelee) advantage = true;
   if (targetProne && !isMelee) disadvantage = true;
   // Advantage + disadvantage cancel out (5e rules)
-  if (advantage && disadvantage) { advantage = false; disadvantage = false; }
+  if (advantage && disadvantage) {
+    advantage = false;
+    disadvantage = false;
+  }
   const r1 = Math.floor(Math.random() * 20) + 1;
   const r2 = Math.floor(Math.random() * 20) + 1;
   const roll = advantage ? Math.max(r1, r2) : disadvantage ? Math.min(r1, r2) : r1;
@@ -74,14 +73,14 @@ export function effectiveAC(baseAC: number, targetConditions: ActiveCondition[])
 export interface EnemyAbility {
   name: string;
   type: 'attack' | 'aoe' | 'condition' | 'heal';
-  damageDie?: string;       // e.g. "2d6"
+  damageDie?: string; // e.g. "2d6"
   attackBonus?: number;
   condition?: ConditionType; // applies this condition on hit
   conditionDuration?: number;
-  cooldown: number;         // turns between uses, 0 = every turn
+  cooldown: number; // turns between uses, 0 = every turn
   description: string;
-  isRanged?: boolean;       // true = can use at distance (skips adjacency requirement)
-  range?: number;           // max range in cells (used with isRanged)
+  isRanged?: boolean; // true = can use at distance (skips adjacency requirement)
+  range?: number; // max range in cells (used with isRanged)
 }
 
 export interface Unit {
@@ -97,9 +96,9 @@ export interface Unit {
   characterId?: string; // link to a Character if this is a PC
   // Enemy combat stats (populated from stat templates)
   attackBonus?: number;
-  damageDie?: string;     // e.g. "1d8"
+  damageDie?: string; // e.g. "1d8"
   damageBonus?: number;
-  dexMod?: number;        // for initiative
+  dexMod?: number; // for initiative
   abilities?: EnemyAbility[];
   abilityCooldowns?: Record<string, number>; // ability name -> turns until available
   conditions?: ActiveCondition[];
@@ -131,60 +130,125 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
     { names: ['Goblin', 'Kobold', 'Giant Rat', 'Skeleton'], cr: 0.25, hp: [7, 12], ac: 12, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 2, xpValue: 50, abilities: [] },
     { names: ['Zombie', 'Wolf', 'Bandit'], cr: 0.25, hp: [10, 16], ac: 11, attackBonus: 3, damageDie: '1d6', damageBonus: 1, dexMod: 0, xpValue: 50, abilities: [] },
     { names: ['Stirge', 'Crawling Claw', 'Twig Blight'], cr: 0.25, hp: [5, 9], ac: 13, attackBonus: 4, damageDie: '1d4', damageBonus: 2, dexMod: 3, xpValue: 50, abilities: [] },
-    { names: ['Cultist', 'Tribal Warrior', 'Thug'], cr: 0.5, hp: [12, 18], ac: 12, attackBonus: 3, damageDie: '1d8', damageBonus: 1, dexMod: 1, xpValue: 100, abilities: [
-      { name: 'Pack Tactics', type: 'attack', damageDie: '1d8', attackBonus: 4, cooldown: 2, description: 'Coordinates with allies for a precise strike.' },
-    ]},
+    { names: ['Cultist', 'Tribal Warrior', 'Thug'], cr: 0.5, hp: [12, 18], ac: 12, attackBonus: 3, damageDie: '1d8', damageBonus: 1, dexMod: 1, xpValue: 100, abilities: [{ name: 'Pack Tactics', type: 'attack', damageDie: '1d8', attackBonus: 4, cooldown: 2, description: 'Coordinates with allies for a precise strike.' }] },
   ],
   medium: [
-    { names: ['Orc', 'Gnoll', 'Bugbear', 'Hobgoblin'], cr: 1, hp: [15, 25], ac: 13, attackBonus: 5, damageDie: '1d10', damageBonus: 3, dexMod: 1, xpValue: 200, abilities: [
-      { name: 'Aggressive Charge', type: 'attack', damageDie: '2d6', attackBonus: 5, cooldown: 3, description: 'Rushes forward and strikes with extra force.' },
-    ]},
-    { names: ['Dire Wolf', 'Ghoul', 'Shadow'], cr: 1, hp: [18, 28], ac: 14, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 2, xpValue: 200, abilities: [
-      { name: 'Paralyzing Touch', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'On hit, the target is stunned until the end of its next turn.' },
-    ]},
-    { names: ['Fire Beetle', 'Giant Spider', 'Vine Blight'], cr: 1, hp: [14, 22], ac: 13, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 1, xpValue: 200, abilities: [
-      { name: 'Venomous Bite', type: 'condition', condition: 'poisoned', conditionDuration: 2, cooldown: 3, description: 'Injects venom that saps strength and focus.' },
-    ]},
-    { names: ['Specter', 'Wight', 'Animated Armor'], cr: 1, hp: [20, 30], ac: 15, attackBonus: 4, damageDie: '1d8', damageBonus: 3, dexMod: 2, xpValue: 200, abilities: [
-      { name: 'Necrotic Touch', type: 'attack', damageDie: '2d6', attackBonus: 4, condition: 'hexed', conditionDuration: 1, cooldown: 3, description: 'Drains the warmth from living flesh.' },
-    ]},
+    { names: ['Orc', 'Gnoll', 'Bugbear', 'Hobgoblin'], cr: 1, hp: [15, 25], ac: 13, attackBonus: 5, damageDie: '1d10', damageBonus: 3, dexMod: 1, xpValue: 200, abilities: [{ name: 'Aggressive Charge', type: 'attack', damageDie: '2d6', attackBonus: 5, cooldown: 3, description: 'Rushes forward and strikes with extra force.' }] },
+    { names: ['Dire Wolf', 'Ghoul', 'Shadow'], cr: 1, hp: [18, 28], ac: 14, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 2, xpValue: 200, abilities: [{ name: 'Paralyzing Touch', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'On hit, the target is stunned until the end of its next turn.' }] },
+    { names: ['Fire Beetle', 'Giant Spider', 'Vine Blight'], cr: 1, hp: [14, 22], ac: 13, attackBonus: 4, damageDie: '1d8', damageBonus: 2, dexMod: 1, xpValue: 200, abilities: [{ name: 'Venomous Bite', type: 'condition', condition: 'poisoned', conditionDuration: 2, cooldown: 3, description: 'Injects venom that saps strength and focus.' }] },
+    { names: ['Specter', 'Wight', 'Animated Armor'], cr: 1, hp: [20, 30], ac: 15, attackBonus: 4, damageDie: '1d8', damageBonus: 3, dexMod: 2, xpValue: 200, abilities: [{ name: 'Necrotic Touch', type: 'attack', damageDie: '2d6', attackBonus: 4, condition: 'hexed', conditionDuration: 1, cooldown: 3, description: 'Drains the warmth from living flesh.' }] },
   ],
   hard: [
-    { names: ['Ogre', 'Minotaur', 'Owlbear', 'Troll'], cr: 2, hp: [30, 50], ac: 14, attackBonus: 6, damageDie: '2d8', damageBonus: 4, dexMod: 0, xpValue: 450, abilities: [
-      { name: 'Crushing Blow', type: 'attack', damageDie: '3d8', attackBonus: 6, cooldown: 3, description: 'A devastating overhead strike.' },
-      { name: 'Frightening Roar', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 5, description: 'A terrifying bellow that shakes your resolve.' },
-    ]},
-    { names: ['Wraith', 'Basilisk', 'Manticore'], cr: 3, hp: [35, 55], ac: 15, attackBonus: 6, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [
-      { name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' },
-    ]},
-    { names: ['Hell Hound', 'Phase Spider', 'Displacer Beast'], cr: 3, hp: [32, 48], ac: 14, attackBonus: 5, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [
-      { name: 'Fire Breath', type: 'aoe', damageDie: '3d6', cooldown: 4, description: 'Exhales a cone of searing flame.', isRanged: true, range: 6 },
-      { name: 'Phase Shift', type: 'condition', condition: 'blessed', conditionDuration: 1, cooldown: 4, description: 'Blinks between planes, becoming harder to hit.' },
-    ]},
-    { names: ['Ettin', 'Flesh Golem', 'Gelatinous Cube'], cr: 2, hp: [40, 60], ac: 13, attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: -1, xpValue: 450, abilities: [
-      { name: 'Double Strike', type: 'attack', damageDie: '2d10', attackBonus: 7, cooldown: 2, description: 'Two heads swing in unison — or the mass engulfs its prey.' },
-      { name: 'Stunning Slam', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'A blow so heavy it rattles your skull.' },
-    ]},
+    {
+      names: ['Ogre', 'Minotaur', 'Owlbear', 'Troll'],
+      cr: 2,
+      hp: [30, 50],
+      ac: 14,
+      attackBonus: 6,
+      damageDie: '2d8',
+      damageBonus: 4,
+      dexMod: 0,
+      xpValue: 450,
+      abilities: [
+        { name: 'Crushing Blow', type: 'attack', damageDie: '3d8', attackBonus: 6, cooldown: 3, description: 'A devastating overhead strike.' },
+        { name: 'Frightening Roar', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 5, description: 'A terrifying bellow that shakes your resolve.' },
+      ],
+    },
+    { names: ['Wraith', 'Basilisk', 'Manticore'], cr: 3, hp: [35, 55], ac: 15, attackBonus: 6, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [{ name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' }] },
+    {
+      names: ['Hell Hound', 'Phase Spider', 'Displacer Beast'],
+      cr: 3,
+      hp: [32, 48],
+      ac: 14,
+      attackBonus: 5,
+      damageDie: '2d6',
+      damageBonus: 3,
+      dexMod: 3,
+      xpValue: 700,
+      abilities: [
+        { name: 'Fire Breath', type: 'aoe', damageDie: '3d6', cooldown: 4, description: 'Exhales a cone of searing flame.', isRanged: true, range: 6 },
+        { name: 'Phase Shift', type: 'condition', condition: 'blessed', conditionDuration: 1, cooldown: 4, description: 'Blinks between planes, becoming harder to hit.' },
+      ],
+    },
+    {
+      names: ['Ettin', 'Flesh Golem', 'Gelatinous Cube'],
+      cr: 2,
+      hp: [40, 60],
+      ac: 13,
+      attackBonus: 7,
+      damageDie: '2d10',
+      damageBonus: 4,
+      dexMod: -1,
+      xpValue: 450,
+      abilities: [
+        { name: 'Double Strike', type: 'attack', damageDie: '2d10', attackBonus: 7, cooldown: 2, description: 'Two heads swing in unison — or the mass engulfs its prey.' },
+        { name: 'Stunning Slam', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 4, description: 'A blow so heavy it rattles your skull.' },
+      ],
+    },
   ],
   deadly: [
-    { names: ['Young Dragon', 'Beholder Zombie', 'Hydra', 'Lich Apprentice'], cr: 5, hp: [60, 90], ac: 17, attackBonus: 8, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800, abilities: [
-      { name: 'Breath Weapon', type: 'aoe', damageDie: '6d6', cooldown: 4, description: 'A torrent of elemental fury engulfs the area.', isRanged: true, range: 12 },
-      { name: 'Multiattack', type: 'attack', damageDie: '2d8', attackBonus: 8, cooldown: 0, description: 'Strikes twice in rapid succession.' },
-      { name: 'Terrifying Presence', type: 'condition', condition: 'frightened', conditionDuration: 3, cooldown: 6, description: 'An aura of dread forces a WIS save or be frightened.' },
-    ]},
-    { names: ['Mind Flayer', 'Vampire Spawn', 'Flameskull Trio'], cr: 4, hp: [50, 75], ac: 16, attackBonus: 7, damageDie: '2d8', damageBonus: 4, dexMod: 3, xpValue: 1100, abilities: [
-      { name: 'Mind Blast', type: 'aoe', damageDie: '4d8', cooldown: 5, description: 'A cone of psychic energy stuns all who fail their save.', isRanged: true, range: 12 },
-      { name: 'Psychic Grasp', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 3, description: 'Seizes the mind of a target, paralyzing them.' },
-    ]},
-    { names: ['Shambling Mound', 'Elemental', 'Chimera'], cr: 4, hp: [55, 80], ac: 15, attackBonus: 7, damageDie: '2d10', damageBonus: 4, dexMod: 1, xpValue: 1100, abilities: [
-      { name: 'Engulf', type: 'attack', damageDie: '3d8', attackBonus: 7, condition: 'prone', conditionDuration: 1, cooldown: 3, description: 'Wraps around a target, crushing and smothering.' },
-      { name: 'Lightning Absorption', type: 'heal', cooldown: 5, description: 'Absorbs elemental energy to regenerate.' },
-    ]},
-    { names: ['Death Knight', 'Oni', 'Night Hag'], cr: 5, hp: [65, 95], ac: 18, attackBonus: 9, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800, abilities: [
-      { name: 'Hellfire Orb', type: 'aoe', damageDie: '5d8', cooldown: 5, description: 'Hurls a sphere of searing hellfire that detonates on impact.', isRanged: true, range: 24 },
-      { name: 'Soul Rend', type: 'attack', damageDie: '3d10', attackBonus: 9, condition: 'hexed', conditionDuration: 3, cooldown: 4, description: 'Tears at the soul, leaving the target cursed and weakened.' },
-      { name: 'Dark Command', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 4, description: 'Issues a command laced with dark power. Obey or tremble.' },
-    ]},
+    {
+      names: ['Young Dragon', 'Beholder Zombie', 'Hydra', 'Lich Apprentice'],
+      cr: 5,
+      hp: [60, 90],
+      ac: 17,
+      attackBonus: 8,
+      damageDie: '2d10',
+      damageBonus: 5,
+      dexMod: 2,
+      xpValue: 1800,
+      abilities: [
+        { name: 'Breath Weapon', type: 'aoe', damageDie: '6d6', cooldown: 4, description: 'A torrent of elemental fury engulfs the area.', isRanged: true, range: 12 },
+        { name: 'Multiattack', type: 'attack', damageDie: '2d8', attackBonus: 8, cooldown: 0, description: 'Strikes twice in rapid succession.' },
+        { name: 'Terrifying Presence', type: 'condition', condition: 'frightened', conditionDuration: 3, cooldown: 6, description: 'An aura of dread forces a WIS save or be frightened.' },
+      ],
+    },
+    {
+      names: ['Mind Flayer', 'Vampire Spawn', 'Flameskull Trio'],
+      cr: 4,
+      hp: [50, 75],
+      ac: 16,
+      attackBonus: 7,
+      damageDie: '2d8',
+      damageBonus: 4,
+      dexMod: 3,
+      xpValue: 1100,
+      abilities: [
+        { name: 'Mind Blast', type: 'aoe', damageDie: '4d8', cooldown: 5, description: 'A cone of psychic energy stuns all who fail their save.', isRanged: true, range: 12 },
+        { name: 'Psychic Grasp', type: 'condition', condition: 'stunned', conditionDuration: 1, cooldown: 3, description: 'Seizes the mind of a target, paralyzing them.' },
+      ],
+    },
+    {
+      names: ['Shambling Mound', 'Elemental', 'Chimera'],
+      cr: 4,
+      hp: [55, 80],
+      ac: 15,
+      attackBonus: 7,
+      damageDie: '2d10',
+      damageBonus: 4,
+      dexMod: 1,
+      xpValue: 1100,
+      abilities: [
+        { name: 'Engulf', type: 'attack', damageDie: '3d8', attackBonus: 7, condition: 'prone', conditionDuration: 1, cooldown: 3, description: 'Wraps around a target, crushing and smothering.' },
+        { name: 'Lightning Absorption', type: 'heal', cooldown: 5, description: 'Absorbs elemental energy to regenerate.' },
+      ],
+    },
+    {
+      names: ['Death Knight', 'Oni', 'Night Hag'],
+      cr: 5,
+      hp: [65, 95],
+      ac: 18,
+      attackBonus: 9,
+      damageDie: '2d10',
+      damageBonus: 5,
+      dexMod: 2,
+      xpValue: 1800,
+      abilities: [
+        { name: 'Hellfire Orb', type: 'aoe', damageDie: '5d8', cooldown: 5, description: 'Hurls a sphere of searing hellfire that detonates on impact.', isRanged: true, range: 24 },
+        { name: 'Soul Rend', type: 'attack', damageDie: '3d10', attackBonus: 9, condition: 'hexed', conditionDuration: 3, cooldown: 4, description: 'Tears at the soul, leaving the target cursed and weakened.' },
+        { name: 'Dark Command', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 4, description: 'Issues a command laced with dark power. Obey or tremble.' },
+      ],
+    },
   ],
 };
 
@@ -287,9 +351,9 @@ export type FacialHairType = (typeof FACIAL_HAIR_TYPES)[number];
 
 export interface Appearance {
   bodyType: BodyType;
-  skinTone: number;   // index into race-specific skin tone palette (0-5)
-  hairColor: number;  // index into hair color palette (0-7)
-  eyeColor: number;   // index into eye color palette (0-5)
+  skinTone: number; // index into race-specific skin tone palette (0-5)
+  hairColor: number; // index into hair color palette (0-7)
+  eyeColor: number; // index into eye color palette (0-5)
   hairStyle: HairStyle;
   scar: ScarType;
   faceMarking: FaceMarkingType;
@@ -297,8 +361,14 @@ export interface Appearance {
 }
 
 export const DEFAULT_APPEARANCE: Appearance = {
-  bodyType: 1, skinTone: 0, hairColor: 0, eyeColor: 0,
-  hairStyle: 'short', scar: 'none', faceMarking: 'none', facialHair: 'none',
+  bodyType: 1,
+  skinTone: 0,
+  hairColor: 0,
+  eyeColor: 0,
+  hairStyle: 'short',
+  scar: 'none',
+  faceMarking: 'none',
+  facialHair: 'none',
 };
 
 // XP thresholds per level (D&D 5e)
@@ -322,16 +392,16 @@ export interface Item {
   value: number; // gold value
   // Equipment stats (only for equippable items)
   equipSlot?: EquipSlot;
-  acBonus?: number;       // armor: base AC or shield: +AC
+  acBonus?: number; // armor: base AC or shield: +AC
   armorCategory?: ArmorCategory; // D&D 5e: light=full DEX, medium=DEX max +2, heavy=no DEX
-  damageDie?: string;     // weapon: e.g. "1d8", "2d6"
-  damageBonus?: number;   // weapon: flat bonus to damage
-  attackBonus?: number;   // weapon: flat bonus to hit
-  isRanged?: boolean;     // weapon: true = ranged (uses DEX), false/undefined = melee (uses STR)
-  range?: number;         // weapon: attack range in cells (1=melee, 30=longbow 150ft, etc.)
-  healAmount?: number;    // potion: HP restored
+  damageDie?: string; // weapon: e.g. "1d8", "2d6"
+  damageBonus?: number; // weapon: flat bonus to damage
+  attackBonus?: number; // weapon: flat bonus to hit
+  isRanged?: boolean; // weapon: true = ranged (uses DEX), false/undefined = melee (uses STR)
+  range?: number; // weapon: attack range in cells (1=melee, 30=longbow 150ft, etc.)
+  healAmount?: number; // potion: HP restored
   statBonus?: Partial<Stats>; // ring/misc: stat bonuses
-  quantity?: number;      // stackable items (potions, scrolls)
+  quantity?: number; // stackable items (potions, scrolls)
 }
 
 export interface EquipmentSlots {
@@ -353,7 +423,7 @@ const COMMON_LOOT: Omit<Item, 'id'>[] = [
   { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Light and concealable.', value: 2, equipSlot: 'weapon', damageDie: '1d4', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Handaxe', type: 'weapon', rarity: 'common', description: 'Can be thrown.', value: 5, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Chain Shirt', type: 'armor', rarity: 'common', description: 'Medium armor.', value: 50, equipSlot: 'armor', acBonus: 13, armorCategory: 'medium' },
-  { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: 'Reveals an item\'s properties.', value: 25 },
+  { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: "Reveals an item's properties.", value: 25 },
   { name: 'Quarterstaff', type: 'weapon', rarity: 'common', description: 'A sturdy wooden staff.', value: 2, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, range: 1 },
   { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d8', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16 },
   { name: 'Shortbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d6', damageBonus: 0, attackBonus: 0, isRanged: true, range: 16 },
@@ -457,15 +527,25 @@ export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
   { name: 'Superior Healing Potion', type: 'potion', rarity: 'rare', description: 'Restores 8d4+8 HP.', value: 500, healAmount: 36, quantity: 1, category: 'Potions' },
   // Accessories
   { name: 'Ring of Protection', type: 'ring', rarity: 'uncommon', description: '+1 AC while worn.', value: 300, equipSlot: 'ring', acBonus: 1, category: 'Accessories' },
-  { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: 'Reveals an item\'s properties.', value: 25, category: 'Accessories' },
+  { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: "Reveals an item's properties.", value: 25, category: 'Accessories' },
 ];
 
 export const SHOP_CATEGORIES = ['Weapons', 'Armor', 'Potions', 'Accessories'] as const;
 
 // Hit die average by class — used for HP gain on level-up and short rest healing
 export const HIT_DIE_AVG: Record<string, number> = {
-  Fighter: 6, Barbarian: 7, Paladin: 6, Ranger: 6, Rogue: 5, Monk: 5,
-  Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
+  Fighter: 6,
+  Barbarian: 7,
+  Paladin: 6,
+  Ranger: 6,
+  Rogue: 5,
+  Monk: 5,
+  Cleric: 5,
+  Bard: 5,
+  Druid: 5,
+  Warlock: 5,
+  Wizard: 4,
+  Sorcerer: 4,
 };
 
 // D&D 5e AC calculation: respects armor category DEX caps
@@ -509,15 +589,15 @@ export interface Spell {
   level: number; // 0 = cantrip, 1-9 = spell levels
   school: SpellSchool;
   description: string;
-  damage?: string;      // e.g. "1d10" for fire bolt, scales with level
-  healAmount?: number;   // for healing spells
-  range: string;         // "Touch", "Self", "60ft", etc.
-  duration: string;      // "Instantaneous", "1 minute", "Concentration, 1 hour"
-  saveStat?: StatName;   // target save stat (DEX for fireball, WIS for hold person)
+  damage?: string; // e.g. "1d10" for fire bolt, scales with level
+  healAmount?: number; // for healing spells
+  range: string; // "Touch", "Self", "60ft", etc.
+  duration: string; // "Instantaneous", "1 minute", "Concentration, 1 hour"
+  saveStat?: StatName; // target save stat (DEX for fireball, WIS for hold person)
   isConcentration: boolean;
   classes: CharacterClass[]; // which classes can learn this
   appliesCondition?: ConditionType; // condition applied on hit/failed save
-  conditionDuration?: number;       // rounds the condition lasts
+  conditionDuration?: number; // rounds the condition lasts
 }
 
 // Spell slot table: spellSlots[classLevel][spellLevel] = number of slots
@@ -585,7 +665,10 @@ export const SPELL_LIST: Spell[] = [
 // Get spells available for a class (cantrips + spells they can cast at their level)
 export function getClassSpells(charClass: CharacterClass, level: number): Spell[] {
   const slots = getSpellSlots(charClass, level);
-  const maxSpellLevel = Object.keys(slots).map(Number).sort((a, b) => b - a)[0] || 0;
+  const maxSpellLevel =
+    Object.keys(slots)
+      .map(Number)
+      .sort((a, b) => b - a)[0] || 0;
   return SPELL_LIST.filter((s) => s.classes.includes(charClass) && s.level <= Math.max(maxSpellLevel, 0));
 }
 
@@ -607,12 +690,12 @@ export interface ClassAbility {
   description: string;
   type: 'heal' | 'buff' | 'attack' | 'utility'; // what the ability does
   resetsOn: 'short' | 'long'; // when the cooldown resets
-  damage?: string;          // e.g. "2d6" — for attack-type abilities
+  damage?: string; // e.g. "2d6" — for attack-type abilities
   healFormula?: 'level_d10' | 'level_x5' | 'level_d6'; // scaled heal
   appliesCondition?: ConditionType;
   conditionDuration?: number;
-  selfOnly?: boolean;       // targets self (vs enemy)
-  color: string;            // tailwind color for UI
+  selfOnly?: boolean; // targets self (vs enemy)
+  color: string; // tailwind color for UI
 }
 
 export const CLASS_ABILITIES: ClassAbility[] = [
@@ -663,7 +746,7 @@ export interface Feat {
 
 export const FEATS: Feat[] = [
   { id: 'tough', name: 'Tough', description: 'Your hit point maximum increases by 2 for every level you have.', maxHpPerLevel: 2 },
-  { id: 'alert', name: 'Alert', description: '+5 to initiative. You can\'t be surprised while conscious.', initiativeBonus: 5 },
+  { id: 'alert', name: 'Alert', description: "+5 to initiative. You can't be surprised while conscious.", initiativeBonus: 5 },
   { id: 'great-weapon-master', name: 'Great Weapon Master', description: 'Your heavy weapon strikes deal +3 bonus damage.', damageBonus: 3 },
   { id: 'war-caster', name: 'War Caster', description: '+2 to spell attack rolls and concentration saves.', attackBonus: 2 },
   { id: 'lucky', name: 'Lucky', description: '+1 to all saving throws from sheer fortune.', savingThrowBonus: 1 },
@@ -680,7 +763,7 @@ export function hasPendingASI(character: Character): boolean {
   // Count how many ASI levels the character has reached
   const asiLevelsReached = ASI_LEVELS.filter((l) => character.level >= l).length;
   // Count how many choices they've already made (ASIs applied + feats taken)
-  const choicesMade = (character.asiChoicesMade || 0);
+  const choicesMade = character.asiChoicesMade || 0;
   return asiLevelsReached > choicesMade;
 }
 
@@ -895,22 +978,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [turnIndex, setTurnIndex] = useState(0);
 
   // Map state — terrain grid and token positions (lifted from BattleMap for spatial combat)
-  const [terrain, setTerrain] = useState<TerrainType[][]>(() =>
-    Array.from({ length: DEFAULT_ROWS }, () => Array<TerrainType>(DEFAULT_COLS).fill('void'))
-  );
+  const [terrain, setTerrain] = useState<TerrainType[][]>(() => Array.from({ length: DEFAULT_ROWS }, () => Array<TerrainType>(DEFAULT_COLS).fill('void')));
   const [mapPositions, setMapPositions] = useState<TokenPosition[]>([]);
   const [mapImageUrl, setMapImageUrl] = useState<string | null>(null); // R2-backed DM map background
 
-  // Fetch Discord identity on mount — populate currentPlayer with real user data
+  // Fetch user identity on mount — populate currentPlayer with real user data (Discord or Google)
   useEffect(() => {
     fetch('/api/auth/me')
-      .then((r) => r.ok ? r.json() as Promise<{ user?: { id?: string; username?: string; global_name?: string; avatar?: string } }> : null)
+      .then((r) => (r.ok ? (r.json() as Promise<{ user?: { id?: string; username?: string; global_name?: string; avatar?: string; picture?: string } }>) : null))
       .then((data) => {
         if (data?.user?.id) {
           const u = data.user;
-          const avatarUrl = u.avatar
-            ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128`
-            : 'https://cdn.discordapp.com/embed/avatars/0.png';
+          // Google: picture is a full URL. Discord: avatar is a hash, construct CDN URL.
+          const avatarUrl = u.picture || (u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128` : 'https://cdn.discordapp.com/embed/avatars/0.png');
           setCurrentPlayer({
             id: u.id!,
             username: u.global_name || u.username || 'Adventurer',
@@ -947,7 +1027,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     syncingRef.current = true;
     fetch('/api/characters')
-      .then((r) => r.ok ? r.json() as Promise<{ characters?: Character[] }> : null)
+      .then((r) => (r.ok ? (r.json() as Promise<{ characters?: Character[] }>) : null))
       .then((data) => {
         if (data?.characters?.length) {
           const serverChars = data.characters;
@@ -962,7 +1042,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {}) // server unavailable — use localStorage only
-      .finally(() => { syncingRef.current = false; });
+      .finally(() => {
+        syncingRef.current = false;
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addCharacter = useCallback((c: Character) => {
@@ -974,188 +1056,209 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateCharacter = useCallback((id: string, updates: Partial<Character>) => {
-    setCharacters((prev) => prev.map((c) => c.id === id ? { ...c, ...updates } : c));
+    setCharacters((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
   }, []);
 
   // Grant XP to a character, auto-level if threshold reached
   const grantXP = useCallback((id: string, xp: number): { leveledUp: boolean; newLevel: number } => {
     let leveledUp = false;
     let newLevel = 1;
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== id) return c;
-      const totalXP = c.xp + xp;
-      let level = c.level;
-      // Check for level up
-      while (level < 20 && totalXP >= XP_THRESHOLDS[level]) {
-        level++;
-      }
-      leveledUp = level > c.level;
-      newLevel = level;
-      if (leveledUp) {
-        // Recalculate maxHp on level up (add hit die average + CON mod)
-        const conMod = Math.floor((c.stats.CON - 10) / 2);
-        // Feat HP bonuses: Tough (+2/level), Durable (+1/level)
-        const featHpPerLevel = (c.feats || []).reduce((sum, fid) => {
-          const f = FEATS.find((ft) => ft.id === fid);
-          return sum + (f?.maxHpPerLevel || 0);
-        }, 0);
-        const levelsGained = level - c.level;
-        const hpGain = ((HIT_DIE_AVG[c.class] || 5) + conMod + featHpPerLevel) * levelsGained;
-        const newMaxHp = c.maxHp + hpGain;
-        return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp }; // full heal on level up
-      }
-      return { ...c, xp: totalXP };
-    }));
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const totalXP = c.xp + xp;
+        let level = c.level;
+        // Check for level up
+        while (level < 20 && totalXP >= XP_THRESHOLDS[level]) {
+          level++;
+        }
+        leveledUp = level > c.level;
+        newLevel = level;
+        if (leveledUp) {
+          // Recalculate maxHp on level up (add hit die average + CON mod)
+          const conMod = Math.floor((c.stats.CON - 10) / 2);
+          // Feat HP bonuses: Tough (+2/level), Durable (+1/level)
+          const featHpPerLevel = (c.feats || []).reduce((sum, fid) => {
+            const f = FEATS.find((ft) => ft.id === fid);
+            return sum + (f?.maxHpPerLevel || 0);
+          }, 0);
+          const levelsGained = level - c.level;
+          const hpGain = ((HIT_DIE_AVG[c.class] || 5) + conMod + featHpPerLevel) * levelsGained;
+          const newMaxHp = c.maxHp + hpGain;
+          return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp }; // full heal on level up
+        }
+        return { ...c, xp: totalXP };
+      })
+    );
     return { leveledUp, newLevel };
   }, []);
 
   // Rest: short rest heals hit die + CON, long rest fully heals + resets death saves + clears conditions
   // Both rest types reset class abilities based on the ability's resetsOn property
   const restCharacter = useCallback((id: string, type: 'short' | 'long') => {
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== id) return c;
-      const ability = getClassAbility(c.class);
-      const resetAbility = ability ? (type === 'long' || ability.resetsOn === 'short') : false;
-      if (type === 'long') {
-        return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false };
-      }
-      // Short rest: heal hit die average + CON mod (once)
-      const conMod = Math.floor((c.stats.CON - 10) / 2);
-      const heal = Math.max(1, (HIT_DIE_AVG[c.class] || 5) + conMod);
-      return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? 'normal' as Condition : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed };
-    }));
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const ability = getClassAbility(c.class);
+        const resetAbility = ability ? type === 'long' || ability.resetsOn === 'short' : false;
+        if (type === 'long') {
+          return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false };
+        }
+        // Short rest: heal hit die average + CON mod (once)
+        const conMod = Math.floor((c.stats.CON - 10) / 2);
+        const heal = Math.max(1, (HIT_DIE_AVG[c.class] || 5) + conMod);
+        return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? ('normal' as Condition) : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed };
+      })
+    );
     // Long rest also clears all combat conditions on the player's unit
     if (type === 'long') {
-      setUnits((prev) => prev.map((u) => u.characterId === id ? { ...u, conditions: [] } : u));
+      setUnits((prev) => prev.map((u) => (u.characterId === id ? { ...u, conditions: [] } : u)));
     }
   }, []);
 
   // Inventory: add an item to a character's inventory
   const addItem = useCallback((charId: string, item: Item) => {
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const inv = c.inventory || [];
-      // Stack potions/scrolls if same name exists
-      if ((item.type === 'potion' || item.type === 'scroll') && item.quantity) {
-        const existing = inv.find((i) => i.name === item.name);
-        if (existing) {
-          return { ...c, inventory: inv.map((i) => i.id === existing.id ? { ...i, quantity: (i.quantity || 1) + (item.quantity || 1) } : i) };
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+        const inv = c.inventory || [];
+        // Stack potions/scrolls if same name exists
+        if ((item.type === 'potion' || item.type === 'scroll') && item.quantity) {
+          const existing = inv.find((i) => i.name === item.name);
+          if (existing) {
+            return { ...c, inventory: inv.map((i) => (i.id === existing.id ? { ...i, quantity: (i.quantity || 1) + (item.quantity || 1) } : i)) };
+          }
         }
-      }
-      return { ...c, inventory: [...inv, item] };
-    }));
+        return { ...c, inventory: [...inv, item] };
+      })
+    );
   }, []);
 
   // Inventory: remove an item (or reduce quantity for stackables)
   const removeItem = useCallback((charId: string, itemId: string) => {
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const inv = c.inventory || [];
-      const item = inv.find((i) => i.id === itemId);
-      if (!item) return c;
-      if (item.quantity && item.quantity > 1) {
-        return { ...c, inventory: inv.map((i) => i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i) };
-      }
-      return { ...c, inventory: inv.filter((i) => i.id !== itemId) };
-    }));
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+        const inv = c.inventory || [];
+        const item = inv.find((i) => i.id === itemId);
+        if (!item) return c;
+        if (item.quantity && item.quantity > 1) {
+          return { ...c, inventory: inv.map((i) => (i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i)) };
+        }
+        return { ...c, inventory: inv.filter((i) => i.id !== itemId) };
+      })
+    );
   }, []);
 
   // Equipment: equip an item from inventory — moves old item back to inventory, recalculates AC
   const equipItem = useCallback((charId: string, itemId: string) => {
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const inv = c.inventory || [];
-      const item = inv.find((i) => i.id === itemId);
-      if (!item || !item.equipSlot) return c;
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+        const inv = c.inventory || [];
+        const item = inv.find((i) => i.id === itemId);
+        if (!item || !item.equipSlot) return c;
 
-      const eq = { ...(c.equipment || EMPTY_EQUIPMENT) };
-      const slot = item.equipSlot;
-      let newInv = inv.filter((i) => i.id !== itemId);
+        const eq = { ...(c.equipment || EMPTY_EQUIPMENT) };
+        const slot = item.equipSlot;
+        let newInv = inv.filter((i) => i.id !== itemId);
 
-      // Unequip current item in that slot back to inventory
-      if (eq[slot]) newInv = [...newInv, eq[slot]!];
-      eq[slot] = item;
+        // Unequip current item in that slot back to inventory
+        if (eq[slot]) newInv = [...newInv, eq[slot]!];
+        eq[slot] = item;
 
-      return { ...c, inventory: newInv, equipment: eq, ac: calculateAC(c.stats, eq) };
-    }));
+        return { ...c, inventory: newInv, equipment: eq, ac: calculateAC(c.stats, eq) };
+      })
+    );
   }, []);
 
   // Equipment: unequip an item back to inventory, recalculate AC
   const unequipItem = useCallback((charId: string, slot: EquipSlot) => {
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const eq = { ...(c.equipment || EMPTY_EQUIPMENT) };
-      const item = eq[slot];
-      if (!item) return c;
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+        const eq = { ...(c.equipment || EMPTY_EQUIPMENT) };
+        const item = eq[slot];
+        if (!item) return c;
 
-      eq[slot] = null;
-      const newInv = [...(c.inventory || []), item];
+        eq[slot] = null;
+        const newInv = [...(c.inventory || []), item];
 
-      return { ...c, inventory: newInv, equipment: eq, ac: calculateAC(c.stats, eq) };
-    }));
+        return { ...c, inventory: newInv, equipment: eq, ac: calculateAC(c.stats, eq) };
+      })
+    );
   }, []);
 
   // Use a consumable item (potion, scroll)
   const useItem = useCallback((charId: string, itemId: string): { message: string } => {
     let msg = '';
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const inv = c.inventory || [];
-      const item = inv.find((i) => i.id === itemId);
-      if (!item) return c;
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+        const inv = c.inventory || [];
+        const item = inv.find((i) => i.id === itemId);
+        if (!item) return c;
 
-      let updated = { ...c };
-      if (item.type === 'potion' && item.healAmount) {
-        const healed = Math.min(item.healAmount, c.maxHp - c.hp);
-        updated.hp = Math.min(c.maxHp, c.hp + item.healAmount);
-        if (c.condition === 'unconscious' || c.condition === 'stabilized') {
-          updated.condition = 'normal';
-          updated.deathSaves = { successes: 0, failures: 0 };
+        let updated = { ...c };
+        if (item.type === 'potion' && item.healAmount) {
+          const healed = Math.min(item.healAmount, c.maxHp - c.hp);
+          updated.hp = Math.min(c.maxHp, c.hp + item.healAmount);
+          if (c.condition === 'unconscious' || c.condition === 'stabilized') {
+            updated.condition = 'normal';
+            updated.deathSaves = { successes: 0, failures: 0 };
+          }
+          msg = `${c.name} drinks ${item.name}, restoring ${healed} HP! (${updated.hp}/${c.maxHp})`;
+        } else {
+          msg = `${c.name} uses ${item.name}.`;
         }
-        msg = `${c.name} drinks ${item.name}, restoring ${healed} HP! (${updated.hp}/${c.maxHp})`;
-      } else {
-        msg = `${c.name} uses ${item.name}.`;
-      }
 
-      // Remove or decrement
-      if (item.quantity && item.quantity > 1) {
-        updated.inventory = inv.map((i) => i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i);
-      } else {
-        updated.inventory = inv.filter((i) => i.id !== itemId);
-      }
-      return updated;
-    }));
+        // Remove or decrement
+        if (item.quantity && item.quantity > 1) {
+          updated.inventory = inv.map((i) => (i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i));
+        } else {
+          updated.inventory = inv.filter((i) => i.id !== itemId);
+        }
+        return updated;
+      })
+    );
     return { message: msg };
   }, []);
 
   // Shop: buy an item (deduct gold, add to inventory)
   const buyItem = useCallback((charId: string, shopItem: Omit<Item, 'id'>): { success: boolean; message: string } => {
     let result = { success: false, message: '' };
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      if (c.gold < shopItem.value) {
-        result = { success: false, message: `Not enough gold! Need ${shopItem.value}g, have ${c.gold}g.` };
-        return c;
-      }
-      const newItem: Item = { ...shopItem, id: crypto.randomUUID() };
-      result = { success: true, message: `Bought ${shopItem.name} for ${shopItem.value}g.` };
-      return { ...c, gold: c.gold - shopItem.value, inventory: [...(c.inventory || []), newItem] };
-    }));
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+        if (c.gold < shopItem.value) {
+          result = { success: false, message: `Not enough gold! Need ${shopItem.value}g, have ${c.gold}g.` };
+          return c;
+        }
+        const newItem: Item = { ...shopItem, id: crypto.randomUUID() };
+        result = { success: true, message: `Bought ${shopItem.name} for ${shopItem.value}g.` };
+        return { ...c, gold: c.gold - shopItem.value, inventory: [...(c.inventory || []), newItem] };
+      })
+    );
     return result;
   }, []);
 
   // Shop: sell an item (half value, remove from inventory)
   const sellItem = useCallback((charId: string, itemId: string): { success: boolean; message: string } => {
     let result = { success: false, message: '' };
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const inv = c.inventory || [];
-      const item = inv.find((i) => i.id === itemId);
-      if (!item) { result = { success: false, message: 'Item not found.' }; return c; }
-      const sellPrice = Math.max(1, Math.floor(item.value / 2));
-      result = { success: true, message: `Sold ${item.name} for ${sellPrice}g.` };
-      return { ...c, gold: c.gold + sellPrice, inventory: inv.filter((i) => i.id !== itemId) };
-    }));
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+        const inv = c.inventory || [];
+        const item = inv.find((i) => i.id === itemId);
+        if (!item) {
+          result = { success: false, message: 'Item not found.' };
+          return c;
+        }
+        const sellPrice = Math.max(1, Math.floor(item.value / 2));
+        result = { success: true, message: `Sold ${item.name} for ${sellPrice}g.` };
+        return { ...c, gold: c.gold + sellPrice, inventory: inv.filter((i) => i.id !== itemId) };
+      })
+    );
     return result;
   }, []);
 
@@ -1174,59 +1277,54 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const clearRolls = useCallback(() => setRolls([]), []);
 
   // Combat: apply damage to a unit (clamp to 0) + concentration check. Returns updated units for sync.
-  const damageUnit = useCallback((unitId: string, damage: number): Unit[] => {
-    let result: Unit[] = [];
-    setUnits((prev) => {
-      const updated = prev.map((u) =>
-        u.id === unitId ? { ...u, hp: Math.max(0, u.hp - damage) } : u
-      );
-      // Concentration save: DC = max(10, floor(damage/2))
-      const damagedUnit = updated.find((u) => u.id === unitId);
-      if (damagedUnit?.concentratingOn && damagedUnit.hp > 0) {
-        const dc = Math.max(10, Math.floor(damage / 2));
-        // CON save: d20 + CON mod (look up from character if player)
-        const saveRoll = Math.floor(Math.random() * 20) + 1;
-        let conMod = 0;
-        if (damagedUnit.characterId) {
-          const char = characters.find((c) => c.id === damagedUnit.characterId);
-          if (char) {
-            conMod = Math.floor((char.stats.CON - 10) / 2);
-            // War Caster feat: +2 to concentration saves
-            if ((char.feats || []).includes('war-caster')) conMod += 2;
+  const damageUnit = useCallback(
+    (unitId: string, damage: number): Unit[] => {
+      let result: Unit[] = [];
+      setUnits((prev) => {
+        const updated = prev.map((u) => (u.id === unitId ? { ...u, hp: Math.max(0, u.hp - damage) } : u));
+        // Concentration save: DC = max(10, floor(damage/2))
+        const damagedUnit = updated.find((u) => u.id === unitId);
+        if (damagedUnit?.concentratingOn && damagedUnit.hp > 0) {
+          const dc = Math.max(10, Math.floor(damage / 2));
+          // CON save: d20 + CON mod (look up from character if player)
+          const saveRoll = Math.floor(Math.random() * 20) + 1;
+          let conMod = 0;
+          if (damagedUnit.characterId) {
+            const char = characters.find((c) => c.id === damagedUnit.characterId);
+            if (char) {
+              conMod = Math.floor((char.stats.CON - 10) / 2);
+              // War Caster feat: +2 to concentration saves
+              if ((char.feats || []).includes('war-caster')) conMod += 2;
+            }
+          }
+          const totalSave = saveRoll + conMod;
+          if (totalSave < dc) {
+            // Failed concentration save — drop concentration and remove conditions sourced by this caster
+            const casterName = damagedUnit.name;
+            concentrationBreakMessages.current.push(`${casterName} fails concentration save (${saveRoll}+${conMod}=${totalSave} vs DC ${dc})! ${damagedUnit.concentratingOn} ends.`);
+            result = updated.map((u) => {
+              if (u.id === unitId) return { ...u, concentratingOn: undefined };
+              // Remove conditions applied by this caster
+              return { ...u, conditions: (u.conditions || []).filter((c) => c.source !== casterName) };
+            });
+            return result;
+          } else {
+            concentrationBreakMessages.current.push(`${damagedUnit.name} maintains concentration (${saveRoll}+${conMod}=${totalSave} vs DC ${dc}).`);
           }
         }
-        const totalSave = saveRoll + conMod;
-        if (totalSave < dc) {
-          // Failed concentration save — drop concentration and remove conditions sourced by this caster
-          const casterName = damagedUnit.name;
-          concentrationBreakMessages.current.push(
-            `${casterName} fails concentration save (${saveRoll}+${conMod}=${totalSave} vs DC ${dc})! ${damagedUnit.concentratingOn} ends.`
-          );
-          result = updated.map((u) => {
-            if (u.id === unitId) return { ...u, concentratingOn: undefined };
-            // Remove conditions applied by this caster
-            return { ...u, conditions: (u.conditions || []).filter((c) => c.source !== casterName) };
-          });
-          return result;
-        } else {
-          concentrationBreakMessages.current.push(
-            `${damagedUnit.name} maintains concentration (${saveRoll}+${conMod}=${totalSave} vs DC ${dc}).`
-          );
-        }
-      }
-      result = updated;
-      return updated;
-    });
-    return result;
-  }, [characters]);
+        result = updated;
+        return updated;
+      });
+      return result;
+    },
+    [characters]
+  );
 
   // Combat: heal a unit (clamp to maxHp). Returns updated units for sync.
   const healUnit = useCallback((unitId: string, amount: number): Unit[] => {
     let result: Unit[] = [];
     setUnits((prev) => {
-      result = prev.map((u) =>
-        u.id === unitId ? { ...u, hp: Math.min(u.maxHp, u.hp + amount) } : u
-      );
+      result = prev.map((u) => (u.id === unitId ? { ...u, hp: Math.min(u.maxHp, u.hp + amount) } : u));
       return result;
     });
     return result;
@@ -1291,292 +1389,320 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Spells: cast a spell (check slots, apply damage/healing, consume slot)
-  const castSpell = useCallback((charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
-    let result = { success: false, message: '' };
-    const spell = SPELL_LIST.find((s) => s.id === spellId);
-    if (!spell) { return { success: false, message: 'Unknown spell.' }; }
-
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      if (spell.level > 0) {
-        const maxSlots = getSpellSlots(c.class, c.level);
-        const used = c.spellSlotsUsed || {};
-        const slotsAvail = (maxSlots[spell.level] || 0) - (used[spell.level] || 0);
-        if (slotsAvail <= 0) {
-          result = { success: false, message: `No level ${spell.level} spell slots remaining!` };
-          return c;
-        }
-        const newUsed = { ...used, [spell.level]: (used[spell.level] || 0) + 1 };
-        result = { success: true, message: '' };
-        return { ...c, spellSlotsUsed: newUsed };
-      }
-      result = { success: true, message: '' };
-      return c;
-    }));
-
-    if (result.success) {
-      const char = characters.find((c) => c.id === charId);
-      const casterName = char?.name || 'Caster';
-
-      // Concentration: if this spell requires concentration, drop any existing concentration
-      if (spell.isConcentration) {
-        const casterUnit = units.find((u) => u.characterId === charId);
-        if (casterUnit?.concentratingOn) {
-          // Drop old concentration — remove conditions applied by the old spell
-          const oldSpellName = casterUnit.concentratingOn;
-          // Clear concentration conditions from all units that were sourced by this caster
-          setUnits((prev) => prev.map((u) => ({
-            ...u,
-            conditions: (u.conditions || []).filter((c) => c.source !== casterName),
-            concentratingOn: u.id === casterUnit.id ? undefined : u.concentratingOn,
-          })));
-          result.message = `${casterName} breaks concentration on ${oldSpellName}. `;
-        }
-        // Set new concentration on caster unit
-        if (casterUnit) {
-          setUnits((prev) => prev.map((u) =>
-            u.id === casterUnit.id ? { ...u, concentratingOn: spell.name } : u
-          ));
-        }
+  const castSpell = useCallback(
+    (charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
+      let result = { success: false, message: '' };
+      const spell = SPELL_LIST.find((s) => s.id === spellId);
+      if (!spell) {
+        return { success: false, message: 'Unknown spell.' };
       }
 
-      // Saving throw: if spell has saveStat, target rolls to resist
-      let targetSaved = false;
-      if (spell.saveStat && targetUnitId) {
-        const target = units.find((u) => u.id === targetUnitId);
-        if (target && char) {
-          // Spell save DC = 8 + proficiency + casting stat mod
-          const castingStatMap: Record<string, StatName> = {
-            Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS', Bard: 'CHA',
-            Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS',
-          };
-          const castingStat = castingStatMap[char.class] || 'INT';
-          const castMod = Math.floor((char.stats[castingStat] - 10) / 2);
-          const profBonus = Math.ceil(char.level / 4) + 1;
-          const spellDC = 8 + profBonus + castMod;
-          // Target save roll: d20 + save stat mod (enemies use dexMod for DEX, or 0 for others)
-          const saveRoll = Math.floor(Math.random() * 20) + 1;
-          const targetSaveMod = spell.saveStat === 'DEX' ? (target.dexMod || 0) : 0;
-          const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
-          const totalSave = saveRoll + targetSaveMod + condSaveMod;
-          targetSaved = totalSave >= spellDC;
-        }
-      }
-
-      if (spell.damage) {
-        let dmg = rollSpellDamage(spell.damage);
-        if (targetSaved) dmg = Math.floor(dmg / 2); // half damage on save
-        if (targetUnitId) damageUnit(targetUnitId, dmg);
-        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
-        result.message = targetSaved
-          ? `${casterName} casts ${spell.name}! ${targetName} saves \u2014 ${dmg} damage (half).`
-          : `${casterName} casts ${spell.name} for ${dmg} damage!`;
-        // Apply condition only if target failed the save
-        if (spell.appliesCondition && targetUnitId && !targetSaved) {
-          applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
-          result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
-        } else if (spell.appliesCondition && targetSaved) {
-          result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} resists the ${spell.appliesCondition} effect.`;
-        }
-      } else if (spell.healAmount) {
-        if (char) {
-          const healed = Math.min(spell.healAmount, char.maxHp - char.hp);
-          setCharacters((prev) => prev.map((c) => {
-            if (c.id !== charId) return c;
-            let updated = { ...c, hp: Math.min(c.maxHp, c.hp + spell.healAmount!) };
-            if (c.condition === 'unconscious' || c.condition === 'stabilized') {
-              updated = { ...updated, condition: 'normal' as const, deathSaves: { successes: 0, failures: 0 } };
+      setCharacters((prev) =>
+        prev.map((c) => {
+          if (c.id !== charId) return c;
+          if (spell.level > 0) {
+            const maxSlots = getSpellSlots(c.class, c.level);
+            const used = c.spellSlotsUsed || {};
+            const slotsAvail = (maxSlots[spell.level] || 0) - (used[spell.level] || 0);
+            if (slotsAvail <= 0) {
+              result = { success: false, message: `No level ${spell.level} spell slots remaining!` };
+              return c;
             }
-            return updated;
-          }));
-          result.message = `${casterName} casts ${spell.name}, restoring ${healed} HP!`;
-        } else {
-          result.message = `${casterName} casts ${spell.name}.`;
+            const newUsed = { ...used, [spell.level]: (used[spell.level] || 0) + 1 };
+            result = { success: true, message: '' };
+            return { ...c, spellSlotsUsed: newUsed };
+          }
+          result = { success: true, message: '' };
+          return c;
+        })
+      );
+
+      if (result.success) {
+        const char = characters.find((c) => c.id === charId);
+        const casterName = char?.name || 'Caster';
+
+        // Concentration: if this spell requires concentration, drop any existing concentration
+        if (spell.isConcentration) {
+          const casterUnit = units.find((u) => u.characterId === charId);
+          if (casterUnit?.concentratingOn) {
+            // Drop old concentration — remove conditions applied by the old spell
+            const oldSpellName = casterUnit.concentratingOn;
+            // Clear concentration conditions from all units that were sourced by this caster
+            setUnits((prev) =>
+              prev.map((u) => ({
+                ...u,
+                conditions: (u.conditions || []).filter((c) => c.source !== casterName),
+                concentratingOn: u.id === casterUnit.id ? undefined : u.concentratingOn,
+              }))
+            );
+            result.message = `${casterName} breaks concentration on ${oldSpellName}. `;
+          }
+          // Set new concentration on caster unit
+          if (casterUnit) {
+            setUnits((prev) => prev.map((u) => (u.id === casterUnit.id ? { ...u, concentratingOn: spell.name } : u)));
+          }
         }
-      } else if (spell.appliesCondition && targetUnitId) {
-        // Pure condition spell (like Hold Person with no damage)
-        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
-        if (targetSaved) {
-          result.message = `${casterName} casts ${spell.name}! ${targetName} resists with a successful save.`;
-        } else {
-          applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
-          result.message = `${casterName} casts ${spell.name}! ${targetName} is ${spell.appliesCondition}!`;
+
+        // Saving throw: if spell has saveStat, target rolls to resist
+        let targetSaved = false;
+        if (spell.saveStat && targetUnitId) {
+          const target = units.find((u) => u.id === targetUnitId);
+          if (target && char) {
+            // Spell save DC = 8 + proficiency + casting stat mod
+            const castingStatMap: Record<string, StatName> = {
+              Wizard: 'INT',
+              Sorcerer: 'CHA',
+              Cleric: 'WIS',
+              Druid: 'WIS',
+              Bard: 'CHA',
+              Warlock: 'CHA',
+              Paladin: 'CHA',
+              Ranger: 'WIS',
+            };
+            const castingStat = castingStatMap[char.class] || 'INT';
+            const castMod = Math.floor((char.stats[castingStat] - 10) / 2);
+            const profBonus = Math.ceil(char.level / 4) + 1;
+            const spellDC = 8 + profBonus + castMod;
+            // Target save roll: d20 + save stat mod (enemies use dexMod for DEX, or 0 for others)
+            const saveRoll = Math.floor(Math.random() * 20) + 1;
+            const targetSaveMod = spell.saveStat === 'DEX' ? target.dexMod || 0 : 0;
+            const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
+            const totalSave = saveRoll + targetSaveMod + condSaveMod;
+            targetSaved = totalSave >= spellDC;
+          }
         }
-      } else {
-        result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
+
+        if (spell.damage) {
+          let dmg = rollSpellDamage(spell.damage);
+          if (targetSaved) dmg = Math.floor(dmg / 2); // half damage on save
+          if (targetUnitId) damageUnit(targetUnitId, dmg);
+          const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+          result.message = targetSaved ? `${casterName} casts ${spell.name}! ${targetName} saves \u2014 ${dmg} damage (half).` : `${casterName} casts ${spell.name} for ${dmg} damage!`;
+          // Apply condition only if target failed the save
+          if (spell.appliesCondition && targetUnitId && !targetSaved) {
+            applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+            result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
+          } else if (spell.appliesCondition && targetSaved) {
+            result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} resists the ${spell.appliesCondition} effect.`;
+          }
+        } else if (spell.healAmount) {
+          if (char) {
+            const healed = Math.min(spell.healAmount, char.maxHp - char.hp);
+            setCharacters((prev) =>
+              prev.map((c) => {
+                if (c.id !== charId) return c;
+                let updated = { ...c, hp: Math.min(c.maxHp, c.hp + spell.healAmount!) };
+                if (c.condition === 'unconscious' || c.condition === 'stabilized') {
+                  updated = { ...updated, condition: 'normal' as const, deathSaves: { successes: 0, failures: 0 } };
+                }
+                return updated;
+              })
+            );
+            result.message = `${casterName} casts ${spell.name}, restoring ${healed} HP!`;
+          } else {
+            result.message = `${casterName} casts ${spell.name}.`;
+          }
+        } else if (spell.appliesCondition && targetUnitId) {
+          // Pure condition spell (like Hold Person with no damage)
+          const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+          if (targetSaved) {
+            result.message = `${casterName} casts ${spell.name}! ${targetName} resists with a successful save.`;
+          } else {
+            applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+            result.message = `${casterName} casts ${spell.name}! ${targetName} is ${spell.appliesCondition}!`;
+          }
+        } else {
+          result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
+        }
+        if (spell.level > 0) result.message += ` (Level ${spell.level} slot used)`;
       }
-      if (spell.level > 0) result.message += ` (Level ${spell.level} slot used)`;
-    }
-    return result;
-  }, [characters, damageUnit, applyCondition, units]);
+      return result;
+    },
+    [characters, damageUnit, applyCondition, units]
+  );
 
   // Spells: restore all spell slots (called on long rest)
   const restoreSpellSlots = useCallback((charId: string) => {
-    setCharacters((prev) => prev.map((c) =>
-      c.id === charId ? { ...c, spellSlotsUsed: {} } : c
-    ));
+    setCharacters((prev) => prev.map((c) => (c.id === charId ? { ...c, spellSlotsUsed: {} } : c)));
   }, []);
 
   // Class abilities: use the class-specific ability (1/rest cooldown)
-  const useClassAbility = useCallback((charId: string, targetUnitId?: string): { success: boolean; message: string } => {
-    const char = characters.find((c) => c.id === charId);
-    if (!char) return { success: false, message: 'No character found.' };
-    const ability = getClassAbility(char.class);
-    if (!ability) return { success: false, message: `${char.class} has no special ability.` };
-    if (char.classAbilityUsed) return { success: false, message: `${ability.name} already used — rest to recharge.` };
+  const useClassAbility = useCallback(
+    (charId: string, targetUnitId?: string): { success: boolean; message: string } => {
+      const char = characters.find((c) => c.id === charId);
+      if (!char) return { success: false, message: 'No character found.' };
+      const ability = getClassAbility(char.class);
+      if (!ability) return { success: false, message: `${char.class} has no special ability.` };
+      if (char.classAbilityUsed) return { success: false, message: `${ability.name} already used — rest to recharge.` };
 
-    // Mark as used
-    setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: true } : c));
+      // Mark as used
+      setCharacters((prev) => prev.map((c) => (c.id === charId ? { ...c, classAbilityUsed: true } : c)));
 
-    const casterName = char.name;
-    let msg = '';
+      const casterName = char.name;
+      let msg = '';
 
-    if (ability.type === 'heal' && ability.healFormula) {
-      let healAmt = 0;
-      if (ability.healFormula === 'level_d10') healAmt = Math.floor(Math.random() * 10) + 1 + char.level;
-      else if (ability.healFormula === 'level_x5') healAmt = char.level * 5;
-      else if (ability.healFormula === 'level_d6') healAmt = (Math.floor(Math.random() * 6) + 1) * Math.max(1, Math.ceil(char.level / 2));
-      const healed = Math.min(healAmt, char.maxHp - char.hp);
-      setCharacters((prev) => prev.map((c) => {
-        if (c.id !== charId) return c;
-        let updated = { ...c, hp: Math.min(c.maxHp, c.hp + healAmt) };
-        if (c.condition === 'unconscious' || c.condition === 'stabilized') {
-          updated = { ...updated, condition: 'normal' as Condition, deathSaves: { successes: 0, failures: 0 } };
-        }
-        return updated;
-      }));
-      msg = `${casterName} uses ${ability.name}, restoring ${healed} HP!`;
-    } else if (ability.type === 'buff' && ability.appliesCondition) {
-      // Buff self or target
-      if (ability.selfOnly) {
-        const playerUnit = units.find((u) => u.characterId === charId);
-        if (playerUnit) {
-          applyCondition(playerUnit.id, { type: ability.appliesCondition, duration: ability.conditionDuration || 3, source: ability.name });
-          msg = `${casterName} uses ${ability.name}! ${CONDITION_EFFECTS[ability.appliesCondition].description} for ${ability.conditionDuration || 3} rounds.`;
-        } else {
-          msg = `${casterName} uses ${ability.name}!`;
-        }
-      } else if (targetUnitId) {
-        applyCondition(targetUnitId, { type: ability.appliesCondition, duration: ability.conditionDuration || 3, source: casterName });
-        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
-        msg = `${casterName} uses ${ability.name} on ${targetName}! They are ${ability.appliesCondition} for ${ability.conditionDuration || 3} rounds.`;
-      } else {
-        // No target — refund
-        setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: false } : c));
-        return { success: false, message: 'Select an enemy target first.' };
-      }
-    } else if (ability.type === 'attack' && ability.damage) {
-      if (targetUnitId) {
-        const dmg = rollSpellDamage(ability.damage);
-        damageUnit(targetUnitId, dmg);
-        const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
-        msg = `${casterName} uses ${ability.name} on ${targetName} for ${dmg} damage!`;
-      } else {
-        setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: false } : c));
-        return { success: false, message: 'Select an enemy target first.' };
-      }
-    } else if (ability.type === 'utility') {
-      // Arcane Recovery: restore lowest empty spell slot
-      const slots = getSpellSlots(char.class, char.level);
-      const used = char.spellSlotsUsed || {};
-      let recovered = false;
-      for (const lvl of Object.keys(slots).map(Number).sort()) {
-        if ((used[lvl] || 0) > 0) {
-          setCharacters((prev) => prev.map((c) => {
+      if (ability.type === 'heal' && ability.healFormula) {
+        let healAmt = 0;
+        if (ability.healFormula === 'level_d10') healAmt = Math.floor(Math.random() * 10) + 1 + char.level;
+        else if (ability.healFormula === 'level_x5') healAmt = char.level * 5;
+        else if (ability.healFormula === 'level_d6') healAmt = (Math.floor(Math.random() * 6) + 1) * Math.max(1, Math.ceil(char.level / 2));
+        const healed = Math.min(healAmt, char.maxHp - char.hp);
+        setCharacters((prev) =>
+          prev.map((c) => {
             if (c.id !== charId) return c;
-            const newUsed = { ...c.spellSlotsUsed };
-            newUsed[lvl] = Math.max(0, (newUsed[lvl] || 0) - 1);
-            return { ...c, spellSlotsUsed: newUsed };
-          }));
-          msg = `${casterName} uses ${ability.name}, recovering a level ${lvl} spell slot!`;
-          recovered = true;
-          break;
+            let updated = { ...c, hp: Math.min(c.maxHp, c.hp + healAmt) };
+            if (c.condition === 'unconscious' || c.condition === 'stabilized') {
+              updated = { ...updated, condition: 'normal' as Condition, deathSaves: { successes: 0, failures: 0 } };
+            }
+            return updated;
+          })
+        );
+        msg = `${casterName} uses ${ability.name}, restoring ${healed} HP!`;
+      } else if (ability.type === 'buff' && ability.appliesCondition) {
+        // Buff self or target
+        if (ability.selfOnly) {
+          const playerUnit = units.find((u) => u.characterId === charId);
+          if (playerUnit) {
+            applyCondition(playerUnit.id, { type: ability.appliesCondition, duration: ability.conditionDuration || 3, source: ability.name });
+            msg = `${casterName} uses ${ability.name}! ${CONDITION_EFFECTS[ability.appliesCondition].description} for ${ability.conditionDuration || 3} rounds.`;
+          } else {
+            msg = `${casterName} uses ${ability.name}!`;
+          }
+        } else if (targetUnitId) {
+          applyCondition(targetUnitId, { type: ability.appliesCondition, duration: ability.conditionDuration || 3, source: casterName });
+          const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+          msg = `${casterName} uses ${ability.name} on ${targetName}! They are ${ability.appliesCondition} for ${ability.conditionDuration || 3} rounds.`;
+        } else {
+          // No target — refund
+          setCharacters((prev) => prev.map((c) => (c.id === charId ? { ...c, classAbilityUsed: false } : c)));
+          return { success: false, message: 'Select an enemy target first.' };
+        }
+      } else if (ability.type === 'attack' && ability.damage) {
+        if (targetUnitId) {
+          const dmg = rollSpellDamage(ability.damage);
+          damageUnit(targetUnitId, dmg);
+          const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+          msg = `${casterName} uses ${ability.name} on ${targetName} for ${dmg} damage!`;
+        } else {
+          setCharacters((prev) => prev.map((c) => (c.id === charId ? { ...c, classAbilityUsed: false } : c)));
+          return { success: false, message: 'Select an enemy target first.' };
+        }
+      } else if (ability.type === 'utility') {
+        // Arcane Recovery: restore lowest empty spell slot
+        const slots = getSpellSlots(char.class, char.level);
+        const used = char.spellSlotsUsed || {};
+        let recovered = false;
+        for (const lvl of Object.keys(slots).map(Number).sort()) {
+          if ((used[lvl] || 0) > 0) {
+            setCharacters((prev) =>
+              prev.map((c) => {
+                if (c.id !== charId) return c;
+                const newUsed = { ...c.spellSlotsUsed };
+                newUsed[lvl] = Math.max(0, (newUsed[lvl] || 0) - 1);
+                return { ...c, spellSlotsUsed: newUsed };
+              })
+            );
+            msg = `${casterName} uses ${ability.name}, recovering a level ${lvl} spell slot!`;
+            recovered = true;
+            break;
+          }
+        }
+        if (!recovered) {
+          setCharacters((prev) => prev.map((c) => (c.id === charId ? { ...c, classAbilityUsed: false } : c)));
+          return { success: false, message: 'No spell slots to recover.' };
         }
       }
-      if (!recovered) {
-        setCharacters((prev) => prev.map((c) => c.id === charId ? { ...c, classAbilityUsed: false } : c));
-        return { success: false, message: 'No spell slots to recover.' };
-      }
-    }
 
-    return { success: true, message: msg || `${casterName} uses ${ability.name}!` };
-  }, [characters, units, applyCondition, damageUnit]);
+      return { success: true, message: msg || `${casterName} uses ${ability.name}!` };
+    },
+    [characters, units, applyCondition, damageUnit]
+  );
 
   // ASI: increase one stat by 2, or two different stats by 1 each (max 20)
-  const applyASI = useCallback((charId: string, stat1: StatName, stat2?: StatName): { success: boolean; message: string } => {
-    const char = characters.find((c) => c.id === charId);
-    if (!char) return { success: false, message: 'Character not found.' };
-    if (!hasPendingASI(char)) return { success: false, message: 'No ability score improvement available.' };
+  const applyASI = useCallback(
+    (charId: string, stat1: StatName, stat2?: StatName): { success: boolean; message: string } => {
+      const char = characters.find((c) => c.id === charId);
+      if (!char) return { success: false, message: 'Character not found.' };
+      if (!hasPendingASI(char)) return { success: false, message: 'No ability score improvement available.' };
 
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const newStats = { ...c.stats };
-      if (stat2 && stat2 !== stat1) {
-        // +1 to two different stats
-        newStats[stat1] = Math.min(20, newStats[stat1] + 1);
-        newStats[stat2] = Math.min(20, newStats[stat2] + 1);
-      } else {
-        // +2 to one stat
-        newStats[stat1] = Math.min(20, newStats[stat1] + 2);
-      }
-      // Recalculate HP if CON changed
-      const oldConMod = Math.floor((c.stats.CON - 10) / 2);
-      const newConMod = Math.floor((newStats.CON - 10) / 2);
-      const hpDelta = (newConMod - oldConMod) * c.level;
-      return {
-        ...c,
-        stats: newStats,
-        maxHp: c.maxHp + hpDelta,
-        hp: c.hp + hpDelta,
-        asiChoicesMade: (c.asiChoicesMade || 0) + 1,
-      };
-    }));
+      setCharacters((prev) =>
+        prev.map((c) => {
+          if (c.id !== charId) return c;
+          const newStats = { ...c.stats };
+          if (stat2 && stat2 !== stat1) {
+            // +1 to two different stats
+            newStats[stat1] = Math.min(20, newStats[stat1] + 1);
+            newStats[stat2] = Math.min(20, newStats[stat2] + 1);
+          } else {
+            // +2 to one stat
+            newStats[stat1] = Math.min(20, newStats[stat1] + 2);
+          }
+          // Recalculate HP if CON changed
+          const oldConMod = Math.floor((c.stats.CON - 10) / 2);
+          const newConMod = Math.floor((newStats.CON - 10) / 2);
+          const hpDelta = (newConMod - oldConMod) * c.level;
+          return {
+            ...c,
+            stats: newStats,
+            maxHp: c.maxHp + hpDelta,
+            hp: c.hp + hpDelta,
+            asiChoicesMade: (c.asiChoicesMade || 0) + 1,
+          };
+        })
+      );
 
-    const label = stat2 && stat2 !== stat1 ? `+1 ${stat1}, +1 ${stat2}` : `+2 ${stat1}`;
-    return { success: true, message: `${char.name} improves ability scores: ${label}!` };
-  }, [characters]);
+      const label = stat2 && stat2 !== stat1 ? `+1 ${stat1}, +1 ${stat2}` : `+2 ${stat1}`;
+      return { success: true, message: `${char.name} improves ability scores: ${label}!` };
+    },
+    [characters]
+  );
 
   // Select a feat as an alternative to ASI
-  const selectFeat = useCallback((charId: string, featId: string): { success: boolean; message: string } => {
-    const char = characters.find((c) => c.id === charId);
-    if (!char) return { success: false, message: 'Character not found.' };
-    if (!hasPendingASI(char)) return { success: false, message: 'No feat selection available.' };
-    if ((char.feats || []).includes(featId)) return { success: false, message: 'You already have this feat.' };
+  const selectFeat = useCallback(
+    (charId: string, featId: string): { success: boolean; message: string } => {
+      const char = characters.find((c) => c.id === charId);
+      if (!char) return { success: false, message: 'Character not found.' };
+      if (!hasPendingASI(char)) return { success: false, message: 'No feat selection available.' };
+      if ((char.feats || []).includes(featId)) return { success: false, message: 'You already have this feat.' };
 
-    const feat = FEATS.find((f) => f.id === featId);
-    if (!feat) return { success: false, message: 'Feat not found.' };
+      const feat = FEATS.find((f) => f.id === featId);
+      if (!feat) return { success: false, message: 'Feat not found.' };
 
-    setCharacters((prev) => prev.map((c) => {
-      if (c.id !== charId) return c;
-      const newStats = { ...c.stats };
-      // Apply stat bonuses
-      if (feat.statBonuses) {
-        for (const [stat, bonus] of Object.entries(feat.statBonuses)) {
-          newStats[stat as StatName] = Math.min(20, newStats[stat as StatName] + (bonus || 0));
-        }
-      }
-      // Apply HP per level bonus
-      let hpBonus = 0;
-      if (feat.maxHpPerLevel) hpBonus = feat.maxHpPerLevel * c.level;
-      // CON change HP recalc
-      const oldConMod = Math.floor((c.stats.CON - 10) / 2);
-      const newConMod = Math.floor((newStats.CON - 10) / 2);
-      const conHpDelta = (newConMod - oldConMod) * c.level;
-      // Apply AC bonus
-      const acDelta = feat.acBonus || 0;
-      return {
-        ...c,
-        stats: newStats,
-        maxHp: c.maxHp + hpBonus + conHpDelta,
-        hp: c.hp + hpBonus + conHpDelta,
-        ac: c.ac + acDelta,
-        feats: [...(c.feats || []), featId],
-        asiChoicesMade: (c.asiChoicesMade || 0) + 1,
-      };
-    }));
+      setCharacters((prev) =>
+        prev.map((c) => {
+          if (c.id !== charId) return c;
+          const newStats = { ...c.stats };
+          // Apply stat bonuses
+          if (feat.statBonuses) {
+            for (const [stat, bonus] of Object.entries(feat.statBonuses)) {
+              newStats[stat as StatName] = Math.min(20, newStats[stat as StatName] + (bonus || 0));
+            }
+          }
+          // Apply HP per level bonus
+          let hpBonus = 0;
+          if (feat.maxHpPerLevel) hpBonus = feat.maxHpPerLevel * c.level;
+          // CON change HP recalc
+          const oldConMod = Math.floor((c.stats.CON - 10) / 2);
+          const newConMod = Math.floor((newStats.CON - 10) / 2);
+          const conHpDelta = (newConMod - oldConMod) * c.level;
+          // Apply AC bonus
+          const acDelta = feat.acBonus || 0;
+          return {
+            ...c,
+            stats: newStats,
+            maxHp: c.maxHp + hpBonus + conHpDelta,
+            hp: c.hp + hpBonus + conHpDelta,
+            ac: c.ac + acDelta,
+            feats: [...(c.feats || []), featId],
+            asiChoicesMade: (c.asiChoicesMade || 0) + 1,
+          };
+        })
+      );
 
-    return { success: true, message: `${char.name} gains the ${feat.name} feat!` };
-  }, [characters]);
+      return { success: true, message: `${char.name} gains the ${feat.name} feat!` };
+    },
+    [characters]
+  );
 
   // Combat: remove a unit (dead enemy, etc). Returns updated units for sync.
   const removeUnit = useCallback((unitId: string): Unit[] => {
@@ -1639,7 +1765,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     let turnResult = { units: [] as Unit[], turnIndex: 0, newRound: false };
     setUnits((prev) => {
       const alive = prev.filter((u) => u.hp > 0);
-      if (alive.length === 0) { turnResult = { units: prev, turnIndex: 0, newRound: false }; return prev; }
+      if (alive.length === 0) {
+        turnResult = { units: prev, turnIndex: 0, newRound: false };
+        return prev;
+      }
 
       // Find current turn unit
       const currentIdx = prev.findIndex((u) => u.isCurrentTurn);

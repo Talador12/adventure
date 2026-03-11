@@ -171,6 +171,16 @@ secrets-staging: makeinfo ## [Auth] Promote secrets to staging
 	$(WRANGLER) secret put DISCORD_CLIENT_ID --env staging
 	$(WRANGLER) secret put DISCORD_CLIENT_SECRET --env staging
 
+secrets-google: makeinfo ## [Auth] Set Google OAuth secrets for dev environment
+	@read -p "Enter GOOGLE_CLIENT_ID: " client_id; \
+	read -p "Enter GOOGLE_CLIENT_SECRET: " client_secret; \
+	echo "Setting Google secrets..."; \
+	echo "$$client_id" | $(WRANGLER) secret put GOOGLE_CLIENT_ID --env development; \
+	echo "$$client_secret" | $(WRANGLER) secret put GOOGLE_CLIENT_SECRET --env development; \
+	echo "GOOGLE_CLIENT_ID=$$client_id" >> .dev.vars; \
+	echo "GOOGLE_CLIENT_SECRET=$$client_secret" >> .dev.vars; \
+	echo "Google secrets set."
+
 secrets-prod: makeinfo ## [Auth] Promote secrets to production (gated)
 	$(require_production_release)
 	$(WRANGLER) secret put DISCORD_CLIENT_ID

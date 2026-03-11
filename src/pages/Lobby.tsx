@@ -61,6 +61,13 @@ export default function Lobby() {
           setIsDM((msg.isDM as boolean) ?? false);
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
           setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
+          // Auto-join campaign party in D1 (fire-and-forget)
+          fetch(`/api/party/${encodeURIComponent(room)}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ role: msg.isDM ? 'dm' : 'player' }),
+          }).catch(() => {});
           // Replay doodle pad stroke history from server (late-join catch-up)
           if (Array.isArray(msg.strokeHistory) && msg.strokeHistory.length > 0) {
             // Small delay to ensure canvas is mounted and sized
@@ -138,6 +145,15 @@ export default function Lobby() {
               unitName: msg.unitName as string | undefined,
             },
           ]);
+          // Persist roll to D1 — only the roller persists
+          if (msg.playerId === wsPlayerId) {
+            persistChatMessage(room, {
+              username: msg.username as string,
+              type: 'roll',
+              text: `rolled ${(msg.die as string)?.toUpperCase()} for ${msg.value}`,
+              metadata: { die: msg.die, sides: msg.sides, value: msg.value, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName },
+            });
+          }
           // Play dice animation for everyone
           diceRef.current?.playRemoteRoll({
             die: msg.die as DieType,
@@ -242,8 +258,15 @@ export default function Lobby() {
           unitName: roll.unitName,
         },
       ]);
+      // Persist local roll to D1
+      persistChatMessage(room, {
+        username: playerName,
+        type: 'roll',
+        text: `rolled ${roll.die?.toUpperCase()} for ${roll.value}`,
+        metadata: { die: roll.die, sides: roll.sides, value: roll.value, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName },
+      });
     },
-    [currentPlayer]
+    [currentPlayer, room]
   );
 
   const handleDoodleStroke = useCallback(

@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 26: D1 Database + Persistent Users + Chat Persistence — D1 bindings wired, ensureUser() lazy-upserts Discord users into D1, chat persistence (GET/POST /api/chat/:roomId), party management (GET/POST/DELETE /api/party/:roomId), user profile endpoint, frontend loads chat history on mount. Previous: Phase 8 session robustness (Round 25), Map image persistence, Multiplayer sync (Phases 1-8).
+Round 26: D1 Database + Persistent Users + Chat/Roll/DM Persistence + Google OAuth — D1 bindings wired, ensureUser() lazy-upserts users into D1, chat/roll/DM narration/NPC/action persistence, party management with auto-join, Google OAuth alongside Discord, party member avatars on campaign cards. Previous: Phase 8 session robustness (Round 25), Map image persistence, Multiplayer sync (Phases 1-8).
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -505,12 +505,23 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Game.tsx: loads chat history from D1 on mount, persists outgoing chat messages
 - Makefile targets: `d1-dev`, `d1-staging`, `d1-prod`, `d1-migrate-dev`, `d1-migrate-staging`, `d1-migrate-prod`
 
-**Phase 2 — NOT YET STARTED:**
-- Google OAuth (`GET /api/auth/google` + callback) — needs `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`
+**Phase 2 — DONE (this commit):**
+- Persist dice rolls to D1: roller persists their own roll on `roll_result` (avoids duplicates), local/offline rolls persisted via `handleRollComplete`
+- Persist DM narration to D1: `callDmNarrate` persists after successful AI response
+- Persist NPC dialogue to D1: `callNpcDialogue` persists with NPC name/role metadata
+- Persist player actions to D1: `handlePlayerAction` persists at send site
+- Auto-join party on WebSocket `welcome` (fire-and-forget POST to `/api/party/:roomId/join` with role)
+- Google OAuth: `GET /api/auth/google` redirect + `GET /api/auth/google/callback` token exchange. JWT includes `provider: 'google'`, normalized user object. `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in secrets. `ensureUser()` handles Google avatar (full URL in `picture` field).
+- Google sign-in button on Home.tsx (inline Google "G" SVG alongside Discord button)
+- GameContext + Home.tsx avatar handling updated for Google users (`user.picture` || Discord CDN URL)
+- Home.tsx: party member avatars on campaign cards (stacked avatar row, up to 5 + overflow count)
+- Makefile: `secrets-google` target for Google OAuth secrets
+
+**Phase 3 — NOT YET STARTED:**
 - Migrate campaign list from KV to D1 `campaigns` table
-- Persist dice rolls and DM narration to D1 (currently only user-sent chat persists)
-- Auto-join party on campaign creation / WebSocket join
-- Home.tsx: party member avatars on campaign cards, Google auth button
+- Persist join/leave/system messages to D1 (currently transient)
+- Campaign settings panel (rename, description)
+- Link account: connect Google + Discord to same D1 user
 
 **D1 schema:**
 - `users` — persistent identity (UUID, display name, avatar). One row per human, linked to one or more auth providers.
@@ -678,3 +689,4 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Condition system overhaul: Split overloaded `blessed` condition into distinct types — `dodging` (Dodge action +2 AC), `raging` (Barbarian Rage +2 atk), `inspired` (Bardic Inspiration +2 atk/saves). `blessed` reserved for Bless spell only. Wired `effectiveAC()` into all 5 attack roll sites (enemy basic melee, enemy abilities, player quick attack, player OA, enemy OA in BattleMap). Implemented D&D 5e prone advantage/disadvantage via `rollD20WithProne()` helper (melee vs prone = advantage, ranged vs prone = disadvantage, prone attacker = disadvantage, adv+disadv cancel per 5e rules). Combat log shows [adv]/[disadv] tags. CONDITION_COLORS in BattleMap updated for new types. Combat log highlighting includes all 10 condition types. 22 new condition tests (127 total).
 - Phase 8 session robustness + DM role UI: Stable reconnect IDs (sessionStorage + Lobby DO reuse), DM authorization (first joiner = DM, server-enforced DM-only messages, reassignment on disconnect), DM transfer (`transfer_dm` message type), rate limiting (10 game_events/sec per client), message queue (100-cap offline buffer), DM role UI gating (`canUseDMTools` = `isDM || !wsConnected` — gates encounter, NPC talk, scene name, narration input, Begin Adventure in Game.tsx; DM mode toggle, terrain paint, traps, map upload in BattleMap.tsx; "Make DM" transfer button in Lobby.tsx). DM/Player badge in toolbar. 6 new Phase 8 tests (133 total).
 - D1 Database Phase 1: D1 bindings in wrangler.toml (all envs) + wrangler.test.toml. `D1Database` interface + `DB` binding in Env. `ensureUser()` lazy-upserts Discord users into D1 `users`/`auth_providers` tables (graceful fallback if D1 unavailable). `getJwtPayload()` helper. Chat persistence: `GET/POST /api/chat/:roomId` (D1). Party management: `GET/POST/DELETE /api/party/:roomId` with JOIN queries. `GET /api/user/me` full user profile with auth providers. Frontend `chatApi.ts` helper (loadChatHistory + persistChatMessage). Lobby.tsx + Game.tsx load chat history on mount, persist outgoing messages. Makefile: d1-dev/staging/prod + d1-migrate-dev/staging/prod targets. Migration SQL: `users`, `auth_providers`, `campaigns`, `party_members`, `chat_messages` tables with indexes.
+- D1 Database Phase 2: Full chat persistence — dice rolls, DM narration, NPC dialogue, player actions all persisted to D1 (roller/sender persists to avoid duplicates). Auto-join party on WebSocket welcome (fire-and-forget). Google OAuth: standard browser redirect flow (`/api/auth/google` + callback), normalized user object in JWT, `ensureUser()` handles Google avatar URLs. Google "G" button on Home.tsx alongside Discord. GameContext + Home.tsx avatar handling updated for multi-provider (Google `picture` URL vs Discord CDN hash). Party member avatars on campaign cards (stacked row, 5 max + overflow). Makefile: `secrets-google` target.

@@ -484,6 +484,8 @@ export default function Game() {
           addDmMessage(data.narration);
           // Broadcast narration to all players via WebSocket
           sendRef.current({ type: 'dm_narrate', narration: data.narration });
+          // Persist DM narration to D1
+          persistChatMessage(room, { username: 'Dungeon Master', type: 'dm', text: data.narration });
         } else {
           addDmMessage(data.error || 'The DM pauses, lost in thought...');
         }
@@ -537,6 +539,8 @@ export default function Game() {
           setNpcDialogueHistory((prev) => [...prev, `${selectedCharacter.name}: ${playerMessage}`, `${npcName}: ${npcText}`]);
           // Broadcast NPC dialogue to all players
           sendRef.current({ type: 'dm_npc', npcName, dialogue: npcText });
+          // Persist NPC dialogue to D1
+          persistChatMessage(room, { username: npcName, type: 'dm', text: npcText, metadata: { npcName, npcRole } });
         } else {
           addDmMessage(data.error || `${npcName} stares at you blankly.`);
         }
@@ -917,13 +921,20 @@ export default function Game() {
 
     // Broadcast the action to all players
     sendRef.current({ type: 'dm_action', characterName: selectedCharacter?.name || currentPlayer.username, action: text });
+    // Persist player action to D1
+    persistChatMessage(room, {
+      username: selectedCharacter?.name || currentPlayer.username,
+      type: 'chat',
+      text: npcMode ? `"${text}"` : `*${text}*`,
+      avatarUrl: currentPlayer.avatar,
+    });
 
     if (npcMode) {
       await callNpcDialogue(text);
     } else {
       await callDmNarrate(text);
     }
-  }, [actionInput, currentPlayer.id, currentPlayer.username, selectedCharacter, callDmNarrate, callNpcDialogue, npcMode]);
+  }, [actionInput, currentPlayer.id, currentPlayer.username, currentPlayer.avatar, selectedCharacter, callDmNarrate, callNpcDialogue, npcMode, room]);
 
   // Generate encounter — spawn enemy units with stat blocks from templates
   const handleGenerateEncounter = useCallback(async () => {
@@ -1030,6 +1041,13 @@ export default function Game() {
           setWsPlayerId(msg.playerId as string);
           setIsDM((msg.isDM as boolean) ?? false);
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
+          // Auto-join campaign party in D1 (fire-and-forget)
+          fetch(`/api/party/${encodeURIComponent(room)}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ characterId: selectedCharacterId, role: msg.isDM ? 'dm' : 'player' }),
+          }).catch(() => {});
           // Request game state from existing players (late join sync)
           sendRef.current({ type: 'state_request' });
           break;
@@ -1069,6 +1087,16 @@ export default function Game() {
               characterName: msg.unitName as string | undefined,
             },
           ]);
+          // Persist roll to D1 — only the roller persists (avoid duplicates)
+          if (msg.playerId === wsPlayerId) {
+            persistChatMessage(room, {
+              username: msg.username as string,
+              type: 'roll',
+              text: `rolled ${(msg.die as string)?.toUpperCase()} for ${msg.value}`,
+              avatarUrl: msg.avatar as string | undefined,
+              metadata: { die: msg.die, sides: msg.sides, value: msg.value, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName, characterName: msg.unitName },
+            });
+          }
           // Sound FX
           playDiceRoll();
           if (msg.isCritical) setTimeout(playCritical, 400);
@@ -1377,8 +1405,15 @@ export default function Game() {
           unitName: roll.unitName,
         },
       ]);
+      // Persist local roll to D1
+      persistChatMessage(room, {
+        username: displayUsername,
+        type: 'roll',
+        text: `rolled ${roll.die?.toUpperCase()} for ${roll.value}`,
+        metadata: { die: roll.die, sides: roll.sides, value: roll.value, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName, characterName: charName || undefined },
+      });
     },
-    [selectedCharacter, currentPlayer]
+    [selectedCharacter, currentPlayer, room]
   );
 
   const statusColor = status === 'connected' ? 'bg-green-500' : status === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500';

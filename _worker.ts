@@ -57,6 +57,8 @@ interface Env {
   DB?: D1Database;
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
   JWT_SECRET?: string;
 }
 
@@ -84,6 +86,12 @@ const DISCORD_AUTH_URI = 'https://discord.com/api/oauth2/authorize';
 const DISCORD_TOKEN_URI = 'https://discord.com/api/oauth2/token';
 const DISCORD_USERINFO_URI = 'https://discord.com/api/users/@me';
 const DISCORD_REDIRECT_URIS = ['http://localhost:5173/api/auth/discord/callback', 'https://adventure.notebooks.cloudflare.com/api/auth/discord/callback'];
+
+// Google OAuth
+const GOOGLE_AUTH_URI = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URI = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USERINFO_URI = 'https://www.googleapis.com/oauth2/v2/userinfo';
+const GOOGLE_REDIRECT_URIS = ['http://localhost:5173/api/auth/google/callback', 'https://adventure.notebooks.cloudflare.com/api/auth/google/callback'];
 
 const COOKIE_NAME = 'adventure_session';
 const DEV_JWT_FALLBACK = 'adventure-dev-secret-do-not-use-in-prod';
@@ -154,6 +162,66 @@ app.get('/api/auth/me', async (c) => {
 // GET /api/auth/signout - clear session cookie
 app.get('/api/auth/signout', (c) => {
   c.header('Set-Cookie', `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+  return c.redirect('/');
+});
+
+// ── Google OAuth ──
+
+// GET /api/auth/google - redirect to Google OAuth
+app.get('/api/auth/google', (c) => {
+  if (!c.env.GOOGLE_CLIENT_ID) return c.text('Google OAuth not configured', 503);
+  const redirect_uri = GOOGLE_REDIRECT_URIS.find((uri) => c.req.url.startsWith(uri.split('/api')[0])) || GOOGLE_REDIRECT_URIS[0];
+  const params = new URLSearchParams({
+    client_id: c.env.GOOGLE_CLIENT_ID,
+    redirect_uri,
+    response_type: 'code',
+    scope: 'openid email profile',
+    access_type: 'offline',
+    prompt: 'consent',
+  });
+  return c.redirect(`${GOOGLE_AUTH_URI}?${params.toString()}`);
+});
+
+// GET /api/auth/google/callback - exchange code for token, set JWT cookie
+app.get('/api/auth/google/callback', async (c) => {
+  if (!c.env.GOOGLE_CLIENT_ID || !c.env.GOOGLE_CLIENT_SECRET) return c.text('Google OAuth not configured', 503);
+
+  const url = new URL(c.req.url);
+  const code = url.searchParams.get('code');
+  if (!code) return c.text('Missing code', 400);
+
+  const redirect_uri = GOOGLE_REDIRECT_URIS.find((uri) => c.req.url.startsWith(uri.split('/api')[0])) || GOOGLE_REDIRECT_URIS[0];
+  const tokenRes = await fetch(GOOGLE_TOKEN_URI, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: c.env.GOOGLE_CLIENT_ID,
+      client_secret: c.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri,
+      grant_type: 'authorization_code',
+    }),
+  });
+  const tokenData: Record<string, string> = await tokenRes.json();
+  if (!tokenData.access_token) return c.text('Failed to get token', 400);
+
+  const userRes = await fetch(GOOGLE_USERINFO_URI, {
+    headers: { Authorization: `Bearer ${tokenData.access_token}` },
+  });
+  const googleUser = (await userRes.json()) as Record<string, string>;
+
+  // Normalize Google user to match our JWT format (compatible with Discord layout)
+  const user = {
+    id: googleUser.id,
+    username: googleUser.email?.split('@')[0] || googleUser.name || 'User',
+    global_name: googleUser.name || googleUser.email?.split('@')[0] || 'User',
+    email: googleUser.email,
+    avatar: null, // Google uses picture URL directly, not a hash
+    picture: googleUser.picture, // full URL to profile picture
+  };
+
+  const jwt = await new SignJWT({ user, provider: 'google' }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('7d').sign(getJwtKey(c.env));
+  c.header('Set-Cookie', `${COOKIE_NAME}=${jwt}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800`);
   return c.redirect('/');
 });
 
@@ -877,7 +945,8 @@ async function ensureUser(c: { req: { raw: Request }; env: Env }): Promise<strin
   const { user, provider } = jwt;
   const providerUserId = user.id;
   const displayName = user.global_name || user.username || 'Adventurer';
-  const avatarUrl = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.webp` : null;
+  // Discord: avatar is a hash, construct CDN URL. Google: picture is a full URL.
+  const avatarUrl = user.picture || (user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.webp` : null);
 
   try {
     // Check if this auth provider is already linked to a user
