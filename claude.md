@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 22: Multiplayer sync (Phases 1-7), Opportunity Attacks, Disengage action. Full game state syncs over WebSocket. DoodlePad late-join replay. D&D 5e opportunity attacks when leaving enemy threat range + Disengage action to avoid them.
+Round 23: Condition system overhaul — split overloaded `blessed` into `dodging`/`raging`/`inspired`, wired AC modifiers from conditions into all attack rolls, implemented D&D 5e prone advantage/disadvantage. Previous: Multiplayer sync (Phases 1-7), Opportunity Attacks, Disengage action.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -36,10 +36,10 @@ Round 22: Multiplayer sync (Phases 1-7), Opportunity Attacks, Disengage action. 
 ### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
-- **Status:** Done — all 105 tests passing (77 player + 28 worker), 2 budget-skipped
+- **Status:** Done — all 127 tests passing (99 player + 28 worker), 2 budget-skipped
 
 **Three test categories:**
-1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 16 describe blocks, 77 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks. **All 77 passing.**
+1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 17 describe blocks, 99 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks, condition system (CONDITION_EFFECTS, effectiveAC, rollD20WithProne, CLASS_ABILITIES condition types). **All 99 passing.**
 2. **AI fallback tests** (`tests/ai/fallback.test.ts`) — AI binding `undefined` → all 9 AI endpoints return 503 with helpful message. Non-AI endpoints (campaign save/load) still work. **All 11 passing.**
 3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **All 11 passing, 2 skipped** (live AI tests behind `AI_TESTS=live` gate).
 4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). **All 6 passing.**
@@ -309,7 +309,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### Combat depth overhaul
 - **Status:** Done
 - Unit type extended: attackBonus, damageDie, damageBonus, dexMod, abilities, abilityCooldowns, conditions, cr, xpValue
-- 7 condition types: poisoned (-2 atk/saves), stunned (skip turn, -2 AC), frightened (-2 atk), blessed (+2 atk/saves), hexed (-2 saves), burning (1d6/turn), prone (-2 atk)
+- 10 condition types: poisoned (-2 atk/saves), stunned (skip turn, -2 AC), frightened (-2 atk), blessed (+2 atk/saves), hexed (-2 saves), burning (1d6/turn), prone (melee adv/ranged disadv via rollD20WithProne), dodging (+2 AC), raging (+2 atk), inspired (+2 atk/saves)
 - Condition system: applyCondition, removeCondition, tickConditions (duration tracking, burning damage, auto-expire messages)
 - Enemy stat templates by difficulty: easy (goblins CR 0.25), medium (orcs CR 1), hard (ogres CR 2-3), deadly (dragons CR 4-5)
 - 8 enemy abilities: Aggressive Charge, Paralyzing Touch, Crushing Blow, Frightening Roar, Life Drain, Breath Weapon, Multiattack, Mind Blast, Psychic Grasp
@@ -343,13 +343,13 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ClassAbility interface: id, name, class, type (heal/buff/attack/utility), resetsOn (short/long), damage, healFormula, condition application
 - 12 class abilities — one per class:
   - Fighter: Second Wind (heal 1d10+level, short rest)
-  - Barbarian: Rage (+2 atk blessed for 3 rounds, long rest)
+  - Barbarian: Rage (+2 atk raging for 3 rounds, long rest)
   - Rogue: Sneak Attack (2d6 extra damage, short rest)
   - Paladin: Lay on Hands (heal level*5, long rest)
   - Ranger: Hunter's Mark (hex target 3 rounds, short rest)
   - Monk: Flurry of Blows (2d4 damage, short rest)
   - Cleric: Channel Divinity (heal level*d6, short rest)
-  - Bard: Bardic Inspiration (blessed 3 rounds, short rest)
+  - Bard: Bardic Inspiration (inspired 3 rounds, short rest)
   - Druid: Wild Shape (heal 1d10+level, short rest)
   - Warlock: Eldritch Blast (2d10 force damage, short rest)
   - Wizard: Arcane Recovery (restore 1 spell slot, long rest)
@@ -443,7 +443,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
   - Button shows disabled after use, tooltip explains mechanic
   - Movement indicator in map legend shows lightning bolt icon when dashed
 - Token condition indicator pips: colored dots rendered above tokens on the battle map
-  - 7 condition colors matching CONDITION_EFFECTS (poisoned=green, stunned=yellow, burning=orange, etc.)
+  - 10 condition colors matching CONDITION_EFFECTS (poisoned=green, stunned=yellow, burning=orange, dodging=sky, raging=red, inspired=indigo, etc.)
   - Pips auto-layout horizontally with dark background for readability
 - Hidden trap system: 4 trap types (Spike, Fire, Poison, Alarm)
   - `Trap` interface: id, col, row, type, detected, triggered
@@ -487,7 +487,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### High priority (next)
 - Multiplayer session sync — Phase 8 (session robustness — deferred)
 - Map image persistence — R2-backed DM map uploads
-- Condition system fixes — `prone` should use advantage/disadvantage (not flat -2), `blessed` overloaded for 3 mechanics (Bless spell, Dodge action, Phase Shift), AC modifiers from `CONDITION_EFFECTS` defined but never applied in attack calculations
+- Condition system fixes — DONE (Round 23)
 
 ### Medium priority
 - Party management — invite/remove players, assign DM role, character visibility settings
@@ -567,3 +567,4 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - AI timeout hardening: backend `aiRunWithTimeout` wrapper (25s text / 45s image) for all 10 `c.env.AI.run()` calls in _worker.ts; frontend `fetchWithTimeout` wired into all 10 AI fetch calls in CharacterCreate.tsx (7 calls) and Game.tsx (3 calls, 35s text / 45s encounter)
 - Multiplayer session sync (Phases 1-7): Result-broadcasting with suppression flag architecture. Lobby DO relays `game_event`/`state_request`/`state_response`. GameContext functions return computed results via closure capture. Game.tsx sync infrastructure: `broadcastGameEvent`, `broadcastCombatSync`, ref-based delayed broadcasts. 10 event types: `game_sync`, `encounter_spawn`, `token_move`, `terrain_update`, `map_positions`, `character_update`, `scene_sync`, `quest_sync`, `state_request`, `state_response`. Late-join recovery via state request/response. All combat actions, enemy AI, map interactions, character stats, scenes, and quests now sync across players. DoodlePad late-join replay (stroke history in DO memory, capped 5000), "X is drawing..." attribution indicator.
 - Opportunity Attacks + Disengage: D&D 5e reaction system — `reactionUsed` and `disengaged` fields on Unit, reset each turn. `findOpportunityAttackers()` pure function in mapUtils.ts checks adjacency transitions, reaction availability, stun immunity, disengage bypass. Enemy OA on player movement (BattleMap handleMouseUp), player OA on enemy movement (Game.tsx enemy AI useEffect). Disengage combat action button (violet themed). 8 new OA tests (105 total). Synced via broadcastCombatSyncLatest.
+- Condition system overhaul: Split overloaded `blessed` condition into distinct types — `dodging` (Dodge action +2 AC), `raging` (Barbarian Rage +2 atk), `inspired` (Bardic Inspiration +2 atk/saves). `blessed` reserved for Bless spell only. Wired `effectiveAC()` into all 5 attack roll sites (enemy basic melee, enemy abilities, player quick attack, player OA, enemy OA in BattleMap). Implemented D&D 5e prone advantage/disadvantage via `rollD20WithProne()` helper (melee vs prone = advantage, ranged vs prone = disadvantage, prone attacker = disadvantage, adv+disadv cancel per 5e rules). Combat log shows [adv]/[disadv] tags. CONDITION_COLORS in BattleMap updated for new types. Combat log highlighting includes all 10 condition types. 22 new condition tests (127 total).

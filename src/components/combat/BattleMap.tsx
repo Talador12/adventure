@@ -1,7 +1,7 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
 import { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
-import { useGame, type Unit, type ConditionType } from '../../contexts/GameContext';
+import { useGame, type Unit, type ConditionType, CONDITION_EFFECTS, rollD20WithProne, effectiveAC } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 
 const CELL_SIZE = 48;
@@ -29,6 +29,9 @@ const CONDITION_COLORS: Record<string, string> = {
   hexed: '#e879f9',      // fuchsia
   burning: '#fb923c',    // orange
   prone: '#d97706',      // amber
+  dodging: '#7dd3fc',    // sky-300
+  raging: '#f87171',     // red-400
+  inspired: '#818cf8',   // indigo-400
 };
 
 // --- Hidden trap system ---
@@ -821,10 +824,14 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
           dragging.unitId, movingUnit.type, oldPos.col, oldPos.row, col, row, units, positions,
         );
         for (const atk of attackers) {
-          // Roll attack: d20 + attackBonus vs moving unit's AC
-          const roll = Math.floor(Math.random() * 20) + 1;
-          const totalAtk = roll + atk.attackBonus;
-          const hit = roll === 20 || (roll !== 1 && totalAtk >= movingUnit.ac);
+          // Roll attack with condition modifiers: d20 + attackBonus + condAtkMod vs effectiveAC
+          const atkUnit = units.find((u) => u.id === atk.unitId);
+          const condAtkMod = (atkUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
+          const targetAC = effectiveAC(movingUnit.ac, movingUnit.conditions || []);
+          // OA is always melee
+          const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(atkUnit?.conditions || [], movingUnit.conditions || [], true);
+          const totalAtk = roll + atk.attackBonus + condAtkMod;
+          const hit = roll === 20 || (roll !== 1 && totalAtk >= targetAC);
           let dmg = 0;
           if (hit) {
             // Roll damage from damageDie (e.g. "1d8")

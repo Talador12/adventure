@@ -15,7 +15,7 @@ export interface Player {
 }
 
 // --- Condition system ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -23,6 +23,8 @@ export interface ActiveCondition {
 }
 
 // Condition effects on combat rolls
+// attackMod: bonus/penalty to attack rolls. acMod: bonus/penalty to AC. saveMod: bonus/penalty to saves.
+// prone is special: uses advantage/disadvantage (handled in attack roll logic, not flat mod)
 export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod: number; saveMod: number; description: string; color: string }> = {
   poisoned:   { attackMod: -2, acMod: 0, saveMod: -2, description: 'Disadvantage on attacks and saves', color: 'text-green-400' },
   stunned:    { attackMod: -99, acMod: -2, saveMod: -99, description: 'Cannot act, auto-fail STR/DEX saves', color: 'text-yellow-300' },
@@ -30,8 +32,43 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   blessed:    { attackMod: 2, acMod: 0, saveMod: 2, description: '+1d4 to attacks and saves', color: 'text-sky-400' },
   hexed:      { attackMod: 0, acMod: 0, saveMod: -2, description: 'Disadvantage on ability checks', color: 'text-fuchsia-400' },
   burning:    { attackMod: 0, acMod: 0, saveMod: 0, description: 'Takes 1d6 fire damage at start of turn', color: 'text-orange-400' },
-  prone:      { attackMod: -2, acMod: 0, saveMod: 0, description: 'Melee attacks have advantage, ranged have disadvantage', color: 'text-amber-600' },
+  prone:      { attackMod: 0, acMod: 0, saveMod: 0, description: 'Melee advantage, ranged disadvantage against this target', color: 'text-amber-600' },
+  dodging:    { attackMod: 0, acMod: 2, saveMod: 0, description: 'Dodging — +2 AC until next turn', color: 'text-sky-300' },
+  raging:     { attackMod: 2, acMod: 0, saveMod: 0, description: 'Raging — +2 to melee attacks', color: 'text-red-400' },
+  inspired:   { attackMod: 2, acMod: 0, saveMod: 2, description: 'Inspired — +2 to attacks and saves', color: 'text-indigo-400' },
 };
+
+// --- Combat roll helpers ---
+
+/** Roll a d20 with advantage/disadvantage from prone. Returns { roll, hadAdvantage, hadDisadvantage }. */
+export function rollD20WithProne(
+  attackerConditions: ActiveCondition[],
+  targetConditions: ActiveCondition[],
+  isMelee: boolean,
+): { roll: number; hadAdvantage: boolean; hadDisadvantage: boolean } {
+  const attackerProne = attackerConditions.some((c) => c.type === 'prone');
+  const targetProne = targetConditions.some((c) => c.type === 'prone');
+  // Prone attacker: disadvantage on all attacks
+  // Melee vs prone target: advantage
+  // Ranged vs prone target: disadvantage
+  let advantage = false;
+  let disadvantage = false;
+  if (attackerProne) disadvantage = true;
+  if (targetProne && isMelee) advantage = true;
+  if (targetProne && !isMelee) disadvantage = true;
+  // Advantage + disadvantage cancel out (5e rules)
+  if (advantage && disadvantage) { advantage = false; disadvantage = false; }
+  const r1 = Math.floor(Math.random() * 20) + 1;
+  const r2 = Math.floor(Math.random() * 20) + 1;
+  const roll = advantage ? Math.max(r1, r2) : disadvantage ? Math.min(r1, r2) : r1;
+  return { roll, hadAdvantage: advantage, hadDisadvantage: disadvantage };
+}
+
+/** Compute effective AC after condition modifiers (dodging, stunned, etc). */
+export function effectiveAC(baseAC: number, targetConditions: ActiveCondition[]): number {
+  const acMod = targetConditions.reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.acMod || 0), 0);
+  return baseAC + acMod;
+}
 
 // --- Enemy ability system ---
 export interface EnemyAbility {
@@ -582,7 +619,7 @@ export const CLASS_ABILITIES: ClassAbility[] = [
   // Fighter: Second Wind — heal 1d10+level HP, 1/short rest
   { id: 'second-wind', name: 'Second Wind', class: 'Fighter', type: 'heal', resetsOn: 'short', healFormula: 'level_d10', selfOnly: true, color: 'red', description: 'Dig deep and recover 1d10+level HP' },
   // Barbarian: Rage — +2 damage, blessed condition (damage resistance flavor), 1/long rest
-  { id: 'rage', name: 'Rage', class: 'Barbarian', type: 'buff', resetsOn: 'long', appliesCondition: 'blessed', conditionDuration: 3, selfOnly: true, color: 'red', description: 'Enter a rage: +2 to attacks for 3 rounds' },
+  { id: 'rage', name: 'Rage', class: 'Barbarian', type: 'buff', resetsOn: 'long', appliesCondition: 'raging', conditionDuration: 3, selfOnly: true, color: 'red', description: 'Enter a rage: +2 to attacks for 3 rounds' },
   // Rogue: Sneak Attack — extra 2d6 damage on one attack, 1/short rest
   { id: 'sneak-attack', name: 'Sneak Attack', class: 'Rogue', type: 'attack', resetsOn: 'short', damage: '2d6', color: 'slate', description: 'Strike a vital spot for 2d6 extra damage' },
   // Paladin: Lay on Hands — heal level*5 HP, 1/long rest
@@ -594,7 +631,7 @@ export const CLASS_ABILITIES: ClassAbility[] = [
   // Cleric: Channel Divinity — heal self for level*d6, 1/short rest
   { id: 'channel-divinity', name: 'Channel Divinity', class: 'Cleric', type: 'heal', resetsOn: 'short', healFormula: 'level_d6', selfOnly: true, color: 'yellow', description: 'Invoke divine power to heal level\u00d7d6 HP' },
   // Bard: Bardic Inspiration — apply blessed to self for 3 rounds, 1/short rest
-  { id: 'bardic-inspiration', name: 'Bardic Inspiration', class: 'Bard', type: 'buff', resetsOn: 'short', appliesCondition: 'blessed', conditionDuration: 3, selfOnly: true, color: 'pink', description: 'Inspire yourself with a rousing melody (+2 attacks/saves for 3 rounds)' },
+  { id: 'bardic-inspiration', name: 'Bardic Inspiration', class: 'Bard', type: 'buff', resetsOn: 'short', appliesCondition: 'inspired', conditionDuration: 3, selfOnly: true, color: 'pink', description: 'Inspire yourself with a rousing melody (+2 attacks/saves for 3 rounds)' },
   // Druid: Wild Shape — gain temp HP (level*3) via blessed condition, 1/short rest
   { id: 'wild-shape', name: 'Wild Shape', class: 'Druid', type: 'heal', resetsOn: 'short', healFormula: 'level_d10', selfOnly: true, color: 'green', description: 'Shift into beast form, recovering 1d10+level HP' },
   // Warlock: Eldritch Blast — deal 2d10 force damage to a target, 1/short rest

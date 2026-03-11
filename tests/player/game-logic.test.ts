@@ -24,6 +24,8 @@ import {
   getClassAbility,
   hasPendingASI,
   randomEncounterTheme,
+  rollD20WithProne,
+  effectiveAC,
   STAT_NAMES,
   RACES,
   CLASSES,
@@ -45,6 +47,8 @@ import {
   type Unit,
   type Item,
   type Stats,
+  type ActiveCondition,
+  type ConditionType,
 } from '../../src/contexts/GameContext';
 
 // ---------------------------------------------------------------------------
@@ -578,5 +582,155 @@ describe('opportunity attacks', () => {
     // Enemy moves away from another enemy — no OA
     const attackers = findOpportunityAttackers('e1', 'enemy', 5, 5, 5, 3, units, positions);
     expect(attackers).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Condition system
+// ---------------------------------------------------------------------------
+describe('condition system', () => {
+  const makeCond = (type: ConditionType, duration = 2): ActiveCondition => ({ type, duration, source: 'test' });
+
+  describe('CONDITION_EFFECTS', () => {
+    it('has entries for all 10 condition types', () => {
+      const expectedTypes: ConditionType[] = ['poisoned', 'stunned', 'frightened', 'blessed', 'hexed', 'burning', 'prone', 'dodging', 'raging', 'inspired'];
+      for (const t of expectedTypes) {
+        expect(CONDITION_EFFECTS[t]).toBeDefined();
+        expect(CONDITION_EFFECTS[t]).toHaveProperty('attackMod');
+        expect(CONDITION_EFFECTS[t]).toHaveProperty('acMod');
+        expect(CONDITION_EFFECTS[t]).toHaveProperty('saveMod');
+        expect(CONDITION_EFFECTS[t]).toHaveProperty('description');
+        expect(CONDITION_EFFECTS[t]).toHaveProperty('color');
+      }
+    });
+
+    it('dodging gives +2 AC', () => {
+      expect(CONDITION_EFFECTS.dodging.acMod).toBe(2);
+      expect(CONDITION_EFFECTS.dodging.attackMod).toBe(0);
+    });
+
+    it('raging gives +2 attack', () => {
+      expect(CONDITION_EFFECTS.raging.attackMod).toBe(2);
+      expect(CONDITION_EFFECTS.raging.acMod).toBe(0);
+    });
+
+    it('inspired gives +2 attack and +2 saves', () => {
+      expect(CONDITION_EFFECTS.inspired.attackMod).toBe(2);
+      expect(CONDITION_EFFECTS.inspired.saveMod).toBe(2);
+    });
+
+    it('stunned gives -2 AC and -99 attack (cannot act)', () => {
+      expect(CONDITION_EFFECTS.stunned.acMod).toBe(-2);
+      expect(CONDITION_EFFECTS.stunned.attackMod).toBe(-99);
+    });
+
+    it('prone has zero flat mods (uses advantage/disadvantage instead)', () => {
+      expect(CONDITION_EFFECTS.prone.attackMod).toBe(0);
+      expect(CONDITION_EFFECTS.prone.acMod).toBe(0);
+    });
+  });
+
+  describe('effectiveAC', () => {
+    it('returns base AC when no conditions', () => {
+      expect(effectiveAC(15, [])).toBe(15);
+    });
+
+    it('applies dodging +2 AC', () => {
+      expect(effectiveAC(15, [makeCond('dodging')])).toBe(17);
+    });
+
+    it('applies stunned -2 AC', () => {
+      expect(effectiveAC(15, [makeCond('stunned')])).toBe(13);
+    });
+
+    it('stacks multiple conditions', () => {
+      // dodging (+2) + stunned (-2) = net 0
+      expect(effectiveAC(15, [makeCond('dodging'), makeCond('stunned')])).toBe(15);
+    });
+
+    it('conditions without acMod leave AC unchanged', () => {
+      expect(effectiveAC(15, [makeCond('poisoned'), makeCond('raging')])).toBe(15);
+    });
+  });
+
+  describe('rollD20WithProne', () => {
+    // Statistical tests: run many rolls and verify the distribution changes
+    const N = 1000;
+    const avgRolls = (attConds: ActiveCondition[], tgtConds: ActiveCondition[], isMelee: boolean) => {
+      let sum = 0;
+      for (let i = 0; i < N; i++) {
+        sum += rollD20WithProne(attConds, tgtConds, isMelee).roll;
+      }
+      return sum / N;
+    };
+
+    it('no prone = normal d20 (avg ~10.5)', () => {
+      const avg = avgRolls([], [], true);
+      expect(avg).toBeGreaterThan(8);
+      expect(avg).toBeLessThan(13);
+    });
+
+    it('melee vs prone target = advantage (avg ~13.8)', () => {
+      const avg = avgRolls([], [makeCond('prone')], true);
+      // Advantage avg is ~13.82
+      expect(avg).toBeGreaterThan(12);
+    });
+
+    it('ranged vs prone target = disadvantage (avg ~7.2)', () => {
+      const avg = avgRolls([], [makeCond('prone')], false);
+      // Disadvantage avg is ~7.18
+      expect(avg).toBeLessThan(9);
+    });
+
+    it('prone attacker = disadvantage', () => {
+      const avg = avgRolls([makeCond('prone')], [], true);
+      expect(avg).toBeLessThan(9);
+    });
+
+    it('prone attacker vs prone target melee = cancel out (normal)', () => {
+      // Attacker prone (disadv) + target prone melee (adv) = cancel
+      const avg = avgRolls([makeCond('prone')], [makeCond('prone')], true);
+      expect(avg).toBeGreaterThan(8);
+      expect(avg).toBeLessThan(13);
+    });
+
+    it('reports hadAdvantage correctly for melee vs prone', () => {
+      const result = rollD20WithProne([], [makeCond('prone')], true);
+      expect(result.hadAdvantage).toBe(true);
+      expect(result.hadDisadvantage).toBe(false);
+    });
+
+    it('reports hadDisadvantage correctly for ranged vs prone', () => {
+      const result = rollD20WithProne([], [makeCond('prone')], false);
+      expect(result.hadAdvantage).toBe(false);
+      expect(result.hadDisadvantage).toBe(true);
+    });
+
+    it('cancellation reports neither advantage nor disadvantage', () => {
+      // prone attacker (disadv) + prone target melee (adv) = cancel
+      const result = rollD20WithProne([makeCond('prone')], [makeCond('prone')], true);
+      expect(result.hadAdvantage).toBe(false);
+      expect(result.hadDisadvantage).toBe(false);
+    });
+  });
+
+  describe('CLASS_ABILITIES condition types', () => {
+    it('Rage applies raging (not blessed)', () => {
+      const rage = CLASS_ABILITIES.find((a) => a.id === 'rage');
+      expect(rage).toBeDefined();
+      expect(rage!.appliesCondition).toBe('raging');
+    });
+
+    it('Bardic Inspiration applies inspired (not blessed)', () => {
+      const bi = CLASS_ABILITIES.find((a) => a.id === 'bardic-inspiration');
+      expect(bi).toBeDefined();
+      expect(bi!.appliesCondition).toBe('inspired');
+    });
+
+    it('blessed condition type is reserved for the Bless spell', () => {
+      // No class ability should apply blessed — it's only for the Bless spell
+      const blessed = CLASS_ABILITIES.filter((a) => a.appliesCondition === 'blessed');
+      expect(blessed).toHaveLength(0);
+    });
   });
 });

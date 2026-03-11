@@ -6,7 +6,7 @@ import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
 import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
-import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES } from '../contexts/GameContext';
+import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, rollLoot, type Item, SHOP_ITEMS, SHOP_CATEGORIES, RARITY_COLORS, RARITY_BG, getClassSpells, getSpellSlots, type Spell, FULL_CASTERS, HALF_CASTERS, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, type ConditionType, getClassAbility, randomEncounterTheme, hasPendingASI, FEATS, EXTRA_ATTACK_CLASSES, rollD20WithProne, effectiveAC } from '../contexts/GameContext';
 import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDistance, hasLineOfSight, parseRangeFt, DEFAULT_COLS, DEFAULT_ROWS, type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { playDiceRoll, playCritical, playFumble, playCombatHit, playCombatMiss, playEncounterStart, playTurnChange, playEnemyDeath, playPlayerJoin, playMagicSpell, playLevelUp, playHealing, playLootDrop, isMuted, toggleMute } from '../hooks/useSoundFX';
@@ -565,7 +565,7 @@ export default function Game() {
                 currentUnit.id, 'enemy', enemyPos.col, enemyPos.row, dest.col, dest.row, units, mapPositions,
               );
               for (const atk of oaAttackers) {
-                // Player OA: find character's weapon stats
+                // Player OA: find character's weapon stats + condition modifiers
                 const atkUnit = units.find((u) => u.id === atk.unitId);
                 const atkChar = atkUnit?.characterId ? characters.find((c) => c.id === atkUnit.characterId) : null;
                 const weapon = atkChar?.equipment?.weapon;
@@ -573,9 +573,12 @@ export default function Game() {
                 const dieDmg = weapon?.damageDie || '1d4';
                 const dmgBonus = weapon?.damageBonus || 0;
                 const strMod = atkChar ? Math.floor((atkChar.stats.STR - 10) / 2) : 0;
-                const roll = Math.floor(Math.random() * 20) + 1;
-                const totalAtk = roll + atkBonus + strMod;
-                const hit = roll === 20 || (roll !== 1 && totalAtk >= currentUnit.ac);
+                const condAtkMod = (atkUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
+                const targetAC = effectiveAC(currentUnit.ac, currentUnit.conditions || []);
+                // OA is always melee (triggered by leaving melee range)
+                const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(atkUnit?.conditions || [], currentUnit.conditions || [], true);
+                const totalAtk = roll + atkBonus + strMod + condAtkMod;
+                const hit = roll === 20 || (roll !== 1 && totalAtk >= targetAC);
                 let dmg = 0;
                 if (hit) {
                   const dieMatch = dieDmg.match(/(\d+)d(\d+)/);
@@ -589,9 +592,10 @@ export default function Game() {
                   damageUnit(currentUnit.id, dmg);
                 }
                 setUnits((prev) => prev.map((u) => u.id === atk.unitId ? { ...u, reactionUsed: true } : u));
+                const advTag = hadAdvantage ? ' (advantage)' : hadDisadvantage ? ' (disadvantage)' : '';
                 const oaMsg = hit
-                  ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!`
-                  : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!`;
+                  ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!${advTag}`
+                  : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!${advTag}`;
                 setCombatLog((prev) => [...prev, oaMsg]);
                 addDmMessage(oaMsg);
               }
@@ -684,13 +688,17 @@ export default function Game() {
           abilMsg += ` All players take ${dmg} damage!`;
           playCombatHit();
         } else if (availAbility.type === 'attack' || availAbility.type === 'condition') {
-          const roll = Math.floor(Math.random() * 20) + 1;
-          const total = roll + atkBonus;
-          const hit = roll === 20 || total >= target.ac;
+          const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
+          const targetAC = effectiveAC(target.ac, target.conditions || []);
+          const isMelee = !availAbility.isRanged;
+          const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], isMelee);
+          const total = roll + atkBonus + condAtkMod;
+          const hit = roll === 20 || total >= targetAC;
+          const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
           if (hit) {
             const dmg = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 0;
             if (dmg > 0) damageUnit(target.id, roll === 20 ? dmg * 2 : dmg);
-            abilMsg += ` Hits ${target.name} for ${roll === 20 ? dmg * 2 : dmg} damage! (${roll}+${atkBonus}=${total} vs AC ${target.ac})`;
+            abilMsg += ` Hits ${target.name} for ${roll === 20 ? dmg * 2 : dmg} damage! (${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
             if (availAbility.condition) {
               applyCondition(target.id, { type: availAbility.condition, duration: availAbility.conditionDuration || 2, source: currentUnit.name });
               abilMsg += ` ${target.name} is ${availAbility.condition}!`;
@@ -698,7 +706,7 @@ export default function Game() {
             playCombatHit();
             if (roll === 20) playCritical();
           } else {
-            abilMsg += ` Misses ${target.name}! (${roll}+${atkBonus}=${total} vs AC ${target.ac})`;
+            abilMsg += ` Misses ${target.name}! (${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
             playCombatMiss();
           }
         } else if (availAbility.type === 'heal') {
@@ -717,13 +725,14 @@ export default function Game() {
         const atkBonus = currentUnit.attackBonus ?? 3;
         const dmgBonus = currentUnit.damageBonus ?? 2;
         const dmgDie = currentUnit.damageDie || '1d6';
-        // Condition modifiers
+        // Condition modifiers (attacker attack mod + target AC mod + prone advantage/disadvantage)
         const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
-
-        const attackRoll = Math.floor(Math.random() * 20) + 1;
+        const targetAC = effectiveAC(target.ac, target.conditions || []);
+        const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], true);
         const totalAttack = attackRoll + atkBonus + condAtkMod;
-        const isHit = attackRoll === 20 || totalAttack >= target.ac;
+        const isHit = attackRoll === 20 || totalAttack >= targetAC;
         const isCrit = attackRoll === 20;
+        const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
 
         if (isHit) {
           const baseDmg = rollSpellDamage(dmgDie);
@@ -732,8 +741,8 @@ export default function Game() {
           playCombatHit();
           if (isCrit) playCritical();
           addDmMessage(isCrit
-            ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${target.ac})`
-            : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${target.ac})`);
+            ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`
+            : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
           // Check if target died
           if (target.hp - finalDmg <= 0) {
             playEnemyDeath();
@@ -741,7 +750,7 @@ export default function Game() {
           }
         } else {
           playCombatMiss();
-          addDmMessage(`${currentUnit.name} misses ${target.name}! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${target.ac})`);
+          addDmMessage(`${currentUnit.name} misses ${target.name}! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
         }
       }
 
@@ -1550,15 +1559,18 @@ export default function Game() {
                                 return sum + (f?.attackBonus || 0);
                               }, 0);
 
+                              const targetAC = effectiveAC(target.ac, target.conditions || []);
+                              const isMeleeAttack = !weaponIsRanged;
                               let totalDamageDealt = 0;
                               for (let atk = 0; atk < numAttacks; atk++) {
-                                const attackRoll = Math.floor(Math.random() * 20) + 1;
+                                const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack);
                                 const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus;
-                                const isHit = attackRoll === 20 || totalAttack >= target.ac;
+                                const isHit = attackRoll === 20 || totalAttack >= targetAC;
                                 const isCrit = attackRoll === 20;
                                 const atkLabel = `${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}=${totalAttack}`;
                                 const atkPrefix = numAttacks > 1 ? `[Attack ${atk + 1}] ` : '';
                                 const verb = weaponIsRanged ? 'shoots' : 'strikes';
+                                const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
 
                                 if (isHit) {
                                   const baseDmg = rollSpellDamage(weaponDie);
@@ -1568,13 +1580,13 @@ export default function Game() {
                                   playCombatHit();
                                   if (isCrit) playCritical();
                                   const logMsg = isCrit
-                                    ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`
-                                    : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${target.ac})`;
+                                    ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`
+                                    : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`;
                                   setCombatLog((prev) => [...prev, logMsg]);
                                   addDmMessage(logMsg);
                                 } else {
                                   playCombatMiss();
-                                  const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${target.ac})`;
+                                  const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${targetAC})${advTag}`;
                                   setCombatLog((prev) => [...prev, missMsg]);
                                   addDmMessage(missMsg);
                                 }
@@ -1732,13 +1744,13 @@ export default function Game() {
                       {inCombat && selectedCharacter && (() => {
                         const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
                         if (!playerUnit) return null;
-                        const isDodging = playerUnit.conditions?.some((c) => c.type === 'blessed' && c.source === 'Dodge');
+                        const isDodging = playerUnit.conditions?.some((c) => c.type === 'dodging');
                         return (
                           <button
                             disabled={!!isDodging || !isPlayerTurn}
                             title={!isPlayerTurn ? 'Wait for your turn' : undefined}
                             onClick={() => {
-                              applyCondition(playerUnit.id, { type: 'blessed', duration: 1, source: 'Dodge' });
+                              applyCondition(playerUnit.id, { type: 'dodging', duration: 1, source: 'Dodge' });
                               const msg = `${selectedCharacter.name} takes the Dodge action! (+2 AC until next turn)`;
                               setCombatLog((prev) => [...prev, msg]);
                               addDmMessage(msg);
@@ -2249,7 +2261,7 @@ export default function Game() {
                               const isHit = entry.includes('hits ') || entry.includes('CRITICAL') || entry.includes('damage');
                               const isMiss = entry.includes('misses ') || entry.includes('resists');
                               const isDeath = entry.includes('falls!');
-                              const isCondition = entry.includes('stunned') || entry.includes('poisoned') || entry.includes('frightened') || entry.includes('burning') || entry.includes('hexed') || entry.includes('blessed');
+                              const isCondition = entry.includes('stunned') || entry.includes('poisoned') || entry.includes('frightened') || entry.includes('burning') || entry.includes('hexed') || entry.includes('blessed') || entry.includes('prone') || entry.includes('dodging') || entry.includes('raging') || entry.includes('inspired');
                               return (
                                 <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded ${
                                   isDeath ? 'text-red-400 bg-red-950/30' :
