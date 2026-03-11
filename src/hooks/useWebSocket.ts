@@ -14,6 +14,7 @@ interface UseWebSocketOptions {
   roomId: string;
   username: string;
   avatar?: string;
+  spectate?: boolean; // join as spectator (no seat)
   onMessage?: (msg: WSMessage) => void;
   enabled?: boolean; // default true, set false to defer connection
 }
@@ -31,7 +32,7 @@ const PING_INTERVAL = 25000; // 25s keepalive
 // Session storage key for stable player ID across reconnects
 const PLAYER_ID_KEY = 'adventure:playerId';
 
-export function useWebSocket({ roomId, username, avatar, onMessage, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
+export function useWebSocket({ roomId, username, avatar, spectate, onMessage, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -87,6 +88,7 @@ export function useWebSocket({ roomId, username, avatar, onMessage, enabled = tr
         avatar: avatarRef.current,
       };
       if (playerIdRef.current) joinMsg.playerId = playerIdRef.current;
+      if (spectate) joinMsg.spectate = true;
       ws.send(JSON.stringify(joinMsg));
 
       // Flush offline message queue (Phase 8.5)

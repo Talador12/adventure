@@ -43,7 +43,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 ## Current Focus
 
-Round 28 (complete): Character wizard, BattleMap minimap + AoE overlays, turn timer, DM sidebar, AoE spell targeting, encounter calculator, NPC generator, animated tokens, ambient sound system, landing page overhaul (dashboard cards, balanced AI messaging, condensed header/hero, 2-column layout, VTT accessibility copy). Round 29 (next): Lobby hub with role-based flows (DM/Player/Spectator entry points), public/private lobbies, campaign browser, spectator mode. Previous: Round 27 (complete) landing page + lobby + seat model + campaign settings + kick. Round 26 (complete) D1 + chat persistence + Google OAuth.
+Round 29 (complete): Spectator mode (Lobby DO + Lobby.tsx + Game.tsx), campaign visibility (public/private toggle in lobby settings), public campaign browser (GET /api/campaigns/public + horizontal card scroll on Home.tsx), role-based entry (?spectate=1 query param), spectate/claim_seat WebSocket protocol, 4 new multiplayer tests (153 total). Round 28 (complete): Character wizard, BattleMap minimap + AoE overlays, turn timer, DM sidebar, AoE spell targeting, encounter calculator, NPC generator, animated tokens, ambient sound system, landing page overhaul. Round 30 (next): Persistent game state (save/load combat, map, initiative to KV), lobby password protection, campaign invites via Discord DM. Previous: Round 27 (complete) landing page + lobby + seat model + campaign settings + kick. Round 26 (complete) D1 + chat persistence + Google OAuth.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -68,13 +68,13 @@ Round 28 (complete): Character wizard, BattleMap minimap + AoE overlays, turn ti
 ### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
-- **Status:** Done — all 149 tests passing (104 player + 45 worker), 2 budget-skipped
+- **Status:** Done — all 153 tests passing (104 player + 49 worker), 2 budget-skipped
 
 **Three test categories:**
 1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 17 describe blocks, 99 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks, condition system (CONDITION_EFFECTS, effectiveAC, rollD20WithProne, CLASS_ABILITIES condition types). **All 99 passing.**
 2. **AI fallback tests** (`tests/ai/fallback.test.ts`) — AI binding `undefined` → all 9 AI endpoints return 503 with helpful message. Non-AI endpoints (campaign save/load) still work. **All 11 passing.**
 3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **All 11 passing, 2 skipped** (live AI tests behind `AI_TESTS=live` gate).
-4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). Phase 8 tests: DM assignment, DM auth rejection, DM transfer, DM reassignment on disconnect, stable reconnect IDs, rate limiting. Seat model tests: default seats, auto-claim, ready toggle, character select, AI seat toggle, DM auth on seats, add/remove seats, seat revert on disconnect, DM type toggle, REST seats endpoint. **All 22 passing.**
+4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). Phase 8 tests: DM assignment, DM auth rejection, DM transfer, DM reassignment on disconnect, stable reconnect IDs, rate limiting. Seat model tests: default seats, auto-claim, ready toggle, character select, AI seat toggle, DM auth on seats, add/remove seats, seat revert on disconnect, DM type toggle, REST seats endpoint. Spectator tests: spectate-on-join, spectate/claim toggle, DM-cannot-spectate, REST spectators. **All 26 passing.**
 
 **Infrastructure:**
 - `vitest.config.ts` — plain vitest for player tests (no Workers runtime)

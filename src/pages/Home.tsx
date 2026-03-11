@@ -36,14 +36,21 @@ export default function Home() {
   const { toast } = useToast();
   const { characters, removeCharacter } = useGame();
   const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number }>>([]);
+  const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
   const [partyMembers, setPartyMembers] = useState<Record<string, Array<{ display_name: string; avatar_url: string | null; role: string }>>>({});
 
-  // Fetch saved campaigns on mount
+  // Fetch saved campaigns + public campaigns on mount
   useEffect(() => {
     fetch('/api/campaigns')
       .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; createdAt: number }> }>) : null))
       .then((data) => {
         if (data?.campaigns?.length) setCampaigns(data.campaigns);
+      })
+      .catch(() => {});
+    fetch('/api/campaigns/public')
+      .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }> }>) : null))
+      .then((data) => {
+        if (data?.campaigns?.length) setPublicCampaigns(data.campaigns);
       })
       .catch(() => {});
   }, []);
@@ -278,8 +285,39 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Main content — 2-column layout on desktop */}
-      <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+      {/* Main content */}
+      <main className="flex-1 p-6 max-w-6xl mx-auto w-full space-y-6">
+
+        {/* Public campaign browser — only show if there are public games */}
+        {publicCampaigns.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-slate-400">Public Games</h2>
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {publicCampaigns.filter((pc) => !campaigns.some((c) => c.roomId === pc.roomId)).slice(0, 8).map((pc) => (
+                <div key={pc.roomId} className="shrink-0 w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow hover:shadow-lg transition-all overflow-hidden">
+                  <div className="px-3 pt-3 pb-2">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{pc.name}</h3>
+                    {pc.description && <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{pc.description}</p>}
+                    <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+                      {pc.dmName && <span className="text-amber-500">DM: {pc.dmName}</span>}
+                      {typeof pc.playerCount === 'number' && <span>{pc.playerCount} player{pc.playerCount !== 1 ? 's' : ''}</span>}
+                    </div>
+                  </div>
+                  <div className="flex border-t border-slate-200 dark:border-slate-800">
+                    <button onClick={() => navigate(`/lobby/${pc.roomId}`)} className="flex-1 py-2 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 transition-colors text-center border-r border-slate-200 dark:border-slate-800">
+                      Join
+                    </button>
+                    <button onClick={() => navigate(`/lobby/${pc.roomId}?spectate=1`)} className="flex-1 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-500/10 transition-colors text-center">
+                      Spectate
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 2-column layout on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Campaigns column */}

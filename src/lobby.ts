@@ -22,6 +22,7 @@ interface Session {
   avatar?: string;
   joinedAt: number;
   seatId?: string;       // which seat this player occupies (if any)
+  spectating: boolean;   // true if explicitly spectating (no seat, chat-only)
   lastGameEvents: number[]; // timestamps for rate limiting (Phase 8.4)
 }
 
@@ -92,7 +93,7 @@ export class Lobby {
       // Store a temporary placeholder so we can still receive messages.
       const tempId = crypto.randomUUID();
       const now = Date.now();
-      this.sessions.set(server, { id: tempId, username: 'Anonymous', joinedAt: now, lastGameEvents: [] });
+      this.sessions.set(server, { id: tempId, username: 'Anonymous', joinedAt: now, spectating: false, lastGameEvents: [] });
 
       server.addEventListener('message', (event) => {
         try {
@@ -154,9 +155,9 @@ export class Lobby {
       return new Response(null, { status: 101, webSocket: client });
     }
 
-    // REST: get player list + seats
+    // REST: get player list + seats + spectators
     if (url.pathname.endsWith('/players')) {
-      return Response.json({ players: this.getPlayerList(), seats: this.seats, dmSeatType: this.dmSeatType });
+      return Response.json({ players: this.getPlayerList(), seats: this.seats, spectators: this.getSpectatorList(), dmSeatType: this.dmSeatType });
     }
 
     return Response.json({ status: 'ok', players: this.sessions.size, seats: this.seats.length });
@@ -209,36 +210,40 @@ export class Lobby {
           }
         }
 
-        // Auto-assign to a seat: find first empty seat, or reconnect to previous seat
+        // Auto-assign to a seat (skip if client explicitly wants to spectate)
+        const wantsSpectate = !!(data.spectate);
         let assignedSeatId: string | undefined;
-        if (isReconnect) {
-          // Try to reclaim previous seat (check if a seat still has this playerId)
-          const prevSeat = this.seats.find((s) => s.playerId === finalId);
-          if (prevSeat) {
-            prevSeat.type = 'human';
-            prevSeat.username = username;
-            prevSeat.avatar = avatar;
-            assignedSeatId = prevSeat.id;
+        if (!wantsSpectate) {
+          if (isReconnect) {
+            // Try to reclaim previous seat (check if a seat still has this playerId)
+            const prevSeat = this.seats.find((s) => s.playerId === finalId);
+            if (prevSeat) {
+              prevSeat.type = 'human';
+              prevSeat.username = username;
+              prevSeat.avatar = avatar;
+              assignedSeatId = prevSeat.id;
+            }
+          }
+          if (!assignedSeatId) {
+            // Claim first empty seat
+            const emptySeat = this.seats.find((s) => s.type === 'empty');
+            if (emptySeat) {
+              emptySeat.type = 'human';
+              emptySeat.playerId = finalId;
+              emptySeat.username = username;
+              emptySeat.avatar = avatar;
+              emptySeat.ready = false;
+              assignedSeatId = emptySeat.id;
+            }
+            // If no empty seats, player joins without a seat (spectator)
           }
         }
-        if (!assignedSeatId) {
-          // Claim first empty seat
-          const emptySeat = this.seats.find((s) => s.type === 'empty');
-          if (emptySeat) {
-            emptySeat.type = 'human';
-            emptySeat.playerId = finalId;
-            emptySeat.username = username;
-            emptySeat.avatar = avatar;
-            emptySeat.ready = false;
-            assignedSeatId = emptySeat.id;
-          }
-          // If no empty seats, player joins without a seat (spectator)
-        }
 
-        this.sessions.set(server, { id: finalId, username, avatar, joinedAt: Date.now(), seatId: assignedSeatId, lastGameEvents: [] });
+        const isSpectating = wantsSpectate || !assignedSeatId;
+        this.sessions.set(server, { id: finalId, username, avatar, joinedAt: Date.now(), seatId: assignedSeatId, spectating: isSpectating && !assignedSeatId, lastGameEvents: [] });
 
-        // DM assignment: first player to join becomes DM (if DM seat is human-type)
-        if (!this.dmPlayerId && this.dmSeatType === 'human') {
+        // DM assignment: first seated player to join becomes DM (spectators don't become DM)
+        if (!this.dmPlayerId && this.dmSeatType === 'human' && !isSpectating) {
           this.dmPlayerId = finalId;
         }
 
@@ -249,11 +254,13 @@ export class Lobby {
             playerId: finalId,
             players: this.getPlayerList(),
             seats: this.seats,
+            spectators: this.getSpectatorList(),
             dmSeatType: this.dmSeatType,
             strokeHistory: this.strokeHistory,
             isDM: finalId === this.dmPlayerId,
             dmPlayerId: this.dmPlayerId,
             seatId: assignedSeatId,
+            isSpectating: isSpectating && !assignedSeatId,
             timestamp: Date.now(),
           })
         );
@@ -698,6 +705,59 @@ export class Lobby {
         break;
       }
 
+      case 'spectate': {
+        // Player explicitly switches to spectator mode — vacates their seat
+        const specSession = this.sessions.get(server);
+        if (!specSession) return;
+        // Can't spectate if you're the DM (must transfer or switch to AI DM first)
+        if (specSession.id === this.dmPlayerId) {
+          server.send(JSON.stringify({ type: 'error', message: 'DM cannot spectate — transfer DM or switch to AI DM first', timestamp: Date.now() }));
+          return;
+        }
+        // Vacate seat if in one
+        if (specSession.seatId) {
+          const seat = this.seats.find((s) => s.id === specSession.seatId);
+          if (seat && seat.type === 'human') {
+            seat.type = 'empty';
+            seat.playerId = undefined;
+            seat.username = undefined;
+            seat.avatar = undefined;
+            seat.characterId = undefined;
+            seat.characterName = undefined;
+            seat.ready = false;
+          }
+          specSession.seatId = undefined;
+        }
+        specSession.spectating = true;
+        server.send(JSON.stringify({ type: 'spectate_confirmed', timestamp: Date.now() }));
+        this.broadcast({ type: 'seats_updated', seats: this.seats, spectators: this.getSpectatorList(), timestamp: Date.now() });
+        break;
+      }
+
+      case 'claim_seat': {
+        // Spectator claims an empty seat to join as a player
+        const claimSession = this.sessions.get(server);
+        if (!claimSession) return;
+        const claimSeatId = data.seatId as string;
+        const claimSeat = claimSeatId
+          ? this.seats.find((s) => s.id === claimSeatId)
+          : this.seats.find((s) => s.type === 'empty');
+        if (!claimSeat || claimSeat.type !== 'empty') {
+          server.send(JSON.stringify({ type: 'error', message: 'No empty seat available', timestamp: Date.now() }));
+          return;
+        }
+        claimSeat.type = 'human';
+        claimSeat.playerId = claimSession.id;
+        claimSeat.username = claimSession.username;
+        claimSeat.avatar = claimSession.avatar;
+        claimSeat.ready = false;
+        claimSession.seatId = claimSeat.id;
+        claimSession.spectating = false;
+        server.send(JSON.stringify({ type: 'seat_claimed', seatId: claimSeat.id, timestamp: Date.now() }));
+        this.broadcast({ type: 'seats_updated', seats: this.seats, spectators: this.getSpectatorList(), timestamp: Date.now() });
+        break;
+      }
+
       case 'ping': {
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
         break;
@@ -735,5 +795,11 @@ export class Lobby {
         characterName: seat?.characterName,
       };
     });
+  }
+
+  private getSpectatorList(): { id: string; username: string; avatar?: string }[] {
+    return Array.from(this.sessions.values())
+      .filter((s) => s.spectating || !s.seatId)
+      .map((s) => ({ id: s.id, username: s.username, avatar: s.avatar }));
   }
 }

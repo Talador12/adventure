@@ -1171,6 +1171,46 @@ app.put('/api/campaign/:roomId', async (c) => {
   }
 });
 
+// --- Public campaign index helpers ---
+// The public index is a single KV key `campaigns:public` containing an array of
+// { roomId, name, description, dmName, visibility, playerCount, updatedAt }.
+// Updated whenever a campaign's visibility changes or is deleted.
+async function syncPublicIndex(kv: KVNamespace, roomId: string, campaign: Record<string, unknown>) {
+  const raw = (await kv.get('campaigns:public')) as string | null;
+  const index: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+  const existing = index.findIndex((e) => e.roomId === roomId);
+  if (campaign.visibility === 'public') {
+    const entry = {
+      roomId,
+      name: campaign.name || roomId,
+      description: campaign.description || '',
+      dmName: campaign.dmName || '',
+      playerCount: campaign.playerCount ?? 0,
+      updatedAt: Date.now(),
+    };
+    if (existing >= 0) index[existing] = entry;
+    else index.push(entry);
+  } else {
+    // Remove from public index
+    if (existing >= 0) index.splice(existing, 1);
+  }
+  await kv.put('campaigns:public', JSON.stringify(index));
+}
+
+// GET /api/campaigns/public — browse public campaigns (no auth required)
+app.get('/api/campaigns/public', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ campaigns: [] });
+  try {
+    const raw = (await c.env.CAMPAIGNS.get('campaigns:public')) as string | null;
+    const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+    // Sort by most recently updated
+    campaigns.sort((a, b) => ((b.updatedAt as number) || 0) - ((a.updatedAt as number) || 0));
+    return c.json({ campaigns });
+  } catch {
+    return c.json({ campaigns: [] });
+  }
+});
+
 // GET /api/campaigns — list all campaigns for the authenticated user
 app.get('/api/campaigns', async (c) => {
   const userId = await getUserId(c);
@@ -1210,7 +1250,7 @@ app.post('/api/campaigns', async (c) => {
   }
 });
 
-// PATCH /api/campaigns/:roomId — update campaign metadata (name, description)
+// PATCH /api/campaigns/:roomId — update campaign metadata (name, description, visibility)
 app.patch('/api/campaigns/:roomId', async (c) => {
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
@@ -1224,7 +1264,13 @@ app.patch('/api/campaigns/:roomId', async (c) => {
     if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
     if (body.name !== undefined) campaign.name = String(body.name).slice(0, 100);
     if (body.description !== undefined) campaign.description = String(body.description).slice(0, 500);
+    if (body.visibility !== undefined) {
+      const vis = String(body.visibility);
+      if (vis === 'public' || vis === 'private') campaign.visibility = vis;
+    }
     await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+    // Sync public campaign index
+    await syncPublicIndex(c.env.CAMPAIGNS, roomId, campaign);
     return c.json({ ok: true, campaign });
   } catch {
     return c.json({ error: 'Failed to update campaign' }, 500);
@@ -1242,8 +1288,9 @@ app.delete('/api/campaigns/:roomId', async (c) => {
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     const filtered = campaigns.filter((c) => c.roomId !== roomId);
     await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(filtered));
-    // Also delete campaign state
+    // Also delete campaign state + remove from public index
     await c.env.CAMPAIGNS.delete(`campaign:${roomId}`);
+    await syncPublicIndex(c.env.CAMPAIGNS, roomId, { visibility: 'private' });
     return c.json({ ok: true });
   } catch {
     return c.json({ error: 'Failed to delete campaign' }, 500);

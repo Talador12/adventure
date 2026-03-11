@@ -73,10 +73,13 @@ export default function Game() {
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const [isDM, setIsDM] = useState(false);
   const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
+  const [isSpectating, setIsSpectating] = useState(false);
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
   // Offline/single-player (not connected) defaults to full access.
+  // Spectators get no game controls at all.
   const [wsConnected, setWsConnected] = useState(false);
-  const canUseDMTools = isDM || !wsConnected;
+  const canUseDMTools = !isSpectating && (isDM || !wsConnected);
+  const canAct = !isSpectating; // players + DM can act, spectators cannot
   const diceRef = useRef<DiceRollerHandle>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
@@ -1075,6 +1078,7 @@ export default function Game() {
         case 'welcome':
           setWsPlayerId(msg.playerId as string);
           setIsDM((msg.isDM as boolean) ?? false);
+          setIsSpectating(!!(msg.isSpectating));
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
           // Auto-join campaign party in D1 (fire-and-forget)
           fetch(`/api/party/${encodeURIComponent(room)}/join`, {
@@ -1928,8 +1932,12 @@ export default function Game() {
 
                 {/* DM + Combat toolbar */}
                 <div className="flex items-center gap-2 p-3 border-b border-slate-800 flex-wrap">
-                  {/* DM role indicator */}
-                  {wsConnected && <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${canUseDMTools ? 'bg-amber-900/40 text-amber-400 border border-amber-700/40' : 'bg-slate-800 text-slate-500 border border-slate-700/40'}`}>{canUseDMTools ? 'DM' : 'Player'}</span>}
+                  {/* Role indicator */}
+                  {wsConnected && (
+                    isSpectating
+                      ? <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-sky-900/40 text-sky-400 border border-sky-700/40">Spectating</span>
+                      : <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${canUseDMTools ? 'bg-amber-900/40 text-amber-400 border border-amber-700/40' : 'bg-slate-800 text-slate-500 border border-slate-700/40'}`}>{canUseDMTools ? 'DM' : 'Player'}</span>
+                  )}
 
                   {/* DM-only controls: encounter, NPC, scene */}
                   {canUseDMTools && (

@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../components/ui/toast';
 import { Button } from '../components/ui/button';
@@ -36,20 +36,25 @@ interface Seat {
 
 export default function Lobby() {
   const { roomId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentPlayer, characters } = useGame();
   const room = roomId || 'default';
   const roomLink = `${window.location.origin}/lobby/${room}`;
+  const wantsSpectate = searchParams.get('spectate') === '1';
 
   const [players, setPlayers] = useState<LobbyPlayer[]>([]);
   const [seats, setSeats] = useState<Seat[]>([]);
+  const [spectators, setSpectators] = useState<{ id: string; username: string; avatar?: string }[]>([]);
+  const [isSpectating, setIsSpectating] = useState(false);
   const [dmSeatType, setDmSeatType] = useState<'human' | 'ai'>('human');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const [mySeatId, setMySeatId] = useState<string | null>(null);
   const [isDM, setIsDM] = useState(false);
   const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
+  const [campaignVisibility, setCampaignVisibility] = useState<'public' | 'private'>('private');
   const diceRef = useRef<DiceRollerHandle>(null);
   const doodleRef = useRef<DoodlePadHandle>(null);
   const [drawingPlayer, setDrawingPlayer] = useState<string | null>(null);
@@ -79,8 +84,10 @@ export default function Lobby() {
           setWsPlayerId(msg.playerId as string);
           setPlayers(msg.players as LobbyPlayer[]);
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
+          if (Array.isArray(msg.spectators)) setSpectators(msg.spectators as { id: string; username: string; avatar?: string }[]);
           if (msg.dmSeatType) setDmSeatType(msg.dmSeatType as 'human' | 'ai');
           if (msg.seatId) setMySeatId(msg.seatId as string);
+          setIsSpectating(!!(msg.isSpectating));
           setIsDM((msg.isDM as boolean) ?? false);
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
           setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
@@ -126,6 +133,19 @@ export default function Lobby() {
 
         case 'seats_updated':
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
+          if (Array.isArray(msg.spectators)) setSpectators(msg.spectators as { id: string; username: string; avatar?: string }[]);
+          break;
+
+        case 'spectate_confirmed':
+          setIsSpectating(true);
+          setMySeatId(null);
+          toast('You are now spectating', 'info');
+          break;
+
+        case 'seat_claimed':
+          setIsSpectating(false);
+          setMySeatId(msg.seatId as string);
+          toast('You joined a seat!', 'success');
           break;
 
         case 'dm_type_changed':
@@ -242,6 +262,7 @@ export default function Lobby() {
     roomId: room,
     username: currentPlayer.username,
     avatar: currentPlayer.avatar,
+    spectate: wantsSpectate,
     onMessage: handleWsMessage,
   });
 
@@ -343,22 +364,25 @@ export default function Lobby() {
     fetch('/api/campaigns', { credentials: 'include' })
       .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; description?: string }> }>) : null))
       .then((data) => {
-        const campaign = data?.campaigns?.find((c) => c.roomId === room);
+        const campaign = data?.campaigns?.find((c: Record<string, unknown>) => c.roomId === room);
         if (campaign) {
-          setCampaignName(campaign.name || room);
-          setCampaignDescription(campaign.description || '');
+          setCampaignName((campaign as Record<string, unknown>).name as string || room);
+          setCampaignDescription((campaign as Record<string, unknown>).description as string || '');
+          if ((campaign as Record<string, unknown>).visibility === 'public') setCampaignVisibility('public');
         }
       })
       .catch(() => {});
   }, [room]);
 
   const saveCampaignSettings = useCallback(
-    (name: string, description: string) => {
+    (name: string, description: string, visibility?: 'public' | 'private') => {
+      const body: Record<string, string> = { name, description };
+      if (visibility) body.visibility = visibility;
       fetch(`/api/campaigns/${encodeURIComponent(room)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify(body),
       }).catch(() => {});
     },
     [room]
@@ -436,6 +460,11 @@ export default function Lobby() {
             <div className={`w-2 h-2 rounded-full ${statusColor}`} />
             <span className="text-[10px] text-slate-500">{status}</span>
           </div>
+          {isSpectating && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-900/40 border border-sky-700/40 text-sky-400 font-semibold">
+              Spectating
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {allReady && <span className="text-[10px] text-emerald-400 font-semibold animate-pulse">All Ready</span>}
@@ -490,6 +519,24 @@ export default function Lobby() {
               <label className="text-[10px] text-slate-500 uppercase tracking-wider">Invite Link</label>
               <code className="text-[11px] bg-slate-800 px-3 py-1 rounded text-[#F38020] select-all flex-1">{roomLink}</code>
               <button onClick={copyLink} className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded border border-slate-700">Copy</button>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-[10px] text-slate-500 uppercase tracking-wider">Visibility</label>
+              <button
+                onClick={() => {
+                  const next = campaignVisibility === 'private' ? 'public' : 'private';
+                  setCampaignVisibility(next);
+                  saveCampaignSettings(campaignName.trim() || room, campaignDescription, next);
+                  toast(`Campaign is now ${next}`, 'info');
+                }}
+                className={`text-xs px-3 py-1 rounded border font-semibold transition-all ${
+                  campaignVisibility === 'public'
+                    ? 'bg-emerald-900/30 border-emerald-700/40 text-emerald-400 hover:bg-emerald-900/50'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                {campaignVisibility === 'public' ? 'Public — listed in browser' : 'Private — invite only'}
+              </button>
             </div>
           </div>
         </div>
@@ -679,6 +726,46 @@ export default function Lobby() {
                 </div>
               )}
             </div>
+
+            {/* Spectator bar */}
+            {(spectators.length > 0 || isSpectating) && (
+              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-800/50">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider shrink-0">Spectating</span>
+                <div className="flex -space-x-1.5 flex-1 min-w-0">
+                  {spectators.slice(0, 8).map((s) =>
+                    s.avatar ? (
+                      <img key={s.id} src={s.avatar} alt={s.username} title={s.username} className="w-5 h-5 rounded-full border border-slate-900" />
+                    ) : (
+                      <div key={s.id} title={s.username} className="w-5 h-5 rounded-full bg-slate-700 border border-slate-900 flex items-center justify-center text-[8px] font-bold text-slate-400">
+                        {s.username.charAt(0).toUpperCase()}
+                      </div>
+                    )
+                  )}
+                  {spectators.length > 8 && <div className="w-5 h-5 rounded-full bg-slate-700 border border-slate-900 flex items-center justify-center text-[7px] text-slate-400">+{spectators.length - 8}</div>}
+                  {spectators.length === 0 && <span className="text-[10px] text-slate-600 italic">none</span>}
+                </div>
+                {/* Spectate / Join Seat toggle */}
+                {!isDM && (
+                  isSpectating ? (
+                    <button
+                      onClick={() => send({ type: 'claim_seat' })}
+                      className="text-[10px] px-2.5 py-1 rounded bg-emerald-900/30 hover:bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 font-semibold transition-all shrink-0"
+                      title="Join an empty seat"
+                    >
+                      Join a Seat
+                    </button>
+                  ) : mySeatId ? (
+                    <button
+                      onClick={() => send({ type: 'spectate' })}
+                      className="text-[10px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 font-semibold transition-all shrink-0"
+                      title="Leave your seat and spectate"
+                    >
+                      Spectate
+                    </button>
+                  ) : null
+                )}
+              </div>
+            )}
           </div>
 
           {/* Dice + Doodle Pad side by side */}

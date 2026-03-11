@@ -763,3 +763,87 @@ describe('Seat model — party configuration', () => {
     await closeAndWait(ws);
   });
 });
+
+// --- Spectator mode tests ---
+describe('Spectator mode', () => {
+  it('player joining with spectate=true gets isSpectating and no seat', async () => {
+    const room = 'spectate-join-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'Watcher', spectate: true });
+    const welcome = await waitForMessage(ws, 'welcome');
+
+    expect(welcome.isSpectating).toBe(true);
+    expect(welcome.seatId).toBeUndefined();
+    expect(Array.isArray(welcome.spectators)).toBe(true);
+    const specs = welcome.spectators as Array<{ id: string; username: string }>;
+    expect(specs.some((s) => s.username === 'Watcher')).toBe(true);
+
+    await closeAndWait(ws);
+  });
+
+  it('seated player can switch to spectator and back', async () => {
+    const room = 'spectate-toggle-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'DM' });
+    const w1 = await waitForMessage(ws1, 'welcome');
+    expect(w1.seatId).toBeTruthy();
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Player2' });
+    await waitForMessage(ws2, 'welcome');
+    // Consume the player_joined on ws1
+    await waitForMessage(ws1, 'player_joined');
+
+    // Player2 switches to spectate
+    const seatsUpdate = waitForMessage(ws1, 'seats_updated');
+    send(ws2, { type: 'spectate' });
+    const confirmed = await waitForMessage(ws2, 'spectate_confirmed');
+    expect(confirmed.type).toBe('spectate_confirmed');
+
+    const updated = await seatsUpdate;
+    const spectators = updated.spectators as Array<{ username: string }>;
+    expect(spectators.some((s) => s.username === 'Player2')).toBe(true);
+
+    // Player2 claims a seat back
+    const seatsUpdate2 = waitForMessage(ws1, 'seats_updated');
+    send(ws2, { type: 'claim_seat' });
+    const claimed = await waitForMessage(ws2, 'seat_claimed');
+    expect(claimed.seatId).toBeTruthy();
+
+    const updated2 = await seatsUpdate2;
+    const specs2 = updated2.spectators as Array<{ username: string }>;
+    expect(specs2.some((s) => s.username === 'Player2')).toBe(false);
+
+    await closeAndWait(ws2);
+    await closeAndWait(ws1);
+  });
+
+  it('DM cannot switch to spectator', async () => {
+    const room = 'spectate-dm-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'DM' });
+    const welcome = await waitForMessage(ws, 'welcome');
+    expect(welcome.isDM).toBe(true);
+
+    send(ws, { type: 'spectate' });
+    const err = await waitForMessage(ws, 'error');
+    expect(err.message).toContain('DM cannot spectate');
+
+    await closeAndWait(ws);
+  });
+
+  it('spectators appear in REST /players endpoint', async () => {
+    const room = 'spectate-rest-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'Viewer', spectate: true });
+    await waitForMessage(ws, 'welcome');
+
+    const id = env.LOBBY.idFromName(room);
+    const stub = env.LOBBY.get(id);
+    const resp = await stub.fetch('http://fake/players');
+    const data = (await resp.json()) as { spectators: Array<{ username: string }> };
+    expect(data.spectators.some((s) => s.username === 'Viewer')).toBe(true);
+
+    await closeAndWait(ws);
+  });
+});
