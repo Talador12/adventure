@@ -772,6 +772,55 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
   }
 });
 
+// AI session recap — "Previously on..." summary of past adventure events
+app.post('/api/dm/recap', async (c) => {
+  if (!c.env.AI) {
+    return c.json({ error: 'AI binding not available' }, 503);
+  }
+
+  const body = await c.req.json<Record<string, unknown>>();
+  const history = (body.history as string[]) || [];
+  const characters = (body.characters as Array<Record<string, unknown>>) || [];
+  const scene = String(body.scene || '');
+
+  if (history.length === 0) {
+    return c.json({ error: 'No history to recap' }, 400);
+  }
+
+  const charNames = characters.map((ch) => `${ch.name} (Level ${ch.level} ${ch.race} ${ch.class})`).join(', ');
+
+  const systemPrompt = `You are a dramatic narrator delivering a "Previously on..." recap for a D&D campaign. Write in the style of a TV show recap narrator — past tense, dramatic, building tension for what comes next.
+
+RULES:
+- 3-5 sentences maximum. Be punchy and vivid.
+- Reference character names and specific events from the history.
+- End with a hook that builds anticipation for the next session.
+- Use dramatic present tense for the final sentence ("And now..." or "But little do they know...").
+- Never mention game mechanics, dice, or rules. Pure narrative.
+
+THE PARTY: ${charNames || 'A group of adventurers'}
+${scene ? `CURRENT LOCATION: ${scene}` : ''}`;
+
+  // Take the last 20 history entries for context
+  const recentHistory = history.slice(-20).join('\n');
+
+  try {
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Here is what has happened so far:\n\n${recentHistory}\n\nWrite the "Previously on..." recap.` },
+      ],
+      max_tokens: 300,
+    });
+
+    const response = ((result as Record<string, unknown>).response as string) || '';
+    return c.json({ recap: response.trim() });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Recap generation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // Portrait upload — encrypt with AES-256-GCM and store in KV
 async function deriveEncryptionKey(secret: string): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), 'PBKDF2', false, ['deriveKey']);

@@ -16,11 +16,13 @@ import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
+import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import type { Quest } from '../types/game';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
 import ShopView from '../components/game/ShopView';
+import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
 
 // API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
 function apiBase(): string {
@@ -105,6 +107,9 @@ export default function Game() {
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
+
+  // Floating combat text (damage numbers, miss, heal)
+  const { texts: floatingTexts, addFloatingText, expireText: expireFloatingText } = useFloatingCombatText();
 
   // AoE spell targeting state
   const [activeAoE, setActiveAoE] = useState<ActiveAoE | null>(null);
@@ -207,118 +212,41 @@ export default function Game() {
     }
   }, [sceneName, room]);
 
-  // Fire-and-forget server campaign sync — debounced to avoid spamming on rapid updates
-  const campaignSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  useEffect(() => {
-    if (!adventureStarted) return; // don't save empty campaigns
-    setSaveStatus('saving');
-    clearTimeout(campaignSaveTimer.current);
-    campaignSaveTimer.current = setTimeout(() => {
-      fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dmHistory,
-          sceneName,
-          selectedCharacterId: selectedCharacterId || null,
-          combatLog,
-          // Combat state — survives page refresh mid-combat
-          units: inCombat ? units : null,
-          inCombat,
-          combatRound: inCombat ? combatRound : 0,
-          turnIndex: inCombat ? units.findIndex((u) => u.isCurrentTurn) : 0,
-          terrain,
-          mapPositions,
-          mapImageUrl,
-          quests,
-        }),
-      }).then(() => {
-        setSaveStatus('saved');
-        setLastSavedAt(Date.now());
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      }).catch(() => {
-        setSaveStatus('error');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      });
-    }, 2000); // debounce 2s
-    return () => clearTimeout(campaignSaveTimer.current);
-  }, [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted, inCombat, units, combatRound, terrain, mapPositions, mapImageUrl, quests]);
+  // Campaign persistence — auto-save, server load, registration (extracted hook)
+  const getCampaignState = useCallback(() => ({
+    dmHistory, sceneName, selectedCharacterId, combatLog,
+    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests,
+  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests]);
 
-  // Load campaign from server on mount — merge with localStorage (server wins for newer data)
-  const campaignLoadedRef = useRef(false);
-  useEffect(() => {
-    if (campaignLoadedRef.current) return;
-    campaignLoadedRef.current = true;
-    fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`)
-      .then((r) => (r.ok ? (r.json() as Promise<{ campaign?: Record<string, unknown> }>) : null))
-      .then((data) => {
-        if (data?.campaign) {
-          const c = data.campaign;
-          // Server history is longer — use it (otherwise keep local which may be more recent)
-          const serverHistory = c.dmHistory as string[] | undefined;
-          if (serverHistory && serverHistory.length > dmHistory.length) {
-            setDmHistory(serverHistory);
-          }
-          if (c.sceneName && !sceneName) {
-            setSceneName(c.sceneName as string);
-          }
-          // Auto-select character: prefer seat assignment from lobby, then saved campaign state
-          let autoCharId: string | null = null;
-          try { autoCharId = sessionStorage.getItem(`adventure:seatCharId:${room}`); } catch { /* ok */ }
-          if (autoCharId && !selectedCharacterId) {
-            const seatChar = characters.find((ch) => ch.id === autoCharId);
-            if (seatChar) {
-              handleSelectCharacter(seatChar);
-              try { sessionStorage.removeItem(`adventure:seatCharId:${room}`); } catch { /* ok */ }
-            }
-          } else if (c.selectedCharacterId && !selectedCharacterId) {
-            const found = characters.find((ch) => ch.id === c.selectedCharacterId);
-            if (found) handleSelectCharacter(found);
-          }
-          // Restore combat state if server had an active combat session
-          if (c.inCombat && Array.isArray(c.units) && (c.units as unknown[]).length > 0) {
-            setUnits(c.units as Unit[]);
-            setInCombat(true);
-            setCombatRound((c.combatRound as number) || 1);
-            setTurnIndex((c.turnIndex as number) || 0);
-          }
-          // Restore terrain + map positions if present
-          if (c.terrain && Array.isArray(c.terrain)) {
-            setTerrain(c.terrain as TerrainType[][]);
-          }
-          if (c.mapPositions && Array.isArray(c.mapPositions)) {
-            setMapPositions(c.mapPositions as TokenPosition[]);
-          }
-          // Restore map background image
-          if (c.mapImageUrl && typeof c.mapImageUrl === 'string') {
-            setMapImageUrl(c.mapImageUrl as string);
-          }
-          // Restore quests
-          if (c.quests && Array.isArray(c.quests)) {
-            setQuests(c.quests as Quest[]);
-          }
-          // Restore combat log
-          if (c.combatLog && Array.isArray(c.combatLog)) {
-            setCombatLog(c.combatLog as string[]);
-          }
-        }
-      })
-      .catch(() => {}); // server unavailable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room]);
+  const handleCampaignLoad = useCallback((data: CampaignLoadResult) => {
+    if (data.dmHistory) setDmHistory(data.dmHistory);
+    if (data.sceneName) setSceneName(data.sceneName);
+    if (data.units) setUnits(data.units);
+    if (data.inCombat !== undefined) setInCombat(data.inCombat);
+    if (data.combatRound !== undefined) setCombatRound(data.combatRound);
+    if (data.turnIndex !== undefined) setTurnIndex(data.turnIndex);
+    if (data.terrain) setTerrain(data.terrain);
+    if (data.mapPositions) setMapPositions(data.mapPositions);
+    if (data.mapImageUrl !== undefined) setMapImageUrl(data.mapImageUrl);
+    if (data.quests) setQuests(data.quests);
+    if (data.combatLog) setCombatLog(data.combatLog);
+  }, [setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl]);
 
-  // Register campaign on first adventure start
-  useEffect(() => {
-    if (adventureStarted && dmHistory.length === 1) {
-      fetch(`${apiBase()}/api/campaigns`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomId: room, name: `Campaign ${room.slice(0, 8)}` }),
-      }).catch(() => {});
-    }
-  }, [adventureStarted, dmHistory.length, room]);
+  // Ref for auto-select — avoids stale closure since handleSelectCharacter is defined later
+  const autoSelectCharRef = useRef<(id: string) => void>(() => {});
+
+  const { saveStatus, lastSavedAt } = useCampaignPersistence({
+    room,
+    adventureStarted,
+    getState: getCampaignState,
+    onLoad: handleCampaignLoad,
+    onAutoSelectCharacter: (charId) => autoSelectCharRef.current(charId),
+    characters,
+    selectedCharacterId,
+    dmHistoryLength: dmHistory.length,
+    sceneName,
+    saveDeps: [dmHistory, sceneName, selectedCharacterId, combatLog, room, adventureStarted, inCombat, units, combatRound, terrain, mapPositions, mapImageUrl, quests],
+  });
 
   // Ref for WebSocket send — avoids circular deps between callbacks and useWebSocket
   const sendRef = useRef<(msg: WSMessage) => void>(() => {});
@@ -522,6 +450,12 @@ export default function Game() {
     },
     [currentPlayer.id, setUnits]
   );
+
+  // Wire auto-select ref for campaign load (avoids circular dep with handleSelectCharacter)
+  autoSelectCharRef.current = (charId: string) => {
+    const char = characters.find((c) => c.id === charId);
+    if (char) handleSelectCharacter(char);
+  };
 
   // Add a DM narration to chat
   const addDmMessage = useCallback((text: string) => {
@@ -1059,7 +993,9 @@ export default function Game() {
           )}
 
           {/* Main content area */}
-          <div className="flex-1 p-4 overflow-auto">
+          <div className="flex-1 p-4 overflow-auto relative">
+            {/* Floating combat text overlay */}
+            <FloatingCombatText texts={floatingTexts} onExpire={expireFloatingText} />
             {!adventureStarted ? (
               // Pre-adventure: Begin Adventure prompt
               <div className="rounded-xl border border-slate-800 bg-slate-900 flex flex-col items-center justify-center h-full gap-6 p-8">
@@ -1190,10 +1126,11 @@ export default function Game() {
                   setPendingAoESpell={setPendingAoESpell}
                   shopMessage={shopMessage}
                   setShopMessage={setShopMessage}
+                  addFloatingText={addFloatingText}
                 />
 
                 {activeView === 'narration' ? (
-                  <NarrationPanel
+                   <NarrationPanel
                     selectedCharacter={selectedCharacter}
                     canUseDMTools={canUseDMTools}
                     dmHistory={dmHistory}
@@ -1202,6 +1139,8 @@ export default function Game() {
                     npcName={npcName}
                     npcRole={npcRole}
                     npcMode={npcMode}
+                    sceneName={sceneName}
+                    allCharacters={characters}
                     setNpcName={setNpcName}
                     setNpcRole={setNpcRole}
                     quests={quests}

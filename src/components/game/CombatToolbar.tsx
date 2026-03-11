@@ -48,6 +48,7 @@ interface CombatToolbarProps {
   setPendingAoESpell: (v: { spell: Spell; charId: string } | null) => void;
   shopMessage: string | null;
   setShopMessage: (v: string | null) => void;
+  addFloatingText: (text: string, type: 'damage' | 'heal' | 'miss' | 'crit' | 'condition' | 'info', opts?: { x?: number; y?: number }) => void;
 }
 
 export default function CombatToolbar({
@@ -87,6 +88,7 @@ export default function CombatToolbar({
   setPendingAoESpell,
   shopMessage,
   setShopMessage,
+  addFloatingText,
 }: CombatToolbarProps) {
   const {
     units,
@@ -308,12 +310,18 @@ export default function CombatToolbar({
                                     totalDamageDealt += finalDmg;
                                     damageUnit(target.id, finalDmg);
                                     playCombatHit();
-                                    if (isCrit) playCritical();
+                                    if (isCrit) {
+                                      playCritical();
+                                      addFloatingText(`${finalDmg}`, 'crit');
+                                    } else {
+                                      addFloatingText(`${finalDmg}`, 'damage');
+                                    }
                                     const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, logMsg]);
                                     addDmMessage(logMsg);
                                   } else {
                                     playCombatMiss();
+                                    addFloatingText('Miss', 'miss');
                                     const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, missMsg]);
                                     addDmMessage(missMsg);
@@ -417,11 +425,14 @@ export default function CombatToolbar({
                                           playMagicSpell();
                                           setCombatLog((prev) => [...prev, result.message]);
                                           addDmMessage(result.message);
-                                          if (spell.damage && enemyTarget && enemyTarget.hp <= 0) {
-                                            playEnemyDeath();
-                                            addDmMessage(`${enemyTarget.name} falls!`);
+                                          if (spell.damage && enemyTarget) {
+                                            if (enemyTarget.hp <= 0) {
+                                              playEnemyDeath();
+                                              addDmMessage(`${enemyTarget.name} falls!`);
+                                            }
+                                            addFloatingText(`${spell.damage}`, 'damage');
                                           }
-                                          if (spell.healAmount) playHealing();
+                                          if (spell.healAmount) { playHealing(); addFloatingText(`${spell.healAmount}`, 'heal'); }
                                           setTimeout(broadcastCombatSyncLatest, 50);
                                         } else {
                                           setShopMessage(result.message);
@@ -483,8 +494,8 @@ export default function CombatToolbar({
                                     playEnemyDeath();
                                     addDmMessage(`${enemyTarget.name} falls!`);
                                   }
-                                  if (ability.type === 'heal') playHealing();
-                                  if (ability.type === 'attack') playCombatHit();
+                                  if (ability.type === 'heal') { playHealing(); addFloatingText(ability.healFormula || 'Heal', 'heal'); }
+                                  if (ability.type === 'attack') { playCombatHit(); addFloatingText(ability.damage || 'Hit', 'damage'); }
                                   setTimeout(broadcastCombatSyncLatest, 50);
                                 } else {
                                   setShopMessage(result.message);
@@ -663,6 +674,7 @@ export default function CombatToolbar({
                         onClick={() => {
                           restCharacter(selectedCharacter.id, 'short');
                           playHealing();
+                          addFloatingText('Short Rest', 'heal');
                           addDmMessage(`${selectedCharacter.name} takes a short rest, tending wounds and catching their breath.`);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-800/50 text-sky-300 text-xs font-semibold rounded-lg transition-all"
@@ -676,6 +688,7 @@ export default function CombatToolbar({
                         onClick={() => {
                           restCharacter(selectedCharacter.id, 'long');
                           playHealing();
+                          addFloatingText('Full Rest', 'heal');
                           addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored.`);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-800/50 text-indigo-300 text-xs font-semibold rounded-lg transition-all"

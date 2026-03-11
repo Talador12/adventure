@@ -1,7 +1,9 @@
 // NarrationPanel — the narration/story view containing character status bar, turn
 // indicator, quest tracker, death saves, DM history scroll, combat log, and action input.
 // Extracted from Game.tsx to reduce file size.
+import { useState, useCallback } from 'react';
 import { useGame, type Character, CONDITION_EFFECTS } from '../../contexts/GameContext';
+import { fetchWithTimeout } from '../../lib/fetchUtils';
 import type { Quest } from '../../types/game';
 
 interface NarrationPanelProps {
@@ -13,6 +15,8 @@ interface NarrationPanelProps {
   npcName: string;
   npcRole: string;
   npcMode: boolean;
+  sceneName: string;
+  allCharacters: Character[];
   setNpcName: (v: string) => void;
   setNpcRole: (v: string) => void;
   quests: Quest[];
@@ -40,6 +44,8 @@ export default function NarrationPanel({
   npcName,
   npcRole,
   npcMode,
+  sceneName,
+  allCharacters,
   setNpcName,
   setNpcRole,
   quests,
@@ -58,6 +64,36 @@ export default function NarrationPanel({
   broadcastGameEvent,
 }: NarrationPanelProps) {
   const { units, inCombat, combatRound } = useGame();
+
+  // Session recap state
+  const [recapText, setRecapText] = useState<string | null>(null);
+  const [recapLoading, setRecapLoading] = useState(false);
+  const [showRecap, setShowRecap] = useState(false);
+
+  const handleRecap = useCallback(async () => {
+    if (dmHistory.length === 0) return;
+    setRecapLoading(true);
+    setShowRecap(true);
+    try {
+      const res = await fetchWithTimeout('/api/dm/recap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          history: dmHistory,
+          characters: allCharacters.map((ch) => ({
+            name: ch.name, race: ch.race, class: ch.class, level: ch.level,
+          })),
+          scene: sceneName,
+        }),
+      }, 35_000);
+      const data = (await res.json()) as { recap?: string; error?: string };
+      setRecapText(data.recap || data.error || 'The narrator falls silent...');
+    } catch {
+      setRecapText('*The echoes of past adventures fade into silence...*');
+    } finally {
+      setRecapLoading(false);
+    }
+  }, [dmHistory, allCharacters, sceneName]);
 
   return (
     <>
@@ -293,6 +329,39 @@ export default function NarrationPanel({
           <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Talking to:</span>
           <input type="text" value={npcName} onChange={(e) => setNpcName(e.target.value)} placeholder="NPC name..." className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none w-32 focus:ring-1 focus:ring-purple-500/50" />
           <input type="text" value={npcRole} onChange={(e) => setNpcRole(e.target.value)} placeholder="Role (e.g., tavern keeper, guard captain)..." className="text-xs px-2 py-1.5 bg-slate-800 border border-purple-700/50 rounded-lg text-purple-200 placeholder-slate-600 outline-none flex-1 min-w-40 focus:ring-1 focus:ring-purple-500/50" />
+        </div>
+      )}
+
+      {/* Session Recap — "Previously on..." */}
+      {dmHistory.length >= 3 && (
+        <div className="border-b border-slate-800">
+          {!showRecap ? (
+            <button
+              onClick={handleRecap}
+              disabled={recapLoading}
+              className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-indigo-400/70 hover:text-indigo-300 transition-colors group"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 group-hover:scale-110 transition-transform">
+                <path fillRule="evenodd" d="M7.455 2.004a.75.75 0 01.26.77 7.047 7.047 0 002.91 3.45 7.047 7.047 0 002.91-3.45.75.75 0 011.36.49 8.547 8.547 0 01-4.3 5.85 5.522 5.522 0 012.965 4.136.75.75 0 01-1.49.18A4.022 4.022 0 009.97 10.2a4.022 4.022 0 00-2.1 3.23.75.75 0 01-1.49-.18 5.522 5.522 0 012.965-4.137 8.547 8.547 0 01-4.3-5.849.75.75 0 011.36-.49 7.047 7.047 0 002.91 3.45 7.047 7.047 0 002.91-3.45.75.75 0 01.23-.77z" clipRule="evenodd" />
+              </svg>
+              Previously on this adventure...
+            </button>
+          ) : (
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Previously...</span>
+                <button onClick={() => setShowRecap(false)} className="text-slate-600 hover:text-slate-400 transition-colors text-xs">&times;</button>
+              </div>
+              {recapLoading ? (
+                <div className="flex items-center gap-2 text-indigo-500/60 animate-pulse">
+                  <div className="w-4 h-4 border-2 border-indigo-500/60 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm italic">The narrator gathers their thoughts...</span>
+                </div>
+              ) : recapText ? (
+                <p className="text-sm text-indigo-200/80 italic leading-relaxed">{recapText}</p>
+              ) : null}
+            </div>
+          )}
         </div>
       )}
 
