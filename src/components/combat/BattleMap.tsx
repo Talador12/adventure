@@ -352,9 +352,10 @@ interface BattleMapProps {
   onTerrainChange?: (terrain: TerrainType[][]) => void;
   onOpportunityAttack?: (attackerName: string, targetName: string, damage: number, hit: boolean) => void;
   onMapImageChange?: (url: string | null) => void;
+  canUseDMTools?: boolean; // false hides DM mode toggle, terrain paint, traps, map upload
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
@@ -1040,72 +1041,77 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
           Generate
         </button>
 
-        <div className="w-px h-4 bg-slate-700 mx-1" />
-
-        {/* DM mode toggle */}
-        <button
-          onClick={() => setDmMode(!dmMode)}
-          className={`text-[10px] px-2 py-1 rounded font-semibold transition-all ${dmMode ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
-          title="DM Mode: see through fog of war"
-        >
-          {dmMode ? 'DM: ON' : 'DM'}
-        </button>
-
-        <div className="w-px h-4 bg-slate-700 mx-1" />
-
-        {/* Terrain tools */}
-        {dmTools.map((t) => (
-          <button
-            key={t.tool}
-            onClick={() => setDmTool(t.tool)}
-            className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === t.tool ? 'bg-slate-600 text-white ring-1 ring-slate-500' : `bg-slate-800/60 ${t.color} hover:bg-slate-700/60`}`}
-          >
-            {t.label}
-          </button>
-        ))}
-
-        {/* Trap tools (DM only) */}
-        {dmMode && (
+        {/* DM tools — only visible when canUseDMTools is true */}
+        {canUseDMTools && (
           <>
             <div className="w-px h-4 bg-slate-700 mx-1" />
-            <span className="text-[9px] text-red-500/70 uppercase tracking-wider font-semibold">Traps</span>
-            {trapTools.map((t) => (
+
+            {/* DM mode toggle */}
+            <button
+              onClick={() => setDmMode(!dmMode)}
+              className={`text-[10px] px-2 py-1 rounded font-semibold transition-all ${dmMode ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+              title="DM Mode: see through fog of war"
+            >
+              {dmMode ? 'DM: ON' : 'DM'}
+            </button>
+
+            <div className="w-px h-4 bg-slate-700 mx-1" />
+
+            {/* Terrain tools */}
+            {dmTools.map((t) => (
               <button
                 key={t.tool}
                 onClick={() => setDmTool(t.tool)}
-                className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === t.tool ? 'bg-red-900/60 text-white ring-1 ring-red-500/50' : `bg-red-950/40 ${t.color} hover:bg-red-900/40`}`}
+                className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === t.tool ? 'bg-slate-600 text-white ring-1 ring-slate-500' : `bg-slate-800/60 ${t.color} hover:bg-slate-700/60`}`}
               >
                 {t.label}
               </button>
             ))}
-            {traps.filter((t) => !t.triggered).length > 0 && (
-              <span className="text-[9px] text-red-400/60 font-mono">{traps.filter((t) => !t.triggered).length} set</span>
-            )}
-            <div className="w-px h-4 bg-slate-700 mx-1" />
-            <span className="text-[9px] text-emerald-500/70 uppercase tracking-wider font-semibold">Map</span>
-            <input
-              ref={mapFileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMapUpload(f); e.target.value = ''; }}
-            />
-            <button
-              onClick={() => mapFileInputRef.current?.click()}
-              disabled={mapUploading}
-              className="text-[10px] px-2 py-1 rounded bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 font-semibold transition-all disabled:opacity-50"
-              title="Upload a battle map background image (PNG/JPG/WebP, max 10MB)"
-            >
-              {mapUploading ? 'Uploading...' : 'Upload'}
-            </button>
-            {mapImageUrl && (
-              <button
-                onClick={handleClearMapImage}
-                className="text-[10px] px-2 py-1 rounded bg-slate-800/60 hover:bg-red-900/40 border border-slate-600/50 text-slate-400 hover:text-red-300 font-semibold transition-all"
-                title="Remove map background image"
-              >
-                Clear
-              </button>
+
+            {/* Trap tools (DM only — also requires DM mode active) */}
+            {dmMode && (
+              <>
+                <div className="w-px h-4 bg-slate-700 mx-1" />
+                <span className="text-[9px] text-red-500/70 uppercase tracking-wider font-semibold">Traps</span>
+                {trapTools.map((t) => (
+                  <button
+                    key={t.tool}
+                    onClick={() => setDmTool(t.tool)}
+                    className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === t.tool ? 'bg-red-900/60 text-white ring-1 ring-red-500/50' : `bg-red-950/40 ${t.color} hover:bg-red-900/40`}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+                {traps.filter((t) => !t.triggered).length > 0 && (
+                  <span className="text-[9px] text-red-400/60 font-mono">{traps.filter((t) => !t.triggered).length} set</span>
+                )}
+                <div className="w-px h-4 bg-slate-700 mx-1" />
+                <span className="text-[9px] text-emerald-500/70 uppercase tracking-wider font-semibold">Map</span>
+                <input
+                  ref={mapFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMapUpload(f); e.target.value = ''; }}
+                />
+                <button
+                  onClick={() => mapFileInputRef.current?.click()}
+                  disabled={mapUploading}
+                  className="text-[10px] px-2 py-1 rounded bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 font-semibold transition-all disabled:opacity-50"
+                  title="Upload a battle map background image (PNG/JPG/WebP, max 10MB)"
+                >
+                  {mapUploading ? 'Uploading...' : 'Upload'}
+                </button>
+                {mapImageUrl && (
+                  <button
+                    onClick={handleClearMapImage}
+                    className="text-[10px] px-2 py-1 rounded bg-slate-800/60 hover:bg-red-900/40 border border-slate-600/50 text-slate-400 hover:text-red-300 font-semibold transition-all"
+                    title="Remove map background image"
+                  >
+                    Clear
+                  </button>
+                )}
+              </>
             )}
           </>
         )}

@@ -11,7 +11,7 @@ See `AGENTS.md` for architecture, build commands, and conventions.
 
 ## Current Focus
 
-Round 24: Map image persistence — R2-backed DM map uploads with multiplayer sync. Previous: Condition system overhaul, Multiplayer sync (Phases 1-7), Opportunity Attacks, Disengage action.
+Round 25: Phase 8 session robustness + DM role UI — stable reconnect IDs, DM authorization, rate limiting, message queue, DM role UI gating, DM transfer. Previous: Map image persistence, Condition system overhaul, Multiplayer sync (Phases 1-7), Opportunity Attacks, Disengage action.
 
 ### Illustrated portrait system
 - **Status:** Done (Phase 1 — base images + wiring)
@@ -36,13 +36,13 @@ Round 24: Map image persistence — R2-backed DM map uploads with multiplayer sy
 ### Multiplayer session sync + test framework (Round 19)
 
 ### Test framework
-- **Status:** Done — all 127 tests passing (99 player + 28 worker), 2 budget-skipped
+- **Status:** Done — all 133 tests passing (99 player + 34 worker), 2 budget-skipped
 
 **Three test categories:**
 1. **Player mode tests** (`tests/player/game-logic.test.ts`) — pure game logic, no AI, no network. 17 describe blocks, 99 tests. Covers spatial engine (mapUtils), AC calculation, hit dice, enemy generation, encounter themes, spell system (slots, class spells, damage), class abilities, feats/ASI, XP thresholds, conditions, loot, shop, extra attack, data integrity, opportunity attacks, condition system (CONDITION_EFFECTS, effectiveAC, rollD20WithProne, CLASS_ABILITIES condition types). **All 99 passing.**
 2. **AI fallback tests** (`tests/ai/fallback.test.ts`) — AI binding `undefined` → all 9 AI endpoints return 503 with helpful message. Non-AI endpoints (campaign save/load) still work. **All 11 passing.**
 3. **AI error tests** (`tests/ai/errors.test.ts`) — AI binding exists but throws/returns empty/garbage/hangs → endpoints return 500 with informative message. Mock AI objects: `throwingAI`, `emptyAI`, `garbageAI`, `hangingAI`. Budget-aware `describe.skipIf` for live AI tests. **All 11 passing, 2 skipped** (live AI tests behind `AI_TESTS=live` gate).
-4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). **All 6 passing.**
+4. **Multiplayer campaign tests** (`tests/multiplayer/campaign.test.ts`) — 3-player Lobby DO WebSocket session lifecycle via Miniflare: join, chat, dice (server-authoritative), DM narrate, NPC dialogue, player actions, draw (exclude sender), disconnect/rejoin, edge cases (empty chat, dice clamping, unknown types, ping/pong, REST endpoint). Phase 8 tests: DM assignment, DM auth rejection, DM transfer, DM reassignment on disconnect, stable reconnect IDs, rate limiting. **All 12 passing.**
 
 **Infrastructure:**
 - `vitest.config.ts` — plain vitest for player tests (no Workers runtime)
@@ -53,7 +53,7 @@ Round 24: Map image persistence — R2-backed DM map uploads with multiplayer sy
 - Makefile targets: `make test` (all), `make test-player`, `make test-worker`, `make test-multiplayer`, `make test-ai`, `make test-ai-live`, `make test-watch`
 
 ### Multiplayer session sync — full game state over WebSocket
-- **Status:** Done (Phases 1-7 complete, Phase 8 deferred)
+- **Status:** Done (Phases 1-8 complete)
 
 #### What's already synced (working)
 | Feature | Mechanism | Quality |
@@ -181,13 +181,15 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Per-player attribution: color-code brush by player or show player cursor
 - Canvas state snapshot: on join, existing client sends current canvas as image data
 
-**Phase 8: Session robustness**
-- Reconnect state recovery: on reconnect, request full state snapshot from another client or load from campaign save
-- Host election: designate DM/first-joiner as authoritative for conflict resolution
-- Message queue: buffer sends during disconnect, flush on reconnect
-- Lobby DO hibernation: migrate to `this.state.acceptWebSocket()` API for cost reduction
-- Rate limiting: per-message throttle for game_events (prevent state flood)
-- Auth on DM actions: only designated DM can send dm_narrate/dm_npc/terrain edits
+**Phase 8: Session robustness — DONE**
+- Stable reconnect IDs: `sessionStorage` persists `playerId` per room, sent in `join` message. Lobby DO detects returning players, reuses their ID, closes dead sockets, broadcasts `player_reconnected` instead of `player_joined`. No more "left then joined" flash on reconnect.
+- DM authorization: first joiner becomes DM, tracked in Lobby DO (`dmPlayerId`). DM-only message types (`dm_narrate`, `dm_npc`, `dm_action`) rejected from non-DM players with error response. DM reassigned to oldest remaining player on disconnect. `dm_changed` broadcast keeps all clients in sync.
+- DM transfer: `transfer_dm` message type — only current DM can invoke. Validates target exists, updates `dmPlayerId`, broadcasts `dm_changed` to all.
+- Rate limiting: `game_event` messages capped at 10/second per client with sliding window. Excess events get error response.
+- Message queue: `useWebSocket` buffers up to 100 messages when disconnected, flushes on reconnect after join handshake completes.
+- DM role UI: `canUseDMTools` derived state (`isDM || !wsConnected`) gates DM-only controls in Game.tsx (encounter, NPC talk, scene name, Begin Adventure, narration input) and BattleMap.tsx (DM mode toggle, terrain painting, trap placement, map upload). DM/Player badge in toolbar. Non-DM players see read-only narration with chat hint. Lobby.tsx shows "Make DM" transfer button on non-DM players (visible to current DM only), DM badge in player list.
+- `welcome` message includes `isDM`, `dmPlayerId`. Player list includes `isDM` per player.
+- Remaining deferred: Lobby DO hibernation (migrate to `this.state.acceptWebSocket()` API for cost reduction)
 
 ### Previous: Ranged combat + line of sight
 - **Status:** Done (Round 18)
@@ -485,9 +487,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ## Backlog
 
 ### High priority (next)
-- Multiplayer session sync — Phase 8 (session robustness — deferred)
+- Lobby DO hibernation — migrate to `this.state.acceptWebSocket()` for cost reduction (Phase 8 deferred item)
 - Map image persistence — DONE (Round 24)
 - Condition system fixes — DONE (Round 23)
+- Session robustness + DM role UI — DONE (Round 25)
 
 ### Medium priority
 - Party management — invite/remove players, assign DM role, character visibility settings
@@ -515,10 +518,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - `tickConditions` has randomness (1d6 burning damage) — RESOLVED: broadcasts result state.
 - BattleMap takes zero props — RESOLVED: added `BattleMapProps` with `onTokenMove`/`onTerrainChange` callbacks.
 - React `setUnits` is async (batched) — RESOLVED: closure capture + ref-based delayed broadcasts.
-- `useWebSocket` assigns new UUID on every reconnect — brief "left then joined" flash for other players. No session resume protocol. (Phase 8)
-- Lobby DO uses no persistent storage — all state lost on eviction/hibernation. Strokes, player list, etc. are ephemeral. (Phase 8)
-- No auth on DM-only actions — any connected player can send `dm_narrate`, `dm_npc`, `dm_action`, terrain edits. (Phase 8)
-- `send()` silently drops messages when socket not OPEN — no outbound queue or retry. (Phase 8)
+- `useWebSocket` assigns new UUID on every reconnect — RESOLVED: stable `playerId` persisted to `sessionStorage`, sent in `join` message, Lobby DO reuses it on reconnect.
+- No auth on DM-only actions — RESOLVED: Lobby DO tracks DM (`dmPlayerId`), rejects `dm_narrate`/`dm_npc`/`dm_action` from non-DM players. DM transfer via `transfer_dm` message.
+- `send()` silently drops messages when socket not OPEN — RESOLVED: message queue (cap 100) flushed on reconnect.
+- Lobby DO uses no persistent storage — all state lost on eviction/hibernation. Strokes, player list, etc. are ephemeral. (Deferred — DO hibernation migration)
 
 ## Completed
 
@@ -569,3 +572,4 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Opportunity Attacks + Disengage: D&D 5e reaction system — `reactionUsed` and `disengaged` fields on Unit, reset each turn. `findOpportunityAttackers()` pure function in mapUtils.ts checks adjacency transitions, reaction availability, stun immunity, disengage bypass. Enemy OA on player movement (BattleMap handleMouseUp), player OA on enemy movement (Game.tsx enemy AI useEffect). Disengage combat action button (violet themed). 8 new OA tests (105 total). Synced via broadcastCombatSyncLatest.
 - Map image persistence (R2): DM can upload battle map background images (PNG/JPG/WebP/GIF, max 10MB) via DM Mode toolbar. Images stored in Cloudflare R2 (`MAP_IMAGES` binding, `adventure-maps-{env}` buckets). API: `POST /api/map/upload` (base64 data URL → R2), `GET /api/map/:id` (stream from R2, 24h cache), `DELETE /api/map/:id`. BattleMap draws uploaded image as canvas background layer — floor/void cells become transparent when image present, special terrain (walls, water, etc.) still renders on top. Fog of war, tokens, traps all layer correctly. `mapImageUrl` state in GameContext, persisted in campaign save/load. Multiplayer sync via `map_image` game event + `state_response` late-join recovery. Upload/Clear buttons in DM tools (emerald themed). Makefile targets: `r2-dev`, `r2-staging`, `r2-prod` for bucket creation.
 - Condition system overhaul: Split overloaded `blessed` condition into distinct types — `dodging` (Dodge action +2 AC), `raging` (Barbarian Rage +2 atk), `inspired` (Bardic Inspiration +2 atk/saves). `blessed` reserved for Bless spell only. Wired `effectiveAC()` into all 5 attack roll sites (enemy basic melee, enemy abilities, player quick attack, player OA, enemy OA in BattleMap). Implemented D&D 5e prone advantage/disadvantage via `rollD20WithProne()` helper (melee vs prone = advantage, ranged vs prone = disadvantage, prone attacker = disadvantage, adv+disadv cancel per 5e rules). Combat log shows [adv]/[disadv] tags. CONDITION_COLORS in BattleMap updated for new types. Combat log highlighting includes all 10 condition types. 22 new condition tests (127 total).
+- Phase 8 session robustness + DM role UI: Stable reconnect IDs (sessionStorage + Lobby DO reuse), DM authorization (first joiner = DM, server-enforced DM-only messages, reassignment on disconnect), DM transfer (`transfer_dm` message type), rate limiting (10 game_events/sec per client), message queue (100-cap offline buffer), DM role UI gating (`canUseDMTools` = `isDM || !wsConnected` — gates encounter, NPC talk, scene name, narration input, Begin Adventure in Game.tsx; DM mode toggle, terrain paint, traps, map upload in BattleMap.tsx; "Make DM" transfer button in Lobby.tsx). DM/Player badge in toolbar. 6 new Phase 8 tests (133 total).

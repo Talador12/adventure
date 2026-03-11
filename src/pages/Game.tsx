@@ -37,6 +37,10 @@ export default function Game() {
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const [isDM, setIsDM] = useState(false);
   const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
+  // DM tool access: DM gets full controls, non-DM gets read-only narration.
+  // Offline/single-player (not connected) defaults to full access.
+  const [wsConnected, setWsConnected] = useState(false);
+  const canUseDMTools = isDM || !wsConnected;
   const diceRef = useRef<DiceRollerHandle>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
@@ -1199,6 +1203,8 @@ export default function Game() {
     onMessage: handleWsMessage,
   });
   sendRef.current = send;
+  // Track connection status for canUseDMTools (must be after hook call)
+  useEffect(() => { setWsConnected(status === 'connected'); }, [status]);
 
   const handleChatSend = useCallback((text: string) => send({ type: 'chat', message: text }), [send]);
 
@@ -1419,6 +1425,7 @@ export default function Game() {
                   </p>
                 </div>
 
+                {canUseDMTools ? (
                 <button
                   onClick={handleBeginAdventure}
                   disabled={dmLoading}
@@ -1438,6 +1445,9 @@ export default function Game() {
                     </>
                   )}
                 </button>
+                ) : (
+                  <p className="text-sm text-slate-500 italic">Waiting for the DM to begin the adventure...</p>
+                )}
               </div>
             ) : (
               // Adventure in progress: DM tools + narration/map area
@@ -1468,55 +1478,67 @@ export default function Game() {
 
                 {/* DM + Combat toolbar */}
                 <div className="flex items-center gap-2 p-3 border-b border-slate-800 flex-wrap">
-                  <button
-                    onClick={handleGenerateEncounter}
-                    disabled={encounterLoading || dmLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/40 hover:bg-red-900/60 border border-red-800/50 disabled:opacity-30 text-red-300 text-xs font-semibold rounded-lg transition-all"
-                  >
-                    {encounterLoading ? (
-                      <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M9.944 3.143a.75.75 0 01.112 1.056l-2.4 3h2.594a.75.75 0 01.59 1.213l-3.75 4.5a.75.75 0 11-1.152-.96l2.4-3H5.744a.75.75 0 01-.59-1.213l3.75-4.5a.75.75 0 011.04-.096z" clipRule="evenodd" /><path fillRule="evenodd" d="M13.944 6.143a.75.75 0 01.112 1.056l-1.2 1.5h1.394a.75.75 0 01.59 1.213l-2.25 2.7a.75.75 0 11-1.152-.96l1.2-1.5h-1.394a.75.75 0 01-.59-1.213l2.25-2.7a.75.75 0 011.04-.096z" clipRule="evenodd" /></svg>
-                    )}
-                    Encounter
-                  </button>
+                  {/* DM role indicator */}
+                  {wsConnected && (
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${canUseDMTools ? 'bg-amber-900/40 text-amber-400 border border-amber-700/40' : 'bg-slate-800 text-slate-500 border border-slate-700/40'}`}>
+                      {canUseDMTools ? 'DM' : 'Player'}
+                    </span>
+                  )}
 
-                  {/* Difficulty selector */}
-                  <select
-                    value={encounterDifficulty}
-                    onChange={(e) => setEncounterDifficulty(e.target.value as typeof encounterDifficulty)}
-                    className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 outline-none"
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                    <option value="deadly">Deadly</option>
-                  </select>
+                  {/* DM-only controls: encounter, NPC, scene */}
+                  {canUseDMTools && (
+                    <>
+                      <button
+                        onClick={handleGenerateEncounter}
+                        disabled={encounterLoading || dmLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/40 hover:bg-red-900/60 border border-red-800/50 disabled:opacity-30 text-red-300 text-xs font-semibold rounded-lg transition-all"
+                      >
+                        {encounterLoading ? (
+                          <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M9.944 3.143a.75.75 0 01.112 1.056l-2.4 3h2.594a.75.75 0 01.59 1.213l-3.75 4.5a.75.75 0 11-1.152-.96l2.4-3H5.744a.75.75 0 01-.59-1.213l3.75-4.5a.75.75 0 011.04-.096z" clipRule="evenodd" /><path fillRule="evenodd" d="M13.944 6.143a.75.75 0 01.112 1.056l-1.2 1.5h1.394a.75.75 0 01.59 1.213l-2.25 2.7a.75.75 0 11-1.152-.96l1.2-1.5h-1.394a.75.75 0 01-.59-1.213l2.25-2.7a.75.75 0 011.04-.096z" clipRule="evenodd" /></svg>
+                        )}
+                        Encounter
+                      </button>
 
-                  {/* NPC Talk toggle */}
-                  <button
-                    onClick={() => {
-                      if (npcMode) {
-                        setNpcMode(false);
-                        setNpcDialogueHistory([]);
-                      } else {
-                        setNpcMode(true);
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all ${npcMode ? 'bg-purple-600/40 border-purple-500/50 text-purple-200' : 'bg-purple-900/40 hover:bg-purple-900/60 border-purple-800/50 text-purple-300'}`}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 3.976 1 5.365v2.171c0 1.388.993 2.61 2.43 2.841A41.587 41.587 0 0010 11c2.233 0 4.412-.187 6.57-.623C18.007 10.146 19 8.924 19 7.536V5.365c0-1.389-.993-2.61-2.43-2.841A41.587 41.587 0 0010 2zM1 13.694v-1.358C2.32 13.107 4.106 13.5 6 13.695v.705A4.5 4.5 0 011.5 18H1v-4.306zM14 14.4v-.705c1.894-.196 3.68-.588 5-1.36v1.359L19 18h-.5A4.5 4.5 0 0114 14.4z" clipRule="evenodd" /></svg>
-                    {npcMode ? 'End Talk' : 'Talk NPC'}
-                  </button>
+                      {/* Difficulty selector */}
+                      <select
+                        value={encounterDifficulty}
+                        onChange={(e) => setEncounterDifficulty(e.target.value as typeof encounterDifficulty)}
+                        className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 outline-none"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                        <option value="deadly">Deadly</option>
+                      </select>
 
-                  {/* Scene name input — compact inline */}
-                  <input
-                    type="text"
-                    value={sceneName}
-                    onChange={(e) => { setSceneName(e.target.value); broadcastGameEvent('scene_sync', { sceneName: e.target.value }); }}
-                    placeholder="Scene..."
-                    className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 placeholder-slate-600 outline-none w-24 focus:w-40 transition-all focus:ring-1 focus:ring-amber-600/50"
-                  />
+                      {/* NPC Talk toggle */}
+                      <button
+                        onClick={() => {
+                          if (npcMode) {
+                            setNpcMode(false);
+                            setNpcDialogueHistory([]);
+                          } else {
+                            setNpcMode(true);
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all ${npcMode ? 'bg-purple-600/40 border-purple-500/50 text-purple-200' : 'bg-purple-900/40 hover:bg-purple-900/60 border-purple-800/50 text-purple-300'}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 3.976 1 5.365v2.171c0 1.388.993 2.61 2.43 2.841A41.587 41.587 0 0010 11c2.233 0 4.412-.187 6.57-.623C18.007 10.146 19 8.924 19 7.536V5.365c0-1.389-.993-2.61-2.43-2.841A41.587 41.587 0 0010 2zM1 13.694v-1.358C2.32 13.107 4.106 13.5 6 13.695v.705A4.5 4.5 0 011.5 18H1v-4.306zM14 14.4v-.705c1.894-.196 3.68-.588 5-1.36v1.359L19 18h-.5A4.5 4.5 0 0114 14.4z" clipRule="evenodd" /></svg>
+                        {npcMode ? 'End Talk' : 'Talk NPC'}
+                      </button>
+
+                      {/* Scene name input — compact inline */}
+                      <input
+                        type="text"
+                        value={sceneName}
+                        onChange={(e) => { setSceneName(e.target.value); broadcastGameEvent('scene_sync', { sceneName: e.target.value }); }}
+                        placeholder="Scene..."
+                        className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 placeholder-slate-600 outline-none w-24 focus:w-40 transition-all focus:ring-1 focus:ring-amber-600/50"
+                      />
+                    </>
+                  )}
 
                   {/* Combat controls — show when enemies exist */}
                   {units.some((u) => u.type === 'enemy') && (
@@ -2325,7 +2347,8 @@ export default function Game() {
                       </div>
                     )}
 
-                    {/* Player action input */}
+                    {/* Player action input — DM can narrate/speak, players see read-only hint */}
+                    {canUseDMTools ? (
                     <div className="p-4 border-t border-slate-800">
                       <div className="flex gap-2">
                         <input
@@ -2346,6 +2369,11 @@ export default function Game() {
                         </button>
                       </div>
                     </div>
+                    ) : (
+                    <div className="px-4 py-3 border-t border-slate-800">
+                      <p className="text-[10px] text-slate-600 italic text-center">The DM controls narration. Use chat to describe your actions.</p>
+                    </div>
+                    )}
                   </>
                 ) : activeView === 'shop' ? (
                   /* Shop view */
@@ -2452,6 +2480,7 @@ export default function Game() {
                 ) : (
                   /* Battle Map view */
                   <BattleMap
+                    canUseDMTools={canUseDMTools}
                     onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                     onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
                     onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}

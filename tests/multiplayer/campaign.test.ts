@@ -304,3 +304,191 @@ describe('multiplayer edge cases', () => {
     await closeAndWait(ws);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 8: Session robustness
+// ---------------------------------------------------------------------------
+describe('Phase 8 — session robustness', () => {
+  it('first joiner becomes DM, welcome includes isDM + dmPlayerId', async () => {
+    const room = 'p8-dm-assign-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'DungeonMaster' });
+    const welcome1 = await waitForMessage(ws1, 'welcome');
+
+    expect(welcome1.isDM).toBe(true);
+    expect(welcome1.dmPlayerId).toBe(welcome1.playerId);
+
+    // Second player is NOT DM
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Player2' });
+    const welcome2 = await waitForMessage(ws2, 'welcome');
+
+    expect(welcome2.isDM).toBe(false);
+    expect(welcome2.dmPlayerId).toBe(welcome1.playerId);
+
+    // Player list reflects DM status
+    const players = welcome2.players as Array<Record<string, unknown>>;
+    const dm = players.find((p) => p.isDM === true);
+    expect(dm).toBeTruthy();
+    expect(dm!.username).toBe('DungeonMaster');
+
+    await Promise.all([closeAndWait(ws1), closeAndWait(ws2)]);
+  });
+
+  it('DM-only messages are rejected from non-DM players', async () => {
+    const room = 'p8-dm-auth-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'TheDM' });
+    await waitForMessage(ws1, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Player' });
+    await waitForMessage(ws2, 'welcome');
+
+    // Player tries to send dm_narrate — should get error
+    const errPromise = waitForMessage(ws2, 'error');
+    send(ws2, { type: 'dm_narrate', narration: 'I am not the DM!' });
+    const err = await errPromise;
+    expect(err.message).toContain('Only the DM');
+
+    // DM can send dm_narrate — player receives it
+    const narratePromise = waitForMessage(ws2, 'dm_narrate');
+    send(ws1, { type: 'dm_narrate', narration: 'A dragon appears!' });
+    const narrate = await narratePromise;
+    expect(narrate.narration).toBe('A dragon appears!');
+
+    await Promise.all([closeAndWait(ws1), closeAndWait(ws2)]);
+  });
+
+  it('DM transfer works and updates all clients', async () => {
+    const room = 'p8-dm-transfer-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'OriginalDM' });
+    const welcome1 = await waitForMessage(ws1, 'welcome');
+    const dm1Id = welcome1.playerId as string;
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'NewDM' });
+    const welcome2 = await waitForMessage(ws2, 'welcome');
+    const p2Id = welcome2.playerId as string;
+
+    // Non-DM cannot transfer
+    const errPromise = waitForMessage(ws2, 'error');
+    send(ws2, { type: 'transfer_dm', targetPlayerId: dm1Id });
+    const err = await errPromise;
+    expect(err.message).toContain('Only the DM');
+
+    // DM transfers to player 2
+    const changed1 = waitForMessage(ws1, 'dm_changed');
+    const changed2 = waitForMessage(ws2, 'dm_changed');
+    send(ws1, { type: 'transfer_dm', targetPlayerId: p2Id });
+
+    const c1 = await changed1;
+    const c2 = await changed2;
+    expect(c1.dmPlayerId).toBe(p2Id);
+    expect(c2.dmUsername).toBe('NewDM');
+
+    // Now player 2 can send DM messages
+    const narratePromise = waitForMessage(ws1, 'dm_narrate');
+    send(ws2, { type: 'dm_narrate', narration: 'New DM narrates!' });
+    const narrate = await narratePromise;
+    expect(narrate.narration).toBe('New DM narrates!');
+
+    // And player 1 can no longer send DM messages
+    const err2Promise = waitForMessage(ws1, 'error');
+    send(ws1, { type: 'dm_narrate', narration: 'I lost DM powers' });
+    const err2 = await err2Promise;
+    expect(err2.message).toContain('Only the DM');
+
+    await Promise.all([closeAndWait(ws1), closeAndWait(ws2)]);
+  });
+
+  it('DM reassigns to oldest player when DM disconnects', async () => {
+    const room = 'p8-dm-reassign-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'OriginalDM' });
+    await waitForMessage(ws1, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Survivor' });
+    await waitForMessage(ws2, 'welcome');
+
+    // DM disconnects — player 2 should receive dm_changed
+    const changedPromise = waitForMessage(ws2, 'dm_changed');
+    await closeAndWait(ws1);
+
+    const changed = await changedPromise;
+    expect(changed.dmUsername).toBe('Survivor');
+
+    // Survivor can now send DM messages
+    const ws3 = await connectPlayer(room);
+    send(ws3, { type: 'join', username: 'LateJoiner' });
+    const welcome3 = await waitForMessage(ws3, 'welcome');
+    expect(welcome3.isDM).toBe(false);
+
+    const narratePromise = waitForMessage(ws3, 'dm_narrate');
+    send(ws2, { type: 'dm_narrate', narration: 'Survivor takes over!' });
+    const narrate = await narratePromise;
+    expect(narrate.narration).toBe('Survivor takes over!');
+
+    await Promise.all([closeAndWait(ws2), closeAndWait(ws3)]);
+  });
+
+  it('reconnecting with stable playerId reuses identity', async () => {
+    const room = 'p8-reconnect-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'Stable' });
+    const welcome1 = await waitForMessage(ws1, 'welcome');
+    const stableId = welcome1.playerId as string;
+
+    // Add a second player to observe reconnect events
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Observer' });
+    await waitForMessage(ws2, 'welcome');
+
+    // Player 1 disconnects
+    const leftPromise = waitForMessage(ws2, 'player_left');
+    await closeAndWait(ws1);
+    await leftPromise;
+
+    // Player 1 reconnects with same playerId
+    const reconnectPromise = waitForMessage(ws2, 'player_reconnected');
+    const ws1b = await connectPlayer(room);
+    send(ws1b, { type: 'join', username: 'Stable', playerId: stableId });
+    const welcome1b = await waitForMessage(ws1b, 'welcome');
+
+    // Same ID returned
+    expect(welcome1b.playerId).toBe(stableId);
+
+    // Observer sees player_reconnected, not player_joined
+    const reconnect = await reconnectPromise;
+    expect(reconnect.type).toBe('player_reconnected');
+    expect(reconnect.username).toBe('Stable');
+
+    await Promise.all([closeAndWait(ws1b), closeAndWait(ws2)]);
+  });
+
+  it('game_event rate limiting rejects excess events', async () => {
+    const room = 'p8-rate-limit-' + Date.now();
+    const ws = await connectPlayer(room);
+    send(ws, { type: 'join', username: 'Spammer' });
+    await waitForMessage(ws, 'welcome');
+
+    // Add a second player to receive relayed game_events
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Receiver' });
+    await waitForMessage(ws2, 'welcome');
+
+    // Blast 15 game_events rapidly — first 10 should go through, rest get rate limited
+    for (let i = 0; i < 15; i++) {
+      send(ws, { type: 'game_event', event: 'test_sync', data: { i } });
+    }
+
+    // Wait a bit for all messages to process
+    const errPromise = waitForMessage(ws, 'error');
+    const err = await errPromise;
+    expect(err.message).toContain('Rate limit');
+
+    await Promise.all([closeAndWait(ws), closeAndWait(ws2)]);
+  });
+});

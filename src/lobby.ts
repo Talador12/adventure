@@ -399,6 +399,34 @@ export class Lobby {
         break;
       }
 
+      case 'transfer_dm': {
+        // Only current DM can transfer the role
+        const transferSession = this.sessions.get(server);
+        if (!transferSession || transferSession.id !== this.dmPlayerId) {
+          server.send(JSON.stringify({ type: 'error', message: 'Only the DM can transfer the role', timestamp: Date.now() }));
+          return;
+        }
+        const targetId = data.targetPlayerId as string;
+        if (!targetId) return;
+        // Verify target exists
+        let targetSession: Session | null = null;
+        for (const [, s] of this.sessions) {
+          if (s.id === targetId) { targetSession = s; break; }
+        }
+        if (!targetSession) {
+          server.send(JSON.stringify({ type: 'error', message: 'Target player not found', timestamp: Date.now() }));
+          return;
+        }
+        this.dmPlayerId = targetId;
+        this.broadcast({
+          type: 'dm_changed',
+          dmPlayerId: targetId,
+          dmUsername: targetSession.username,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
       case 'ping': {
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
         break;

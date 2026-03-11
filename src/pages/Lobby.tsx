@@ -288,6 +288,16 @@ export default function Lobby() {
                     <span className="font-medium text-slate-200">{p.username}</span>
                     {p.isDM && <span className="text-[9px] text-amber-400 font-bold">DM</span>}
                     {p.id === wsPlayerId && <span className="text-[9px] text-[#F38020]">(you)</span>}
+                    {/* Transfer DM button — shown to current DM on non-DM players */}
+                    {isDM && !p.isDM && p.id !== wsPlayerId && (
+                      <button
+                        onClick={() => send({ type: 'transfer_dm', targetPlayerId: p.id })}
+                        className="text-[8px] px-1.5 py-0.5 rounded bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700/40 text-amber-400 font-semibold transition-all ml-1"
+                        title={`Make ${p.username} the DM`}
+                      >
+                        Make DM
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
