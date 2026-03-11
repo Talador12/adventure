@@ -6,7 +6,7 @@ import { useToast } from '../components/ui/toast';
 import { useGame } from '../contexts/GameContext';
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCloudflare, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { faCloudflare, faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 
 type Theme = 'dark' | 'light';
 
@@ -232,8 +232,8 @@ export default function Home() {
             </div>
           )}
 
-          <a href="https://github.com/talador12/adventure" target="_blank" rel="noreferrer" className="text-sm underline text-white/80 hover:text-white font-medium hidden sm:inline">
-            GitHub
+          <a href="https://github.com/talador12/adventure" target="_blank" rel="noreferrer" className="text-white/70 hover:text-white transition-colors" title="GitHub">
+            <FontAwesomeIcon icon={faGithub} className="text-xl" />
           </a>
         </div>
       </header>
@@ -317,11 +317,11 @@ export default function Home() {
           </div>
         )}
 
-        {/* 2-column layout on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 2-column layout on desktop — items-stretch so both columns match height */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
         {/* Campaigns column */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-0">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-[#F38020]">Your Campaigns</h2>
             <Button variant="default" className="bg-[#F38020] hover:bg-[#e06a10] text-white font-semibold py-2 px-5 rounded-lg shadow text-sm transition-all active:scale-[0.98]" onClick={handleCreateCampaign}>
