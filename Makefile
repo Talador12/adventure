@@ -76,7 +76,7 @@ test-watch: makeinfo ## [Test] Run all tests in watch mode
 dev: makeinfo kill ## [Dev] Start frontend + worker dev servers
 	@echo "Starting dev servers..."
 	@$(VITE) --port $(PORT_FRONTEND) & \
-	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) & \
+	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) --local & \
 	sleep 3 && \
 	echo "" && \
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" && \
@@ -90,7 +90,7 @@ dev-frontend: makeinfo kill-frontend ## [Dev] Start frontend only (no worker)
 	$(VITE) --port $(PORT_FRONTEND)
 
 dev-worker: makeinfo ## [Dev] Start worker only (no frontend)
-	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR)
+	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) --local
 
 start: makeinfo ## [Dev] Quick start: kill, build, dev
 	$(MAKE) kill
