@@ -30,7 +30,7 @@ import type {
   CharacterClass,
 } from '../types/game';
 import {
-  CONDITION_EFFECTS, XP_THRESHOLDS, HIT_DIE_AVG, EMPTY_EQUIPMENT,
+  CONDITION_EFFECTS, XP_THRESHOLDS, HIT_DIE_AVG, HIT_DIE_SIDES, EMPTY_EQUIPMENT,
   calculateAC, rollSpellDamage, ASI_LEVELS, hasPendingASI,
 } from '../types/game';
 import { rollLoot } from '../data/items';
@@ -303,7 +303,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
           const levelsGained = level - c.level;
           const hpGain = ((HIT_DIE_AVG[c.class] || 5) + conMod + featHpPerLevel) * levelsGained;
           const newMaxHp = c.maxHp + hpGain;
-          return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp }; // full heal on level up
+          const hdRemaining = (c.hitDiceRemaining ?? c.level) + levelsGained; // gain hit dice on level up
+          return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp, hitDiceRemaining: hdRemaining }; // full heal on level up
         }
         return { ...c, xp: totalXP };
       })
@@ -319,13 +320,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (c.id !== id) return c;
         const ability = getClassAbility(c.class);
         const resetAbility = ability ? type === 'long' || ability.resetsOn === 'short' : false;
+        const hdRemaining = c.hitDiceRemaining ?? c.level; // default to full for old characters
         if (type === 'long') {
-          return { ...c, hp: c.maxHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false };
+          // Long rest: full heal, restore half hit dice (min 1), reset slots + ability
+          const restoreHd = Math.max(1, Math.floor(c.level / 2));
+          return { ...c, hp: c.maxHp, hitDiceRemaining: Math.min(c.level, hdRemaining + restoreHd), deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false };
         }
-        // Short rest: heal hit die average + CON mod (once)
+        // Short rest: spend 1 hit die (roll actual die + CON mod)
+        if (hdRemaining <= 0) return c; // no hit dice left
         const conMod = Math.floor((c.stats.CON - 10) / 2);
-        const heal = Math.max(1, (HIT_DIE_AVG[c.class] || 5) + conMod);
-        return { ...c, hp: Math.min(c.maxHp, c.hp + heal), condition: c.hp > 0 ? ('normal' as Condition) : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed };
+        const sides = HIT_DIE_SIDES[c.class] || 8;
+        const roll = Math.floor(Math.random() * sides) + 1;
+        const heal = Math.max(1, roll + conMod);
+        return { ...c, hp: Math.min(c.maxHp, c.hp + heal), hitDiceRemaining: hdRemaining - 1, condition: c.hp > 0 ? ('normal' as Condition) : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed };
       })
     );
     // Long rest also clears all combat conditions on the player's unit

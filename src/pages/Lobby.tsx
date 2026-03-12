@@ -66,6 +66,8 @@ export default function Lobby() {
   const doodleRef = useRef<DoodlePadHandle>(null);
   const [drawingPlayer, setDrawingPlayer] = useState<string | null>(null);
   const drawingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // playerId -> username
+  const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
 
@@ -293,6 +295,28 @@ export default function Lobby() {
         case 'clear_canvas':
           doodleRef.current?.clearRemote();
           break;
+
+        case 'typing': {
+          const typerId = msg.playerId as string;
+          const typerName = msg.username as string;
+          setTypingUsers((prev) => {
+            const next = new Map(prev);
+            next.set(typerId, typerName);
+            return next;
+          });
+          // Clear after 3s of no typing messages from this player
+          const existing = typingTimersRef.current.get(typerId);
+          if (existing) clearTimeout(existing);
+          typingTimersRef.current.set(typerId, setTimeout(() => {
+            setTypingUsers((prev) => {
+              const next = new Map(prev);
+              next.delete(typerId);
+              return next;
+            });
+            typingTimersRef.current.delete(typerId);
+          }, 3000));
+          break;
+        }
       }
     },
     [wsPlayerId]
@@ -942,7 +966,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
         <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
-          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} currentPlayerId={wsPlayerId || undefined} />
+          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
     </div>

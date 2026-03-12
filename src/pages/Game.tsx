@@ -305,7 +305,7 @@ export default function Game() {
   }), [terrain, mapImageUrl, sceneName, quests, dmHistory]);
 
   // --- WebSocket message handling (extracted hook) ---
-  const { wsPlayerId, isDM, isSpectating, wsConnected, setWsConnected, handleWsMessage } = useGameWebSocket({
+  const { wsPlayerId, isDM, isSpectating, wsConnected, setWsConnected, handleWsMessage, typingUsers } = useGameWebSocket({
     room,
     sendRef,
     isRemoteEventRef,
@@ -1383,7 +1383,7 @@ export default function Game() {
                 <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} />
               </div>
               <div className="flex-1 flex flex-col p-4 overflow-hidden">
-                <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} currentPlayerId={wsPlayerId || currentPlayer.id} />
+                <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
               </div>
             </>
           )}

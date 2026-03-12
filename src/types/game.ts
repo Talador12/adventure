@@ -251,6 +251,12 @@ export const HIT_DIE_AVG: Record<string, number> = {
   Cleric: 5, Bard: 5, Druid: 5, Warlock: 5, Wizard: 4, Sorcerer: 4,
 };
 
+// Hit die sides per class (d6/d8/d10/d12)
+export const HIT_DIE_SIDES: Record<string, number> = {
+  Fighter: 10, Barbarian: 12, Paladin: 10, Ranger: 10, Rogue: 8, Monk: 8,
+  Cleric: 8, Bard: 8, Druid: 8, Warlock: 8, Wizard: 6, Sorcerer: 6,
+};
+
 // --- Spells ---
 export type SpellSchool = 'evocation' | 'abjuration' | 'conjuration' | 'divination' | 'enchantment' | 'illusion' | 'necromancy' | 'transmutation';
 export type AoEShape = 'circle' | 'cone' | 'line' | 'cube';
@@ -339,6 +345,7 @@ export interface Character {
   classAbilityUsed: boolean;
   feats: string[];
   asiChoicesMade: number;
+  hitDiceRemaining: number; // how many hit dice are left to spend (max = level)
   createdAt: number;
 }
 

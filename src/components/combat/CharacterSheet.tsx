@@ -1,5 +1,5 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI } from '../../contexts/GameContext';
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES } from '../../contexts/GameContext';
 import { useState } from 'react';
 
 interface CharacterSheetProps {
@@ -201,11 +201,11 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         </div>
         <button
           onClick={() => restCharacter(character.id, 'short')}
-          disabled={character.hp >= character.maxHp || character.condition === 'dead'}
+          disabled={character.hp >= character.maxHp || character.condition === 'dead' || (character.hitDiceRemaining ?? character.level) <= 0}
           className="flex-1 rounded-lg bg-blue-900/20 border border-blue-800/40 hover:bg-blue-900/40 disabled:opacity-30 p-2 text-center transition-all"
         >
           <div className="text-[10px] text-blue-400 uppercase tracking-wider font-semibold">Short Rest</div>
-          <div className="text-[9px] text-slate-500 mt-0.5">Hit Die + CON</div>
+          <div className="text-[9px] text-slate-500 mt-0.5">d{HIT_DIE_SIDES[character.class] || 8} + CON</div>
         </button>
         <button
           onClick={() => restCharacter(character.id, 'long')}
@@ -215,6 +215,35 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           <div className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold">Long Rest</div>
           <div className="text-[9px] text-slate-500 mt-0.5">Full Heal</div>
         </button>
+      </div>
+
+      {/* Hit Dice Tracker */}
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Hit Dice</span>
+          <span className="text-[10px] text-slate-400 font-mono">
+            {character.hitDiceRemaining ?? character.level}/{character.level}d{HIT_DIE_SIDES[character.class] || 8}
+          </span>
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {Array.from({ length: character.level }).map((_, i) => {
+            const remaining = character.hitDiceRemaining ?? character.level;
+            const isAvailable = i < remaining;
+            return (
+              <div
+                key={i}
+                className={`w-6 h-6 rounded border flex items-center justify-center text-[8px] font-bold transition-all ${
+                  isAvailable
+                    ? 'border-blue-600/50 bg-blue-900/30 text-blue-300'
+                    : 'border-slate-700 bg-slate-800/50 text-slate-600'
+                }`}
+                title={isAvailable ? `Hit die available (d${HIT_DIE_SIDES[character.class] || 8})` : 'Spent'}
+              >
+                d{HIT_DIE_SIDES[character.class] || 8}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* AC + Speed */}

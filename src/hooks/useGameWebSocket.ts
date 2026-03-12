@@ -70,6 +70,7 @@ export interface GameWebSocketState {
   wsConnected: boolean;
   setWsConnected: (v: boolean) => void;
   handleWsMessage: (msg: WSMessage) => void;
+  typingUsers: Map<string, string>; // playerId -> username
 }
 
 export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
@@ -101,6 +102,8 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
   const [dmPlayerId, setDmPlayerId] = useState<string | null>(null);
   const [isSpectating, setIsSpectating] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
+  const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Keep a ref to wsPlayerId so the handler callback doesn't go stale
   const wsPlayerIdRef = useRef<string | null>(null);
@@ -399,6 +402,27 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           }
           break;
         }
+
+        case 'typing': {
+          const typerId = msg.playerId as string;
+          const typerName = msg.username as string;
+          setTypingUsers((prev) => {
+            const next = new Map(prev);
+            next.set(typerId, typerName);
+            return next;
+          });
+          const existing = typingTimersRef.current.get(typerId);
+          if (existing) clearTimeout(existing);
+          typingTimersRef.current.set(typerId, setTimeout(() => {
+            setTypingUsers((prev) => {
+              const next = new Map(prev);
+              next.delete(typerId);
+              return next;
+            });
+            typingTimersRef.current.delete(typerId);
+          }, 3000));
+          break;
+        }
       }
     },
     // Use refs for frequently-changing state to avoid re-creating the callback on every state change.
@@ -414,5 +438,6 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     wsConnected,
     setWsConnected,
     handleWsMessage,
+    typingUsers,
   };
 }

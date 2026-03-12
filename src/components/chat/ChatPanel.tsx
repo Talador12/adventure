@@ -80,6 +80,8 @@ interface ChatPanelProps {
   messages: ChatMessage[];
   onSend: (text: string) => void;
   onSlashRoll?: (result: SlashRollResult) => void;
+  onTyping?: () => void;
+  typingUsers?: string[]; // usernames of people currently typing
   currentPlayerId?: string;
 }
 
@@ -151,11 +153,12 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, currentPlayerId }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onTyping, typingUsers, currentPlayerId }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMsgCount, setNewMsgCount] = useState(0);
+  const typingThrottleRef = useRef<number>(0);
 
   // Track scroll position to decide auto-scroll behavior
   const handleScroll = () => {
@@ -286,9 +289,27 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, currentPlayer
         )}
       </div>
 
+      {/* Typing indicator */}
+      {typingUsers && typingUsers.length > 0 && (
+        <div className="mt-1 shrink-0 text-[10px] text-slate-500 italic h-4 truncate">
+          {typingUsers.length === 1
+            ? `${typingUsers[0]} is typing...`
+            : typingUsers.length === 2
+              ? `${typingUsers[0]} and ${typingUsers[1]} are typing...`
+              : `${typingUsers[0]} and ${typingUsers.length - 1} others are typing...`}
+        </div>
+      )}
+
       {/* Input */}
       <div className="mt-3 shrink-0 flex gap-2">
-        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
+        <input type="text" value={input} onChange={(e) => {
+          setInput(e.target.value);
+          // Throttled typing indicator — max once per 2s
+          if (onTyping && e.target.value.trim() && Date.now() - typingThrottleRef.current > 2000) {
+            typingThrottleRef.current = Date.now();
+            onTyping();
+          }
+        }} placeholder="Type a message... (/roll, /me)" className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
         <button onClick={handleSend} disabled={!input.trim()} className="px-3 py-2 bg-[#F38020] hover:bg-[#e06a10] disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors">
           Send
         </button>

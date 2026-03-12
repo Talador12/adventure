@@ -758,6 +758,23 @@ export class Lobby {
         break;
       }
 
+      case 'typing': {
+        // Relay typing indicator to all OTHER clients (not back to sender)
+        const typingSession = this.sessions.get(server);
+        if (!typingSession) break;
+        const typingPayload = JSON.stringify({
+          type: 'typing',
+          playerId: typingSession.id,
+          username: typingSession.username,
+          timestamp: Date.now(),
+        });
+        for (const [ws] of this.sessions) {
+          if (ws === server) continue;
+          try { ws.send(typingPayload); } catch { /* dead socket */ }
+        }
+        break;
+      }
+
       case 'ping': {
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
         break;

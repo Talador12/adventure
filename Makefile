@@ -293,6 +293,16 @@ install: makeinfo ## [Utility] Install dependencies
 lint: makeinfo ## [Utility] Check formatting with Prettier
 	npx prettier --check .
 
+typecheck: makeinfo ## [Utility] Run TypeScript type checking (no emit)
+	npx tsc --noEmit
+
+ci: makeinfo ## [Utility] Run full CI pipeline: typecheck, lint, build, test
+	@echo "Running CI pipeline..."
+	$(MAKE) typecheck
+	$(MAKE) lint
+	$(MAKE) build
+	$(MAKE) test
+
 tree: makeinfo ## [Utility] Print directory tree
 	tree -I 'node_modules|.git|dist|.next|.turbo|public' -L 6
 
