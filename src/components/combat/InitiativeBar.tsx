@@ -8,10 +8,16 @@ interface InitiativeBarProps {
   turnTimerEnabled?: boolean;
   turnTimeSeconds?: number;
   onTimerExpire?: () => void; // called when turn timer hits 0
+  canReorder?: boolean; // DM can drag to reorder
+  onReorder?: (reorderedIds: string[]) => void; // callback with new order
 }
 
-export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTimeSeconds = DEFAULT_TURN_TIME, onTimerExpire }: InitiativeBarProps) {
+export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTimeSeconds = DEFAULT_TURN_TIME, onTimerExpire, canReorder, onReorder }: InitiativeBarProps) {
   const { players, characters, selectedUnitId, setSelectedUnitId } = useGame();
+
+  // Drag reorder state
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // Turn timer
   const [timeLeft, setTimeLeft] = useState(turnTimeSeconds);
@@ -94,14 +100,45 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
 
           const isEntering = animatingTurnId === entry.id;
 
+          const isDragging = dragId === entry.id;
+          const isDragOver = dragOverId === entry.id && dragId !== entry.id;
+
           return (
             <button
               key={entry.id}
               ref={(el) => { if (el) turnCardRefs.current.set(entry.id, el); else turnCardRefs.current.delete(entry.id); }}
               onClick={() => setSelectedUnitId(isSelected ? null : entry.id)}
+              draggable={canReorder}
+              onDragStart={(e) => {
+                if (!canReorder) return;
+                setDragId(entry.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(e) => {
+                if (!canReorder || !dragId) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverId(entry.id);
+              }}
+              onDragLeave={() => { if (dragOverId === entry.id) setDragOverId(null); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (!canReorder || !dragId || dragId === entry.id) { setDragId(null); setDragOverId(null); return; }
+                // Reorder: move dragId to the position of entry.id
+                const ids = entries.map((e) => e.id);
+                const fromIdx = ids.indexOf(dragId);
+                const toIdx = ids.indexOf(entry.id);
+                if (fromIdx === -1 || toIdx === -1) { setDragId(null); setDragOverId(null); return; }
+                ids.splice(fromIdx, 1);
+                ids.splice(toIdx, 0, dragId);
+                onReorder?.(ids);
+                setDragId(null);
+                setDragOverId(null);
+              }}
+              onDragEnd={() => { setDragId(null); setDragOverId(null); }}
               className={`relative flex flex-col items-center gap-1.5 rounded-xl px-4 py-3 min-w-[100px] border transition-all duration-300 cursor-pointer group ${
                 isSelected ? 'border-[#F38020] bg-[#F38020]/10 shadow-lg ring-1 ring-[#F38020]/50' : entry.isCurrentTurn ? 'border-yellow-500/80 bg-yellow-500/10 shadow-lg scale-105' : 'border-slate-700 bg-slate-800/80 hover:border-slate-600 hover:bg-slate-800'
-              } ${entry.type === 'enemy' && !isSelected && !entry.isCurrentTurn ? 'border-red-900/50' : ''} ${isEntering ? 'animate-turn-enter' : ''}`}
+              } ${entry.type === 'enemy' && !isSelected && !entry.isCurrentTurn ? 'border-red-900/50' : ''} ${isEntering ? 'animate-turn-enter' : ''} ${isDragging ? 'opacity-50 scale-95' : ''} ${isDragOver ? 'ring-2 ring-purple-500/60 border-purple-500/60' : ''} ${canReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}
               style={entry.isCurrentTurn && !isSelected ? { boxShadow: '0 0 20px rgba(234,179,8,0.2)' } : undefined}
             >
               {/* Turn indicator + timer */}

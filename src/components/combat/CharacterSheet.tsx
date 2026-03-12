@@ -1,6 +1,6 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType } from '../../contexts/GameContext';
-import { useState, useCallback } from 'react';
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell } from '../../contexts/GameContext';
+import { useState, useCallback, useMemo } from 'react';
 
 interface CharacterSheetProps {
   character: Character;
@@ -110,6 +110,204 @@ const CONDITION_TOOLTIPS: Record<ConditionType, string> = {
   raging: 'Raging: +2 to melee attack and damage rolls. Resistance to bludgeoning, piercing, slashing damage.',
   inspired: 'Inspired: Bardic Inspiration — +2 to attack rolls and saving throws for the duration.',
 };
+
+// School colors for filter badges
+const SCHOOL_COLORS: Record<string, string> = {
+  abjuration: 'text-blue-300 bg-blue-900/30 border-blue-700/40',
+  conjuration: 'text-cyan-300 bg-cyan-900/30 border-cyan-700/40',
+  divination: 'text-amber-300 bg-amber-900/30 border-amber-700/40',
+  enchantment: 'text-pink-300 bg-pink-900/30 border-pink-700/40',
+  evocation: 'text-red-300 bg-red-900/30 border-red-700/40',
+  illusion: 'text-purple-300 bg-purple-900/30 border-purple-700/40',
+  necromancy: 'text-green-300 bg-green-900/30 border-green-700/40',
+  transmutation: 'text-yellow-300 bg-yellow-900/30 border-yellow-700/40',
+};
+
+interface SpellbookSectionProps {
+  spells: Spell[];
+  slots: Record<number, number>;
+  used: Record<number, number>;
+  schools: string[];
+  castingStat: StatName | undefined;
+  spellDC: number;
+  spellAttack: number;
+  prof: number;
+  castMod: number;
+  onToggleSlot: (level: number, slotIndex: number, isAvailable: boolean) => void;
+}
+
+function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, spellAttack, prof, castMod, onToggleSlot }: SpellbookSectionProps) {
+  const [spellSearch, setSpellSearch] = useState('');
+  const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
+  const [levelFilter, setLevelFilter] = useState<number | null>(null);
+
+  // Unique spell levels available
+  const spellLevels = useMemo(() => [...new Set(spells.map((s) => s.level))].sort((a, b) => a - b), [spells]);
+
+  // Filter spells
+  const filteredSpells = useMemo(() => {
+    let result = spells;
+    if (spellSearch) {
+      const q = spellSearch.toLowerCase();
+      result = result.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.school.toLowerCase().includes(q));
+    }
+    if (schoolFilter) {
+      result = result.filter((s) => s.school === schoolFilter);
+    }
+    if (levelFilter !== null) {
+      result = result.filter((s) => s.level === levelFilter);
+    }
+    return result;
+  }, [spells, spellSearch, schoolFilter, levelFilter]);
+
+  const filteredCantrips = filteredSpells.filter((s) => s.level === 0);
+  const filteredLeveled = filteredSpells.filter((s) => s.level > 0);
+  const hasFilters = spellSearch || schoolFilter || levelFilter !== null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Spellbook</div>
+        {castingStat && (
+          <div className="flex gap-2">
+            <span className="text-[9px] font-mono text-purple-400" title={`Spell Save DC = 8 + ${prof} (prof) + ${castMod} (${castingStat})`}>DC {spellDC}</span>
+            <span className="text-[9px] font-mono text-purple-400" title={`Spell Attack = +${prof} (prof) + ${castMod} (${castingStat})`}>+{spellAttack} atk</span>
+          </div>
+        )}
+      </div>
+
+      {/* Search + filters */}
+      <div className="space-y-1.5 mb-2">
+        <input
+          type="text"
+          value={spellSearch}
+          onChange={(e) => setSpellSearch(e.target.value)}
+          placeholder="Search spells..."
+          className="w-full px-2 py-1 bg-slate-800/60 border border-slate-700/50 rounded text-[10px] text-slate-200 placeholder-slate-600 focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 outline-none"
+        />
+        {/* Level filter pills */}
+        <div className="flex flex-wrap gap-1">
+          {spellLevels.map((lv) => (
+            <button
+              key={lv}
+              onClick={() => setLevelFilter(levelFilter === lv ? null : lv)}
+              className={`text-[8px] px-1.5 py-0.5 rounded-full border font-semibold transition-all ${
+                levelFilter === lv
+                  ? 'border-purple-500/60 bg-purple-900/40 text-purple-300'
+                  : 'border-slate-700 bg-slate-800/50 text-slate-500 hover:text-slate-300 hover:border-slate-600'
+              }`}
+            >
+              {lv === 0 ? 'Cantrip' : `Lv${lv}`}
+            </button>
+          ))}
+          <div className="w-px h-3 bg-slate-700 self-center mx-0.5" />
+          {/* School filter pills */}
+          {schools.map((school) => (
+            <button
+              key={school}
+              onClick={() => setSchoolFilter(schoolFilter === school ? null : school)}
+              className={`text-[8px] px-1.5 py-0.5 rounded-full border font-medium capitalize transition-all ${
+                schoolFilter === school
+                  ? SCHOOL_COLORS[school] || 'text-slate-300 bg-slate-700/50 border-slate-600'
+                  : 'border-slate-700 bg-slate-800/50 text-slate-500 hover:text-slate-300 hover:border-slate-600'
+              }`}
+            >
+              {school.slice(0, 4)}
+            </button>
+          ))}
+          {hasFilters && (
+            <button
+              onClick={() => { setSpellSearch(''); setSchoolFilter(null); setLevelFilter(null); }}
+              className="text-[8px] px-1.5 py-0.5 rounded-full border border-red-800/40 bg-red-900/20 text-red-400 hover:bg-red-900/30 transition-all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Spell slots — clickable pips */}
+      {Object.keys(slots).length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {Object.entries(slots).map(([lvl, max]) => {
+            const usedCount = used[Number(lvl)] || 0;
+            const remaining = max - usedCount;
+            return (
+              <div key={lvl} className="text-center">
+                <div className="text-[8px] text-slate-600 mb-0.5">Lv{lvl}</div>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: max }).map((_, i) => {
+                    const isAvailable = i < remaining;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => onToggleSlot(Number(lvl), i, isAvailable)}
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer ${
+                          isAvailable
+                            ? 'border-purple-500/60 bg-purple-900/40 hover:bg-purple-800/50 hover:border-purple-400/70'
+                            : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'
+                        }`}
+                        title={isAvailable ? `Click to spend level ${lvl} slot` : `Click to restore level ${lvl} slot`}
+                      >
+                        {isAvailable && <div className="w-2 h-2 rounded-full bg-purple-400 shadow-sm shadow-purple-400/50" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="text-[7px] text-slate-600 mt-0.5">{remaining}/{max}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Cantrips */}
+      {filteredCantrips.length > 0 && (
+        <div className="mb-1.5">
+          <div className="text-[9px] text-slate-600 mb-1">Cantrips</div>
+          <div className="space-y-0.5">
+            {filteredCantrips.map((s) => (
+              <div key={s.id} className="flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30">
+                <span className="text-slate-300 font-medium">{s.name}</span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-[7px] capitalize ${SCHOOL_COLORS[s.school]?.split(' ')[0] || 'text-slate-500'}`}>{s.school.slice(0, 4)}</span>
+                  <span className="text-slate-500">{s.damage || s.description.slice(0, 20)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Leveled spells */}
+      {filteredLeveled.length > 0 && (
+        <div>
+          <div className="text-[9px] text-slate-600 mb-1">Spells</div>
+          <div className="space-y-0.5">
+            {filteredLeveled.map((s) => {
+              const slotsAvail = (slots[s.level] || 0) - (used[s.level] || 0);
+              return (
+                <div key={s.id} className={`flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30 ${slotsAvail <= 0 ? 'opacity-40' : ''}`}>
+                  <span className="text-purple-300 font-medium">{s.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    {s.isConcentration && <span className="text-[7px] text-blue-400 font-bold">C</span>}
+                    <span className={`text-[7px] capitalize ${SCHOOL_COLORS[s.school]?.split(' ')[0] || 'text-slate-500'}`}>{s.school.slice(0, 4)}</span>
+                    <span className="text-slate-500">Lv{s.level} {'\u2022'} {s.damage || (s.healAmount ? `+${s.healAmount}HP` : s.range)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* No results */}
+      {hasFilters && filteredSpells.length === 0 && (
+        <div className="text-[10px] text-slate-600 text-center py-2 italic">No spells match filters</div>
+      )}
+    </div>
+  );
+}
 
 export default function CharacterSheet({ character }: CharacterSheetProps) {
   const { restCharacter, equipItem, unequipItem, useItem, removeItem, units, updateCharacter, addRoll, currentPlayer } = useGame();
@@ -602,8 +800,6 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         const slots = getSpellSlots(character.class, character.level);
         const used = character.spellSlotsUsed || {};
         const spells = getClassSpells(character.class, character.level);
-        const cantrips = spells.filter((s) => s.level === 0);
-        const leveled = spells.filter((s) => s.level > 0);
 
         // Spell save DC and attack bonus
         const castingStat = CASTING_STAT[character.class];
@@ -611,89 +807,22 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         const spellDC = 8 + prof + castMod;
         const spellAttack = prof + castMod;
 
+        // Collect unique schools for filter
+        const schools = [...new Set(spells.map((s) => s.school))].sort();
+
         return (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Spellbook</div>
-              {castingStat && (
-                <div className="flex gap-2">
-                  <span className="text-[9px] font-mono text-purple-400" title={`Spell Save DC = 8 + ${prof} (prof) + ${castMod} (${castingStat})`}>DC {spellDC}</span>
-                  <span className="text-[9px] font-mono text-purple-400" title={`Spell Attack = +${prof} (prof) + ${castMod} (${castingStat})`}>+{spellAttack} atk</span>
-                </div>
-              )}
-            </div>
-
-            {/* Spell slots — clickable pips */}
-            {Object.keys(slots).length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {Object.entries(slots).map(([lvl, max]) => {
-                  const usedCount = used[Number(lvl)] || 0;
-                  const remaining = max - usedCount;
-                  return (
-                    <div key={lvl} className="text-center">
-                      <div className="text-[8px] text-slate-600 mb-0.5">Lv{lvl}</div>
-                      <div className="flex gap-0.5">
-                        {Array.from({ length: max }).map((_, i) => {
-                          const isAvailable = i < remaining;
-                          return (
-                            <button
-                              key={i}
-                              onClick={() => toggleSpellSlot(Number(lvl), i, isAvailable)}
-                              className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer ${
-                                isAvailable
-                                  ? 'border-purple-500/60 bg-purple-900/40 hover:bg-purple-800/50 hover:border-purple-400/70'
-                                  : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'
-                              }`}
-                              title={isAvailable ? `Click to spend level ${lvl} slot` : `Click to restore level ${lvl} slot`}
-                            >
-                              {isAvailable && <div className="w-2 h-2 rounded-full bg-purple-400 shadow-sm shadow-purple-400/50" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="text-[7px] text-slate-600 mt-0.5">{remaining}/{max}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Cantrips */}
-            {cantrips.length > 0 && (
-              <div className="mb-1.5">
-                <div className="text-[9px] text-slate-600 mb-1">Cantrips</div>
-                <div className="space-y-0.5">
-                  {cantrips.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30">
-                      <span className="text-slate-300 font-medium">{s.name}</span>
-                      <span className="text-slate-500">{s.damage || s.description.slice(0, 20)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Leveled spells */}
-            {leveled.length > 0 && (
-              <div>
-                <div className="text-[9px] text-slate-600 mb-1">Spells</div>
-                <div className="space-y-0.5">
-                  {leveled.map((s) => {
-                    const slotsAvail = (slots[s.level] || 0) - (used[s.level] || 0);
-                    return (
-                      <div key={s.id} className={`flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30 ${slotsAvail <= 0 ? 'opacity-40' : ''}`}>
-                        <span className="text-purple-300 font-medium">{s.name}</span>
-                        <div className="flex items-center gap-1.5">
-                          {s.isConcentration && <span className="text-[7px] text-blue-400 font-bold">C</span>}
-                          <span className="text-slate-500">Lv{s.level} {'\u2022'} {s.damage || (s.healAmount ? `+${s.healAmount}HP` : s.range)}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          <SpellbookSection
+            spells={spells}
+            slots={slots}
+            used={used}
+            schools={schools}
+            castingStat={castingStat}
+            spellDC={spellDC}
+            spellAttack={spellAttack}
+            prof={prof}
+            castMod={castMod}
+            onToggleSlot={toggleSpellSlot}
+          />
         );
       })()}
     </div>

@@ -1523,6 +1523,33 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                     Clear
                   </button>
                 )}
+                <div className="w-px h-4 bg-slate-700 mx-1" />
+                <span className="text-[9px] text-sky-500/70 uppercase tracking-wider font-semibold">Fog</span>
+                <button
+                  onClick={() => setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)))}
+                  className="text-[10px] px-2 py-1 rounded bg-slate-800/60 hover:bg-slate-700/60 border border-slate-600/50 text-slate-400 hover:text-slate-200 font-semibold transition-all"
+                  title="Full Dark — reset fog, hide all cells"
+                >
+                  Dark
+                </button>
+                <button
+                  onClick={() => {
+                    // Explored only — keep what players have already seen, don't add new
+                    // This is essentially a no-op (current state) but useful to communicate intent after a reveal-all
+                    setExplored((prev) => prev.map((row) => [...row]));
+                  }}
+                  className="text-[10px] px-2 py-1 rounded bg-slate-800/60 hover:bg-slate-700/60 border border-slate-600/50 text-slate-400 hover:text-slate-200 font-semibold transition-all"
+                  title="Explored Only — only show what players have seen"
+                >
+                  Explored
+                </button>
+                <button
+                  onClick={() => setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(true)))}
+                  className="text-[10px] px-2 py-1 rounded bg-sky-900/40 hover:bg-sky-900/60 border border-sky-700/50 text-sky-300 font-semibold transition-all"
+                  title="Reveal All — mark all cells as explored"
+                >
+                  Reveal
+                </button>
               </>
             )}
           </>

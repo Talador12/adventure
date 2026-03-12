@@ -19,6 +19,7 @@ export interface ChatMessage {
   isFumble?: boolean;
   unitName?: string;
   characterName?: string; // In-game character name (distinct from player username)
+  portrait?: string; // Character portrait URL for roll messages
   // Whisper-specific fields
   targetUsername?: string; // who the whisper is addressed to
   targetPlayerId?: string;
@@ -128,10 +129,21 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
           ? 'bg-gradient-to-r from-red-500/15 to-red-900/10 border-red-500/40 shadow-sm shadow-red-500/10'
           : 'bg-slate-800/60 border-slate-700/50'
     }`}>
-      {/* Attribution line */}
-      <div className="flex items-center gap-1 mb-1">
-        <span className={`font-bold ${isCrit ? 'text-yellow-300' : isFumble ? 'text-red-300' : 'text-amber-200'}`}>{displayName}</span>
-        {showPlayer && <span className="text-slate-500 text-[10px]">[{msg.username}]</span>}
+      {/* Attribution line with portrait */}
+      <div className="flex items-center gap-2 mb-1">
+        {msg.portrait ? (
+          <img src={msg.portrait} alt="" className="w-6 h-6 rounded-full object-cover border border-slate-600 shrink-0" />
+        ) : (
+          <div className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold ${
+            isCrit ? 'bg-yellow-500/20 text-yellow-400' : isFumble ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+          }`}>
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="flex items-center gap-1">
+          <span className={`font-bold ${isCrit ? 'text-yellow-300' : isFumble ? 'text-red-300' : 'text-amber-200'}`}>{displayName}</span>
+          {showPlayer && <span className="text-slate-500 text-[10px]">[{msg.username}]</span>}
+        </div>
       </div>
       {/* Roll result */}
       <div className="flex items-center gap-2">

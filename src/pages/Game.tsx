@@ -865,6 +865,7 @@ export default function Game() {
           playerId: currentPlayer.id,
           username: displayUsername,
           characterName: charName || undefined,
+          portrait: selectedCharacter?.portrait || undefined,
           text: '',
           timestamp: Date.now(),
           die: roll.die,
@@ -907,6 +908,7 @@ export default function Game() {
           playerId: currentPlayer.id,
           username: playerName,
           characterName: charName || undefined,
+          portrait: selectedCharacter?.portrait || undefined,
           text: `${result.notation}: ${rollText}${result.modifier ? ` ${result.modifier > 0 ? '+' : ''}${result.modifier}` : ''} = ${result.total}`,
           timestamp: Date.now(),
           die: result.notation,
@@ -1162,6 +1164,23 @@ export default function Game() {
                     setTimeout(broadcastCombatSyncLatest, 50);
                     setCombatLog((prev) => [...prev, `Turn timer expired — advancing turn.`]);
                   }
+                }}
+                canReorder={canUseDMTools && inCombat}
+                onReorder={(reorderedIds) => {
+                  setUnits((prev: Unit[]) => {
+                    const ordered: Unit[] = [];
+                    for (const id of reorderedIds) {
+                      const u = prev.find((u) => u.id === id);
+                      if (u) ordered.push(u);
+                    }
+                    // Append any units not in the reorder list (shouldn't happen, safety net)
+                    for (const u of prev) {
+                      if (!reorderedIds.includes(u.id)) ordered.push(u);
+                    }
+                    return ordered;
+                  });
+                  setTimeout(broadcastCombatSyncLatest, 50);
+                  setCombatLog((prev) => [...prev, 'DM reordered initiative.']);
                 }}
               />
             </div>
