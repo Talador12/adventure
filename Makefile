@@ -137,7 +137,7 @@ deploy-worker-staging: makeinfo # Deploy Worker to staging
 #                        Production Deploy Commands                            #
 ################################################################################
 
-release: makeinfo ## [Deploy] Deploy worker + pages to production (gated)
+deploy-prod: makeinfo ## [Deploy] Deploy worker + pages to production (gated)
 	$(require_production_release)
 	$(MAKE) deploy-worker-prod
 	$(WRANGLER) pages deploy public --project-name=adventure --branch=main
@@ -145,6 +145,59 @@ release: makeinfo ## [Deploy] Deploy worker + pages to production (gated)
 deploy-worker-prod: makeinfo # Deploy Worker to production (gated)
 	$(require_production_release)
 	$(WRANGLER) deploy
+
+################################################################################
+#                           Release Commands                                   #
+################################################################################
+
+# Read version from package.json
+VERSION := $(shell node -p "require('./package.json').version")
+
+release: makeinfo ## [Release] Tag, push, and create GitHub release for current version
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Releasing v$(VERSION)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@if git tag -l "v$(VERSION)" | grep -q "v$(VERSION)"; then \
+		echo "ERROR: Tag v$(VERSION) already exists."; \
+		echo "Bump version in package.json first, then run make release."; \
+		exit 1; \
+	fi
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "ERROR: Working tree is dirty. Commit or stash changes first."; \
+		exit 1; \
+	fi
+	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
+	git push origin "v$(VERSION)"
+	gh release create "v$(VERSION)" \
+		--title "v$(VERSION)" \
+		--notes-file - <<< "$$(git log $$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD --oneline --no-decorate)" \
+		--target staging
+	@echo ""
+	@echo "  Released v$(VERSION)"
+	@echo ""
+
+release-patch: makeinfo ## [Release] Bump patch version (0.1.0 -> 0.1.1), commit, and release
+	@$(MAKE) _bump-version BUMP=patch
+	@$(MAKE) release
+
+release-minor: makeinfo ## [Release] Bump minor version (0.1.0 -> 0.2.0), commit, and release
+	@$(MAKE) _bump-version BUMP=minor
+	@$(MAKE) release
+
+_bump-version: makeinfo
+	@old_version=$(VERSION); \
+	IFS='.' read -r major minor patch <<< "$$old_version"; \
+	if [ "$(BUMP)" = "patch" ]; then patch=$$((patch + 1)); \
+	elif [ "$(BUMP)" = "minor" ]; then minor=$$((minor + 1)); patch=0; \
+	elif [ "$(BUMP)" = "major" ]; then major=$$((major + 1)); minor=0; patch=0; \
+	fi; \
+	new_version="$$major.$$minor.$$patch"; \
+	node -e "const p=require('./package.json');p.version='$$new_version';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"; \
+	git add package.json; \
+	git commit -m "chore: bump version to v$$new_version"; \
+	echo "Bumped $$old_version -> $$new_version"
 
 ################################################################################
 #                            Auth & Secrets                                    #
