@@ -1,7 +1,7 @@
-import React, { Component, Suspense } from 'react';
+import React, { Component, Suspense, useEffect, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { ToastProvider } from './components/ui/toast';
 import { GameProvider } from './contexts/GameContext';
 import Home from './pages/Home'; // Home is the landing page — keep eagerly loaded
@@ -94,6 +94,38 @@ function NotFound() {
   );
 }
 
+// Auth gate — redirects to Home if no session (temp user or real cookie)
+function RequireAuth({ children }: { children: ReactNode }) {
+  const [checking, setChecking] = useState(true);
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    // Check localStorage temp user first
+    try {
+      const stored = localStorage.getItem('adventure:tempUser');
+      if (stored && JSON.parse(stored)?.id) {
+        setAuthed(true);
+        setChecking(false);
+        return;
+      }
+    } catch { /* ignore */ }
+
+    // Fall back to real auth cookie check
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        const d = data as { user?: { id?: string } };
+        setAuthed(!!d.user?.id);
+      })
+      .catch(() => setAuthed(false))
+      .finally(() => setChecking(false));
+  }, []);
+
+  if (checking) return <PageLoader />;
+  if (!authed) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
@@ -103,12 +135,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/lobby" element={<Lobby />} />
-                <Route path="/lobby/:roomId" element={<Lobby />} />
-                <Route path="/game" element={<Game />} />
-                <Route path="/game/:roomId" element={<Game />} />
-                <Route path="/characters/new" element={<CharacterCreate />} />
-                <Route path="/characters/:id/edit" element={<CharacterCreate />} />
+                <Route path="/lobby" element={<RequireAuth><Lobby /></RequireAuth>} />
+                <Route path="/lobby/:roomId" element={<RequireAuth><Lobby /></RequireAuth>} />
+                <Route path="/game" element={<RequireAuth><Game /></RequireAuth>} />
+                <Route path="/game/:roomId" element={<RequireAuth><Game /></RequireAuth>} />
+                <Route path="/characters/new" element={<RequireAuth><CharacterCreate /></RequireAuth>} />
+                <Route path="/characters/:id/edit" element={<RequireAuth><CharacterCreate /></RequireAuth>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

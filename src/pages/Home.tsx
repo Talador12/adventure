@@ -8,6 +8,7 @@ import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCloudflare, faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { importJSONFile } from '../lib/export';
+import { randomFantasyName } from '../lib/names';
 
 type Theme = 'dark' | 'light';
 
@@ -101,8 +102,17 @@ export default function Home() {
     localStorage.theme = theme;
   }, [theme]);
 
-  // Fetch user session once on mount
+  // Fetch user session once on mount (check localStorage temp user first)
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem('adventure:tempUser');
+      if (stored) {
+        setUser(JSON.parse(stored));
+        return;
+      }
+    } catch {
+      /* ignore bad JSON */
+    }
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => {
@@ -200,11 +210,28 @@ export default function Home() {
     window.location.href = '/api/auth/google';
   };
 
+  const handleTempLogin = () => {
+    const name = randomFantasyName('Human');
+    const tempUser = {
+      id: `temp-${crypto.randomUUID().slice(0, 8)}`,
+      username: name,
+      global_name: name,
+      avatar: '',
+      picture: '',
+    };
+    localStorage.setItem('adventure:tempUser', JSON.stringify(tempUser));
+    setUser(tempUser);
+    toast(`Welcome, ${name}!`, 'success');
+  };
+
   const handleSignOut = () => {
+    // Clear all auth state: real session cookie + temp user
     document.cookie = 'adventure_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    localStorage.removeItem('adventure:tempUser');
     setUser(null);
     setShowDropdown(false);
     toast('Signed out', 'info');
+    navigate('/');
   };
 
   // Google: picture is a full URL. Discord: avatar is a hash, construct CDN URL.
@@ -219,6 +246,15 @@ export default function Home() {
           <h1 className="text-lg sm:text-xl font-extrabold tracking-tight drop-shadow-md text-white shrink-0">Adventure</h1>
           <span className="text-[11px] text-white/50 font-medium hidden sm:inline">your table, your rules</span>
         </div>
+
+        {/* Temp login — center of header */}
+        {!user && (
+          <button onClick={handleTempLogin} className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 active:scale-[0.97] text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all cursor-pointer border-2 border-white/30">
+            <span>Quick Login</span>
+            <span className="text-[10px] font-normal text-emerald-100/90">this one works, use it for now</span>
+          </button>
+        )}
+
         <div className="flex gap-3 items-center">
           {/* Theme toggle */}
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white">

@@ -52,6 +52,9 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 The complete feature set built from project inception through 46 development iterations. Everything listed below is shipped and working.
 
 **Recent highlights (latest work):**
+- Temp login — "Quick Login" button generates random fantasy-named user in localStorage, bypasses OAuth for local testing
+- Auth gates — `RequireAuth` wrapper on all sub-pages (Lobby, Game, CharacterCreate), redirects to Home if not logged in
+- Sign-out clears all auth state (temp user + session cookie) and redirects to Home
 - Spell search/filter — search bar + level/school filter pills in the CharacterSheet spellbook
 - Initiative drag reorder — DM drag-and-drop reorder during combat
 - Character portrait in dice roll chat messages — 24px circular portrait next to roller name
