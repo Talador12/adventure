@@ -39,6 +39,7 @@ export default function Home() {
   const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
   const [partyMembers, setPartyMembers] = useState<Record<string, Array<{ display_name: string; avatar_url: string | null; role: string }>>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState<{ roomId: string; name: string } | null>(null);
 
   // Fetch saved campaigns + public campaigns on mount
   useEffect(() => {
@@ -73,6 +74,12 @@ export default function Home() {
   }, [campaigns]);
 
   const handleDeleteCampaign = (roomId: string, name: string) => {
+    setDeleteConfirm({ roomId, name });
+  };
+
+  const confirmDeleteCampaign = () => {
+    if (!deleteConfirm) return;
+    const { roomId, name } = deleteConfirm;
     fetch(`/api/campaigns/${encodeURIComponent(roomId)}`, { method: 'DELETE' }).catch(() => {});
     setCampaigns((prev) => prev.filter((c) => c.roomId !== roomId));
     // Clean up localStorage too
@@ -83,6 +90,7 @@ export default function Home() {
       /* ok */
     }
     toast(`${name} deleted`, 'info');
+    setDeleteConfirm(null);
   };
 
   // Apply theme class
@@ -533,6 +541,26 @@ export default function Home() {
           <FontAwesomeIcon icon={faCloudflare} className="text-[#F38020] transition-transform hover:scale-110" style={{ fontSize: '1.2em' }} />
         </p>
       </main>
+
+      {/* Delete campaign confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-2">Delete Campaign?</h3>
+            <p className="text-sm text-slate-400 mb-5">
+              Are you sure you want to delete <span className="font-semibold text-slate-200">{deleteConfirm.name}</span>? This will remove all saved game state and cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button onClick={confirmDeleteCampaign} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors shadow-lg shadow-red-900/30">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

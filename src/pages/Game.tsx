@@ -4,7 +4,7 @@ import InitiativeBar from '../components/combat/InitiativeBar';
 import BattleMap, { type ActiveAoE } from '../components/combat/BattleMap';
 import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
-import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
+import ChatPanel, { type ChatMessage, type SlashRollResult } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, type Item, type Spell, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, randomEncounterTheme, hasPendingASI } from '../contexts/GameContext';
 import LevelUpModal from '../components/game/LevelUpModal';
@@ -881,6 +881,45 @@ export default function Game() {
     [selectedCharacter, currentPlayer, room]
   );
 
+  // Handle /roll slash command from chat — creates a roll message without using the dice roller UI
+  const handleSlashRoll = useCallback(
+    (result: SlashRollResult) => {
+      const charName = selectedCharacter?.name || '';
+      const playerName = currentPlayer.username || funDefault();
+      const isCrit = result.rolls.length === 1 && result.rolls[0] === 20;
+      const isFumble = result.rolls.length === 1 && result.rolls[0] === 1;
+      playDiceRoll();
+      if (isCrit) setTimeout(playCritical, 400);
+      if (isFumble) setTimeout(playFumble, 400);
+      const rollText = result.kept
+        ? `[${result.rolls.join(', ')}] keep ${result.kept.join(', ')}`
+        : `[${result.rolls.join(', ')}]`;
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: 'roll',
+          playerId: currentPlayer.id,
+          username: playerName,
+          characterName: charName || undefined,
+          text: `${result.notation}: ${rollText}${result.modifier ? ` ${result.modifier > 0 ? '+' : ''}${result.modifier}` : ''} = ${result.total}`,
+          timestamp: Date.now(),
+          die: result.notation,
+          value: result.total,
+          isCritical: isCrit,
+          isFumble,
+        },
+      ]);
+      persistChatMessage(room, {
+        username: playerName,
+        type: 'roll',
+        text: `rolled ${result.notation} for ${result.total}`,
+        metadata: { die: result.notation, value: result.total, isCritical: isCrit, isFumble, characterName: charName || undefined },
+      });
+    },
+    [selectedCharacter, currentPlayer, room]
+  );
+
   // AoE confirm handler — extracted from BattleMap onAoEConfirm inline callback
   const handleAoEConfirm = useCallback((affectedCells: { col: number; row: number }[]) => {
     if (!pendingAoESpell) { setActiveAoE(null); return; }
@@ -1344,7 +1383,7 @@ export default function Game() {
                 <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} />
               </div>
               <div className="flex-1 flex flex-col p-4 overflow-hidden">
-                <ChatPanel messages={chatMessages} onSend={handleChatSend} currentPlayerId={wsPlayerId || currentPlayer.id} />
+                <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} currentPlayerId={wsPlayerId || currentPlayer.id} />
               </div>
             </>
           )}

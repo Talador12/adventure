@@ -21,9 +21,65 @@ export interface ChatMessage {
   characterName?: string; // In-game character name (distinct from player username)
 }
 
+// Parse /roll commands: /roll d20, /roll 2d6+3, /roll adv, /roll disadv, /roll 4d6kh3
+export interface SlashRollResult {
+  notation: string;
+  rolls: number[];
+  modifier: number;
+  total: number;
+  kept?: number[];      // for keep-highest/lowest
+  advantage?: boolean;
+  disadvantage?: boolean;
+}
+
+export function parseSlashRoll(input: string): SlashRollResult | null {
+  const text = input.trim().toLowerCase();
+  // /roll adv or /roll advantage
+  if (text === 'adv' || text === 'advantage') {
+    const r1 = Math.floor(Math.random() * 20) + 1;
+    const r2 = Math.floor(Math.random() * 20) + 1;
+    return { notation: '2d20kh1 (advantage)', rolls: [r1, r2], modifier: 0, total: Math.max(r1, r2), kept: [Math.max(r1, r2)], advantage: true };
+  }
+  // /roll disadv or /roll disadvantage
+  if (text === 'disadv' || text === 'disadvantage') {
+    const r1 = Math.floor(Math.random() * 20) + 1;
+    const r2 = Math.floor(Math.random() * 20) + 1;
+    return { notation: '2d20kl1 (disadvantage)', rolls: [r1, r2], modifier: 0, total: Math.min(r1, r2), kept: [Math.min(r1, r2)], disadvantage: true };
+  }
+  // Parse XdY+Z or XdYkhN or XdYklN
+  const match = text.match(/^(\d*)d(\d+)(?:kh(\d+)|kl(\d+))?(?:\s*([+-])\s*(\d+))?$/);
+  if (!match) return null;
+  const count = parseInt(match[1] || '1', 10);
+  const sides = parseInt(match[2], 10);
+  const keepHigh = match[3] ? parseInt(match[3], 10) : null;
+  const keepLow = match[4] ? parseInt(match[4], 10) : null;
+  const modSign = match[5] === '-' ? -1 : 1;
+  const modVal = match[6] ? parseInt(match[6], 10) * modSign : 0;
+  if (count < 1 || count > 100 || sides < 1 || sides > 100) return null;
+
+  const rolls: number[] = [];
+  for (let i = 0; i < count; i++) rolls.push(Math.floor(Math.random() * sides) + 1);
+
+  let kept: number[] | undefined;
+  let sum: number;
+  if (keepHigh) {
+    kept = [...rolls].sort((a, b) => b - a).slice(0, keepHigh);
+    sum = kept.reduce((a, b) => a + b, 0);
+  } else if (keepLow) {
+    kept = [...rolls].sort((a, b) => a - b).slice(0, keepLow);
+    sum = kept.reduce((a, b) => a + b, 0);
+  } else {
+    sum = rolls.reduce((a, b) => a + b, 0);
+  }
+
+  const notation = `${count}d${sides}${keepHigh ? `kh${keepHigh}` : ''}${keepLow ? `kl${keepLow}` : ''}${modVal ? (modVal > 0 ? `+${modVal}` : `${modVal}`) : ''}`;
+  return { notation, rolls, modifier: modVal, total: sum + modVal, kept };
+}
+
 interface ChatPanelProps {
   messages: ChatMessage[];
   onSend: (text: string) => void;
+  onSlashRoll?: (result: SlashRollResult) => void;
   currentPlayerId?: string;
 }
 
@@ -95,20 +151,64 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, currentPlayerId }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, currentPlayerId }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [newMsgCount, setNewMsgCount] = useState(0);
 
-  // Auto-scroll to bottom on new messages
+  // Track scroll position to decide auto-scroll behavior
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const atBottom = scrollHeight - scrollTop - clientHeight < 40;
+    setIsAtBottom(atBottom);
+    if (atBottom) setNewMsgCount(0);
+  };
+
+  // Auto-scroll only if user is already at bottom
   useEffect(() => {
+    if (isAtBottom && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    } else {
+      setNewMsgCount((n) => n + 1);
+    }
+  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setNewMsgCount(0);
+      setIsAtBottom(true);
     }
-  }, [messages.length]);
+  };
 
   const handleSend = () => {
     const text = input.trim();
     if (!text) return;
+    // Slash commands
+    if (text.startsWith('/roll ') || text === '/roll') {
+      const arg = text.slice(6).trim();
+      if (!arg) {
+        // bare /roll = d20
+        const result = parseSlashRoll('d20');
+        if (result) onSlashRoll?.(result);
+      } else {
+        const result = parseSlashRoll(arg);
+        if (result) {
+          onSlashRoll?.(result);
+        } else {
+          onSend(`[Invalid roll: ${arg}]`);
+        }
+      }
+      setInput('');
+      return;
+    }
+    if (text.startsWith('/me ')) {
+      onSend(`*${text.slice(4)}*`);
+      setInput('');
+      return;
+    }
     onSend(text);
     setInput('');
   };
@@ -118,48 +218,72 @@ export default function ChatPanel({ messages, onSend, currentPlayerId }: ChatPan
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 shrink-0">Chat</h2>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
-        {messages.length === 0 && <div className="text-xs text-slate-600 text-center py-8">No messages yet. Say hello!</div>}
+      <div className="flex-1 relative min-h-0">
+        <div ref={scrollRef} onScroll={handleScroll} className="absolute inset-0 overflow-y-auto space-y-1 pr-1">
+          {messages.length === 0 && <div className="text-xs text-slate-600 text-center py-8">No messages yet. Say hello!</div>}
 
-        {messages.map((msg) => {
-          if (msg.type === 'dm') {
-            return <DmMessage key={msg.id} msg={msg} />;
-          }
+          {messages.map((msg, idx) => {
+            if (msg.type === 'dm') {
+              return <DmMessage key={msg.id} msg={msg} />;
+            }
 
-          if (msg.type === 'roll') {
-            return <RollMessage key={msg.id} msg={msg} />;
-          }
+            if (msg.type === 'roll') {
+              return <RollMessage key={msg.id} msg={msg} />;
+            }
 
-          if (msg.type === 'system' || msg.type === 'join' || msg.type === 'leave') {
+            if (msg.type === 'system' || msg.type === 'join' || msg.type === 'leave') {
+              return (
+                <div key={msg.id} className="text-[11px] text-slate-600 text-center py-0.5 italic">
+                  {msg.text}
+                </div>
+              );
+            }
+
+            // Message grouping — skip avatar/name if same sender as previous chat message
+            const prev = idx > 0 ? messages[idx - 1] : null;
+            const isGrouped = prev && prev.type === 'chat' && prev.playerId === msg.playerId && (msg.timestamp - prev.timestamp < 60000);
+            const isMe = msg.playerId === currentPlayerId;
+
+            if (isGrouped) {
+              return (
+                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`${isMe ? 'mr-8' : 'ml-8'}`}>
+                    <div className={`px-3 py-1 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
-              <div key={msg.id} className="text-[11px] text-slate-600 text-center py-0.5 italic">
-                {msg.text}
+              <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${isGrouped ? '' : 'mt-1'}`}>
+                {msg.avatar ? (
+                  <img src={msg.avatar} alt="" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
+                ) : (
+                  <div className={`w-6 h-6 rounded-full shrink-0 mt-0.5 flex items-center justify-center text-[9px] font-bold ${isMe ? 'bg-[#F38020]/30 text-[#F38020]' : 'bg-slate-700 text-slate-400'}`}>
+                    {msg.username.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[10px] font-semibold ${isMe ? 'text-[#F38020]' : 'text-slate-400'}`}>{msg.username}</span>
+                    <span className="text-[9px] text-slate-600">{formatTime(msg.timestamp)}</span>
+                  </div>
+                  <div className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
+                </div>
               </div>
             );
-          }
+          })}
+        </div>
 
-          // Regular chat message
-          const isMe = msg.playerId === currentPlayerId;
-          return (
-            <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
-              {/* Avatar */}
-              {msg.avatar ? (
-                <img src={msg.avatar} alt="" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
-              ) : (
-                <div className={`w-6 h-6 rounded-full shrink-0 mt-0.5 flex items-center justify-center text-[9px] font-bold ${isMe ? 'bg-[#F38020]/30 text-[#F38020]' : 'bg-slate-700 text-slate-400'}`}>
-                  {msg.username.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[10px] font-semibold ${isMe ? 'text-[#F38020]' : 'text-slate-400'}`}>{msg.username}</span>
-                  <span className="text-[9px] text-slate-600">{formatTime(msg.timestamp)}</span>
-                </div>
-                <div className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
-              </div>
-            </div>
-          );
-        })}
+        {/* Scroll-to-bottom indicator */}
+        {!isAtBottom && newMsgCount > 0 && (
+          <button
+            onClick={scrollToBottom}
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#F38020] text-white text-[10px] font-semibold rounded-full shadow-lg hover:bg-[#e06a10] transition-colors z-10 animate-fade-in-up"
+          >
+            {newMsgCount} new message{newMsgCount > 1 ? 's' : ''} ↓
+          </button>
+        )}
       </div>
 
       {/* Input */}

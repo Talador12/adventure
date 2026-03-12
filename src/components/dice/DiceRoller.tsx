@@ -55,6 +55,8 @@ interface DiceRollerProps {
   compact?: boolean;
 }
 
+type AdvantageMode = 'normal' | 'advantage' | 'disadvantage';
+
 const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, onRollComplete, useServerRolls = false, compact = false }, ref) {
   const { currentPlayer, addRoll, rolls, clearRolls, selectedUnitId, units } = useGame();
   const [rolling, setRolling] = useState<DieType | null>(null);
@@ -63,6 +65,7 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
   const [critState, setCritState] = useState<'crit' | 'fumble' | null>(null); // persistent color — stays until next roll
   const [showBurst, setShowBurst] = useState(false); // temporary VFX burst — fades after animation
   const [rollerLabel, setRollerLabel] = useState<string | null>(null);
+  const [advMode, setAdvMode] = useState<AdvantageMode>('normal');
   const diceDisplayRef = useRef<HTMLDivElement>(null);
   // Queue for remote rolls that arrive while an animation is playing
   const pendingRemoteRef = useRef<RemoteRoll[]>([]);
@@ -177,10 +180,18 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
       }
 
       // Offline mode: generate locally
+      // Advantage/disadvantage only applies to d20
+      if (advMode !== 'normal' && die === 'd20') {
+        const r1 = Math.floor(Math.random() * 20) + 1;
+        const r2 = Math.floor(Math.random() * 20) + 1;
+        const finalValue = advMode === 'advantage' ? Math.max(r1, r2) : Math.min(r1, r2);
+        playAnimation(die, sides, finalValue, currentPlayer.username, selectedUnit?.name, true);
+        return;
+      }
       const finalValue = Math.floor(Math.random() * sides) + 1;
       playAnimation(die, sides, finalValue, currentPlayer.username, selectedUnit?.name, true);
     },
-    [useServerRolls, onLocalRoll, playAnimation, currentPlayer, selectedUnit]
+    [useServerRolls, onLocalRoll, playAnimation, currentPlayer, selectedUnit, advMode]
   );
 
   // Expose imperative API for parent to trigger remote roll animations
@@ -275,11 +286,40 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         </div>
       )}
 
+      {/* Advantage/Disadvantage toggle */}
+      <div className="flex gap-1.5">
+        {(['normal', 'advantage', 'disadvantage'] as AdvantageMode[]).map((mode) => {
+          const isActive = advMode === mode;
+          const label = mode === 'normal' ? 'Normal' : mode === 'advantage' ? 'ADV' : 'DISADV';
+          const activeStyle = mode === 'advantage'
+            ? 'bg-green-600/30 border-green-500/60 text-green-300'
+            : mode === 'disadvantage'
+              ? 'bg-red-600/30 border-red-500/60 text-red-300'
+              : 'bg-slate-700/50 border-slate-500/50 text-slate-300';
+          return (
+            <button
+              key={mode}
+              onClick={() => setAdvMode(mode)}
+              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg border transition-all ${
+                isActive ? activeStyle : 'border-slate-700/50 text-slate-600 hover:text-slate-400 hover:border-slate-600/50'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Dice buttons */}
       <div className="grid grid-cols-3 gap-2">
         {DICE.map(({ type, sides, color }) => (
-          <button key={type} disabled={animatingRef.current || rolling !== null} onClick={() => doRoll(type, sides)} className={`relative bg-gradient-to-br ${color} text-white font-bold py-2.5 px-3 rounded-lg shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:scale-105 active:scale-95 text-sm ${rolling === type ? 'ring-2 ring-white' : ''}`}>
+          <button key={type} disabled={animatingRef.current || rolling !== null} onClick={() => doRoll(type, sides)} className={`relative bg-gradient-to-br ${color} text-white font-bold py-2.5 px-3 rounded-lg shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:scale-105 active:scale-95 text-sm ${rolling === type ? 'ring-2 ring-white' : ''} ${advMode !== 'normal' && type === 'd20' ? 'ring-2 ring-offset-1 ring-offset-slate-900 ' + (advMode === 'advantage' ? 'ring-green-500/60' : 'ring-red-500/60') : ''}`}>
             {type.toUpperCase()}
+            {advMode !== 'normal' && type === 'd20' && (
+              <span className={`absolute -top-1 -right-1 text-[7px] font-black px-1 py-0.5 rounded-full ${advMode === 'advantage' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                {advMode === 'advantage' ? '2x' : '2x'}
+              </span>
+            )}
           </button>
         ))}
       </div>

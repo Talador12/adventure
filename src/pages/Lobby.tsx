@@ -2,7 +2,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../components/ui/toast';
 import { Button } from '../components/ui/button';
-import ChatPanel, { type ChatMessage } from '../components/chat/ChatPanel';
+import ChatPanel, { type ChatMessage, type SlashRollResult } from '../components/chat/ChatPanel';
 import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
 import DoodlePad, { type DoodlePadHandle, type DoodleStroke } from '../components/lobby/DoodlePad';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
@@ -373,6 +373,40 @@ export default function Lobby() {
         type: 'roll',
         text: `rolled ${roll.die?.toUpperCase()} for ${roll.value}`,
         metadata: { die: roll.die, sides: roll.sides, value: roll.value, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName },
+      });
+    },
+    [currentPlayer, room]
+  );
+
+  // Handle /roll slash command from chat
+  const handleSlashRoll = useCallback(
+    (result: SlashRollResult) => {
+      const playerName = currentPlayer.username || funDefault();
+      const isCrit = result.rolls.length === 1 && result.rolls[0] === 20;
+      const isFumble = result.rolls.length === 1 && result.rolls[0] === 1;
+      const rollText = result.kept
+        ? `[${result.rolls.join(', ')}] keep ${result.kept.join(', ')}`
+        : `[${result.rolls.join(', ')}]`;
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: 'roll',
+          playerId: currentPlayer.id,
+          username: playerName,
+          text: `${result.notation}: ${rollText}${result.modifier ? ` ${result.modifier > 0 ? '+' : ''}${result.modifier}` : ''} = ${result.total}`,
+          timestamp: Date.now(),
+          die: result.notation,
+          value: result.total,
+          isCritical: isCrit,
+          isFumble,
+        },
+      ]);
+      persistChatMessage(room, {
+        username: playerName,
+        type: 'roll',
+        text: `rolled ${result.notation} for ${result.total}`,
+        metadata: { die: result.notation, value: result.total, isCritical: isCrit, isFumble },
       });
     },
     [currentPlayer, room]
@@ -908,7 +942,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
         <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
-          <ChatPanel messages={chatMessages} onSend={handleChatSend} currentPlayerId={wsPlayerId || undefined} />
+          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
     </div>
