@@ -234,8 +234,10 @@ export default function Home() {
     navigate('/');
   };
 
-  // Google: picture is a full URL. Discord: avatar is a hash, construct CDN URL.
-  const avatarUrl = user?.picture || (user?.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png');
+  // Google: picture is a full URL. Discord: avatar is a hash, construct CDN URL. Temp users: no avatar.
+  const isTempUser = !!user?.id?.startsWith('temp-');
+  const avatarUrl = user?.picture || (user?.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : '');
+  const userInitial = (user?.global_name || user?.username || '?')[0].toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0c0f1a] text-slate-900 dark:text-slate-100 transition-colors">
@@ -249,9 +251,9 @@ export default function Home() {
 
         {/* Temp login — center of header */}
         {!user && (
-          <button onClick={handleTempLogin} className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 active:scale-[0.97] text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all cursor-pointer border-2 border-white/30">
+          <button onClick={handleTempLogin} className="absolute left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-500/90 hover:bg-emerald-400 active:bg-emerald-600 active:scale-[0.97] text-white text-xs font-semibold shadow hover:shadow-md transition-all cursor-pointer border border-white/20">
             <span>Quick Login</span>
-            <span className="text-[10px] font-normal text-emerald-100/90">this one works, use it for now</span>
+            <span className="text-[9px] font-normal text-emerald-100/80">- works now</span>
           </button>
         )}
 
@@ -261,23 +263,37 @@ export default function Home() {
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
-          {/* Discord Auth / Profile Dropdown */}
+          {/* Auth / Profile Dropdown */}
           {user ? (
             <div ref={dropdownRef} className="relative">
-              <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow focus:outline-none focus:ring-2 focus:ring-white/50 transition hover:ring-2 hover:ring-white/50" onClick={() => setShowDropdown(!showDropdown)} title={user.username}>
-                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              <button className="w-9 h-9 rounded-full overflow-hidden border-2 border-white shadow focus:outline-none focus:ring-2 focus:ring-white/50 transition hover:ring-2 hover:ring-white/50" onClick={() => setShowDropdown(!showDropdown)} title={user.global_name || user.username}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">{userInitial}</div>
+                )}
               </button>
 
               {showDropdown && (
                 <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl overflow-hidden z-50 animate-[slideIn_0.15s_ease-out]">
                   <div className="px-4 py-3 border-b border-slate-700">
                     <div className="flex items-center gap-3">
-                      <img src={avatarUrl} className="w-10 h-10 rounded-full" alt="" />
+                      {avatarUrl ? (
+                        <img src={avatarUrl} className="w-10 h-10 rounded-full" alt="" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-lg">{userInitial}</div>
+                      )}
                       <div>
                         <div className="text-sm font-semibold text-white">{user.global_name || user.username}</div>
                         <div className="text-xs text-slate-400 flex items-center gap-1">
-                          <FontAwesomeIcon icon={faDiscord} className="text-[#5865F2]" />
-                          {user.username}
+                          {isTempUser ? (
+                            <span className="text-emerald-400">Guest</span>
+                          ) : (
+                            <>
+                              <FontAwesomeIcon icon={faDiscord} className="text-[#5865F2]" />
+                              {user.username}
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -596,13 +612,16 @@ export default function Home() {
 
         </div>{/* end 2-column grid */}
 
-        <p className="text-slate-500 dark:text-slate-500 text-sm mt-8 mb-2 flex items-center gap-1.5 justify-center animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+        <p className="text-slate-700 dark:text-slate-500 text-sm mt-8 mb-2 flex items-center gap-1.5 justify-center animate-fade-in-up" style={{ animationDelay: '300ms' }}>
           Built by{' '}
-          <a href="https://github.com/Talador12" target="_blank" rel="noreferrer" className="underline decoration-slate-600 hover:decoration-[#F38020] hover:text-[#F38020] transition-all">
+          <a href="https://github.com/Talador12" target="_blank" rel="noreferrer" className="underline decoration-slate-400 dark:decoration-slate-600 hover:decoration-[#F38020] hover:text-[#F38020] transition-all">
             Keith Adler
           </a>{' '}
           on
-          <FontAwesomeIcon icon={faCloudflare} className="text-[#F38020] transition-transform hover:scale-110" style={{ fontSize: '1.2em' }} />
+          <a href="https://cloudflare.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#e06a10] dark:text-[#F38020] font-bold hover:text-[#ff9533] transition-colors">
+            CLOUDFLARE
+            <FontAwesomeIcon icon={faCloudflare} className="transition-transform hover:scale-110" style={{ fontSize: '1.2em' }} />
+          </a>
         </p>
       </main>
 
