@@ -893,7 +893,7 @@ export default function CharacterCreate() {
                         ? 'border-[#F38020] bg-amber-900/40 shadow-lg shadow-amber-900/20 ring-1 ring-[#F38020]/40'
                         : 'border-amber-900/25 bg-[#2a1f14]/80 hover:border-amber-800/50 hover:bg-[#322418]/80'
                     }`}
-                    style={{ minHeight: '64px' }}
+                    style={{ minHeight: '88px' }}
                   >
                     {/* Text */}
                     <div className="flex-1 pl-3 py-2 min-w-0">
@@ -901,11 +901,11 @@ export default function CharacterCreate() {
                       <div className={`text-[10px] mt-0.5 leading-tight ${isSelected ? 'text-amber-400/70' : 'text-amber-600/60'}`}>{bonusStr}</div>
                     </div>
                     {/* Portrait — illustrated art */}
-                    <div className="w-24 h-full shrink-0 relative bg-[#1e160e]" style={{ borderRadius: '0 0.65rem 0.65rem 0' }}>
+                    <div className="w-20 h-full shrink-0 relative" style={{ borderRadius: '0 0.65rem 0.65rem 0' }}>
                       <img
                         src={racePortraitPath(r)}
                         alt={r}
-                        className="absolute inset-0 w-full h-full object-contain"
+                        className="absolute inset-0 w-full h-full object-cover"
                         style={{ borderRadius: '0 0.65rem 0.65rem 0' }}
                       />
                       {/* Fade edge into card bg */}
@@ -935,7 +935,7 @@ export default function CharacterCreate() {
                         ? 'border-[#F38020] bg-amber-900/40 shadow-lg shadow-amber-900/20 ring-1 ring-[#F38020]/40'
                         : 'border-amber-900/25 bg-[#2a1f14]/80 hover:border-amber-800/50 hover:bg-[#322418]/80'
                     }`}
-                    style={{ minHeight: '64px' }}
+                    style={{ minHeight: '88px' }}
                   >
                     {/* Text */}
                     <div className="flex-1 pl-3 py-2 min-w-0">
@@ -943,11 +943,11 @@ export default function CharacterCreate() {
                       <div className={`text-[10px] mt-0.5 leading-tight ${isSelected ? 'text-amber-400/70' : 'text-amber-600/60'}`}>d{CLASS_HIT_DIE[c]} HP</div>
                     </div>
                     {/* Portrait — illustrated art */}
-                    <div className="w-24 h-full shrink-0 relative bg-[#1e160e]" style={{ borderRadius: '0 0.65rem 0.65rem 0' }}>
+                    <div className="w-20 h-full shrink-0 relative" style={{ borderRadius: '0 0.65rem 0.65rem 0' }}>
                       <img
                         src={classPortraitPath(c)}
                         alt={c}
-                        className="absolute inset-0 w-full h-full object-contain"
+                        className="absolute inset-0 w-full h-full object-cover"
                         style={{ borderRadius: '0 0.65rem 0.65rem 0' }}
                       />
                       <div className="absolute inset-0" style={{
