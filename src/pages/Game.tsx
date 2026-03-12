@@ -22,6 +22,7 @@ import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
 import ShopView from '../components/game/ShopView';
+import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
 
 // API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
@@ -41,6 +42,7 @@ export default function Game() {
     currentPlayer,
     rolls,
     selectedUnitId,
+    setSelectedUnitId,
     characters,
     inCombat,
     setInCombat,
@@ -879,6 +881,68 @@ export default function Game() {
     [selectedCharacter, currentPlayer, room]
   );
 
+  // AoE confirm handler — extracted from BattleMap onAoEConfirm inline callback
+  const handleAoEConfirm = useCallback((affectedCells: { col: number; row: number }[]) => {
+    if (!pendingAoESpell) { setActiveAoE(null); return; }
+    const { spell, charId } = pendingAoESpell;
+    const slotResult = castSpell(charId, spell.id);
+    if (!slotResult.success) {
+      setShopMessage(slotResult.message);
+      setTimeout(() => setShopMessage(null), 2500);
+      setActiveAoE(null);
+      setPendingAoESpell(null);
+      return;
+    }
+    playMagicSpell();
+    const char = characters.find((c) => c.id === charId);
+    const casterName = char?.name || 'Caster';
+    const affectedSet = new Set(affectedCells.map((c) => `${c.col},${c.row}`));
+    const hitUnits = units.filter((u) => {
+      const pos = mapPositions.find((p) => p.unitId === u.id);
+      return pos && affectedSet.has(`${pos.col},${pos.row}`);
+    });
+    const targets = spell.damage ? hitUnits.filter((u) => !u.characterId) : hitUnits;
+    const messages: string[] = [];
+    if (targets.length === 0) {
+      messages.push(`${casterName} casts ${spell.name} but hits no targets!`);
+    } else {
+      let spellDC = 13;
+      if (char) {
+        const castingStatMap: Record<string, StatName> = { Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS', Bard: 'CHA', Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS' };
+        const castingStat = castingStatMap[char.class] || 'INT';
+        const castMod = Math.floor((char.stats[castingStat] - 10) / 2);
+        const profBonus = Math.ceil(char.level / 4) + 1;
+        spellDC = 8 + profBonus + castMod;
+      }
+      for (const target of targets) {
+        const saveRoll = Math.floor(Math.random() * 20) + 1;
+        const targetSaveMod = spell.saveStat === 'DEX' ? target.dexMod || 0 : 0;
+        const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
+        const saved = (saveRoll + targetSaveMod + condSaveMod) >= spellDC;
+        if (spell.damage) {
+          let dmg = rollSpellDamage(spell.damage);
+          if (saved) dmg = Math.floor(dmg / 2);
+          damageUnit(target.id, dmg);
+          messages.push(saved ? `${target.name} saves — ${dmg} damage (half).` : `${target.name} takes ${dmg} damage!`);
+          if (target.hp - dmg <= 0) {
+            playEnemyDeath();
+            messages.push(`${target.name} falls!`);
+          }
+        }
+        if (spell.appliesCondition && !saved) {
+          applyCondition(target.id, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+          messages.push(`${target.name} is ${spell.appliesCondition}!`);
+        }
+      }
+    }
+    const fullMsg = `${casterName} casts ${spell.name}! ${messages.join(' ')}${spell.level > 0 ? ` (Level ${spell.level} slot used)` : ''}`;
+    setCombatLog((prev) => [...prev, fullMsg]);
+    addDmMessage(fullMsg);
+    setActiveAoE(null);
+    setPendingAoESpell(null);
+    setTimeout(broadcastCombatSyncLatest, 50);
+  }, [pendingAoESpell, castSpell, characters, units, mapPositions, damageUnit, applyCondition, addDmMessage, broadcastCombatSyncLatest]);
+
   const statusColor = status === 'connected' ? 'bg-green-500' : status === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500';
 
   // Character picker — extracted component
@@ -1041,6 +1105,18 @@ export default function Game() {
             <div className="bg-slate-900/50 border-b border-slate-800 shrink-0">
               <InitiativeBar entries={units} />
             </div>
+          )}
+
+          {/* Party health overview — always visible when characters exist */}
+          {characters.length > 0 && adventureStarted && (
+            <PartyHealthBar
+              characters={characters}
+              selectedCharacterId={selectedCharacter?.id || null}
+              onSelectCharacter={(id) => {
+                const unit = units.find((u) => u.characterId === id);
+                if (unit) setSelectedUnitId(unit.id === selectedUnitId ? null : unit.id);
+              }}
+            />
           )}
 
           {/* Main content area */}
@@ -1232,73 +1308,7 @@ export default function Game() {
                     }}
                     animateMoveRef={animateMoveRef}
                     activeAoE={activeAoE}
-                    onAoEConfirm={(affectedCells) => {
-                      if (!pendingAoESpell) { setActiveAoE(null); return; }
-                      const { spell, charId } = pendingAoESpell;
-                      // Cast the spell (consumes slot, handles concentration)
-                      const slotResult = castSpell(charId, spell.id);
-                      if (!slotResult.success) {
-                        setShopMessage(slotResult.message);
-                        setTimeout(() => setShopMessage(null), 2500);
-                        setActiveAoE(null);
-                        setPendingAoESpell(null);
-                        return;
-                      }
-                      playMagicSpell();
-                      const char = characters.find((c) => c.id === charId);
-                      const casterName = char?.name || 'Caster';
-                      // Find all units standing in affected cells
-                      const affectedSet = new Set(affectedCells.map((c) => `${c.col},${c.row}`));
-                      const hitUnits = units.filter((u) => {
-                        const pos = mapPositions.find((p) => p.unitId === u.id);
-                        return pos && affectedSet.has(`${pos.col},${pos.row}`);
-                      });
-                      // Only damage enemies (not friendly units) for offensive AoE
-                      const targets = spell.damage ? hitUnits.filter((u) => !u.characterId) : hitUnits;
-                      const messages: string[] = [];
-                      if (targets.length === 0) {
-                        messages.push(`${casterName} casts ${spell.name} but hits no targets!`);
-                      } else {
-                        // Spell save DC
-                        let spellDC = 13;
-                        if (char) {
-                          const castingStatMap: Record<string, StatName> = { Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS', Bard: 'CHA', Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS' };
-                          const castingStat = castingStatMap[char.class] || 'INT';
-                          const castMod = Math.floor((char.stats[castingStat] - 10) / 2);
-                          const profBonus = Math.ceil(char.level / 4) + 1;
-                          spellDC = 8 + profBonus + castMod;
-                        }
-                        for (const target of targets) {
-                          // Each target rolls a save
-                          const saveRoll = Math.floor(Math.random() * 20) + 1;
-                          const targetSaveMod = spell.saveStat === 'DEX' ? target.dexMod || 0 : 0;
-                          const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
-                          const saved = (saveRoll + targetSaveMod + condSaveMod) >= spellDC;
-                          if (spell.damage) {
-                            let dmg = rollSpellDamage(spell.damage);
-                            if (saved) dmg = Math.floor(dmg / 2);
-                            damageUnit(target.id, dmg);
-                            messages.push(saved
-                              ? `${target.name} saves — ${dmg} damage (half).`
-                              : `${target.name} takes ${dmg} damage!`);
-                            if (target.hp - dmg <= 0) {
-                              playEnemyDeath();
-                              messages.push(`${target.name} falls!`);
-                            }
-                          }
-                          if (spell.appliesCondition && !saved) {
-                            applyCondition(target.id, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
-                            messages.push(`${target.name} is ${spell.appliesCondition}!`);
-                          }
-                        }
-                      }
-                      const fullMsg = `${casterName} casts ${spell.name}! ${messages.join(' ')}${spell.level > 0 ? ` (Level ${spell.level} slot used)` : ''}`;
-                      setCombatLog((prev) => [...prev, fullMsg]);
-                      addDmMessage(fullMsg);
-                      setActiveAoE(null);
-                      setPendingAoESpell(null);
-                      setTimeout(broadcastCombatSyncLatest, 50);
-                    }}
+                    onAoEConfirm={handleAoEConfirm}
                     onAoECancel={() => {
                       setActiveAoE(null);
                       setPendingAoESpell(null);

@@ -39,6 +39,35 @@ const CLASS_SAVE_PROFICIENCIES: Record<string, StatName[]> = {
   Sorcerer: ['CON', 'CHA'],
 };
 
+// D&D 5e skills — each tied to an ability score
+const SKILLS: { name: string; stat: StatName }[] = [
+  { name: 'Acrobatics', stat: 'DEX' }, { name: 'Animal Handling', stat: 'WIS' },
+  { name: 'Arcana', stat: 'INT' }, { name: 'Athletics', stat: 'STR' },
+  { name: 'Deception', stat: 'CHA' }, { name: 'History', stat: 'INT' },
+  { name: 'Insight', stat: 'WIS' }, { name: 'Intimidation', stat: 'CHA' },
+  { name: 'Investigation', stat: 'INT' }, { name: 'Medicine', stat: 'WIS' },
+  { name: 'Nature', stat: 'INT' }, { name: 'Perception', stat: 'WIS' },
+  { name: 'Performance', stat: 'CHA' }, { name: 'Persuasion', stat: 'CHA' },
+  { name: 'Religion', stat: 'INT' }, { name: 'Sleight of Hand', stat: 'DEX' },
+  { name: 'Stealth', stat: 'DEX' }, { name: 'Survival', stat: 'WIS' },
+];
+
+// Skill proficiencies by class (simplified — typical starting picks, 2-4 per class)
+const CLASS_SKILL_PROFICIENCIES: Record<string, string[]> = {
+  Fighter: ['Athletics', 'Intimidation'],
+  Barbarian: ['Athletics', 'Perception'],
+  Paladin: ['Athletics', 'Persuasion'],
+  Ranger: ['Nature', 'Perception', 'Stealth', 'Survival'],
+  Rogue: ['Acrobatics', 'Deception', 'Stealth', 'Perception'],
+  Monk: ['Acrobatics', 'Stealth'],
+  Cleric: ['Insight', 'Medicine'],
+  Bard: ['Deception', 'Performance', 'Persuasion'],
+  Druid: ['Nature', 'Perception'],
+  Warlock: ['Arcana', 'Deception'],
+  Wizard: ['Arcana', 'Investigation'],
+  Sorcerer: ['Arcana', 'Persuasion'],
+};
+
 // Slot display names and icons
 const SLOT_LABELS: Record<EquipSlot, { label: string; icon: string }> = {
   weapon: { label: 'Weapon', icon: '⚔️' },
@@ -65,6 +94,7 @@ function itemStatLine(item: Item): string {
 export default function CharacterSheet({ character }: CharacterSheetProps) {
   const { restCharacter, equipItem, unequipItem, useItem, removeItem, units } = useGame();
   const [showInventory, setShowInventory] = useState(false);
+  const [showSkills, setShowSkills] = useState(false);
   const prof = proficiencyBonus(character.level);
   const saveProficiencies = CLASS_SAVE_PROFICIENCIES[character.class] || [];
 
@@ -246,6 +276,39 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             );
           })}
         </div>
+      </div>
+
+      {/* Skills */}
+      <div>
+        <button onClick={() => setShowSkills((s) => !s)} className="w-full flex items-center justify-between mb-2 group">
+          <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold group-hover:text-slate-300 transition-colors">
+            Skills
+          </span>
+          <span className="text-[9px] text-slate-600">{showSkills ? '▲' : '▼'}</span>
+        </button>
+        {showSkills && (
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+            {SKILLS.map((skill) => {
+              const mod = Math.floor((character.stats[skill.stat] - 10) / 2);
+              const isProficient = (CLASS_SKILL_PROFICIENCIES[character.class] || []).includes(skill.name);
+              const bonus = isProficient ? mod + prof : mod;
+              return (
+                <div key={skill.name} className="flex items-center gap-1 text-[10px]">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isProficient ? 'bg-[#F38020]' : 'bg-slate-700'}`} />
+                  <span className="text-slate-400 truncate flex-1">{skill.name}</span>
+                  <span className={`font-mono font-bold shrink-0 ${bonus >= 0 ? 'text-slate-200' : 'text-red-400'}`}>
+                    {bonus >= 0 ? `+${bonus}` : bonus}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {!showSkills && (
+          <div className="text-[9px] text-slate-600">
+            Passive Perception: {10 + Math.floor((character.stats.WIS - 10) / 2) + ((CLASS_SKILL_PROFICIENCIES[character.class] || []).includes('Perception') ? prof : 0)}
+          </div>
+        )}
       </div>
 
       {/* Equipment Slots */}

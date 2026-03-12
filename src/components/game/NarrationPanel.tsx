@@ -3,6 +3,20 @@
 // Extracted from Game.tsx to reduce file size.
 import { useState, useCallback } from 'react';
 import { useGame, type Character, CONDITION_EFFECTS } from '../../contexts/GameContext';
+
+type CombatEntryType = 'crit' | 'hit' | 'miss' | 'death' | 'spell' | 'condition' | 'heal' | 'other';
+
+function classifyCombatEntry(entry: string): CombatEntryType {
+  if (entry.includes('CRITICAL')) return 'crit';
+  if (entry.includes('falls!') || entry.includes('is dead')) return 'death';
+  if (entry.includes('casts ') || entry.includes('spell')) return 'spell';
+  if (entry.includes('heals') || entry.includes('healing') || entry.includes('Hit Points') || entry.includes('regains')) return 'heal';
+  const conditionWords = ['stunned', 'poisoned', 'frightened', 'burning', 'hexed', 'blessed', 'prone', 'dodging', 'raging', 'inspired', 'concentration'];
+  if (conditionWords.some((w) => entry.toLowerCase().includes(w))) return 'condition';
+  if (entry.includes('hits ') || entry.includes('damage') || entry.includes('strikes')) return 'hit';
+  if (entry.includes('misses ') || entry.includes('resists')) return 'miss';
+  return 'other';
+}
 import { fetchWithTimeout } from '../../lib/fetchUtils';
 import type { Quest } from '../../types/game';
 
@@ -64,6 +78,10 @@ export default function NarrationPanel({
   broadcastGameEvent,
 }: NarrationPanelProps) {
   const { units, inCombat, combatRound } = useGame();
+
+  // Combat log filter
+  type LogFilter = 'all' | 'attacks' | 'spells' | 'conditions' | 'deaths';
+  const [combatLogFilter, setCombatLogFilter] = useState<LogFilter>('all');
 
   // Session recap state
   const [recapText, setRecapText] = useState<string | null>(null);
@@ -403,7 +421,7 @@ export default function NarrationPanel({
         )}
       </div>
 
-      {/* Combat log — togglable during combat */}
+      {/* Combat log — togglable during combat, with filter tabs */}
       {inCombat && combatLog.length > 0 && (
         <div className="border-t border-slate-800">
           <button onClick={() => setShowCombatLog(!showCombatLog)} className="w-full flex items-center gap-2 px-4 py-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-300 transition-colors">
@@ -414,27 +432,53 @@ export default function NarrationPanel({
             <span className="px-1 py-0.5 text-[8px] bg-slate-800 rounded text-slate-600">{combatLog.length}</span>
           </button>
           {showCombatLog && (
-            <div className="max-h-40 overflow-y-auto px-4 pb-2 space-y-0.5">
-              {combatLog.map((entry, i) => {
-                const isCrit = entry.includes('CRITICAL');
-                const isHit = entry.includes('hits ') || isCrit || entry.includes('damage');
-                const isMiss = entry.includes('misses ') || entry.includes('resists');
-                const isDeath = entry.includes('falls!');
-                const isCondition = entry.includes('stunned') || entry.includes('poisoned') || entry.includes('frightened') || entry.includes('burning') || entry.includes('hexed') || entry.includes('blessed') || entry.includes('prone') || entry.includes('dodging') || entry.includes('raging') || entry.includes('inspired');
-                return (
-                  <div key={i} className={`text-[10px] font-mono px-2 py-0.5 rounded transition-all ${
-                    isCrit ? 'text-amber-300 bg-amber-950/30 font-bold crit-flash' :
-                    isDeath ? 'text-red-400 bg-red-950/30' :
-                    isHit ? 'text-orange-300 bg-orange-950/20' :
-                    isMiss ? 'text-slate-500' :
-                    isCondition ? 'text-purple-300 bg-purple-950/20' :
-                    'text-slate-400'
-                  }`}>
-                    {entry}
-                  </div>
-                );
-              })}
-            </div>
+            <>
+              {/* Filter tabs */}
+              <div className="flex items-center gap-1 px-4 pb-1">
+                {(['all', 'attacks', 'spells', 'conditions', 'deaths'] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setCombatLogFilter(f)}
+                    className={`text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase transition-colors ${
+                      combatLogFilter === f ? 'bg-amber-600/20 text-amber-400' : 'text-slate-600 hover:text-slate-400'
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              <div className="max-h-48 overflow-y-auto px-4 pb-2 space-y-0.5">
+                {combatLog.map((entry, i) => {
+                  const cat = classifyCombatEntry(entry);
+                  // Filter
+                  if (combatLogFilter !== 'all') {
+                    if (combatLogFilter === 'attacks' && cat !== 'hit' && cat !== 'miss' && cat !== 'crit') return null;
+                    if (combatLogFilter === 'spells' && cat !== 'spell') return null;
+                    if (combatLogFilter === 'conditions' && cat !== 'condition') return null;
+                    if (combatLogFilter === 'deaths' && cat !== 'death') return null;
+                  }
+                  // Round separator — detect "Round X" or turn starts
+                  const isRoundStart = entry.includes('Initiative rolled') || entry.includes('Round ');
+                  return (
+                    <div key={i}>
+                      {isRoundStart && i > 0 && <div className="border-t border-slate-800/50 my-1" />}
+                      <div className={`text-[10px] font-mono px-2 py-0.5 rounded transition-all ${
+                        cat === 'crit' ? 'text-amber-300 bg-amber-950/30 font-bold crit-flash' :
+                        cat === 'death' ? 'text-red-400 bg-red-950/30' :
+                        cat === 'hit' ? 'text-orange-300 bg-orange-950/20' :
+                        cat === 'miss' ? 'text-slate-500' :
+                        cat === 'spell' ? 'text-blue-300 bg-blue-950/20' :
+                        cat === 'condition' ? 'text-purple-300 bg-purple-950/20' :
+                        cat === 'heal' ? 'text-green-300 bg-green-950/20' :
+                        'text-slate-400'
+                      }`}>
+                        {entry}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
