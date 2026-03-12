@@ -26,6 +26,11 @@ interface DMSidebarProps {
   dmNotes: string;
   setDmNotes: (v: string) => void;
   selectedCharacter: { level: number } | null;
+  // Turn timer
+  turnTimerEnabled: boolean;
+  setTurnTimerEnabled: (v: boolean) => void;
+  turnTimeSeconds: number;
+  setTurnTimeSeconds: (v: number) => void;
 }
 
 export default function DMSidebar({
@@ -49,6 +54,10 @@ export default function DMSidebar({
   dmNotes,
   setDmNotes,
   selectedCharacter,
+  turnTimerEnabled,
+  setTurnTimerEnabled,
+  turnTimeSeconds,
+  setTurnTimeSeconds,
 }: DMSidebarProps) {
   const { units, characters, inCombat } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -164,6 +173,55 @@ export default function DMSidebar({
                 placeholder="Scene name..."
                 className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder:text-slate-600 focus:border-[#F38020] focus:outline-none"
               />
+            </div>
+            {/* Turn Timer Settings */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Turn Timer</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setTurnTimerEnabled(!turnTimerEnabled)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                    turnTimerEnabled
+                      ? 'border-green-600/50 bg-green-900/20 text-green-400'
+                      : 'border-slate-700 text-slate-500 hover:border-slate-600'
+                  }`}
+                >
+                  {turnTimerEnabled ? 'On' : 'Off'}
+                </button>
+                {turnTimerEnabled && (
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <input
+                      type="range"
+                      min={15}
+                      max={300}
+                      step={15}
+                      value={turnTimeSeconds}
+                      onChange={(e) => setTurnTimeSeconds(Number(e.target.value))}
+                      className="flex-1 h-1 accent-[#F38020] cursor-pointer"
+                    />
+                    <span className="text-[10px] font-mono text-slate-400 w-8 text-right">
+                      {turnTimeSeconds >= 60 ? `${Math.floor(turnTimeSeconds / 60)}m${turnTimeSeconds % 60 > 0 ? `${turnTimeSeconds % 60}s` : ''}` : `${turnTimeSeconds}s`}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {turnTimerEnabled && (
+                <div className="flex gap-1">
+                  {[30, 60, 120, 180].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setTurnTimeSeconds(s)}
+                      className={`flex-1 py-1 rounded text-[9px] font-medium transition-all border ${
+                        turnTimeSeconds === s
+                          ? 'border-[#F38020]/50 bg-[#F38020]/10 text-[#F38020]'
+                          : 'border-slate-700 text-slate-500 hover:border-slate-600'
+                      }`}
+                    >
+                      {s >= 60 ? `${s / 60}m` : `${s}s`}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}

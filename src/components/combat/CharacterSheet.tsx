@@ -1,6 +1,6 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES } from '../../contexts/GameContext';
-import { useState } from 'react';
+import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType } from '../../contexts/GameContext';
+import { useState, useCallback } from 'react';
 
 interface CharacterSheetProps {
   character: Character;
@@ -91,12 +91,68 @@ function itemStatLine(item: Item): string {
   return parts.join(', ');
 }
 
+// Casting stat by class (for spell save DC display)
+const CASTING_STAT: Record<string, StatName> = {
+  Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS',
+  Bard: 'CHA', Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS',
+};
+
+// Condition reference tooltips — full 5e descriptions
+const CONDITION_TOOLTIPS: Record<ConditionType, string> = {
+  poisoned: 'Poisoned: Disadvantage on attack rolls and ability checks (-2 to attacks and saves).',
+  stunned: 'Stunned: Cannot move or take actions. Auto-fail STR/DEX saves. Attacks against have advantage (-2 AC).',
+  frightened: 'Frightened: Disadvantage on ability checks and attack rolls while source of fear is in line of sight (-2 to attacks).',
+  blessed: 'Blessed: Add 1d4 to attack rolls and saving throws (+2 to attacks and saves).',
+  hexed: 'Hexed: Disadvantage on ability checks with the chosen ability (-2 to saves).',
+  burning: 'Burning: Takes 1d6 fire damage at the start of each turn. Can use action to extinguish.',
+  prone: 'Prone: Melee attacks against have advantage. Ranged attacks against have disadvantage. Must spend half movement to stand.',
+  dodging: 'Dodging: +2 AC until next turn. Attacks against have disadvantage. DEX saves have advantage.',
+  raging: 'Raging: +2 to melee attack and damage rolls. Resistance to bludgeoning, piercing, slashing damage.',
+  inspired: 'Inspired: Bardic Inspiration — +2 to attack rolls and saving throws for the duration.',
+};
+
 export default function CharacterSheet({ character }: CharacterSheetProps) {
-  const { restCharacter, equipItem, unequipItem, useItem, removeItem, units } = useGame();
+  const { restCharacter, equipItem, unequipItem, useItem, removeItem, units, updateCharacter, addRoll, currentPlayer } = useGame();
   const [showInventory, setShowInventory] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const prof = proficiencyBonus(character.level);
   const saveProficiencies = CLASS_SAVE_PROFICIENCIES[character.class] || [];
+
+  // Spend or restore a single spell slot by clicking
+  const toggleSpellSlot = useCallback((level: number, slotIndex: number, isAvailable: boolean) => {
+    const used = character.spellSlotsUsed || {};
+    const maxSlots = getSpellSlots(character.class, character.level);
+    const maxForLevel = maxSlots[level] || 0;
+    const usedCount = used[level] || 0;
+    if (isAvailable) {
+      // Spend: increase used count
+      if (usedCount < maxForLevel) {
+        updateCharacter(character.id, { spellSlotsUsed: { ...used, [level]: usedCount + 1 } });
+      }
+    } else {
+      // Restore: decrease used count
+      if (usedCount > 0) {
+        updateCharacter(character.id, { spellSlotsUsed: { ...used, [level]: usedCount - 1 } });
+      }
+    }
+  }, [character.id, character.class, character.level, character.spellSlotsUsed, updateCharacter]);
+
+  // Quick roll: ability check or saving throw
+  const quickRoll = useCallback((label: string, modifier: number) => {
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const total = roll + modifier;
+    const isCrit = roll === 20;
+    const isFumble = roll === 1;
+    addRoll({
+      die: 'd20' as const,
+      sides: 20,
+      value: total,
+      playerId: currentPlayer.id,
+      playerName: currentPlayer.username,
+      unitId: undefined,
+      unitName: `${character.name}: ${label}`,
+    });
+  }, [addRoll, currentPlayer, character.name]);
 
   const hpPct = Math.max(0, (character.hp / character.maxHp) * 100);
   const hpColor = hpPct > 50 ? 'bg-green-500' : hpPct > 25 ? 'bg-yellow-500' : 'bg-red-500';
@@ -181,14 +237,35 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         </div>
       )}
 
-      {/* Concentration indicator */}
+      {/* Active conditions on unit — with tooltips */}
       {(() => {
         const playerUnit = units.find((u) => u.characterId === character.id);
-        if (!playerUnit?.concentratingOn) return null;
+        if (!playerUnit?.conditions?.length && !playerUnit?.concentratingOn) return null;
         return (
-          <div className="rounded-lg px-3 py-2 border border-blue-700/40 bg-blue-900/20 text-center">
-            <div className="text-[9px] text-blue-400/70 uppercase tracking-wider">Concentrating</div>
-            <div className="text-xs font-bold text-blue-300">{playerUnit.concentratingOn}</div>
+          <div className="space-y-1.5">
+            {/* Concentration indicator */}
+            {playerUnit?.concentratingOn && (
+              <div className="rounded-lg px-3 py-2 border border-blue-700/40 bg-blue-900/20 text-center">
+                <div className="text-[9px] text-blue-400/70 uppercase tracking-wider">Concentrating</div>
+                <div className="text-xs font-bold text-blue-300">{playerUnit.concentratingOn}</div>
+              </div>
+            )}
+            {/* Condition badges with reference tooltips */}
+            {playerUnit?.conditions && playerUnit.conditions.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {playerUnit.conditions.map((c, i) => (
+                  <span
+                    key={i}
+                    className={`text-[9px] font-bold uppercase px-2 py-1 rounded-lg border cursor-help transition-colors ${
+                      CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'
+                    } border-slate-700/50 bg-slate-800/50 hover:bg-slate-700/50`}
+                    title={CONDITION_TOOLTIPS[c.type] || CONDITION_EFFECTS[c.type]?.description || c.type}
+                  >
+                    {c.type}{c.duration > 0 ? ` (${c.duration}r)` : ''}{c.source ? ` - ${c.source}` : ''}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         );
       })()}
@@ -267,7 +344,7 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         </div>
       </div>
 
-      {/* Ability Scores */}
+      {/* Ability Scores — click to roll check */}
       <div>
         <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Ability Scores</div>
         <div className="grid grid-cols-3 gap-2">
@@ -275,17 +352,22 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             const val = character.stats[stat];
             const mod = Math.floor((val - 10) / 2);
             return (
-              <div key={stat} className="rounded-lg bg-slate-800 border border-slate-700 p-2 text-center">
-                <div className="text-[9px] text-slate-500 uppercase tracking-wider">{stat}</div>
+              <button
+                key={stat}
+                onClick={() => quickRoll(`${stat} Check`, mod)}
+                className="rounded-lg bg-slate-800 border border-slate-700 p-2 text-center hover:border-slate-500 hover:bg-slate-750 transition-all cursor-pointer group"
+                title={`Roll ${stat} ability check (d20${mod >= 0 ? '+' : ''}${mod})`}
+              >
+                <div className="text-[9px] text-slate-500 uppercase tracking-wider group-hover:text-slate-300 transition-colors">{stat}</div>
                 <div className={`text-lg font-black ${modColor(val)}`}>{val}</div>
                 <div className={`text-xs font-bold ${modColor(val)}`}>{mod >= 0 ? `+${mod}` : mod}</div>
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* Saving Throws */}
+      {/* Saving Throws — with quick roll */}
       <div>
         <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Saving Throws</div>
         <div className="grid grid-cols-2 gap-1">
@@ -295,19 +377,25 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             const isProficient = saveProficiencies.includes(stat);
             const saveBonus = isProficient ? mod + prof : mod;
             return (
-              <div key={stat} className="flex items-center gap-1.5 text-xs">
+              <button
+                key={stat}
+                onClick={() => quickRoll(`${stat} Save`, saveBonus)}
+                className="flex items-center gap-1.5 text-xs rounded px-1 py-0.5 hover:bg-slate-700/50 transition-colors cursor-pointer group"
+                title={`Roll ${stat} saving throw (d20${saveBonus >= 0 ? '+' : ''}${saveBonus})`}
+              >
                 <div className={`w-2 h-2 rounded-full ${isProficient ? 'bg-[#F38020]' : 'bg-slate-700'}`} />
-                <span className="text-slate-400 w-8">{stat}</span>
+                <span className="text-slate-400 w-8 group-hover:text-slate-200 transition-colors">{stat}</span>
                 <span className={`font-mono font-bold ${saveBonus >= 0 ? 'text-slate-200' : 'text-red-400'}`}>
                   {saveBonus >= 0 ? `+${saveBonus}` : saveBonus}
                 </span>
-              </div>
+                <span className="text-[8px] text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">d20</span>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* Skills */}
+      {/* Skills — with quick roll */}
       <div>
         <button onClick={() => setShowSkills((s) => !s)} className="w-full flex items-center justify-between mb-2 group">
           <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold group-hover:text-slate-300 transition-colors">
@@ -322,13 +410,18 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
               const isProficient = (CLASS_SKILL_PROFICIENCIES[character.class] || []).includes(skill.name);
               const bonus = isProficient ? mod + prof : mod;
               return (
-                <div key={skill.name} className="flex items-center gap-1 text-[10px]">
+                <button
+                  key={skill.name}
+                  onClick={() => quickRoll(skill.name, bonus)}
+                  className="flex items-center gap-1 text-[10px] rounded px-0.5 py-0.5 hover:bg-slate-700/50 transition-colors cursor-pointer group"
+                  title={`Roll ${skill.name} check (d20${bonus >= 0 ? '+' : ''}${bonus})`}
+                >
                   <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isProficient ? 'bg-[#F38020]' : 'bg-slate-700'}`} />
-                  <span className="text-slate-400 truncate flex-1">{skill.name}</span>
+                  <span className="text-slate-400 truncate flex-1 text-left group-hover:text-slate-200 transition-colors">{skill.name}</span>
                   <span className={`font-mono font-bold shrink-0 ${bonus >= 0 ? 'text-slate-200' : 'text-red-400'}`}>
                     {bonus >= 0 ? `+${bonus}` : bonus}
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -512,11 +605,25 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         const cantrips = spells.filter((s) => s.level === 0);
         const leveled = spells.filter((s) => s.level > 0);
 
+        // Spell save DC and attack bonus
+        const castingStat = CASTING_STAT[character.class];
+        const castMod = castingStat ? Math.floor((character.stats[castingStat] - 10) / 2) : 0;
+        const spellDC = 8 + prof + castMod;
+        const spellAttack = prof + castMod;
+
         return (
           <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Spellbook</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Spellbook</div>
+              {castingStat && (
+                <div className="flex gap-2">
+                  <span className="text-[9px] font-mono text-purple-400" title={`Spell Save DC = 8 + ${prof} (prof) + ${castMod} (${castingStat})`}>DC {spellDC}</span>
+                  <span className="text-[9px] font-mono text-purple-400" title={`Spell Attack = +${prof} (prof) + ${castMod} (${castingStat})`}>+{spellAttack} atk</span>
+                </div>
+              )}
+            </div>
 
-            {/* Spell slots */}
+            {/* Spell slots — clickable pips */}
             {Object.keys(slots).length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {Object.entries(slots).map(([lvl, max]) => {
@@ -526,19 +633,25 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                     <div key={lvl} className="text-center">
                       <div className="text-[8px] text-slate-600 mb-0.5">Lv{lvl}</div>
                       <div className="flex gap-0.5">
-                        {Array.from({ length: max }).map((_, i) => (
-                          <div
-                            key={i}
-                            className={`w-5 h-5 rounded border flex items-center justify-center ${
-                              i < remaining
-                                ? 'border-purple-600/50 bg-purple-900/30'
-                                : 'border-slate-700 bg-slate-800/50'
-                            }`}
-                          >
-                            {i < remaining && <div className="w-2 h-2 rounded-full bg-purple-400" />}
-                          </div>
-                        ))}
+                        {Array.from({ length: max }).map((_, i) => {
+                          const isAvailable = i < remaining;
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => toggleSpellSlot(Number(lvl), i, isAvailable)}
+                              className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer ${
+                                isAvailable
+                                  ? 'border-purple-500/60 bg-purple-900/40 hover:bg-purple-800/50 hover:border-purple-400/70'
+                                  : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'
+                              }`}
+                              title={isAvailable ? `Click to spend level ${lvl} slot` : `Click to restore level ${lvl} slot`}
+                            >
+                              {isAvailable && <div className="w-2 h-2 rounded-full bg-purple-400 shadow-sm shadow-purple-400/50" />}
+                            </button>
+                          );
+                        })}
                       </div>
+                      <div className="text-[7px] text-slate-600 mt-0.5">{remaining}/{max}</div>
                     </div>
                   );
                 })}
@@ -570,7 +683,10 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                     return (
                       <div key={s.id} className={`flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30 ${slotsAvail <= 0 ? 'opacity-40' : ''}`}>
                         <span className="text-purple-300 font-medium">{s.name}</span>
-                        <span className="text-slate-500">Lv{s.level} • {s.damage || (s.healAmount ? `+${s.healAmount}HP` : s.range)}</span>
+                        <div className="flex items-center gap-1.5">
+                          {s.isConcentration && <span className="text-[7px] text-blue-400 font-bold">C</span>}
+                          <span className="text-slate-500">Lv{s.level} {'\u2022'} {s.damage || (s.healAmount ? `+${s.healAmount}HP` : s.range)}</span>
+                        </div>
                       </div>
                     );
                   })}

@@ -158,11 +158,11 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 {entry.hp}/{maxHp}
               </span>
 
-              {/* Condition badges */}
+              {/* Condition badges — with reference tooltips */}
               {entry.conditions && entry.conditions.length > 0 && (
                 <div className="flex flex-wrap gap-0.5 mt-0.5">
                   {entry.conditions.map((c, i) => (
-                    <span key={i} className={`text-[7px] font-bold uppercase px-1 py-0 rounded ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'} bg-slate-900/80`} title={CONDITION_EFFECTS[c.type]?.description}>
+                    <span key={i} className={`text-[7px] font-bold uppercase px-1 py-0 rounded cursor-help ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'} bg-slate-900/80`} title={`${c.type.charAt(0).toUpperCase() + c.type.slice(1)}: ${CONDITION_EFFECTS[c.type]?.description || 'Unknown condition'}${c.duration > 0 ? ` (${c.duration} rounds remaining)` : ''}${c.source ? ` — Source: ${c.source}` : ''}`}>
                       {c.type}{c.duration > 0 ? ` ${c.duration}` : ''}
                     </span>
                   ))}

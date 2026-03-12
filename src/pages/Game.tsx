@@ -131,6 +131,10 @@ export default function Game() {
   // Keyboard shortcut help overlay
   const [showHelpOverlay, setShowHelpOverlay] = useState(false);
 
+  // Turn timer — DM-configurable
+  const [turnTimerEnabled, setTurnTimerEnabled] = useState(true);
+  const [turnTimeSeconds, setTurnTimeSeconds] = useState(60);
+
    // Quest tracker
    const questStorageKey = `adventure:quests:${room}`;
   const [quests, setQuests] = useState<Quest[]>(() => {
@@ -1134,6 +1138,10 @@ export default function Game() {
             dmNotes={dmNotes}
             setDmNotes={setDmNotes}
             selectedCharacter={selectedCharacter}
+            turnTimerEnabled={turnTimerEnabled}
+            setTurnTimerEnabled={setTurnTimerEnabled}
+            turnTimeSeconds={turnTimeSeconds}
+            setTurnTimeSeconds={setTurnTimeSeconds}
           />
         )}
 
@@ -1142,7 +1150,19 @@ export default function Game() {
           {/* Initiative bar — only show when units exist */}
           {units.length > 0 && (
             <div className="bg-slate-900/50 border-b border-slate-800 shrink-0">
-              <InitiativeBar entries={units} />
+              <InitiativeBar
+                entries={units}
+                turnTimerEnabled={turnTimerEnabled}
+                turnTimeSeconds={turnTimeSeconds}
+                onTimerExpire={() => {
+                  // Auto-advance turn when timer expires
+                  if (inCombat) {
+                    const result = nextTurn();
+                    setTimeout(broadcastCombatSyncLatest, 50);
+                    setCombatLog((prev) => [...prev, `Turn timer expired — advancing turn.`]);
+                  }
+                }}
+              />
             </div>
           )}
 
