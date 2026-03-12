@@ -901,16 +901,16 @@ export default function CharacterCreate() {
                       <div className={`text-[10px] mt-0.5 leading-tight ${isSelected ? 'text-amber-400/70' : 'text-amber-600/60'}`}>{bonusStr}</div>
                     </div>
                     {/* Portrait — illustrated art */}
-                    <div className="w-16 h-full shrink-0 relative">
+                    <div className="w-24 h-full shrink-0 relative bg-[#1e160e]" style={{ borderRadius: '0 0.65rem 0.65rem 0' }}>
                       <img
                         src={racePortraitPath(r)}
                         alt={r}
-                        className="absolute inset-0 w-full h-full object-cover object-[center_20%]"
+                        className="absolute inset-0 w-full h-full object-contain"
                         style={{ borderRadius: '0 0.65rem 0.65rem 0' }}
                       />
                       {/* Fade edge into card bg */}
                       <div className="absolute inset-0" style={{
-                        background: `linear-gradient(90deg, ${isSelected ? 'rgba(42,31,20,0.85)' : 'rgba(42,31,20,0.7)'} 0%, transparent 40%)`,
+                        background: `linear-gradient(90deg, ${isSelected ? 'rgba(42,31,20,0.85)' : 'rgba(42,31,20,0.7)'} 0%, transparent 35%)`,
                         borderRadius: '0 0.65rem 0.65rem 0',
                       }} />
                     </div>
@@ -943,15 +943,15 @@ export default function CharacterCreate() {
                       <div className={`text-[10px] mt-0.5 leading-tight ${isSelected ? 'text-amber-400/70' : 'text-amber-600/60'}`}>d{CLASS_HIT_DIE[c]} HP</div>
                     </div>
                     {/* Portrait — illustrated art */}
-                    <div className="w-16 h-full shrink-0 relative">
+                    <div className="w-24 h-full shrink-0 relative bg-[#1e160e]" style={{ borderRadius: '0 0.65rem 0.65rem 0' }}>
                       <img
                         src={classPortraitPath(c)}
                         alt={c}
-                        className="absolute inset-0 w-full h-full object-cover object-[center_20%]"
+                        className="absolute inset-0 w-full h-full object-contain"
                         style={{ borderRadius: '0 0.65rem 0.65rem 0' }}
                       />
                       <div className="absolute inset-0" style={{
-                        background: `linear-gradient(90deg, ${isSelected ? 'rgba(42,31,20,0.85)' : 'rgba(42,31,20,0.7)'} 0%, transparent 40%)`,
+                        background: `linear-gradient(90deg, ${isSelected ? 'rgba(42,31,20,0.85)' : 'rgba(42,31,20,0.7)'} 0%, transparent 35%)`,
                         borderRadius: '0 0.65rem 0.65rem 0',
                       }} />
                     </div>
