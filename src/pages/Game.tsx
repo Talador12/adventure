@@ -146,6 +146,7 @@ export default function Game() {
     }
   });
   const [showQuests, setShowQuests] = useState(false);
+  const [showDiceHistory, setShowDiceHistory] = useState(false);
   const [newQuestTitle, setNewQuestTitle] = useState('');
   useEffect(() => {
     try {
@@ -1326,6 +1327,7 @@ export default function Game() {
                     npcRole={npcRole}
                     npcMode={npcMode}
                     sceneName={sceneName}
+                    roomId={room}
                     allCharacters={characters}
                     setNpcName={setNpcName}
                     setNpcRole={setNpcRole}
@@ -1402,8 +1404,44 @@ export default function Game() {
               <div className="p-4 border-b border-slate-800 overflow-y-auto">
                 <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} />
               </div>
+              {/* Dice History — collapsible panel */}
+              {rolls.length > 0 && (
+                <div className="border-b border-slate-800">
+                  <button
+                    onClick={() => setShowDiceHistory((s) => !s)}
+                    className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    <span>Roll History ({rolls.length})</span>
+                    <span>{showDiceHistory ? '\u25B2' : '\u25BC'}</span>
+                  </button>
+                  {showDiceHistory && (
+                    <div className="max-h-36 overflow-y-auto px-4 pb-2 space-y-1">
+                      {rolls.slice(0, 20).map((roll) => (
+                        <div key={roll.id} className={`flex items-center justify-between text-[10px] px-2 py-1 rounded ${
+                          roll.isCritical ? 'bg-yellow-500/10 border border-yellow-600/20' : roll.isFumble ? 'bg-red-500/10 border border-red-600/20' : 'bg-slate-800/50'
+                        }`}>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={`font-bold shrink-0 ${roll.isCritical ? 'text-yellow-400' : roll.isFumble ? 'text-red-400' : 'text-white'}`}>
+                              {roll.value}
+                            </span>
+                            <span className="text-slate-500 font-mono shrink-0">{roll.die?.toUpperCase()}</span>
+                            <span className="text-slate-400 truncate">
+                              {roll.unitName || roll.playerName}
+                            </span>
+                          </div>
+                          <span className="text-[8px] text-slate-600 shrink-0 ml-1">
+                            {new Date(roll.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="flex-1 flex flex-col p-4 overflow-hidden">
-                <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
+                <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => {
+                  send({ type: 'whisper', targetUsername: target, message: msg });
+                }} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
               </div>
             </>
           )}

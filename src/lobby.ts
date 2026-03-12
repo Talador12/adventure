@@ -758,6 +758,47 @@ export class Lobby {
         break;
       }
 
+      case 'whisper': {
+        // Private message: sender → specific target player only
+        const whisperSession = this.sessions.get(server);
+        if (!whisperSession) return;
+        const whisperMessage = (data.message as string) || '';
+        const targetUsername = (data.targetUsername as string) || '';
+        if (!whisperMessage.trim() || !targetUsername.trim()) {
+          server.send(JSON.stringify({ type: 'error', message: 'Whisper requires targetUsername and message', timestamp: Date.now() }));
+          return;
+        }
+        // Find target by username (case-insensitive)
+        let targetWs: WebSocket | null = null;
+        let targetSess: Session | null = null;
+        for (const [ws, s] of this.sessions) {
+          if (s.username.toLowerCase() === targetUsername.toLowerCase()) {
+            targetWs = ws;
+            targetSess = s;
+            break;
+          }
+        }
+        if (!targetWs || !targetSess) {
+          server.send(JSON.stringify({ type: 'error', message: `Player "${targetUsername}" not found`, timestamp: Date.now() }));
+          return;
+        }
+        const whisperPayload = {
+          type: 'whisper',
+          playerId: whisperSession.id,
+          username: whisperSession.username,
+          avatar: whisperSession.avatar,
+          targetPlayerId: targetSess.id,
+          targetUsername: targetSess.username,
+          message: whisperMessage.trim(),
+          timestamp: Date.now(),
+        };
+        // Send to target
+        try { targetWs.send(JSON.stringify(whisperPayload)); } catch { /* dead socket */ }
+        // Echo back to sender so they see their own whisper
+        try { server.send(JSON.stringify(whisperPayload)); } catch { /* dead socket */ }
+        break;
+      }
+
       case 'typing': {
         // Relay typing indicator to all OTHER clients (not back to sender)
         const typingSession = this.sessions.get(server);

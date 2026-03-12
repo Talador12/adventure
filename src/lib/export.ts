@@ -57,6 +57,100 @@ export function exportJSON(char: Character) {
 }
 
 // ============================================================================
+//  JSON Import — validate and parse Adventure JSON format
+// ============================================================================
+const REQUIRED_CHAR_FIELDS = ['name', 'race', 'class', 'level', 'stats', 'hp', 'maxHp', 'ac'] as const;
+
+export function validateCharacterJSON(data: unknown): { valid: boolean; character?: Character; errors: string[] } {
+  const errors: string[] = [];
+  if (!data || typeof data !== 'object') return { valid: false, errors: ['Not a valid JSON object'] };
+  const obj = data as Record<string, unknown>;
+
+  // Check required fields
+  for (const field of REQUIRED_CHAR_FIELDS) {
+    if (obj[field] === undefined) errors.push(`Missing required field: ${field}`);
+  }
+  if (errors.length > 0) return { valid: false, errors };
+
+  // Validate types
+  if (typeof obj.name !== 'string' || !obj.name.trim()) errors.push('name must be a non-empty string');
+  if (typeof obj.race !== 'string') errors.push('race must be a string');
+  if (typeof obj.class !== 'string') errors.push('class must be a string');
+  if (typeof obj.level !== 'number' || obj.level < 1 || obj.level > 20) errors.push('level must be 1-20');
+  if (typeof obj.hp !== 'number') errors.push('hp must be a number');
+  if (typeof obj.maxHp !== 'number') errors.push('maxHp must be a number');
+  if (typeof obj.ac !== 'number') errors.push('ac must be a number');
+  if (typeof obj.stats !== 'object' || !obj.stats) {
+    errors.push('stats must be an object with STR/DEX/CON/INT/WIS/CHA');
+  } else {
+    const stats = obj.stats as Record<string, unknown>;
+    for (const s of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']) {
+      if (typeof stats[s] !== 'number') errors.push(`stats.${s} must be a number`);
+    }
+  }
+  if (errors.length > 0) return { valid: false, errors };
+
+  // Build character with defaults for optional fields
+  const char: Character = {
+    id: (obj.id as string) || crypto.randomUUID(),
+    name: (obj.name as string).trim(),
+    race: obj.race as Character['race'],
+    class: obj.class as Character['class'],
+    level: obj.level as number,
+    xp: (obj.xp as number) ?? 0,
+    stats: obj.stats as Character['stats'],
+    hp: obj.hp as number,
+    maxHp: obj.maxHp as number,
+    ac: obj.ac as number,
+    deathSaves: (obj.deathSaves as Character['deathSaves']) ?? { successes: 0, failures: 0 },
+    condition: (obj.condition as Character['condition']) ?? 'normal',
+    portrait: obj.portrait as string | undefined,
+    appearance: (obj.appearance as Character['appearance']) ?? { bodyType: 1, skinTone: 0, hairColor: 0, eyeColor: 0, hairStyle: 'short', scar: 'none', faceMarking: 'none', facialHair: 'none' },
+    background: (obj.background as Character['background']) ?? 'Folk Hero',
+    alignment: (obj.alignment as Character['alignment']) ?? 'True Neutral',
+    personalityTraits: (obj.personalityTraits as string) ?? '',
+    ideals: (obj.ideals as string) ?? '',
+    bonds: (obj.bonds as string) ?? '',
+    flaws: (obj.flaws as string) ?? '',
+    backstory: (obj.backstory as string) ?? '',
+    appearanceDescription: obj.appearanceDescription as string | undefined,
+    playerId: (obj.playerId as string) ?? '',
+    gold: (obj.gold as number) ?? 0,
+    inventory: (obj.inventory as Character['inventory']) ?? [],
+    equipment: (obj.equipment as Character['equipment']) ?? { weapon: null, armor: null, shield: null, ring: null },
+    spellSlotsUsed: (obj.spellSlotsUsed as Record<number, number>) ?? {},
+    classAbilityUsed: (obj.classAbilityUsed as boolean) ?? false,
+    feats: (obj.feats as string[]) ?? [],
+    asiChoicesMade: (obj.asiChoicesMade as number) ?? 0,
+    hitDiceRemaining: (obj.hitDiceRemaining as number) ?? (obj.level as number),
+    createdAt: (obj.createdAt as number) ?? Date.now(),
+  };
+
+  return { valid: true, character: char, errors: [] };
+}
+
+export function importJSONFile(): Promise<{ character?: Character; errors: string[] }> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.adventure.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) { resolve({ errors: ['No file selected'] }); return; }
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const result = validateCharacterJSON(data);
+        resolve(result.valid ? { character: result.character, errors: [] } : { errors: result.errors });
+      } catch (e) {
+        resolve({ errors: [`Failed to parse JSON: ${e instanceof Error ? e.message : 'Unknown error'}`] });
+      }
+    };
+    input.click();
+  });
+}
+
+// ============================================================================
 //  Markdown — universal clipboard-friendly format
 // ============================================================================
 export function exportMarkdown(char: Character): string {

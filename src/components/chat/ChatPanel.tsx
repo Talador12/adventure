@@ -1,7 +1,7 @@
 // ChatPanel — real-time chat with roll announcements and system messages.
 import { useState, useRef, useEffect } from 'react';
 
-export type ChatMessageType = 'chat' | 'roll' | 'system' | 'join' | 'leave' | 'dm';
+export type ChatMessageType = 'chat' | 'roll' | 'system' | 'join' | 'leave' | 'dm' | 'whisper';
 
 export interface ChatMessage {
   id: string;
@@ -19,6 +19,9 @@ export interface ChatMessage {
   isFumble?: boolean;
   unitName?: string;
   characterName?: string; // In-game character name (distinct from player username)
+  // Whisper-specific fields
+  targetUsername?: string; // who the whisper is addressed to
+  targetPlayerId?: string;
 }
 
 // Parse /roll commands: /roll d20, /roll 2d6+3, /roll adv, /roll disadv, /roll 4d6kh3
@@ -80,6 +83,7 @@ interface ChatPanelProps {
   messages: ChatMessage[];
   onSend: (text: string) => void;
   onSlashRoll?: (result: SlashRollResult) => void;
+  onWhisper?: (targetUsername: string, message: string) => void;
   onTyping?: () => void;
   typingUsers?: string[]; // usernames of people currently typing
   currentPlayerId?: string;
@@ -153,7 +157,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, onTyping, typingUsers, currentPlayerId }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, typingUsers, currentPlayerId }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -212,6 +216,13 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onTyping, typ
       setInput('');
       return;
     }
+    // Whisper: /whisper @username message OR /w @username message
+    const whisperMatch = text.match(/^\/(?:whisper|w)\s+@(\S+)\s+(.+)$/);
+    if (whisperMatch && onWhisper) {
+      onWhisper(whisperMatch[1], whisperMatch[2]);
+      setInput('');
+      return;
+    }
     onSend(text);
     setInput('');
   };
@@ -232,6 +243,22 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onTyping, typ
 
             if (msg.type === 'roll') {
               return <RollMessage key={msg.id} msg={msg} />;
+            }
+
+            if (msg.type === 'whisper') {
+              const isSender = msg.playerId === currentPlayerId;
+              return (
+                <div key={msg.id} className="rounded-lg px-3 py-2 border border-pink-700/30 bg-pink-950/20 text-xs">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[9px] font-bold text-pink-400 uppercase tracking-wider">Whisper</span>
+                    <span className="text-pink-300 font-semibold text-[10px]">
+                      {isSender ? `To ${msg.targetUsername}` : `From ${msg.username}`}
+                    </span>
+                    <span className="text-[9px] text-pink-700/60 ml-auto">{formatTime(msg.timestamp)}</span>
+                  </div>
+                  <p className="text-pink-200/90 text-xs">{msg.text}</p>
+                </div>
+              );
             }
 
             if (msg.type === 'system' || msg.type === 'join' || msg.type === 'leave') {
@@ -309,7 +336,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onTyping, typ
             typingThrottleRef.current = Date.now();
             onTyping();
           }
-        }} placeholder="Type a message... (/roll, /me)" className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
+        }} placeholder="Type a message... (/roll, /me, /w @name)" className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
         <button onClick={handleSend} disabled={!input.trim()} className="px-3 py-2 bg-[#F38020] hover:bg-[#e06a10] disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors">
           Send
         </button>

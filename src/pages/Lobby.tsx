@@ -234,6 +234,24 @@ export default function Lobby() {
           break;
         }
 
+        case 'whisper': {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'whisper',
+              playerId: msg.playerId as string,
+              username: msg.username as string,
+              avatar: msg.avatar as string | undefined,
+              text: msg.message as string,
+              timestamp: msg.timestamp as number,
+              targetUsername: msg.targetUsername as string | undefined,
+              targetPlayerId: msg.targetPlayerId as string | undefined,
+            },
+          ]);
+          break;
+        }
+
         case 'roll_result': {
           // Show roll in chat
           setChatMessages((prev) => [
@@ -966,7 +984,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
         <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
-          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
+          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
     </div>

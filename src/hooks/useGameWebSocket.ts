@@ -143,6 +143,23 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           ]);
           break;
 
+        case 'whisper':
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              type: 'whisper',
+              playerId: msg.playerId as string,
+              username: msg.username as string,
+              avatar: msg.avatar as string | undefined,
+              text: msg.message as string,
+              timestamp: msg.timestamp as number,
+              targetUsername: msg.targetUsername as string | undefined,
+              targetPlayerId: msg.targetPlayerId as string | undefined,
+            },
+          ]);
+          break;
+
         case 'roll_result': {
           setChatMessages((prev) => [
             ...prev,

@@ -7,6 +7,7 @@ import { useGame } from '../contexts/GameContext';
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCloudflare, faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
+import { importJSONFile } from '../lib/export';
 
 type Theme = 'dark' | 'light';
 
@@ -34,7 +35,7 @@ export default function Home() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { characters, removeCharacter } = useGame();
+  const { characters, removeCharacter, addCharacter } = useGame();
   const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number }>>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
@@ -171,6 +172,24 @@ export default function Home() {
       return;
     }
     navigate('/characters/new');
+  };
+
+  const handleImportCharacter = async () => {
+    if (!user) {
+      toast('Sign in to import a character', 'warning');
+      return;
+    }
+    const result = await importJSONFile();
+    if (result.errors.length > 0) {
+      toast(result.errors[0], 'error');
+      return;
+    }
+    if (result.character) {
+      // Assign a new ID and current player to avoid conflicts
+      const imported = { ...result.character, id: crypto.randomUUID(), playerId: user.id || '', createdAt: Date.now() };
+      addCharacter(imported);
+      toast(`Imported ${imported.name}!`, 'success');
+    }
   };
 
   const handleDiscordLogin = () => {
@@ -439,11 +458,20 @@ export default function Home() {
 
         {/* Characters column */}
         <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-xl font-semibold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">Your Characters</h2>
-            <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
-              + New Character
-            </Button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleImportCharacter}
+                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-all"
+                title="Import character from .adventure.json file"
+              >
+                Import
+              </button>
+              <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
+                + New
+              </Button>
+            </div>
           </div>
           {characters.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">

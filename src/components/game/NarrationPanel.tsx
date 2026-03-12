@@ -30,6 +30,7 @@ interface NarrationPanelProps {
   npcRole: string;
   npcMode: boolean;
   sceneName: string;
+  roomId: string;
   allCharacters: Character[];
   setNpcName: (v: string) => void;
   setNpcRole: (v: string) => void;
@@ -59,6 +60,7 @@ export default function NarrationPanel({
   npcRole,
   npcMode,
   sceneName,
+  roomId,
   allCharacters,
   setNpcName,
   setNpcRole,
@@ -83,10 +85,13 @@ export default function NarrationPanel({
   type LogFilter = 'all' | 'attacks' | 'spells' | 'conditions' | 'deaths';
   const [combatLogFilter, setCombatLogFilter] = useState<LogFilter>('all');
 
-  // Session recap state
-  const [recapText, setRecapText] = useState<string | null>(null);
+  // Session recap state — persisted to localStorage per room
+  const recapStorageKey = `adventure:recap:${roomId}`;
+  const [recapText, setRecapText] = useState<string | null>(() => {
+    try { return localStorage.getItem(recapStorageKey); } catch { return null; }
+  });
   const [recapLoading, setRecapLoading] = useState(false);
-  const [showRecap, setShowRecap] = useState(false);
+  const [showRecap, setShowRecap] = useState(!!recapText); // auto-show if cached recap exists
 
   const handleRecap = useCallback(async () => {
     if (dmHistory.length === 0) return;
@@ -105,7 +110,10 @@ export default function NarrationPanel({
         }),
       }, 35_000);
       const data = (await res.json()) as { recap?: string; error?: string };
-      setRecapText(data.recap || data.error || 'The narrator falls silent...');
+      const text = data.recap || data.error || 'The narrator falls silent...';
+      setRecapText(text);
+      // Persist to localStorage for campaign resume
+      try { localStorage.setItem(recapStorageKey, text); } catch { /* full */ }
     } catch {
       setRecapText('*The echoes of past adventures fade into silence...*');
     } finally {
