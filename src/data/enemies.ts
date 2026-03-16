@@ -100,6 +100,109 @@ export function randomEncounterTheme(): { setting: string; twist: string } {
   return ENCOUNTER_THEMES[Math.floor(Math.random() * ENCOUNTER_THEMES.length)];
 }
 
+// ── Biome-based random encounter tables ──
+
+export type Biome = 'forest' | 'dungeon' | 'mountain' | 'swamp' | 'desert' | 'underdark' | 'coastal' | 'urban';
+
+export const BIOME_LABELS: Record<Biome, { label: string; icon: string; color: string }> = {
+  forest:   { label: 'Forest',    icon: '🌲', color: 'text-green-400' },
+  dungeon:  { label: 'Dungeon',   icon: '🏰', color: 'text-slate-400' },
+  mountain: { label: 'Mountain',  icon: '⛰️', color: 'text-stone-400' },
+  swamp:    { label: 'Swamp',     icon: '🌿', color: 'text-emerald-500' },
+  desert:   { label: 'Desert',    icon: '🏜️', color: 'text-amber-400' },
+  underdark: { label: 'Underdark', icon: '🕳️', color: 'text-purple-400' },
+  coastal:  { label: 'Coastal',   icon: '🌊', color: 'text-sky-400' },
+  urban:    { label: 'Urban',     icon: '🏙️', color: 'text-orange-300' },
+};
+
+/** Each biome has weighted encounter entries with enemy names + flavor. */
+export interface BiomeEncounter {
+  enemies: string[];
+  flavor: string;
+  difficulty: 'easy' | 'medium' | 'hard' | 'deadly';
+  weight: number; // higher = more likely
+}
+
+export const BIOME_ENCOUNTERS: Record<Biome, BiomeEncounter[]> = {
+  forest: [
+    { enemies: ['Wolf', 'Dire Wolf'], flavor: 'A howl pierces the canopy. Predators circle through the underbrush.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Goblin', 'Goblin', 'Goblin'], flavor: 'Goblin raiders spring from behind fallen logs, crude weapons raised.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Twig Blight', 'Vine Blight'], flavor: 'The trees themselves lurch to life, bark splitting to reveal thorny maws.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Bugbear', 'Hobgoblin'], flavor: 'An ambush from the tree line — they were waiting for you.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Owlbear'], flavor: 'A terrible screech-hoot shakes the air. Something massive crashes through the brush.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Young Dragon'], flavor: 'A shadow passes overhead, then the treeline erupts in flame.', difficulty: 'deadly', weight: 1 },
+  ],
+  dungeon: [
+    { enemies: ['Skeleton', 'Skeleton', 'Zombie'], flavor: 'The dead rise from alcoves, eye sockets glowing with cold blue light.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Giant Rat', 'Giant Rat', 'Giant Rat'], flavor: 'Scratching echoes in the dark. Dozens of red eyes catch your torchlight.', difficulty: 'easy', weight: 2 },
+    { enemies: ['Ghoul', 'Shadow'], flavor: 'The torches flicker. Something between the shadows hungers for the living.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Animated Armor', 'Animated Armor'], flavor: 'The suits of armor flanking the corridor animate with a grinding screech.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Minotaur'], flavor: 'A bellowing roar from deeper in the labyrinth. Hooves pound stone.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Lich Apprentice'], flavor: 'Arcane sigils flare on the walls. The temperature drops to freezing.', difficulty: 'deadly', weight: 1 },
+  ],
+  mountain: [
+    { enemies: ['Kobold', 'Kobold', 'Kobold'], flavor: 'Small figures scramble across the rocks above, dropping stones and shrieking.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Orc', 'Orc'], flavor: 'War cries echo off the cliff face. A raiding party blocks the pass.', difficulty: 'medium', weight: 3 },
+    { enemies: ['Manticore'], flavor: 'A barbed tail whips overhead. Something with too many teeth circles the peak.', difficulty: 'hard', weight: 2 },
+    { enemies: ['Basilisk'], flavor: 'You notice the statues along the path look... too lifelike.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Chimera'], flavor: 'Three heads — lion, goat, dragon — turn toward you as one.', difficulty: 'deadly', weight: 1 },
+  ],
+  swamp: [
+    { enemies: ['Stirge', 'Stirge', 'Stirge'], flavor: 'A cloud of bloodsuckers rises from the stagnant water.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Zombie', 'Zombie', 'Crawling Claw'], flavor: 'Something rises from the bog. It used to be human.', difficulty: 'easy', weight: 2 },
+    { enemies: ['Giant Spider', 'Giant Spider'], flavor: 'Webs stretch between the dead trees. Something skitters above.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Shambling Mound'], flavor: 'The vegetation itself rises — a massive heap of rotting vines and fury.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Night Hag'], flavor: 'An eerie cackle carries across the mist. The air tastes of nightmares.', difficulty: 'deadly', weight: 1 },
+  ],
+  desert: [
+    { enemies: ['Bandit', 'Bandit', 'Thug'], flavor: 'Desert raiders emerge from behind sand dunes, scarves across their faces.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Giant Spider'], flavor: 'The sand erupts. A burrowing predator lunges from below.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Gnoll', 'Gnoll'], flavor: 'Hyena-like laughter carries on the wind. A war band approaches.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Elemental'], flavor: 'A whirlwind of sand coalesces into a towering, furious form.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Young Dragon'], flavor: 'A brass blur descends from the blinding sun, landing in an explosion of sand.', difficulty: 'deadly', weight: 1 },
+  ],
+  underdark: [
+    { enemies: ['Kobold', 'Kobold'], flavor: 'Traps click. Small shapes dart between the stalagmites.', difficulty: 'easy', weight: 2 },
+    { enemies: ['Specter', 'Wight'], flavor: 'Cold emanates from the walls. Something that was once buried here stirs.', difficulty: 'medium', weight: 3 },
+    { enemies: ['Phase Spider'], flavor: 'It blinks in and out of visibility, appearing closer each time.', difficulty: 'hard', weight: 2 },
+    { enemies: ['Displacer Beast'], flavor: 'You see it three feet to the left of where it actually is. By the time you realize, it strikes.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Mind Flayer'], flavor: 'A psychic pressure builds behind your eyes. Something ancient and alien probes your thoughts.', difficulty: 'deadly', weight: 1 },
+  ],
+  coastal: [
+    { enemies: ['Bandit', 'Bandit'], flavor: 'Pirates emerge from the sea cave, cutlasses drawn.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Ghoul', 'Zombie'], flavor: 'The tide washes in waterlogged corpses that begin to twitch.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Wraith'], flavor: 'A spectral ship appears on the horizon. Something boards yours.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Hydra'], flavor: 'The sea churns. Multiple serpentine heads break the surface.', difficulty: 'deadly', weight: 1 },
+  ],
+  urban: [
+    { enemies: ['Thug', 'Thug', 'Bandit'], flavor: 'Footsteps behind you. The alley narrows. This was planned.', difficulty: 'easy', weight: 3 },
+    { enemies: ['Cultist', 'Cultist', 'Cultist'], flavor: 'Robed figures step from the shadows, chanting in a tongue that hurts to hear.', difficulty: 'medium', weight: 2 },
+    { enemies: ['Vampire Spawn'], flavor: 'The charming stranger\'s smile reveals too many teeth.', difficulty: 'hard', weight: 1 },
+    { enemies: ['Oni'], flavor: 'The magistrate\'s form ripples and shifts, revealing a towering fiend.', difficulty: 'deadly', weight: 1 },
+  ],
+};
+
+/** Roll a biome-based random encounter. Returns enemy names, flavor text, and difficulty.
+ *  Uses weighted random selection — common encounters happen more often. */
+export function rollBiomeEncounter(biome: Biome): BiomeEncounter {
+  const table = BIOME_ENCOUNTERS[biome];
+  const totalWeight = table.reduce((sum, e) => sum + e.weight, 0);
+  let roll = Math.random() * totalWeight;
+  for (const entry of table) {
+    roll -= entry.weight;
+    if (roll <= 0) return entry;
+  }
+  return table[table.length - 1]; // fallback
+}
+
+/** Check for random encounter (d20 roll vs DC). Returns encounter or null.
+ *  Default DC 15 = 30% encounter chance. Lower DC = more encounters. */
+export function checkRandomEncounter(biome: Biome, dc = 15): { encounter: BiomeEncounter; roll: number } | null {
+  const roll = Math.floor(Math.random() * 20) + 1;
+  if (roll >= dc) return { encounter: rollBiomeEncounter(biome), roll };
+  return null;
+}
+
 export function generateEnemies(difficulty: string, partyLevel: number, count?: number): Unit[] {
   const templates = ENEMY_TEMPLATES[difficulty] || ENEMY_TEMPLATES.medium;
   const template = templates[Math.floor(Math.random() * templates.length)];
