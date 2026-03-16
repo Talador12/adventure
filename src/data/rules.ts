@@ -68,6 +68,22 @@ export const ABILITY_SCORES = [
   { abbr: 'CHA', name: 'Charisma', description: 'Force of personality. Sorcerer/Bard/Warlock/Paladin spellcasting, Persuasion/Deception, CHA saves (banishment).' },
 ];
 
+// --- D&D 5e exhaustion levels (cumulative) ---
+export interface ExhaustionLevel {
+  level: number;
+  effect: string;
+  color: string; // tailwind text color
+}
+
+export const EXHAUSTION_LEVELS: ExhaustionLevel[] = [
+  { level: 1, effect: 'Disadvantage on ability checks', color: 'text-yellow-400' },
+  { level: 2, effect: 'Speed halved', color: 'text-orange-400' },
+  { level: 3, effect: 'Disadvantage on attack rolls and saving throws', color: 'text-orange-500' },
+  { level: 4, effect: 'Hit point maximum halved', color: 'text-red-400' },
+  { level: 5, effect: 'Speed reduced to 0', color: 'text-red-500' },
+  { level: 6, effect: 'Death', color: 'text-red-600' },
+];
+
 // --- Common game mechanics ---
 export const GAME_MECHANICS = [
   { name: 'Advantage', description: 'Roll 2d20, take the higher result. Granted by flanking, hiding, Help action, some spells.' },

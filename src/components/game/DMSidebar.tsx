@@ -441,6 +441,44 @@ export default function DMSidebar({
               </div>
             )}
 
+            {/* Exhaustion — DM adjusts exhaustion level per character */}
+            {characters.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Exhaustion</label>
+                <p className="text-[9px] text-slate-600">D&amp;D 5e exhaustion (0-6). Cumulative penalties. Long rest reduces by 1.</p>
+                <div className="space-y-1">
+                  {characters.map((char) => {
+                    const lvl = char.exhaustion ?? 0;
+                    return (
+                      <div key={char.id} className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-slate-800 bg-slate-800/30">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`text-xs font-semibold truncate ${lvl >= 4 ? 'text-red-400' : lvl >= 2 ? 'text-orange-400' : lvl >= 1 ? 'text-yellow-400' : 'text-slate-400'}`}>{char.name}</span>
+                          <span className="text-[8px] text-slate-600">{char.class} {char.level}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => updateCharacter(char.id, { exhaustion: Math.max(0, lvl - 1) })}
+                            disabled={lvl <= 0}
+                            className="w-5 h-5 rounded text-[10px] font-bold border border-slate-700 text-slate-400 hover:text-green-400 hover:border-green-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          >
+                            -
+                          </button>
+                          <span className={`text-xs font-mono font-bold w-4 text-center ${lvl >= 4 ? 'text-red-400' : lvl >= 2 ? 'text-orange-400' : lvl >= 1 ? 'text-yellow-400' : 'text-slate-500'}`}>{lvl}</span>
+                          <button
+                            onClick={() => updateCharacter(char.id, { exhaustion: Math.min(6, lvl + 1) })}
+                            disabled={lvl >= 6}
+                            className="w-5 h-5 rounded text-[10px] font-bold border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Session Notes</label>
               <p className="text-[9px] text-slate-600">Auto-saved to your browser. Only you can see these.</p>

@@ -341,9 +341,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         const resetAbility = ability ? type === 'long' || ability.resetsOn === 'short' : false;
         const hdRemaining = c.hitDiceRemaining ?? c.level; // default to full for old characters
         if (type === 'long') {
-          // Long rest: full heal, restore half hit dice (min 1), reset slots + ability
+          // Long rest: full heal, restore half hit dice (min 1), reset slots + ability, reduce exhaustion by 1
           const restoreHd = Math.max(1, Math.floor(c.level / 2));
-          return { ...c, hp: c.maxHp, hitDiceRemaining: Math.min(c.level, hdRemaining + restoreHd), deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false };
+          const newExhaustion = Math.max(0, (c.exhaustion ?? 0) - 1);
+          return { ...c, hp: c.maxHp, hitDiceRemaining: Math.min(c.level, hdRemaining + restoreHd), deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false, exhaustion: newExhaustion };
         }
         // Short rest: spend 1 hit die (roll actual die + CON mod)
         if (hdRemaining <= 0) return c; // no hit dice left

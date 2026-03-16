@@ -1,6 +1,6 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
 import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell } from '../../contexts/GameContext';
-import { CONDITION_TOOLTIPS } from '../../data/rules';
+import { CONDITION_TOOLTIPS, EXHAUSTION_LEVELS } from '../../data/rules';
 import { useState, useCallback, useMemo } from 'react';
 
 interface CharacterSheetProps {
@@ -454,6 +454,42 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           </div>
         );
       })()}
+
+      {/* Exhaustion — D&D 5e cumulative penalties */}
+      {(character.exhaustion ?? 0) > 0 && (
+        <div className="rounded-lg border border-orange-700/40 bg-orange-900/10 p-2.5 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wider">Exhaustion</span>
+            <span className={`text-sm font-black ${
+              character.exhaustion >= 5 ? 'text-red-500' :
+              character.exhaustion >= 3 ? 'text-orange-400' : 'text-yellow-400'
+            }`}>
+              Level {character.exhaustion}
+            </span>
+          </div>
+          {/* Level pips */}
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5, 6].map((lvl) => (
+              <div
+                key={lvl}
+                className={`flex-1 h-1.5 rounded-full transition-all ${
+                  lvl <= character.exhaustion
+                    ? lvl >= 5 ? 'bg-red-500' : lvl >= 3 ? 'bg-orange-500' : 'bg-yellow-500'
+                    : 'bg-slate-700'
+                }`}
+              />
+            ))}
+          </div>
+          {/* Active penalties */}
+          <div className="space-y-0.5">
+            {EXHAUSTION_LEVELS.filter((e) => e.level <= character.exhaustion).map((e) => (
+              <div key={e.level} className={`text-[9px] ${e.color}`}>
+                <span className="font-bold">Lv{e.level}:</span> {e.effect}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Gold + Rest */}
       <div className="flex gap-2">

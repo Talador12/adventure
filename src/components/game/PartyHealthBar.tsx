@@ -73,6 +73,19 @@ export default function PartyHealthBar({ characters, selectedCharacterId, onSele
                 {isDead ? 'DEAD' : isUnconscious ? 'DOWN' : `${char.hp}/${char.maxHp}`}
               </span>
             </div>
+            {/* Exhaustion badge */}
+            {(char.exhaustion ?? 0) > 0 && (
+              <span
+                className={`text-[7px] font-bold px-1 py-0.5 rounded border ${
+                  char.exhaustion >= 4 ? 'text-red-400 border-red-700/50 bg-red-900/20' :
+                  char.exhaustion >= 2 ? 'text-orange-400 border-orange-700/50 bg-orange-900/20' :
+                  'text-yellow-400 border-yellow-700/50 bg-yellow-900/20'
+                }`}
+                title={`Exhaustion level ${char.exhaustion}`}
+              >
+                E{char.exhaustion}
+              </span>
+            )}
             {/* Condition pips */}
             {conditions.length > 0 && (
               <div className="flex gap-0.5">

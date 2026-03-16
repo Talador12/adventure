@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Exhaustion levels — D&D 5e exhaustion system (0-6) with cumulative penalties. `exhaustion: number` on Character interface. DM controls in DMSidebar Notes tab (per-character +/- buttons). Visual indicator in PartyHealthBar (E1-E6 badge, color-coded by severity). Full exhaustion section in CharacterSheet with level pips and active penalty list. Long rest reduces exhaustion by 1. `EXHAUSTION_LEVELS` data in rules.ts. Character creation defaults to 0. JSON import validates with fallback.
 - Encounter history log — `EncounterLog` component (220 lines) as new "Encounters" view tab. Auto-saves combat stats when combat ends: damage dealt/taken, kills, spells cast, critical hits, fumbles, KOs, rounds survived. Live stats during active combat with pulsing red indicator. Past encounters as expandable cards with time-ago display. Parses combat log strings with regex heuristics to extract structured data. localStorage persistence per campaign (last 20 encounters). `6` keyboard shortcut.
 - Inspiration points — D&D 5e DM reward mechanic. `inspiration: boolean` on Character interface. DM grants/revokes from DMSidebar Notes tab (per-character toggle buttons). Golden star pip on PartyHealthBar portraits. "Spend Inspiration (Advantage)" button in DiceRoller that auto-sets advantage mode and consumes the point. Character creation defaults to `false`. JSON import validates with fallback. Synced via existing `character_update` game event.
 - Quick rules reference — `RulesReference` modal with 5 tabs (Conditions, Actions, Spells, Scores, Rules). Conditions tab shows all 10 conditions with modifier badges. Actions tab has 11 D&D 5e combat actions with icons. Spells tab groups all 24 spells by school with expandable cards. Scores tab explains all 6 ability scores. Rules tab covers 10 key mechanics (advantage, death saves, concentration, etc.). Searchable. `R` keyboard shortcut. Shared `rules.ts` data file extracted from CharacterSheet.
@@ -887,7 +888,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Session timer (track total play time per session, auto-save on idle)~~ (DONE — SessionTimer component in Game header)
 - ~~Encounter history log (damage dealt, spells cast, rounds survived)~~ (DONE — EncounterLog component with auto-save + live stats)
 - ~~Inspiration points (D&D 5e DM reward mechanic, spend for advantage)~~ (DONE — Character field + DMSidebar grant/revoke + DiceRoller spend)
-- Exhaustion levels (6 levels, cumulative penalties, tracked on character)
+- ~~Exhaustion levels (6 levels, cumulative penalties, tracked on character)~~ (DONE — Character field + DMSidebar controls + PartyHealthBar badge + CharacterSheet section + long rest reduces by 1)
 - Map pin/marker system (DM drops named annotations on battle map)
 - Party formation presets (marching order for travel, auto-arrange tokens)
 - Combat recap per round (auto-generated summary of what happened)

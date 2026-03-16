@@ -124,6 +124,7 @@ export function validateCharacterJSON(data: unknown): { valid: boolean; characte
     asiChoicesMade: (obj.asiChoicesMade as number) ?? 0,
     hitDiceRemaining: (obj.hitDiceRemaining as number) ?? (obj.level as number),
     inspiration: (obj.inspiration as boolean) ?? false,
+    exhaustion: (obj.exhaustion as number) ?? 0,
     createdAt: (obj.createdAt as number) ?? Date.now(),
   };
 

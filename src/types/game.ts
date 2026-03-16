@@ -347,6 +347,7 @@ export interface Character {
   asiChoicesMade: number;
   hitDiceRemaining: number; // how many hit dice are left to spend (max = level)
   inspiration: boolean; // D&D 5e inspiration — DM grants, player spends for advantage
+  exhaustion: number; // D&D 5e exhaustion level (0-6). Cumulative penalties; 6 = death.
   createdAt: number;
 }
 
