@@ -24,6 +24,7 @@ import CombatToolbar from '../components/game/CombatToolbar';
 import ShopView from '../components/game/ShopView';
 import SessionJournal, { type JournalEntry } from '../components/game/SessionJournal';
 import MonsterBrowser from '../components/game/MonsterBrowser';
+import LootTracker, { type LootItem } from '../components/game/LootTracker';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -84,6 +85,7 @@ export default function Game() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
+  const lootSyncRef = useRef<(items: LootItem[]) => void>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
   // Game state — derive selectedCharacter from characters array so it stays reactive
@@ -110,7 +112,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot'>('narration');
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
@@ -340,6 +342,7 @@ export default function Game() {
     updateCharacter,
     getStateForResponse,
     journalSyncRef,
+    lootSyncRef,
     setWeather,
     selectedCharacterId,
   });
@@ -386,6 +389,7 @@ export default function Game() {
       if (e.key === '2') { setActiveView('map'); return; }
       if (e.key === '3' && !inCombat) { setActiveView('shop'); return; }
       if (e.key === '4') { setActiveView('journal'); return; }
+      if (e.key === '5') { setActiveView('loot'); return; }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1364,6 +1368,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('journal')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'journal' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Journal
                   </button>
+                  <button onClick={() => setActiveView('loot')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'loot' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    Loot
+                  </button>
                 </div>
 
                 {/* AoE targeting banner */}
@@ -1472,6 +1479,14 @@ export default function Game() {
                     playerName={currentPlayer.username || 'Unknown'}
                     onBroadcast={(evt) => broadcastGameEvent(evt.type, { entries: evt.entries })}
                     syncRef={journalSyncRef}
+                  />
+                ) : activeView === 'loot' ? (
+                  <LootTracker
+                    roomId={room}
+                    playerName={currentPlayer.username || 'Unknown'}
+                    isDM={canUseDMTools}
+                    onBroadcast={(evt) => broadcastGameEvent(evt.type, { items: evt.items })}
+                    syncRef={lootSyncRef}
                   />
                 ) : (
                   /* Battle Map view */
@@ -1591,6 +1606,7 @@ export default function Game() {
                 ['2', 'Battle map view'],
                 ['3', 'Shop view (out of combat)'],
                 ['4 / J', 'Session journal'],
+                ['5', 'Party loot tracker'],
                 ['B', 'Monster manual (DM only)'],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">

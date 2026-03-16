@@ -10,6 +10,7 @@ import type { ChatMessage } from '../components/chat/ChatPanel';
 import type { TerrainType, TokenPosition } from '../lib/mapUtils';
 import type { Quest } from '../types/game';
 import type { JournalEntry } from '../components/game/SessionJournal';
+import type { LootItem } from '../components/game/LootTracker';
 import type { DiceRollerHandle } from '../components/dice/DiceRoller';
 import { playDiceRoll, playCritical, playFumble, playPlayerJoin } from './useSoundFX';
 import { persistChatMessage } from '../lib/chatApi';
@@ -61,6 +62,9 @@ export interface GameWebSocketDeps {
 
   // Journal sync callback ref
   journalSyncRef: React.MutableRefObject<((entries: JournalEntry[]) => void) | null>;
+
+  // Loot sync callback ref
+  lootSyncRef: React.MutableRefObject<((items: LootItem[]) => void) | null>;
 
   // Weather sync
   setWeather?: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
@@ -389,6 +393,12 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               case 'journal_sync': {
                 if (Array.isArray(eventData.entries)) {
                   deps.journalSyncRef.current?.(eventData.entries as JournalEntry[]);
+                }
+                break;
+              }
+              case 'loot_sync': {
+                if (Array.isArray(eventData.items)) {
+                  deps.lootSyncRef.current?.(eventData.items as LootItem[]);
                 }
                 break;
               }
