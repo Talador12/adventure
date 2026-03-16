@@ -5,6 +5,7 @@ import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/Gam
 import { randomFantasyName } from '../../lib/names';
 import { setAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../../hooks/useSoundFX';
 import { BIOME_LABELS, rollBiomeEncounter, checkRandomEncounter, type Biome, type BiomeEncounter } from '../../data/enemies';
+import { rollTreasureHoard, HOARD_TIER_LABELS, type TreasureHoardResult } from '../../data/rules';
 import FormationPresets from './FormationPresets';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
@@ -85,6 +86,8 @@ export default function DMSidebar({
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
   const [biome, setBiome] = useState<Biome>('forest');
   const [lastBiomeRoll, setLastBiomeRoll] = useState<{ encounter: BiomeEncounter; roll: number } | null>(null);
+  const [hoardTier, setHoardTier] = useState(0);
+  const [lastHoard, setLastHoard] = useState<TreasureHoardResult | null>(null);
 
   return (
     <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-hidden">
@@ -304,6 +307,38 @@ export default function DMSidebar({
                 )}
               </div>
             )}
+            {/* Travel Pace Calculator */}
+            {!inCombat && (
+              <div className="space-y-1.5 border-t border-slate-700/50 pt-3">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Travel Pace</label>
+                <div className="bg-slate-800/60 rounded-lg border border-slate-700/50 overflow-hidden">
+                  <div className="grid grid-cols-4 text-[8px] font-semibold uppercase text-slate-500 border-b border-slate-700/50">
+                    <div className="px-2 py-1">Pace</div>
+                    <div className="px-2 py-1 text-center">mi/hr</div>
+                    <div className="px-2 py-1 text-center">mi/day</div>
+                    <div className="px-2 py-1 text-right">Effect</div>
+                  </div>
+                  {([
+                    { pace: 'Fast', mph: 4, mpd: 30, effect: '-5 Perception', color: 'text-red-400', icon: '🏃' },
+                    { pace: 'Normal', mph: 3, mpd: 24, effect: '—', color: 'text-slate-300', icon: '🚶' },
+                    { pace: 'Slow', mph: 2, mpd: 18, effect: 'Can stealth', color: 'text-green-400', icon: '🐢' },
+                  ] as const).map((row) => (
+                    <div key={row.pace} className="grid grid-cols-4 text-[10px] border-b border-slate-700/30 last:border-0 hover:bg-slate-700/20 transition-colors">
+                      <div className="px-2 py-1.5 font-medium text-slate-300">{row.icon} {row.pace}</div>
+                      <div className="px-2 py-1.5 text-center font-mono text-slate-400">{row.mph}</div>
+                      <div className="px-2 py-1.5 text-center font-mono text-slate-400">{row.mpd}</div>
+                      <div className={`px-2 py-1.5 text-right text-[9px] ${row.color}`}>{row.effect}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[8px] text-slate-600 space-y-0.5">
+                  <p>• 8 hours of travel per day. Pushing beyond risks exhaustion (DC 10 + 1/hr CON save).</p>
+                  <p>• Difficult terrain: halve distance. Mounted: fast pace without -5 Perception penalty.</p>
+                  <p>• Forced march: CON save each extra hour or gain 1 exhaustion level.</p>
+                </div>
+              </div>
+            )}
+
             {/* Turn Timer Settings */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Turn Timer</label>
@@ -357,6 +392,74 @@ export default function DMSidebar({
             {!inCombat && (
               <div className="border-t border-slate-700/50 pt-3">
                 <FormationPresets roomId={roomId} onApplyFormation={onApplyFormation} />
+              </div>
+            )}
+            {/* Treasure Hoard Generator */}
+            {!inCombat && (
+              <div className="space-y-2 border-t border-slate-700/50 pt-3">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Treasure Hoard</label>
+                <div className="flex gap-1">
+                  {HOARD_TIER_LABELS.map((label, i) => (
+                    <button
+                      key={label}
+                      onClick={() => { setHoardTier(i); setLastHoard(null); }}
+                      className={`flex-1 py-1 rounded text-[9px] font-medium transition-all border ${
+                        hoardTier === i
+                          ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
+                          : 'border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setLastHoard(rollTreasureHoard(hoardTier))}
+                  className="w-full py-1.5 text-[10px] font-semibold rounded-lg bg-amber-900/40 text-amber-400 border border-amber-700/50 hover:bg-amber-800/40 hover:border-amber-600/50 transition-all"
+                >
+                  💰 Roll Treasure Hoard
+                </button>
+                {lastHoard && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] text-amber-400 font-semibold uppercase">Hoard Contents</span>
+                      <span className="text-[11px] font-bold text-amber-300">💰 {lastHoard.gold.toLocaleString()} gp</span>
+                    </div>
+                    {lastHoard.gems.length > 0 && (
+                      <div>
+                        <span className="text-[8px] text-cyan-500 font-semibold uppercase">Gems ({lastHoard.gems.length})</span>
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {lastHoard.gems.map((g, i) => (
+                            <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-900/30 border border-cyan-800/40 text-cyan-300">
+                              {g.name} ({g.value}gp)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {lastHoard.items.length > 0 && (
+                      <div>
+                        <span className="text-[8px] text-purple-500 font-semibold uppercase">Magic Items ({lastHoard.items.length})</span>
+                        <div className="space-y-0.5 mt-0.5">
+                          {lastHoard.items.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between text-[10px]">
+                              <span className="text-slate-300">{item.name}</span>
+                              <span className={`text-[8px] font-semibold uppercase ${
+                                item.rarity === 'legendary' ? 'text-amber-400' :
+                                item.rarity === 'very rare' ? 'text-fuchsia-400' :
+                                item.rarity === 'rare' ? 'text-blue-400' :
+                                item.rarity === 'uncommon' ? 'text-green-400' : 'text-slate-500'
+                              }`}>{item.rarity}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="text-[8px] text-slate-600 pt-0.5 border-t border-slate-700/30">
+                      Total gem value: {lastHoard.gems.reduce((s, g) => s + g.value, 0).toLocaleString()} gp
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>

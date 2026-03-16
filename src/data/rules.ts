@@ -97,3 +97,150 @@ export const GAME_MECHANICS = [
   { name: 'Cover', description: 'Half cover: +2 AC and DEX saves. Three-quarters: +5 AC and DEX saves. Full cover: can\'t be targeted directly.' },
   { name: 'Difficult Terrain', description: 'Each foot of movement costs 2 feet. Water, rubble, dense undergrowth, and magical effects can create difficult terrain.' },
 ];
+
+// --- Treasure hoard tables (simplified from DMG Chapter 7) ---
+export interface TreasureHoardResult {
+  gold: number;
+  gems: { name: string; value: number }[];
+  items: { name: string; rarity: string }[];
+}
+
+interface HoardTable {
+  label: string;
+  crRange: string;
+  goldDice: () => number; // roll function for gold
+  gemTable: { name: string; value: number; weight: number }[];
+  itemTable: { name: string; rarity: string; weight: number }[];
+  gemCount: () => number;
+  itemCount: () => number;
+}
+
+function rollDice(count: number, sides: number): number {
+  let total = 0;
+  for (let i = 0; i < count; i++) total += Math.floor(Math.random() * sides) + 1;
+  return total;
+}
+
+function weightedPick<T extends { weight: number }>(table: T[]): T {
+  const total = table.reduce((sum, t) => sum + t.weight, 0);
+  let roll = Math.random() * total;
+  for (const entry of table) {
+    roll -= entry.weight;
+    if (roll <= 0) return entry;
+  }
+  return table[table.length - 1];
+}
+
+const HOARD_TABLES: HoardTable[] = [
+  {
+    label: 'CR 0-4',
+    crRange: '0-4',
+    goldDice: () => rollDice(6, 6) * 10,
+    gemCount: () => rollDice(2, 4),
+    itemCount: () => Math.random() < 0.3 ? 1 : 0,
+    gemTable: [
+      { name: 'Agate', value: 10, weight: 3 },
+      { name: 'Turquoise', value: 10, weight: 3 },
+      { name: 'Obsidian', value: 10, weight: 2 },
+      { name: 'Moonstone', value: 50, weight: 2 },
+      { name: 'Citrine', value: 50, weight: 1 },
+      { name: 'Jasper', value: 50, weight: 1 },
+    ],
+    itemTable: [
+      { name: 'Potion of Healing', rarity: 'common', weight: 5 },
+      { name: 'Spell Scroll (1st level)', rarity: 'common', weight: 3 },
+      { name: 'Bag of Holding', rarity: 'uncommon', weight: 1 },
+      { name: 'Cloak of Protection', rarity: 'uncommon', weight: 1 },
+    ],
+  },
+  {
+    label: 'CR 5-10',
+    crRange: '5-10',
+    goldDice: () => rollDice(4, 6) * 100,
+    gemCount: () => rollDice(3, 6),
+    itemCount: () => rollDice(1, 4),
+    gemTable: [
+      { name: 'Bloodstone', value: 50, weight: 2 },
+      { name: 'Onyx', value: 50, weight: 2 },
+      { name: 'Sardonyx', value: 50, weight: 2 },
+      { name: 'Garnet', value: 100, weight: 2 },
+      { name: 'Amethyst', value: 100, weight: 2 },
+      { name: 'Pearl', value: 100, weight: 1 },
+      { name: 'Topaz', value: 500, weight: 1 },
+    ],
+    itemTable: [
+      { name: 'Potion of Greater Healing', rarity: 'uncommon', weight: 4 },
+      { name: 'Spell Scroll (3rd level)', rarity: 'uncommon', weight: 3 },
+      { name: 'Flame Tongue Sword', rarity: 'rare', weight: 2 },
+      { name: 'Ring of Resistance', rarity: 'rare', weight: 1 },
+      { name: 'Wand of Fireballs', rarity: 'rare', weight: 1 },
+      { name: 'Amulet of Health', rarity: 'rare', weight: 1 },
+    ],
+  },
+  {
+    label: 'CR 11-16',
+    crRange: '11-16',
+    goldDice: () => rollDice(4, 6) * 1000,
+    gemCount: () => rollDice(2, 4),
+    itemCount: () => rollDice(1, 6),
+    gemTable: [
+      { name: 'Blue Sapphire', value: 1000, weight: 2 },
+      { name: 'Emerald', value: 1000, weight: 2 },
+      { name: 'Fire Opal', value: 1000, weight: 2 },
+      { name: 'Star Ruby', value: 1000, weight: 2 },
+      { name: 'Diamond', value: 5000, weight: 1 },
+      { name: 'Jacinth', value: 5000, weight: 1 },
+    ],
+    itemTable: [
+      { name: 'Potion of Supreme Healing', rarity: 'very rare', weight: 3 },
+      { name: 'Spell Scroll (6th level)', rarity: 'very rare', weight: 2 },
+      { name: 'Staff of Power', rarity: 'very rare', weight: 1 },
+      { name: 'Robe of the Archmagi', rarity: 'very rare', weight: 1 },
+      { name: 'Vorpal Sword', rarity: 'legendary', weight: 1 },
+      { name: 'Holy Avenger', rarity: 'legendary', weight: 1 },
+    ],
+  },
+  {
+    label: 'CR 17+',
+    crRange: '17+',
+    goldDice: () => rollDice(12, 6) * 1000,
+    gemCount: () => rollDice(3, 6),
+    itemCount: () => rollDice(1, 6) + 1,
+    gemTable: [
+      { name: 'Diamond', value: 5000, weight: 3 },
+      { name: 'Jacinth', value: 5000, weight: 2 },
+      { name: 'Ruby', value: 5000, weight: 2 },
+      { name: 'Black Opal', value: 1000, weight: 2 },
+      { name: 'Star Sapphire', value: 1000, weight: 2 },
+    ],
+    itemTable: [
+      { name: 'Potion of Storm Giant Strength', rarity: 'legendary', weight: 2 },
+      { name: 'Sphere of Annihilation', rarity: 'legendary', weight: 1 },
+      { name: 'Deck of Many Things', rarity: 'legendary', weight: 1 },
+      { name: 'Ring of Three Wishes', rarity: 'legendary', weight: 1 },
+      { name: 'Talisman of Ultimate Evil', rarity: 'legendary', weight: 1 },
+      { name: 'Luck Blade', rarity: 'legendary', weight: 1 },
+      { name: 'Apparatus of Kwalish', rarity: 'legendary', weight: 1 },
+    ],
+  },
+];
+
+export function rollTreasureHoard(crTier: number = 0): TreasureHoardResult {
+  const table = HOARD_TABLES[Math.min(crTier, HOARD_TABLES.length - 1)];
+  const gold = table.goldDice();
+  const gemCount = table.gemCount();
+  const itemCount = table.itemCount();
+  const gems: TreasureHoardResult['gems'] = [];
+  const items: TreasureHoardResult['items'] = [];
+  for (let i = 0; i < gemCount; i++) {
+    const gem = weightedPick(table.gemTable);
+    gems.push({ name: gem.name, value: gem.value });
+  }
+  for (let i = 0; i < itemCount; i++) {
+    const item = weightedPick(table.itemTable);
+    items.push({ name: item.name, rarity: item.rarity });
+  }
+  return { gold, gems, items };
+}
+
+export const HOARD_TIER_LABELS = HOARD_TABLES.map((t) => t.label);
