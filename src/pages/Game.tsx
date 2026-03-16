@@ -27,6 +27,7 @@ import MonsterBrowser from '../components/game/MonsterBrowser';
 import RulesReference from '../components/game/RulesReference';
 import SessionTimer from '../components/game/SessionTimer';
 import LootTracker, { type LootItem } from '../components/game/LootTracker';
+import EncounterLog from '../components/game/EncounterLog';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -114,7 +115,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters'>('narration');
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
@@ -397,6 +398,7 @@ export default function Game() {
       if (e.key === '3' && !inCombat) { setActiveView('shop'); return; }
       if (e.key === '4') { setActiveView('journal'); return; }
       if (e.key === '5') { setActiveView('loot'); return; }
+      if (e.key === '6') { setActiveView('encounters'); return; }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1388,6 +1390,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('loot')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'loot' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Loot
                   </button>
+                  <button onClick={() => setActiveView('encounters')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'encounters' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    Encounters
+                  </button>
                 </div>
 
                 {/* AoE targeting banner */}
@@ -1504,6 +1509,13 @@ export default function Game() {
                     isDM={canUseDMTools}
                     onBroadcast={(evt) => broadcastGameEvent(evt.type, { items: evt.items })}
                     syncRef={lootSyncRef}
+                  />
+                ) : activeView === 'encounters' ? (
+                  <EncounterLog
+                    roomId={room}
+                    currentCombatLog={combatLog}
+                    inCombat={inCombat}
+                    combatRound={combatRound}
                   />
                 ) : (
                   /* Battle Map view */
@@ -1625,6 +1637,7 @@ export default function Game() {
                 ['4 / J', 'Session journal'],
                 ['5', 'Party loot tracker'],
                 ['R', 'Quick rules reference'],
+                ['6', 'Encounter history log'],
                 ['B', 'Monster manual (DM only)'],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
