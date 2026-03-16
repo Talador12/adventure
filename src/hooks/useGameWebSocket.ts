@@ -9,6 +9,7 @@ import type { Unit, DieType, Character } from '../contexts/GameContext';
 import type { ChatMessage } from '../components/chat/ChatPanel';
 import type { TerrainType, TokenPosition } from '../lib/mapUtils';
 import type { Quest } from '../types/game';
+import type { JournalEntry } from '../components/game/SessionJournal';
 import type { DiceRollerHandle } from '../components/dice/DiceRoller';
 import { playDiceRoll, playCritical, playFumble, playPlayerJoin } from './useSoundFX';
 import { persistChatMessage } from '../lib/chatApi';
@@ -57,6 +58,9 @@ export interface GameWebSocketDeps {
     quests: Quest[];
     dmHistory: string[];
   };
+
+  // Journal sync callback ref
+  journalSyncRef: React.MutableRefObject<((entries: JournalEntry[]) => void) | null>;
 
   // Character context for party join
   selectedCharacterId: string | null;
@@ -377,6 +381,12 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               case 'map_image': {
                 const url = eventData.mapImageUrl as string | null;
                 setMapImageUrl(url ?? null);
+                break;
+              }
+              case 'journal_sync': {
+                if (Array.isArray(eventData.entries)) {
+                  deps.journalSyncRef.current?.(eventData.entries as JournalEntry[]);
+                }
                 break;
               }
             }

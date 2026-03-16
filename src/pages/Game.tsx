@@ -22,6 +22,7 @@ import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
 import ShopView from '../components/game/ShopView';
+import SessionJournal, { type JournalEntry } from '../components/game/SessionJournal';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
 
@@ -80,6 +81,7 @@ export default function Game() {
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const diceRef = useRef<DiceRollerHandle>(null);
+  const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
   // Game state — derive selectedCharacter from characters array so it stays reactive
@@ -106,7 +108,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal'>('narration');
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
@@ -330,6 +332,7 @@ export default function Game() {
     setMapImageUrl,
     updateCharacter,
     getStateForResponse,
+    journalSyncRef,
     selectedCharacterId,
   });
 
@@ -365,10 +368,13 @@ export default function Game() {
       if (e.key === 'q' || e.key === 'Q') { setShowQuests((s) => !s); return; }
       // L — toggle combat log
       if (e.key === 'l' || e.key === 'L') { setShowCombatLog((s) => !s); return; }
-      // 1/2/3 — switch views (narration/map/shop)
+      // J — toggle journal view
+      if (e.key === 'j' || e.key === 'J') { setActiveView((v) => v === 'journal' ? 'narration' : 'journal'); return; }
+      // 1/2/3/4 — switch views (narration/map/shop/journal)
       if (e.key === '1') { setActiveView('narration'); return; }
       if (e.key === '2') { setActiveView('map'); return; }
       if (e.key === '3' && !inCombat) { setActiveView('shop'); return; }
+      if (e.key === '4') { setActiveView('journal'); return; }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1307,6 +1313,9 @@ export default function Game() {
                       Shop
                     </button>
                   )}
+                  <button onClick={() => setActiveView('journal')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'journal' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    Journal
+                  </button>
                 </div>
 
                 {/* AoE targeting banner */}
@@ -1409,6 +1418,13 @@ export default function Game() {
                       setShopMessage={setShopMessage}
                     />
                   </div>
+                ) : activeView === 'journal' ? (
+                  <SessionJournal
+                    roomId={room}
+                    playerName={currentPlayer.username || 'Unknown'}
+                    onBroadcast={(evt) => broadcastGameEvent(evt.type, { entries: evt.entries })}
+                    syncRef={journalSyncRef}
+                  />
                 ) : (
                   /* Battle Map view */
                   <BattleMap
@@ -1523,6 +1539,7 @@ export default function Game() {
                 ['1', 'Narration view'],
                 ['2', 'Battle map view'],
                 ['3', 'Shop view (out of combat)'],
+                ['4 / J', 'Session journal'],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
                   <kbd className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-md text-xs font-mono text-slate-300 shadow-sm">{key}</kbd>
