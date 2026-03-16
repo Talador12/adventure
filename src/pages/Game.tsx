@@ -30,6 +30,7 @@ import LootTracker, { type LootItem } from '../components/game/LootTracker';
 import EncounterLog from '../components/game/EncounterLog';
 import NpcTracker from '../components/game/NpcTracker';
 import DiceStats from '../components/game/DiceStats';
+import CombatRecap from '../components/game/CombatRecap';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -1466,6 +1467,11 @@ export default function Game() {
                   setShopMessage={setShopMessage}
                   addFloatingText={addFloatingText}
                 />
+
+                {/* Combat round recap — shown above content in narration view */}
+                {inCombat && activeView === 'narration' && (
+                  <CombatRecap combatLog={combatLog} combatRound={combatRound} inCombat={inCombat} />
+                )}
 
                 {activeView === 'narration' ? (
                    <NarrationPanel
