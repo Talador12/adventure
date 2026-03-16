@@ -1044,7 +1044,7 @@ export default function Game() {
   const moodTint = MOOD_TINTS[currentAmbient];
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden relative">
+    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden relative page-enter">
       {/* Ambient mood tint overlay */}
       {moodTint && (
         <div

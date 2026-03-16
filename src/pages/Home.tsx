@@ -407,7 +407,7 @@ export default function Home() {
               <Button variant="default" className="btn-glow flex-1 sm:flex-none bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
                 New Campaign
               </Button>
-              <Button variant="default" className="flex-1 sm:flex-none bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
+              <Button variant="default" className="btn-glow flex-1 sm:flex-none bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
                 Create Character
               </Button>
             </div>
@@ -423,7 +423,7 @@ export default function Home() {
               { icon: '✨', label: 'Just Works', desc: 'No plugins, no install, no PDF imports — open a browser and play in minutes' },
               { icon: '🎭', label: 'Every Seat, Your Call', desc: 'Human or AI for any seat — DM, players, spectators. Or no AI at all' },
             ].map((f) => (
-              <div key={f.label} className="feature-card p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 backdrop-blur-sm animate-card-reveal">
+              <div key={f.label} className="feature-card card-glow p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 backdrop-blur-sm animate-card-reveal">
                 <div className="text-2xl mb-1 animate-float" style={{ animationDelay: `${Math.random() * 2}s` }}>{f.icon}</div>
                 <div className="text-sm font-semibold text-white">{f.label}</div>
                 <div className="text-[11px] text-slate-400">{f.desc}</div>
@@ -442,7 +442,7 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-slate-400">Public Games</h2>
             <div className="flex gap-3 overflow-x-auto pb-1 stagger-children">
               {publicCampaigns.filter((pc) => !campaigns.some((c) => c.roomId === pc.roomId)).slice(0, 8).map((pc) => (
-                <div key={pc.roomId} className="game-card shrink-0 w-56 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow hover:shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
+                <div key={pc.roomId} className="game-card card-glow shrink-0 w-56 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow hover:shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
                   <div className="px-3 pt-3 pb-2">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{pc.name}</h3>
                     {pc.description && <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{pc.description}</p>}
@@ -472,7 +472,7 @@ export default function Home() {
         <div className="flex flex-col gap-4 animate-fade-in-up">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold bg-gradient-to-r from-[#F38020] to-amber-400 bg-clip-text text-transparent">Your Campaigns</h2>
-            <Button variant="default" className="bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
+            <Button variant="default" className="btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
               + New Campaign
             </Button>
           </div>
@@ -501,7 +501,7 @@ export default function Home() {
                 const dmMember = members.find((m) => m.role === 'dm');
                 const playerCount = members.filter((m) => m.role !== 'dm').length;
                 return (
-                  <div key={c.roomId} className="game-card rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
+                  <div key={c.roomId} className="game-card card-glow rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
                     {/* Campaign header */}
                     <div className="px-4 pt-4 pb-3">
                       <div className="flex items-start justify-between gap-2">
@@ -565,7 +565,7 @@ export default function Home() {
               >
                 Import
               </button>
-              <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
+              <Button variant="default" className="btn-glow bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
                 + New
               </Button>
             </div>
@@ -583,7 +583,7 @@ export default function Home() {
                 const chaMod = Math.floor((c.stats.CHA - 10) / 2);
                 const fmtMod = (v: number) => v >= 0 ? `+${v}` : `${v}`;
                 return (
-                  <div key={c.id} className="game-card rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
+                  <div key={c.id} className="game-card card-glow rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
                     <div className="flex gap-3 p-4">
                       {/* Portrait */}
                       <img
@@ -644,7 +644,7 @@ export default function Home() {
               {user ? (
                 <>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No characters yet. Create one to join a campaign!</p>
-                  <Button variant="default" className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
+                  <Button variant="default" className="btn-glow bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
                     Create Your First Character
                   </Button>
                 </>

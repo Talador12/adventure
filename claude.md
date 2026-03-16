@@ -790,23 +790,23 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 | Campaign metadata | KV list + D1 schema exists | Migrate KV → D1 | TODO |
 | User preferences | localStorage | D1 + localStorage (sync) | TODO |
 
-### v0.2.0: Visual Polish + Codebase Health (IN PROGRESS)
+### v0.2.0: Visual Polish + Codebase Health (DONE)
 **Goal:** Make the app feel premium — slick animations, fantasy color palette, smooth transitions. Simultaneously decompose bloated files and optimize the bundle.
 
-**Visual polish (IN PROGRESS):**
+**Visual polish (DONE):**
 - [x] Fantasy CSS animation system: 10 keyframes (fadeInUp, cardReveal, shimmer, gentleFloat, glowPulse, gradientShift, slideIn, popIn, emberRise, borderGlow)
 - [x] Utility classes: `.animate-fade-in-up`, `.animate-card-reveal`, `.stagger-children`, `.text-shimmer`, `.card-glow`, `.hero-gradient`, `.btn-glow`, `.animate-float`, `.feature-card`, `.game-card`, `.hp-bar-shimmer`, `.stat-badge`, `.input-glow`, `.crit-flash`, `.page-enter`
 - [x] Fantasy color palette tokens: ember, gold, mystic, arcane, dragon, forest
 - [x] Polished scrollbar (gradient thumb, thinner)
-- [ ] Hero section: animated gradient background, shimmer on tagline
-- [ ] Feature cards: `.feature-card` class, staggered entrance, subtle hover glow
-- [ ] Campaign/character cards: `.game-card` class, staggered entrance, hover lift
-- [ ] CTA buttons: `.btn-glow` pulse on primary actions
-- [ ] Page entrance animation on Home, Lobby, Game
-- [ ] Lobby UI: card hover effects, seat card animations
-- [ ] Game UI: crit flash on dice rolls, HP bar shimmer, smoother transitions
+- [x] Hero section: `hero-gradient` animated background, `text-shimmer` on tagline
+- [x] Feature cards: `feature-card` + `card-glow`, staggered entrance via `stagger-children`, ember hover glow
+- [x] Campaign/character cards: `game-card` + `card-glow`, staggered entrance, hover lift with ember shadow
+- [x] CTA buttons: `btn-glow` pulse on New Campaign, Create Character, + New, empty-state CTA
+- [x] Page entrance animation: `page-enter` on Home `<main>`, Lobby outer div, Game outer div
+- [x] Lobby UI: `seat-card` hover lift, `seat-ready` pulse on ready seats, `animate-card-reveal` entrance
+- [x] Game UI: `crit-flash` on DiceRoller crit display, `hp-bar-shimmer` on PartyHealthBar + InitiativeBar + NarrationPanel HP bars
 
-**Codebase decomposition (IN PROGRESS):**
+**Codebase decomposition (DONE):**
 - [x] `src/types/game.ts` — all shared interfaces and type definitions (~300 lines extracted)
 - [x] `src/data/enemies.ts` — enemy templates, encounter themes, generateEnemies (~100 lines)
 - [x] `src/data/items.ts` — loot tables, shop items, rollLoot (~100 lines)

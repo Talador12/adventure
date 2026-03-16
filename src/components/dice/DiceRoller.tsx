@@ -448,7 +448,7 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
       </div>
 
       {/* Animated dice display */}
-      <div ref={diceDisplayRef} className="relative flex items-center justify-center py-6" style={showBurst && critState === 'fumble' ? { animation: 'fumbleShake 0.6s ease-out' } : undefined}>
+      <div ref={diceDisplayRef} className={`relative flex items-center justify-center py-6${showBurst && critState === 'crit' ? ' crit-flash' : ''}`} style={showBurst && critState === 'fumble' ? { animation: 'fumbleShake 0.6s ease-out' } : undefined}>
         {/* Dice shape outline — tint gold/red persistently on crit/fumble */}
         {ShapeComponent && (
           <div

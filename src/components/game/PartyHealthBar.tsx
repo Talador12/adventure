@@ -58,7 +58,7 @@ export default function PartyHealthBar({ characters, selectedCharacterId, onSele
             </div>
             {/* HP bar */}
             <div className="flex flex-col items-end gap-0.5">
-              <div className="w-14 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-14 h-1.5 bg-slate-700 rounded-full overflow-hidden hp-bar-shimmer">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${isDead ? 'bg-red-800' : isLow ? 'bg-red-500' : isMid ? 'bg-yellow-500' : 'bg-green-500'}`}
                   style={{ width: `${hpPct}%` }}
