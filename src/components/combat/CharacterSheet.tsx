@@ -1,5 +1,6 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
 import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell } from '../../contexts/GameContext';
+import { CONDITION_TOOLTIPS } from '../../data/rules';
 import { useState, useCallback, useMemo } from 'react';
 
 interface CharacterSheetProps {
@@ -97,21 +98,7 @@ const CASTING_STAT: Record<string, StatName> = {
   Bard: 'CHA', Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS',
 };
 
-// Condition reference tooltips — full 5e descriptions
-const CONDITION_TOOLTIPS: Record<ConditionType, string> = {
-  poisoned: 'Poisoned: Disadvantage on attack rolls and ability checks (-2 to attacks and saves).',
-  stunned: 'Stunned: Cannot move or take actions. Auto-fail STR/DEX saves. Attacks against have advantage (-2 AC).',
-  frightened: 'Frightened: Disadvantage on ability checks and attack rolls while source of fear is in line of sight (-2 to attacks).',
-  blessed: 'Blessed: Add 1d4 to attack rolls and saving throws (+2 to attacks and saves).',
-  hexed: 'Hexed: Disadvantage on ability checks with the chosen ability (-2 to saves).',
-  burning: 'Burning: Takes 1d6 fire damage at the start of each turn. Can use action to extinguish.',
-  prone: 'Prone: Melee attacks against have advantage. Ranged attacks against have disadvantage. Must spend half movement to stand.',
-  dodging: 'Dodging: +2 AC until next turn. Attacks against have disadvantage. DEX saves have advantage.',
-  raging: 'Raging: +2 to melee attack and damage rolls. Resistance to bludgeoning, piercing, slashing damage.',
-  inspired: 'Inspired: Bardic Inspiration — +2 to attack rolls and saving throws for the duration.',
-};
-
-// School colors for filter badges
+// School colors for filter badges (also exported from data/rules.ts SPELL_SCHOOLS but kept inline for render perf)
 const SCHOOL_COLORS: Record<string, string> = {
   abjuration: 'text-blue-300 bg-blue-900/30 border-blue-700/40',
   conjuration: 'text-cyan-300 bg-cyan-900/30 border-cyan-700/40',

@@ -24,6 +24,8 @@ import CombatToolbar from '../components/game/CombatToolbar';
 import ShopView from '../components/game/ShopView';
 import SessionJournal, { type JournalEntry } from '../components/game/SessionJournal';
 import MonsterBrowser from '../components/game/MonsterBrowser';
+import RulesReference from '../components/game/RulesReference';
+import SessionTimer from '../components/game/SessionTimer';
 import LootTracker, { type LootItem } from '../components/game/LootTracker';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
@@ -138,6 +140,8 @@ export default function Game() {
   const [showHelpOverlay, setShowHelpOverlay] = useState(false);
   // Monster manual browser modal
   const [showMonsterBrowser, setShowMonsterBrowser] = useState(false);
+  // Rules reference modal
+  const [showRulesRef, setShowRulesRef] = useState(false);
 
   // Weather effects on battle map
   const [weather, setWeather] = useState<'none' | 'rain' | 'fog' | 'snow' | 'sandstorm'>('none');
@@ -361,6 +365,7 @@ export default function Game() {
 
       // Escape closes modals/panels in priority order (topmost first)
       if (e.key === 'Escape') {
+        if (showRulesRef) { setShowRulesRef(false); return; }
         if (showMonsterBrowser) { setShowMonsterBrowser(false); return; }
         if (showHelpOverlay) { setShowHelpOverlay(false); return; }
         if (showLevelUpModal) { setShowLevelUpModal(false); return; }
@@ -382,6 +387,8 @@ export default function Game() {
       if (e.key === 'l' || e.key === 'L') { setShowCombatLog((s) => !s); return; }
       // J — toggle journal view
       if (e.key === 'j' || e.key === 'J') { setActiveView((v) => v === 'journal' ? 'narration' : 'journal'); return; }
+      // R — toggle rules reference
+      if (e.key === 'r' || e.key === 'R') { setShowRulesRef((s) => !s); return; }
       // B — toggle monster browser (DM only)
       if ((e.key === 'b' || e.key === 'B') && canUseDMTools) { setShowMonsterBrowser((s) => !s); return; }
       // 1/2/3/4 — switch views (narration/map/shop/journal)
@@ -393,7 +400,7 @@ export default function Game() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showLevelUpModal, showDMSidebar, showCombatLog, showQuests, showHelpOverlay, soundMuted, canUseDMTools, inCombat]);
+  }, [showLevelUpModal, showDMSidebar, showCombatLog, showQuests, showHelpOverlay, showRulesRef, soundMuted, canUseDMTools, inCombat]);
 
   // Delayed broadcast — reads from refs after React processes state batches.
   // Use this when you can't easily capture return values (e.g. player UI actions).
@@ -1124,6 +1131,7 @@ export default function Game() {
             <div className={`w-2 h-2 rounded-full ${statusColor}`} />
             <span className="text-[10px] text-slate-500">{status}</span>
           </div>
+          <SessionTimer roomId={room} compact />
         </div>
         <div className="flex items-center gap-3">
           {/* Sound controls — mute toggle + volume slider */}
@@ -1177,6 +1185,15 @@ export default function Game() {
               </div>
             )}
           </div>
+          <button
+            onClick={() => setShowRulesRef((s) => !s)}
+            className={`text-xs px-2 py-1 rounded border transition-colors ${
+              showRulesRef ? 'border-amber-500/50 text-amber-400 bg-amber-500/10' : 'border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-500'
+            }`}
+            title="Quick rules reference (R)"
+          >
+            Rules
+          </button>
           <button
             onClick={() => setShowHelpOverlay((s) => !s)}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors w-5 h-5 flex items-center justify-center rounded border border-slate-700 hover:border-slate-500"
@@ -1607,6 +1624,7 @@ export default function Game() {
                 ['3', 'Shop view (out of combat)'],
                 ['4 / J', 'Session journal'],
                 ['5', 'Party loot tracker'],
+                ['R', 'Quick rules reference'],
                 ['B', 'Monster manual (DM only)'],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
@@ -1618,6 +1636,11 @@ export default function Game() {
             <p className="mt-4 text-[10px] text-slate-600 text-center">Shortcuts are disabled when typing in input fields</p>
           </div>
         </div>
+      )}
+
+      {/* Rules Reference modal */}
+      {showRulesRef && (
+        <RulesReference onClose={() => setShowRulesRef(false)} />
       )}
 
       {/* Monster Manual browser modal */}
