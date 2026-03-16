@@ -23,6 +23,8 @@ import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
 import ShopView from '../components/game/ShopView';
 import SessionJournal, { type JournalEntry } from '../components/game/SessionJournal';
+import MonsterBrowser from '../components/game/MonsterBrowser';
+import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
 
@@ -132,6 +134,8 @@ export default function Game() {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   // Keyboard shortcut help overlay
   const [showHelpOverlay, setShowHelpOverlay] = useState(false);
+  // Monster manual browser modal
+  const [showMonsterBrowser, setShowMonsterBrowser] = useState(false);
 
   // Turn timer — DM-configurable
   const [turnTimerEnabled, setTurnTimerEnabled] = useState(true);
@@ -350,6 +354,7 @@ export default function Game() {
 
       // Escape closes modals/panels in priority order (topmost first)
       if (e.key === 'Escape') {
+        if (showMonsterBrowser) { setShowMonsterBrowser(false); return; }
         if (showHelpOverlay) { setShowHelpOverlay(false); return; }
         if (showLevelUpModal) { setShowLevelUpModal(false); return; }
         if (showDMSidebar) { setShowDMSidebar(false); return; }
@@ -370,6 +375,8 @@ export default function Game() {
       if (e.key === 'l' || e.key === 'L') { setShowCombatLog((s) => !s); return; }
       // J — toggle journal view
       if (e.key === 'j' || e.key === 'J') { setActiveView((v) => v === 'journal' ? 'narration' : 'journal'); return; }
+      // B — toggle monster browser (DM only)
+      if ((e.key === 'b' || e.key === 'B') && canUseDMTools) { setShowMonsterBrowser((s) => !s); return; }
       // 1/2/3/4 — switch views (narration/map/shop/journal)
       if (e.key === '1') { setActiveView('narration'); return; }
       if (e.key === '2') { setActiveView('map'); return; }
@@ -812,6 +819,40 @@ export default function Game() {
     }
   }, [selectedCharacter, dmHistory, addDmMessage, setUnits, encounterDifficulty, broadcastGameEvent, terrain, mapPositions]);
 
+  // Spawn monsters from the Monster Manual browser
+  const handleSpawnMonster = useCallback((monster: Monster, count: number) => {
+    const partyLevel = selectedCharacter?.level || 1;
+    const levelScale = 1 + (partyLevel - 1) * 0.15;
+    const newUnits: Unit[] = Array.from({ length: count }, (_, i) => {
+      const baseHp = monster.hp[0] + Math.floor(Math.random() * (monster.hp[1] - monster.hp[0] + 1));
+      const scaledHp = Math.round(baseHp * levelScale);
+      return {
+        id: `enemy-${crypto.randomUUID().slice(0, 8)}-${i}`,
+        name: count > 1 ? `${monster.name} ${String.fromCharCode(65 + i)}` : monster.name,
+        hp: scaledHp, maxHp: scaledHp, ac: monster.ac, initiative: -1, isCurrentTurn: false,
+        type: 'enemy' as const, playerId: 'ai-dm',
+        attackBonus: monster.attackBonus, damageDie: monster.damageDie, damageBonus: monster.damageBonus,
+        dexMod: monster.dexMod, abilities: monster.abilities.map((a) => ({ ...a })),
+        abilityCooldowns: {}, conditions: [], speed: monster.speed, movementUsed: 0,
+        reactionUsed: false, disengaged: false, cr: monster.cr, xpValue: monster.xpValue,
+      } satisfies Unit;
+    });
+    const names = newUnits.map((u) => u.name).join(', ');
+    addDmMessage(`*${names} ${count > 1 ? 'appear' : 'appears'} on the battlefield!*`);
+    playEncounterStart();
+    setUnits((prev: Unit[]) => [...prev, ...newUnits]);
+    setTimeout(() => {
+      broadcastGameEvent('encounter_spawn', {
+        units: unitsRef.current,
+        terrain: terrain,
+        positions: mapPositions,
+        inCombat: inCombatRef.current,
+        combatRound: combatRoundRef.current,
+      });
+    }, 100);
+    setShowMonsterBrowser(false);
+  }, [selectedCharacter, addDmMessage, setUnits, broadcastGameEvent, terrain, mapPositions]);
+
   const { status, send } = useWebSocket({
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
@@ -1187,6 +1228,7 @@ export default function Game() {
             setTurnTimerEnabled={setTurnTimerEnabled}
             turnTimeSeconds={turnTimeSeconds}
             setTurnTimeSeconds={setTurnTimeSeconds}
+            onOpenMonsterBrowser={() => setShowMonsterBrowser(true)}
           />
         )}
 
@@ -1540,6 +1582,7 @@ export default function Game() {
                 ['2', 'Battle map view'],
                 ['3', 'Shop view (out of combat)'],
                 ['4 / J', 'Session journal'],
+                ['B', 'Monster manual (DM only)'],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
                   <kbd className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-md text-xs font-mono text-slate-300 shadow-sm">{key}</kbd>
@@ -1550,6 +1593,14 @@ export default function Game() {
             <p className="mt-4 text-[10px] text-slate-600 text-center">Shortcuts are disabled when typing in input fields</p>
           </div>
         </div>
+      )}
+
+      {/* Monster Manual browser modal */}
+      {showMonsterBrowser && (
+        <MonsterBrowser
+          onSpawn={handleSpawnMonster}
+          onClose={() => setShowMonsterBrowser(false)}
+        />
       )}
 
       {/* Level-Up Choice Modal — extracted component */}

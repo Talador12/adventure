@@ -32,6 +32,8 @@ interface DMSidebarProps {
   setTurnTimerEnabled: (v: boolean) => void;
   turnTimeSeconds: number;
   setTurnTimeSeconds: (v: number) => void;
+  // Monster browser
+  onOpenMonsterBrowser: () => void;
 }
 
 export default function DMSidebar({
@@ -59,6 +61,7 @@ export default function DMSidebar({
   setTurnTimerEnabled,
   turnTimeSeconds,
   setTurnTimeSeconds,
+  onOpenMonsterBrowser,
 }: DMSidebarProps) {
   const { units, characters, inCombat } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -155,6 +158,12 @@ export default function DMSidebar({
               {encounterLoading ? (
                 <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />Spawning...</>
               ) : 'Spawn Encounter'}
+            </button>
+            <button
+              onClick={onOpenMonsterBrowser}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5"
+            >
+              🐉 Browse Monsters
             </button>
             {units.length > 0 && inCombat && (
               <div className="space-y-1.5">
