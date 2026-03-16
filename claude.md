@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- NPC relationship tracker — `NpcTracker` component (~260 lines) as new "NPCs" view tab. DM adds NPCs with name, role, location, faction, and disposition (-2 hostile to +2 allied). Disposition bar with +/- controls. Search + filter (all/alive/dead/hostile/friendly). Inline editable notes per NPC. Mark dead/revive toggle. Purple-accented faction display. localStorage persistence per campaign. `7` keyboard shortcut.
 - Exhaustion levels — D&D 5e exhaustion system (0-6) with cumulative penalties. `exhaustion: number` on Character interface. DM controls in DMSidebar Notes tab (per-character +/- buttons). Visual indicator in PartyHealthBar (E1-E6 badge, color-coded by severity). Full exhaustion section in CharacterSheet with level pips and active penalty list. Long rest reduces exhaustion by 1. `EXHAUSTION_LEVELS` data in rules.ts. Character creation defaults to 0. JSON import validates with fallback.
 - Encounter history log — `EncounterLog` component (220 lines) as new "Encounters" view tab. Auto-saves combat stats when combat ends: damage dealt/taken, kills, spells cast, critical hits, fumbles, KOs, rounds survived. Live stats during active combat with pulsing red indicator. Past encounters as expandable cards with time-ago display. Parses combat log strings with regex heuristics to extract structured data. localStorage persistence per campaign (last 20 encounters). `6` keyboard shortcut.
 - Inspiration points — D&D 5e DM reward mechanic. `inspiration: boolean` on Character interface. DM grants/revokes from DMSidebar Notes tab (per-character toggle buttons). Golden star pip on PartyHealthBar portraits. "Spend Inspiration (Advantage)" button in DiceRoller that auto-sets advantage mode and consumes the point. Character creation defaults to `false`. JSON import validates with fallback. Synced via existing `character_update` game event.
@@ -892,7 +893,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Map pin/marker system (DM drops named annotations on battle map)
 - Party formation presets (marching order for travel, auto-arrange tokens)
 - Combat recap per round (auto-generated summary of what happened)
-- NPC relationship tracker (faction standing, NPC disposition, notes)
+- ~~NPC relationship tracker (faction standing, NPC disposition, notes)~~ (DONE — NpcTracker component with disposition scale, search/filter, DM controls, localStorage)
 
 **Content & Import/Export:**
 - Import from D&D Beyond / Foundry VTT / Roll20 JSON

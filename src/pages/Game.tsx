@@ -28,6 +28,7 @@ import RulesReference from '../components/game/RulesReference';
 import SessionTimer from '../components/game/SessionTimer';
 import LootTracker, { type LootItem } from '../components/game/LootTracker';
 import EncounterLog from '../components/game/EncounterLog';
+import NpcTracker from '../components/game/NpcTracker';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -115,7 +116,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs'>('narration');
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
@@ -399,6 +400,7 @@ export default function Game() {
       if (e.key === '4') { setActiveView('journal'); return; }
       if (e.key === '5') { setActiveView('loot'); return; }
       if (e.key === '6') { setActiveView('encounters'); return; }
+      if (e.key === '7') { setActiveView('npcs'); return; }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1393,6 +1395,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('encounters')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'encounters' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Encounters
                   </button>
+                  <button onClick={() => setActiveView('npcs')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'npcs' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    NPCs
+                  </button>
                 </div>
 
                 {/* AoE targeting banner */}
@@ -1517,6 +1522,11 @@ export default function Game() {
                     inCombat={inCombat}
                     combatRound={combatRound}
                   />
+                ) : activeView === 'npcs' ? (
+                  <NpcTracker
+                    roomId={room}
+                    isDM={canUseDMTools}
+                  />
                 ) : (
                   /* Battle Map view */
                   <div className="relative flex-1 overflow-hidden">
@@ -1638,6 +1648,7 @@ export default function Game() {
                 ['5', 'Party loot tracker'],
                 ['R', 'Quick rules reference'],
                 ['6', 'Encounter history log'],
+                ['7', 'NPC relationship tracker'],
                 ['B', 'Monster manual (DM only)'],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
