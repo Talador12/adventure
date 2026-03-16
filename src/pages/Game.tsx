@@ -137,6 +137,9 @@ export default function Game() {
   // Monster manual browser modal
   const [showMonsterBrowser, setShowMonsterBrowser] = useState(false);
 
+  // Weather effects on battle map
+  const [weather, setWeather] = useState<'none' | 'rain' | 'fog' | 'snow' | 'sandstorm'>('none');
+
   // Turn timer — DM-configurable
   const [turnTimerEnabled, setTurnTimerEnabled] = useState(true);
   const [turnTimeSeconds, setTurnTimeSeconds] = useState(60);
@@ -337,6 +340,7 @@ export default function Game() {
     updateCharacter,
     getStateForResponse,
     journalSyncRef,
+    setWeather,
     selectedCharacterId,
   });
 
@@ -1229,6 +1233,8 @@ export default function Game() {
             turnTimeSeconds={turnTimeSeconds}
             setTurnTimeSeconds={setTurnTimeSeconds}
             onOpenMonsterBrowser={() => setShowMonsterBrowser(true)}
+            weather={weather}
+            setWeather={(w) => { setWeather(w); broadcastGameEvent('weather_change', { weather: w }); }}
           />
         )}
 
@@ -1469,25 +1475,28 @@ export default function Game() {
                   />
                 ) : (
                   /* Battle Map view */
-                  <BattleMap
-                    canUseDMTools={canUseDMTools}
-                    onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
-                    onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
-                    onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}
-                    onOpportunityAttack={(attackerName, targetName, damage, hit) => {
-                      const msg = hit ? `Opportunity Attack! ${attackerName} strikes ${targetName} for ${damage} damage as they flee!` : `Opportunity Attack! ${attackerName} swings at ${targetName} but misses!`;
-                      setCombatLog((prev) => [...prev, msg]);
-                      addDmMessage(msg);
-                      setTimeout(broadcastCombatSyncLatest, 50);
-                    }}
-                    animateMoveRef={animateMoveRef}
-                    activeAoE={activeAoE}
-                    onAoEConfirm={handleAoEConfirm}
-                    onAoECancel={() => {
-                      setActiveAoE(null);
-                      setPendingAoESpell(null);
-                    }}
-                  />
+                  <div className="relative flex-1 overflow-hidden">
+                    <BattleMap
+                      canUseDMTools={canUseDMTools}
+                      onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
+                      onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
+                      onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}
+                      onOpportunityAttack={(attackerName, targetName, damage, hit) => {
+                        const msg = hit ? `Opportunity Attack! ${attackerName} strikes ${targetName} for ${damage} damage as they flee!` : `Opportunity Attack! ${attackerName} swings at ${targetName} but misses!`;
+                        setCombatLog((prev) => [...prev, msg]);
+                        addDmMessage(msg);
+                        setTimeout(broadcastCombatSyncLatest, 50);
+                      }}
+                      animateMoveRef={animateMoveRef}
+                      activeAoE={activeAoE}
+                      onAoEConfirm={handleAoEConfirm}
+                      onAoECancel={() => {
+                        setActiveAoE(null);
+                        setPendingAoESpell(null);
+                      }}
+                    />
+                    {weather !== 'none' && <div className={`weather-${weather}`} />}
+                  </div>
                 )}
               </div>
             )}

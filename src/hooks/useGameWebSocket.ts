@@ -62,6 +62,9 @@ export interface GameWebSocketDeps {
   // Journal sync callback ref
   journalSyncRef: React.MutableRefObject<((entries: JournalEntry[]) => void) | null>;
 
+  // Weather sync
+  setWeather?: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
+
   // Character context for party join
   selectedCharacterId: string | null;
 }
@@ -386,6 +389,12 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               case 'journal_sync': {
                 if (Array.isArray(eventData.entries)) {
                   deps.journalSyncRef.current?.(eventData.entries as JournalEntry[]);
+                }
+                break;
+              }
+              case 'weather_change': {
+                if (typeof eventData.weather === 'string') {
+                  deps.setWeather?.(eventData.weather as 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm');
                 }
                 break;
               }

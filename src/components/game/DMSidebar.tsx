@@ -34,6 +34,9 @@ interface DMSidebarProps {
   setTurnTimeSeconds: (v: number) => void;
   // Monster browser
   onOpenMonsterBrowser: () => void;
+  // Weather
+  weather: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm';
+  setWeather: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
 }
 
 export default function DMSidebar({
@@ -62,6 +65,8 @@ export default function DMSidebar({
   turnTimeSeconds,
   setTurnTimeSeconds,
   onOpenMonsterBrowser,
+  weather,
+  setWeather,
 }: DMSidebarProps) {
   const { units, characters, inCombat } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -185,6 +190,31 @@ export default function DMSidebar({
                 placeholder="Scene name..."
                 className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder:text-slate-600 focus:border-[#F38020] focus:outline-none"
               />
+            </div>
+            {/* Weather effects */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Weather</label>
+              <div className="flex flex-wrap gap-1">
+                {([
+                  { key: 'none', icon: '☀️', label: 'Clear' },
+                  { key: 'rain', icon: '🌧️', label: 'Rain' },
+                  { key: 'fog', icon: '🌫️', label: 'Fog' },
+                  { key: 'snow', icon: '❄️', label: 'Snow' },
+                  { key: 'sandstorm', icon: '🏜️', label: 'Sandstorm' },
+                ] as const).map((w) => (
+                  <button
+                    key={w.key}
+                    onClick={() => setWeather(w.key)}
+                    className={`px-1.5 py-1 rounded-md text-[10px] font-medium transition-all border ${
+                      weather === w.key
+                        ? 'border-sky-500/50 bg-sky-500/10 text-sky-300'
+                        : 'border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+                    }`}
+                  >
+                    {w.icon} {w.label}
+                  </button>
+                ))}
+              </div>
             </div>
             {/* Random Encounter Table */}
             {!inCombat && (
