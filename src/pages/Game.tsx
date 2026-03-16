@@ -1263,6 +1263,8 @@ export default function Game() {
             onOpenMonsterBrowser={() => setShowMonsterBrowser(true)}
             weather={weather}
             setWeather={(w) => { setWeather(w); broadcastGameEvent('weather_change', { weather: w }); }}
+            roomId={room}
+            onApplyFormation={(positions) => { setMapPositions(positions); broadcastGameEvent('formation_apply', { positions }); }}
           />
         )}
 

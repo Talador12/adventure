@@ -408,6 +408,12 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
                 }
                 break;
               }
+              case 'formation_apply': {
+                if (Array.isArray(eventData.positions)) {
+                  setMapPositions(eventData.positions as TokenPosition[]);
+                }
+                break;
+              }
             }
           } finally {
             isRemoteEventRef.current = false;

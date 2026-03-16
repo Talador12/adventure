@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Party formation presets — `FormationPresets` component (~230 lines) in DMSidebar encounter tab. Six formations: Line, Column, Wedge, Diamond, Circle, Scatter. Drag-reorderable marching order with localStorage persistence. Repositions player tokens relative to current center, respects terrain (skips walls). WebSocket sync via `formation_apply` game event. Only shown out of combat.
 - Combat recap per round — `CombatRecap` component (~200 lines) auto-generates narrative summaries when combat rounds advance. Parses combat log strings for damage, kills, spells, crits, fumbles, and KOs. Produces italic narrative one-liners ("Round 2: 3 enemies fell, a devastating critical hit landed, Fireball cast."). Collapsible banner with round history. Color-coded by event severity (amber for crits, red for kills, yellow for KOs). Shown in narration view during combat.
 - Dice roll statistics — `DiceStats` component (~250 lines) as new "Stats" view tab. Luck rating (-100 cursed to +100 blessed) with visual bar. Per-die breakdown (d4-d20) with average vs expected comparison bars. Crit/fumble counts. Hot/cold streaks on d20 rolls. Per-player leaderboard (d20 average, crits, fumbles). Recent roll history with timestamps. All computed via `useMemo` from GameContext `rolls` array. `8` keyboard shortcut.
 - NPC relationship tracker — `NpcTracker` component (~260 lines) as new "NPCs" view tab. DM adds NPCs with name, role, location, faction, and disposition (-2 hostile to +2 allied). Disposition bar with +/- controls. Search + filter (all/alive/dead/hostile/friendly). Inline editable notes per NPC. Mark dead/revive toggle. Purple-accented faction display. localStorage persistence per campaign. `7` keyboard shortcut.
@@ -893,7 +894,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Inspiration points (D&D 5e DM reward mechanic, spend for advantage)~~ (DONE — Character field + DMSidebar grant/revoke + DiceRoller spend)
 - ~~Exhaustion levels (6 levels, cumulative penalties, tracked on character)~~ (DONE — Character field + DMSidebar controls + PartyHealthBar badge + CharacterSheet section + long rest reduces by 1)
 - Map pin/marker system (DM drops named annotations on battle map)
-- Party formation presets (marching order for travel, auto-arrange tokens)
+- ~~Party formation presets (marching order for travel, auto-arrange tokens)~~ (DONE — FormationPresets component with 6 formations, drag-reorder marching order, WebSocket sync)
 - ~~Combat recap per round (auto-generated summary of what happened)~~ (DONE — CombatRecap component with narrative summaries, round history, severity coloring)
 - ~~NPC relationship tracker (faction standing, NPC disposition, notes)~~ (DONE — NpcTracker component with disposition scale, search/filter, DM controls, localStorage)
 

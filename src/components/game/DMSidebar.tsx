@@ -5,6 +5,8 @@ import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/Gam
 import { randomFantasyName } from '../../lib/names';
 import { setAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../../hooks/useSoundFX';
 import { BIOME_LABELS, rollBiomeEncounter, checkRandomEncounter, type Biome, type BiomeEncounter } from '../../data/enemies';
+import FormationPresets from './FormationPresets';
+import type { TokenPosition } from '../../lib/mapUtils';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -37,6 +39,9 @@ interface DMSidebarProps {
   // Weather
   weather: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm';
   setWeather: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
+  // Formation
+  roomId: string;
+  onApplyFormation: (positions: TokenPosition[]) => void;
 }
 
 export default function DMSidebar({
@@ -67,6 +72,8 @@ export default function DMSidebar({
   onOpenMonsterBrowser,
   weather,
   setWeather,
+  roomId,
+  onApplyFormation,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -340,6 +347,12 @@ export default function DMSidebar({
                 </div>
               )}
             </div>
+            {/* Party formation presets */}
+            {!inCombat && (
+              <div className="border-t border-slate-700/50 pt-3">
+                <FormationPresets roomId={roomId} onApplyFormation={onApplyFormation} />
+              </div>
+            )}
           </>
         )}
         {/* NPC tab */}
