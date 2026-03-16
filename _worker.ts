@@ -918,8 +918,8 @@ app.post('/api/portrait/describe', async (c) => {
       if (description) {
         return c.json({ description, fallback: true });
       }
-    } catch {
-      /* ignore fallback errors */
+    } catch (fallbackErr) {
+      console.error('portrait describe fallback failed:', fallbackErr instanceof Error ? fallbackErr.message : fallbackErr);
     }
 
     const msg = err instanceof Error ? err.message : 'Image analysis failed';

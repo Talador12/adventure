@@ -822,17 +822,17 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] `src/components/game/CombatToolbar.tsx` — combat actions + DM controls toolbar (745 lines, 22 unused imports cleaned from Game.tsx)
 - [x] WS Message Handler → `src/hooks/useGameWebSocket.ts` (already extracted)
 - [x] Campaign Persistence → `src/hooks/useCampaignPersistence.ts` (extracted + localStorage fallback for temp users)
-- [ ] Shop View (~94 lines)
+- [x] Shop View (~94 lines) — extracted to `src/components/game/ShopView.tsx` in v0.1.0-dev.37
 
 **Bundle optimization:**
 - [x] Hono security patch: 4.12.5 → 4.12.7 (Dependabot CVE fix)
 - [x] Lazy load routes: `React.lazy()` for Game, CharacterCreate, Lobby (in main.tsx)
-- [ ] Manual chunks: split vendor (react, react-dom) from app code via Vite rollupOptions
-- [ ] Target: 703KB → under 400KB initial load
+- [x] Manual chunks: `vendor-react` (49KB: react/react-dom/react-router-dom) + `vendor-ui` (30KB: clsx/tailwind-merge/lucide-react) via Vite rollupOptions.manualChunks. Main bundle down from ~395KB → 339KB.
+- [x] Target: initial load well under 400KB (main 339KB + vendor-react 49KB cached separately)
 
 **Error handling improvements (from code review):**
-- [ ] Add `console.error` to all bare `catch {}` blocks in _worker.ts
-- [ ] Standardize error response shape: `{ error: string }` everywhere
+- [x] Add `console.error` to bare `catch {}` blocks in _worker.ts — audited all 4 bare catches: 3 are JWT verify (expected auth failures, return null/user:null), 1 fallback error in portrait describe now logs with `console.error`
+- [x] Standardize error response shape: `{ error: string }` everywhere — verified all error responses already use `{ error: string }` format
 - [x] AbortController timeout on client-side AI fetch calls (fetchWithTimeout wired to all 10 AI calls)
 
 ### v0.3.0: Mobile + Accessibility (PLANNED)

@@ -16,6 +16,12 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
       },
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['clsx', 'tailwind-merge', 'lucide-react'],
+        },
+      },
     },
   },
   // Use assets/ as the static dir so it doesn't conflict with build outDir
