@@ -594,6 +594,7 @@ export default function CharacterCreate() {
       feats: [],
       asiChoicesMade: 0,
       hitDiceRemaining: 1, // level 1 = 1 hit die
+      inspiration: false,
       createdAt: Date.now(),
     };
   }, [finalStats, charClass, name, race, portrait, appearance, background, alignment, personalityTraits, ideals, bonds, flaws, backstory, analyzeUpload, aiDescription, currentPlayer.id]);
@@ -679,6 +680,7 @@ export default function CharacterCreate() {
         feats: [],
         asiChoicesMade: 0,
         hitDiceRemaining: 1,
+        inspiration: false,
         createdAt: Date.now(),
       };
       addCharacter(character);

@@ -81,7 +81,7 @@ interface DiceRollerProps {
 type AdvantageMode = 'normal' | 'advantage' | 'disadvantage';
 
 const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, onRollComplete, onMacroRoll, useServerRolls = false, compact = false }, ref) {
-  const { currentPlayer, addRoll, rolls, clearRolls, selectedUnitId, units } = useGame();
+  const { currentPlayer, addRoll, rolls, clearRolls, selectedUnitId, units, characters, updateCharacter } = useGame();
   const [rolling, setRolling] = useState<DieType | null>(null);
   const [displayValue, setDisplayValue] = useState<number | null>(null);
   const [lastRoll, setLastRoll] = useState<{ die: DieType; value: number; sides: number; playerName?: string } | null>(null);
@@ -374,6 +374,24 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
           );
         })}
       </div>
+
+      {/* Inspiration spend button */}
+      {(() => {
+        const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+        const myChar = selectedUnit?.characterId ? characters.find((c) => c.id === selectedUnit.characterId) : null;
+        if (!myChar?.inspiration) return null;
+        return (
+          <button
+            onClick={() => {
+              updateCharacter(myChar.id, { inspiration: false });
+              setAdvMode('advantage');
+            }}
+            className="w-full py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all active:scale-95"
+          >
+            ★ Spend Inspiration (Advantage)
+          </button>
+        );
+      })()}
 
       {/* Dice macros — saved roll shortcuts */}
       {!compact && (

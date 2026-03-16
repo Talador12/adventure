@@ -346,6 +346,7 @@ export interface Character {
   feats: string[];
   asiChoicesMade: number;
   hitDiceRemaining: number; // how many hit dice are left to spend (max = level)
+  inspiration: boolean; // D&D 5e inspiration — DM grants, player spends for advantage
   createdAt: number;
 }
 

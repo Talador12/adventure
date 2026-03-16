@@ -68,7 +68,7 @@ export default function DMSidebar({
   weather,
   setWeather,
 }: DMSidebarProps) {
-  const { units, characters, inCombat } = useGame();
+  const { units, characters, inCombat, updateCharacter } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
   const [biome, setBiome] = useState<Biome>('forest');
   const [lastBiomeRoll, setLastBiomeRoll] = useState<{ encounter: BiomeEncounter; roll: number } | null>(null);
@@ -412,6 +412,35 @@ export default function DMSidebar({
         {/* Notes tab */}
         {dmSidebarTab === 'notes' && (
           <>
+            {/* Inspiration — DM grants advantage tokens to players */}
+            {characters.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Inspiration</label>
+                <p className="text-[9px] text-slate-600">Grant inspiration — players can spend it for advantage on one roll.</p>
+                <div className="space-y-1">
+                  {characters.map((char) => (
+                    <div key={char.id} className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-slate-800 bg-slate-800/30">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`text-xs font-semibold truncate ${char.inspiration ? 'text-amber-400' : 'text-slate-400'}`}>{char.name}</span>
+                        <span className="text-[8px] text-slate-600">{char.class} {char.level}</span>
+                      </div>
+                      <button
+                        onClick={() => updateCharacter(char.id, { inspiration: !char.inspiration })}
+                        className={`text-[10px] px-2 py-0.5 rounded-md border transition-all font-semibold ${
+                          char.inspiration
+                            ? 'border-amber-500/50 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+                            : 'border-slate-700 text-slate-500 hover:text-amber-400 hover:border-amber-500/40'
+                        }`}
+                        title={char.inspiration ? `Revoke ${char.name}'s inspiration` : `Grant ${char.name} inspiration`}
+                      >
+                        {char.inspiration ? '★ Inspired' : '☆ Grant'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Session Notes</label>
               <p className="text-[9px] text-slate-600">Auto-saved to your browser. Only you can see these.</p>

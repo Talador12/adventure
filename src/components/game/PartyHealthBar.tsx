@@ -42,13 +42,18 @@ export default function PartyHealthBar({ characters, selectedCharacterId, onSele
             }`}
             title={`${char.name} — ${char.hp}/${char.maxHp} HP${conditions.length ? ` (${conditions.map((c) => c.type).join(', ')})` : ''}`}
           >
-            {/* Tiny portrait */}
-            <img
-              src={portraitSrc}
-              alt={char.name}
-              className={`w-6 h-6 rounded-full object-cover border ${isDead ? 'border-red-800 grayscale' : isUnconscious ? 'border-yellow-700' : 'border-slate-700'}`}
-              onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${char.race.toLowerCase()}.webp`; }}
-            />
+            {/* Tiny portrait + inspiration pip */}
+            <div className="relative shrink-0">
+              <img
+                src={portraitSrc}
+                alt={char.name}
+                className={`w-6 h-6 rounded-full object-cover border ${isDead ? 'border-red-800 grayscale' : isUnconscious ? 'border-yellow-700' : 'border-slate-700'}`}
+                onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${char.race.toLowerCase()}.webp`; }}
+              />
+              {char.inspiration && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 text-[7px] leading-none flex items-center justify-center bg-amber-500 rounded-full text-slate-900 font-bold" title="Inspired!">★</span>
+              )}
+            </div>
             {/* Name + class */}
             <div className="flex flex-col min-w-0">
               <span className={`text-[10px] font-semibold truncate max-w-[60px] ${isDead ? 'text-red-500 line-through' : isSelected ? 'text-[#F38020]' : 'text-slate-300'}`}>

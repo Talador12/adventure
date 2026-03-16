@@ -123,6 +123,7 @@ export function validateCharacterJSON(data: unknown): { valid: boolean; characte
     feats: (obj.feats as string[]) ?? [],
     asiChoicesMade: (obj.asiChoicesMade as number) ?? 0,
     hitDiceRemaining: (obj.hitDiceRemaining as number) ?? (obj.level as number),
+    inspiration: (obj.inspiration as boolean) ?? false,
     createdAt: (obj.createdAt as number) ?? Date.now(),
   };
 
