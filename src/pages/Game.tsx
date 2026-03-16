@@ -31,6 +31,7 @@ import EncounterLog from '../components/game/EncounterLog';
 import NpcTracker from '../components/game/NpcTracker';
 import DiceStats from '../components/game/DiceStats';
 import CombatRecap from '../components/game/CombatRecap';
+import CombatMVP from '../components/game/CombatMVP';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -1503,6 +1504,15 @@ export default function Game() {
                 {/* Combat round recap — shown above content in narration view */}
                 {inCombat && activeView === 'narration' && (
                   <CombatRecap combatLog={combatLog} combatRound={combatRound} inCombat={inCombat} />
+                )}
+
+                {/* Post-combat MVP awards — shown after combat ends */}
+                {activeView === 'narration' && (
+                  <CombatMVP
+                    combatLog={combatLog}
+                    inCombat={inCombat}
+                    playerNames={characters.map((c) => c.name)}
+                  />
                 )}
 
                 {activeView === 'narration' ? (
