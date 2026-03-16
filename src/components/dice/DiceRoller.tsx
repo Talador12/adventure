@@ -1,6 +1,27 @@
 import { useState, useRef, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { DICE_SHAPE_MAP } from './DiceShapes';
 import { useGame, type DieType } from '../../contexts/GameContext';
+import { parseSlashRoll } from '../chat/ChatPanel';
+
+// Dice macro — saved roll shortcut
+interface DiceMacro {
+  id: string;
+  label: string;
+  notation: string;
+}
+
+const MACROS_STORAGE_KEY = 'adventure:diceMacros';
+
+function loadMacros(): DiceMacro[] {
+  try {
+    const raw = localStorage.getItem(MACROS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveMacros(macros: DiceMacro[]) {
+  try { localStorage.setItem(MACROS_STORAGE_KEY, JSON.stringify(macros)); } catch { /* ok */ }
+}
 
 const DICE: { type: DieType; sides: number; color: string }[] = [
   { type: 'd4', sides: 4, color: 'from-red-500 to-red-700' },
@@ -49,6 +70,8 @@ interface DiceRollerProps {
   onLocalRoll?: (die: DieType, sides: number) => void;
   /** Called when a local (offline) roll finishes — parent can add to chat */
   onRollComplete?: (roll: LocalRollResult) => void;
+  /** Called when a macro is executed — parent can add result to chat like a slash roll */
+  onMacroRoll?: (label: string, notation: string, rolls: number[], total: number, isCrit: boolean, isFumble: boolean) => void;
   /** If true, local rolls use onLocalRoll instead of generating a result locally */
   useServerRolls?: boolean;
   /** Compact mode for lobby sidebar */
@@ -57,15 +80,19 @@ interface DiceRollerProps {
 
 type AdvantageMode = 'normal' | 'advantage' | 'disadvantage';
 
-const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, onRollComplete, useServerRolls = false, compact = false }, ref) {
+const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, onRollComplete, onMacroRoll, useServerRolls = false, compact = false }, ref) {
   const { currentPlayer, addRoll, rolls, clearRolls, selectedUnitId, units } = useGame();
   const [rolling, setRolling] = useState<DieType | null>(null);
   const [displayValue, setDisplayValue] = useState<number | null>(null);
   const [lastRoll, setLastRoll] = useState<{ die: DieType; value: number; sides: number; playerName?: string } | null>(null);
-  const [critState, setCritState] = useState<'crit' | 'fumble' | null>(null); // persistent color — stays until next roll
-  const [showBurst, setShowBurst] = useState(false); // temporary VFX burst — fades after animation
+  const [critState, setCritState] = useState<'crit' | 'fumble' | null>(null);
+  const [showBurst, setShowBurst] = useState(false);
   const [rollerLabel, setRollerLabel] = useState<string | null>(null);
   const [advMode, setAdvMode] = useState<AdvantageMode>('normal');
+  const [macros, setMacros] = useState<DiceMacro[]>(loadMacros);
+  const [showAddMacro, setShowAddMacro] = useState(false);
+  const [newMacroLabel, setNewMacroLabel] = useState('');
+  const [newMacroNotation, setNewMacroNotation] = useState('');
   const diceDisplayRef = useRef<HTMLDivElement>(null);
   // Queue for remote rolls that arrive while an animation is playing
   const pendingRemoteRef = useRef<RemoteRoll[]>([]);
@@ -194,6 +221,44 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
     [useServerRolls, onLocalRoll, playAnimation, currentPlayer, selectedUnit, advMode]
   );
 
+  // Macro handlers
+  const addMacro = useCallback(() => {
+    const label = newMacroLabel.trim();
+    const notation = newMacroNotation.trim().toLowerCase();
+    if (!label || !notation) return;
+    // Validate notation
+    const test = parseSlashRoll(notation);
+    if (!test) return;
+    const macro: DiceMacro = { id: crypto.randomUUID().slice(0, 8), label, notation };
+    setMacros((prev) => { const next = [...prev, macro]; saveMacros(next); return next; });
+    setNewMacroLabel('');
+    setNewMacroNotation('');
+    setShowAddMacro(false);
+  }, [newMacroLabel, newMacroNotation]);
+
+  const removeMacro = useCallback((id: string) => {
+    setMacros((prev) => { const next = prev.filter((m) => m.id !== id); saveMacros(next); return next; });
+  }, []);
+
+  const executeMacro = useCallback((macro: DiceMacro) => {
+    const result = parseSlashRoll(macro.notation);
+    if (!result) return;
+    const isCrit = result.rolls.length === 1 && result.total === result.rolls[0] && result.rolls[0] === 20;
+    const isFumble = result.rolls.length === 1 && result.total === result.rolls[0] && result.rolls[0] === 1;
+    // Register in game context
+    addRoll({
+      die: 'd20' as DieType, // visual only — macro result shown in roll history
+      sides: 20,
+      value: result.total,
+      playerId: currentPlayer.id,
+      playerName: currentPlayer.username,
+      unitId: selectedUnitId || undefined,
+      unitName: selectedUnit?.name,
+    });
+    // Notify parent
+    onMacroRoll?.(macro.label, result.notation, result.rolls, result.total, isCrit, isFumble);
+  }, [addRoll, currentPlayer, selectedUnitId, selectedUnit, onMacroRoll]);
+
   // Expose imperative API for parent to trigger remote roll animations
   useImperativeHandle(
     ref,
@@ -309,6 +374,64 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
           );
         })}
       </div>
+
+      {/* Dice macros — saved roll shortcuts */}
+      {!compact && (
+        <div className="space-y-1.5">
+          {macros.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {macros.map((m) => (
+                <div key={m.id} className="group relative">
+                  <button
+                    onClick={() => executeMacro(m)}
+                    title={`Roll ${m.notation}`}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-600/20 border border-amber-500/30 text-amber-300 hover:bg-amber-600/30 hover:border-amber-500/50 transition-all active:scale-95"
+                  >
+                    {m.label}
+                  </button>
+                  <button
+                    onClick={() => removeMacro(m.id)}
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-700 border border-slate-600 text-slate-400 text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:border-red-500 hover:text-white"
+                  >
+                    x
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {showAddMacro ? (
+            <div className="flex gap-1.5 items-end">
+              <div className="flex-1 space-y-1">
+                <input
+                  type="text"
+                  placeholder="Name (e.g. Fireball)"
+                  value={newMacroLabel}
+                  onChange={(e) => setNewMacroLabel(e.target.value)}
+                  className="w-full px-2 py-1 text-[11px] rounded bg-slate-800 border border-slate-700 text-slate-200 placeholder-slate-600 focus:border-amber-500/50 outline-none"
+                  maxLength={20}
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && addMacro()}
+                />
+                <input
+                  type="text"
+                  placeholder="Roll (e.g. 8d6+5)"
+                  value={newMacroNotation}
+                  onChange={(e) => setNewMacroNotation(e.target.value)}
+                  className="w-full px-2 py-1 text-[11px] rounded bg-slate-800 border border-slate-700 text-slate-200 placeholder-slate-600 focus:border-amber-500/50 outline-none"
+                  maxLength={20}
+                  onKeyDown={(e) => e.key === 'Enter' && addMacro()}
+                />
+              </div>
+              <button onClick={addMacro} className="px-2 py-1 text-[10px] font-bold rounded bg-amber-600/30 border border-amber-500/40 text-amber-300 hover:bg-amber-600/40 transition-all">Save</button>
+              <button onClick={() => { setShowAddMacro(false); setNewMacroLabel(''); setNewMacroNotation(''); }} className="px-2 py-1 text-[10px] rounded text-slate-500 hover:text-slate-300 transition-colors">Cancel</button>
+            </div>
+          ) : (
+            <button onClick={() => setShowAddMacro(true)} className="text-[10px] text-slate-600 hover:text-amber-400 transition-colors">
+              + Add macro
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Dice buttons */}
       <div className="grid grid-cols-3 gap-2">

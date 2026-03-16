@@ -927,6 +927,42 @@ export default function Game() {
     [selectedCharacter, currentPlayer, room]
   );
 
+  // Handle dice macro execution — macro label + notation result posted to chat with SFX
+  const handleMacroRoll = useCallback(
+    (label: string, notation: string, rolls: number[], total: number, isCrit: boolean, isFumble: boolean) => {
+      const charName = selectedCharacter?.name || '';
+      const playerName = currentPlayer.username || funDefault();
+      playDiceRoll();
+      if (isCrit) setTimeout(playCritical, 400);
+      if (isFumble) setTimeout(playFumble, 400);
+      const rollText = `[${rolls.join(', ')}]`;
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: 'roll',
+          playerId: currentPlayer.id,
+          username: playerName,
+          characterName: charName || undefined,
+          portrait: selectedCharacter?.portrait || undefined,
+          text: `${label} (${notation}): ${rollText} = ${total}`,
+          timestamp: Date.now(),
+          die: notation,
+          value: total,
+          isCritical: isCrit,
+          isFumble,
+        },
+      ]);
+      persistChatMessage(room, {
+        username: playerName,
+        type: 'roll',
+        text: `used ${label} (${notation}) for ${total}`,
+        metadata: { die: notation, value: total, isCritical: isCrit, isFumble, characterName: charName || undefined },
+      });
+    },
+    [selectedCharacter, currentPlayer, room]
+  );
+
   // AoE confirm handler — extracted from BattleMap onAoEConfirm inline callback
   const handleAoEConfirm = useCallback((affectedCells: { col: number; row: number }[]) => {
     if (!pendingAoESpell) { setActiveAoE(null); return; }
@@ -1421,7 +1457,7 @@ export default function Game() {
           ) : (
             <>
               <div className="p-4 border-b border-slate-800 overflow-y-auto">
-                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} />
+                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} onMacroRoll={handleMacroRoll} useServerRolls={status === 'connected'} />
               </div>
               {/* Dice History — collapsible panel */}
               {rolls.length > 0 && (

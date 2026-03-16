@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Dice macros — saved roll shortcuts (e.g. "Fireball: 8d6+5") in DiceRoller, amber-themed pills, inline add form, localStorage persistence, wired to chat in Game.tsx and Lobby.tsx with SFX
 - Login modal — Discord/Google/Quick Login moved into centered modal, header cleaned up
 - Auth gates — `RequireAuth` wrapper on all sub-pages (Lobby, Game, CharacterCreate), redirects to Home if not logged in
 - Sign-out clears all auth state (temp user + session cookie) and redirects to Home
@@ -819,20 +820,20 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] `src/components/game/NarrationPanel.tsx` — narration view (308 lines, character status + quest tracker + DM history + combat log + action input)
 - [x] `src/types/game.ts` — Quest interface moved from inline Game.tsx definition
 - [x] `src/components/game/CombatToolbar.tsx` — combat actions + DM controls toolbar (745 lines, 22 unused imports cleaned from Game.tsx)
-- [ ] WS Message Handler (~308 lines → useGameWebSocket custom hook)
-- [ ] Campaign Persistence (~128 lines → useCampaignPersistence custom hook)
+- [x] WS Message Handler → `src/hooks/useGameWebSocket.ts` (already extracted)
+- [x] Campaign Persistence → `src/hooks/useCampaignPersistence.ts` (extracted + localStorage fallback for temp users)
 - [ ] Shop View (~94 lines)
 
 **Bundle optimization:**
 - [x] Hono security patch: 4.12.5 → 4.12.7 (Dependabot CVE fix)
-- [ ] Lazy load routes: `React.lazy()` for Game, CharacterCreate, Lobby (heavy pages)
-- [ ] Manual chunks: split vendor (react, react-dom) from app code
+- [x] Lazy load routes: `React.lazy()` for Game, CharacterCreate, Lobby (in main.tsx)
+- [ ] Manual chunks: split vendor (react, react-dom) from app code via Vite rollupOptions
 - [ ] Target: 703KB → under 400KB initial load
 
 **Error handling improvements (from code review):**
 - [ ] Add `console.error` to all bare `catch {}` blocks in _worker.ts
 - [ ] Standardize error response shape: `{ error: string }` everywhere
-- [ ] Add AbortController timeout to client-side AI fetch calls
+- [x] AbortController timeout on client-side AI fetch calls (fetchWithTimeout wired to all 10 AI calls)
 
 ### v0.3.0: Mobile + Accessibility (PLANNED)
 **Goal:** Touch-friendly on phones/tablets, accessible to all players.
@@ -866,7 +867,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Multiclass support (second class on level-up, shared spell slots)
 - Reaction system expansion (Shield, Counterspell, Hellish Rebuke on enemy turn)
 - Inventory trading between players (drag to portrait)
-- Dice macros / saved roll shortcuts
+- ~~Dice macros / saved roll shortcuts~~ (DONE — v0.1.0)
 - Initiative reroll / manual editing (DM drag-reorder)
 - Weather/lighting effects on battle map (rain, fog, darkness, torch light)
 - Random encounter tables (per biome/dungeon level, auto-roll between rests)
@@ -967,4 +968,5 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Condition system overhaul: Split overloaded `blessed` condition into distinct types — `dodging` (Dodge action +2 AC), `raging` (Barbarian Rage +2 atk), `inspired` (Bardic Inspiration +2 atk/saves). `blessed` reserved for Bless spell only. Wired `effectiveAC()` into all 5 attack roll sites (enemy basic melee, enemy abilities, player quick attack, player OA, enemy OA in BattleMap). Implemented D&D 5e prone advantage/disadvantage via `rollD20WithProne()` helper (melee vs prone = advantage, ranged vs prone = disadvantage, prone attacker = disadvantage, adv+disadv cancel per 5e rules). Combat log shows [adv]/[disadv] tags. CONDITION_COLORS in BattleMap updated for new types. Combat log highlighting includes all 10 condition types. 22 new condition tests (127 total).
 - Phase 8 session robustness + DM role UI: Stable reconnect IDs (sessionStorage + Lobby DO reuse), DM authorization (first joiner = DM, server-enforced DM-only messages, reassignment on disconnect), DM transfer (`transfer_dm` message type), rate limiting (10 game_events/sec per client), message queue (100-cap offline buffer), DM role UI gating (`canUseDMTools` = `isDM || !wsConnected` — gates encounter, NPC talk, scene name, narration input, Begin Adventure in Game.tsx; DM mode toggle, terrain paint, traps, map upload in BattleMap.tsx; "Make DM" transfer button in Lobby.tsx). DM/Player badge in toolbar. 6 new Phase 8 tests (133 total).
 - D1 Database Phase 1: D1 bindings in wrangler.toml (all envs) + wrangler.test.toml. `D1Database` interface + `DB` binding in Env. `ensureUser()` lazy-upserts Discord users into D1 `users`/`auth_providers` tables (graceful fallback if D1 unavailable). `getJwtPayload()` helper. Chat persistence: `GET/POST /api/chat/:roomId` (D1). Party management: `GET/POST/DELETE /api/party/:roomId` with JOIN queries. `GET /api/user/me` full user profile with auth providers. Frontend `chatApi.ts` helper (loadChatHistory + persistChatMessage). Lobby.tsx + Game.tsx load chat history on mount, persist outgoing messages. Makefile: d1-dev/staging/prod + d1-migrate-dev/staging/prod targets. Migration SQL: `users`, `auth_providers`, `campaigns`, `party_members`, `chat_messages` tables with indexes.
+- Dice macros: Saved roll shortcuts in DiceRoller — `DiceMacro` interface (id/label/notation), localStorage persistence, amber-themed pill buttons with hover-delete, inline add form with notation validation via `parseSlashRoll`, `executeMacro` registers in game context + calls `onMacroRoll` prop. Wired in Game.tsx (`handleMacroRoll` with sound FX, chat message, D1 persistence) and Lobby.tsx (same minus sound FX). Cleaned unused `useMemo` import. Macros hidden in compact mode (lobby sidebar). All 153 tests pass, zero TS errors.
 - D1 Database Phase 2: Full chat persistence — dice rolls, DM narration, NPC dialogue, player actions all persisted to D1 (roller/sender persists to avoid duplicates). Auto-join party on WebSocket welcome (fire-and-forget). Google OAuth: standard browser redirect flow (`/api/auth/google` + callback), normalized user object in JWT, `ensureUser()` handles Google avatar URLs. Google "G" button on Home.tsx alongside Discord. GameContext + Home.tsx avatar handling updated for multi-provider (Google `picture` URL vs Discord CDN hash). Party member avatars on campaign cards (stacked row, 5 max + overflow). Makefile: `secrets-google` target.

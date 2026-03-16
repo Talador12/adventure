@@ -456,6 +456,36 @@ export default function Lobby() {
     [currentPlayer, room]
   );
 
+  // Handle dice macro execution — macro label + notation result posted to chat
+  const handleMacroRoll = useCallback(
+    (label: string, notation: string, rolls: number[], total: number, isCrit: boolean, isFumble: boolean) => {
+      const playerName = currentPlayer.username || funDefault();
+      const rollText = `[${rolls.join(', ')}]`;
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: 'roll',
+          playerId: currentPlayer.id,
+          username: playerName,
+          text: `${label} (${notation}): ${rollText} = ${total}`,
+          timestamp: Date.now(),
+          die: notation,
+          value: total,
+          isCritical: isCrit,
+          isFumble,
+        },
+      ]);
+      persistChatMessage(room, {
+        username: playerName,
+        type: 'roll',
+        text: `used ${label} (${notation}) for ${total}`,
+        metadata: { die: notation, value: total, isCritical: isCrit, isFumble },
+      });
+    },
+    [currentPlayer, room]
+  );
+
   const handleDoodleStroke = useCallback(
     (stroke: DoodleStroke) => {
       send({ type: 'draw', ...stroke });
@@ -969,7 +999,7 @@ export default function Lobby() {
             {/* Dice roller — left (hidden on mobile, dice available via chat) */}
             <div className="hidden sm:flex w-64 shrink-0 border-r border-slate-800/60 p-4 flex-col items-center overflow-y-auto bg-slate-900/20">
               <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Dice</h3>
-              <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} useServerRolls={status === 'connected'} compact />
+              <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} onMacroRoll={handleMacroRoll} useServerRolls={status === 'connected'} compact />
             </div>
             {/* Doodle pad — fills remaining space, synced via WebSocket */}
             <div className="flex-1 overflow-hidden relative">
