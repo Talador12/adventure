@@ -8,7 +8,7 @@ import type { WSMessage } from './useWebSocket';
 import type { Unit, DieType, Character } from '../contexts/GameContext';
 import type { ChatMessage } from '../components/chat/ChatPanel';
 import type { TerrainType, TokenPosition } from '../lib/mapUtils';
-import type { Quest } from '../types/game';
+import type { Quest, MapPin } from '../types/game';
 import type { JournalEntry } from '../components/game/SessionJournal';
 import type { LootItem } from '../components/game/LootTracker';
 import type { DiceRollerHandle } from '../components/dice/DiceRoller';
@@ -68,6 +68,9 @@ export interface GameWebSocketDeps {
 
   // Weather sync
   setWeather?: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
+
+  // Map pins sync
+  setMapPins?: React.Dispatch<React.SetStateAction<MapPin[]>>;
 
   // Character context for party join
   selectedCharacterId: string | null;
@@ -414,6 +417,12 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
                 }
                 break;
               }
+              case 'pin_sync': {
+                if (Array.isArray(eventData.pins)) {
+                  deps.setMapPins?.(eventData.pins as MapPin[]);
+                }
+                break;
+              }
             }
           } finally {
             isRemoteEventRef.current = false;
@@ -449,6 +458,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
             if (typeof stateData.sceneName === 'string') setSceneName(stateData.sceneName);
             if (Array.isArray(stateData.quests)) setQuests(stateData.quests as Quest[]);
             if (Array.isArray(stateData.dmHistory)) setDmHistory(stateData.dmHistory as string[]);
+            if (Array.isArray(stateData.mapPins)) deps.setMapPins?.(stateData.mapPins as MapPin[]);
           } finally {
             isRemoteEventRef.current = false;
           }

@@ -17,7 +17,7 @@ import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
-import type { Quest } from '../types/game';
+import type { Quest, MapPin } from '../types/game';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
@@ -149,6 +149,20 @@ export default function Game() {
 
   // Weather effects on battle map
   const [weather, setWeather] = useState<'none' | 'rain' | 'fog' | 'snow' | 'sandstorm'>('none');
+
+  // Map pins — DM-placed annotations on the battle map
+  const pinStorageKey = `adventure:pins:${room}`;
+  const [mapPins, setMapPins] = useState<MapPin[]>(() => {
+    try {
+      const s = localStorage.getItem(pinStorageKey);
+      return s ? JSON.parse(s) : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(pinStorageKey, JSON.stringify(mapPins)); } catch { /* full */ }
+  }, [mapPins, pinStorageKey]);
 
   // Turn timer — DM-configurable
   const [turnTimerEnabled, setTurnTimerEnabled] = useState(true);
@@ -315,6 +329,8 @@ export default function Game() {
   mapPositionsRef.current = mapPositions;
 
   // Provide current state for late-join state_request responses (uses refs for freshness)
+  const mapPinsRef = useRef(mapPins);
+  mapPinsRef.current = mapPins;
   const getStateForResponse = useCallback(() => ({
     units: unitsRef.current,
     inCombat: inCombatRef.current,
@@ -326,7 +342,18 @@ export default function Game() {
     sceneName,
     quests,
     dmHistory,
+    mapPins: mapPinsRef.current,
   }), [terrain, mapImageUrl, sceneName, quests, dmHistory]);
+
+  // Map pin handlers — add/remove with broadcast
+  const handlePinAdd = useCallback((pin: MapPin) => {
+    setMapPins((prev) => [...prev, pin]);
+    broadcastGameEvent('pin_sync', { pins: [...mapPinsRef.current, pin] });
+  }, [broadcastGameEvent]);
+  const handlePinRemove = useCallback((pinId: string) => {
+    setMapPins((prev) => prev.filter((p) => p.id !== pinId));
+    broadcastGameEvent('pin_sync', { pins: mapPinsRef.current.filter((p) => p.id !== pinId) });
+  }, [broadcastGameEvent]);
 
   // --- WebSocket message handling (extracted hook) ---
   const { wsPlayerId, isDM, isSpectating, wsConnected, setWsConnected, handleWsMessage, typingUsers } = useGameWebSocket({
@@ -352,6 +379,7 @@ export default function Game() {
     journalSyncRef,
     lootSyncRef,
     setWeather,
+    setMapPins,
     selectedCharacterId,
   });
 
@@ -1265,6 +1293,8 @@ export default function Game() {
             setWeather={(w) => { setWeather(w); broadcastGameEvent('weather_change', { weather: w }); }}
             roomId={room}
             onApplyFormation={(positions) => { setMapPositions(positions); broadcastGameEvent('formation_apply', { positions }); }}
+            mapPins={mapPins}
+            onPinRemove={handlePinRemove}
           />
         )}
 
@@ -1550,6 +1580,9 @@ export default function Game() {
                       onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                       onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
                       onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}
+                      mapPins={mapPins}
+                      onPinAdd={handlePinAdd}
+                      onPinRemove={handlePinRemove}
                       onOpportunityAttack={(attackerName, targetName, damage, hit) => {
                         const msg = hit ? `Opportunity Attack! ${attackerName} strikes ${targetName} for ${damage} damage as they flee!` : `Opportunity Attack! ${attackerName} swings at ${targetName} but misses!`;
                         setCombatLog((prev) => [...prev, msg]);

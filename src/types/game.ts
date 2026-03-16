@@ -386,6 +386,28 @@ export interface Quest {
   completed: boolean;
 }
 
+// Map pin/marker — DM-placed annotations on the battle map
+export interface MapPin {
+  id: string;
+  col: number;
+  row: number;
+  label: string;
+  color: string; // hex color
+  icon?: string; // emoji or short symbol
+  createdBy?: string; // player username
+}
+
+export const MAP_PIN_COLORS = [
+  { label: 'Red', value: '#ef4444' },
+  { label: 'Blue', value: '#3b82f6' },
+  { label: 'Green', value: '#22c55e' },
+  { label: 'Yellow', value: '#eab308' },
+  { label: 'Purple', value: '#a855f7' },
+  { label: 'Orange', value: '#f97316' },
+  { label: 'Cyan', value: '#06b6d4' },
+  { label: 'Pink', value: '#ec4899' },
+] as const;
+
 export function rollSpellDamage(die: string): number {
   const match = die.match(/^(\d+)d(\d+)(?:\+(\d+))?$/);
   if (!match) return 0;

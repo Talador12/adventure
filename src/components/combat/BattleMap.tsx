@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
+import type { MapPin } from '../../types/game';
 
 const CELL_SIZE = 48;
 const TOKEN_RADIUS = 18;
@@ -416,7 +417,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin';
 
 // AoE overlay state for spell targeting
 export interface ActiveAoE {
@@ -437,9 +438,13 @@ interface BattleMapProps {
   onAoEConfirm?: (affectedCells: { col: number; row: number }[]) => void;
   onAoECancel?: () => void;
   animateMoveRef?: React.MutableRefObject<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>;
+  // Map pins
+  mapPins?: MapPin[];
+  onPinAdd?: (pin: MapPin) => void;
+  onPinRemove?: (pinId: string) => void;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -480,6 +485,12 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   // AoE hover tracking
   const [aoeHoverCell, setAoeHoverCell] = useState<{ col: number; row: number } | null>(null);
+
+  // Pin creation state
+  const [pendingPinCell, setPendingPinCell] = useState<{ col: number; row: number } | null>(null);
+  const [pinLabel, setPinLabel] = useState('');
+  const [pinColor, setPinColor] = useState('#ef4444');
+  const [pinIcon, setPinIcon] = useState('');
 
   // Token animation state — smooth movement between grid cells
   interface TokenAnim { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }
@@ -1028,6 +1039,14 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const paintTerrain = useCallback((col: number, row: number) => {
     if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
 
+    // Handle pin placement — open inline creation form at clicked cell
+    if (dmTool === 'pin') {
+      setPendingPinCell({ col, row });
+      setPinLabel('');
+      setPinIcon('');
+      return;
+    }
+
     // Handle trap placement
     if (dmTool.startsWith('trap-')) {
       const trapType = dmTool.replace('trap-', '') as Trap['type'];
@@ -1041,9 +1060,11 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
-    // Erase also removes traps at the cell
+    // Erase also removes traps and pins at the cell
     if (dmTool === 'erase') {
       setTraps((prev) => prev.filter((t) => !(t.col === col && t.row === row)));
+      const pinAtCell = mapPins.find((p) => p.col === col && p.row === row);
+      if (pinAtCell) onPinRemove?.(pinAtCell.id);
     }
 
     const terrainMap: Record<string, TerrainType | null> = {
@@ -1060,7 +1081,24 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       onTerrainChange?.(next);
       return next;
     });
-  }, [dmTool, gridCols, gridRows, terrain, traps, onTerrainChange]);
+  }, [dmTool, gridCols, gridRows, terrain, traps, onTerrainChange, mapPins, onPinRemove]);
+
+  // Confirm pin creation from the inline form
+  const confirmPin = useCallback(() => {
+    if (!pendingPinCell || !pinLabel.trim()) return;
+    const pin: MapPin = {
+      id: `pin-${crypto.randomUUID().slice(0, 8)}`,
+      col: pendingPinCell.col,
+      row: pendingPinCell.row,
+      label: pinLabel.trim(),
+      color: pinColor,
+      icon: pinIcon || undefined,
+    };
+    onPinAdd?.(pin);
+    setPendingPinCell(null);
+    setPinLabel('');
+    setPinIcon('');
+  }, [pendingPinCell, pinLabel, pinColor, pinIcon, onPinAdd]);
 
   // --- Mouse handlers ---
   const handleMouseDown = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
@@ -1480,6 +1518,19 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
               </button>
             ))}
 
+            {/* Pin tool — place named markers on the map */}
+            <div className="w-px h-4 bg-slate-700 mx-1" />
+            <button
+              onClick={() => { setDmTool('pin'); setPendingPinCell(null); }}
+              className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === 'pin' ? 'bg-amber-700/60 text-white ring-1 ring-amber-500/50' : 'bg-amber-950/40 text-amber-400/70 hover:bg-amber-900/40'}`}
+              title="Place a named pin/marker on the map"
+            >
+              📌 Pin
+            </button>
+            {mapPins.length > 0 && (
+              <span className="text-[9px] text-amber-400/60 font-mono">{mapPins.length}</span>
+            )}
+
             {/* Trap tools (DM only — also requires DM mode active) */}
             {dmMode && (
               <>
@@ -1610,6 +1661,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         style={{ cursor: dmTool !== 'select' ? 'crosshair' : panning ? 'grabbing' : 'default' }}
       >
         <div
+          className="relative"
           style={{
             transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
@@ -1630,6 +1682,111 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             onTouchCancel={handleTouchEnd}
             onContextMenu={(e) => e.preventDefault()}
           />
+
+          {/* Map pin markers — HTML overlay on top of canvas, inside zoom/pan container */}
+          {mapPins.map((pin) => (
+            <div
+              key={pin.id}
+              className="absolute pointer-events-auto group"
+              style={{
+                left: pin.col * CELL_SIZE + CELL_SIZE / 2,
+                top: pin.row * CELL_SIZE,
+                transform: 'translate(-50%, -100%)',
+                zIndex: 20,
+              }}
+            >
+              {/* Pin head */}
+              <div
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full shadow-lg border border-white/20 cursor-default whitespace-nowrap"
+                style={{ backgroundColor: pin.color, minWidth: 18 }}
+                title={pin.label}
+              >
+                {pin.icon && <span className="text-[9px]">{pin.icon}</span>}
+                <span className="text-[8px] font-bold text-white drop-shadow-sm leading-none max-w-[80px] truncate">{pin.label}</span>
+              </div>
+              {/* Pin tail (small triangle pointing down) */}
+              <div
+                className="mx-auto w-0 h-0"
+                style={{
+                  borderLeft: '4px solid transparent',
+                  borderRight: '4px solid transparent',
+                  borderTop: `6px solid ${pin.color}`,
+                }}
+              />
+              {/* Delete button on hover — DM only */}
+              {canUseDMTools && onPinRemove && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPinRemove(pin.id); }}
+                  className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-600 text-white text-[7px] font-bold leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                  title="Remove pin"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+
+          {/* Pin creation form — appears at the clicked cell */}
+          {pendingPinCell && canUseDMTools && (
+            <div
+              className="absolute z-30 pointer-events-auto"
+              style={{
+                left: pendingPinCell.col * CELL_SIZE + CELL_SIZE / 2,
+                top: pendingPinCell.row * CELL_SIZE - 8,
+                transform: 'translate(-50%, -100%)',
+              }}
+            >
+              <div className="bg-slate-900 border border-amber-600/50 rounded-lg shadow-xl p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                <div className="text-[9px] text-amber-400 font-semibold uppercase mb-1">New Pin</div>
+                <input
+                  autoFocus
+                  type="text"
+                  value={pinLabel}
+                  onChange={(e) => setPinLabel(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') confirmPin(); if (e.key === 'Escape') setPendingPinCell(null); }}
+                  placeholder="Label..."
+                  className="w-full text-[11px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none mb-1.5"
+                  maxLength={30}
+                />
+                <div className="flex items-center gap-1 mb-1.5">
+                  <input
+                    type="text"
+                    value={pinIcon}
+                    onChange={(e) => setPinIcon(e.target.value)}
+                    placeholder="Icon"
+                    className="w-12 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none text-center"
+                    maxLength={2}
+                    title="Optional emoji or symbol"
+                  />
+                  <div className="flex gap-0.5 flex-1 flex-wrap">
+                    {(['#ef4444','#3b82f6','#22c55e','#eab308','#a855f7','#f97316','#06b6d4','#ec4899'] as const).map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setPinColor(c)}
+                        className={`w-4 h-4 rounded-full border-2 transition-all ${pinColor === c ? 'border-white scale-110' : 'border-transparent hover:border-white/40'}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={confirmPin}
+                    disabled={!pinLabel.trim()}
+                    className="flex-1 text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Place
+                  </button>
+                  <button
+                    onClick={() => setPendingPinCell(null)}
+                    className="text-[10px] px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Minimap overlay — bottom-right corner */}

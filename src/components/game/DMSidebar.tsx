@@ -7,6 +7,7 @@ import { setAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../../hooks/use
 import { BIOME_LABELS, rollBiomeEncounter, checkRandomEncounter, type Biome, type BiomeEncounter } from '../../data/enemies';
 import FormationPresets from './FormationPresets';
 import type { TokenPosition } from '../../lib/mapUtils';
+import type { MapPin } from '../../types/game';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -42,6 +43,9 @@ interface DMSidebarProps {
   // Formation
   roomId: string;
   onApplyFormation: (positions: TokenPosition[]) => void;
+  // Map pins
+  mapPins: MapPin[];
+  onPinRemove: (pinId: string) => void;
 }
 
 export default function DMSidebar({
@@ -74,6 +78,8 @@ export default function DMSidebar({
   setWeather,
   roomId,
   onApplyFormation,
+  mapPins,
+  onPinRemove,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -488,6 +494,32 @@ export default function DMSidebar({
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Map Pins list */}
+            {mapPins.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Map Pins ({mapPins.length})</label>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {mapPins.map((pin) => (
+                    <div key={pin.id} className="flex items-center justify-between px-2 py-1 rounded-lg border border-slate-800 bg-slate-800/30 group">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: pin.color }} />
+                        {pin.icon && <span className="text-[10px]">{pin.icon}</span>}
+                        <span className="text-[10px] text-slate-300 font-medium truncate">{pin.label}</span>
+                        <span className="text-[8px] text-slate-600">({pin.col},{pin.row})</span>
+                      </div>
+                      <button
+                        onClick={() => onPinRemove(pin.id)}
+                        className="text-[9px] text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all font-semibold"
+                        title="Remove pin"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
