@@ -15,6 +15,7 @@ import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playC
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
+import { useAIPlayerTurn } from '../hooks/useAIPlayerTurn';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import type { Quest, MapPin } from '../types/game';
@@ -32,6 +33,7 @@ import NpcTracker from '../components/game/NpcTracker';
 import DiceStats from '../components/game/DiceStats';
 import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
+import CampaignTimeline from '../components/game/CampaignTimeline';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -100,6 +102,13 @@ export default function Game() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const selectedCharacter = selectedCharacterId ? (characters.find((c) => c.id === selectedCharacterId) ?? null) : null;
   const [showCharacterPicker, setShowCharacterPicker] = useState(true);
+  // AI player character IDs — loaded from sessionStorage (set by Lobby on Start Game)
+  const [aiCharacterIds] = useState<Set<string>>(() => {
+    try {
+      const saved = sessionStorage.getItem(`adventure:aiCharIds:${room}`);
+      return saved ? new Set(JSON.parse(saved) as string[]) : new Set();
+    } catch { return new Set(); }
+  });
   const [dmLoading, setDmLoading] = useState(false);
   const [encounterLoading, setEncounterLoading] = useState(false);
   // Persist DM history to localStorage keyed by room ID
@@ -119,7 +128,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline'>('narration');
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
@@ -222,9 +231,10 @@ export default function Game() {
     });
   }, [room]);
 
-  // Derived: is it currently the player's turn? Used to enforce turn-based action restrictions.
+  // Derived: is it currently the human player's turn? AI player turns are auto-played.
   const currentTurnUnit = units.find((u) => u.isCurrentTurn);
-  const isPlayerTurn = !inCombat || currentTurnUnit?.type === 'player';
+  const isAIPlayerTurn = currentTurnUnit?.type === 'player' && currentTurnUnit.characterId && aiCharacterIds.has(currentTurnUnit.characterId);
+  const isPlayerTurn = !inCombat || (currentTurnUnit?.type === 'player' && !isAIPlayerTurn);
 
   // Drain concentration break messages into combat log (collected by damageUnit ref)
   // Call after any action that triggers damageUnit
@@ -433,6 +443,7 @@ export default function Game() {
       if (e.key === '6') { setActiveView('encounters'); return; }
       if (e.key === '7') { setActiveView('npcs'); return; }
       if (e.key === '8') { setActiveView('dicestats'); return; }
+      if (e.key === '9') { setActiveView('timeline'); return; }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -529,6 +540,44 @@ export default function Game() {
     const char = characters.find((c) => c.id === charId);
     if (char) handleSelectCharacter(char);
   };
+
+  // Create units for AI-controlled player characters (from lobby AI seats)
+  const aiUnitsCreatedRef = useRef(false);
+  useEffect(() => {
+    if (aiCharacterIds.size === 0 || aiUnitsCreatedRef.current) return;
+    // Wait until the human player has selected their character (units array has at least one player unit)
+    const hasHumanUnit = units.some((u) => u.type === 'player' && u.characterId && !aiCharacterIds.has(u.characterId));
+    if (!hasHumanUnit) return;
+    aiUnitsCreatedRef.current = true;
+
+    const aiUnits: Unit[] = [];
+    for (const charId of aiCharacterIds) {
+      // Skip if unit already exists (from campaign load)
+      if (units.some((u) => u.characterId === charId)) continue;
+      const char = characters.find((c) => c.id === charId);
+      if (!char) continue;
+      const monkSpeedBonus = char.class === 'Monk' ? Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0) : 0;
+      aiUnits.push({
+        id: `unit-${char.id}`,
+        name: char.name,
+        hp: char.hp,
+        maxHp: char.maxHp,
+        ac: char.ac,
+        initiative: -1,
+        isCurrentTurn: false,
+        type: 'player',
+        playerId: `ai-${char.id}`,
+        characterId: char.id,
+        speed: 6 + monkSpeedBonus,
+        movementUsed: 0,
+        reactionUsed: false,
+        disengaged: false,
+      });
+    }
+    if (aiUnits.length > 0) {
+      setUnits((prev) => [...prev, ...aiUnits]);
+    }
+  }, [aiCharacterIds, units, characters, setUnits]);
 
   // Add a DM narration to chat
   const addDmMessage = useCallback((text: string) => {
@@ -727,6 +776,9 @@ export default function Game() {
 
   // Auto-execute enemy turns — extracted to useEnemyAI hook
   useEnemyAI({ addDmMessage, setCombatLog, broadcastCombatSync, broadcastGameEvent, animateMoveRef, drainConcentrationMessages });
+
+  // Auto-execute AI player turns — AI-controlled party members act autonomously
+  useAIPlayerTurn({ aiCharacterIds, addDmMessage, setCombatLog, broadcastCombatSync, broadcastGameEvent, animateMoveRef, drainConcentrationMessages });
 
   // Begin Adventure — first DM narration
   // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
@@ -1437,6 +1489,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('dicestats')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'dicestats' ? 'border-red-500 text-red-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Stats
                   </button>
+                  <button onClick={() => setActiveView('timeline')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'timeline' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    Timeline
+                  </button>
                 </div>
 
                 {/* AoE targeting banner */}
@@ -1582,6 +1637,14 @@ export default function Game() {
                   />
                 ) : activeView === 'dicestats' ? (
                   <DiceStats />
+                ) : activeView === 'timeline' ? (
+                  <CampaignTimeline
+                    roomId={room}
+                    dmHistory={dmHistory}
+                    combatLog={combatLog}
+                    inCombat={inCombat}
+                    characters={characters.map((c) => ({ name: c.name, level: c.level, class: c.class, gold: c.gold }))}
+                  />
                 ) : (
                   /* Battle Map view */
                   <div className="relative flex-1 overflow-hidden">
@@ -1675,6 +1738,8 @@ export default function Game() {
               <div className="flex-1 flex flex-col p-4 overflow-hidden">
                 <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => {
                   send({ type: 'whisper', targetUsername: target, message: msg });
+                }} onReaction={(messageId, emoji) => {
+                  send({ type: 'chat_reaction', messageId, emoji });
                 }} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
               </div>
             </>

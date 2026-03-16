@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- AI player turn logic — `useAIPlayerTurn` hook (~320 lines) at `src/hooks/useAIPlayerTurn.ts` makes AI-controlled player seats actually play during combat. Intelligent decision tree: heal self/allies when low HP (potions first, then class abilities, then spells), use class abilities when available (70% chance), cast damage spells (casters prefer highest damage in-range spell), cast cantrips when out of slots, move toward enemies via pathfinding, melee attack with equipped weapon stats + proficiency + feat bonuses. Supports Extra Attack for martial classes at level 5+. Handles opportunity attacks against AI player movement. Identifies AI players via `aiCharacterIds` Set loaded from sessionStorage (set by Lobby.tsx on Start Game from AI seat data). Game.tsx creates units for AI characters on mount. `isPlayerTurn` now excludes AI player turns from enabling human controls. Smart target selection: 30% chance to focus-fire lowest HP enemy. Delay slightly longer than enemy AI (1000ms vs 800ms) to feel more deliberate. All sound FX wired (combat hits/misses/crits, spells, healing). Full multiplayer sync via broadcastCombatSync.
+- Campaign timeline — `CampaignTimeline` component (~270 lines) at `src/components/game/CampaignTimeline.tsx`. New "Timeline" view tab (`9` keyboard shortcut). Auto-generates session history by parsing DM history and combat log strings for events: adventure start, combat encounters (kill count), rest events, deaths, loot finds, level-ups, critical hit milestones. 9 event types with distinct icons and color themes (combat/red, narration/amber, levelup/yellow, quest/emerald, death/slate, loot/amber, rest/sky, scene/indigo, milestone/purple). Filter tabs to browse by category. Vertical timeline with dot+line layout, time-ago timestamps. Auto-tracks character level changes for level-up events. localStorage persistence per campaign (capped at 100 events). Live combat indicator with pulsing red dot. Indigo-themed tab button.
+- Chat emoji reactions — full-stack emoji reaction system on chat messages. `ChatMessage` interface extended with `reactions?: Record<string, string[]>` (emoji → playerIds). 8 D&D-themed reaction emojis (👍⚔️🎯😂🔥❤️💀🎲). Hover over any message reveals a floating reaction picker bar. Click to toggle reaction on/off. Reaction pills below messages show emoji + count, highlighted when you've reacted. Lobby DO handles `chat_reaction` message type — broadcasts to all clients. `useGameWebSocket` and Lobby.tsx both handle incoming `chat_reaction` with toggle logic (add/remove playerId from emoji array). Wired in both Game.tsx and Lobby.tsx via `onReaction` prop on ChatPanel. Orange accent on your own reactions.
 - Session MVP awards — `CombatMVP` component (~140 lines) shows post-combat awards when combat ends. Parses full combat log for per-player stats: damage dealt, kills, critical hits, spells cast, healing done. Awards: Most Damage (sword), Most Kills (skull), Critical Master (bullseye), Arcane Master (sparkle), Healer (heart). Detects combat-end transition via `usePrevious` ref pattern. Collapsible amber-themed banner in narration view with award cards (icon, category, winner, value). Auto-hides when new combat starts, click to dismiss. All player character names passed from `characters` array.
 - Travel pace calculator + treasure hoard generator — Two DM utility tools in DMSidebar encounter tab (shown out of combat). Travel pace: D&D 5e reference table (Fast 4mi/hr 30mi/day -5 Perception, Normal 3mi/hr 24mi/day, Slow 2mi/hr 18mi/day can stealth) with forced march exhaustion rules and difficult terrain/mounted notes. Treasure hoard: 4-tier CR-based generator (CR 0-4, 5-10, 11-16, 17+) with gold dice rolls, weighted gem tables (Agate through Diamond), and weighted magic item tables (Potion of Healing through Ring of Three Wishes). Rarity-colored item display. `rollTreasureHoard()` and `HOARD_TIER_LABELS` in rules.ts.
 - Map pin/marker system — DM-placed named annotations on the battle map. `MapPin` interface (id, col, row, label, color, icon, createdBy) in types/game.ts with 8 preset colors. New `'pin'` DM tool in BattleMap toolbar — click map cell to open inline creation form with label input, emoji/icon field, and 8-color picker. Pins rendered as HTML overlay elements inside the zoom/pan container (not canvas-drawn) — colored pill with label text, triangle tail pointing to cell, hover-reveal delete button. Pin list in DMSidebar Notes tab showing all pins with color dot, label, coordinates, hover-delete. localStorage persistence per campaign (`adventure:pins:{roomId}`). WebSocket sync via `pin_sync` game event. Late-join recovery includes pins in `state_response`. Erase DM tool also removes pins at the erased cell.
@@ -890,6 +893,11 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Random encounter tables (per biome/dungeon level, auto-roll between rests)~~ (DONE — 8 biomes, weighted tables, DMSidebar UI)
 - Downtime activities (crafting, research, carousing)
 - Familiar/companion tokens (separate initiative, player-controlled)
+- Custom monster creator (DM builds custom monsters with ability editor)
+- AI companion auto-generation (auto-create character for AI seats without one assigned)
+- Lair actions (boss monsters trigger environmental effects on initiative count 20)
+- Legendary actions (boss enemies get extra actions between player turns)
+- Grapple/shove combat maneuvers (contested Athletics checks, movement restrictions)
 - ~~Party loot tracker (shared inventory, DM distributes items to players)~~ (DONE — LootTracker component + WebSocket sync)
 - ~~Quick rules reference panel (conditions, actions, spell schools during play)~~ (DONE — RulesReference modal + rules.ts data)
 - ~~Session timer (track total play time per session, auto-save on idle)~~ (DONE — SessionTimer component in Game header)
@@ -918,17 +926,24 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Sound FX expansion — remaining spell effects, death saves, conditions
 - Portrait gallery — save/browse AI portraits, remix styles, share with party
 - Dynamic lighting (token light sources, darkvision, dim light zones)
+- Animated token attack indicators (slash/arrow/spell beam between attacker and target)
+- Dice roll 3D animation (three.js or CSS 3D transforms for satisfying dice physics)
+- Ambient background music player (tavern, combat, exploration — royalty-free tracks via Web Audio)
 
 **Social & Community:**
 - AI session recap ("last time on..." from combat log + chat)
-- Campaign timeline / session log (auto-generated, browseable)
+- ~~Campaign timeline / session log (auto-generated, browseable)~~ (DONE — CampaignTimeline component with 9 event types, filter tabs, auto-parse from DM history + combat log)
 - ~~Journal/notes — shared campaign notes, session summaries, DM-only notes~~ (DONE — SessionJournal component + DM notes tab)
+- ~~Chat emoji reactions (react to messages with emoji)~~ (DONE — 8 D&D-themed emoji, hover picker, toggle reactions, WebSocket sync, lobby + game)
 - Discord integration for voice/chat (Activity SDK or webhook)
 - Drop-in/drop-out guest characters (no account, temporary token)
 - Campaign templates (share setup for others to clone)
+- Campaign comparison stats (total kills, gold earned, sessions played across campaigns)
+- Achievement badges (first crit, 100 kills, TPK survivor, dragon slayer, etc.)
+- Shareable character cards (social media image export with stats + portrait)
 
 **AI enhancements:**
-- AI player turn logic (AI seats actually play — move, attack, cast)
+- ~~AI player turn logic (AI seats actually play — move, attack, cast)~~ (DONE — useAIPlayerTurn hook with intelligent decision tree, heal/cast/attack/move, feat+proficiency support, Extra Attack, OA handling)
 - AI DM encounter pacing (dynamic difficulty mid-combat)
 - AI rules lawyer (passive — flags rule violations in chat)
 - AI session prep (DM goals → generated maps + encounters + NPCs)

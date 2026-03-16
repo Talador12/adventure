@@ -157,6 +157,30 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           ]);
           break;
 
+        case 'chat_reaction': {
+          // Toggle reaction on a chat message
+          const reactMsgId = msg.messageId as string;
+          const reactEmoji = msg.emoji as string;
+          const reactPlayerId = msg.playerId as string;
+          if (reactMsgId && reactEmoji && reactPlayerId) {
+            setChatMessages((prev) => prev.map((m) => {
+              if (m.id !== reactMsgId) return m;
+              const reactions = { ...(m.reactions || {}) };
+              const ids = reactions[reactEmoji] || [];
+              if (ids.includes(reactPlayerId)) {
+                // Toggle off
+                reactions[reactEmoji] = ids.filter((id) => id !== reactPlayerId);
+                if (reactions[reactEmoji].length === 0) delete reactions[reactEmoji];
+              } else {
+                // Toggle on
+                reactions[reactEmoji] = [...ids, reactPlayerId];
+              }
+              return { ...m, reactions };
+            }));
+          }
+          break;
+        }
+
         case 'whisper':
           setChatMessages((prev) => [
             ...prev,

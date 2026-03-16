@@ -295,6 +295,23 @@ export class Lobby {
         break;
       }
 
+      case 'chat_reaction': {
+        // Broadcast emoji reaction to all clients (including sender for confirmation)
+        const reactSession = this.sessions.get(server);
+        if (!reactSession) return;
+        const messageId = data.messageId as string;
+        const emoji = data.emoji as string;
+        if (!messageId || !emoji) return;
+        this.broadcast({
+          type: 'chat_reaction',
+          playerId: reactSession.id,
+          messageId,
+          emoji,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
       case 'roll': {
         const session = this.sessions.get(server);
         if (!session) return;

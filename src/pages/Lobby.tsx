@@ -254,6 +254,27 @@ export default function Lobby() {
           break;
         }
 
+        case 'chat_reaction': {
+          const reactMsgId = msg.messageId as string;
+          const reactEmoji = msg.emoji as string;
+          const reactPlayerId = msg.playerId as string;
+          if (reactMsgId && reactEmoji && reactPlayerId) {
+            setChatMessages((prev) => prev.map((m) => {
+              if (m.id !== reactMsgId) return m;
+              const reactions = { ...(m.reactions || {}) };
+              const ids = reactions[reactEmoji] || [];
+              if (ids.includes(reactPlayerId)) {
+                reactions[reactEmoji] = ids.filter((id) => id !== reactPlayerId);
+                if (reactions[reactEmoji].length === 0) delete reactions[reactEmoji];
+              } else {
+                reactions[reactEmoji] = [...ids, reactPlayerId];
+              }
+              return { ...m, reactions };
+            }));
+          }
+          break;
+        }
+
         case 'roll_result': {
           // Show roll in chat
           setChatMessages((prev) => [
@@ -537,7 +558,7 @@ export default function Lobby() {
     [room]
   );
 
-  // Start game: store seat character assignment in sessionStorage for Game.tsx to pick up
+  // Start game: store seat character assignment + AI seat data in sessionStorage for Game.tsx
   const handleStartGame = useCallback(() => {
     if (mySeatId) {
       const seat = seats.find((s) => s.id === mySeatId);
@@ -545,6 +566,11 @@ export default function Lobby() {
         try { sessionStorage.setItem(`adventure:seatCharId:${room}`, seat.characterId); } catch { /* ok */ }
       }
     }
+    // Store AI seat character IDs so Game.tsx can auto-play their turns
+    const aiCharIds = seats
+      .filter((s) => s.type === 'ai' && s.characterId)
+      .map((s) => s.characterId!);
+    try { sessionStorage.setItem(`adventure:aiCharIds:${room}`, JSON.stringify(aiCharIds)); } catch { /* ok */ }
     navigate(`/game/${room}`);
   }, [mySeatId, seats, room, navigate]);
 
@@ -1016,7 +1042,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
         <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
-          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
+          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
     </div>

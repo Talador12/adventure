@@ -23,6 +23,8 @@ export interface ChatMessage {
   // Whisper-specific fields
   targetUsername?: string; // who the whisper is addressed to
   targetPlayerId?: string;
+  // Reactions — emoji -> array of playerIds who reacted
+  reactions?: Record<string, string[]>;
 }
 
 // Parse /roll commands: /roll d20, /roll 2d6+3, /roll adv, /roll disadv, /roll 4d6kh3
@@ -80,14 +82,65 @@ export function parseSlashRoll(input: string): SlashRollResult | null {
   return { notation, rolls, modifier: modVal, total: sum + modVal, kept };
 }
 
+// Common reaction emojis (D&D-themed)
+const REACTION_EMOJIS = ['👍', '⚔️', '🎯', '😂', '🔥', '❤️', '💀', '🎲'];
+
 interface ChatPanelProps {
   messages: ChatMessage[];
   onSend: (text: string) => void;
   onSlashRoll?: (result: SlashRollResult) => void;
   onWhisper?: (targetUsername: string, message: string) => void;
   onTyping?: () => void;
+  onReaction?: (messageId: string, emoji: string) => void;
   typingUsers?: string[]; // usernames of people currently typing
   currentPlayerId?: string;
+}
+
+function ReactionBar({ reactions, currentPlayerId, onReaction, messageId }: {
+  reactions: Record<string, string[]>;
+  currentPlayerId?: string;
+  onReaction?: (messageId: string, emoji: string) => void;
+  messageId: string;
+}) {
+  const entries = Object.entries(reactions).filter(([, ids]) => ids.length > 0);
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {entries.map(([emoji, ids]) => {
+        const isMine = currentPlayerId ? ids.includes(currentPlayerId) : false;
+        return (
+          <button
+            key={emoji}
+            onClick={() => onReaction?.(messageId, emoji)}
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] border transition-colors ${
+              isMine
+                ? 'bg-[#F38020]/20 border-[#F38020]/40 text-[#F38020]'
+                : 'bg-slate-800/60 border-slate-700/40 text-slate-400 hover:border-slate-600'
+            }`}
+          >
+            <span>{emoji}</span>
+            <span className="font-medium">{ids.length}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ReactionPicker({ onPick }: { onPick: (emoji: string) => void }) {
+  return (
+    <div className="flex gap-0.5 bg-slate-800 border border-slate-700 rounded-full px-1.5 py-0.5 shadow-lg">
+      {REACTION_EMOJIS.map((emoji) => (
+        <button
+          key={emoji}
+          onClick={(e) => { e.stopPropagation(); onPick(emoji); }}
+          className="w-6 h-6 flex items-center justify-center text-sm rounded-full hover:bg-slate-700 transition-colors"
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function formatTime(ts: number) {
@@ -169,12 +222,13 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, typingUsers, currentPlayerId }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, typingUsers, currentPlayerId }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMsgCount, setNewMsgCount] = useState(0);
   const typingThrottleRef = useRef<number>(0);
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
 
   // Track scroll position to decide auto-scroll behavior
   const handleScroll = () => {
@@ -249,12 +303,40 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
           {messages.length === 0 && <div className="text-xs text-slate-600 text-center py-8">No messages yet. Say hello!</div>}
 
           {messages.map((msg, idx) => {
+            // Reaction bar shared across all message types
+            const reactionBar = msg.reactions && Object.keys(msg.reactions).length > 0 ? (
+              <ReactionBar reactions={msg.reactions} currentPlayerId={currentPlayerId} onReaction={onReaction} messageId={msg.id} />
+            ) : null;
+
+            // Hover reaction picker (for non-system messages)
+            const showPicker = hoveredMsgId === msg.id && msg.type !== 'system' && msg.type !== 'join' && msg.type !== 'leave';
+
             if (msg.type === 'dm') {
-              return <DmMessage key={msg.id} msg={msg} />;
+              return (
+                <div key={msg.id} className="relative group" onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
+                  <DmMessage msg={msg} />
+                  {reactionBar}
+                  {showPicker && onReaction && (
+                    <div className="absolute -top-3 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ReactionPicker onPick={(emoji) => { onReaction(msg.id, emoji); setHoveredMsgId(null); }} />
+                    </div>
+                  )}
+                </div>
+              );
             }
 
             if (msg.type === 'roll') {
-              return <RollMessage key={msg.id} msg={msg} />;
+              return (
+                <div key={msg.id} className="relative group" onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
+                  <RollMessage msg={msg} />
+                  {reactionBar}
+                  {showPicker && onReaction && (
+                    <div className="absolute -top-3 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ReactionPicker onPick={(emoji) => { onReaction(msg.id, emoji); setHoveredMsgId(null); }} />
+                    </div>
+                  )}
+                </div>
+              );
             }
 
             if (msg.type === 'whisper') {
@@ -288,16 +370,22 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
 
             if (isGrouped) {
               return (
-                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} relative group`} onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
                   <div className={`${isMe ? 'mr-8' : 'ml-8'}`}>
                     <div className={`px-3 py-1 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
+                    {reactionBar}
                   </div>
+                  {showPicker && onReaction && (
+                    <div className="absolute -top-3 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ReactionPicker onPick={(emoji) => { onReaction(msg.id, emoji); setHoveredMsgId(null); }} />
+                    </div>
+                  )}
                 </div>
               );
             }
 
             return (
-              <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${isGrouped ? '' : 'mt-1'}`}>
+              <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${isGrouped ? '' : 'mt-1'} relative group`} onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
                 {msg.avatar ? (
                   <img src={msg.avatar} alt="" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
                 ) : (
@@ -311,7 +399,13 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
                     <span className="text-[9px] text-slate-600">{formatTime(msg.timestamp)}</span>
                   </div>
                   <div className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
+                  {reactionBar}
                 </div>
+                {showPicker && onReaction && (
+                  <div className="absolute -top-3 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ReactionPicker onPick={(emoji) => { onReaction(msg.id, emoji); setHoveredMsgId(null); }} />
+                  </div>
+                )}
               </div>
             );
           })}
