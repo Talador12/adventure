@@ -51,10 +51,14 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 
 The complete feature set built from project inception through 46 development iterations. Everything listed below is shipped and working.
 
+**BLOCKED — waiting on Keith:**
+- Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
+
 **Recent highlights (latest work):**
-- Temp login — "Quick Login" button generates random fantasy-named user in localStorage, bypasses OAuth for local testing
+- Login modal — Discord/Google/Quick Login moved into centered modal, header cleaned up
 - Auth gates — `RequireAuth` wrapper on all sub-pages (Lobby, Game, CharacterCreate), redirects to Home if not logged in
 - Sign-out clears all auth state (temp user + session cookie) and redirects to Home
+- Avatar dropdown fix — removed overflow-hidden from header that was clipping dropdown
 - Spell search/filter — search bar + level/school filter pills in the CharacterSheet spellbook
 - Initiative drag reorder — DM drag-and-drop reorder during combat
 - Character portrait in dice roll chat messages — 24px circular portrait next to roller name

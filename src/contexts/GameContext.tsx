@@ -200,14 +200,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [mapPositions, setMapPositions] = useState<TokenPosition[]>([]);
   const [mapImageUrl, setMapImageUrl] = useState<string | null>(null); // R2-backed DM map background
 
-  // Fetch user identity on mount — populate currentPlayer with real user data (Discord or Google)
+  // Fetch user identity on mount — check temp user first, then real auth
   useEffect(() => {
+    // Check localStorage temp user first (instant, no network)
+    try {
+      const stored = localStorage.getItem('adventure:tempUser');
+      if (stored) {
+        const t = JSON.parse(stored) as { id?: string; username?: string; global_name?: string };
+        if (t.id) {
+          setCurrentPlayer({
+            id: t.id,
+            username: t.global_name || t.username || 'Adventurer',
+            controllerType: 'human',
+          });
+          return; // skip real auth check
+        }
+      }
+    } catch { /* bad JSON — fall through */ }
+
+    // Fall back to real auth (Discord/Google)
     fetch('/api/auth/me')
       .then((r) => (r.ok ? (r.json() as Promise<{ user?: { id?: string; username?: string; global_name?: string; avatar?: string; picture?: string } }>) : null))
       .then((data) => {
         if (data?.user?.id) {
           const u = data.user;
-          // Google: picture is a full URL. Discord: avatar is a hash, construct CDN URL.
           const avatarUrl = u.picture || (u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128` : 'https://cdn.discordapp.com/embed/avatars/0.png');
           setCurrentPlayer({
             id: u.id!,
@@ -225,24 +241,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Persist characters to localStorage + server sync on change
   const syncingRef = useRef(false); // prevent save-during-load loops
+  const isTempUser = currentPlayer.id.startsWith('temp-');
   useEffect(() => {
     try {
       localStorage.setItem(CHARACTERS_STORAGE_KEY, JSON.stringify(characters));
     } catch {
       // storage full or unavailable — silently fail
     }
-    // Fire-and-forget server sync (don't block UI, don't fail loudly)
-    if (!syncingRef.current && characters.length >= 0) {
+    // Fire-and-forget server sync (skip for temp users — no auth cookie)
+    if (!syncingRef.current && !isTempUser && characters.length >= 0) {
       fetch('/api/characters', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ characters }),
       }).catch(() => {}); // server unavailable — localStorage is the fallback
     }
-  }, [characters]);
+  }, [characters, isTempUser]);
 
   // Try to load from server on mount (merge: server data fills in any missing characters)
+  // Skip for temp users — they have no server-side characters
   useEffect(() => {
+    if (isTempUser) return;
     syncingRef.current = true;
     fetch('/api/characters')
       .then((r) => (r.ok ? (r.json() as Promise<{ characters?: Character[] }>) : null))
@@ -263,7 +282,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       .finally(() => {
         syncingRef.current = false;
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isTempUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addCharacter = useCallback((c: Character) => {
     setCharacters((prev) => [...prev, c]);

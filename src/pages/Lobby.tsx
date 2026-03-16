@@ -104,19 +104,19 @@ export default function Lobby() {
       .catch(() => setPasswordError('Could not verify — try again'));
   };
 
-  // Load persistent chat history from D1 on mount
+  // Load persistent chat history from D1 on mount (skip for temp users — no auth cookie)
   useEffect(() => {
+    if (currentPlayer.id.startsWith('temp-')) return;
     loadChatHistory(room).then((history) => {
       if (history.length > 0) {
         setChatMessages((prev) => {
-          // Deduplicate: only add messages not already in state (by id)
           const existingIds = new Set(prev.map((m) => m.id));
           const newMsgs = history.filter((m) => !existingIds.has(m.id));
           return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
         });
       }
     });
-  }, [room]);
+  }, [room, currentPlayer.id]);
 
   // WebSocket message handler
   const handleWsMessage = useCallback(
@@ -133,13 +133,15 @@ export default function Lobby() {
           setIsDM((msg.isDM as boolean) ?? false);
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
           setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
-          // Auto-join campaign party in D1 (fire-and-forget)
-          fetch(`/api/party/${encodeURIComponent(room)}/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ role: msg.isDM ? 'dm' : 'player' }),
-          }).catch(() => {});
+          // Auto-join campaign party in D1 (fire-and-forget, skip for temp users)
+          if (!currentPlayer.id.startsWith('temp-')) {
+            fetch(`/api/party/${encodeURIComponent(room)}/join`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ role: msg.isDM ? 'dm' : 'player' }),
+            }).catch(() => {});
+          }
           // Replay doodle pad stroke history from server (late-join catch-up)
           if (Array.isArray(msg.strokeHistory) && msg.strokeHistory.length > 0) {
             // Small delay to ensure canvas is mounted and sized

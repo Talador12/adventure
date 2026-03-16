@@ -46,13 +46,26 @@ export default function Home() {
 
   // Fetch saved campaigns + public campaigns on mount
   useEffect(() => {
-    fetch('/api/campaigns')
-      .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; createdAt: number }> }>) : null))
-      .then((data) => {
-        if (data?.campaigns?.length) setCampaigns(data.campaigns);
-      })
-      .catch(() => {})
-      .finally(() => setCampaignsLoading(false));
+    // Temp users: load campaign list from localStorage
+    const isTempLogin = (() => { try { const s = localStorage.getItem('adventure:tempUser'); return !!s && JSON.parse(s)?.id?.startsWith('temp-'); } catch { return false; } })();
+    if (isTempLogin) {
+      try {
+        const raw = localStorage.getItem('adventure:campaigns');
+        if (raw) {
+          const list = JSON.parse(raw) as Array<{ roomId: string; name: string; createdAt: number }>;
+          if (list.length) setCampaigns(list);
+        }
+      } catch { /* ok */ }
+      setCampaignsLoading(false);
+    } else {
+      fetch('/api/campaigns')
+        .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; createdAt: number }> }>) : null))
+        .then((data) => {
+          if (data?.campaigns?.length) setCampaigns(data.campaigns);
+        })
+        .catch(() => {})
+        .finally(() => setCampaignsLoading(false));
+    }
     fetch('/api/campaigns/public')
       .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }> }>) : null))
       .then((data) => {
@@ -61,9 +74,11 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
-  // Fetch party members for all campaigns
+  // Fetch party members for all campaigns (skip for temp users — no auth cookie)
   useEffect(() => {
     if (campaigns.length === 0) return;
+    const isTempLogin = (() => { try { const s = localStorage.getItem('adventure:tempUser'); return !!s && JSON.parse(s)?.id?.startsWith('temp-'); } catch { return false; } })();
+    if (isTempLogin) return; // temp users can't access party API
     campaigns.forEach((c) => {
       fetch(`/api/party/${encodeURIComponent(c.roomId)}`, { credentials: 'include' })
         .then((r) => (r.ok ? (r.json() as Promise<{ members?: Array<{ display_name: string; avatar_url: string | null; role: string }> }>) : null))
@@ -83,12 +98,22 @@ export default function Home() {
   const confirmDeleteCampaign = () => {
     if (!deleteConfirm) return;
     const { roomId, name } = deleteConfirm;
-    fetch(`/api/campaigns/${encodeURIComponent(roomId)}`, { method: 'DELETE' }).catch(() => {});
+    const isTempLogin = (() => { try { const s = localStorage.getItem('adventure:tempUser'); return !!s && JSON.parse(s)?.id?.startsWith('temp-'); } catch { return false; } })();
+    if (!isTempLogin) {
+      fetch(`/api/campaigns/${encodeURIComponent(roomId)}`, { method: 'DELETE' }).catch(() => {});
+    }
     setCampaigns((prev) => prev.filter((c) => c.roomId !== roomId));
-    // Clean up localStorage too
+    // Clean up localStorage
     try {
       localStorage.removeItem(`adventure:dm-history:${roomId}`);
       localStorage.removeItem(`adventure:scene:${roomId}`);
+      localStorage.removeItem(`adventure:campaign:${roomId}`);
+      // Update temp user campaign list
+      const raw = localStorage.getItem('adventure:campaigns');
+      if (raw) {
+        const list = JSON.parse(raw) as Array<{ roomId: string }>;
+        localStorage.setItem('adventure:campaigns', JSON.stringify(list.filter((c) => c.roomId !== roomId)));
+      }
     } catch {
       /* ok */
     }

@@ -24,8 +24,17 @@ function rowToMessage(row: Record<string, unknown>): ChatMessage {
   };
 }
 
-// Load recent chat history for a room from D1
+// Check if current user is temp (no auth cookie — D1 calls will 401)
+function isTempUser(): boolean {
+  try {
+    const s = localStorage.getItem('adventure:tempUser');
+    return !!s && JSON.parse(s)?.id?.startsWith('temp-');
+  } catch { return false; }
+}
+
+// Load recent chat history for a room from D1 (skips for temp users)
 export async function loadChatHistory(roomId: string, limit = 100): Promise<ChatMessage[]> {
+  if (isTempUser()) return []; // no auth cookie — would 401
   try {
     const res = await fetch(`/api/chat/${encodeURIComponent(roomId)}?limit=${limit}`, {
       credentials: 'include',
@@ -38,7 +47,7 @@ export async function loadChatHistory(roomId: string, limit = 100): Promise<Chat
   }
 }
 
-// Save a chat message to D1 (fire-and-forget — errors are silently ignored)
+// Save a chat message to D1 (fire-and-forget, skips for temp users)
 export function persistChatMessage(
   roomId: string,
   msg: {
@@ -49,6 +58,7 @@ export function persistChatMessage(
     metadata?: Record<string, unknown>;
   }
 ): void {
+  if (isTempUser()) return; // no auth cookie — would 401
   fetch(`/api/chat/${encodeURIComponent(roomId)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
