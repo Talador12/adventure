@@ -106,6 +106,67 @@ export function chebyshevDistance(col1: number, row1: number, col2: number, row2
   return Math.max(Math.abs(col1 - col2), Math.abs(row1 - row2));
 }
 
+// Flanking check: returns true if an ally of the attacker is on the opposite side of the target.
+// "Opposite side" = the ally is adjacent to the target AND on roughly the other side (180° ± 90°).
+export function isFlanking(
+  attackerCol: number, attackerRow: number,
+  targetCol: number, targetRow: number,
+  allyPositions: { col: number; row: number }[],
+): boolean {
+  // Direction from target to attacker
+  const dx = attackerCol - targetCol;
+  const dy = attackerRow - targetRow;
+  for (const ally of allyPositions) {
+    if (!isAdjacent(ally.col, ally.row, targetCol, targetRow)) continue;
+    // Direction from target to ally
+    const adx = ally.col - targetCol;
+    const ady = ally.row - targetRow;
+    // Dot product: negative means roughly opposite direction (angle > 90°)
+    if (dx * adx + dy * ady < 0) return true;
+  }
+  return false;
+}
+
+// Cover check: walk the line between attacker and target, count terrain obstructions.
+// Returns cover level: 'none' | 'half' (+2 AC) | 'three-quarters' (+5 AC) | 'full' (untargetable).
+export type CoverLevel = 'none' | 'half' | 'three-quarters' | 'full';
+export const COVER_AC_BONUS: Record<CoverLevel, number> = { none: 0, half: 2, 'three-quarters': 5, full: 99 };
+
+export function checkCover(
+  terrain: TerrainType[][],
+  attackerCol: number, attackerRow: number,
+  targetCol: number, targetRow: number,
+): CoverLevel {
+  if (terrain.length === 0) return 'none';
+  if (attackerCol === targetCol && attackerRow === targetRow) return 'none';
+  // Adjacent melee — no cover
+  if (isAdjacent(attackerCol, attackerRow, targetCol, targetRow)) return 'none';
+
+  // Walk the line, count obstructing cells (water = half, difficult = half, wall = full)
+  let obstructions = 0;
+  let x0 = attackerCol, y0 = attackerRow;
+  const x1 = targetCol, y1 = targetRow;
+  const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+
+  while (x0 !== x1 || y0 !== y1) {
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+    if (x0 === x1 && y0 === y1) break; // don't count the target cell
+    const row = terrain[y0];
+    if (!row) continue;
+    const cell = row[x0];
+    if (cell === 'wall' || cell === 'void') return 'full';
+    if (cell === 'water' || cell === 'difficult') obstructions++;
+  }
+
+  if (obstructions >= 3) return 'three-quarters';
+  if (obstructions >= 1) return 'half';
+  return 'none';
+}
+
 // Bresenham line-of-sight: returns true if no wall/void blocks the path between two cells
 export function hasLineOfSight(
   terrain: TerrainType[][],

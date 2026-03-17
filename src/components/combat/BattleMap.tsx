@@ -34,6 +34,15 @@ const CONDITION_COLORS: Record<string, string> = {
   dodging: '#7dd3fc',    // sky-300
   raging: '#f87171',     // red-400
   inspired: '#818cf8',   // indigo-400
+  helping: '#2dd4bf',    // teal-400
+  hidden: '#94a3b8',     // slate-400
+};
+
+// Short abbreviation for condition overlays on map tokens
+const CONDITION_ABBREV: Record<string, string> = {
+  poisoned: 'PSN', stunned: 'STN', frightened: 'FRT', blessed: 'BLS',
+  hexed: 'HEX', burning: 'BRN', prone: 'PRN', dodging: 'DDG',
+  raging: 'RAG', inspired: 'INS', helping: 'HLP', hidden: 'HID',
 };
 
 // --- Hidden trap system ---
@@ -855,26 +864,58 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.stroke();
       }
 
-      // Condition indicator pips (small colored dots above token)
+      // Condition visual overlays — colored ring around token + abbreviated labels
       const conditions = unit.conditions || [];
       if (conditions.length > 0) {
-        const pipR = 3;
-        const pipY = cy - TOKEN_RADIUS - 6;
-        const totalW = conditions.length * (pipR * 2 + 2) - 2;
-        const startX = cx - totalW / 2 + pipR;
+        // Draw colored ring around token (uses the most impactful condition's color)
+        const primaryColor = CONDITION_COLORS[conditions[0].type] || '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(cx, cy, TOKEN_RADIUS + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = primaryColor;
+        ctx.lineWidth = 2.5;
+        ctx.globalAlpha = 0.7;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Pulsing glow for burning/stunned/frightened (high-impact conditions)
+        const urgentCondition = conditions.find((c) => c.type === 'burning' || c.type === 'stunned' || c.type === 'frightened');
+        if (urgentCondition) {
+          const urgentColor = CONDITION_COLORS[urgentCondition.type] || '#fb923c';
+          ctx.beginPath();
+          ctx.arc(cx, cy, TOKEN_RADIUS + 6, 0, Math.PI * 2);
+          ctx.strokeStyle = urgentColor;
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = 0.3;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        // Condition abbreviation labels above token (compact text badges)
+        const labelY = cy - TOKEN_RADIUS - 8;
+        const labelH = 10;
+        ctx.font = 'bold 7px system-ui';
+        ctx.textAlign = 'center';
+        const totalLabelsW = conditions.length * 22 - 2;
+        const labelStartX = cx - totalLabelsW / 2 + 10;
         conditions.forEach((cond, ci) => {
-          const pipX = startX + ci * (pipR * 2 + 2);
+          const lx = labelStartX + ci * 22;
           const color = CONDITION_COLORS[cond.type] || '#94a3b8';
-          // Outer glow
+          const abbrev = CONDITION_ABBREV[cond.type] || cond.type.slice(0, 3).toUpperCase();
+          // Background pill
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          const textW = ctx.measureText(abbrev).width + 4;
           ctx.beginPath();
-          ctx.arc(pipX, pipY, pipR + 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.roundRect(lx - textW / 2, labelY - labelH / 2, textW, labelH, 3);
           ctx.fill();
-          // Pip
+          // Border
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.arc(pipX, pipY, pipR, 0, Math.PI * 2);
+          ctx.roundRect(lx - textW / 2, labelY - labelH / 2, textW, labelH, 3);
+          ctx.stroke();
+          // Text
           ctx.fillStyle = color;
-          ctx.fill();
+          ctx.fillText(abbrev, lx, labelY + 3);
         });
       }
     });

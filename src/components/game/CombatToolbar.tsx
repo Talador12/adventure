@@ -7,7 +7,7 @@
  */
 
 import { useGame, type Unit, type Item, type Character, CONDITION_EFFECTS, EXTRA_ATTACK_CLASSES, FEATS, FULL_CASTERS, HALF_CASTERS, getClassSpells, getSpellSlots, getClassAbility, rollSpellDamage, rollLoot, hasPendingASI, effectiveAC, rollD20WithProne, type Spell } from '../../contexts/GameContext';
-import { chebyshevDistance, hasLineOfSight, isAdjacent, parseRangeFt } from '../../lib/mapUtils';
+import { chebyshevDistance, hasLineOfSight, isAdjacent, isFlanking, checkCover, COVER_AC_BONUS, parseRangeFt } from '../../lib/mapUtils';
 import type { ActiveAoE } from '../combat/BattleMap';
 import { playTurnChange, playCombatHit, playCombatMiss, playMagicSpell, playEnemyDeath, playHealing, playLevelUp, playLootDrop, playCritical } from '../../hooks/useSoundFX';
 
@@ -291,18 +291,40 @@ export default function CombatToolbar({
                                   return sum + (f?.attackBonus || 0);
                                 }, 0);
 
-                                const targetAC = effectiveAC(target.ac, target.conditions || []);
+                                // Flanking bonus: +2 if an ally is on the opposite side of the target
+                                let flankingBonus = 0;
+                                if (!weaponIsRanged && attackerPos && targetPos) {
+                                  const allyPositions = units
+                                    .filter((u) => u.type === 'player' && u.hp > 0 && u.id !== playerUnit?.id)
+                                    .map((u) => mapPositions.find((p) => p.unitId === u.id))
+                                    .filter(Boolean) as { col: number; row: number }[];
+                                  if (isFlanking(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row, allyPositions)) {
+                                    flankingBonus = 2;
+                                  }
+                                }
+
+                                // Cover bonus: ranged attacks through obstructions grant AC bonus to target
+                                let coverBonus = 0;
+                                let coverLabel = '';
+                                if (weaponIsRanged && attackerPos && targetPos && terrain.length > 0) {
+                                  const cover = checkCover(terrain, attackerPos.col, attackerPos.row, targetPos.col, targetPos.row);
+                                  coverBonus = COVER_AC_BONUS[cover];
+                                  if (cover !== 'none') coverLabel = ` [${cover} cover +${coverBonus} AC]`;
+                                }
+
+                                const targetAC = effectiveAC(target.ac, target.conditions || []) + coverBonus;
                                 const isMeleeAttack = !weaponIsRanged;
                                 let totalDamageDealt = 0;
                                 for (let atk = 0; atk < numAttacks; atk++) {
                                   const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack);
-                                  const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus;
+                                  const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus + flankingBonus;
                                   const isHit = attackRoll === 20 || totalAttack >= targetAC;
                                   const isCrit = attackRoll === 20;
-                                  const atkLabel = `${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}=${totalAttack}`;
+                                  const flankTag = flankingBonus > 0 ? '+2flank' : '';
+                                  const atkLabel = `${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}${flankTag}=${totalAttack}`;
                                   const atkPrefix = numAttacks > 1 ? `[Attack ${atk + 1}] ` : '';
                                   const verb = weaponIsRanged ? 'shoots' : 'strikes';
-                                  const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
+                                  const advTag = (hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '') + coverLabel;
 
                                   if (isHit) {
                                     const baseDmg = rollSpellDamage(weaponDie);
@@ -595,6 +617,78 @@ export default function CombatToolbar({
                                 <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
                               </svg>
                               Disengage
+                            </button>
+                          );
+                        })()}
+
+                      {/* Help action — give an ally advantage on their next attack against a target */}
+                      {inCombat &&
+                        selectedCharacter &&
+                        (() => {
+                          const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                          if (!playerUnit) return null;
+                          const alreadyHelping = playerUnit.conditions?.some((c) => c.type === 'helping');
+                          return (
+                            <button
+                              disabled={!isPlayerTurn || !!alreadyHelping}
+                              title={!isPlayerTurn ? 'Wait for your turn' : alreadyHelping ? 'Already helping' : 'Give an ally advantage on their next attack'}
+                              onClick={() => {
+                                applyCondition(playerUnit.id, { type: 'helping', duration: 1, source: 'Help' });
+                                const msg = `${selectedCharacter.name} takes the Help action! (Next ally attack has advantage)`;
+                                setCombatLog((prev) => [...prev, msg]);
+                                addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/40 hover:bg-teal-900/60 border border-teal-700/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                <path d="M7 8a3 3 0 100-6 3 3 0 000 6zM14.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 18a9.953 9.953 0 01-5.385-1.572zM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 00-1.588-3.755 4.502 4.502 0 015.874 2.636.818.818 0 01-.36.98A7.465 7.465 0 0114.5 16z" />
+                              </svg>
+                              Help
+                            </button>
+                          );
+                        })()}
+
+                      {/* Hide action — stealth check to become hidden */}
+                      {inCombat &&
+                        selectedCharacter &&
+                        (() => {
+                          const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                          if (!playerUnit) return null;
+                          const alreadyHidden = playerUnit.conditions?.some((c) => c.type === 'hidden');
+                          return (
+                            <button
+                              disabled={!isPlayerTurn || !!alreadyHidden}
+                              title={!isPlayerTurn ? 'Wait for your turn' : alreadyHidden ? 'Already hidden' : 'Attempt to hide — DEX (Stealth) check'}
+                              onClick={() => {
+                                // Stealth check vs passive perception of nearest enemy
+                                const dexMod = Math.floor(((selectedCharacter.stats?.DEX || 10) - 10) / 2);
+                                const prof = Math.ceil(selectedCharacter.level / 4) + 1;
+                                const roll = Math.floor(Math.random() * 20) + 1;
+                                const total = roll + dexMod + prof;
+                                // Passive perception of enemies (10 + WIS mod estimate)
+                                const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0);
+                                const highestPP = enemies.length > 0 ? Math.max(...enemies.map((e) => 10 + (e.dexMod || 0))) : 12;
+                                const success = roll === 20 || (roll !== 1 && total >= highestPP);
+                                if (success) {
+                                  applyCondition(playerUnit.id, { type: 'hidden', duration: 1, source: 'Hide' });
+                                  const msg = `${selectedCharacter.name} hides successfully! (Stealth ${roll}+${dexMod + prof}=${total} vs PP ${highestPP}) Advantage on next attack.`;
+                                  setCombatLog((prev) => [...prev, msg]);
+                                  addDmMessage(msg);
+                                } else {
+                                  const msg = `${selectedCharacter.name} fails to hide! (Stealth ${roll}+${dexMod + prof}=${total} vs PP ${highestPP})`;
+                                  setCombatLog((prev) => [...prev, msg]);
+                                  addDmMessage(msg);
+                                }
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-600/50 text-slate-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                                <path fillRule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.092 1.092a4 4 0 00-5.558-5.558z" clipRule="evenodd" />
+                                <path d="M10.748 13.93l2.523 2.523a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z" />
+                              </svg>
+                              Hide
                             </button>
                           );
                         })()}

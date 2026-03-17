@@ -15,6 +15,8 @@ export const CONDITION_TOOLTIPS: Record<ConditionType, string> = {
   dodging: 'Dodging: +2 AC until next turn. Attacks against have disadvantage. DEX saves have advantage.',
   raging: 'Raging: +2 to melee attack and damage rolls. Resistance to bludgeoning, piercing, slashing damage.',
   inspired: 'Inspired: Bardic Inspiration — +2 to attack rolls and saving throws for the duration.',
+  helping: 'Helping: The next ally to attack the same target has advantage on their attack roll (+2 to attack).',
+  hidden: 'Hidden: You cannot be seen. Advantage on attack rolls (+2 to attacks). Ends after you attack or are found.',
 };
 
 // --- Combat actions (D&D 5e PHB actions in combat) ---

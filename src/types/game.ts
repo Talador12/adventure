@@ -14,7 +14,7 @@ export interface Player {
 }
 
 // --- Conditions ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -32,6 +32,8 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   dodging: { attackMod: 0, acMod: 2, saveMod: 0, description: 'Dodging — +2 AC until next turn', color: 'text-sky-300' },
   raging: { attackMod: 2, acMod: 0, saveMod: 0, description: 'Raging — +2 to melee attacks', color: 'text-red-400' },
   inspired: { attackMod: 2, acMod: 0, saveMod: 2, description: 'Inspired — +2 to attacks and saves', color: 'text-indigo-400' },
+  helping: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Helping an ally — next ally attack vs target has advantage', color: 'text-teal-400' },
+  hidden: { attackMod: 2, acMod: 0, saveMod: 0, description: 'Hidden — advantage on next attack, enemies can\'t target you', color: 'text-slate-300' },
 };
 
 // --- Combat roll helpers ---

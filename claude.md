@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Help + Hide combat actions — two new D&D 5e combat actions in CombatToolbar. Help: grants `helping` condition (next ally attack has advantage). Hide: DEX (Stealth) check vs enemy passive perception — success applies `hidden` condition (+2 attack on next attack, enemies can't target). Both added as `ConditionType` with CONDITION_EFFECTS, CONDITION_TOOLTIPS, CONDITION_COLORS, CONDITION_ABBREV entries. Teal accent for Help, slate for Hide.
+- Flanking bonus — `isFlanking()` pure function in `mapUtils.ts`. Checks if any ally of the attacker is adjacent to the target on the opposite side (dot product < 0 means ~180° apart). +2 attack bonus for melee attacks when flanking. Shows `+2flank` in attack roll log. Wired into CombatToolbar Quick Attack.
+- Status effect visual overlays on battle map tokens — upgraded from tiny dots to full overlays. Colored ring around tokens with conditions (primary condition color, 2.5px stroke with 0.7 opacity). Pulsing glow for urgent conditions (burning, stunned, frightened). Abbreviated text labels above tokens (PSN, STN, BRN, DDG, etc.) in colored pill badges with dark background. All 12 condition types mapped with abbreviations.
+- Cover system — `checkCover()` function in `mapUtils.ts` walks the line between attacker and target, counting terrain obstructions. Returns `CoverLevel`: none (0 AC), half (+2 AC for 1+ water/difficult terrain), three-quarters (+5 AC for 3+ obstructions), full (wall/void = untargetable). Applied to ranged attacks in CombatToolbar. Cover label shown in combat log messages.
 - Custom monster creator — `CustomMonsterCreator` component (~250 lines) in DMSidebar encounter tab. DMs build custom monsters with form: name, CR (auto-fills HP/AC/attack/damage/speed defaults from CR), type (14 types with icons), size, stat block grid (HP/AC/Atk+/Dmg+/DEX/Speed), damage die, description, and custom abilities (name/type/die/cooldown/ranged toggle). Save to localStorage per campaign for reuse. Spawn directly into combat via existing `handleSpawnMonster`. Saved monsters list with count selector and per-entry spawn/delete. Purple accent UI.
 - Dynamic difficulty scaling — `useDynamicDifficulty` hook (~100 lines) auto-adjusts encounter strength mid-combat. Monitors party HP% vs enemy HP% every 2 rounds (max 2 adjustments per encounter). If party is getting destroyed (< 30% HP, enemies > 50%): nerf enemy HP by 15% + reduce attack bonus by 1. If struggling: nerf HP by 10%. If steamrolling: heal enemies 20% of missing HP + boost attack. Narrative DM messages disguise the adjustment. DM toggle in DMSidebar ("Auto-balance encounters" ON/OFF). Persisted to localStorage per campaign.
 - Shareable character cards — `CharacterCard` component (~220 lines) renders a 600x340 canvas card with: portrait (with fallback initial), name, race/class/level, alignment/background, HP/AC/gold/XP bar, 6-stat block with modifier badges, equipment highlights, feat list, HP bar, and branding. Download as PNG or copy to clipboard. Shown at bottom of CharacterSheet.
@@ -911,11 +915,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Grapple/shove combat maneuvers (contested Athletics checks, movement restrictions)
 - ~~Concentration tracker visual (glowing aura on concentrating tokens, auto-break notification)~~ (DONE — purple glow ring + pulsing C badge on InitiativeBar avatars)
 - Initiative tiebreaker resolution (DEX mod comparison, DM choice on ties)
-- Status effect visual overlays on battle map tokens (poison green, fire orange, stunned stars)
+- ~~Status effect visual overlays on battle map tokens (poison green, fire orange, stunned stars)~~ (DONE — colored rings, pulsing glow for urgent, abbreviated text labels in pill badges)
 - "Readied action" support (hold action until trigger condition, execute as reaction)
-- Flanking bonus (+2 to attacks when allies are on opposite sides of target)
-- Cover system (half/three-quarters/full cover modifying AC behind terrain)
-- Dash/Dodge/Disengage/Help/Hide action buttons with proper 5e mechanics
+- ~~Flanking bonus (+2 to attacks when allies are on opposite sides of target)~~ (DONE — isFlanking() in mapUtils, +2 melee bonus, shown in attack log)
+- ~~Cover system (half/three-quarters/full cover modifying AC behind terrain)~~ (DONE — checkCover() in mapUtils, +2/+5/full AC bonus for ranged attacks through terrain)
+- ~~Dash/Dodge/Disengage/Help/Hide action buttons with proper 5e mechanics~~ (DONE — Dodge/Dash/Disengage were existing, Help + Hide added with conditions, stealth checks, teal/slate UI)
+- Opportunity attack prompt for players (when enemy moves away, prompt to use reaction)
+- Bonus action system (separate from main action — Cunning Action, healing word, etc.)
+- Attack of opportunity for players when enemy leaves their reach (reaction-based)
 - ~~Party loot tracker (shared inventory, DM distributes items to players)~~ (DONE — LootTracker component + WebSocket sync)
 - ~~Quick rules reference panel (conditions, actions, spell schools during play)~~ (DONE — RulesReference modal + rules.ts data)
 - ~~Session timer (track total play time per session, auto-save on idle)~~ (DONE — SessionTimer component in Game header)
