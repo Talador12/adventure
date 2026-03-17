@@ -8,6 +8,7 @@ import { BIOME_LABELS, rollBiomeEncounter, checkRandomEncounter, type Biome, typ
 import { rollTreasureHoard, HOARD_TIER_LABELS, type TreasureHoardResult } from '../../data/rules';
 import FormationPresets from './FormationPresets';
 import DowntimeActivities from './DowntimeActivities';
+import CustomMonsterCreator from './CustomMonsterCreator';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 
@@ -51,6 +52,11 @@ interface DMSidebarProps {
   // Downtime
   selectedCharacterId: string | null;
   onAddDmMessage: (text: string) => void;
+  // Custom monster spawn
+  onSpawnMonster: (monster: import('../../data/monsters').Monster, count: number) => void;
+  // Dynamic difficulty
+  dynamicDifficultyEnabled: boolean;
+  setDynamicDifficultyEnabled: (v: boolean) => void;
 }
 
 export default function DMSidebar({
@@ -87,6 +93,9 @@ export default function DMSidebar({
   onPinRemove,
   selectedCharacterId,
   onAddDmMessage,
+  onSpawnMonster,
+  dynamicDifficultyEnabled,
+  setDynamicDifficultyEnabled,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter, grantXP } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -137,6 +146,20 @@ export default function DMSidebar({
                 ))}
               </div>
             </div>
+            {/* Dynamic difficulty toggle */}
+            <div className="flex items-center justify-between py-1">
+              <span className="text-[10px] text-slate-500">Auto-balance encounters</span>
+              <button
+                onClick={() => setDynamicDifficultyEnabled(!dynamicDifficultyEnabled)}
+                className={`text-[9px] px-2 py-0.5 rounded-full border font-medium transition-colors ${
+                  dynamicDifficultyEnabled
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                    : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {dynamicDifficultyEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
             {/* Encounter difficulty calculator */}
             {(() => {
               const playerUnits = units.filter((u: Unit) => u.characterId);
@@ -177,6 +200,12 @@ export default function DMSidebar({
               }
               return null;
             })()}
+            {/* Custom Monster Creator */}
+            {!inCombat && (
+              <div className="border-t border-slate-700/50 pt-3">
+                <CustomMonsterCreator roomId={roomId} onSpawn={onSpawnMonster} />
+              </div>
+            )}
             {/* Downtime Activities — between adventures */}
             {!inCombat && selectedCharacterId && (
               <div className="border-t border-slate-700/50 pt-3">

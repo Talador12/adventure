@@ -4,10 +4,19 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 
+export type DamageType = 'slashing' | 'piercing' | 'bludgeoning' | 'fire' | 'cold' | 'lightning' | 'thunder' | 'poison' | 'acid' | 'necrotic' | 'radiant' | 'force' | 'psychic';
+
+const DAMAGE_TYPE_ICONS: Record<DamageType, string> = {
+  slashing: '🗡️', piercing: '🏹', bludgeoning: '🔨', fire: '🔥', cold: '❄️',
+  lightning: '⚡', thunder: '💨', poison: '☠️', acid: '🧪', necrotic: '💀',
+  radiant: '✨', force: '💫', psychic: '🧠',
+};
+
 export interface FloatingText {
   id: string;
   text: string;
   type: 'damage' | 'heal' | 'miss' | 'crit' | 'condition' | 'info';
+  damageType?: DamageType; // for damage/crit — shows type icon
   x: number; // percentage from left (0-100)
   y: number; // percentage from top (0-100)
   timestamp: number;
@@ -50,6 +59,9 @@ function FloatingNumber({ text, onDone }: { text: FloatingText; onDone: () => vo
       {text.type === 'heal' && '+'}
       {text.text}
       {text.type === 'crit' && '!'}
+      {text.damageType && (text.type === 'damage' || text.type === 'crit') && (
+        <span className="ml-0.5 text-[10px] opacity-80">{DAMAGE_TYPE_ICONS[text.damageType]}</span>
+      )}
     </div>
   );
 }

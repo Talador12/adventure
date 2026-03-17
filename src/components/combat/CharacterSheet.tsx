@@ -1,6 +1,7 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
 import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell } from '../../contexts/GameContext';
 import { CONDITION_TOOLTIPS, EXHAUSTION_LEVELS } from '../../data/rules';
+import CharacterCard from '../game/CharacterCard';
 import { useState, useCallback, useMemo } from 'react';
 
 interface CharacterSheetProps {
@@ -878,6 +879,11 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           />
         );
       })()}
+
+      {/* Shareable Character Card */}
+      <div className="border-t border-slate-700/50 pt-3 mt-3">
+        <CharacterCard character={character} />
+      </div>
     </div>
   );
 }

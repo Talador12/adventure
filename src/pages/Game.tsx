@@ -16,6 +16,7 @@ import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
 import { useAIPlayerTurn } from '../hooks/useAIPlayerTurn';
+import { useDynamicDifficulty } from '../hooks/useDynamicDifficulty';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import type { Quest, MapPin } from '../types/game';
@@ -782,6 +783,12 @@ export default function Game() {
   // Auto-execute AI player turns — AI-controlled party members act autonomously
   useAIPlayerTurn({ aiCharacterIds, addDmMessage, setCombatLog, broadcastCombatSync, broadcastGameEvent, animateMoveRef, drainConcentrationMessages });
 
+  // Dynamic difficulty — auto-adjust encounter strength mid-combat
+  const [dynamicDifficultyEnabled, setDynamicDifficultyEnabled] = useState(() => {
+    try { return localStorage.getItem(`adventure:dynDiff:${room}`) === '1'; } catch { return false; }
+  });
+  useDynamicDifficulty({ enabled: dynamicDifficultyEnabled, addDmMessage, broadcastCombatSync });
+
   // --- AI Session Recap: "Last time on your adventure..." ---
   const [sessionRecap, setSessionRecap] = useState<string | null>(null);
   const [recapLoading, setRecapLoading] = useState(false);
@@ -1399,6 +1406,12 @@ export default function Game() {
             onPinRemove={handlePinRemove}
             selectedCharacterId={selectedCharacterId}
             onAddDmMessage={addDmMessage}
+            onSpawnMonster={handleSpawnMonster}
+            dynamicDifficultyEnabled={dynamicDifficultyEnabled}
+            setDynamicDifficultyEnabled={(v) => {
+              setDynamicDifficultyEnabled(v);
+              try { localStorage.setItem(`adventure:dynDiff:${room}`, v ? '1' : '0'); } catch { /* ok */ }
+            }}
           />
         )}
 

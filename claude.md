@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Custom monster creator — `CustomMonsterCreator` component (~250 lines) in DMSidebar encounter tab. DMs build custom monsters with form: name, CR (auto-fills HP/AC/attack/damage/speed defaults from CR), type (14 types with icons), size, stat block grid (HP/AC/Atk+/Dmg+/DEX/Speed), damage die, description, and custom abilities (name/type/die/cooldown/ranged toggle). Save to localStorage per campaign for reuse. Spawn directly into combat via existing `handleSpawnMonster`. Saved monsters list with count selector and per-entry spawn/delete. Purple accent UI.
+- Dynamic difficulty scaling — `useDynamicDifficulty` hook (~100 lines) auto-adjusts encounter strength mid-combat. Monitors party HP% vs enemy HP% every 2 rounds (max 2 adjustments per encounter). If party is getting destroyed (< 30% HP, enemies > 50%): nerf enemy HP by 15% + reduce attack bonus by 1. If struggling: nerf HP by 10%. If steamrolling: heal enemies 20% of missing HP + boost attack. Narrative DM messages disguise the adjustment. DM toggle in DMSidebar ("Auto-balance encounters" ON/OFF). Persisted to localStorage per campaign.
+- Shareable character cards — `CharacterCard` component (~220 lines) renders a 600x340 canvas card with: portrait (with fallback initial), name, race/class/level, alignment/background, HP/AC/gold/XP bar, 6-stat block with modifier badges, equipment highlights, feat list, HP bar, and branding. Download as PNG or copy to clipboard. Shown at bottom of CharacterSheet.
+- Concentration tracker visual — glowing purple ring + pulsing "C" badge on InitiativeBar avatars when a unit is concentrating on a spell. Ring uses `ring-2 ring-purple-400/60` with `shadow-[0_0_8px_rgba(168,85,247,0.4)]` glow. Badge tooltip shows spell name. Always visible (not just on hover).
+- Combat damage type indicators — `DamageType` union type with 13 D&D damage types (slashing, piercing, bludgeoning, fire, cold, lightning, thunder, poison, acid, necrotic, radiant, force, psychic). Each mapped to an emoji icon. `FloatingText.damageType` optional field renders the icon next to floating damage numbers during combat. Added to `FloatingCombatText` rendering.
 - AI session recap — "Previously on your adventure..." auto-narration when returning to a game with existing history. Fires once on mount via the `/api/dm/narrate` endpoint with a recap-specific prompt using the last 8 DM history entries. Dramatic amber-themed banner with dismiss button. Session-scoped via sessionStorage (only shows once per browser session). Loading spinner while generating. 20s timeout — non-critical, graceful failure.
 - Downtime activities — `DowntimeActivities` component (~200 lines) with 6 between-adventure activities: Crafting (INT), Research (INT), Carousing (CHA), Gambling (WIS), Training (STR), Meditation (WIS). Each has gold cost, ability check DC, success/failure/critical success outcomes with gold/XP rewards. Integrated into DMSidebar encounter tab (shown out of combat). Wired to character gold, XP, and DM message log. 2s cooldown between activities.
 - Lair actions — `LairAction` interface (damage/condition/terrain/flavor types with save DC + stat). Boss monsters fire environmental effects at initiative count 20 (start of each new round). Adult Dragon gets 3 lair actions: Volcanic Tremor (2d6 fire, DEX DC 15), Toxic Fumes (poisoned, CON DC 14), Lair Darkness (flavor). Save-for-half-damage on damage types. Implemented as third useEffect in useEnemyAI, round-tracked via ref.
@@ -899,15 +904,18 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Random encounter tables (per biome/dungeon level, auto-roll between rests)~~ (DONE — 8 biomes, weighted tables, DMSidebar UI)
 - ~~Downtime activities (crafting, research, carousing)~~ (DONE — 6 activities with ability checks, gold/XP rewards, DMSidebar integration)
 - Familiar/companion tokens (separate initiative, player-controlled)
-- Custom monster creator (DM builds custom monsters with ability editor)
+- ~~Custom monster creator (DM builds custom monsters with ability editor)~~ (DONE — CustomMonsterCreator component with full stat block form, ability editor, localStorage persistence, spawn integration)
 - AI companion auto-generation (auto-create character for AI seats without one assigned)
 - ~~Lair actions (boss monsters trigger environmental effects on initiative count 20)~~ (DONE — LairAction interface, Adult Dragon with 3 lair actions, useEnemyAI round-start effect)
 - ~~Legendary actions (boss enemies get extra actions between player turns)~~ (DONE — Unit fields, Adult Dragon 3 + Mind Flayer 2 legendary abilities, useEnemyAI between-turn effect, InitiativeBar indicator)
 - Grapple/shove combat maneuvers (contested Athletics checks, movement restrictions)
-- Concentration tracker visual (glowing aura on concentrating tokens, auto-break notification)
+- ~~Concentration tracker visual (glowing aura on concentrating tokens, auto-break notification)~~ (DONE — purple glow ring + pulsing C badge on InitiativeBar avatars)
 - Initiative tiebreaker resolution (DEX mod comparison, DM choice on ties)
 - Status effect visual overlays on battle map tokens (poison green, fire orange, stunned stars)
 - "Readied action" support (hold action until trigger condition, execute as reaction)
+- Flanking bonus (+2 to attacks when allies are on opposite sides of target)
+- Cover system (half/three-quarters/full cover modifying AC behind terrain)
+- Dash/Dodge/Disengage/Help/Hide action buttons with proper 5e mechanics
 - ~~Party loot tracker (shared inventory, DM distributes items to players)~~ (DONE — LootTracker component + WebSocket sync)
 - ~~Quick rules reference panel (conditions, actions, spell schools during play)~~ (DONE — RulesReference modal + rules.ts data)
 - ~~Session timer (track total play time per session, auto-save on idle)~~ (DONE — SessionTimer component in Game header)
@@ -939,8 +947,11 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Animated token attack indicators (slash/arrow/spell beam between attacker and target)
 - Dice roll 3D animation (three.js or CSS 3D transforms for satisfying dice physics)
 - Ambient background music player (tavern, combat, exploration — royalty-free tracks via Web Audio)
-- Combat damage type indicators (slash/pierce/bludgeon/fire/cold/etc icons on floating text)
+- ~~Combat damage type indicators (slash/pierce/bludgeon/fire/cold/etc icons on floating text)~~ (DONE — 13 DamageType with emoji icons on FloatingCombatText)
 - Token aura system (visual rings around tokens for spell effects, threat ranges)
+- Battle map fog-of-war per-player (each player only sees what their token can see)
+- Minimap overlay (small corner map showing full battlefield when zoomed in)
+- Combat initiative history (show previous rounds' turn orders for reference)
 
 **Social & Community:**
 - ~~AI session recap ("last time on..." from combat log + chat)~~ (DONE — auto-narration on game load via DM AI endpoint, amber banner, session-scoped)
@@ -952,7 +963,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Campaign templates (share setup for others to clone)
 - Campaign comparison stats (total kills, gold earned, sessions played across campaigns)
 - ~~Achievement badges (first crit, 100 kills, TPK survivor, dragon slayer, etc.)~~ (DONE — 16 achievements, 4 categories, persistent tracking, Badges view tab)
-- Shareable character cards (social media image export with stats + portrait)
+- ~~Shareable character cards (social media image export with stats + portrait)~~ (DONE — canvas-based 600x340 PNG generation with portrait, stats, equipment, download + clipboard copy)
 
 **AI enhancements:**
 - ~~AI player turn logic (AI seats actually play — move, attack, cast)~~ (DONE — useAIPlayerTurn hook with intelligent decision tree, heal/cast/attack/move, feat+proficiency support, Extra Attack, OA handling)
@@ -960,7 +971,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - AI rules lawyer (passive — flags rule violations in chat)
 - AI session prep (DM goals → generated maps + encounters + NPCs)
 - AI voice narration (TTS with distinct NPC voices)
-- Dynamic difficulty auto-scaling
+- ~~Dynamic difficulty auto-scaling~~ (DONE — useDynamicDifficulty hook, party HP% monitoring, DM toggle in DMSidebar, narrative-disguised adjustments)
 
 ## Known Technical Debt
 
