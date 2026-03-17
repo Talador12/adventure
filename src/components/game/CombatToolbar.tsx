@@ -49,6 +49,7 @@ interface CombatToolbarProps {
   shopMessage: string | null;
   setShopMessage: (v: string | null) => void;
   addFloatingText: (text: string, type: 'damage' | 'heal' | 'miss' | 'crit' | 'condition' | 'info', opts?: { x?: number; y?: number }) => void;
+  addAttackIndicator: (fromCol: number, fromRow: number, toCol: number, toRow: number, type?: 'melee' | 'ranged' | 'spell' | 'heal') => void;
 }
 
 export default function CombatToolbar({
@@ -89,6 +90,7 @@ export default function CombatToolbar({
   shopMessage,
   setShopMessage,
   addFloatingText,
+  addAttackIndicator,
 }: CombatToolbarProps) {
   const {
     units,
@@ -316,15 +318,24 @@ export default function CombatToolbar({
                                 const isMeleeAttack = !weaponIsRanged;
                                 let totalDamageDealt = 0;
                                 for (let atk = 0; atk < numAttacks; atk++) {
-                                  const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack);
+                                  const { roll: attackRoll, hadAdvantage, hadDisadvantage, rolls } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack);
                                   const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus + flankingBonus;
                                   const isHit = attackRoll === 20 || totalAttack >= targetAC;
                                   const isCrit = attackRoll === 20;
                                   const flankTag = flankingBonus > 0 ? '+2flank' : '';
-                                  const atkLabel = `${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}${flankTag}=${totalAttack}`;
+                                  // Show both dice when adv/disadv: "rolled 14,8 [2d20]" vs normal "rolled 14 [d20]"
+                                  const diceDisplay = (hadAdvantage || hadDisadvantage)
+                                    ? `rolled ${rolls[0]},${rolls[1]} [2d20]`
+                                    : `rolled ${attackRoll} [d20]`;
+                                  const atkLabel = `${diceDisplay} ${attackRoll}+${statMod}${weaponAtkBonus ? `+${weaponAtkBonus}` : ''}${featAtkBonus ? `+${featAtkBonus}` : ''}${flankTag}=${totalAttack}`;
                                   const atkPrefix = numAttacks > 1 ? `[Attack ${atk + 1}] ` : '';
                                   const verb = weaponIsRanged ? 'shoots' : 'strikes';
                                   const advTag = (hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '') + coverLabel;
+
+                                  // Trigger attack indicator on first attack
+                                  if (atk === 0 && attackerPos && targetPos) {
+                                    addAttackIndicator(attackerPos.col, attackerPos.row, targetPos.col, targetPos.row, weaponIsRanged ? 'ranged' : 'melee');
+                                  }
 
                                   if (isHit) {
                                     const baseDmg = rollSpellDamage(weaponDie);

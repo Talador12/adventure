@@ -132,7 +132,12 @@ export default function Lobby() {
           setIsSpectating(!!(msg.isSpectating));
           setIsDM((msg.isDM as boolean) ?? false);
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
-          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }]);
+          setChatMessages((prev) => {
+            // Only show "Connected" once — skip if already shown in the last 10 seconds
+            const recentConnect = prev.find((m) => m.type === 'system' && m.text === 'Connected to lobby' && Date.now() - m.timestamp < 10_000);
+            if (recentConnect) return prev;
+            return [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'Connected to lobby', timestamp: Date.now() }];
+          });
           // Auto-join campaign party in D1 (fire-and-forget, skip for temp users)
           if (!currentPlayer.id.startsWith('temp-')) {
             fetch(`/api/party/${encodeURIComponent(room)}/join`, {
@@ -289,26 +294,31 @@ export default function Lobby() {
               timestamp: msg.timestamp as number,
               die: msg.die as string,
               sides: msg.sides as number,
-              value: msg.value as number,
+              value: (msg.total as number) ?? (msg.value as number) ?? 0,
+              rollCount: msg.count as number | undefined,
+              allRolls: msg.allRolls as number[] | undefined,
+              keptRolls: msg.keptRolls as number[] | undefined,
               isCritical: msg.isCritical as boolean,
               isFumble: msg.isFumble as boolean,
               unitName: msg.unitName as string | undefined,
+              advMode: msg.advMode as string | undefined,
             },
           ]);
           // Persist roll to D1 — only the roller persists
+          const lobbyRollTotal = (msg.total as number) ?? (msg.value as number) ?? 0;
           if (msg.playerId === wsPlayerId) {
             persistChatMessage(room, {
               username: msg.username as string,
               type: 'roll',
-              text: `rolled ${(msg.die as string)?.toUpperCase()} for ${msg.value}`,
-              metadata: { die: msg.die, sides: msg.sides, value: msg.value, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName },
+              text: `rolled ${(msg.die as string)?.toUpperCase()} for ${lobbyRollTotal}`,
+              metadata: { die: msg.die, sides: msg.sides, value: lobbyRollTotal, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName },
             });
           }
           // Play dice animation for everyone
           diceRef.current?.playRemoteRoll({
             die: msg.die as DieType,
             sides: msg.sides as number,
-            value: msg.value as number,
+            value: lobbyRollTotal,
             playerName: msg.username as string,
             unitName: msg.unitName as string | undefined,
           });
@@ -401,8 +411,8 @@ export default function Lobby() {
   );
 
   const handleLocalRoll = useCallback(
-    (die: DieType, sides: number) => {
-      send({ type: 'roll', die, sides: sides });
+    (die: DieType, sides: number, count: number, advMode: 'normal' | 'advantage' | 'disadvantage') => {
+      send({ type: 'roll', die, sides, count, advMode });
     },
     [send]
   );
@@ -426,18 +436,22 @@ export default function Lobby() {
           timestamp: Date.now(),
           die: roll.die,
           sides: roll.sides,
-          value: roll.value,
+          value: roll.total,
+          rollCount: roll.count,
+          allRolls: roll.allRolls,
+          keptRolls: roll.keptRolls,
           isCritical: roll.isCritical,
           isFumble: roll.isFumble,
           unitName: roll.unitName,
+          advMode: roll.advMode,
         },
       ]);
       // Persist local roll to D1
       persistChatMessage(room, {
         username: playerName,
         type: 'roll',
-        text: `rolled ${roll.die?.toUpperCase()} for ${roll.value}`,
-        metadata: { die: roll.die, sides: roll.sides, value: roll.value, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName },
+        text: `rolled ${roll.count > 1 ? roll.count : ''}${roll.die?.toUpperCase()} for ${roll.total}`,
+        metadata: { die: roll.die, sides: roll.sides, value: roll.total, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName },
       });
     },
     [currentPlayer, room]
@@ -809,13 +823,14 @@ export default function Lobby() {
                 }`}>
                   <span>{dmSeatType === 'ai' ? '🤖' : '👑'}</span>
                   <span>DM: {dmSeatType === 'ai' ? 'AI' : players.find((p) => p.id === dmPlayerId)?.username || 'Waiting...'}</span>
-                  {isDM && (
+                  {/* DM can switch to AI; when AI is DM, anyone can claim it back */}
+                  {(isDM || dmSeatType === 'ai') && (
                     <button
                       onClick={() => send({ type: 'set_dm_type', dmSeatType: dmSeatType === 'human' ? 'ai' : 'human' })}
-                      className="ml-1 px-1 py-0.5 rounded bg-slate-700/50 hover:bg-slate-600/50 text-[9px] text-slate-300"
-                      title={dmSeatType === 'human' ? 'Switch to AI DM' : 'Switch to Human DM'}
+                      className="ml-1 px-1.5 py-0.5 rounded bg-slate-700/50 hover:bg-slate-600/50 text-[9px] text-slate-300 hover:text-white transition-colors"
+                      title={dmSeatType === 'human' ? 'Switch to AI DM' : 'Claim DM — switch back to Human'}
                     >
-                      {dmSeatType === 'human' ? '→ AI' : '→ Human'}
+                      {dmSeatType === 'human' ? '→ AI' : '→ Claim DM'}
                     </button>
                   )}
                 </div>
@@ -900,13 +915,22 @@ export default function Lobby() {
                           const char = characters.find((c) => c.id === e.target.value);
                           send({ type: 'select_character', characterId: char?.id, characterName: char?.name });
                         }}
-                        className="ml-auto text-[9px] bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-slate-300 max-w-[80px]"
+                        className="ml-auto text-[9px] bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-slate-300 max-w-[100px]"
                       >
-                        <option value="">Character...</option>
+                        <option value="">Pick character...</option>
                         {characters.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                          <option key={c.id} value={c.id}>{c.name} (Lv{c.level})</option>
                         ))}
                       </select>
+                    )}
+                    {/* No characters — prompt to create one */}
+                    {seat.type === 'human' && seat.playerId === wsPlayerId && characters.length === 0 && (
+                      <button
+                        onClick={() => navigate('/create')}
+                        className="ml-auto text-[9px] px-2 py-1 rounded bg-emerald-900/30 hover:bg-emerald-900/50 border border-emerald-700/30 text-emerald-400 font-semibold transition-all"
+                      >
+                        + Create Character
+                      </button>
                     )}
 
                     {/* DM controls: change seat type */}

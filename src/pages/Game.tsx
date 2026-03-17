@@ -17,6 +17,7 @@ import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
 import { useAIPlayerTurn } from '../hooks/useAIPlayerTurn';
 import { useDynamicDifficulty } from '../hooks/useDynamicDifficulty';
+import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import type { Quest, MapPin } from '../types/game';
@@ -783,6 +784,9 @@ export default function Game() {
   // Auto-execute AI player turns — AI-controlled party members act autonomously
   useAIPlayerTurn({ aiCharacterIds, addDmMessage, setCombatLog, broadcastCombatSync, broadcastGameEvent, animateMoveRef, drainConcentrationMessages });
 
+  // Attack indicators — animated lines on battle map during attacks
+  const { indicators: attackIndicators, addIndicator: addAttackIndicator } = useAttackIndicators();
+
   // Dynamic difficulty — auto-adjust encounter strength mid-combat
   const [dynamicDifficultyEnabled, setDynamicDifficultyEnabled] = useState(() => {
     try { return localStorage.getItem(`adventure:dynDiff:${room}`) === '1'; } catch { return false; }
@@ -1038,11 +1042,13 @@ export default function Game() {
   );
 
   const handleLocalRoll = useCallback(
-    (die: DieType, sides: number) => {
+    (die: DieType, sides: number, count: number, advMode: 'normal' | 'advantage' | 'disadvantage') => {
       send({
         type: 'roll',
         die,
         sides,
+        count,
+        advMode,
         unitId: selectedUnitId || undefined,
         unitName: selectedUnit?.name || undefined,
       });
@@ -1076,18 +1082,22 @@ export default function Game() {
           timestamp: Date.now(),
           die: roll.die,
           sides: roll.sides,
-          value: roll.value,
+          value: roll.total,
+          rollCount: roll.count,
+          allRolls: roll.allRolls,
+          keptRolls: roll.keptRolls,
           isCritical: roll.isCritical,
           isFumble: roll.isFumble,
           unitName: roll.unitName,
+          advMode: roll.advMode,
         },
       ]);
       // Persist local roll to D1
       persistChatMessage(room, {
         username: displayUsername,
         type: 'roll',
-        text: `rolled ${roll.die?.toUpperCase()} for ${roll.value}`,
-        metadata: { die: roll.die, sides: roll.sides, value: roll.value, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName, characterName: charName || undefined },
+        text: `rolled ${roll.count > 1 ? roll.count : ''}${roll.die?.toUpperCase()} for ${roll.total}${roll.advMode ? ` [${roll.advMode}]` : ''}`,
+        metadata: { die: roll.die, sides: roll.sides, value: roll.total, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName, characterName: charName || undefined },
       });
     },
     [selectedCharacter, currentPlayer, room]
@@ -1621,6 +1631,7 @@ export default function Game() {
                   shopMessage={shopMessage}
                   setShopMessage={setShopMessage}
                   addFloatingText={addFloatingText}
+                  addAttackIndicator={addAttackIndicator}
                 />
 
                 {/* Combat round recap — shown above content in narration view */}
@@ -1759,6 +1770,7 @@ export default function Game() {
                         setTimeout(broadcastCombatSyncLatest, 50);
                       }}
                       animateMoveRef={animateMoveRef}
+                      attackIndicators={attackIndicators}
                       activeAoE={activeAoE}
                       onAoEConfirm={handleAoEConfirm}
                       onAoECancel={() => {

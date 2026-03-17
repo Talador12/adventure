@@ -116,7 +116,7 @@ export function useEnemyAI({
                 const strMod = atkChar ? Math.floor((atkChar.stats.STR - 10) / 2) : 0;
                 const condAtkMod = (atkUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
                 const targetAC = effectiveAC(currentUnit.ac, currentUnit.conditions || []);
-                const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(atkUnit?.conditions || [], currentUnit.conditions || [], true);
+                const { roll, hadAdvantage, hadDisadvantage, rolls: oaRolls } = rollD20WithProne(atkUnit?.conditions || [], currentUnit.conditions || [], true);
                 const totalAtk = roll + atkBonus + strMod + condAtkMod;
                 const hit = roll === 20 || (roll !== 1 && totalAtk >= targetAC);
                 let dmg = 0;
@@ -132,8 +132,9 @@ export function useEnemyAI({
                   damageUnit(currentUnit.id, dmg);
                 }
                 setUnits((prev) => prev.map((u) => (u.id === atk.unitId ? { ...u, reactionUsed: true } : u)));
-                const advTag = hadAdvantage ? ' (advantage)' : hadDisadvantage ? ' (disadvantage)' : '';
-                const oaMsg = hit ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!${advTag}` : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!${advTag}`;
+                const oaDiceTag = (hadAdvantage || hadDisadvantage) ? ` (rolled ${oaRolls[0]},${oaRolls[1]} [2d20]` : ` (rolled ${roll} [d20]`;
+                const advTag = hadAdvantage ? ', adv)' : hadDisadvantage ? ', disadv)' : ')';
+                const oaMsg = hit ? `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${dmg} damage!${oaDiceTag}${advTag}` : `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!${oaDiceTag}${advTag}`;
                 setCombatLog((prev) => [...prev, oaMsg]);
                 addDmMessage(oaMsg);
               }
@@ -231,14 +232,15 @@ export function useEnemyAI({
           const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
           const targetAC = effectiveAC(target.ac, target.conditions || []);
           const isMelee = !availAbility.isRanged;
-          const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], isMelee);
+          const { roll, hadAdvantage, hadDisadvantage, rolls } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], isMelee);
           const total = roll + atkBonus + condAtkMod;
           const hit = roll === 20 || total >= targetAC;
+          const diceTag = (hadAdvantage || hadDisadvantage) ? `rolled ${rolls[0]},${rolls[1]} [2d20] ` : `rolled ${roll} [d20] `;
           const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
           if (hit) {
             const dmg = availAbility.damageDie ? rollSpellDamage(availAbility.damageDie) : 0;
             if (dmg > 0) damageUnit(target.id, roll === 20 ? dmg * 2 : dmg);
-            abilMsg += ` Hits ${target.name} for ${roll === 20 ? dmg * 2 : dmg} damage! (${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
+            abilMsg += ` Hits ${target.name} for ${roll === 20 ? dmg * 2 : dmg} damage! (${diceTag}${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
             if (availAbility.condition) {
               applyCondition(target.id, { type: availAbility.condition, duration: availAbility.conditionDuration || 2, source: currentUnit.name });
               abilMsg += ` ${target.name} is ${availAbility.condition}!`;
@@ -246,7 +248,7 @@ export function useEnemyAI({
             playCombatHit();
             if (roll === 20) playCritical();
           } else {
-            abilMsg += ` Misses ${target.name}! (${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
+            abilMsg += ` Misses ${target.name}! (${diceTag}${roll}+${atkBonus}=${total} vs AC ${targetAC})${advTag}`;
             playCombatMiss();
           }
         } else if (availAbility.type === 'heal') {
@@ -265,10 +267,11 @@ export function useEnemyAI({
         const dmgDie = currentUnit.damageDie || '1d6';
         const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
         const targetAC = effectiveAC(target.ac, target.conditions || []);
-        const { roll: attackRoll, hadAdvantage, hadDisadvantage } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], true);
+        const { roll: attackRoll, hadAdvantage, hadDisadvantage, rolls: atkRolls } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], true);
         const totalAttack = attackRoll + atkBonus + condAtkMod;
         const isHit = attackRoll === 20 || totalAttack >= targetAC;
         const isCrit = attackRoll === 20;
+        const diceTag = (hadAdvantage || hadDisadvantage) ? `rolled ${atkRolls[0]},${atkRolls[1]} [2d20] ` : `rolled ${attackRoll} [d20] `;
         const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
 
         if (isHit) {
@@ -277,14 +280,14 @@ export function useEnemyAI({
           damageUnit(target.id, finalDmg);
           playCombatHit();
           if (isCrit) playCritical();
-          addDmMessage(isCrit ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}` : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
+          addDmMessage(isCrit ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}` : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
           if (target.hp - finalDmg <= 0) {
             playEnemyDeath();
             addDmMessage(`${target.name} falls!`);
           }
         } else {
           playCombatMiss();
-          addDmMessage(`${currentUnit.name} misses ${target.name}! (${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
+          addDmMessage(`${currentUnit.name} misses ${target.name}! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
         }
       }
 

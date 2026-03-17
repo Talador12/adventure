@@ -37,7 +37,7 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
 };
 
 // --- Combat roll helpers ---
-export function rollD20WithProne(attackerConditions: ActiveCondition[], targetConditions: ActiveCondition[], isMelee: boolean): { roll: number; hadAdvantage: boolean; hadDisadvantage: boolean } {
+export function rollD20WithProne(attackerConditions: ActiveCondition[], targetConditions: ActiveCondition[], isMelee: boolean): { roll: number; hadAdvantage: boolean; hadDisadvantage: boolean; rolls: [number, number] } {
   const attackerProne = attackerConditions.some((c) => c.type === 'prone');
   const targetProne = targetConditions.some((c) => c.type === 'prone');
   let advantage = false;
@@ -49,7 +49,7 @@ export function rollD20WithProne(attackerConditions: ActiveCondition[], targetCo
   const r1 = Math.floor(Math.random() * 20) + 1;
   const r2 = Math.floor(Math.random() * 20) + 1;
   const roll = advantage ? Math.max(r1, r2) : disadvantage ? Math.min(r1, r2) : r1;
-  return { roll, hadAdvantage: advantage, hadDisadvantage: disadvantage };
+  return { roll, hadAdvantage: advantage, hadDisadvantage: disadvantage, rolls: [r1, r2] };
 }
 
 export function effectiveAC(baseAC: number, targetConditions: ActiveCondition[]): number {

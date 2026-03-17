@@ -211,21 +211,28 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               timestamp: msg.timestamp as number,
               die: msg.die as string,
               sides: msg.sides as number,
-              value: msg.value as number,
+              value: msg.total as number,
+              rollCount: msg.count as number | undefined,
+              allRolls: msg.allRolls as number[] | undefined,
+              keptRolls: msg.keptRolls as number[] | undefined,
               isCritical: msg.isCritical as boolean,
               isFumble: msg.isFumble as boolean,
               unitName: msg.unitName as string | undefined,
               characterName: msg.unitName as string | undefined,
+              advMode: msg.advMode as string | undefined,
             },
           ]);
           // Persist roll to D1 — only the roller persists (avoid duplicates)
+          const rollTotal = (msg.total as number) ?? (msg.value as number) ?? 0;
           if (msg.playerId === wsPlayerIdRef.current) {
+            const rollCount = (msg.count as number) || 1;
+            const advLabel = msg.advMode ? ` [${msg.advMode}]` : '';
             persistChatMessage(room, {
               username: msg.username as string,
               type: 'roll',
-              text: `rolled ${(msg.die as string)?.toUpperCase()} for ${msg.value}`,
+              text: `rolled ${rollCount > 1 ? rollCount : ''}${(msg.die as string)?.toUpperCase()} for ${rollTotal}${advLabel}`,
               avatarUrl: msg.avatar as string | undefined,
-              metadata: { die: msg.die, sides: msg.sides, value: msg.value, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName, characterName: msg.unitName },
+              metadata: { die: msg.die, sides: msg.sides, value: rollTotal, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName, characterName: msg.unitName },
             });
           }
           // Sound FX
@@ -236,7 +243,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           diceRef.current?.playRemoteRoll({
             die: msg.die as DieType,
             sides: msg.sides as number,
-            value: msg.value as number,
+            value: rollTotal,
             playerName: msg.username as string,
             unitName: msg.unitName as string | undefined,
           });

@@ -20,6 +20,11 @@ export interface ChatMessage {
   unitName?: string;
   characterName?: string; // In-game character name (distinct from player username)
   portrait?: string; // Character portrait URL for roll messages
+  // Multi-dice roll fields
+  rollCount?: number;       // how many dice requested (e.g. 3 for 3d8)
+  allRolls?: number[];      // every die rolled (2× count for adv/disadv)
+  keptRolls?: number[];     // dice that counted toward total
+  advMode?: string;         // 'advantage' | 'disadvantage'
   // Whisper-specific fields
   targetUsername?: string; // who the whisper is addressed to
   targetPlayerId?: string;
@@ -173,6 +178,25 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   const isFumble = msg.isFumble;
   const displayName = msg.characterName || msg.unitName || msg.username;
   const showPlayer = msg.characterName && msg.username && msg.characterName !== msg.username;
+  const isAdv = msg.advMode === 'advantage';
+  const isDisadv = msg.advMode === 'disadvantage';
+  const count = msg.rollCount || 1;
+  const allRolls = msg.allRolls;
+  const keptRolls = msg.keptRolls;
+  const total = msg.value ?? 0;
+
+  // Build the notation string: "2d20", "3d8", etc.
+  const totalDiceRolled = allRolls?.length || count;
+  const notation = `${totalDiceRolled}${msg.die?.toLowerCase() || 'd20'}`;
+  // Build the kept set for highlighting
+  const keptSet = new Set<number>(); // track indices of kept dice in allRolls
+  if (allRolls && keptRolls) {
+    const keptCopy = [...keptRolls];
+    allRolls.forEach((v, i) => {
+      const idx = keptCopy.indexOf(v);
+      if (idx >= 0) { keptSet.add(i); keptCopy.splice(idx, 1); }
+    });
+  }
 
   return (
     <div className={`rounded-lg px-3 py-2.5 text-xs border ${
@@ -182,8 +206,8 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
           ? 'bg-gradient-to-r from-red-500/15 to-red-900/10 border-red-500/40 shadow-sm shadow-red-500/10'
           : 'bg-slate-800/60 border-slate-700/50'
     }`}>
-      {/* Attribution line with portrait */}
-      <div className="flex items-center gap-2 mb-1">
+      {/* Attribution line with portrait + adv badge */}
+      <div className="flex items-center gap-2 mb-1.5">
         {msg.portrait ? (
           <img src={msg.portrait} alt="" className="w-6 h-6 rounded-full object-cover border border-slate-600 shrink-0" />
         ) : (
@@ -193,28 +217,91 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
             {displayName.charAt(0).toUpperCase()}
           </div>
         )}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <span className={`font-bold ${isCrit ? 'text-yellow-300' : isFumble ? 'text-red-300' : 'text-amber-200'}`}>{displayName}</span>
           {showPlayer && <span className="text-slate-500 text-[10px]">[{msg.username}]</span>}
         </div>
       </div>
-      {/* Roll result */}
-      <div className="flex items-center gap-2">
-        <span className="text-slate-500">rolled</span>
-        <span className={`font-mono font-bold px-1.5 py-0.5 rounded ${
-          isCrit ? 'text-yellow-300 bg-yellow-500/20' : isFumble ? 'text-red-300 bg-red-500/20' : 'text-white bg-slate-700/50'
-        }`}>{msg.die?.toUpperCase()}</span>
-        <span className="text-slate-500">for</span>
-        <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{msg.value}</span>
-      </div>
+
+      {/* Roll line */}
+      {(() => {
+        const isSingleNormal = !isAdv && !isDisadv && count === 1;
+        const isMultiNormal = !isAdv && !isDisadv && count > 1;
+        const die = msg.die?.toLowerCase() || 'd20';
+        const sides = msg.sides || 20;
+
+        // Single normal die: "rolled d20 for 12" (clean, no brackets)
+        if (isSingleNormal) {
+          return (
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500">rolled</span>
+              <span className={`font-mono font-semibold text-[10px] px-1.5 py-0.5 rounded bg-slate-800/60 ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-slate-300'}`}>{die}</span>
+              <span className="text-slate-500">for</span>
+              <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{total}</span>
+            </div>
+          );
+        }
+
+        // Multi-dice normal: "rolled 3d20 [14, 8, 17] = 39" with per-die crit/fumble coloring
+        if (isMultiNormal) {
+          return (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-slate-500">rolled</span>
+              <span className="font-mono font-semibold text-[10px] px-1.5 py-0.5 rounded bg-slate-800/60 text-slate-300">{count}{die}</span>
+              {allRolls && (
+                <span className="font-mono text-[11px]">
+                  [{allRolls.map((v, i) => (
+                    <span key={i}>
+                      <span className={v === sides ? 'text-yellow-400 font-bold' : v === 1 ? 'text-red-400 font-bold' : 'text-slate-400'}>{v}</span>
+                      {i < allRolls.length - 1 && <span className="text-slate-600">, </span>}
+                    </span>
+                  ))}]
+                </span>
+              )}
+              <span className="text-slate-500">=</span>
+              <span className="font-black text-lg text-white">{total}</span>
+            </div>
+          );
+        }
+
+        // Advantage/disadvantage: "rolled d20 with advantage [17, 8] = 17"
+        return (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-slate-500">rolled</span>
+            <span className="font-mono font-semibold text-[10px] px-1.5 py-0.5 rounded bg-slate-800/60 text-slate-300">{count > 1 ? count : ''}{die}</span>
+            <span className="text-slate-500">with</span>
+            {isAdv && <span className="text-[10px] font-bold italic text-green-400">advantage</span>}
+            {isDisadv && <span className="text-[10px] font-bold italic text-red-400">disadvantage</span>}
+            {allRolls && allRolls.length > 0 && (
+              <span className="flex items-center gap-0.5">
+                {allRolls.map((v, i) => {
+                  const isKept = keptSet.has(i);
+                  const isDieMax = v === sides;
+                  const isDieMin = v === 1;
+                  return (
+                    <span key={i} className={`font-mono font-bold px-1.5 py-0.5 rounded text-[11px] ${
+                      isKept
+                        ? (isDieMax ? 'text-yellow-300 bg-yellow-500/15' : isDieMin ? 'text-red-300 bg-red-500/15' : 'text-white bg-slate-700/50')
+                        : 'text-slate-500 bg-slate-800/40 line-through'
+                    }`}>{v}</span>
+                  );
+                })}
+              </span>
+            )}
+            <span className="text-slate-500">=</span>
+            <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{total}</span>
+          </div>
+        );
+      })()}
+
       {/* Crit/fumble flair */}
       {isCrit && (
-        <div className="mt-1 text-yellow-400 font-black text-[11px] uppercase tracking-widest" style={{ textShadow: '0 0 8px rgba(250,204,21,0.4)' }}>
+        <div className="mt-1.5 text-yellow-400 font-black text-[11px] uppercase tracking-widest" style={{ textShadow: '0 0 8px rgba(250,204,21,0.4)' }}>
           CRITICAL HIT!
         </div>
       )}
       {isFumble && (
-        <div className="mt-1 text-red-400 font-black text-[11px] uppercase tracking-widest" style={{ textShadow: '0 0 8px rgba(239,68,68,0.4)' }}>
+        <div className="mt-1.5 text-red-400 font-black text-[11px] uppercase tracking-widest" style={{ textShadow: '0 0 8px rgba(239,68,68,0.4)' }}>
           CRITICAL FAIL!
         </div>
       )}

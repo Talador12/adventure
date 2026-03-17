@@ -318,20 +318,39 @@ export class Lobby {
 
         const sides = Math.min(Math.max(Number(data.sides) || 20, 2), 100);
         const die = (data.die as string) || `d${sides}`;
-        const value = Math.floor(Math.random() * sides) + 1;
-        const isCritical = value === sides;
-        const isFumble = value === 1;
+        const count = Math.min(Math.max(Number(data.count) || 1, 1), 10);
+        const advMode = (data.advMode as string) || 'normal';
+
+        // Advantage/disadvantage: roll 2× dice, keep best/worst half
+        const totalDice = advMode !== 'normal' ? count * 2 : count;
+        const allRolls: number[] = [];
+        for (let i = 0; i < totalDice; i++) allRolls.push(Math.floor(Math.random() * sides) + 1);
+
+        let keptRolls: number[];
+        if (advMode === 'advantage') {
+          keptRolls = [...allRolls].sort((a, b) => b - a).slice(0, count);
+        } else if (advMode === 'disadvantage') {
+          keptRolls = [...allRolls].sort((a, b) => a - b).slice(0, count);
+        } else {
+          keptRolls = allRolls;
+        }
+        const total = keptRolls.reduce((s, v) => s + v, 0);
+        // Full crit: every kept die rolled max. Full fumble: every kept die rolled 1.
+        const isCritical = keptRolls.length > 0 && keptRolls.every((v) => v === sides);
+        const isFumble = keptRolls.length > 0 && keptRolls.every((v) => v === 1);
 
         this.broadcast({
           type: 'roll_result',
           playerId: session.id,
           username: session.username,
           avatar: session.avatar,
-          die,
-          sides,
-          value,
-          isCritical,
-          isFumble,
+          die, sides, count,
+          allRolls,
+          keptRolls,
+          total,
+          value: total, // backward compat
+          isCritical, isFumble,
+          advMode: advMode !== 'normal' ? advMode : undefined,
           unitId: (data.unitId as string) || undefined,
           unitName: (data.unitName as string) || undefined,
           timestamp: Date.now(),

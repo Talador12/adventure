@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback, type MouseEvent as Rea
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
+import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
 
 const CELL_SIZE = 48;
 const TOKEN_RADIUS = 18;
@@ -451,9 +452,11 @@ interface BattleMapProps {
   mapPins?: MapPin[];
   onPinAdd?: (pin: MapPin) => void;
   onPinRemove?: (pinId: string) => void;
+  // Attack indicators
+  attackIndicators?: import('../../hooks/useAttackIndicators').AttackIndicator[];
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [] }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -932,11 +935,16 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       }
     }
 
+    // Attack indicators — animated lines between attacker and target
+    if (attackIndicators.length > 0) {
+      drawAttackIndicators(ctx, attackIndicators, CELL_SIZE);
+    }
+
     // DM tool brush cursor (when painting terrain)
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -1282,7 +1290,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
           const condAtkMod = (atkUnit?.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
           const targetAC = effectiveAC(movingUnit.ac, movingUnit.conditions || []);
           // OA is always melee
-          const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(atkUnit?.conditions || [], movingUnit.conditions || [], true);
+          const { roll, hadAdvantage, hadDisadvantage, rolls: oaRolls } = rollD20WithProne(atkUnit?.conditions || [], movingUnit.conditions || [], true);
           const totalAtk = roll + atk.attackBonus + condAtkMod;
           const hit = roll === 20 || (roll !== 1 && totalAtk >= targetAC);
           let dmg = 0;

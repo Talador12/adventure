@@ -58,16 +58,20 @@ export interface DiceRollerHandle {
 export interface LocalRollResult {
   die: DieType;
   sides: number;
-  value: number;
+  count: number;
+  allRolls: number[];
+  keptRolls: number[];
+  total: number;
   isCritical: boolean;
   isFumble: boolean;
   playerName: string;
   unitName?: string;
+  advMode?: 'normal' | 'advantage' | 'disadvantage';
 }
 
 interface DiceRollerProps {
   /** Called when the local user clicks a die — parent should send to WebSocket */
-  onLocalRoll?: (die: DieType, sides: number) => void;
+  onLocalRoll?: (die: DieType, sides: number, count: number, advMode: 'normal' | 'advantage' | 'disadvantage') => void;
   /** Called when a local (offline) roll finishes — parent can add to chat */
   onRollComplete?: (roll: LocalRollResult) => void;
   /** Called when a macro is executed — parent can add result to chat like a slash roll */
@@ -89,6 +93,13 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
   const [showBurst, setShowBurst] = useState(false);
   const [rollerLabel, setRollerLabel] = useState<string | null>(null);
   const [advMode, setAdvMode] = useState<AdvantageMode>('normal');
+  const [diceCount, setDiceCount] = useState(1);
+  const advModeRef = useRef<AdvantageMode>('normal');
+  const diceCountRef = useRef(1);
+  const pendingRollDataRef = useRef<{ allRolls: number[]; keptRolls: number[]; total: number; count: number; advMode: AdvantageMode } | null>(null);
+  // Keep refs in sync with state so playAnimation closure always sees current values
+  advModeRef.current = advMode;
+  diceCountRef.current = diceCount;
   const [macros, setMacros] = useState<DiceMacro[]>(loadMacros);
   const [showAddMacro, setShowAddMacro] = useState(false);
   const [newMacroLabel, setNewMacroLabel] = useState('');
@@ -124,8 +135,11 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         ticks++;
         if (ticks >= totalTicks) {
           clearInterval(interval);
-          const isCrit = finalValue === sides;
-          const isFumble = finalValue === 1;
+          // Full crit: every kept die is max. Full fumble: every kept die is 1.
+          const rollData_ = pendingRollDataRef.current;
+          const keptForCrit = rollData_?.keptRolls || [finalValue];
+          const isCrit = keptForCrit.every((v) => v === sides);
+          const isFumble = keptForCrit.every((v) => v === 1);
 
           setDisplayValue(finalValue);
           setLastRoll({ die, value: finalValue, sides, playerName });
@@ -145,15 +159,23 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
 
           // Notify parent of local roll result so it can add to chat
           if (isLocal && onRollCompleteRef.current) {
+            // Read from stored roll data (captured at roll time, immune to auto-reset race)
+            const rollData = pendingRollDataRef.current;
+            const rollAdvMode = rollData?.advMode || 'normal';
             onRollCompleteRef.current({
               die,
               sides,
-              value: finalValue,
+              count: rollData?.count || 1,
+              allRolls: rollData?.allRolls || [finalValue],
+              keptRolls: rollData?.keptRolls || [finalValue],
+              total: rollData?.total ?? finalValue,
               isCritical: isCrit,
               isFumble,
               playerName: playerName || currentPlayer.username,
               unitName: isLocal ? selectedUnit?.name : unitName,
+              advMode: rollAdvMode !== 'normal' ? rollAdvMode : undefined,
             });
+            pendingRollDataRef.current = null;
           }
 
           // Persistent crit/fumble color — stays until next roll starts
@@ -178,14 +200,18 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
     [currentPlayer, addRoll, selectedUnitId, selectedUnit]
   );
 
-  // Local roll click handler
+  // Local roll click handler — supports multi-dice + advantage/disadvantage
   const doRoll = useCallback(
     (die: DieType, sides: number) => {
       if (animatingRef.current) return;
+      const count = diceCountRef.current;
+      const mode = advModeRef.current;
 
       if (useServerRolls && onLocalRoll) {
         // Tell parent to send to WebSocket — server will broadcast result back
-        onLocalRoll(die, sides);
+        onLocalRoll(die, sides, count, mode);
+        // Auto-reset to normal after rolling — adv/disadv is a one-shot modifier
+        if (mode !== 'normal') setAdvMode('normal');
         // Start the animation immediately with random placeholder, will be overridden
         setRolling(die);
         setCritState(null);
@@ -195,30 +221,35 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         const spinInterval = setInterval(() => {
           setDisplayValue(Math.floor(Math.random() * sides) + 1);
           ticks++;
-          // If we haven't received the server result after 2s, stop spinning
-          if (ticks > 36) {
-            clearInterval(spinInterval);
-            setRolling(null);
-          }
+          if (ticks > 36) { clearInterval(spinInterval); setRolling(null); }
         }, 55);
-        // Store the interval so playRemoteRoll can clear it
         (diceDisplayRef.current as unknown as Record<string, unknown>).__spinInterval = spinInterval;
         return;
       }
 
-      // Offline mode: generate locally
-      // Advantage/disadvantage only applies to d20
-      if (advMode !== 'normal' && die === 'd20') {
-        const r1 = Math.floor(Math.random() * 20) + 1;
-        const r2 = Math.floor(Math.random() * 20) + 1;
-        const finalValue = advMode === 'advantage' ? Math.max(r1, r2) : Math.min(r1, r2);
-        playAnimation(die, sides, finalValue, currentPlayer.username, selectedUnit?.name, true);
-        return;
+      // Offline mode: roll locally with multi-dice + advantage
+      const totalDice = mode !== 'normal' ? count * 2 : count;
+      const allRolls: number[] = [];
+      for (let i = 0; i < totalDice; i++) allRolls.push(Math.floor(Math.random() * sides) + 1);
+
+      let keptRolls: number[];
+      if (mode === 'advantage') {
+        keptRolls = [...allRolls].sort((a, b) => b - a).slice(0, count);
+      } else if (mode === 'disadvantage') {
+        keptRolls = [...allRolls].sort((a, b) => a - b).slice(0, count);
+      } else {
+        keptRolls = allRolls;
       }
-      const finalValue = Math.floor(Math.random() * sides) + 1;
-      playAnimation(die, sides, finalValue, currentPlayer.username, selectedUnit?.name, true);
+      const total = keptRolls.reduce((s, v) => s + v, 0);
+
+      // Store for playAnimation callback to read (capture advMode NOW, before auto-reset)
+      pendingRollDataRef.current = { allRolls, keptRolls, total, count, advMode: mode };
+      playAnimation(die, sides, total, currentPlayer.username, selectedUnit?.name, true);
+
+      // Auto-reset to normal after rolling — adv/disadv is a one-shot modifier
+      if (mode !== 'normal') setAdvMode('normal');
     },
-    [useServerRolls, onLocalRoll, playAnimation, currentPlayer, selectedUnit, advMode]
+    [useServerRolls, onLocalRoll, playAnimation, currentPlayer, selectedUnit]
   );
 
   // Macro handlers
@@ -451,16 +482,19 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         </div>
       )}
 
+      {/* Dice count selector */}
+      <div className="flex items-center justify-center gap-2 py-1">
+        <button onClick={() => setDiceCount((c) => Math.max(1, c - 1))} className="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-colors flex items-center justify-center">-</button>
+        <span className="text-sm font-mono font-bold text-white w-8 text-center">{diceCount}{advMode !== 'normal' ? <span className="text-slate-500">×2</span> : ''}</span>
+        <button onClick={() => setDiceCount((c) => Math.min(10, c + 1))} className="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-colors flex items-center justify-center">+</button>
+        <span className="text-[10px] text-slate-500">dice</span>
+      </div>
+
       {/* Dice buttons */}
       <div className="grid grid-cols-3 gap-2">
         {DICE.map(({ type, sides, color }) => (
-          <button key={type} disabled={animatingRef.current || rolling !== null} onClick={() => doRoll(type, sides)} className={`relative bg-gradient-to-br ${color} text-white font-bold py-2.5 px-3 rounded-lg shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:scale-105 active:scale-95 text-sm ${rolling === type ? 'ring-2 ring-white' : ''} ${advMode !== 'normal' && type === 'd20' ? 'ring-2 ring-offset-1 ring-offset-slate-900 ' + (advMode === 'advantage' ? 'ring-green-500/60' : 'ring-red-500/60') : ''}`}>
-            {type.toUpperCase()}
-            {advMode !== 'normal' && type === 'd20' && (
-              <span className={`absolute -top-1 -right-1 text-[7px] font-black px-1 py-0.5 rounded-full ${advMode === 'advantage' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                {advMode === 'advantage' ? '2x' : '2x'}
-              </span>
-            )}
+          <button key={type} disabled={animatingRef.current || rolling !== null} onClick={() => doRoll(type, sides)} className={`relative bg-gradient-to-br ${color} text-white font-bold py-2.5 px-3 rounded-lg shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:scale-105 active:scale-95 text-sm ${rolling === type ? 'ring-2 ring-white' : ''} ${advMode !== 'normal' ? 'ring-2 ring-offset-1 ring-offset-slate-900 ' + (advMode === 'advantage' ? 'ring-green-500/60' : 'ring-red-500/60') : ''}`}>
+            {diceCount > 1 ? `${diceCount}${type}` : type.toUpperCase()}
           </button>
         ))}
       </div>

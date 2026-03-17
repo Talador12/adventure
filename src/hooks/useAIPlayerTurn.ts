@@ -341,17 +341,18 @@ export function useAIPlayerTurn({
                 const dmgBonus = atkUnit.damageBonus ?? 2;
                 const condAtkMod = (atkUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
                 const targetAC = effectiveAC(currentUnit.ac, currentUnit.conditions || []);
-                const { roll } = rollD20WithProne(atkUnit.conditions || [], currentUnit.conditions || [], true);
+                const { roll, hadAdvantage: oaAdv, hadDisadvantage: oaDisadv, rolls: oaRolls } = rollD20WithProne(atkUnit.conditions || [], currentUnit.conditions || [], true);
                 const totalAtk = roll + atkBonus + condAtkMod;
                 const hit = roll === 20 || (roll !== 1 && totalAtk >= targetAC);
+                const oaDice = (oaAdv || oaDisadv) ? `rolled ${oaRolls[0]},${oaRolls[1]} [2d20]` : `rolled ${roll} [d20]`;
                 if (hit) {
                   const dmg = Math.max(1, rollSpellDamage(dmgDie) + dmgBonus);
                   damageUnit(currentUnit.id, roll === 20 ? dmg * 2 : dmg);
-                  const oaMsg = `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${roll === 20 ? dmg * 2 : dmg} damage!`;
+                  const oaMsg = `Opportunity Attack! ${atk.name} strikes ${currentUnit.name} for ${roll === 20 ? dmg * 2 : dmg} damage! (${oaDice})`;
                   setCombatLog((prev) => [...prev, oaMsg]);
                   addDmMessage(oaMsg);
                 } else {
-                  const oaMsg = `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses!`;
+                  const oaMsg = `Opportunity Attack! ${atk.name} swings at ${currentUnit.name} but misses! (${oaDice})`;
                   setCombatLog((prev) => [...prev, oaMsg]);
                   addDmMessage(oaMsg);
                 }
@@ -420,7 +421,7 @@ export function useAIPlayerTurn({
       const featDmgBonus = (attackerChar.feats || []).includes('great-weapon-master') ? 3 : 0;
       const condAtkMod = (attacker.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
       const targetAC = effectiveAC(defender.ac, defender.conditions || []);
-      const { roll, hadAdvantage, hadDisadvantage } = rollD20WithProne(attacker.conditions || [], defender.conditions || [], true);
+      const { roll, hadAdvantage, hadDisadvantage, rolls: firstRolls } = rollD20WithProne(attacker.conditions || [], defender.conditions || [], true);
       const totalAtk = roll + atkBonus + profBonus + condAtkMod + featAtkBonus;
       const isHit = roll === 20 || (roll !== 1 && totalAtk >= targetAC);
       const isCrit = roll === 20;
@@ -434,12 +435,13 @@ export function useAIPlayerTurn({
 
       for (let atk = 0; atk < numAttacks; atk++) {
         // Re-roll for extra attacks
-        const { roll: atkRoll, hadAdvantage: adv, hadDisadvantage: disadv } = atk === 0
-          ? { roll, hadAdvantage, hadDisadvantage }
+        const { roll: atkRoll, hadAdvantage: adv, hadDisadvantage: disadv, rolls: atkRolls } = atk === 0
+          ? { roll, hadAdvantage, hadDisadvantage, rolls: firstRolls }
           : rollD20WithProne(attacker.conditions || [], defender.conditions || [], true);
         const atkTotal = atkRoll + atkBonus + profBonus + condAtkMod + featAtkBonus;
         const hit = atkRoll === 20 || (atkRoll !== 1 && atkTotal >= targetAC);
         const crit = atkRoll === 20;
+        const diceTag = (adv || disadv) ? `rolled ${atkRolls[0]},${atkRolls[1]} [2d20] ` : `rolled ${atkRoll} [d20] `;
         const tag = adv ? ' [adv]' : disadv ? ' [disadv]' : '';
 
         if (hit) {
@@ -451,13 +453,13 @@ export function useAIPlayerTurn({
           const prefix = numAttacks > 1 ? `(Attack ${atk + 1}) ` : '';
           addDmMessage(
             crit
-              ? `${prefix}CRITICAL! ${attacker.name} strikes ${defender.name} with ${weaponName} for ${finalDmg} damage! (${atkRoll}+${atkBonus + profBonus}=${atkTotal} vs AC ${targetAC})${tag}`
-              : `${prefix}${attacker.name} hits ${defender.name} with ${weaponName} for ${finalDmg} damage! (${atkRoll}+${atkBonus + profBonus}=${atkTotal} vs AC ${targetAC})${tag}`
+              ? `${prefix}CRITICAL! ${attacker.name} strikes ${defender.name} with ${weaponName} for ${finalDmg} damage! (${diceTag}${atkRoll}+${atkBonus + profBonus}=${atkTotal} vs AC ${targetAC})${tag}`
+              : `${prefix}${attacker.name} hits ${defender.name} with ${weaponName} for ${finalDmg} damage! (${diceTag}${atkRoll}+${atkBonus + profBonus}=${atkTotal} vs AC ${targetAC})${tag}`
           );
         } else {
           playCombatMiss();
           const prefix = numAttacks > 1 ? `(Attack ${atk + 1}) ` : '';
-          addDmMessage(`${prefix}${attacker.name} misses ${defender.name} with ${weaponName}! (${atkRoll}+${atkBonus + profBonus}=${atkTotal} vs AC ${targetAC})${tag}`);
+          addDmMessage(`${prefix}${attacker.name} misses ${defender.name} with ${weaponName}! (${diceTag}${atkRoll}+${atkBonus + profBonus}=${atkTotal} vs AC ${targetAC})${tag}`);
         }
       }
     }

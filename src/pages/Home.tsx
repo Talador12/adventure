@@ -547,8 +547,17 @@ export default function Home() {
               })}
             </div>
           ) : (
-            <div className="rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 p-8 text-center backdrop-blur-sm">
-              <p className="text-sm text-slate-500 dark:text-slate-400">{user ? 'No campaigns yet. Create one to get started, or join with a room code above.' : 'Sign in to create and manage campaigns.'}</p>
+            <div className="rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 p-8 text-center backdrop-blur-sm flex flex-col items-center justify-center h-[120px]">
+              {user ? (
+                <>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No campaigns yet. Create or join one above.</p>
+                  <Button variant="default" className="btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
+                    Create Your First Campaign
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Sign in to create and manage campaigns.</p>
+              )}
             </div>
           )}
         </div>
@@ -640,7 +649,7 @@ export default function Home() {
               })}
             </div>
           ) : (
-            <div className="rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 p-8 text-center backdrop-blur-sm">
+            <div className="rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 p-8 text-center backdrop-blur-sm flex flex-col items-center justify-center h-[120px]">
               {user ? (
                 <>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No characters yet. Create one to join a campaign!</p>
