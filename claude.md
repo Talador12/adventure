@@ -615,6 +615,17 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ## Backlog / Roadmap
 
+### Cross-Device Chat History by Campaign ID (PLANNED)
+- Ensure chat history is fully persisted and loaded by campaign ID so players see the same timeline when they switch machines/browsers.
+- Remove any remaining local-only fallback behavior that can hide server-backed history for authenticated users.
+- Add pagination + lazy loading for long-running campaigns so history stays fast while remaining complete.
+
+### Cross-Device Session Parity: Paint + Chat + Dice Playback (PLANNED)
+- Persist lobby doodle/paint state by campaign/session ID so anyone joining (or rejoining on another computer) sees identical lobby art.
+- Guarantee chat history + paint state hydrate together on connect so session context is consistent immediately.
+- Make dice presentation playback synchronized for all participants (same start time, animation phase, and resolve timing) so everyone sees rolls unfold in lockstep.
+- Backfill late joiners with the active/queued roll state so they do not miss ongoing roll presentations.
+
 ### Dice Presentation: Character-Sheet Bonus Breakdown (PLANNED)
 - Show per-roll modifiers in the BG3 presentation window as animated + / - contributions (ability mod, proficiency, equipment, buffs/debuffs, situational effects).
 - Animate bonus application after base dice resolution so players can watch totals build step-by-step.
