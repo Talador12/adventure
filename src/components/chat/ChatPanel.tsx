@@ -184,6 +184,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   const allRolls = msg.allRolls;
   const keptRolls = msg.keptRolls;
   const total = msg.value ?? 0;
+  const toFace = (v: number, sides: number) => (sides === 2 ? (v === 2 ? 'H' : 'T') : String(v));
 
   // Build the notation string: "2d20", "3d8", etc.
   const totalDiceRolled = allRolls?.length || count;
@@ -237,7 +238,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
               <span className="text-slate-500">rolled</span>
               <span className={`font-mono font-semibold text-[10px] px-1.5 py-0.5 rounded bg-slate-800/60 ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-slate-300'}`}>{die}</span>
               <span className="text-slate-500">for</span>
-              <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{total}</span>
+              <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{toFace(total, sides)}</span>
             </div>
           );
         }
@@ -252,14 +253,14 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
                 <span className="font-mono text-[11px]">
                   [{allRolls.map((v, i) => (
                     <span key={i}>
-                      <span className={v === sides ? 'text-yellow-400 font-bold' : v === 1 ? 'text-red-400 font-bold' : 'text-slate-400'}>{v}</span>
+                      <span className={v === sides ? 'text-yellow-400 font-bold' : v === 1 ? 'text-red-400 font-bold' : 'text-slate-400'}>{toFace(v, sides)}</span>
                       {i < allRolls.length - 1 && <span className="text-slate-600">, </span>}
                     </span>
                   ))}]
                 </span>
               )}
               <span className="text-slate-500">=</span>
-              <span className="font-black text-lg text-white">{total}</span>
+              <span className="font-black text-lg text-white">{toFace(total, sides)}</span>
             </div>
           );
         }
@@ -283,13 +284,13 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
                       isKept
                         ? (isDieMax ? 'text-yellow-300 bg-yellow-500/15' : isDieMin ? 'text-red-300 bg-red-500/15' : 'text-white bg-slate-700/50')
                         : 'text-slate-500 bg-slate-800/40 line-through'
-                    }`}>{v}</span>
+                    }`}>{toFace(v, sides)}</span>
                   );
                 })}
               </span>
             )}
             <span className="text-slate-500">=</span>
-            <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{total}</span>
+            <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{toFace(total, sides)}</span>
           </div>
         );
       })()}

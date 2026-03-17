@@ -614,6 +614,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ## Backlog / Roadmap
 
+### Dice Presentation: Character-Sheet Bonus Breakdown (PLANNED)
+- Show per-roll modifiers in the BG3 presentation window as animated + / - contributions (ability mod, proficiency, equipment, buffs/debuffs, situational effects).
+- Animate bonus application after base dice resolution so players can watch totals build step-by-step.
+- Persist bonus breakdown into chat history with color-coded positive/negative modifier text, and include those values in the final displayed total.
+- Keep source-of-truth bonus math server-authoritative so chat/popup totals always match.
+
 ### D1 Database + Persistent Users + Chat Persistence (DONE — Phases 1-2)
 **Goal:** Move from ephemeral/KV-only storage to a relational D1 database for structured data. Enable persistent user identity across auth providers, campaign party management, and chat history that survives page refreshes.
 

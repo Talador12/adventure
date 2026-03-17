@@ -72,7 +72,7 @@ export interface LocalRollResult {
 }
 
 function renderDieValue(sides: number, value: number): string {
-  if (sides === 2) return value === 1 ? 'H' : 'T';
+  if (sides === 2) return value === 2 ? 'H' : 'T';
   return String(value);
 }
 
@@ -144,13 +144,13 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         ticks++;
         if (ticks >= totalTicks) {
           clearInterval(interval);
-          // Full crit/fumble: for d2 coin flips, Heads(1)=success and Tails(2)=failure.
+          // Full crit/fumble: for d2 coin flips, Heads(2)=success and Tails(1)=failure.
           // For all other dice, crit=max and fumble=1.
           const rollData_ = pendingRollDataRef.current;
           const keptForCrit = rollData_?.keptRolls || [finalValue];
           const isCoin = sides === 2;
-          const isCrit = keptForCrit.every((v) => (isCoin ? v === 1 : v === sides));
-          const isFumble = keptForCrit.every((v) => (isCoin ? v === 2 : v === 1));
+          const isCrit = keptForCrit.every((v) => (isCoin ? v === 2 : v === sides));
+          const isFumble = keptForCrit.every((v) => v === 1);
 
           setDisplayValue(finalValue);
           setLastRoll({ die, value: finalValue, sides, playerName });
@@ -292,8 +292,8 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
     const sides = Number(sidesMatch?.[1] || 20);
     const keptForOutcome = result.kept && result.kept.length > 0 ? result.kept : result.rolls;
     const isCoin = sides === 2;
-    const isCrit = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 1 : v === sides));
-    const isFumble = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 2 : v === 1));
+    const isCrit = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 2 : v === sides));
+    const isFumble = keptForOutcome.length > 0 && keptForOutcome.every((v) => v === 1);
     // Register in game context
     addRoll({
       die: 'd20' as DieType, // visual only — macro result shown in roll history
@@ -592,7 +592,7 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
             >
               {renderDieValue(lastRoll?.sides || (rolling ? (DICE.find((d) => d.type === rolling)?.sides || 20) : 20), displayValue)}
               {lastRoll?.sides === 2 && !rolling ? (
-                <span className="ml-2 text-sm font-bold text-amber-300/80">{displayValue === 1 ? 'Heads' : 'Tails'}</span>
+                <span className="ml-2 text-sm font-bold text-amber-300/80">{displayValue === 2 ? 'Heads' : 'Tails'}</span>
               ) : null}
             </div>
 

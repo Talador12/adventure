@@ -50,7 +50,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
 
   const faceText = (value: number) => {
     if (activeRoll.sides !== 2) return String(value);
-    return value === 1 ? 'H' : 'T';
+    return value === 2 ? 'H' : 'T';
   };
 
   const [animatedValues, setAnimatedValues] = useState<number[]>(activeRoll.allRolls);

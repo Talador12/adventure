@@ -1167,8 +1167,8 @@ export default function Game() {
       const sides = Number(sidesMatch?.[1] || 20);
       const keptForOutcome = result.kept && result.kept.length > 0 ? result.kept : result.rolls;
       const isCoin = sides === 2;
-      const isCrit = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 1 : v === sides));
-      const isFumble = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 2 : v === 1));
+      const isCrit = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 2 : v === sides));
+      const isFumble = keptForOutcome.length > 0 && keptForOutcome.every((v) => v === 1);
       playDiceRoll();
       if (isCrit) setTimeout(playCritical, 400);
       if (isFumble) setTimeout(playFumble, 400);
