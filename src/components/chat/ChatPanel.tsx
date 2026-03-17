@@ -237,8 +237,9 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
             <div className="flex items-center gap-2">
               <span className="text-slate-500">rolled</span>
               <span className={`font-mono font-semibold text-[10px] px-1.5 py-0.5 rounded bg-slate-800/60 ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-slate-300'}`}>{die}</span>
+              {sides === 2 && <span className="font-mono text-[11px] text-slate-300">{toFace((allRolls && allRolls[0]) || total, sides)}</span>}
               <span className="text-slate-500">for</span>
-              <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{toFace(total, sides)}</span>
+              <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{total}</span>
             </div>
           );
         }
@@ -260,7 +261,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
                 </span>
               )}
               <span className="text-slate-500">=</span>
-              <span className="font-black text-lg text-white">{toFace(total, sides)}</span>
+              <span className="font-black text-lg text-white">{total}</span>
             </div>
           );
         }
@@ -290,7 +291,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
               </span>
             )}
             <span className="text-slate-500">=</span>
-            <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{toFace(total, sides)}</span>
+            <span className={`font-black text-lg ${isCrit ? 'text-yellow-400' : isFumble ? 'text-red-400' : 'text-white'}`}>{total}</span>
           </div>
         );
       })()}

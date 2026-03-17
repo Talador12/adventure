@@ -406,11 +406,15 @@ export class Lobby {
           keptRolls = allRolls;
         }
         const total = keptRolls.reduce((s, v) => s + v, 0);
-        // Full crit/fumble: for d2 coin flips, Heads(2)=success and Tails(1)=failure.
-        // For all other dice, crit=max and fumble=1.
+        // Full crit/fumble: for d2 coin flips, only single-coin rolls can crit/fumble
+        // (Heads(2)=success, Tails(1)=failure). For all other dice, crit=max and fumble=1.
         const isCoin = sides === 2;
-        const isCritical = keptRolls.length > 0 && keptRolls.every((v) => (isCoin ? v === 2 : v === sides));
-        const isFumble = keptRolls.length > 0 && keptRolls.every((v) => v === 1);
+        const isCritical = isCoin
+          ? keptRolls.length === 1 && keptRolls[0] === 2
+          : keptRolls.length > 0 && keptRolls.every((v) => v === sides);
+        const isFumble = isCoin
+          ? keptRolls.length === 1 && keptRolls[0] === 1
+          : keptRolls.length > 0 && keptRolls.every((v) => v === 1);
         const bonuses = Array.isArray(data.bonuses) ? (data.bonuses as RollBonus[]) : undefined;
         const normalizedAdv = advMode === 'advantage' || advMode === 'disadvantage' ? advMode : undefined;
         const timing = getRollPresentationTiming({

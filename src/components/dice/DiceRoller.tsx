@@ -144,13 +144,17 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         ticks++;
         if (ticks >= totalTicks) {
           clearInterval(interval);
-          // Full crit/fumble: for d2 coin flips, Heads(2)=success and Tails(1)=failure.
-          // For all other dice, crit=max and fumble=1.
+          // Full crit/fumble: for d2 coin flips, only single-coin rolls can crit/fumble
+          // (Heads(2)=success, Tails(1)=failure). For all other dice, crit=max and fumble=1.
           const rollData_ = pendingRollDataRef.current;
           const keptForCrit = rollData_?.keptRolls || [finalValue];
           const isCoin = sides === 2;
-          const isCrit = keptForCrit.every((v) => (isCoin ? v === 2 : v === sides));
-          const isFumble = keptForCrit.every((v) => v === 1);
+          const isCrit = isCoin
+            ? keptForCrit.length === 1 && keptForCrit[0] === 2
+            : keptForCrit.every((v) => v === sides);
+          const isFumble = isCoin
+            ? keptForCrit.length === 1 && keptForCrit[0] === 1
+            : keptForCrit.every((v) => v === 1);
 
           setDisplayValue(finalValue);
           setLastRoll({ die, value: finalValue, sides, playerName });
@@ -292,8 +296,12 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
     const sides = Number(sidesMatch?.[1] || 20);
     const keptForOutcome = result.kept && result.kept.length > 0 ? result.kept : result.rolls;
     const isCoin = sides === 2;
-    const isCrit = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 2 : v === sides));
-    const isFumble = keptForOutcome.length > 0 && keptForOutcome.every((v) => v === 1);
+    const isCrit = isCoin
+      ? keptForOutcome.length === 1 && keptForOutcome[0] === 2
+      : keptForOutcome.length > 0 && keptForOutcome.every((v) => v === sides);
+    const isFumble = isCoin
+      ? keptForOutcome.length === 1 && keptForOutcome[0] === 1
+      : keptForOutcome.length > 0 && keptForOutcome.every((v) => v === 1);
     // Register in game context
     addRoll({
       die: 'd20' as DieType, // visual only — macro result shown in roll history
