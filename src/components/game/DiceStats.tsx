@@ -5,8 +5,9 @@ import { useMemo } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import type { DiceRoll, DieType } from '../../types/game';
 
-const DIE_TYPES: DieType[] = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20'];
+const DIE_TYPES: DieType[] = ['d2', 'd4', 'd6', 'd8', 'd10', 'd12', 'd20'];
 const DIE_COLORS: Record<DieType, string> = {
+  d2: 'text-yellow-300',
   d4: 'text-emerald-400', d6: 'text-sky-400', d8: 'text-violet-400',
   d10: 'text-amber-400', d12: 'text-pink-400', d20: 'text-red-400',
 };

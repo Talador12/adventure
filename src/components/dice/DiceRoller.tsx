@@ -24,6 +24,7 @@ function saveMacros(macros: DiceMacro[]) {
 }
 
 const DICE: { type: DieType; sides: number; color: string }[] = [
+  { type: 'd2', sides: 2, color: 'from-amber-400 to-amber-600' },
   { type: 'd4', sides: 4, color: 'from-red-500 to-red-700' },
   { type: 'd6', sides: 6, color: 'from-blue-500 to-blue-700' },
   { type: 'd8', sides: 8, color: 'from-green-500 to-green-700' },
@@ -34,6 +35,7 @@ const DICE: { type: DieType; sides: number; color: string }[] = [
 
 // Color map for dice shape outlines
 const DICE_COLORS: Record<DieType, string> = {
+  d2: '#f59e0b',
   d4: '#ef4444',
   d6: '#3b82f6',
   d8: '#22c55e',
@@ -67,6 +69,11 @@ export interface LocalRollResult {
   playerName: string;
   unitName?: string;
   advMode?: 'normal' | 'advantage' | 'disadvantage';
+}
+
+function renderDieValue(sides: number, value: number): string {
+  if (sides === 2) return value === 1 ? 'H' : 'T';
+  return String(value);
 }
 
 interface DiceRollerProps {
@@ -137,11 +144,13 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         ticks++;
         if (ticks >= totalTicks) {
           clearInterval(interval);
-          // Full crit: every kept die is max. Full fumble: every kept die is 1.
+          // Full crit/fumble: for d2 coin flips, Heads(1)=success and Tails(2)=failure.
+          // For all other dice, crit=max and fumble=1.
           const rollData_ = pendingRollDataRef.current;
           const keptForCrit = rollData_?.keptRolls || [finalValue];
-          const isCrit = keptForCrit.every((v) => v === sides);
-          const isFumble = keptForCrit.every((v) => v === 1);
+          const isCoin = sides === 2;
+          const isCrit = keptForCrit.every((v) => (isCoin ? v === 1 : v === sides));
+          const isFumble = keptForCrit.every((v) => (isCoin ? v === 2 : v === 1));
 
           setDisplayValue(finalValue);
           setLastRoll({ die, value: finalValue, sides, playerName });
@@ -279,8 +288,12 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
   const executeMacro = useCallback((macro: DiceMacro) => {
     const result = parseSlashRoll(macro.notation);
     if (!result) return;
-    const isCrit = result.rolls.length === 1 && result.total === result.rolls[0] && result.rolls[0] === 20;
-    const isFumble = result.rolls.length === 1 && result.total === result.rolls[0] && result.rolls[0] === 1;
+    const sidesMatch = result.notation.match(/^(?:\d*)d(\d+)/i);
+    const sides = Number(sidesMatch?.[1] || 20);
+    const keptForOutcome = result.kept && result.kept.length > 0 ? result.kept : result.rolls;
+    const isCoin = sides === 2;
+    const isCrit = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 1 : v === sides));
+    const isFumble = keptForOutcome.length > 0 && keptForOutcome.every((v) => (isCoin ? v === 2 : v === 1));
     // Register in game context
     addRoll({
       die: 'd20' as DieType, // visual only — macro result shown in roll history
@@ -496,12 +509,28 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
       </div>
 
       {/* Dice buttons */}
-      <div className="grid grid-cols-3 gap-2">
-        {DICE.map(({ type, sides, color }) => (
-          <button key={type} disabled={animatingRef.current || rolling !== null} onClick={() => doRoll(type, sides)} className={`relative bg-gradient-to-br ${color} text-white font-bold py-2.5 px-3 rounded-lg shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:scale-105 active:scale-95 text-sm ${rolling === type ? 'ring-2 ring-white' : ''} ${advMode !== 'normal' ? 'ring-2 ring-offset-1 ring-offset-slate-900 ' + (advMode === 'advantage' ? 'ring-green-500/60' : 'ring-red-500/60') : ''}`}>
-            {diceCount > 1 ? `${diceCount}${type}` : type.toUpperCase()}
-          </button>
-        ))}
+      <div className="space-y-2">
+        <div className="grid grid-cols-3 gap-2">
+          {DICE.filter((d) => d.type !== 'd20').map(({ type, sides, color }) => (
+            <button key={type} disabled={animatingRef.current || rolling !== null} onClick={() => doRoll(type, sides)} className={`relative bg-gradient-to-br ${color} text-white font-bold py-2.5 px-3 rounded-lg shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:scale-105 active:scale-95 text-sm ${rolling === type ? 'ring-2 ring-white' : ''} ${advMode !== 'normal' ? 'ring-2 ring-offset-1 ring-offset-slate-900 ' + (advMode === 'advantage' ? 'ring-green-500/60' : 'ring-red-500/60') : ''}`}>
+              {diceCount > 1 ? `${diceCount}${type}` : type.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        {(() => {
+          const d20 = DICE.find((d) => d.type === 'd20');
+          if (!d20) return null;
+          return (
+            <button
+              key={d20.type}
+              disabled={animatingRef.current || rolling !== null}
+              onClick={() => doRoll(d20.type, d20.sides)}
+              className={`w-full relative bg-gradient-to-br ${d20.color} text-white font-bold py-3 px-3 rounded-lg shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] text-sm ${rolling === d20.type ? 'ring-2 ring-white' : ''} ${advMode !== 'normal' ? 'ring-2 ring-offset-1 ring-offset-slate-900 ' + (advMode === 'advantage' ? 'ring-green-500/60' : 'ring-red-500/60') : ''}`}
+            >
+              {diceCount > 1 ? `${diceCount}${d20.type}` : d20.type.toUpperCase()}
+            </button>
+          );
+        })()}
       </div>
 
       {/* Animated dice display */}
@@ -561,7 +590,10 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
                     : undefined
               }
             >
-              {displayValue}
+              {renderDieValue(lastRoll?.sides || (rolling ? (DICE.find((d) => d.type === rolling)?.sides || 20) : 20), displayValue)}
+              {lastRoll?.sides === 2 && !rolling ? (
+                <span className="ml-2 text-sm font-bold text-amber-300/80">{displayValue === 1 ? 'Heads' : 'Tails'}</span>
+              ) : null}
             </div>
 
             {/* Label below number */}
@@ -573,10 +605,10 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
                 {/* Crit/fumble text — persists with the color */}
                 {critState === 'crit' && (
                   <div className="text-xs font-bold text-yellow-400 tracking-wide" style={showBurst ? { animation: 'critText 0.5s ease-out' } : undefined}>
-                    CRITICAL HIT!
+                    {lastRoll.sides === 2 ? 'SUCCESS' : 'CRITICAL HIT!'}
                   </div>
                 )}
-                {critState === 'fumble' && <div className="text-xs font-bold text-red-500 tracking-wide">CRITICAL FAIL!</div>}
+                {critState === 'fumble' && <div className="text-xs font-bold text-red-500 tracking-wide">{lastRoll.sides === 2 ? 'FAILURE' : 'CRITICAL FAIL!'}</div>}
               </div>
             )}
           </div>

@@ -373,7 +373,7 @@ export interface Character {
 }
 
 // --- Dice ---
-export type DieType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20';
+export type DieType = 'd2' | 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20';
 
 export interface DiceRoll {
   id: string;

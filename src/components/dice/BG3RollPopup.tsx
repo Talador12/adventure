@@ -46,7 +46,12 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
   }, [activeRoll.sides, activeRoll.die]);
 
   const Shape = DICE_SHAPE_MAP[shapeKey];
-  const dieSize = shapeKey === 'd4' ? 56 : shapeKey === 'd6' ? 60 : shapeKey === 'd8' ? 64 : shapeKey === 'd10' ? 66 : shapeKey === 'd12' ? 70 : 74;
+  const dieSize = shapeKey === 'd2' ? 58 : shapeKey === 'd4' ? 56 : shapeKey === 'd6' ? 60 : shapeKey === 'd8' ? 64 : shapeKey === 'd10' ? 66 : shapeKey === 'd12' ? 70 : 74;
+
+  const faceText = (value: number) => {
+    if (activeRoll.sides !== 2) return String(value);
+    return value === 1 ? 'H' : 'T';
+  };
 
   const [animatedValues, setAnimatedValues] = useState<number[]>(activeRoll.allRolls);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -187,6 +192,16 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
         50% { box-shadow: 0 0 14px rgba(248,113,113,0.8), 0 -4px 10px rgba(251,146,60,0.65); filter: hue-rotate(-10deg) saturate(1.45); }
         100% { box-shadow: 0 0 8px rgba(239,68,68,0.55), 0 -2px 6px rgba(251,146,60,0.4); filter: hue-rotate(8deg) saturate(1.15); }
       }
+      @keyframes maxAura {
+        0% { box-shadow: 0 0 10px rgba(250,204,21,0.45), 0 0 20px rgba(250,204,21,0.2); }
+        50% { box-shadow: 0 0 18px rgba(250,204,21,0.7), 0 0 30px rgba(250,204,21,0.35); }
+        100% { box-shadow: 0 0 10px rgba(250,204,21,0.45), 0 0 20px rgba(250,204,21,0.2); }
+      }
+      @keyframes minAura {
+        0% { box-shadow: 0 0 10px rgba(239,68,68,0.45), 0 0 20px rgba(239,68,68,0.2); }
+        50% { box-shadow: 0 0 18px rgba(239,68,68,0.72), 0 0 30px rgba(239,68,68,0.35); }
+        100% { box-shadow: 0 0 10px rgba(239,68,68,0.45), 0 0 20px rgba(239,68,68,0.2); }
+      }
     `;
     document.head.appendChild(style);
   }, []);
@@ -242,20 +257,26 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
               const showNormalKeepColor = revealSelection && keptFlags[idx] && !showCritColor && !showFailColor;
               const isMaxFace = dieResolved && value === activeRoll.sides;
               const isMinFace = dieResolved && value === 1;
+              const showMaxColor = isMaxFace && !showCritColor;
+              const showMinColor = isMinFace && !showFailColor;
               const dieFaceTextColor = showCritColor
-                ? 'text-yellow-100'
+                ? 'text-yellow-50'
                 : showFailColor
-                  ? 'text-red-100'
-                  : isMaxFace
-                    ? 'text-yellow-200'
-                    : isMinFace
-                      ? 'text-red-200'
+                  ? 'text-red-50'
+                  : showMaxColor
+                    ? 'text-yellow-100'
+                    : showMinColor
+                      ? 'text-red-100'
                       : 'text-white';
               return (
             <div
               key={`${activeRoll.rollId}-${idx}-${value}`}
               className={`relative rounded-lg border px-2 py-1.5 transition-all duration-300 ${
-                revealSelection && keptFlags[idx]
+                showMaxColor
+                  ? 'border-yellow-400/70 bg-yellow-500/20 text-yellow-50 shadow-[0_0_18px_rgba(250,204,21,0.38)]'
+                  : showMinColor
+                    ? 'border-red-400/70 bg-red-500/20 text-red-50 shadow-[0_0_18px_rgba(239,68,68,0.38)]'
+                  : revealSelection && keptFlags[idx]
                   ? showCritColor
                     ? 'border-yellow-500/60 bg-yellow-500/12 text-yellow-100 shadow-[0_0_16px_rgba(250,204,21,0.26)]'
                     : showFailColor
@@ -267,11 +288,15 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
               }`}
               style={{ animationDelay: `${idx * 45}ms` }}
             >
-              <div className="relative flex items-center justify-center" style={{ width: dieSize, height: dieSize, opacity: dieResolved ? 1 : dieRolling ? 0.95 : 0.55, animation: dieRolling ? 'diceRoll 0.9s ease-in-out infinite' : showBurst && keptFlags[idx] && activeRoll.isFumble ? 'fumbleShake 0.45s ease-out' : justResolved && isMinFace ? 'fumbleShake 0.4s ease-out' : 'diceSettle 0.35s ease-out' }}>
+              <div className="relative flex items-center justify-center" style={{ width: dieSize, height: dieSize, opacity: dieResolved ? 1 : dieRolling ? 0.95 : 0.55, animation: dieRolling ? 'diceRoll 0.9s ease-in-out infinite' : showBurst && keptFlags[idx] && activeRoll.isFumble ? 'fumbleShake 0.45s ease-out' : justResolved && isMinFace ? 'fumbleShake 0.4s ease-out' : 'diceSettle 0.35s ease-out', boxShadow: showCritColor ? '0 0 22px rgba(250,204,21,0.52)' : showFailColor ? '0 0 22px rgba(239,68,68,0.52)' : undefined }}>
                 <Shape
                   size={dieSize}
                   className={`absolute inset-0 ${
-                    revealSelection && keptFlags[idx]
+                    showMaxColor
+                      ? 'text-yellow-200/95'
+                      : showMinColor
+                        ? 'text-red-200/95'
+                        : revealSelection && keptFlags[idx]
                       ? showCritColor
                         ? 'text-yellow-300/95'
                         : showFailColor
@@ -281,11 +306,17 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
                   }`}
                 />
                 <span className={`relative text-sm font-extrabold ${dieFaceTextColor}`}>
-                  {animatedValues[idx] ?? value}
+                  {faceText(animatedValues[idx] ?? value)}
                 </span>
                 {(showBurst && keptFlags[idx] && activeRoll.isCritical) || (justResolved && isMaxFace) ? (
                   <span className="absolute w-10 h-10 rounded-full" style={{ animation: 'critGlow 0.9s ease-out forwards' }} />
                 ) : null}
+                {(showCritColor || showMaxColor) && (
+                  <span className="absolute w-10 h-10 rounded-full" style={{ animation: 'maxAura 1.2s ease-in-out infinite' }} />
+                )}
+                {(showFailColor || showMinColor) && (
+                  <span className="absolute w-10 h-10 rounded-full" style={{ animation: 'minAura 0.95s ease-in-out infinite' }} />
+                )}
               </div>
             </div>
               );
@@ -314,12 +345,12 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
           )}
           {resultPhase && activeRoll.isCritical && (
             <span className="text-[11px] px-2 py-1 rounded bg-yellow-500/20 border border-yellow-500/40 font-bold text-yellow-200" style={{ animation: 'diceSettle 0.35s ease-out' }}>
-              Critical Success
+              {activeRoll.sides === 2 ? 'Success' : 'Critical Success'}
             </span>
           )}
           {resultPhase && activeRoll.isFumble && (
             <span className="text-[11px] px-2 py-1 rounded bg-red-500/20 border border-red-500/40 font-bold text-red-200" style={{ animation: 'fumbleShake 0.45s ease-out' }}>
-              Critical Failure
+              {activeRoll.sides === 2 ? 'Failure' : 'Critical Failure'}
             </span>
           )}
           {activeRoll.vetoed && <span className="text-[11px] px-2 py-1 rounded bg-red-900/30 border border-red-700/40 font-bold text-red-200">Vetoed by {activeRoll.vetoedBy || 'DM'}</span>}

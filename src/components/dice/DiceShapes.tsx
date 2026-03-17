@@ -6,6 +6,17 @@ interface DiceShapeProps {
   size?: number;
 }
 
+// d2: Coin — circular face with rim and center seam
+export function D2Shape({ className = '', size = 120 }: DiceShapeProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="60" r="48" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="60" cy="60" r="41" stroke="currentColor" strokeWidth="1.5" opacity="0.45" />
+      <line x1="28" y1="60" x2="92" y2="60" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
+    </svg>
+  );
+}
+
 // d4: Tetrahedron — equilateral triangle
 export function D4Shape({ className = '', size = 120 }: DiceShapeProps) {
   return (
@@ -144,6 +155,7 @@ export function D20Shape({ className = '', size = 120 }: DiceShapeProps) {
 
 // Map die type to its shape component
 export const DICE_SHAPE_MAP: Record<string, React.FC<DiceShapeProps>> = {
+  d2: D2Shape,
   d4: D4Shape,
   d6: D6Shape,
   d8: D8Shape,
