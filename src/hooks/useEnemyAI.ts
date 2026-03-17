@@ -385,4 +385,60 @@ export function useEnemyAI({
 
     return () => clearTimeout(timer);
   }, [inCombat, units, combatRound, damageUnit, applyCondition, addDmMessage, setCombatLog, setUnits, broadcastCombatSync]);
+
+  // --- Lair Actions: fire at the start of each new round (initiative count 20) ---
+  const lairRoundRef = useRef<number>(0);
+  useEffect(() => {
+    if (!inCombat || combatRound <= lairRoundRef.current) return;
+
+    // Find any boss with lair actions
+    const boss = units.find((u) => u.type === 'enemy' && u.hp > 0 && u.lairActions && u.lairActions.length > 0);
+    if (!boss || !boss.lairActions) return;
+
+    lairRoundRef.current = combatRound;
+
+    // Pick a random lair action
+    const action = boss.lairActions[Math.floor(Math.random() * boss.lairActions.length)];
+    const playerTargets = units.filter((u) => u.type === 'player' && u.hp > 0);
+    if (playerTargets.length === 0) return;
+
+    const timer = setTimeout(() => {
+      let msg = `🏔️ Lair Action! ${action.name} — ${action.description}`;
+
+      if (action.type === 'damage' && action.damageDie) {
+        const targets = action.targetAll ? playerTargets : [playerTargets[Math.floor(Math.random() * playerTargets.length)]];
+        for (const target of targets) {
+          // Save for half damage
+          const saveRoll = Math.floor(Math.random() * 20) + 1;
+          const saved = action.saveDC ? saveRoll >= action.saveDC : false;
+          const dmg = rollSpellDamage(action.damageDie);
+          const finalDmg = saved ? Math.floor(dmg / 2) : dmg;
+          if (finalDmg > 0) damageUnit(target.id, finalDmg);
+          msg += saved
+            ? ` ${target.name} saves — ${finalDmg} ${action.damageType || ''} damage (half).`
+            : ` ${target.name} takes ${finalDmg} ${action.damageType || ''} damage!`;
+        }
+        playCombatHit();
+      } else if (action.type === 'condition' && action.condition) {
+        const targets = action.targetAll ? playerTargets : [playerTargets[Math.floor(Math.random() * playerTargets.length)]];
+        for (const target of targets) {
+          const saveRoll = Math.floor(Math.random() * 20) + 1;
+          const saved = action.saveDC ? saveRoll >= action.saveDC : false;
+          if (!saved) {
+            applyCondition(target.id, { type: action.condition, duration: action.conditionDuration || 1, source: `${boss.name}'s Lair` });
+            msg += ` ${target.name} is ${action.condition}!`;
+          } else {
+            msg += ` ${target.name} resists the effect.`;
+          }
+        }
+      }
+      // 'terrain' and 'flavor' types just show the message — no mechanical effect
+
+      addDmMessage(msg);
+      setCombatLog((prev) => [...prev, msg]);
+      setTimeout(() => broadcastCombatSync(units, true, combatRound), 100);
+    }, 500); // fire at the very start of each round
+
+    return () => clearTimeout(timer);
+  }, [inCombat, combatRound, units, damageUnit, applyCondition, addDmMessage, setCombatLog, broadcastCombatSync]);
 }

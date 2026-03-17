@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- AI session recap — "Previously on your adventure..." auto-narration when returning to a game with existing history. Fires once on mount via the `/api/dm/narrate` endpoint with a recap-specific prompt using the last 8 DM history entries. Dramatic amber-themed banner with dismiss button. Session-scoped via sessionStorage (only shows once per browser session). Loading spinner while generating. 20s timeout — non-critical, graceful failure.
+- Downtime activities — `DowntimeActivities` component (~200 lines) with 6 between-adventure activities: Crafting (INT), Research (INT), Carousing (CHA), Gambling (WIS), Training (STR), Meditation (WIS). Each has gold cost, ability check DC, success/failure/critical success outcomes with gold/XP rewards. Integrated into DMSidebar encounter tab (shown out of combat). Wired to character gold, XP, and DM message log. 2s cooldown between activities.
+- Lair actions — `LairAction` interface (damage/condition/terrain/flavor types with save DC + stat). Boss monsters fire environmental effects at initiative count 20 (start of each new round). Adult Dragon gets 3 lair actions: Volcanic Tremor (2d6 fire, DEX DC 15), Toxic Fumes (poisoned, CON DC 14), Lair Darkness (flavor). Save-for-half-damage on damage types. Implemented as third useEffect in useEnemyAI, round-tracked via ref.
+- Inventory trading — `tradeItem(fromCharId, toCharId, itemId)` in GameContext. Handles stacked items (potions/scrolls trade one copy, decrement quantity). Auto-stacks into recipient inventory. "Give" button on CharacterSheet inventory items opens dropdown of party members. Full character picker with name, level, class display.
+- Legendary actions — `legendaryActions`, `legendaryActionsUsed`, `legendaryAbilities` fields on Unit. Boss enemies fire extra attacks between player turns (50% chance per player turn). Adult Dragon gets 3 legendary actions (Tail Sweep, Wing Gust, Detect). Mind Flayer gets 2 (Psychic Lash, Tentacle Grab). Reset at start of boss turn. Purple dot indicator in InitiativeBar showing remaining legendary actions.
+- Achievement badges — `Achievements` component (~250 lines) with 16 achievements across 4 categories (combat, exploration, social, legendary). Persistent tracking via localStorage (stats + unlocked badges). Auto-parses combat log for kills, crits, fumbles, damage, healing, spells. Tracks encounters won, combat rounds, chat messages. New "Badges" view tab (`0` keyboard shortcut). Amber-themed progress bar. Filter tabs by category. Unlocked/locked visual states with category-colored borders.
 - AI player turn logic — `useAIPlayerTurn` hook (~320 lines) at `src/hooks/useAIPlayerTurn.ts` makes AI-controlled player seats actually play during combat. Intelligent decision tree: heal self/allies when low HP (potions first, then class abilities, then spells), use class abilities when available (70% chance), cast damage spells (casters prefer highest damage in-range spell), cast cantrips when out of slots, move toward enemies via pathfinding, melee attack with equipped weapon stats + proficiency + feat bonuses. Supports Extra Attack for martial classes at level 5+. Handles opportunity attacks against AI player movement. Identifies AI players via `aiCharacterIds` Set loaded from sessionStorage (set by Lobby.tsx on Start Game from AI seat data). Game.tsx creates units for AI characters on mount. `isPlayerTurn` now excludes AI player turns from enabling human controls. Smart target selection: 30% chance to focus-fire lowest HP enemy. Delay slightly longer than enemy AI (1000ms vs 800ms) to feel more deliberate. All sound FX wired (combat hits/misses/crits, spells, healing). Full multiplayer sync via broadcastCombatSync.
 - Campaign timeline — `CampaignTimeline` component (~270 lines) at `src/components/game/CampaignTimeline.tsx`. New "Timeline" view tab (`9` keyboard shortcut). Auto-generates session history by parsing DM history and combat log strings for events: adventure start, combat encounters (kill count), rest events, deaths, loot finds, level-ups, critical hit milestones. 9 event types with distinct icons and color themes (combat/red, narration/amber, levelup/yellow, quest/emerald, death/slate, loot/amber, rest/sky, scene/indigo, milestone/purple). Filter tabs to browse by category. Vertical timeline with dot+line layout, time-ago timestamps. Auto-tracks character level changes for level-up events. localStorage persistence per campaign (capped at 100 events). Live combat indicator with pulsing red dot. Indigo-themed tab button.
 - Chat emoji reactions — full-stack emoji reaction system on chat messages. `ChatMessage` interface extended with `reactions?: Record<string, string[]>` (emoji → playerIds). 8 D&D-themed reaction emojis (👍⚔️🎯😂🔥❤️💀🎲). Hover over any message reveals a floating reaction picker bar. Click to toggle reaction on/off. Reaction pills below messages show emoji + count, highlighted when you've reacted. Lobby DO handles `chat_reaction` message type — broadcasts to all clients. `useGameWebSocket` and Lobby.tsx both handle incoming `chat_reaction` with toggle logic (add/remove playerId from emoji array). Wired in both Game.tsx and Lobby.tsx via `onReaction` prop on ChatPanel. Orange accent on your own reactions.
@@ -886,18 +892,22 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Gameplay depth:**
 - Multiclass support (second class on level-up, shared spell slots)
 - Reaction system expansion (Shield, Counterspell, Hellish Rebuke on enemy turn)
-- Inventory trading between players (drag to portrait)
+- ~~Inventory trading between players (drag to portrait)~~ (DONE — tradeItem in GameContext, "Give" button in CharacterSheet with party member picker, stack handling)
 - ~~Dice macros / saved roll shortcuts~~ (DONE — v0.1.0)
 - Initiative reroll / manual editing (DM drag-reorder)
 - ~~Weather/lighting effects on battle map (rain, fog, darkness, torch light)~~ (DONE — weather overlays + DM selector + WebSocket sync)
 - ~~Random encounter tables (per biome/dungeon level, auto-roll between rests)~~ (DONE — 8 biomes, weighted tables, DMSidebar UI)
-- Downtime activities (crafting, research, carousing)
+- ~~Downtime activities (crafting, research, carousing)~~ (DONE — 6 activities with ability checks, gold/XP rewards, DMSidebar integration)
 - Familiar/companion tokens (separate initiative, player-controlled)
 - Custom monster creator (DM builds custom monsters with ability editor)
 - AI companion auto-generation (auto-create character for AI seats without one assigned)
-- Lair actions (boss monsters trigger environmental effects on initiative count 20)
-- Legendary actions (boss enemies get extra actions between player turns)
+- ~~Lair actions (boss monsters trigger environmental effects on initiative count 20)~~ (DONE — LairAction interface, Adult Dragon with 3 lair actions, useEnemyAI round-start effect)
+- ~~Legendary actions (boss enemies get extra actions between player turns)~~ (DONE — Unit fields, Adult Dragon 3 + Mind Flayer 2 legendary abilities, useEnemyAI between-turn effect, InitiativeBar indicator)
 - Grapple/shove combat maneuvers (contested Athletics checks, movement restrictions)
+- Concentration tracker visual (glowing aura on concentrating tokens, auto-break notification)
+- Initiative tiebreaker resolution (DEX mod comparison, DM choice on ties)
+- Status effect visual overlays on battle map tokens (poison green, fire orange, stunned stars)
+- "Readied action" support (hold action until trigger condition, execute as reaction)
 - ~~Party loot tracker (shared inventory, DM distributes items to players)~~ (DONE — LootTracker component + WebSocket sync)
 - ~~Quick rules reference panel (conditions, actions, spell schools during play)~~ (DONE — RulesReference modal + rules.ts data)
 - ~~Session timer (track total play time per session, auto-save on idle)~~ (DONE — SessionTimer component in Game header)
@@ -929,9 +939,11 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Animated token attack indicators (slash/arrow/spell beam between attacker and target)
 - Dice roll 3D animation (three.js or CSS 3D transforms for satisfying dice physics)
 - Ambient background music player (tavern, combat, exploration — royalty-free tracks via Web Audio)
+- Combat damage type indicators (slash/pierce/bludgeon/fire/cold/etc icons on floating text)
+- Token aura system (visual rings around tokens for spell effects, threat ranges)
 
 **Social & Community:**
-- AI session recap ("last time on..." from combat log + chat)
+- ~~AI session recap ("last time on..." from combat log + chat)~~ (DONE — auto-narration on game load via DM AI endpoint, amber banner, session-scoped)
 - ~~Campaign timeline / session log (auto-generated, browseable)~~ (DONE — CampaignTimeline component with 9 event types, filter tabs, auto-parse from DM history + combat log)
 - ~~Journal/notes — shared campaign notes, session summaries, DM-only notes~~ (DONE — SessionJournal component + DM notes tab)
 - ~~Chat emoji reactions (react to messages with emoji)~~ (DONE — 8 D&D-themed emoji, hover picker, toggle reactions, WebSocket sync, lobby + game)
@@ -939,7 +951,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Drop-in/drop-out guest characters (no account, temporary token)
 - Campaign templates (share setup for others to clone)
 - Campaign comparison stats (total kills, gold earned, sessions played across campaigns)
-- Achievement badges (first crit, 100 kills, TPK survivor, dragon slayer, etc.)
+- ~~Achievement badges (first crit, 100 kills, TPK survivor, dragon slayer, etc.)~~ (DONE — 16 achievements, 4 categories, persistent tracking, Badges view tab)
 - Shareable character cards (social media image export with stats + portrait)
 
 **AI enhancements:**

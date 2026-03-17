@@ -782,6 +782,44 @@ export default function Game() {
   // Auto-execute AI player turns — AI-controlled party members act autonomously
   useAIPlayerTurn({ aiCharacterIds, addDmMessage, setCombatLog, broadcastCombatSync, broadcastGameEvent, animateMoveRef, drainConcentrationMessages });
 
+  // --- AI Session Recap: "Last time on your adventure..." ---
+  const [sessionRecap, setSessionRecap] = useState<string | null>(null);
+  const [recapLoading, setRecapLoading] = useState(false);
+  const recapFiredRef = useRef(false);
+
+  // Fire once when a returning player loads a game with existing history
+  useEffect(() => {
+    if (recapFiredRef.current || !adventureStarted || !selectedCharacter || dmHistory.length < 3) return;
+    recapFiredRef.current = true;
+
+    // Check if we already showed a recap this session
+    const recapKey = `adventure:recap-shown:${room}`;
+    try { if (sessionStorage.getItem(recapKey)) return; } catch { /* ok */ }
+
+    setRecapLoading(true);
+    const lastEvents = dmHistory.slice(-8);
+    fetchWithTimeout(`${apiBase()}/api/dm/narrate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        characters: buildPartyPayload(),
+        context: 'The party is returning to a session already in progress.',
+        action: `Summarize what has happened so far in 2-3 dramatic sentences, starting with "Previously..." — like a TV show recap. Base it on these recent events:\n${lastEvents.join('\n')}`,
+        history: lastEvents,
+        scene: sceneName,
+      }),
+    }, 20_000)
+      .then((r) => r.json() as Promise<{ narration?: string }>)
+      .then((data) => {
+        if (data.narration) {
+          setSessionRecap(data.narration);
+          try { sessionStorage.setItem(recapKey, '1'); } catch { /* ok */ }
+        }
+      })
+      .catch(() => { /* no recap — not critical */ })
+      .finally(() => setRecapLoading(false));
+  }, [adventureStarted, selectedCharacter, dmHistory.length, room]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Begin Adventure — first DM narration
   // Begin adventure — callDmNarrate adds to dmHistory, which makes adventureStarted true
   const handleBeginAdventure = useCallback(async () => {
@@ -940,11 +978,14 @@ export default function Game() {
         dexMod: monster.dexMod, abilities: monster.abilities.map((a) => ({ ...a })),
         abilityCooldowns: {}, conditions: [], speed: monster.speed, movementUsed: 0,
         reactionUsed: false, disengaged: false, cr: monster.cr, xpValue: monster.xpValue,
-        // Legendary actions — only the first spawned unit of a boss type gets legendary (not copies)
+        // Legendary + lair actions — only the first spawned unit of a boss type gets these (not copies)
         ...(i === 0 && monster.legendaryActions ? {
           legendaryActions: monster.legendaryActions,
           legendaryActionsUsed: 0,
           legendaryAbilities: monster.legendaryAbilities?.map((a) => ({ ...a })),
+        } : {}),
+        ...(i === 0 && monster.lairActions ? {
+          lairActions: monster.lairActions.map((a) => ({ ...a })),
         } : {}),
       } satisfies Unit;
     });
@@ -1356,6 +1397,8 @@ export default function Game() {
             onApplyFormation={(positions) => { setMapPositions(positions); broadcastGameEvent('formation_apply', { positions }); }}
             mapPins={mapPins}
             onPinRemove={handlePinRemove}
+            selectedCharacterId={selectedCharacterId}
+            onAddDmMessage={addDmMessage}
           />
         )}
 
@@ -1579,6 +1622,26 @@ export default function Game() {
                     inCombat={inCombat}
                     playerNames={characters.map((c) => c.name)}
                   />
+                )}
+
+                {/* AI Session Recap banner */}
+                {activeView === 'narration' && sessionRecap && (
+                  <div className="mx-4 mb-2 rounded-xl border border-amber-600/30 bg-gradient-to-br from-amber-950/40 to-stone-900/60 px-5 py-4 shadow-lg animate-fade-in-up">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-400 text-sm">📜</span>
+                        <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Previously on your adventure...</span>
+                      </div>
+                      <button onClick={() => setSessionRecap(null)} className="text-xs text-slate-500 hover:text-amber-400 transition-colors">Dismiss</button>
+                    </div>
+                    <p className="text-sm text-amber-100/90 italic leading-relaxed">{sessionRecap}</p>
+                  </div>
+                )}
+                {activeView === 'narration' && recapLoading && (
+                  <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-950/20 border border-amber-800/20">
+                    <div className="w-3 h-3 border border-amber-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[10px] text-amber-500/70">Recalling the story so far...</span>
+                  </div>
                 )}
 
                 {activeView === 'narration' ? (

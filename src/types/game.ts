@@ -99,6 +99,21 @@ export interface Unit {
   legendaryActions?: number;       // max legendary actions per round
   legendaryActionsUsed?: number;   // how many used this round (reset on boss turn)
   legendaryAbilities?: EnemyAbility[]; // abilities usable as legendary actions
+  // Lair actions — environmental effects at initiative count 20 (start of round)
+  lairActions?: LairAction[];
+}
+
+export interface LairAction {
+  name: string;
+  description: string;
+  type: 'damage' | 'condition' | 'terrain' | 'flavor';
+  damageDie?: string;
+  damageType?: string;
+  condition?: ConditionType;
+  conditionDuration?: number;
+  saveStat?: string;
+  saveDC?: number;
+  targetAll?: boolean;  // hits all players vs random one
 }
 
 // --- Enemy templates ---
