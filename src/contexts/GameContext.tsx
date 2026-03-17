@@ -63,6 +63,7 @@ interface GameContextValue {
   equipItem: (charId: string, itemId: string) => void;
   unequipItem: (charId: string, slot: EquipSlot) => void;
   useItem: (charId: string, itemId: string) => { message: string };
+  tradeItem: (fromCharId: string, toCharId: string, itemId: string) => { success: boolean; message: string };
 
   // Shop
   buyItem: (charId: string, shopItem: Omit<Item, 'id'>) => { success: boolean; message: string };
@@ -140,6 +141,7 @@ const GameContext = createContext<GameContextValue>({
   useItem: () => ({ message: '' }),
   buyItem: () => ({ success: false, message: '' }),
   sellItem: () => ({ success: false, message: '' }),
+  tradeItem: () => ({ success: false, message: '' }),
   castSpell: () => ({ success: false, message: '' }),
   restoreSpellSlots: () => {},
   useClassAbility: () => ({ success: false, message: '' }),
@@ -504,6 +506,43 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return { ...c, gold: c.gold + sellPrice, inventory: inv.filter((i) => i.id !== itemId) };
       })
     );
+    return result;
+  }, []);
+
+  // Trade: move an item from one character to another
+  const tradeItem = useCallback((fromCharId: string, toCharId: string, itemId: string): { success: boolean; message: string } => {
+    let result = { success: false, message: '' };
+    setCharacters((prev) => {
+      const fromChar = prev.find((c) => c.id === fromCharId);
+      const toChar = prev.find((c) => c.id === toCharId);
+      if (!fromChar || !toChar) { result = { success: false, message: 'Character not found.' }; return prev; }
+      const inv = fromChar.inventory || [];
+      const item = inv.find((i) => i.id === itemId);
+      if (!item) { result = { success: false, message: 'Item not found.' }; return prev; }
+
+      // Handle stacked items — trade one copy
+      const tradedItem = { ...item, id: crypto.randomUUID(), quantity: 1 };
+      const fromInv = item.quantity && item.quantity > 1
+        ? inv.map((i) => i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i)
+        : inv.filter((i) => i.id !== itemId);
+
+      // Stack into recipient's inventory if same name+type exists (potions, scrolls)
+      const toInv = [...(toChar.inventory || [])];
+      const existingStack = toInv.find((i) => i.name === item.name && i.type === item.type && (i.type === 'potion' || i.type === 'scroll'));
+      if (existingStack) {
+        const idx = toInv.indexOf(existingStack);
+        toInv[idx] = { ...existingStack, quantity: (existingStack.quantity || 1) + 1 };
+      } else {
+        toInv.push(tradedItem);
+      }
+
+      result = { success: true, message: `${fromChar.name} gives ${item.name} to ${toChar.name}.` };
+      return prev.map((c) => {
+        if (c.id === fromCharId) return { ...c, inventory: fromInv };
+        if (c.id === toCharId) return { ...c, inventory: toInv };
+        return c;
+      });
+    });
     return result;
   }, []);
 
@@ -1070,6 +1109,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         useItem,
         buyItem,
         sellItem,
+        tradeItem,
         castSpell,
         restoreSpellSlots,
         useClassAbility,

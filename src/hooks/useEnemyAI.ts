@@ -1,6 +1,6 @@
 // useEnemyAI — auto-execute enemy turns with stat-block-driven AI, abilities, conditions, and smart targeting.
 // Extracted from Game.tsx to reduce file size and isolate AI combat logic.
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useGame, type Unit, CONDITION_EFFECTS, rollSpellDamage, rollD20WithProne, effectiveAC } from '../contexts/GameContext';
 import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDistance, hasLineOfSight, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
 import { playTurnChange, playCombatHit, playCombatMiss, playCritical, playEnemyDeath } from './useSoundFX';
@@ -65,6 +65,11 @@ export function useEnemyAI({
       // Tick conditions at start of turn (burning damage, duration countdown)
       const { messages: condMsgs } = tickConditions(currentUnit.id);
       condMsgs.forEach((m) => addDmMessage(m));
+
+      // Reset legendary actions at the start of the boss's turn
+      if (currentUnit.legendaryActions && currentUnit.legendaryActions > 0) {
+        setUnits((prev) => prev.map((u) => u.id === currentUnit.id ? { ...u, legendaryActionsUsed: 0 } : u));
+      }
 
       // Smart target selection: prefer low-HP targets, 30% chance to target lowest
       let target: Unit;
@@ -307,4 +312,77 @@ export function useEnemyAI({
 
     return () => clearTimeout(timer);
   }, [inCombat, units, characters, damageUnit, updateCharacter, addDmMessage, nextTurn, tickConditions, applyCondition, setUnits, terrain, mapPositions, setMapPositions, broadcastCombatSync, broadcastGameEvent, combatRound, setCombatLog, animateMoveRef, drainConcentrationMessages]);
+
+  // --- Legendary Actions: fire between player turns ---
+  // After a player ends their turn, any boss with remaining legendary actions acts
+  const legendaryProcessedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!inCombat) return;
+    const currentUnit = units.find((u) => u.isCurrentTurn);
+    // Only fire legendary actions when it's a player's turn (between enemy and player turns)
+    if (!currentUnit || currentUnit.type !== 'player' || currentUnit.hp <= 0) return;
+
+    // Find bosses with legendary actions remaining
+    const bosses = units.filter((u) => u.type === 'enemy' && u.hp > 0 && (u.legendaryActions || 0) > 0 && (u.legendaryActionsUsed || 0) < (u.legendaryActions || 0) && (u.legendaryAbilities || []).length > 0);
+    if (bosses.length === 0) return;
+
+    // Prevent double-fire for the same turn
+    const turnKey = `legendary-${currentUnit.id}-${combatRound}`;
+    if (legendaryProcessedRef.current === turnKey) return;
+    legendaryProcessedRef.current = turnKey;
+
+    // 50% chance to use a legendary action on any given player turn (not every turn)
+    if (Math.random() > 0.5) return;
+
+    const boss = bosses[0]; // use first available boss
+    const abilities = boss.legendaryAbilities || [];
+    const ability = abilities[Math.floor(Math.random() * abilities.length)];
+    if (!ability) return;
+
+    const playerTargets = units.filter((u) => u.type === 'player' && u.hp > 0);
+    if (playerTargets.length === 0) return;
+    const target = playerTargets[Math.floor(Math.random() * playerTargets.length)];
+
+    const timer = setTimeout(() => {
+      let msg = `⚡ Legendary Action! ${boss.name} uses ${ability.name}!`;
+
+      if (ability.type === 'attack' && ability.damageDie && ability.damageDie !== '0') {
+        const atkBonus = ability.attackBonus ?? boss.attackBonus ?? 5;
+        const targetAC = effectiveAC(target.ac, target.conditions || []);
+        const roll = Math.floor(Math.random() * 20) + 1;
+        const total = roll + atkBonus;
+        const hit = roll === 20 || (roll !== 1 && total >= targetAC);
+        if (hit) {
+          const dmg = rollSpellDamage(ability.damageDie);
+          const finalDmg = Math.max(1, roll === 20 ? dmg * 2 : dmg);
+          damageUnit(target.id, finalDmg);
+          msg += ` Hits ${target.name} for ${finalDmg} damage! (${roll}+${atkBonus}=${total} vs AC ${targetAC})`;
+          playCombatHit();
+          if (roll === 20) playCritical();
+        } else {
+          msg += ` Misses ${target.name}! (${roll}+${atkBonus}=${total} vs AC ${targetAC})`;
+          playCombatMiss();
+        }
+      } else if (ability.type === 'condition' && ability.condition) {
+        applyCondition(target.id, { type: ability.condition, duration: ability.conditionDuration || 1, source: boss.name });
+        msg += ` ${target.name} is ${ability.condition}!`;
+      } else if (ability.type === 'aoe' && ability.damageDie) {
+        const dmg = rollSpellDamage(ability.damageDie);
+        playerTargets.forEach((pt) => damageUnit(pt.id, dmg));
+        msg += ` All players take ${dmg} damage!`;
+        playCombatHit();
+      } else {
+        msg += ` ${ability.description}`;
+      }
+
+      addDmMessage(msg);
+      setCombatLog((prev) => [...prev, msg]);
+
+      // Increment legendary actions used
+      setUnits((prev) => prev.map((u) => u.id === boss.id ? { ...u, legendaryActionsUsed: (u.legendaryActionsUsed || 0) + 1 } : u));
+      setTimeout(() => broadcastCombatSync(units, true, combatRound), 100);
+    }, 1200); // fire 1.2s after player turn starts (lets them see the turn change first)
+
+    return () => clearTimeout(timer);
+  }, [inCombat, units, combatRound, damageUnit, applyCondition, addDmMessage, setCombatLog, setUnits, broadcastCombatSync]);
 }

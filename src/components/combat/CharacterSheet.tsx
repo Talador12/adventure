@@ -297,9 +297,12 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
 }
 
 export default function CharacterSheet({ character }: CharacterSheetProps) {
-  const { restCharacter, equipItem, unequipItem, useItem, removeItem, units, updateCharacter, addRoll, currentPlayer } = useGame();
+  const { restCharacter, equipItem, unequipItem, useItem, removeItem, tradeItem, units, updateCharacter, addRoll, currentPlayer, characters } = useGame();
   const [showInventory, setShowInventory] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [tradeTarget, setTradeTarget] = useState<string | null>(null); // itemId being traded
+  // Other characters available for trading (other player characters)
+  const tradeTargets = characters.filter((c) => c.id !== character.id);
   const prof = proficiencyBonus(character.level);
   const saveProficiencies = CLASS_SAVE_PROFICIENCIES[character.class] || [];
 
@@ -734,6 +737,33 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                         >
                           Use
                         </button>
+                      )}
+                      {tradeTargets.length > 0 && (
+                        <div className="relative">
+                          <button
+                            onClick={() => setTradeTarget(tradeTarget === item.id ? null : item.id)}
+                            className="text-[9px] text-amber-400 hover:text-amber-300 transition-colors px-1.5 py-0.5 rounded hover:bg-amber-900/30"
+                            title="Give to party member"
+                          >
+                            Give
+                          </button>
+                          {tradeTarget === item.id && (
+                            <div className="absolute right-0 top-full mt-1 z-20 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 min-w-[120px]">
+                              {tradeTargets.map((tc) => (
+                                <button
+                                  key={tc.id}
+                                  onClick={() => {
+                                    const result = tradeItem(character.id, tc.id, item.id);
+                                    if (result.success) setTradeTarget(null);
+                                  }}
+                                  className="w-full text-left text-[10px] px-3 py-1.5 hover:bg-slate-700/60 text-slate-300 hover:text-amber-300 transition-colors"
+                                >
+                                  {tc.name} <span className="text-slate-500 text-[9px]">Lv{tc.level} {tc.class}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                       <button
                         onClick={() => removeItem(character.id, item.id)}

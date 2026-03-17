@@ -95,6 +95,10 @@ export interface Unit {
   disengaged: boolean;
   cr?: number;
   xpValue?: number;
+  // Legendary actions — boss monsters get extra actions between player turns
+  legendaryActions?: number;       // max legendary actions per round
+  legendaryActionsUsed?: number;   // how many used this round (reset on boss turn)
+  legendaryAbilities?: EnemyAbility[]; // abilities usable as legendary actions
 }
 
 // --- Enemy templates ---

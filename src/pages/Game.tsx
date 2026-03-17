@@ -34,6 +34,7 @@ import DiceStats from '../components/game/DiceStats';
 import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
 import CampaignTimeline from '../components/game/CampaignTimeline';
+import Achievements from '../components/game/Achievements';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -128,7 +129,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements'>('narration');
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
@@ -444,6 +445,7 @@ export default function Game() {
       if (e.key === '7') { setActiveView('npcs'); return; }
       if (e.key === '8') { setActiveView('dicestats'); return; }
       if (e.key === '9') { setActiveView('timeline'); return; }
+      if (e.key === '0') { setActiveView('achievements'); return; }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -938,6 +940,12 @@ export default function Game() {
         dexMod: monster.dexMod, abilities: monster.abilities.map((a) => ({ ...a })),
         abilityCooldowns: {}, conditions: [], speed: monster.speed, movementUsed: 0,
         reactionUsed: false, disengaged: false, cr: monster.cr, xpValue: monster.xpValue,
+        // Legendary actions — only the first spawned unit of a boss type gets legendary (not copies)
+        ...(i === 0 && monster.legendaryActions ? {
+          legendaryActions: monster.legendaryActions,
+          legendaryActionsUsed: 0,
+          legendaryAbilities: monster.legendaryAbilities?.map((a) => ({ ...a })),
+        } : {}),
       } satisfies Unit;
     });
     const names = newUnits.map((u) => u.name).join(', ');
@@ -1492,6 +1500,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('timeline')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'timeline' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Timeline
                   </button>
+                  <button onClick={() => setActiveView('achievements')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'achievements' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    Badges
+                  </button>
                 </div>
 
                 {/* AoE targeting banner */}
@@ -1644,6 +1655,15 @@ export default function Game() {
                     combatLog={combatLog}
                     inCombat={inCombat}
                     characters={characters.map((c) => ({ name: c.name, level: c.level, class: c.class, gold: c.gold }))}
+                  />
+                ) : activeView === 'achievements' ? (
+                  <Achievements
+                    roomId={room}
+                    combatLog={combatLog}
+                    inCombat={inCombat}
+                    combatRound={combatRound}
+                    chatMessageCount={chatMessages.filter((m) => m.type === 'chat').length}
+                    onUnlock={(msg) => addDmMessage(msg)}
                   />
                 ) : (
                   /* Battle Map view */

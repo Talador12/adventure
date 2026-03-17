@@ -206,6 +206,16 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 </div>
               )}
 
+              {/* Legendary action indicator */}
+              {entry.legendaryActions && entry.legendaryActions > 0 && (
+                <div className="flex items-center gap-0.5 mt-0.5" title={`Legendary Actions: ${(entry.legendaryActions - (entry.legendaryActionsUsed || 0))} / ${entry.legendaryActions} remaining`}>
+                  {Array.from({ length: entry.legendaryActions }).map((_, i) => (
+                    <span key={i} className={`w-2 h-2 rounded-full border ${i < (entry.legendaryActions! - (entry.legendaryActionsUsed || 0)) ? 'bg-purple-500 border-purple-400 shadow-sm shadow-purple-500/40' : 'bg-slate-700 border-slate-600'}`} />
+                  ))}
+                  <span className="text-[7px] text-purple-400 font-bold ml-0.5">LEG</span>
+                </div>
+              )}
+
               {/* Hover tooltip — detailed stat block */}
               <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 bg-slate-900 border border-slate-600 rounded-xl shadow-2xl p-3 z-50 hidden group-hover:block pointer-events-none">
                 <div className="text-xs font-bold text-slate-200 mb-1.5 truncate">{entry.name}</div>
