@@ -80,11 +80,13 @@ interface DiceRollerProps {
   useServerRolls?: boolean;
   /** Compact mode for lobby sidebar */
   compact?: boolean;
+  /** Skip local placeholder spin when server is authoritative */
+  suppressServerSpin?: boolean;
 }
 
 type AdvantageMode = 'normal' | 'advantage' | 'disadvantage';
 
-const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, onRollComplete, onMacroRoll, useServerRolls = false, compact = false }, ref) {
+const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRoller({ onLocalRoll, onRollComplete, onMacroRoll, useServerRolls = false, compact = false, suppressServerSpin = false }, ref) {
   const { currentPlayer, addRoll, rolls, clearRolls, selectedUnitId, units, characters, updateCharacter } = useGame();
   const [rolling, setRolling] = useState<DieType | null>(null);
   const [displayValue, setDisplayValue] = useState<number | null>(null);
@@ -212,6 +214,9 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
         onLocalRoll(die, sides, count, mode);
         // Auto-reset to normal after rolling — adv/disadv is a one-shot modifier
         if (mode !== 'normal') setAdvMode('normal');
+        if (suppressServerSpin) {
+          return;
+        }
         // Start the animation immediately with random placeholder, will be overridden
         setRolling(die);
         setCritState(null);

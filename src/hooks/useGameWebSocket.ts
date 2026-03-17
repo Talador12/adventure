@@ -5,14 +5,14 @@
 
 import { useCallback, useRef, useState, useEffect } from 'react';
 import type { WSMessage } from './useWebSocket';
-import type { Unit, DieType, Character } from '../contexts/GameContext';
+import type { Unit, Character } from '../contexts/GameContext';
 import type { ChatMessage } from '../components/chat/ChatPanel';
 import type { TerrainType, TokenPosition } from '../lib/mapUtils';
 import type { Quest, MapPin } from '../types/game';
+import type { RollPresentation } from '../types/roll';
 import type { JournalEntry } from '../components/game/SessionJournal';
 import type { LootItem } from '../components/game/LootTracker';
-import type { DiceRollerHandle } from '../components/dice/DiceRoller';
-import { playDiceRoll, playCritical, playFumble, playPlayerJoin } from './useSoundFX';
+import { playPlayerJoin } from './useSoundFX';
 import { persistChatMessage } from '../lib/chatApi';
 
 export interface GameWebSocketDeps {
@@ -23,8 +23,6 @@ export interface GameWebSocketDeps {
   isRemoteEventRef: React.MutableRefObject<boolean>;
   /** Ref for BattleMap animated token movement */
   animateMoveRef: React.MutableRefObject<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>;
-  /** Ref for dice roller remote roll animation */
-  diceRef: React.RefObject<DiceRollerHandle | null>;
   /** Ref that always tracks latest mapPositions */
   mapPositionsRef: React.MutableRefObject<TokenPosition[]>;
 
@@ -74,6 +72,11 @@ export interface GameWebSocketDeps {
 
   // Character context for party join
   selectedCharacterId: string | null;
+
+  // Roll presentation callbacks (BG3-style center popup)
+  onRollResult?: (roll: RollPresentation) => void;
+  onRollVetoed?: (rollId: string, vetoedBy?: string) => void;
+  onRollCleared?: (rollId: string, reason?: string) => void;
 }
 
 export interface GameWebSocketState {
@@ -93,7 +96,6 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     sendRef,
     isRemoteEventRef,
     animateMoveRef,
-    diceRef,
     mapPositionsRef,
     setChatMessages,
     setDmHistory,
@@ -109,6 +111,9 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     updateCharacter,
     getStateForResponse,
     selectedCharacterId,
+    onRollResult,
+    onRollVetoed,
+    onRollCleared,
   } = deps;
 
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
@@ -118,6 +123,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
   const [wsConnected, setWsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
   const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const pendingRollChatRef = useRef<Map<string, ChatMessage>>(new Map());
 
   // Keep a ref to wsPlayerId so the handler callback doesn't go stale
   const wsPlayerIdRef = useRef<string | null>(null);
@@ -199,54 +205,90 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           break;
 
         case 'roll_result': {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'roll',
-              playerId: msg.playerId as string,
-              username: msg.username as string,
-              avatar: msg.avatar as string | undefined,
-              text: '',
-              timestamp: msg.timestamp as number,
-              die: msg.die as string,
-              sides: msg.sides as number,
-              value: msg.total as number,
-              rollCount: msg.count as number | undefined,
-              allRolls: msg.allRolls as number[] | undefined,
-              keptRolls: msg.keptRolls as number[] | undefined,
-              isCritical: msg.isCritical as boolean,
-              isFumble: msg.isFumble as boolean,
-              unitName: msg.unitName as string | undefined,
-              characterName: msg.unitName as string | undefined,
-              advMode: msg.advMode as string | undefined,
-            },
-          ]);
-          // Persist roll to D1 — only the roller persists (avoid duplicates)
+          const rollId = (msg.rollId as string) || crypto.randomUUID();
           const rollTotal = (msg.total as number) ?? (msg.value as number) ?? 0;
-          if (msg.playerId === wsPlayerIdRef.current) {
-            const rollCount = (msg.count as number) || 1;
-            const advLabel = msg.advMode ? ` [${msg.advMode}]` : '';
-            persistChatMessage(room, {
-              username: msg.username as string,
-              type: 'roll',
-              text: `rolled ${rollCount > 1 ? rollCount : ''}${(msg.die as string)?.toUpperCase()} for ${rollTotal}${advLabel}`,
-              avatarUrl: msg.avatar as string | undefined,
-              metadata: { die: msg.die, sides: msg.sides, value: rollTotal, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName, characterName: msg.unitName },
-            });
-          }
-          // Sound FX
-          playDiceRoll();
-          if (msg.isCritical) setTimeout(playCritical, 400);
-          if (msg.isFumble) setTimeout(playFumble, 400);
-
-          diceRef.current?.playRemoteRoll({
-            die: msg.die as DieType,
+          const allRolls = (msg.allRolls as number[] | undefined) || [rollTotal];
+          const keptRolls = (msg.keptRolls as number[] | undefined) || [rollTotal];
+          pendingRollChatRef.current.set(rollId, {
+            id: crypto.randomUUID(),
+            type: 'roll',
+            playerId: msg.playerId as string,
+            username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
+            text: '',
+            timestamp: msg.timestamp as number,
+            die: msg.die as string,
             sides: msg.sides as number,
             value: rollTotal,
-            playerName: msg.username as string,
+            rollCount: msg.count as number | undefined,
+            allRolls,
+            keptRolls,
+            isCritical: msg.isCritical as boolean,
+            isFumble: msg.isFumble as boolean,
             unitName: msg.unitName as string | undefined,
+            characterName: msg.unitName as string | undefined,
+            advMode: msg.advMode as string | undefined,
           });
+          onRollResult?.({
+            rollId,
+            playerId: msg.playerId as string,
+            username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
+            unitName: msg.unitName as string | undefined,
+            die: msg.die as string,
+            sides: msg.sides as number,
+            count: (msg.count as number) || 1,
+            allRolls,
+            keptRolls,
+            total: rollTotal,
+            advMode: msg.advMode as 'advantage' | 'disadvantage' | undefined,
+            isCritical: msg.isCritical as boolean,
+            isFumble: msg.isFumble as boolean,
+            dc: msg.dc as number | undefined,
+            bonuses: msg.bonuses as { label: string; value: number }[] | undefined,
+            animationMs: msg.animationMs as number | undefined,
+            presentationMs: msg.presentationMs as number | undefined,
+            timestamp: (msg.timestamp as number) || Date.now(),
+          });
+          break;
+        }
+
+        case 'roll_vetoed': {
+          onRollVetoed?.(msg.rollId as string, msg.vetoedBy as string | undefined);
+          break;
+        }
+
+        case 'roll_cleared': {
+          const rollId = msg.rollId as string;
+          const reason = msg.reason as string | undefined;
+          const pending = pendingRollChatRef.current.get(rollId);
+          if (pending) {
+            pendingRollChatRef.current.delete(rollId);
+            if (reason !== 'vetoed') {
+              setChatMessages((prev) => [...prev, pending]);
+              if (pending.playerId === wsPlayerIdRef.current) {
+                const rollCount = pending.rollCount || 1;
+                const advLabel = pending.advMode ? ` [${pending.advMode}]` : '';
+                persistChatMessage(room, {
+                  username: pending.username,
+                  type: 'roll',
+                  text: `rolled ${rollCount > 1 ? rollCount : ''}${(pending.die as string)?.toUpperCase()} for ${pending.value ?? 0}${advLabel}`,
+                  avatarUrl: pending.avatar,
+                  metadata: { die: pending.die, sides: pending.sides, value: pending.value, isCritical: pending.isCritical, isFumble: pending.isFumble, unitName: pending.unitName, characterName: pending.unitName },
+                });
+              }
+            } else {
+              setChatMessages((prev) => [...prev, {
+                id: crypto.randomUUID(),
+                type: 'system',
+                username: 'System',
+                text: `${pending.unitName || pending.username}'s roll was vetoed by the DM`,
+                timestamp: Date.now(),
+              }]);
+            }
+          }
+
+          onRollCleared?.(rollId, reason);
           break;
         }
 
@@ -520,7 +562,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     },
     // Use refs for frequently-changing state to avoid re-creating the callback on every state change.
     // wsPlayerId is tracked via wsPlayerIdRef, and state_request uses getStateForResponse callback.
-    [room, sendRef, isRemoteEventRef, animateMoveRef, diceRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId]
+    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared]
   );
 
   return {

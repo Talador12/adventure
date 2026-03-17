@@ -28,7 +28,12 @@ function rowToMessage(row: Record<string, unknown>): ChatMessage {
 function isTempUser(): boolean {
   try {
     const s = localStorage.getItem('adventure:tempUser');
-    return !!s && JSON.parse(s)?.id?.startsWith('temp-');
+    const hasTempIdentity = !!s && JSON.parse(s)?.id?.startsWith('temp-');
+    if (!hasTempIdentity) return false;
+    // If a real session cookie exists, prefer persisted chat even if temp identity
+    // data was left in localStorage from a prior visit.
+    const hasSessionCookie = document.cookie.includes('adventure_session=');
+    return !hasSessionCookie;
   } catch { return false; }
 }
 

@@ -44,6 +44,34 @@ interface StrokeEntry {
   playerId: string; username: string;
 }
 
+interface RollBonus {
+  label: string;
+  value: number;
+}
+
+interface QueuedRoll {
+  rollId: string;
+  playerId: string;
+  username: string;
+  avatar?: string;
+  die: string;
+  sides: number;
+  count: number;
+  allRolls: number[];
+  keptRolls: number[];
+  total: number;
+  isCritical: boolean;
+  isFumble: boolean;
+  advMode?: 'advantage' | 'disadvantage';
+  unitId?: string;
+  unitName?: string;
+  dc?: number;
+  bonuses?: RollBonus[];
+  animationMs: number;
+  presentationMs: number;
+  timestamp: number;
+}
+
 const MAX_STROKE_HISTORY = 5000; // cap memory usage
 const DEFAULT_SEAT_COUNT = 4;    // default player seats (DM is separate)
 const MAX_SEATS = 8;             // hard cap on player seats
@@ -51,9 +79,40 @@ const MAX_SEATS = 8;             // hard cap on player seats
 // Rate limit: max game_events per second per client
 const RATE_LIMIT_WINDOW_MS = 1000;
 const RATE_LIMIT_MAX_EVENTS = 10;
+const DICE_STAGGER_MS = 500;
+const MIN_ROLL_ANIMATION_MS = 900;
+const MAX_ROLL_ANIMATION_MS = 10000;
+const BASE_ROLL_HOLD_MS = 1000;
+const OUTCOME_ANIMATION_EXTRA_MS = 1000;
+
+function getRollPresentationTiming(roll: {
+  totalDice: number;
+  advMode?: 'advantage' | 'disadvantage';
+  bonuses?: RollBonus[];
+  isCritical?: boolean;
+  isFumble?: boolean;
+}): { animationMs: number; presentationMs: number } {
+  const bonusCount = roll.bonuses?.length || 0;
+  const diceWeightMs = Math.min(roll.totalDice, 8) * 140;
+  const advWeightMs = roll.advMode ? 260 : 0;
+  const bonusWeightMs = Math.min(bonusCount, 6) * 140;
+  const staggerWindowMs = Math.max(0, roll.totalDice - 1) * DICE_STAGGER_MS;
+  const baseAnimationMs = MIN_ROLL_ANIMATION_MS + diceWeightMs + advWeightMs + bonusWeightMs;
+  const animationMs = Math.min(
+    MAX_ROLL_ANIMATION_MS,
+    Math.max(MIN_ROLL_ANIMATION_MS, baseAnimationMs + staggerWindowMs),
+  );
+  return {
+    animationMs,
+    presentationMs:
+      BASE_ROLL_HOLD_MS +
+      animationMs +
+      (roll.isCritical || roll.isFumble ? OUTCOME_ANIMATION_EXTRA_MS : 0),
+  };
+}
 
 // DM-only message types that require authorization
-const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action']);
+const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action', 'veto_roll']);
 // DM-only seat management messages (set_dm_type handled separately since it can un-DM the sender)
 const DM_SEAT_MESSAGES = new Set(['set_seat_type', 'add_seat', 'remove_seat', 'kick_player']);
 
@@ -65,6 +124,9 @@ export class Lobby {
   dmPlayerId: string | null; // first joiner becomes DM; reassigned on DM leave
   dmSeatType: 'human' | 'ai'; // DM can be human or AI-controlled
   seats: Seat[];               // player seats (DM is separate)
+  activeRoll: QueuedRoll | null;
+  rollQueue: QueuedRoll[];
+  rollTimer: ReturnType<typeof setTimeout> | null;
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
@@ -73,6 +135,9 @@ export class Lobby {
     this.strokeHistory = [];
     this.dmPlayerId = null;
     this.dmSeatType = 'human';
+    this.activeRoll = null;
+    this.rollQueue = [];
+    this.rollTimer = null;
     // Initialize default player seats — all empty
     this.seats = [];
     for (let i = 0; i < DEFAULT_SEAT_COUNT; i++) {
@@ -109,6 +174,12 @@ export class Lobby {
         const session = this.sessions.get(server);
         this.sessions.delete(server);
         if (session) {
+          // Remove any queued/active rolls from this player
+          this.rollQueue = this.rollQueue.filter((r) => r.playerId !== session.id);
+          if (this.activeRoll?.playerId === session.id) {
+            this.finishActiveRoll('disconnected');
+          }
+
           // Revert seat to empty when player disconnects
           if (session.seatId) {
             const seat = this.seats.find((s) => s.id === session.seatId);
@@ -338,23 +409,69 @@ export class Lobby {
         // Full crit: every kept die rolled max. Full fumble: every kept die rolled 1.
         const isCritical = keptRolls.length > 0 && keptRolls.every((v) => v === sides);
         const isFumble = keptRolls.length > 0 && keptRolls.every((v) => v === 1);
+        const bonuses = Array.isArray(data.bonuses) ? (data.bonuses as RollBonus[]) : undefined;
+        const normalizedAdv = advMode === 'advantage' || advMode === 'disadvantage' ? advMode : undefined;
+        const timing = getRollPresentationTiming({
+          totalDice,
+          advMode: normalizedAdv,
+          bonuses,
+          isCritical,
+          isFumble,
+        });
 
-        this.broadcast({
-          type: 'roll_result',
+        const queuedRoll: QueuedRoll = {
+          rollId: crypto.randomUUID(),
           playerId: session.id,
           username: session.username,
           avatar: session.avatar,
-          die, sides, count,
+          die,
+          sides,
+          count,
           allRolls,
           keptRolls,
           total,
-          value: total, // backward compat
-          isCritical, isFumble,
-          advMode: advMode !== 'normal' ? advMode : undefined,
+          isCritical,
+          isFumble,
+          advMode: normalizedAdv,
           unitId: (data.unitId as string) || undefined,
           unitName: (data.unitName as string) || undefined,
+          dc: typeof data.dc === 'number' ? (data.dc as number) : undefined,
+          bonuses,
+          animationMs: timing.animationMs,
+          presentationMs: timing.presentationMs,
+          timestamp: Date.now(),
+        };
+
+        this.enqueueRoll(queuedRoll, server);
+        break;
+      }
+
+      case 'veto_roll': {
+        const vetoSession = this.sessions.get(server);
+        if (!vetoSession || vetoSession.id !== this.dmPlayerId) {
+          server.send(JSON.stringify({ type: 'error', message: 'Only the DM can veto rolls', timestamp: Date.now() }));
+          return;
+        }
+        const rollId = data.rollId as string;
+        if (!rollId || !this.activeRoll || this.activeRoll.rollId !== rollId) {
+          server.send(JSON.stringify({ type: 'error', message: 'Active roll not found for veto', timestamp: Date.now() }));
+          return;
+        }
+
+        this.broadcast({
+          type: 'roll_vetoed',
+          rollId,
+          vetoedBy: vetoSession.username,
           timestamp: Date.now(),
         });
+
+        if (this.rollTimer) {
+          clearTimeout(this.rollTimer);
+          this.rollTimer = null;
+        }
+        this.rollTimer = setTimeout(() => {
+          this.finishActiveRoll('vetoed', vetoSession.username);
+        }, 1000);
         break;
       }
 
@@ -872,6 +989,81 @@ export class Lobby {
         // dead socket — will be cleaned up on close event
       }
     }
+  }
+
+  private enqueueRoll(roll: QueuedRoll, server?: WebSocket) {
+    if (!this.activeRoll) {
+      this.activeRoll = roll;
+      this.broadcast({
+        type: 'roll_result',
+        rollId: roll.rollId,
+        playerId: roll.playerId,
+        username: roll.username,
+        avatar: roll.avatar,
+        die: roll.die,
+        sides: roll.sides,
+        count: roll.count,
+        allRolls: roll.allRolls,
+        keptRolls: roll.keptRolls,
+        total: roll.total,
+        value: roll.total,
+        isCritical: roll.isCritical,
+        isFumble: roll.isFumble,
+        advMode: roll.advMode,
+        unitId: roll.unitId,
+        unitName: roll.unitName,
+        dc: roll.dc,
+        bonuses: roll.bonuses,
+        animationMs: roll.animationMs,
+        presentationMs: roll.presentationMs,
+        timestamp: roll.timestamp,
+      });
+      this.rollTimer = setTimeout(() => {
+        this.finishActiveRoll('completed');
+      }, roll.presentationMs);
+      return;
+    }
+
+    this.rollQueue.push(roll);
+    if (server) {
+      try {
+        server.send(JSON.stringify({
+          type: 'roll_queued',
+          rollId: roll.rollId,
+          position: this.rollQueue.length,
+          timestamp: Date.now(),
+        }));
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  private startNextRoll() {
+    if (this.activeRoll || this.rollQueue.length === 0) return;
+    const next = this.rollQueue.shift();
+    if (!next) return;
+    this.enqueueRoll(next);
+  }
+
+  private finishActiveRoll(reason: 'completed' | 'vetoed' | 'disconnected', vetoedBy?: string) {
+    if (!this.activeRoll) return;
+    const finishedRoll = this.activeRoll;
+    this.activeRoll = null;
+    if (this.rollTimer) {
+      clearTimeout(this.rollTimer);
+      this.rollTimer = null;
+    }
+
+    this.broadcast({
+      type: 'roll_cleared',
+      rollId: finishedRoll.rollId,
+      reason,
+      vetoedBy,
+      timestamp: Date.now(),
+    });
+
+    this.startNextRoll();
   }
 
   private getPlayerList(): PlayerInfo[] {

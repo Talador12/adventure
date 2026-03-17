@@ -4,10 +4,12 @@ import { useToast } from '../components/ui/toast';
 import { Button } from '../components/ui/button';
 import ChatPanel, { type ChatMessage, type SlashRollResult } from '../components/chat/ChatPanel';
 import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
+import BG3RollPopup from '../components/dice/BG3RollPopup';
 import DoodlePad, { type DoodlePadHandle, type DoodleStroke } from '../components/lobby/DoodlePad';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { useGame, type DieType } from '../contexts/GameContext';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
+import type { RollPresentation } from '../types/roll';
 
 interface LobbyPlayer {
   id: string;
@@ -68,8 +70,36 @@ export default function Lobby() {
   const drawingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // playerId -> username
   const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
+  const [rollPopupVisible, setRollPopupVisible] = useState(false);
+  const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
+
+  const showRollPopup = useCallback((roll: RollPresentation) => {
+    if (rollPopupHideRef.current) {
+      clearTimeout(rollPopupHideRef.current);
+      rollPopupHideRef.current = null;
+    }
+    setActiveRollPopup(roll);
+    requestAnimationFrame(() => setRollPopupVisible(true));
+  }, []);
+
+  const hideRollPopup = useCallback(() => {
+    setRollPopupVisible(false);
+    if (rollPopupHideRef.current) clearTimeout(rollPopupHideRef.current);
+    rollPopupHideRef.current = setTimeout(() => {
+      setActiveRollPopup(null);
+      rollPopupHideRef.current = null;
+    }, 340);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rollPopupHideRef.current) clearTimeout(rollPopupHideRef.current);
+    };
+  }, []);
 
   // Check if lobby requires a password on mount
   useEffect(() => {
@@ -281,47 +311,98 @@ export default function Lobby() {
         }
 
         case 'roll_result': {
-          // Show roll in chat
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'roll',
-              playerId: msg.playerId as string,
-              username: msg.username as string,
-              avatar: msg.avatar as string | undefined,
-              text: '',
-              timestamp: msg.timestamp as number,
-              die: msg.die as string,
-              sides: msg.sides as number,
-              value: (msg.total as number) ?? (msg.value as number) ?? 0,
-              rollCount: msg.count as number | undefined,
-              allRolls: msg.allRolls as number[] | undefined,
-              keptRolls: msg.keptRolls as number[] | undefined,
-              isCritical: msg.isCritical as boolean,
-              isFumble: msg.isFumble as boolean,
-              unitName: msg.unitName as string | undefined,
-              advMode: msg.advMode as string | undefined,
-            },
-          ]);
-          // Persist roll to D1 — only the roller persists
+          const rollId = (msg.rollId as string) || crypto.randomUUID();
           const lobbyRollTotal = (msg.total as number) ?? (msg.value as number) ?? 0;
-          if (msg.playerId === wsPlayerId) {
-            persistChatMessage(room, {
-              username: msg.username as string,
-              type: 'roll',
-              text: `rolled ${(msg.die as string)?.toUpperCase()} for ${lobbyRollTotal}`,
-              metadata: { die: msg.die, sides: msg.sides, value: lobbyRollTotal, isCritical: msg.isCritical, isFumble: msg.isFumble, unitName: msg.unitName },
-            });
-          }
-          // Play dice animation for everyone
-          diceRef.current?.playRemoteRoll({
-            die: msg.die as DieType,
+          const allRolls = (msg.allRolls as number[] | undefined) || [lobbyRollTotal];
+          const keptRolls = (msg.keptRolls as number[] | undefined) || [lobbyRollTotal];
+
+          pendingRollMessagesRef.current.set(rollId, {
+            id: crypto.randomUUID(),
+            type: 'roll',
+            playerId: msg.playerId as string,
+            username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
+            text: '',
+            timestamp: msg.timestamp as number,
+            die: msg.die as string,
             sides: msg.sides as number,
             value: lobbyRollTotal,
-            playerName: msg.username as string,
+            rollCount: msg.count as number | undefined,
+            allRolls,
+            keptRolls,
+            isCritical: msg.isCritical as boolean,
+            isFumble: msg.isFumble as boolean,
             unitName: msg.unitName as string | undefined,
+            advMode: msg.advMode as string | undefined,
           });
+          showRollPopup({
+            rollId,
+            playerId: msg.playerId as string,
+            username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
+            unitName: msg.unitName as string | undefined,
+            die: msg.die as string,
+            sides: msg.sides as number,
+            count: (msg.count as number) || 1,
+            allRolls,
+            keptRolls,
+            total: lobbyRollTotal,
+            advMode: msg.advMode as 'advantage' | 'disadvantage' | undefined,
+            isCritical: msg.isCritical as boolean,
+            isFumble: msg.isFumble as boolean,
+            dc: msg.dc as number | undefined,
+            bonuses: msg.bonuses as { label: string; value: number }[] | undefined,
+            animationMs: msg.animationMs as number | undefined,
+            presentationMs: msg.presentationMs as number | undefined,
+            timestamp: (msg.timestamp as number) || Date.now(),
+          });
+          break;
+        }
+
+        case 'roll_vetoed': {
+          const vetoRollId = msg.rollId as string;
+          setActiveRollPopup((prev) => {
+            if (!prev || prev.rollId !== vetoRollId) return prev;
+            return { ...prev, vetoed: true, vetoedBy: (msg.vetoedBy as string) || 'DM' };
+          });
+          break;
+        }
+
+        case 'roll_cleared': {
+          const clearedRollId = msg.rollId as string;
+          const reason = msg.reason as string | undefined;
+          const pending = pendingRollMessagesRef.current.get(clearedRollId);
+          if (pending) {
+            pendingRollMessagesRef.current.delete(clearedRollId);
+            if (reason !== 'vetoed') {
+              setChatMessages((prev) => [...prev, pending]);
+              if (pending.playerId === wsPlayerId) {
+                persistChatMessage(room, {
+                  username: pending.username,
+                  type: 'roll',
+                  text: `rolled ${(pending.die as string)?.toUpperCase()} for ${pending.value ?? 0}`,
+                  metadata: { die: pending.die, sides: pending.sides, value: pending.value, isCritical: pending.isCritical, isFumble: pending.isFumble, unitName: pending.unitName },
+                });
+              }
+            } else {
+              setChatMessages((prev) => [...prev, {
+                id: crypto.randomUUID(),
+                type: 'system',
+                username: 'System',
+                text: `${pending.unitName || pending.username}'s roll was vetoed by the DM`,
+                timestamp: Date.now(),
+              }]);
+            }
+          }
+          hideRollPopup();
+          break;
+        }
+
+        case 'roll_queued': {
+          if (msg.playerId === wsPlayerId) {
+            const position = Number(msg.position) || 1;
+            toast(`Roll queued (${position} ahead)`, 'info');
+          }
           break;
         }
 
@@ -370,7 +451,7 @@ export default function Lobby() {
         }
       }
     },
-    [wsPlayerId]
+    [wsPlayerId, showRollPopup, hideRollPopup, room, toast]
   );
 
   const { status, send } = useWebSocket({
@@ -809,7 +890,7 @@ export default function Lobby() {
       {/* Main content */}
       <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
         {/* Left side: seat roster + activity area (doodle/dice) */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className={`flex-1 flex flex-col overflow-hidden min-h-0 transition-opacity duration-200 ${rollPopupVisible ? 'opacity-45' : 'opacity-100'}`}>
           {/* Seat roster + invite bar */}
           <div className="bg-slate-900/40 border-b border-slate-800/60 px-4 py-3 shrink-0 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-3">
@@ -1047,9 +1128,17 @@ export default function Lobby() {
           {/* Dice + Doodle Pad side by side */}
           <div className="flex-1 flex overflow-hidden min-h-0">
             {/* Dice roller — left (hidden on mobile, dice available via chat) */}
-            <div className="hidden sm:flex w-64 shrink-0 border-r border-slate-800/60 p-4 flex-col items-center overflow-y-auto bg-slate-900/20">
+            <div className="hidden sm:flex relative w-64 shrink-0 border-r border-slate-800/60 p-4 flex-col items-center overflow-y-auto bg-slate-900/20">
               <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Dice</h3>
-              <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} onMacroRoll={handleMacroRoll} useServerRolls={status === 'connected'} compact />
+              <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} onMacroRoll={handleMacroRoll} useServerRolls={status === 'connected'} suppressServerSpin={status === 'connected'} compact />
+              {rollPopupVisible && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/75 backdrop-blur-[1px] pointer-events-auto">
+                  <div className="text-center">
+                    <div className="text-2xl mb-2">🎲</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Rolling...</div>
+                  </div>
+                </div>
+              )}
             </div>
             {/* Doodle pad — fills remaining space, synced via WebSocket */}
             <div className="flex-1 overflow-hidden relative">
@@ -1069,6 +1158,13 @@ export default function Lobby() {
           <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
+
+      <BG3RollPopup
+        roll={activeRollPopup}
+        visible={rollPopupVisible}
+        isDM={isDM}
+        onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
+      />
     </div>
   );
 }

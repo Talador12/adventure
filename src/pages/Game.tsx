@@ -4,6 +4,7 @@ import InitiativeBar from '../components/combat/InitiativeBar';
 import BattleMap, { type ActiveAoE } from '../components/combat/BattleMap';
 import CharacterSheet from '../components/combat/CharacterSheet';
 import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../components/dice/DiceRoller';
+import BG3RollPopup from '../components/dice/BG3RollPopup';
 import ChatPanel, { type ChatMessage, type SlashRollResult } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, type Item, type Spell, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, randomEncounterTheme, hasPendingASI } from '../contexts/GameContext';
@@ -21,6 +22,7 @@ import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import type { Quest, MapPin } from '../types/game';
+import type { RollPresentation } from '../types/roll';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
@@ -95,10 +97,37 @@ export default function Game() {
   const animateMoveRef = useRef<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>(null);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
+  const [rollPopupVisible, setRollPopupVisible] = useState(false);
+  const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
   const lootSyncRef = useRef<(items: LootItem[]) => void>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+
+  const showRollPopup = useCallback((roll: RollPresentation) => {
+    if (rollPopupHideRef.current) {
+      clearTimeout(rollPopupHideRef.current);
+      rollPopupHideRef.current = null;
+    }
+    setActiveRollPopup(roll);
+    requestAnimationFrame(() => setRollPopupVisible(true));
+  }, []);
+
+  const hideRollPopup = useCallback(() => {
+    setRollPopupVisible(false);
+    if (rollPopupHideRef.current) clearTimeout(rollPopupHideRef.current);
+    rollPopupHideRef.current = setTimeout(() => {
+      setActiveRollPopup(null);
+      rollPopupHideRef.current = null;
+    }, 340);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rollPopupHideRef.current) clearTimeout(rollPopupHideRef.current);
+    };
+  }, []);
 
   // Game state — derive selectedCharacter from characters array so it stays reactive
   // to GameContext updates (grantXP, restCharacter, updateCharacter, damageUnit, etc.)
@@ -375,7 +404,6 @@ export default function Game() {
     sendRef,
     isRemoteEventRef,
     animateMoveRef,
-    diceRef,
     mapPositionsRef,
     setChatMessages,
     setDmHistory,
@@ -395,6 +423,16 @@ export default function Game() {
     setWeather,
     setMapPins,
     selectedCharacterId,
+    onRollResult: showRollPopup,
+    onRollVetoed: (rollId, vetoedBy) => {
+      setActiveRollPopup((prev) => {
+        if (!prev || prev.rollId !== rollId) return prev;
+        return { ...prev, vetoed: true, vetoedBy: vetoedBy || 'DM' };
+      });
+    },
+    onRollCleared: () => {
+      hideRollPopup();
+    },
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
@@ -1092,6 +1130,23 @@ export default function Game() {
           advMode: roll.advMode,
         },
       ]);
+      showRollPopup({
+        rollId: crypto.randomUUID(),
+        playerId: currentPlayer.id,
+        username: displayUsername,
+        avatar: currentPlayer.avatar,
+        unitName: roll.unitName,
+        die: roll.die,
+        sides: roll.sides,
+        count: roll.count,
+        allRolls: roll.allRolls,
+        keptRolls: roll.keptRolls,
+        total: roll.total,
+        advMode: roll.advMode === 'advantage' || roll.advMode === 'disadvantage' ? roll.advMode : undefined,
+        isCritical: roll.isCritical,
+        isFumble: roll.isFumble,
+        timestamp: Date.now(),
+      });
       // Persist local roll to D1
       persistChatMessage(room, {
         username: displayUsername,
@@ -1100,7 +1155,7 @@ export default function Game() {
         metadata: { die: roll.die, sides: roll.sides, value: roll.total, isCritical: roll.isCritical, isFumble: roll.isFumble, unitName: roll.unitName, characterName: charName || undefined },
       });
     },
-    [selectedCharacter, currentPlayer, room]
+    [selectedCharacter, currentPlayer, room, showRollPopup]
   );
 
   // Handle /roll slash command from chat — creates a roll message without using the dice roller UI
@@ -1133,6 +1188,23 @@ export default function Game() {
           isFumble,
         },
       ]);
+      showRollPopup({
+        rollId: crypto.randomUUID(),
+        playerId: currentPlayer.id,
+        username: playerName,
+        avatar: currentPlayer.avatar,
+        unitName: charName || undefined,
+        die: result.notation,
+        sides: 20,
+        count: result.rolls.length,
+        allRolls: result.rolls,
+        keptRolls: result.kept || result.rolls,
+        total: result.total,
+        advMode: result.advantage ? 'advantage' : result.disadvantage ? 'disadvantage' : undefined,
+        isCritical: isCrit,
+        isFumble,
+        timestamp: Date.now(),
+      });
       persistChatMessage(room, {
         username: playerName,
         type: 'roll',
@@ -1140,7 +1212,7 @@ export default function Game() {
         metadata: { die: result.notation, value: result.total, isCritical: isCrit, isFumble, characterName: charName || undefined },
       });
     },
-    [selectedCharacter, currentPlayer, room]
+    [selectedCharacter, currentPlayer, room, showRollPopup]
   );
 
   // Handle dice macro execution — macro label + notation result posted to chat with SFX
@@ -1169,6 +1241,22 @@ export default function Game() {
           isFumble,
         },
       ]);
+      showRollPopup({
+        rollId: crypto.randomUUID(),
+        playerId: currentPlayer.id,
+        username: playerName,
+        avatar: currentPlayer.avatar,
+        unitName: charName || undefined,
+        die: notation,
+        sides: 20,
+        count: rolls.length,
+        allRolls: rolls,
+        keptRolls: rolls,
+        total,
+        isCritical: isCrit,
+        isFumble,
+        timestamp: Date.now(),
+      });
       persistChatMessage(room, {
         username: playerName,
         type: 'roll',
@@ -1176,7 +1264,7 @@ export default function Game() {
         metadata: { die: notation, value: total, isCritical: isCrit, isFumble, characterName: charName || undefined },
       });
     },
-    [selectedCharacter, currentPlayer, room]
+    [selectedCharacter, currentPlayer, room, showRollPopup]
   );
 
   // AoE confirm handler — extracted from BattleMap onAoEConfirm inline callback
@@ -1426,7 +1514,7 @@ export default function Game() {
         )}
 
         {/* Left: initiative bar + game board / DM area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`flex-1 flex flex-col overflow-hidden transition-opacity duration-200 ${rollPopupVisible ? 'opacity-45' : 'opacity-100'}`}>
           {/* Initiative bar — only show when units exist */}
           {units.length > 0 && (
             <div className="bg-slate-900/50 border-b border-slate-800 shrink-0">
@@ -1806,8 +1894,16 @@ export default function Game() {
             </div>
           ) : (
             <>
-              <div className="p-4 border-b border-slate-800 overflow-y-auto">
-                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} onMacroRoll={handleMacroRoll} useServerRolls={status === 'connected'} />
+              <div className="relative p-4 border-b border-slate-800 overflow-y-auto">
+                <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} onMacroRoll={handleMacroRoll} useServerRolls={status === 'connected'} suppressServerSpin={status === 'connected'} />
+                {rollPopupVisible && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/75 backdrop-blur-[1px] pointer-events-auto">
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">🎲</div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Rolling...</div>
+                    </div>
+                  </div>
+                )}
               </div>
               {/* Dice History — collapsible panel */}
               {rolls.length > 0 && (
@@ -1854,6 +1950,13 @@ export default function Game() {
           )}
         </div>
       </div>
+
+      <BG3RollPopup
+        roll={activeRollPopup}
+        visible={rollPopupVisible}
+        isDM={isDM}
+        onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
+      />
 
       {/* Keyboard Shortcut Help Overlay */}
       {showHelpOverlay && (
