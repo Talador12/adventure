@@ -74,6 +74,7 @@ export default function Lobby() {
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
+  const [clockRttMs, setClockRttMs] = useState<number | null>(null);
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -512,8 +513,9 @@ export default function Lobby() {
     avatar: currentPlayer.avatar,
     spectate: wantsSpectate,
     onMessage: handleWsMessage,
-    onTimeSync: (offsetMs) => {
+    onTimeSync: (offsetMs, rttMs) => {
       setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
+      setClockRttMs(Math.round(rttMs));
     },
     enabled: passwordVerified, // don't connect until password is verified (or not needed)
   });
@@ -831,6 +833,11 @@ export default function Lobby() {
             <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
             <span className="font-medium">{status}</span>
           </div>
+          {status === 'connected' && clockRttMs !== null && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
+              sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
+            </span>
+          )}
           {isSpectating && (
             <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-900/30 border border-sky-700/30 text-sky-400 font-semibold animate-fade-in-up">
               Spectating

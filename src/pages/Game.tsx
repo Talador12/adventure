@@ -100,6 +100,7 @@ export default function Game() {
   const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
+  const [clockRttMs, setClockRttMs] = useState<number | null>(null);
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
@@ -1062,8 +1063,9 @@ export default function Game() {
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
     onMessage: handleWsMessage,
-    onTimeSync: (offsetMs) => {
+    onTimeSync: (offsetMs, rttMs) => {
       setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
+      setClockRttMs(Math.round(rttMs));
     },
   });
   sendRef.current = send;
@@ -1388,6 +1390,11 @@ export default function Game() {
             <div className={`w-2 h-2 rounded-full ${statusColor}`} />
             <span className="text-[10px] text-slate-500">{status}</span>
           </div>
+          {status === 'connected' && clockRttMs !== null && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
+              sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
+            </span>
+          )}
           <SessionTimer roomId={room} compact />
         </div>
         <div className="flex items-center gap-3">
