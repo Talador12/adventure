@@ -479,6 +479,25 @@ export default function Home() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="px-4 sm:px-6 py-8 max-w-4xl mx-auto w-full">
+        <h2 className="text-center text-lg font-bold text-slate-400 uppercase tracking-widest mb-6 animate-fade-in-up">How It Works</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 stagger-children">
+          {[
+            { step: '1', title: 'Create or Join', desc: 'Start a campaign in one click, or paste a room code to join your friends. No accounts required — play as a guest instantly.', icon: '🏰' },
+            { step: '2', title: 'Build Your Party', desc: 'Create characters with full D&D 5e stats, or import from D&D Beyond. Assign seats to humans or AI — any mix works.', icon: '⚔️' },
+            { step: '3', title: 'Play', desc: 'Explore, fight, and roleplay with live dice, fog of war, AI narration, and real-time sync. Everything runs in your browser.', icon: '🎲' },
+          ].map((s) => (
+            <div key={s.step} className="relative flex flex-col items-center text-center p-5 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm animate-card-reveal">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-[#F38020] flex items-center justify-center text-xs font-black text-white shadow-lg">{s.step}</div>
+              <div className="text-3xl mt-2 mb-2">{s.icon}</div>
+              <h3 className="text-sm font-bold text-white mb-1">{s.title}</h3>
+              <p className="text-[11px] text-slate-400 leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Main content */}
       <main className="flex-1 px-4 sm:px-6 py-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
 

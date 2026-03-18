@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v0.4.0
+## Current Version: v0.4.1
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added "How It Works" 3-step walkthrough section on Home page — positioned between hero and main content. Three numbered cards (Create or Join → Build Your Party → Play) with orange step badges, icons, and descriptive text. Responsive grid (1 col mobile, 3 cols desktop). Mentions guest play, D&D Beyond import, AI narration, live sync.
+- Added environmental lighting zones — DM can paint cells as bright/dim/dark using new Light toolbar (visible in DM mode). Three lighting DM tools (Bright, Dim, Dark) with erase resetting to normal. Lighting modifies vision range per-cell: bright=1.5x, dim=0.75x, dark=0.4x base radius. DM sees colored tint overlays (yellow for bright, amber for dim, dark slate for dark). `LightingLevel` type exported from BattleMap. Game.tsx manages a 20x20 lighting grid passed to BattleMap. Erase tool also resets lighting.
 - Added Low-FX accessibility mode — manual "FX" toggle in Home header (yellow when active). Adds `.low-fx` class to `<html>` which: disables all animations + transitions, removes backdrop blur effects, removes glow effects, increases contrast on borders (slate-700 → slate-500) and text (slate-400/500 → slate-300). Persisted in localStorage, applied on initial render via main.tsx before React hydrates. Stacks with `prefers-reduced-motion` CSS media query.
 - Added AI-generated backstory hooks — new `POST /api/dm/backstory-hooks` endpoint uses Workers AI (Llama 3.1 8B) to generate 3-5 narrative connections between party members based on their races, classes, backgrounds, bonds, and backstories. UI appears in the narration view before adventure starts: dashed "Generate Backstory Hooks" button → violet-themed panel with hooks as italic bordered list items. Supports regenerate and dismiss. Each hook links 2+ characters through shared history, conflicting goals, or complementary abilities.
 - Added D&D Beyond character import — auto-detects DDB JSON format (classes array or data.character wrapper) and routes through `parseDDBCharacter()` in `src/lib/ddbImport.ts`. Parses name, race (fuzzy-matches sub-races like "High Elf" → Elf), class (primary = highest level), stats (base + bonus + racial + overrides), HP (base + CON mod + removed), AC, XP, gold (currency conversion), personality traits, backstory, death saves, inspiration, exhaustion. Import button tooltip updated to mention D&D Beyond. Warnings shown for race/class mapping notes.
@@ -739,7 +741,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Empty states with calls-to-action for both campaigns and characters
 - [x] Removed "AI-powered" branding from all surfaces
 - [x] Auth buttons (Discord + Google) in header — already done
-- [ ] "How it works" section (create campaign, invite friends, play) — deferred
+- [x] "How it works" section (create campaign, invite friends, play)
 
 **Seat model (DONE):**
 - [x] `Seat` interface: `{ id, type: human|ai|empty, playerId?, username?, avatar?, characterId?, characterName?, ready }`
@@ -814,7 +816,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
 - [x] Torch/Light spell mechanic — consumable item or spell that temporarily boosts vision range for the carrier
 - [ ] Lantern item type with fuel tracking (burns for N turns, can be refilled from inventory)
-- [ ] Environmental lighting zones (DM can paint bright/dim/dark areas on the battle map)
+- [x] Environmental lighting zones (DM can paint bright/dim/dark areas on the battle map)
+- [ ] Lighting zone persistence in campaign save/load (currently resets on page reload)
+- [ ] Light source propagation — torch conditions auto-paint bright/dim zones around the carrier token
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes

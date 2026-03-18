@@ -155,6 +155,10 @@ export default function Game() {
   });
   const [dmLoading, setDmLoading] = useState(false);
   const [encounterLoading, setEncounterLoading] = useState(false);
+  // Environmental lighting grid (DM paints bright/dim/dark zones)
+  const [lightingGrid, setLightingGrid] = useState<import('../components/combat/BattleMap').LightingLevel[][]>(
+    () => Array.from({ length: 20 }, () => Array(20).fill('normal'))
+  );
   // Persist DM history to localStorage keyed by room ID
   const dmStorageKey = `adventure:dm-history:${room}`;
   const [dmHistory, setDmHistory] = useState<string[]>(() => {
@@ -2076,6 +2080,8 @@ export default function Game() {
                     <BattleMap
                       canUseDMTools={canUseDMTools}
                       myUnitId={wsConnected && !isDM && selectedCharacterId ? selectedCharacterId : undefined}
+                      lighting={lightingGrid}
+                      onLightingChange={canUseDMTools ? setLightingGrid : undefined}
                       onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                       onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
                       onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}
