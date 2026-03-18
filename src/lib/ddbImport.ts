@@ -2,7 +2,7 @@
 // Maps the DDB export schema to our Character type.
 // Handles the public API shape (/character/v5/{id}/json).
 
-import type { Character, Race, CharacterClass, Item, ItemType, ItemRarity } from '../types/game';
+import type { Character, Race, CharacterClass, Item, ItemType, ItemRarity, Spell, SpellSchool } from '../types/game';
 import { RACES, CLASSES, DEFAULT_APPEARANCE, EMPTY_EQUIPMENT } from '../types/game';
 
 // Normalize a DDB race name to our Race type (best-effort fuzzy match)
@@ -240,6 +240,55 @@ export function parseDDBCharacter(json: Record<string, unknown>, playerId: strin
     if (bestShield) equipped.push(bestShield.name);
     if (bestRing) equipped.push(bestRing.name);
     warnings.push(`Auto-equipped: ${equipped.join(', ')}`);
+  }
+
+  // Spells — parse DDB spells (classSpells + raceSpells)
+  const ddbSpellSources = [
+    ...((charData.classSpells as Array<Record<string, unknown>>) || []),
+    ...((charData.spells as Record<string, Array<Record<string, unknown>>>)?.class || []),
+    ...((charData.spells as Record<string, Array<Record<string, unknown>>>)?.race || []),
+  ];
+  // Flatten: DDB classSpells has a nested spells array per class
+  const ddbSpells: Array<Record<string, unknown>> = [];
+  for (const src of ddbSpellSources) {
+    if (Array.isArray(src.spells)) {
+      for (const s of src.spells as Array<Record<string, unknown>>) ddbSpells.push(s);
+    } else {
+      ddbSpells.push(src);
+    }
+  }
+  const DDB_SCHOOL_MAP: Record<string, SpellSchool> = {
+    abjuration: 'abjuration', conjuration: 'conjuration', divination: 'divination',
+    enchantment: 'enchantment', evocation: 'evocation', illusion: 'illusion',
+    necromancy: 'necromancy', transmutation: 'transmutation',
+  };
+  const parsedSpells: Spell[] = ddbSpells.map((s) => {
+    const def = (s.definition as Record<string, unknown>) || s;
+    const spellName = String(def.name || s.name || 'Unknown Spell');
+    const desc = String(def.description || def.snippet || '').replace(/<[^>]+>/g, '').slice(0, 300);
+    const schoolName = String((def.school as string) || '').toLowerCase();
+    return {
+      id: crypto.randomUUID(),
+      name: spellName,
+      level: (def.level as number) ?? 0,
+      school: DDB_SCHOOL_MAP[schoolName] || 'evocation',
+      description: desc || spellName,
+      range: typeof def.range === 'object' && def.range ? String((def.range as Record<string, unknown>).origin || 'Self') : String(def.range || 'Self'),
+      duration: String((def.duration as Record<string, unknown>)?.durationUnit || def.duration || 'Instantaneous'),
+      isConcentration: !!(def.concentration as boolean),
+      classes: [characterClass],
+      damage: (def.damage as Record<string, unknown>)?.diceString as string | undefined,
+    } satisfies Spell;
+  }).filter((s) => s.name !== 'Unknown Spell');
+  // Deduplicate by name
+  const uniqueSpells = parsedSpells.filter((s, i, arr) => arr.findIndex((x) => x.name === s.name) === i);
+  if (uniqueSpells.length > 0) {
+    const cantrips = uniqueSpells.filter((s) => s.level === 0);
+    const leveled = uniqueSpells.filter((s) => s.level > 0);
+    const parts: string[] = [];
+    if (cantrips.length > 0) parts.push(`${cantrips.length} cantrip${cantrips.length !== 1 ? 's' : ''}`);
+    if (leveled.length > 0) parts.push(`${leveled.length} spell${leveled.length !== 1 ? 's' : ''}`);
+    warnings.push(`Found ${parts.join(' + ')} from D&D Beyond (spells available via class spell list in-game)`);
   }
 
   const character: Character = {
