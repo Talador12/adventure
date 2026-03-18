@@ -26,6 +26,8 @@ interface Session {
   spectating: boolean;   // true if explicitly spectating (no seat, chat-only)
   lastGameEvents: number[]; // timestamps for rate limiting (Phase 8.4)
   rttMs?: number;        // latest client-reported RTT (via report_rtt)
+  lastPongAt: number;    // timestamp of last pong/report_rtt received
+  stale: boolean;        // true if player missed multiple heartbeat windows
 }
 
 interface PlayerInfo {
@@ -39,6 +41,7 @@ interface PlayerInfo {
   characterId?: string;
   characterName?: string;
   rttMs?: number;
+  stale?: boolean;
 }
 
 interface StrokeEntry {
@@ -248,7 +251,7 @@ export class Lobby {
       // Store a temporary placeholder so we can still receive messages.
       const tempId = crypto.randomUUID();
       const now = Date.now();
-      this.sessions.set(server, { id: tempId, username: 'Anonymous', joinedAt: now, spectating: false, lastGameEvents: [] });
+      this.sessions.set(server, { id: tempId, username: 'Anonymous', joinedAt: now, spectating: false, lastGameEvents: [], lastPongAt: now, stale: false });
 
       server.addEventListener('message', (event) => {
         try {
@@ -411,7 +414,7 @@ export class Lobby {
         }
 
         const isSpectating = wantsSpectate || !assignedSeatId;
-        this.sessions.set(server, { id: finalId, username, avatar, joinedAt: Date.now(), seatId: assignedSeatId, spectating: isSpectating && !assignedSeatId, lastGameEvents: [] });
+        this.sessions.set(server, { id: finalId, username, avatar, joinedAt: Date.now(), seatId: assignedSeatId, spectating: isSpectating && !assignedSeatId, lastGameEvents: [], lastPongAt: Date.now(), stale: false });
 
         // DM assignment: first seated player to join becomes DM (spectators don't become DM)
         if (!this.dmPlayerId && this.dmSeatType === 'human' && !isSpectating) {
@@ -1131,17 +1134,27 @@ export class Lobby {
         const rttSession = this.sessions.get(server);
         if (rttSession && Number.isFinite(rtt) && rtt >= 0 && rtt <= 30000) {
           rttSession.rttMs = Math.round(rtt);
+          rttSession.lastPongAt = Date.now();
+          // If player was stale, mark recovered and broadcast
+          if (rttSession.stale) {
+            rttSession.stale = false;
+            this.broadcast({ type: 'player_recovered', playerId: rttSession.id, username: rttSession.username, timestamp: Date.now() });
+          }
           // Broadcast latency snapshot to all (throttled by client ping interval ~25s)
           const latencyMap: Record<string, number> = {};
           for (const s of this.sessions.values()) {
             if (s.rttMs !== undefined) latencyMap[s.id] = s.rttMs;
           }
           this.broadcast({ type: 'latency_update', latency: latencyMap, timestamp: Date.now() });
+          // Check all sessions for heartbeat staleness
+          this.checkHeartbeats();
         }
         break;
       }
 
       case 'ping': {
+        const pingSession = this.sessions.get(server);
+        if (pingSession) pingSession.lastPongAt = Date.now();
         const clientTs = typeof data.clientTs === 'number' ? (data.clientTs as number) : undefined;
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now(), clientTs }));
         break;
@@ -1149,6 +1162,19 @@ export class Lobby {
 
       default:
         server.send(JSON.stringify({ type: 'error', message: `Unknown message type: ${data.type}` }));
+    }
+  }
+
+  /** Check all sessions for heartbeat staleness. Called on every report_rtt. */
+  private checkHeartbeats() {
+    const now = Date.now();
+    const STALE_THRESHOLD_MS = 45000; // 45s without any ping/report_rtt = stale (keepalive is 25s)
+    for (const session of this.sessions.values()) {
+      const timeSincePong = now - session.lastPongAt;
+      if (!session.stale && timeSincePong > STALE_THRESHOLD_MS) {
+        session.stale = true;
+        this.broadcast({ type: 'player_stale', playerId: session.id, username: session.username, timestamp: now });
+      }
     }
   }
 
@@ -1259,6 +1285,7 @@ export class Lobby {
         characterId: seat?.characterId,
         characterName: seat?.characterName,
         rttMs: s.rttMs,
+        stale: s.stale || undefined,
       };
     });
   }

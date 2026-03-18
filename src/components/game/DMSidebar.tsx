@@ -64,6 +64,9 @@ interface DMSidebarProps {
   autoStrictRttMs?: number;
   autoStrictJitterMs?: number;
   onSetRollSyncMode?: (mode: RollInterpolationMode, rttMs?: number, jitterMs?: number) => void;
+  // Latency
+  playerLatency?: Record<string, number>;
+  stalePlayers?: Set<string>;
 }
 
 export default function DMSidebar({
@@ -108,6 +111,8 @@ export default function DMSidebar({
   autoStrictRttMs,
   autoStrictJitterMs,
   onSetRollSyncMode,
+  playerLatency,
+  stalePlayers,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter, grantXP } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -430,6 +435,44 @@ export default function DMSidebar({
                       ? 'Strict: lockstep timing, no catch-up interpolation'
                       : 'Smooth: softens high-latency visual jumps'}
                 </p>
+              </div>
+            )}
+
+            {/* Latency heatmap — compact view of all player RTTs */}
+            {playerLatency && Object.keys(playerLatency).length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Party Latency</label>
+                <div className="space-y-1">
+                  {(() => {
+                    // Build latency entries from playerLatency map, using character names where possible
+                    const playerUnits = units.filter((u) => u.type === 'player');
+                    const entries = Object.entries(playerLatency).map(([playerId, rtt], idx) => {
+                      const isStale = stalePlayers?.has(playerId);
+                      const matchedUnit = playerUnits[idx]; // best-effort positional match
+                      const label = matchedUnit?.name || playerId.slice(0, 8);
+                      return { playerId, rtt, isStale, label };
+                    });
+                    const maxRtt = Math.max(1, ...entries.map((e) => e.rtt));
+                    return entries.map((entry) => (
+                      <div key={entry.playerId} className="flex items-center gap-2 px-2 py-1 rounded-lg border border-slate-800 bg-slate-800/30">
+                        <span className="text-[9px] text-slate-400 w-16 truncate font-medium">{entry.label}</span>
+                        <div className="flex-1 h-2 rounded-full bg-slate-700/50 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              entry.isStale ? 'bg-red-500 animate-pulse' : entry.rtt > 300 ? 'bg-red-500' : entry.rtt > 150 ? 'bg-amber-500' : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${Math.min(100, (entry.rtt / Math.max(maxRtt, 500)) * 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-[8px] font-mono w-10 text-right ${
+                          entry.isStale ? 'text-red-400' : entry.rtt > 300 ? 'text-red-400' : entry.rtt > 150 ? 'text-amber-400' : 'text-emerald-400'
+                        }`}>
+                          {entry.isStale ? 'DC' : `${entry.rtt}ms`}
+                        </span>
+                      </div>
+                    ));
+                  })()}
+                </div>
               </div>
             )}
 

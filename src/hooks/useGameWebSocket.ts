@@ -80,6 +80,8 @@ export interface GameWebSocketDeps {
   onServerTimeSync?: (serverNowMs: number) => void;
   onRollInterpolationMode?: (mode: RollInterpolationMode, autoStrictRttMs?: number, autoStrictJitterMs?: number) => void;
   onLatencyUpdate?: (latency: Record<string, number>) => void;
+  onPlayerStale?: (playerId: string) => void;
+  onPlayerRecovered?: (playerId: string) => void;
 }
 
 export interface GameWebSocketState {
@@ -120,6 +122,8 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     onServerTimeSync,
     onRollInterpolationMode,
     onLatencyUpdate,
+    onPlayerStale,
+    onPlayerRecovered,
   } = deps;
 
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
@@ -613,6 +617,16 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           break;
         }
 
+        case 'player_stale': {
+          onPlayerStale?.(msg.playerId as string);
+          break;
+        }
+
+        case 'player_recovered': {
+          onPlayerRecovered?.(msg.playerId as string);
+          break;
+        }
+
         case 'typing': {
           const typerId = msg.playerId as string;
           const typerName = msg.username as string;
@@ -637,7 +651,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     },
     // Use refs for frequently-changing state to avoid re-creating the callback on every state change.
     // wsPlayerId is tracked via wsPlayerIdRef, and state_request uses getStateForResponse callback.
-    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync, onRollInterpolationMode, onLatencyUpdate]
+    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync, onRollInterpolationMode, onLatencyUpdate, onPlayerStale, onPlayerRecovered]
   );
 
   return {
