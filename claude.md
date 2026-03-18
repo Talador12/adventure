@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added Service Worker for offline-first static assets — `public/sw.js` with stale-while-revalidate strategy for JS/CSS/images/fonts, network-first for API calls, SPA navigation fallback to cached index.html. Pre-caches app shell on install. Auto-cleans old caches on activate. Registered on window load in `main.tsx` with silent fail. Skips WebSocket upgrade requests.
 - Added "Supplies" shop category with light sources and adventuring gear — Candle (x10), Torch (x5), Hooded Lantern, Oil Flask (x3), Tinderbox, Rope (50ft), Healer's Kit (10 uses), Rations (x5). Light source items carry `appliesCondition` so buying and using a torch from the shop correctly lights it. `SHOP_CATEGORIES` extended with 'Supplies'.
 - Added auto-equip from DDB import — after parsing inventory, automatically slots the best weapon (highest avg damage die + attack/damage bonuses), best armor (highest AC bonus), best shield, and first ring into equipment slots. Adds a "Auto-equipped: ..." note to import warnings. Characters arrive ready to fight.
 - Added D&D Beyond inventory import — `ddbImport.ts` now parses the DDB `inventory` array into our Item type. Maps weapon/armor/shield/potion/ring/scroll/misc types from DDB type + subType. Extracts damage dice, attack bonus, AC bonus, ranged flag, range, heal amount. Maps rarity (common/uncommon/rare/legendary→epic). Strips HTML from descriptions. Healing potions get smart defaults (7/14/28 HP). Imported characters now arrive with their full inventory.
@@ -895,7 +896,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Goal:** Everything persists. Browser cache for instant loads, server for cross-device sync.
 
 **Browser cache strategy:**
-- [ ] Service Worker for offline-first static assets
+- [x] Service Worker for offline-first static assets
 - [ ] IndexedDB for local cache of characters, campaign state, chat
 - [ ] Optimistic UI: show cached data immediately, sync in background
 - [ ] Cache invalidation via ETags or Last-Modified headers
