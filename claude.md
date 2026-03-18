@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added keyboard shortcuts for combat actions — A (attack), E (end turn), P (potion), G (dodge), H (dash), F (class ability). Only active during player's turn in combat. Uses `data-combat-action` attributes on CombatToolbar buttons for click delegation. Help overlay (?) updated with combat shortcut section.
 - Added mobile-responsive lobby layout — tab bar at top toggles between "Party & Dice" and "Chat" on small screens. Seat cards wrap on mobile instead of horizontal scroll. Doodle pad capped at 40vh on mobile. Settings panel scrollable with stacked form inputs on mobile. Chat panel goes full-width when active. Desktop layout unchanged.
 - Added mobile-responsive game layout — fixed bottom tab bar (Game/Chat/Sheet) visible on screens <768px. Tapping a tab shows only that panel. The right sidebar (chat + character sheet) hides on mobile and becomes a full-width panel when its tab is active. DM sidebar hidden on mobile. Header compacted (smaller text, lobby label hidden). Main content area adds bottom padding to avoid tab bar overlap. Desktop layout unchanged.
 - Added per-unit vision range based on racial darkvision. `Unit.visionRange` field (cells, default 6 = 30ft). D&D 5e darkvision races (Elf, Dwarf, Gnome, Half-Orc, Tiefling, Dragonborn) get 12 cells (60ft). Humans and Halflings keep 30ft. `computeVisibility` now reads `visionRange` per-position instead of using a global constant. Constants exported from `types/game.ts`: `DARKVISION_RACES`, `DARKVISION_RANGE`, `NORMAL_VISION_RANGE`.
@@ -933,10 +934,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Mobile-responsive lobby (collapsible panels, touch-friendly seat cards)
 - [x] Mobile-responsive game (bottom tab bar: game/chat/sheet panels)
 - [x] Mobile-responsive lobby (collapsible panels, stacked layout on small screens)
-- [ ] Touch-friendly battle map (pinch zoom, tap to select, long-press to move)
+- [x] Touch-friendly battle map (pinch zoom, tap to select, long-press to move)
 - [ ] Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
 - [x] `prefers-reduced-motion` media query: disable all animations automatically
-- [ ] Keyboard navigation for combat actions
+- [x] Keyboard navigation for combat actions
 - [ ] ARIA labels on interactive elements
 
 ### v0.4.0: Cloudflare Access/IDP + Campaign Invites (PLANNED)

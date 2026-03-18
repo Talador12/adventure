@@ -225,6 +225,7 @@ export default function CombatToolbar({
                                 playTurnChange();
                                 broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
                               }}
+                              data-combat-action="end-turn"
                               className={`flex items-center gap-1.5 px-4 py-1.5 border text-xs font-bold rounded-lg transition-all ${isPlayerTurnLocal ? 'bg-green-900/50 hover:bg-green-800/60 border-green-600/60 text-green-300 shadow-green-900/30 shadow-sm' : 'bg-slate-700/40 hover:bg-slate-700/60 border-slate-600/50 text-slate-400'}`}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
@@ -372,6 +373,7 @@ export default function CombatToolbar({
                                 // Broadcast combat state after React processes the batch
                                 setTimeout(broadcastCombatSyncLatest, 50);
                               }}
+                              data-combat-action="attack"
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/40 hover:bg-orange-900/60 border border-orange-700/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               {weapon ? `${weaponIsRanged ? 'Shoot' : 'Attack'} (${weapon.name})` : 'Unarmed Strike'}
@@ -517,6 +519,7 @@ export default function CombatToolbar({
                           const colors = colorMap[ability.color] || colorMap.slate;
                           return (
                             <button
+                              data-combat-action="class-ability"
                               disabled={isUsed || (needsTarget && !enemyTarget) || !isPlayerTurn}
                               onClick={() => {
                                 const result = useClassAbility(selectedCharacter.id, enemyTarget?.id);
@@ -556,6 +559,7 @@ export default function CombatToolbar({
                           const isDodging = playerUnit.conditions?.some((c) => c.type === 'dodging');
                           return (
                             <button
+                              data-combat-action="dodge"
                               disabled={!!isDodging || !isPlayerTurn}
                               title={!isPlayerTurn ? 'Wait for your turn' : undefined}
                               onClick={() => {
@@ -584,6 +588,7 @@ export default function CombatToolbar({
                           const hasDashed = (playerUnit.movementUsed || 0) < 0; // sentinel: negative means dashed
                           return (
                             <button
+                              data-combat-action="dash"
                               disabled={!isPlayerTurn || hasDashed}
                               title={!isPlayerTurn ? 'Wait for your turn' : hasDashed ? 'Already dashed this turn' : 'Double your remaining movement this turn'}
                               onClick={() => {
@@ -815,6 +820,7 @@ export default function CombatToolbar({
                       const potion = potions[0]; // use first available potion
                       return (
                         <button
+                          data-combat-action="potion"
                           onClick={() => {
                             const { message } = useItem(selectedCharacter.id, potion.id);
                             if (message) addDmMessage(message);
