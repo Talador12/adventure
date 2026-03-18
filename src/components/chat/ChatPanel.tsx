@@ -97,6 +97,9 @@ interface ChatPanelProps {
   onWhisper?: (targetUsername: string, message: string) => void;
   onTyping?: () => void;
   onReaction?: (messageId: string, emoji: string) => void;
+  onLoadOlder?: () => void;
+  canLoadOlder?: boolean;
+  loadingOlder?: boolean;
   typingUsers?: string[]; // usernames of people currently typing
   currentPlayerId?: string;
 }
@@ -311,7 +314,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, typingUsers, currentPlayerId }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, typingUsers, currentPlayerId }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -389,6 +392,17 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
       {/* Messages */}
       <div className="flex-1 relative min-h-0">
         <div ref={scrollRef} onScroll={handleScroll} className="absolute inset-0 overflow-y-auto space-y-1 pr-1">
+          {onLoadOlder && (
+            <div className="py-1 text-center">
+              <button
+                onClick={onLoadOlder}
+                disabled={loadingOlder || !canLoadOlder}
+                className="text-[10px] px-2 py-1 rounded border border-slate-700/60 bg-slate-800/60 text-slate-300 disabled:text-slate-600 disabled:cursor-not-allowed hover:border-slate-600/70"
+              >
+                {loadingOlder ? 'Loading older...' : canLoadOlder ? 'Load older messages' : 'No older messages'}
+              </button>
+            </div>
+          )}
           {messages.length === 0 && <div className="text-xs text-slate-600 text-center py-8">No messages yet. Say hello!</div>}
 
           {messages.map((msg, idx) => {

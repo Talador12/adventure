@@ -97,6 +97,9 @@ export default function Game() {
   const animateMoveRef = useRef<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>(null);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [oldestChatTs, setOldestChatTs] = useState<number | null>(null);
+  const [canLoadOlderChat, setCanLoadOlderChat] = useState(true);
+  const [loadingOlderChat, setLoadingOlderChat] = useState(false);
   const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
@@ -256,14 +259,38 @@ export default function Game() {
   useEffect(() => {
     loadChatHistory(room).then((history) => {
       if (history.length > 0) {
+        setOldestChatTs(history[0].timestamp);
+        setCanLoadOlderChat(history.length >= 100);
         setChatMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
           const newMsgs = history.filter((m) => !existingIds.has(m.id));
           return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
         });
+      } else {
+        setCanLoadOlderChat(false);
       }
     });
   }, [room]);
+
+  const handleLoadOlderChat = useCallback(() => {
+    if (loadingOlderChat || !canLoadOlderChat || !oldestChatTs) return;
+    setLoadingOlderChat(true);
+    loadChatHistory(room, 100, oldestChatTs)
+      .then((history) => {
+        if (history.length === 0) {
+          setCanLoadOlderChat(false);
+          return;
+        }
+        setOldestChatTs(history[0].timestamp);
+        setCanLoadOlderChat(history.length >= 100);
+        setChatMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMsgs = history.filter((m) => !existingIds.has(m.id));
+          return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
+        });
+      })
+      .finally(() => setLoadingOlderChat(false));
+  }, [loadingOlderChat, canLoadOlderChat, oldestChatTs, room]);
 
   // Derived: is it currently the human player's turn? AI player turns are auto-played.
   const currentTurnUnit = units.find((u) => u.isCurrentTurn);
@@ -1966,7 +1993,7 @@ export default function Game() {
                   send({ type: 'whisper', targetUsername: target, message: msg });
                 }} onReaction={(messageId, emoji) => {
                   send({ type: 'chat_reaction', messageId, emoji });
-                }} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
+                }} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
               </div>
             </>
           )}

@@ -58,6 +58,9 @@ export default function Lobby() {
   const [isSpectating, setIsSpectating] = useState(false);
   const [dmSeatType, setDmSeatType] = useState<'human' | 'ai'>('human');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [oldestChatTs, setOldestChatTs] = useState<number | null>(null);
+  const [canLoadOlderChat, setCanLoadOlderChat] = useState(true);
+  const [loadingOlderChat, setLoadingOlderChat] = useState(false);
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const [mySeatId, setMySeatId] = useState<string | null>(null);
   const [isDM, setIsDM] = useState(false);
@@ -141,14 +144,36 @@ export default function Lobby() {
     if (currentPlayer.id.startsWith('temp-')) return;
     loadChatHistory(room).then((history) => {
       if (history.length > 0) {
+        setOldestChatTs(history[0].timestamp);
+        setCanLoadOlderChat(history.length >= 100);
         setChatMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
           const newMsgs = history.filter((m) => !existingIds.has(m.id));
           return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
         });
+      } else {
+        setCanLoadOlderChat(false);
       }
     });
   }, [room, currentPlayer.id]);
+
+  const handleLoadOlderChat = useCallback(() => {
+    if (loadingOlderChat || !canLoadOlderChat || !oldestChatTs) return;
+    setLoadingOlderChat(true);
+    loadChatHistory(room, 100, oldestChatTs).then((history) => {
+      if (history.length === 0) {
+        setCanLoadOlderChat(false);
+        return;
+      }
+      setOldestChatTs(history[0].timestamp);
+      setCanLoadOlderChat(history.length >= 100);
+      setChatMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const newMsgs = history.filter((m) => !existingIds.has(m.id));
+        return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
+      });
+    }).finally(() => setLoadingOlderChat(false));
+  }, [loadingOlderChat, canLoadOlderChat, oldestChatTs, room]);
 
   // WebSocket message handler
   const handleWsMessage = useCallback(
@@ -1217,7 +1242,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
         <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
-          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
+          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
 
