@@ -28,8 +28,14 @@ function getInitialTheme(): Theme {
   return 'light';
 }
 
+function getInitialLowFx(): boolean {
+  if (typeof window !== 'undefined') return localStorage.getItem('adventure:lowfx') === '1';
+  return false;
+}
+
 export default function Home() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [lowFx, setLowFx] = useState(getInitialLowFx);
   const [campaignCode, setCampaignCode] = useState('');
   const [user, setUser] = useState<Record<string, string> | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -147,6 +153,12 @@ export default function Home() {
     document.documentElement.classList.add(theme);
     localStorage.theme = theme;
   }, [theme]);
+
+  // Apply Low-FX mode
+  useEffect(() => {
+    document.documentElement.classList.toggle('low-fx', lowFx);
+    localStorage.setItem('adventure:lowfx', lowFx ? '1' : '0');
+  }, [lowFx]);
 
   // Fetch user session once on mount (check localStorage temp user first)
   useEffect(() => {
@@ -301,6 +313,15 @@ export default function Home() {
         </div>
 
         <div className="flex gap-2 sm:gap-3 items-center relative z-10">
+          {/* Low-FX toggle */}
+          <button
+            onClick={() => setLowFx(!lowFx)}
+            className={`text-[9px] px-2 py-1 rounded font-bold transition-all ${lowFx ? 'bg-yellow-600 text-black' : 'bg-white/10 text-white/60 hover:text-white'}`}
+            aria-label={lowFx ? 'Disable Low-FX mode' : 'Enable Low-FX mode'}
+            title="Low-FX: disable animations, increase contrast"
+          >
+            FX
+          </button>
           {/* Theme toggle */}
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white" aria-label="Toggle theme">
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
