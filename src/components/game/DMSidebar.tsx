@@ -122,7 +122,7 @@ export default function DMSidebar({
   const [lastHoard, setLastHoard] = useState<TreasureHoardResult | null>(null);
 
   return (
-    <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-hidden">
+    <aside className="hidden md:flex w-72 bg-slate-900 border-r border-slate-800 flex-col shrink-0 overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
         <span className="text-xs font-semibold text-[#F38020] uppercase tracking-wider">DM Tools</span>
         <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xs">&times;</button>

@@ -173,6 +173,8 @@ export default function Game() {
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements'>('narration');
+  // Mobile layout: bottom tab bar controls which panel is visible
+  const [mobilePanel, setMobilePanel] = useState<'game' | 'chat' | 'sheet'>('game');
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
@@ -1444,12 +1446,12 @@ export default function Game() {
         />
       )}
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center shrink-0 relative z-10">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white">
-            &larr; Lobby
+      <header className="bg-slate-900 border-b border-slate-800 px-3 md:px-6 py-2 md:py-3 flex justify-between items-center shrink-0 relative z-10">
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white text-xs md:text-sm">
+            &larr; <span className="hidden md:inline">Lobby</span>
           </Button>
-          <h1 className="text-lg font-bold text-[#F38020]">Adventure</h1>
+          <h1 className="text-sm md:text-lg font-bold text-[#F38020]">Adventure</h1>
           {selectedCharacter && (
             <span className="text-xs text-slate-400">
               Playing as <span className="text-white font-semibold">{selectedCharacter.name}</span>
@@ -1561,9 +1563,28 @@ export default function Game() {
         </div>
       </header>
 
+      {/* Mobile bottom tab bar — visible only on small screens */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 flex">
+        {(['game', 'chat', 'sheet'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => {
+              setMobilePanel(tab);
+              if (tab === 'sheet') setShowSheet(true);
+              else if (tab === 'chat') setShowSheet(false);
+            }}
+            className={`flex-1 py-2.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+              mobilePanel === tab ? 'text-[#F38020] border-t-2 border-[#F38020] bg-[#F38020]/5' : 'text-slate-500'
+            }`}
+          >
+            {tab === 'game' ? (inCombat ? 'Battle' : 'Game') : tab === 'chat' ? 'Chat' : 'Sheet'}
+          </button>
+        ))}
+      </div>
+
       {/* Main area */}
-      <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* DM Sidebar — collapsible left panel */}
+      <div className="flex-1 flex overflow-hidden relative z-10 pb-10 md:pb-0">
+        {/* DM Sidebar — collapsible left panel (hidden on mobile) */}
         {canUseDMTools && showDMSidebar && (
           <DMSidebar
             onClose={() => setShowDMSidebar(false)}
@@ -1618,7 +1639,7 @@ export default function Game() {
         )}
 
         {/* Left: initiative bar + game board / DM area */}
-        <div className={`flex-1 flex flex-col overflow-hidden transition-opacity duration-200 ${rollPopupVisible ? 'opacity-45' : 'opacity-100'}`}>
+        <div className={`flex-1 flex flex-col overflow-hidden transition-opacity duration-200 ${rollPopupVisible ? 'opacity-45' : 'opacity-100'} ${mobilePanel !== 'game' ? 'hidden md:flex' : ''}`}>
           {/* Initiative bar — only show when units exist */}
           {units.length > 0 && (
             <div className="bg-slate-900/50 border-b border-slate-800 shrink-0">
@@ -1979,8 +2000,8 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Right sidebar: character sheet / dice / chat */}
-        <div className="w-80 border-l border-slate-800 bg-slate-900 flex flex-col shrink-0">
+        {/* Right sidebar: character sheet / dice / chat — hidden on mobile unless tab active */}
+        <div className={`w-full md:w-80 border-l border-slate-800 bg-slate-900 flex flex-col shrink-0 ${mobilePanel === 'chat' || mobilePanel === 'sheet' ? 'flex' : 'hidden md:flex'}`}>
           {/* Sidebar tabs */}
           {selectedCharacter && (
             <div className="flex border-b border-slate-800 shrink-0">
