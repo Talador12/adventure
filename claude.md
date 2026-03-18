@@ -932,7 +932,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Mobile-responsive game (swipeable views: narration/map/chat/sheet)
 - [ ] Touch-friendly battle map (pinch zoom, tap to select, long-press to move)
 - [ ] Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
-- [ ] `prefers-reduced-motion` media query: disable all animations automatically
+- [x] `prefers-reduced-motion` media query: disable all animations automatically
 - [ ] Keyboard navigation for combat actions
 - [ ] ARIA labels on interactive elements
 
@@ -941,7 +941,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 - [ ] Cloudflare Access login (waiting on external setup)
 - [ ] Campaign invite links via Discord DM (bot or webhook)
-- [ ] Lobby chat reactions (emoji reactions on messages)
+- [x] Lobby chat reactions (emoji reactions on messages)
 - [ ] Campaign archive (soft delete, can restore)
 
 ### Future versions
