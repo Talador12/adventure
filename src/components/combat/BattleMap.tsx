@@ -230,10 +230,10 @@ function findSpawnPoints(terrain: TerrainType[][], count: number, side: 'left' |
 // to the cell center without passing through a wall.
 function computeVisibility(
   terrain: TerrainType[][],
-  playerPositions: { col: number; row: number }[],
+  playerPositions: { col: number; row: number; visionRange?: number }[],
   rows: number,
   cols: number,
-  visionRadius: number,
+  defaultVisionRadius: number,
   isDM: boolean,
 ): boolean[][] {
   // DM sees everything
@@ -242,10 +242,11 @@ function computeVisibility(
   const visible: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
 
   for (const pp of playerPositions) {
+    const radius = pp.visionRange ?? defaultVisionRadius;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const dist = Math.sqrt((r - pp.row) ** 2 + (c - pp.col) ** 2);
-        if (dist > visionRadius) continue;
+        if (dist > radius) continue;
         if (visible[r][c]) continue; // already visible
 
         // Bresenham line from player to cell — check for walls
@@ -492,6 +493,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   // DM tools
   const [dmTool, setDmTool] = useState<DmTool>('select');
   const [dmMode, setDmMode] = useState(false); // DM sees through fog
+  const [viewAsUnitId, setViewAsUnitId] = useState<string | null>(null); // DM previews a player's fog
   const [painting, setPainting] = useState(false); // mouse held for terrain painting
 
   // Minimap
@@ -609,17 +611,23 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   }, [units, terrain, gridCols, gridRows]);
 
   // Compute visibility — per-player fog when myUnitId set, shared party vision otherwise
+  // DM "View As" overrides: when DM picks a player to preview, show their fog
+  const effectiveViewUnit = viewAsUnitId || myUnitId;
   const playerPositions = positions
     .filter((p) => {
       const u = units.find((u) => u.id === p.unitId);
       if (!u || u.type !== 'player' || u.hp <= 0) return false;
-      // Per-player fog: only this player's token(s) contribute to vision
-      if (myUnitId) return u.id === myUnitId;
+      if (effectiveViewUnit) return u.id === effectiveViewUnit;
       return true; // shared party vision fallback
     })
-    .map((p) => ({ col: p.col, row: p.row }));
+    .map((p) => {
+      const u = units.find((u) => u.id === p.unitId);
+      return { col: p.col, row: p.row, visionRange: u?.visionRange };
+    });
 
-  const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, dmMode);
+  // DM sees full vision when viewAsUnitId is null (normal DM mode)
+  const effectiveDmMode = dmMode && !viewAsUnitId;
+  const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, effectiveDmMode);
 
   // Update explored map as players reveal cells
   useEffect(() => {
@@ -697,7 +705,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         const isVisible = visibility[r]?.[c] ?? false;
         const wasExplored = explored[r]?.[c] ?? false;
 
-        if (!dmMode && !isVisible && !wasExplored) continue; // completely unknown
+        if (!effectiveDmMode && !isVisible && !wasExplored) continue; // completely unknown
 
         const cellType = terrain[r][c];
         // With bg image: skip floor/void draws (show image), still draw special terrain on top
@@ -708,7 +716,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         }
 
         // Dim explored but not currently visible cells
-        if (!dmMode && !isVisible && wasExplored) {
+        if (!effectiveDmMode && !isVisible && wasExplored) {
           ctx.fillStyle = 'rgba(15,23,42,0.6)';
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
@@ -718,13 +726,13 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     // Draw traps (visible in DM mode, or when detected by players)
     traps.forEach((trap) => {
       if (trap.triggered) return; // already went off, don't render
-      if (!dmMode && !trap.detected) return; // hidden from players
+      if (!effectiveDmMode && !trap.detected) return; // hidden from players
       const tc = TRAP_TEMPLATES[trap.type];
       const trapX = trap.col * CELL_SIZE;
       const trapY = trap.row * CELL_SIZE;
       // Warning triangle
       ctx.save();
-      ctx.globalAlpha = dmMode && !trap.detected ? 0.6 : 0.9;
+      ctx.globalAlpha = effectiveDmMode && !trap.detected ? 0.6 : 0.9;
       const mx = trapX + CELL_SIZE / 2;
       const my = trapY + CELL_SIZE / 2;
       // Small colored diamond
@@ -806,7 +814,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     positions.forEach((pos) => {
       const unit = units.find((u) => u.id === pos.unitId);
       if (!unit) return;
-      if (!dmMode && !visibility[pos.row]?.[pos.col]) return; // hidden in fog
+      if (!effectiveDmMode && !visibility[pos.row]?.[pos.col]) return; // hidden in fog
 
       const isDrag = dragging?.unitId === pos.unitId && dragPos;
       // Animated position: lerp between from/to during animation
@@ -929,7 +937,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     });
 
     // Fog of war — cover unexplored cells
-    if (!dmMode) {
+    if (!effectiveDmMode) {
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
           if (!explored[r]?.[c] && !visibility[r]?.[c]) {
@@ -949,7 +957,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, dmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -972,13 +980,13 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       for (let c = 0; c < gridCols; c++) {
         const isVis = visibility[r]?.[c] ?? false;
         const wasExpl = explored[r]?.[c] ?? false;
-        if (!dmMode && !isVis && !wasExpl) continue;
+        if (!effectiveDmMode && !isVis && !wasExpl) continue;
 
         const cell = terrain[r][c];
         if (cell === 'void') continue;
         const colors = TERRAIN_COLORS[cell];
         ctx.fillStyle = colors.fill;
-        if (!dmMode && !isVis && wasExpl) {
+        if (!effectiveDmMode && !isVis && wasExpl) {
           ctx.globalAlpha = 0.4;
         }
         ctx.fillRect(c * MINIMAP_CELL, r * MINIMAP_CELL, MINIMAP_CELL, MINIMAP_CELL);
@@ -991,8 +999,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     positions.forEach((pos) => {
       const unit = units.find((u) => u.id === pos.unitId);
       if (!unit || unit.hp <= 0) return;
-      const isVis = visibility[pos.row]?.[pos.col] ?? dmMode;
-      if (!isVis && !dmMode) return;
+      const isVis = visibility[pos.row]?.[pos.col] ?? effectiveDmMode;
+      if (!isVis && !effectiveDmMode) return;
       ctx.fillStyle = tokenColor(unit);
       ctx.beginPath();
       ctx.arc(
@@ -1016,7 +1024,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.lineWidth = 1.5;
       ctx.strokeRect(viewX * scale, viewY * scale, viewW * scale, viewH * scale);
     }
-  }, [terrain, positions, units, visibility, explored, dmMode, gridCols, gridRows, zoom, panOffset, showMinimap]);
+  }, [terrain, positions, units, visibility, explored, effectiveDmMode, gridCols, gridRows, zoom, panOffset, showMinimap]);
 
   // Animation loop: run requestAnimationFrame while any token is animating
   useEffect(() => {
@@ -1552,12 +1560,27 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
             {/* DM mode toggle */}
             <button
-              onClick={() => setDmMode(!dmMode)}
+              onClick={() => { setDmMode(!dmMode); if (dmMode) setViewAsUnitId(null); }}
               className={`text-[10px] px-2 py-1 rounded font-semibold transition-all ${dmMode ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
               title="DM Mode: see through fog of war"
             >
               {dmMode ? 'DM: ON' : 'DM'}
             </button>
+
+            {/* View As dropdown — DM previews a player's fog perspective */}
+            {dmMode && (
+              <select
+                value={viewAsUnitId || ''}
+                onChange={(e) => setViewAsUnitId(e.target.value || null)}
+                className="text-[9px] px-1.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-semibold"
+                title="View map as a specific player (fog preview)"
+              >
+                <option value="">Full Vision</option>
+                {units.filter((u) => u.type === 'player' && u.hp > 0).map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            )}
 
             <div className="w-px h-4 bg-slate-700 mx-1" />
 

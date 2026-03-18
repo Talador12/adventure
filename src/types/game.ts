@@ -97,6 +97,8 @@ export interface Unit {
   disengaged: boolean;
   cr?: number;
   xpValue?: number;
+  // Vision range in grid cells (default 6 = 30ft; darkvision races get 12 = 60ft)
+  visionRange?: number;
   // Legendary actions — boss monsters get extra actions between player turns
   legendaryActions?: number;       // max legendary actions per round
   legendaryActionsUsed?: number;   // how many used this round (reset on boss turn)
@@ -140,6 +142,11 @@ export type Stats = Record<StatName, number>;
 // --- Character identity ---
 export const RACES = ['Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Orc', 'Tiefling', 'Dragonborn'] as const;
 export type Race = (typeof RACES)[number];
+
+// Races with 60ft darkvision (D&D 5e). Vision range in grid cells (1 cell = 5ft).
+export const DARKVISION_RACES: ReadonlySet<Race> = new Set(['Elf', 'Dwarf', 'Gnome', 'Half-Orc', 'Tiefling', 'Dragonborn']);
+export const DARKVISION_RANGE = 12; // 60ft = 12 cells
+export const NORMAL_VISION_RANGE = 6; // 30ft = 6 cells
 
 export const CLASSES = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Barbarian', 'Bard', 'Sorcerer', 'Warlock', 'Druid', 'Monk'] as const;
 export type CharacterClass = (typeof CLASSES)[number];

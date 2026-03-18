@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added mobile-responsive game layout — fixed bottom tab bar (Game/Chat/Sheet) visible on screens <768px. Tapping a tab shows only that panel. The right sidebar (chat + character sheet) hides on mobile and becomes a full-width panel when its tab is active. DM sidebar hidden on mobile. Header compacted (smaller text, lobby label hidden). Main content area adds bottom padding to avoid tab bar overlap. Desktop layout unchanged.
+- Added per-unit vision range based on racial darkvision. `Unit.visionRange` field (cells, default 6 = 30ft). D&D 5e darkvision races (Elf, Dwarf, Gnome, Half-Orc, Tiefling, Dragonborn) get 12 cells (60ft). Humans and Halflings keep 30ft. `computeVisibility` now reads `visionRange` per-position instead of using a global constant. Constants exported from `types/game.ts`: `DARKVISION_RACES`, `DARKVISION_RANGE`, `NORMAL_VISION_RANGE`.
+- Added DM "View As" dropdown — when DM mode is on, a dropdown appears next to the toggle listing all living player characters. Selecting one previews the map from that player's fog perspective (only their token's vision). "Full Vision" restores normal DM view. All fog rendering paths (terrain, tokens, traps, minimap) respect `effectiveDmMode` so the preview is accurate. Toggling DM mode off auto-clears the View As selection.
 - Added per-player fog of war in multiplayer — non-DM players now see only from their own character's token when connected to a multiplayer session. DM retains full map vision. Solo/offline play keeps shared party vision. Implemented via `myUnitId` prop on BattleMap: when set, `playerPositions` filter restricts vision computation to only that player's unit. Game.tsx passes `selectedCharacterId` when `wsConnected && !isDM`. No WebSocket changes needed — fog is computed purely client-side from each player's local unit position.
 - Added latency heatmap to Game DMSidebar Notes tab — compact horizontal bar chart showing all connected players' RTT with color-coded severity bars (emerald/amber/red). Stale/disconnected players show a pulsing red bar with "DC" label. Bar width scales relative to the worst latency in the party. Uses the existing `playerLatency` + `stalePlayers` state from `useGameWebSocket`.
 - Added WebSocket heartbeat failure detection — server tracks `lastPongAt` per session and checks all players for staleness (45s threshold, ~2 missed keepalive cycles). Stale players get a `player_stale` broadcast; recovery triggers `player_recovered`. Lobby seat cards show a pulsing red "DC" badge for disconnected players, replacing the normal RTT badge. Game.tsx also tracks stale state via `useGameWebSocket`. REST `/players` endpoint includes `stale` field.
@@ -796,8 +799,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Animated token movement — easeInOutQuad interpolation between grid cells, requestAnimationFrame loop during animation, `animateMoveRef` callback for Game.tsx to trigger enemy AI animations, remote `token_move` events also animate
 - [x] Hover tooltips on initiative bar (HP, AC, abilities with cooldowns, conditions with durations, speed, CR, concentration)
 - [x] Fog of war per-player (each player sees only from their token — currently global fog)
-- [ ] DM "View As" dropdown — DM can preview the map from any specific player's perspective
-- [ ] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
+- [x] DM "View As" dropdown — DM can preview the map from any specific player's perspective
+- [x] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
+- [ ] Torch/Light spell mechanic — consumable item or spell that temporarily boosts vision range for the carrier
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes
@@ -926,10 +930,11 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Goal:** Touch-friendly on phones/tablets, accessible to all players.
 
 - [ ] Mobile-responsive lobby (collapsible panels, touch-friendly seat cards)
-- [ ] Mobile-responsive game (swipeable views: narration/map/chat/sheet)
+- [x] Mobile-responsive game (bottom tab bar: game/chat/sheet panels)
+- [ ] Mobile-responsive lobby (collapsible panels, stacked layout on small screens)
 - [ ] Touch-friendly battle map (pinch zoom, tap to select, long-press to move)
 - [ ] Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
-- [ ] `prefers-reduced-motion` media query: disable all animations automatically
+- [x] `prefers-reduced-motion` media query: disable all animations automatically
 - [ ] Keyboard navigation for combat actions
 - [ ] ARIA labels on interactive elements
 
@@ -938,7 +943,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 - [ ] Cloudflare Access login (waiting on external setup)
 - [ ] Campaign invite links via Discord DM (bot or webhook)
-- [ ] Lobby chat reactions (emoji reactions on messages)
+- [x] Lobby chat reactions (emoji reactions on messages)
 - [ ] Campaign archive (soft delete, can restore)
 
 ### Future versions
