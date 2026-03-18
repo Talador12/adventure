@@ -38,7 +38,8 @@ export default function Home() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { characters, removeCharacter, addCharacter } = useGame();
-  const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number }>>([]);
+  const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number; archived?: boolean; archivedAt?: number }>>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
   const [partyMembers, setPartyMembers] = useState<Record<string, Array<{ display_name: string; avatar_url: string | null; role: string }>>>({});
@@ -95,30 +96,49 @@ export default function Home() {
     setDeleteConfirm({ roomId, name });
   };
 
-  const confirmDeleteCampaign = () => {
+  const confirmDeleteCampaign = (permanent = false) => {
     if (!deleteConfirm) return;
     const { roomId, name } = deleteConfirm;
     const isTempLogin = (() => { try { const s = localStorage.getItem('adventure:tempUser'); return !!s && JSON.parse(s)?.id?.startsWith('temp-'); } catch { return false; } })();
     if (!isTempLogin) {
-      fetch(`/api/campaigns/${encodeURIComponent(roomId)}`, { method: 'DELETE' }).catch(() => {});
+      const url = permanent
+        ? `/api/campaigns/${encodeURIComponent(roomId)}?permanent=1`
+        : `/api/campaigns/${encodeURIComponent(roomId)}`;
+      fetch(url, { method: 'DELETE' }).catch(() => {});
     }
-    setCampaigns((prev) => prev.filter((c) => c.roomId !== roomId));
-    // Clean up localStorage
-    try {
-      localStorage.removeItem(`adventure:dm-history:${roomId}`);
-      localStorage.removeItem(`adventure:scene:${roomId}`);
-      localStorage.removeItem(`adventure:campaign:${roomId}`);
-      // Update temp user campaign list
-      const raw = localStorage.getItem('adventure:campaigns');
-      if (raw) {
-        const list = JSON.parse(raw) as Array<{ roomId: string }>;
-        localStorage.setItem('adventure:campaigns', JSON.stringify(list.filter((c) => c.roomId !== roomId)));
-      }
-    } catch {
-      /* ok */
+    if (permanent) {
+      setCampaigns((prev) => prev.filter((c) => c.roomId !== roomId));
+      // Clean up localStorage
+      try {
+        localStorage.removeItem(`adventure:dm-history:${roomId}`);
+        localStorage.removeItem(`adventure:scene:${roomId}`);
+        localStorage.removeItem(`adventure:campaign:${roomId}`);
+        const raw = localStorage.getItem('adventure:campaigns');
+        if (raw) {
+          const list = JSON.parse(raw) as Array<{ roomId: string }>;
+          localStorage.setItem('adventure:campaigns', JSON.stringify(list.filter((c) => c.roomId !== roomId)));
+        }
+      } catch { /* ok */ }
+      toast(`${name} permanently deleted`, 'info');
+    } else {
+      // Soft-delete: mark as archived locally
+      setCampaigns((prev) => prev.map((c) => c.roomId === roomId ? { ...c, archived: true, archivedAt: Date.now() } as typeof c : c));
+      toast(`${name} archived`, 'info');
     }
-    toast(`${name} deleted`, 'info');
     setDeleteConfirm(null);
+  };
+
+  const handleRestoreCampaign = (roomId: string, name: string) => {
+    const isTempLogin = (() => { try { const s = localStorage.getItem('adventure:tempUser'); return !!s && JSON.parse(s)?.id?.startsWith('temp-'); } catch { return false; } })();
+    if (!isTempLogin) {
+      fetch(`/api/campaigns/${encodeURIComponent(roomId)}/restore`, { method: 'POST' }).catch(() => {});
+    }
+    setCampaigns((prev) => prev.map((c) => {
+      if (c.roomId !== roomId) return c;
+      const { archived: _, archivedAt: __, ...rest } = c as Record<string, unknown>;
+      return rest as typeof c;
+    }));
+    toast(`${name} restored`, 'info');
   };
 
   // Apply theme class
@@ -494,9 +514,9 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          ) : campaigns.length > 0 ? (
+          ) : campaigns.filter((c) => !c.archived).length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
-              {campaigns.map((c) => {
+              {campaigns.filter((c) => !c.archived).map((c) => {
                 const members = partyMembers[c.roomId] || [];
                 const dmMember = members.find((m) => m.role === 'dm');
                 const playerCount = members.filter((m) => m.role !== 'dm').length;
@@ -557,6 +577,46 @@ export default function Home() {
                 </>
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">Sign in to create and manage campaigns.</p>
+              )}
+            </div>
+          )}
+
+          {/* Archived campaigns section */}
+          {campaigns.filter((c) => c.archived).length > 0 && (
+            <div className="mt-2">
+              <button
+                onClick={() => setShowArchived(!showArchived)}
+                className="flex items-center gap-2 text-[10px] text-slate-500 hover:text-slate-300 transition-colors font-semibold uppercase tracking-wider"
+              >
+                <svg className={`w-3 h-3 transition-transform ${showArchived ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
+                Archived ({campaigns.filter((c) => c.archived).length})
+              </button>
+              {showArchived && (
+                <div className="mt-2 space-y-2">
+                  {campaigns.filter((c) => c.archived).map((c) => (
+                    <div key={c.roomId} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900/40 border border-slate-800/50 text-sm">
+                      <div className="min-w-0">
+                        <span className="text-slate-400 truncate block">{c.name}</span>
+                        {c.archivedAt && <span className="text-[9px] text-slate-600">Archived {new Date(c.archivedAt).toLocaleDateString()}</span>}
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleRestoreCampaign(c.roomId, c.name)}
+                          className="text-[10px] px-2 py-1 rounded bg-emerald-900/30 border border-emerald-800/40 text-emerald-400 hover:bg-emerald-900/50 font-semibold transition-colors"
+                        >
+                          Restore
+                        </button>
+                        <button
+                          onClick={() => { setDeleteConfirm({ roomId: c.roomId, name: c.name }); }}
+                          className="text-[10px] px-2 py-1 rounded bg-red-900/30 border border-red-800/40 text-red-400 hover:bg-red-900/50 font-semibold transition-colors"
+                          title="Permanently delete"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -679,25 +739,39 @@ export default function Home() {
         </p>
       </main>
 
-      {/* Delete campaign confirmation modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white mb-2">Delete Campaign?</h3>
-            <p className="text-sm text-slate-400 mb-5">
-              Are you sure you want to delete <span className="font-semibold text-slate-200">{deleteConfirm.name}</span>? This will remove all saved game state and cannot be undone.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors">
-                Cancel
-              </button>
-              <button onClick={confirmDeleteCampaign} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors shadow-lg shadow-red-900/30">
-                Delete
-              </button>
+      {/* Delete/archive campaign confirmation modal */}
+      {deleteConfirm && (() => {
+        const isArchived = campaigns.find((c) => c.roomId === deleteConfirm.roomId)?.archived;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" onClick={() => setDeleteConfirm(null)}>
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {isArchived ? 'Permanently Delete?' : 'Archive Campaign?'}
+              </h3>
+              <p className="text-sm text-slate-400 mb-5">
+                {isArchived
+                  ? <>Permanently delete <span className="font-semibold text-slate-200">{deleteConfirm.name}</span>? This removes all saved game state and cannot be undone.</>
+                  : <>Archive <span className="font-semibold text-slate-200">{deleteConfirm.name}</span>? You can restore it later from the Archived section.</>
+                }
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors">
+                  Cancel
+                </button>
+                {isArchived ? (
+                  <button onClick={() => confirmDeleteCampaign(true)} className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors shadow-lg shadow-red-900/30">
+                    Delete Forever
+                  </button>
+                ) : (
+                  <button onClick={() => confirmDeleteCampaign(false)} className="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition-colors shadow-lg shadow-amber-900/30">
+                    Archive
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
