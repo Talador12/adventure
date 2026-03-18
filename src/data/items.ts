@@ -95,6 +95,15 @@ export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
   { name: 'Superior Healing Potion', type: 'potion', rarity: 'rare', description: 'Restores 8d4+8 HP.', value: 500, healAmount: 36, quantity: 1, category: 'Potions' },
   { name: 'Ring of Protection', type: 'ring', rarity: 'uncommon', description: '+1 AC while worn.', value: 300, equipSlot: 'ring', acBonus: 1, category: 'Accessories' },
   { name: 'Scroll of Identify', type: 'scroll', rarity: 'common', description: "Reveals an item's properties.", value: 25, category: 'Accessories' },
+  // Light sources & supplies
+  { name: 'Candle', type: 'light', rarity: 'common', description: '10ft bright, 20ft dim. Burns 1 hour.', value: 0.01, appliesCondition: 'candlelit', consumable: true, quantity: 10, category: 'Supplies' },
+  { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim. Burns 1 hour.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 5, category: 'Supplies' },
+  { name: 'Hooded Lantern', type: 'light', rarity: 'common', description: '30ft bright, 50ft dim. Burns 6 hours on oil.', value: 5, appliesCondition: 'lantern', category: 'Supplies' },
+  { name: 'Oil Flask', type: 'misc', rarity: 'common', description: 'Fuel for lanterns. Burns 6 hours per flask.', value: 0.1, quantity: 3, category: 'Supplies' },
+  { name: 'Tinderbox', type: 'misc', rarity: 'common', description: 'Flint, steel, and tinder for lighting fires.', value: 0.5, category: 'Supplies' },
+  { name: 'Rope (50ft)', type: 'misc', rarity: 'common', description: 'Hempen rope, 50 feet. 2 HP, AC 10.', value: 1, category: 'Supplies' },
+  { name: "Healer's Kit", type: 'misc', rarity: 'common', description: '10 uses. Stabilize a dying creature as an action.', value: 5, quantity: 10, category: 'Supplies' },
+  { name: 'Rations (1 day)', type: 'misc', rarity: 'common', description: 'Dried food and water for one day of travel.', value: 0.5, consumable: true, quantity: 5, category: 'Supplies' },
 ];
 
-export const SHOP_CATEGORIES = ['Weapons', 'Armor', 'Potions', 'Accessories'] as const;
+export const SHOP_CATEGORIES = ['Weapons', 'Armor', 'Potions', 'Accessories', 'Supplies'] as const;

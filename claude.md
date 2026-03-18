@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v0.5.0
+## Current Version: v0.5.1
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added Service Worker for offline-first static assets — `public/sw.js` with stale-while-revalidate strategy for JS/CSS/images/fonts, network-first for API calls, SPA navigation fallback to cached index.html. Pre-caches app shell on install. Auto-cleans old caches on activate. Registered on window load in `main.tsx` with silent fail. Skips WebSocket upgrade requests.
+- Added "Supplies" shop category with light sources and adventuring gear — Candle (x10), Torch (x5), Hooded Lantern, Oil Flask (x3), Tinderbox, Rope (50ft), Healer's Kit (10 uses), Rations (x5). Light source items carry `appliesCondition` so buying and using a torch from the shop correctly lights it. `SHOP_CATEGORIES` extended with 'Supplies'.
+- Added auto-equip from DDB import — after parsing inventory, automatically slots the best weapon (highest avg damage die + attack/damage bonuses), best armor (highest AC bonus), best shield, and first ring into equipment slots. Adds a "Auto-equipped: ..." note to import warnings. Characters arrive ready to fight.
 - Added D&D Beyond inventory import — `ddbImport.ts` now parses the DDB `inventory` array into our Item type. Maps weapon/armor/shield/potion/ring/scroll/misc types from DDB type + subType. Extracts damage dice, attack bonus, AC bonus, ranged flag, range, heal amount. Maps rarity (common/uncommon/rare/legendary→epic). Strips HTML from descriptions. Healing potions get smart defaults (7/14/28 HP). Imported characters now arrive with their full inventory.
 - Added light source items in inventory — new `'light'` ItemType, `appliesCondition` and `consumable` fields on Item. Pre-built `LIGHT_SOURCE_ITEMS` array (Candle x5, Torch x3, Hooded Lantern, Tinderbox) exported from types/game.ts. `useItem` in GameContext updated: light source items apply their condition to the character's unit (toggle behavior — using again extinguishes). Consumable items (candles, torches) decrement quantity; non-consumable (lantern) stays in inventory. Non-consumable items skip inventory removal on use.
 - Added multiple light source types — 5 light-bearing conditions with distinct propagation radii: candle (10ft/20ft), torch (20ft/30ft), lantern (30ft/50ft), darkvision spell (0ft/60ft dim only), daylight spell (60ft/100ft). `LIGHT_SOURCE_RADII` map in types/game.ts drives BattleMap's `effectiveLighting` computation. Each source emits bright + dim zones. `CONDITION_VISION_OVERRIDE` updated with matching per-condition vision ranges. Condition colors, effects, and rule tooltips added for all 3 new types.
@@ -812,7 +815,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Foundry VTT character import (similar parser for Foundry's actor JSON format)
 - [x] D&D Beyond inventory import (map DDB equipment to our Item types with full stat extraction)
 - [ ] D&D Beyond spell import (map DDB prepared/known spells to our Spell types with slot levels)
-- [ ] Auto-equip best weapon/armor from DDB import into equipment slots
+- [x] Auto-equip best weapon/armor from DDB import into equipment slots
 
 **Game board:**
 - [x] Minimap with click-to-pan (4px/cell, terrain + token dots + viewport rect, toggle button)
@@ -832,7 +835,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Darkvision spell light propagation (60ft dim-only radius, no bright zone)
 - [x] Multiple light source types (candle: 2/4 cells, lantern: 6/10 cells, daylight spell: 12/20 cells)
 - [x] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
-- [ ] Add light source items to the shop (DM shop or starting equipment presets)
+- [x] Add light source items to the shop (Supplies category with adventuring gear)
+- [ ] Starting equipment presets by class (Fighter gets chain mail + longsword, Rogue gets leather + daggers, etc.)
 - [ ] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
 
 **DM tools:**
@@ -892,7 +896,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Goal:** Everything persists. Browser cache for instant loads, server for cross-device sync.
 
 **Browser cache strategy:**
-- [ ] Service Worker for offline-first static assets
+- [x] Service Worker for offline-first static assets
 - [ ] IndexedDB for local cache of characters, campaign state, chat
 - [ ] Optimistic UI: show cached data immediately, sync in background
 - [ ] Cache invalidation via ETags or Last-Modified headers

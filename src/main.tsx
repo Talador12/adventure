@@ -12,6 +12,13 @@ if (typeof window !== 'undefined' && localStorage.getItem('adventure:lowfx') ===
   document.documentElement.classList.add('low-fx');
 }
 
+// Register Service Worker for offline-first static asset caching
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {}); // silent fail ok
+  });
+}
+
 // Lazy-load heavy pages — Game (3266 lines), CharacterCreate (1838 lines), Lobby (897 lines)
 const Game = React.lazy(() => import('./pages/Game'));
 const Lobby = React.lazy(() => import('./pages/Lobby'));
