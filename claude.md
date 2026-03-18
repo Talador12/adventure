@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added ARIA accessibility pass across 7 files — 23 attributes added: `aria-label` on icon-only buttons (theme toggle, sound mute, zoom +/-, delete, close), `role="dialog"` + `aria-modal="true"` on modals (login, delete confirm, help overlay), `aria-label` on canvas elements (battle map, minimap), `aria-label` on form inputs (chat, room code, volume slider), `aria-expanded` on collapsible sections, landmark labels on `<aside>`.
 - Added campaign archive (soft delete + restore). DELETE endpoint now marks campaigns `archived: true` with `archivedAt` timestamp instead of removing them. `?permanent=1` query param hard-deletes. New `POST /api/campaigns/:roomId/restore` endpoint un-archives. Home page hides archived campaigns from main grid and shows a collapsible "Archived (N)" section with Restore + Delete Forever buttons. Confirmation modal dynamically shows "Archive" (amber) for active campaigns and "Delete Forever" (red) for already-archived ones. Public index auto-removes archived campaigns and re-syncs on restore.
 - Added keyboard shortcuts for combat actions — A (attack), E (end turn), P (potion), G (dodge), H (dash), F (class ability). Only active during player's turn in combat. Uses `data-combat-action` attributes on CombatToolbar buttons for click delegation. Help overlay (?) updated with combat shortcut section.
 - Added mobile-responsive lobby layout — tab bar at top toggles between "Party & Dice" and "Chat" on small screens. Seat cards wrap on mobile instead of horizontal scroll. Doodle pad capped at 40vh on mobile. Settings panel scrollable with stacked form inputs on mobile. Chat panel goes full-width when active. Desktop layout unchanged.
@@ -939,7 +940,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
 - [x] `prefers-reduced-motion` media query: disable all animations automatically
 - [x] Keyboard navigation for combat actions
-- [ ] ARIA labels on interactive elements
+- [x] ARIA labels on interactive elements
 
 ### v0.4.0: Cloudflare Access/IDP + Campaign Invites (PLANNED)
 **Goal:** Corporate/team login, campaign sharing via Discord DM.

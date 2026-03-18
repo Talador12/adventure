@@ -1487,7 +1487,7 @@ export default function Game() {
       {/* Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-3 md:px-6 py-2 md:py-3 flex justify-between items-center shrink-0 relative z-10">
         <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white text-xs md:text-sm">
+          <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white text-xs md:text-sm" aria-label="Back to lobby">
             &larr; <span className="hidden md:inline">Lobby</span>
           </Button>
           <h1 className="text-sm md:text-lg font-bold text-[#F38020]">Adventure</h1>
@@ -1522,6 +1522,7 @@ export default function Game() {
               onMouseEnter={() => setShowVolumeSlider(true)}
               className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
               title={soundMuted ? 'Unmute sounds (M)' : 'Mute sounds (M)'}
+              aria-label={soundMuted ? 'Unmute sound' : 'Mute sound'}
             >
               {soundMuted ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -1558,6 +1559,7 @@ export default function Game() {
                   }}
                   className="w-20 h-1 accent-amber-500 cursor-pointer"
                   title={`Volume: ${Math.round(soundVolume * 100)}%`}
+                  aria-label="Volume"
                 />
                 <span className="text-[10px] text-slate-400 w-7 text-right">{Math.round(soundVolume * 100)}%</span>
               </div>
@@ -1576,6 +1578,7 @@ export default function Game() {
             onClick={() => setShowHelpOverlay((s) => !s)}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors w-5 h-5 flex items-center justify-center rounded border border-slate-700 hover:border-slate-500"
             title="Keyboard shortcuts (?)"
+            aria-label="Keyboard shortcuts"
           >
             ?
           </button>
@@ -2129,7 +2132,7 @@ export default function Game() {
 
       {/* Keyboard Shortcut Help Overlay */}
       {showHelpOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowHelpOverlay(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onClick={() => setShowHelpOverlay(false)}>
           <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-amber-400">Keyboard Shortcuts</h2>

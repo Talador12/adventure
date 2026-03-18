@@ -297,7 +297,7 @@ export default function Home() {
 
         <div className="flex gap-2 sm:gap-3 items-center relative z-10">
           {/* Theme toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white" aria-label="Toggle theme">
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
@@ -347,7 +347,7 @@ export default function Home() {
             </button>
           )}
 
-          <a href="https://github.com/talador12/adventure" target="_blank" rel="noreferrer" className="text-white/70 hover:text-white transition-colors" title="GitHub">
+          <a href="https://github.com/talador12/adventure" target="_blank" rel="noreferrer" className="text-white/70 hover:text-white transition-colors" title="GitHub" aria-label="GitHub repository">
             <FontAwesomeIcon icon={faGithub} className="text-xl" />
           </a>
         </div>
@@ -355,7 +355,7 @@ export default function Home() {
 
       {/* Login modal */}
       {showLoginModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" onClick={() => setShowLoginModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" onClick={() => setShowLoginModal(false)} role="dialog" aria-modal="true" aria-label="Sign in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Sign In</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Choose how to sign in to Adventure.</p>
@@ -418,7 +418,7 @@ export default function Home() {
           {/* Quick actions */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-2 justify-center w-full sm:w-auto animate-fade-in-up" style={{ animationDelay: '160ms' }}>
             <div className="flex gap-2 items-center w-full sm:w-auto">
-              <input type="text" placeholder="Room code or invite link" className="input-glow flex-1 sm:flex-none px-4 py-2.5 sm:w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} />
+              <input type="text" placeholder="Room code or invite link" className="input-glow flex-1 sm:flex-none px-4 py-2.5 sm:w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} aria-label="Room code" />
               <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97] shrink-0" onClick={handleJoinCampaign}>
                 Join
               </Button>
@@ -533,7 +533,7 @@ export default function Home() {
                             {playerCount > 0 && <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>}
                           </div>
                         </div>
-                        <button onClick={() => handleDeleteCampaign(c.roomId, c.name)} className="text-slate-500 hover:text-red-400 transition-colors p-1 -mt-1 -mr-1 hover:scale-110" title="Delete campaign">
+                        <button onClick={() => handleDeleteCampaign(c.roomId, c.name)} className="text-slate-500 hover:text-red-400 transition-colors p-1 -mt-1 -mr-1 hover:scale-110" title="Delete campaign" aria-label="Archive campaign">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 000 1.5h.3l.815 8.15A1.5 1.5 0 005.357 15h5.285a1.5 1.5 0 001.493-1.35l.815-8.15h.3a.75.75 0 000-1.5H11v-.75A2.25 2.25 0 008.75 1h-1.5A2.25 2.25 0 005 3.25zm2.25-.75a.75.75 0 00-.75.75V4h3v-.75a.75.75 0 00-.75-.75h-1.5z" clipRule="evenodd" /></svg>
                         </button>
                       </div>
@@ -587,6 +587,7 @@ export default function Home() {
               <button
                 onClick={() => setShowArchived(!showArchived)}
                 className="flex items-center gap-2 text-[10px] text-slate-500 hover:text-slate-300 transition-colors font-semibold uppercase tracking-wider"
+                aria-expanded={showArchived}
               >
                 <svg className={`w-3 h-3 transition-transform ${showArchived ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
                 Archived ({campaigns.filter((c) => c.archived).length})
@@ -669,7 +670,7 @@ export default function Home() {
                           </div>
                           <button
                             onClick={() => { removeCharacter(c.id); toast(`${c.name} deleted`, 'info'); }}
-                            className="text-slate-500 hover:text-red-400 transition-all p-1 -mt-1 -mr-1 hover:scale-110" title="Delete character"
+                            className="text-slate-500 hover:text-red-400 transition-all p-1 -mt-1 -mr-1 hover:scale-110" title="Delete character" aria-label="Delete character"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 000 1.5h.3l.815 8.15A1.5 1.5 0 005.357 15h5.285a1.5 1.5 0 001.493-1.35l.815-8.15h.3a.75.75 0 000-1.5H11v-.75A2.25 2.25 0 008.75 1h-1.5A2.25 2.25 0 005 3.25zm2.25-.75a.75.75 0 00-.75.75V4h3v-.75a.75.75 0 00-.75-.75h-1.5z" clipRule="evenodd" /></svg>
                           </button>
@@ -743,7 +744,7 @@ export default function Home() {
       {deleteConfirm && (() => {
         const isArchived = campaigns.find((c) => c.roomId === deleteConfirm.roomId)?.archived;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" onClick={() => setDeleteConfirm(null)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" onClick={() => setDeleteConfirm(null)} role="dialog" aria-modal="true" aria-label="Confirm action">
             <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white mb-2">
                 {isArchived ? 'Permanently Delete?' : 'Archive Campaign?'}
