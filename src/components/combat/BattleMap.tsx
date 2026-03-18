@@ -1,7 +1,7 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
 import React, { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
-import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
+import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
@@ -37,6 +37,8 @@ const CONDITION_COLORS: Record<string, string> = {
   inspired: '#818cf8',   // indigo-400
   helping: '#2dd4bf',    // teal-400
   hidden: '#94a3b8',     // slate-400
+  torchlit: '#fcd34d',   // amber-300
+  darkvision: '#a5b4fc', // indigo-300
 };
 
 // Short abbreviation for condition overlays on map tokens
@@ -622,7 +624,13 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     })
     .map((p) => {
       const u = units.find((u) => u.id === p.unitId);
-      return { col: p.col, row: p.row, visionRange: u?.visionRange };
+      // Apply condition-based vision overrides (torchlit, darkvision spell)
+      const baseVision = u?.visionRange;
+      const condBoost = (u?.conditions || []).reduce((max, c) => {
+        const override = CONDITION_VISION_OVERRIDE[c.type];
+        return override && override > max ? override : max;
+      }, 0);
+      return { col: p.col, row: p.row, visionRange: condBoost > 0 ? Math.max(baseVision ?? VISION_RADIUS, condBoost) : baseVision };
     });
 
   // DM sees full vision when viewAsUnitId is null (normal DM mode)

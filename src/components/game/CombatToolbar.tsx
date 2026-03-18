@@ -103,6 +103,7 @@ export default function CombatToolbar({
     nextTurn,
     damageUnit,
     applyCondition,
+    removeCondition,
     setUnits,
     setInCombat,
     grantXP,
@@ -705,6 +706,41 @@ export default function CombatToolbar({
                                 <path d="M10.748 13.93l2.523 2.523a9.987 9.987 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z" />
                               </svg>
                               Hide
+                            </button>
+                          );
+                        })()}
+
+                      {/* Light/Extinguish Torch — toggle torchlit condition for extended vision */}
+                      {selectedCharacter &&
+                        inCombat &&
+                        (() => {
+                          const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                          if (!playerUnit) return null;
+                          const hasTorch = playerUnit.conditions?.some((c) => c.type === 'torchlit');
+                          return (
+                            <button
+                              data-combat-action="torch"
+                              disabled={!isPlayerTurn}
+                              title={!isPlayerTurn ? 'Wait for your turn' : hasTorch ? 'Extinguish torch' : 'Light a torch — 40ft vision (free action)'}
+                              onClick={() => {
+                                if (hasTorch) {
+                                  removeCondition(playerUnit.id, 'torchlit');
+                                  const msg = `${selectedCharacter.name} extinguishes their torch.`;
+                                  setCombatLog((prev) => [...prev, msg]);
+                                  addDmMessage(msg);
+                                } else {
+                                  applyCondition(playerUnit.id, { type: 'torchlit', duration: -1, source: 'Torch' });
+                                  const msg = `${selectedCharacter.name} lights a torch! (40ft bright light)`;
+                                  setCombatLog((prev) => [...prev, msg]);
+                                  addDmMessage(msg);
+                                }
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                                hasTorch ? 'bg-amber-900/50 border-amber-600/50 text-amber-300' : 'bg-slate-800/60 border-slate-600/50 text-slate-300 hover:bg-slate-700/60'
+                              }`}
+                            >
+                              {hasTorch ? 'Extinguish' : 'Torch'}
                             </button>
                           );
                         })()}

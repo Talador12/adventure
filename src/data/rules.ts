@@ -17,6 +17,8 @@ export const CONDITION_TOOLTIPS: Record<ConditionType, string> = {
   inspired: 'Inspired: Bardic Inspiration — +2 to attack rolls and saving throws for the duration.',
   helping: 'Helping: The next ally to attack the same target has advantage on their attack roll (+2 to attack).',
   hidden: 'Hidden: You cannot be seen. Advantage on attack rolls (+2 to attacks). Ends after you attack or are found.',
+  torchlit: 'Torchlit: Carrying a torch that sheds 40ft of bright light (8 cells vision range). Free action to light/extinguish.',
+  darkvision: 'Darkvision (spell): Can see in darkness as if it were dim light. 60ft range (12 cells vision). Lasts 8 hours.',
 };
 
 // --- Combat actions (D&D 5e PHB actions in combat) ---

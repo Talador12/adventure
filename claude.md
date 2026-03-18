@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added Torch/Light spell mechanic — two new condition types (`torchlit` at 8 cells/40ft, `darkvision` at 12 cells/60ft) integrated with the existing conditions system. `CONDITION_VISION_OVERRIDE` map exported from types/game.ts. BattleMap's vision computation applies condition-based overrides (max of base visionRange and condition override). CombatToolbar gets a Torch toggle button (free action, duration -1 = until extinguished). Condition colors and rule tooltips added.
 - Added ARIA accessibility pass across 7 files — 23 attributes added: `aria-label` on icon-only buttons (theme toggle, sound mute, zoom +/-, delete, close), `role="dialog"` + `aria-modal="true"` on modals (login, delete confirm, help overlay), `aria-label` on canvas elements (battle map, minimap), `aria-label` on form inputs (chat, room code, volume slider), `aria-expanded` on collapsible sections, landmark labels on `<aside>`.
 - Added campaign archive (soft delete + restore). DELETE endpoint now marks campaigns `archived: true` with `archivedAt` timestamp instead of removing them. `?permanent=1` query param hard-deletes. New `POST /api/campaigns/:roomId/restore` endpoint un-archives. Home page hides archived campaigns from main grid and shows a collapsible "Archived (N)" section with Restore + Delete Forever buttons. Confirmation modal dynamically shows "Archive" (amber) for active campaigns and "Delete Forever" (red) for already-archived ones. Public index auto-removes archived campaigns and re-syncs on restore.
 - Added keyboard shortcuts for combat actions — A (attack), E (end turn), P (potion), G (dodge), H (dash), F (class ability). Only active during player's turn in combat. Uses `data-combat-action` attributes on CombatToolbar buttons for click delegation. Help overlay (?) updated with combat shortcut section.
@@ -805,7 +806,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Fog of war per-player (each player sees only from their token — currently global fog)
 - [x] DM "View As" dropdown — DM can preview the map from any specific player's perspective
 - [x] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
-- [ ] Torch/Light spell mechanic — consumable item or spell that temporarily boosts vision range for the carrier
+- [x] Torch/Light spell mechanic — consumable item or spell that temporarily boosts vision range for the carrier
+- [ ] Lantern item type with fuel tracking (burns for N turns, can be refilled from inventory)
+- [ ] Environmental lighting zones (DM can paint bright/dim/dark areas on the battle map)
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes
