@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added light source items in inventory — new `'light'` ItemType, `appliesCondition` and `consumable` fields on Item. Pre-built `LIGHT_SOURCE_ITEMS` array (Candle x5, Torch x3, Hooded Lantern, Tinderbox) exported from types/game.ts. `useItem` in GameContext updated: light source items apply their condition to the character's unit (toggle behavior — using again extinguishes). Consumable items (candles, torches) decrement quantity; non-consumable (lantern) stays in inventory. Non-consumable items skip inventory removal on use.
 - Added multiple light source types — 5 light-bearing conditions with distinct propagation radii: candle (10ft/20ft), torch (20ft/30ft), lantern (30ft/50ft), darkvision spell (0ft/60ft dim only), daylight spell (60ft/100ft). `LIGHT_SOURCE_RADII` map in types/game.ts drives BattleMap's `effectiveLighting` computation. Each source emits bright + dim zones. `CONDITION_VISION_OVERRIDE` updated with matching per-condition vision ranges. Condition colors, effects, and rule tooltips added for all 3 new types.
 - Added backstory hooks persistence — `backstoryHooks` string array saved/loaded with campaign state. Hooks generated before the adventure starts now survive page reload and session resume, so the DM doesn't lose them by refreshing.
 - Added dynamic light source propagation — torchlit units emit bright light (4 cells/20ft) and dim light (6 cells/30ft) computed at render time via `effectiveLighting` useMemo. Merges with DM-painted static lighting grid (higher rank wins: dark < normal < dim < bright). Optimized with bounded iteration (only scans cells within torch radius). DM sees the combined overlay. Vision computation uses `effectiveLighting` so torch carriers dynamically illuminate dark areas as they move.
@@ -827,7 +828,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Light source propagation — torch conditions auto-paint bright/dim zones around the carrier token
 - [x] Darkvision spell light propagation (60ft dim-only radius, no bright zone)
 - [x] Multiple light source types (candle: 2/4 cells, lantern: 6/10 cells, daylight spell: 12/20 cells)
-- [ ] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
+- [x] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
+- [ ] Add light source items to the shop (DM shop or starting equipment presets)
 - [ ] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
 
 **DM tools:**
