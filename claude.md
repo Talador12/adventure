@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added per-unit vision range based on racial darkvision. `Unit.visionRange` field (cells, default 6 = 30ft). D&D 5e darkvision races (Elf, Dwarf, Gnome, Half-Orc, Tiefling, Dragonborn) get 12 cells (60ft). Humans and Halflings keep 30ft. `computeVisibility` now reads `visionRange` per-position instead of using a global constant. Constants exported from `types/game.ts`: `DARKVISION_RACES`, `DARKVISION_RANGE`, `NORMAL_VISION_RANGE`.
 - Added DM "View As" dropdown — when DM mode is on, a dropdown appears next to the toggle listing all living player characters. Selecting one previews the map from that player's fog perspective (only their token's vision). "Full Vision" restores normal DM view. All fog rendering paths (terrain, tokens, traps, minimap) respect `effectiveDmMode` so the preview is accurate. Toggling DM mode off auto-clears the View As selection.
 - Added per-player fog of war in multiplayer — non-DM players now see only from their own character's token when connected to a multiplayer session. DM retains full map vision. Solo/offline play keeps shared party vision. Implemented via `myUnitId` prop on BattleMap: when set, `playerPositions` filter restricts vision computation to only that player's unit. Game.tsx passes `selectedCharacterId` when `wsConnected && !isDM`. No WebSocket changes needed — fog is computed purely client-side from each player's local unit position.
 - Added latency heatmap to Game DMSidebar Notes tab — compact horizontal bar chart showing all connected players' RTT with color-coded severity bars (emerald/amber/red). Stale/disconnected players show a pulsing red bar with "DC" label. Bar width scales relative to the worst latency in the party. Uses the existing `playerLatency` + `stalePlayers` state from `useGameWebSocket`.
@@ -798,7 +799,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Hover tooltips on initiative bar (HP, AC, abilities with cooldowns, conditions with durations, speed, CR, concentration)
 - [x] Fog of war per-player (each player sees only from their token — currently global fog)
 - [x] DM "View As" dropdown — DM can preview the map from any specific player's perspective
-- [ ] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
+- [x] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
+- [ ] Torch/Light spell mechanic — consumable item or spell that temporarily boosts vision range for the carrier
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes

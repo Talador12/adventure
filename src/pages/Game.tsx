@@ -21,7 +21,7 @@ import { useDynamicDifficulty } from '../hooks/useDynamicDifficulty';
 import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
-import type { Quest, MapPin } from '../types/game';
+import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
 import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
@@ -631,6 +631,7 @@ export default function Game() {
         movementUsed: 0,
         reactionUsed: false,
         disengaged: false,
+        visionRange: DARKVISION_RACES.has(char.race) ? DARKVISION_RANGE : NORMAL_VISION_RANGE,
       };
       setUnits([unit]);
       setShowCharacterPicker(false);

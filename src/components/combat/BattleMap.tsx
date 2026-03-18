@@ -230,10 +230,10 @@ function findSpawnPoints(terrain: TerrainType[][], count: number, side: 'left' |
 // to the cell center without passing through a wall.
 function computeVisibility(
   terrain: TerrainType[][],
-  playerPositions: { col: number; row: number }[],
+  playerPositions: { col: number; row: number; visionRange?: number }[],
   rows: number,
   cols: number,
-  visionRadius: number,
+  defaultVisionRadius: number,
   isDM: boolean,
 ): boolean[][] {
   // DM sees everything
@@ -242,10 +242,11 @@ function computeVisibility(
   const visible: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
 
   for (const pp of playerPositions) {
+    const radius = pp.visionRange ?? defaultVisionRadius;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const dist = Math.sqrt((r - pp.row) ** 2 + (c - pp.col) ** 2);
-        if (dist > visionRadius) continue;
+        if (dist > radius) continue;
         if (visible[r][c]) continue; // already visible
 
         // Bresenham line from player to cell — check for walls
@@ -619,7 +620,10 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       if (effectiveViewUnit) return u.id === effectiveViewUnit;
       return true; // shared party vision fallback
     })
-    .map((p) => ({ col: p.col, row: p.row }));
+    .map((p) => {
+      const u = units.find((u) => u.id === p.unitId);
+      return { col: p.col, row: p.row, visionRange: u?.visionRange };
+    });
 
   // DM sees full vision when viewAsUnitId is null (normal DM mode)
   const effectiveDmMode = dmMode && !viewAsUnitId;
