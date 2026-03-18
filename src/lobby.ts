@@ -4,6 +4,7 @@
 
 // --- Seat model: configurable table with human/AI/empty seats ---
 type SeatType = 'human' | 'ai' | 'empty';
+type RollInterpolationMode = 'smooth' | 'strict';
 
 interface Seat {
   id: string;            // stable ID: "seat-0", "seat-1", etc.
@@ -69,6 +70,7 @@ interface QueuedRoll {
   bonuses?: RollBonus[];
   animationMs: number;
   presentationMs: number;
+  rollInterpolationMode: RollInterpolationMode;
   timestamp: number;
 }
 
@@ -79,6 +81,7 @@ interface PersistedLobbyState {
   dmSeatType: 'human' | 'ai';
   activeRoll: QueuedRoll | null;
   rollQueue: QueuedRoll[];
+  rollInterpolationMode: RollInterpolationMode;
 }
 
 const MAX_STROKE_HISTORY = 5000; // cap memory usage
@@ -121,7 +124,7 @@ function getRollPresentationTiming(roll: {
 }
 
 // DM-only message types that require authorization
-const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action', 'veto_roll']);
+const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action', 'veto_roll', 'set_roll_interpolation_mode']);
 // DM-only seat management messages (set_dm_type handled separately since it can un-DM the sender)
 const DM_SEAT_MESSAGES = new Set(['set_seat_type', 'add_seat', 'remove_seat', 'kick_player']);
 
@@ -136,6 +139,7 @@ export class Lobby {
   activeRoll: QueuedRoll | null;
   rollQueue: QueuedRoll[];
   rollTimer: ReturnType<typeof setTimeout> | null;
+  rollInterpolationMode: RollInterpolationMode;
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
@@ -147,6 +151,7 @@ export class Lobby {
     this.activeRoll = null;
     this.rollQueue = [];
     this.rollTimer = null;
+    this.rollInterpolationMode = 'smooth';
     // Initialize default player seats — all empty
     this.seats = [];
     for (let i = 0; i < DEFAULT_SEAT_COUNT; i++) {
@@ -165,7 +170,16 @@ export class Lobby {
     this.dmPlayerId = typeof saved.dmPlayerId === 'string' || saved.dmPlayerId === null ? saved.dmPlayerId : null;
     this.dmSeatType = saved.dmSeatType === 'ai' ? 'ai' : 'human';
     this.activeRoll = saved.activeRoll || null;
-    this.rollQueue = Array.isArray(saved.rollQueue) ? saved.rollQueue : [];
+    if (this.activeRoll) {
+      this.activeRoll.rollInterpolationMode = this.activeRoll.rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
+    }
+    this.rollQueue = Array.isArray(saved.rollQueue)
+      ? saved.rollQueue.map((roll) => ({
+        ...roll,
+        rollInterpolationMode: roll.rollInterpolationMode === 'strict' ? 'strict' : 'smooth',
+      }))
+      : [];
+    this.rollInterpolationMode = saved.rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
 
     if (this.activeRoll) {
       const elapsed = Math.max(0, Date.now() - this.activeRoll.timestamp);
@@ -192,6 +206,7 @@ export class Lobby {
       dmSeatType: this.dmSeatType,
       activeRoll: this.activeRoll,
       rollQueue: this.rollQueue,
+      rollInterpolationMode: this.rollInterpolationMode,
     };
     this.state.storage.put('lobby_state', payload).catch(() => {});
   }
@@ -281,7 +296,7 @@ export class Lobby {
 
     // REST: get player list + seats + spectators
     if (url.pathname.endsWith('/players')) {
-      return Response.json({ players: this.getPlayerList(), seats: this.seats, spectators: this.getSpectatorList(), dmSeatType: this.dmSeatType });
+      return Response.json({ players: this.getPlayerList(), seats: this.seats, spectators: this.getSpectatorList(), dmSeatType: this.dmSeatType, rollInterpolationMode: this.rollInterpolationMode });
     }
 
     return Response.json({ status: 'ok', players: this.sessions.size, seats: this.seats.length });
@@ -383,6 +398,7 @@ export class Lobby {
             strokeHistory: this.strokeHistory,
             activeRoll: this.activeRoll,
             queuedRolls: this.rollQueue,
+            rollInterpolationMode: this.rollInterpolationMode,
             isDM: finalId === this.dmPlayerId,
             dmPlayerId: this.dmPlayerId,
             seatId: assignedSeatId,
@@ -512,6 +528,7 @@ export class Lobby {
           bonuses,
           animationMs: timing.animationMs,
           presentationMs: timing.presentationMs,
+          rollInterpolationMode: this.rollInterpolationMode,
           timestamp: Date.now(),
         };
 
@@ -912,6 +929,22 @@ export class Lobby {
         break;
       }
 
+      case 'set_roll_interpolation_mode': {
+        const mode = data.rollInterpolationMode as string;
+        if (mode !== 'smooth' && mode !== 'strict') {
+          server.send(JSON.stringify({ type: 'error', message: 'rollInterpolationMode must be "smooth" or "strict"', timestamp: Date.now() }));
+          return;
+        }
+        this.rollInterpolationMode = mode;
+        this.persistState();
+        this.broadcast({
+          type: 'roll_interpolation_mode_changed',
+          rollInterpolationMode: this.rollInterpolationMode,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
       case 'transfer_dm': {
         // Only current DM can transfer the role
         const transferSession = this.sessions.get(server);
@@ -1104,6 +1137,7 @@ export class Lobby {
         bonuses: roll.bonuses,
         animationMs: roll.animationMs,
         presentationMs: roll.presentationMs,
+        rollInterpolationMode: roll.rollInterpolationMode,
         timestamp: roll.timestamp,
       });
       this.rollTimer = setTimeout(() => {

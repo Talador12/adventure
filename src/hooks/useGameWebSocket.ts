@@ -9,7 +9,7 @@ import type { Unit, Character } from '../contexts/GameContext';
 import type { ChatMessage } from '../components/chat/ChatPanel';
 import type { TerrainType, TokenPosition } from '../lib/mapUtils';
 import type { Quest, MapPin } from '../types/game';
-import type { RollPresentation } from '../types/roll';
+import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 import type { JournalEntry } from '../components/game/SessionJournal';
 import type { LootItem } from '../components/game/LootTracker';
 import { playPlayerJoin } from './useSoundFX';
@@ -78,6 +78,7 @@ export interface GameWebSocketDeps {
   onRollVetoed?: (rollId: string, vetoedBy?: string) => void;
   onRollCleared?: (rollId: string, reason?: string) => void;
   onServerTimeSync?: (serverNowMs: number) => void;
+  onRollInterpolationMode?: (mode: RollInterpolationMode) => void;
 }
 
 export interface GameWebSocketState {
@@ -116,6 +117,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     onRollVetoed,
     onRollCleared,
     onServerTimeSync,
+    onRollInterpolationMode,
   } = deps;
 
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
@@ -142,6 +144,9 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           setIsDM((msg.isDM as boolean) ?? false);
           setIsSpectating(!!(msg.isSpectating));
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
+            onRollInterpolationMode?.(msg.rollInterpolationMode as RollInterpolationMode);
+          }
           // Auto-join campaign party in D1 (fire-and-forget)
           fetch(`/api/party/${encodeURIComponent(room)}/join`, {
             method: 'POST',
@@ -343,6 +348,13 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           }
 
           onRollCleared?.(rollId, reason);
+          break;
+        }
+
+        case 'roll_interpolation_mode_changed': {
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
+            onRollInterpolationMode?.(msg.rollInterpolationMode as RollInterpolationMode);
+          }
           break;
         }
 
@@ -616,7 +628,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     },
     // Use refs for frequently-changing state to avoid re-creating the callback on every state change.
     // wsPlayerId is tracked via wsPlayerIdRef, and state_request uses getStateForResponse callback.
-    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync]
+    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync, onRollInterpolationMode]
   );
 
   return {

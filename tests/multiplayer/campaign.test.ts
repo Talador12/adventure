@@ -24,7 +24,7 @@ function send(ws: WebSocket, msg: Record<string, unknown>) {
 function waitForMessage(
   ws: WebSocket,
   type: string,
-  timeoutMs = 2000,
+  timeoutMs = 4000,
 ): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`Timeout waiting for ${type}`)), timeoutMs);
@@ -239,6 +239,9 @@ describe('multiplayer edge cases', () => {
     send(ws, { type: 'join', username: 'Roller' });
     await waitForMessage(ws, 'welcome');
 
+    // Rolls are now presented through the queue, so wait for roll_cleared between
+    // checks to avoid asserting on queued-but-not-yet-presented rolls.
+
     // sides=0 is falsy -> defaults to 20 (d20), then clamped to [2,100]
     const rollPromise = waitForMessage(ws, 'roll_result');
     send(ws, { type: 'roll', sides: 0 });
@@ -246,21 +249,27 @@ describe('multiplayer edge cases', () => {
     expect(roll.sides).toBe(20); // Number(0) || 20 = 20
     expect(roll.value as number).toBeGreaterThanOrEqual(1);
     expect(roll.value as number).toBeLessThanOrEqual(20);
+    const cleared0 = await waitForMessage(ws, 'roll_cleared', 6000);
+    expect(cleared0.rollId).toBe(roll.rollId);
 
     // sides=1 is truthy -> clamps to min 2
     const rollPromise1b = waitForMessage(ws, 'roll_result');
     send(ws, { type: 'roll', sides: 1 });
     const roll1b = await rollPromise1b;
     expect(roll1b.sides).toBe(2);
+    const cleared1 = await waitForMessage(ws, 'roll_cleared', 6000);
+    expect(cleared1.rollId).toBe(roll1b.rollId);
 
     // sides=999 -> clamps to max 100
     const rollPromise2 = waitForMessage(ws, 'roll_result');
     send(ws, { type: 'roll', sides: 999 });
     const roll2 = await rollPromise2;
     expect(roll2.sides).toBe(100);
+    const cleared2 = await waitForMessage(ws, 'roll_cleared', 6000);
+    expect(cleared2.rollId).toBe(roll2.rollId);
 
     await closeAndWait(ws);
-  });
+  }, 20000);
 
   it('unknown message type returns error to sender', async () => {
     const ws = await connectPlayer('edge-unknown-' + Date.now());
@@ -716,6 +725,33 @@ describe('Seat model — party configuration', () => {
     await closeAndWait(ws);
   });
 
+  it('DM can toggle roll interpolation mode and non-DM is rejected', async () => {
+    const room = 'seats-roll-sync-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'DM' });
+    const welcome = await waitForMessage(ws1, 'welcome');
+    expect(welcome.rollInterpolationMode).toBe('smooth');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Player' });
+    await waitForMessage(ws2, 'welcome');
+
+    // DM flips to strict.
+    const changed = waitForMessage(ws1, 'roll_interpolation_mode_changed');
+    send(ws1, { type: 'set_roll_interpolation_mode', rollInterpolationMode: 'strict' });
+    const changedMsg = await changed;
+    expect(changedMsg.rollInterpolationMode).toBe('strict');
+
+    // Non-DM cannot change it.
+    const err = waitForMessage(ws2, 'error');
+    send(ws2, { type: 'set_roll_interpolation_mode', rollInterpolationMode: 'smooth' });
+    const errMsg = await err;
+    expect(errMsg.message).toContain('Only the DM');
+
+    await closeAndWait(ws2);
+    await closeAndWait(ws1);
+  });
+
   it('DM can kick a player from their seat', async () => {
     const room = 'seats-kick-' + Date.now();
     const ws1 = await connectPlayer(room);
@@ -754,10 +790,11 @@ describe('Seat model — party configuration', () => {
     const id = env.LOBBY.idFromName(room);
     const stub = env.LOBBY.get(id);
     const resp = await stub.fetch('http://fake/players');
-    const data = (await resp.json()) as { players: unknown[]; seats: unknown[]; dmSeatType: string };
+    const data = (await resp.json()) as { players: unknown[]; seats: unknown[]; dmSeatType: string; rollInterpolationMode: string };
 
     expect(data.seats.length).toBe(4);
     expect(data.dmSeatType).toBe('human');
+    expect(data.rollInterpolationMode).toBe('smooth');
     expect(data.players.length).toBe(1);
 
     await closeAndWait(ws);

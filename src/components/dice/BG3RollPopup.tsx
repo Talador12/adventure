@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DICE_SHAPE_MAP } from './DiceShapes';
-import type { RollPresentation } from '../../types/roll';
+import type { RollInterpolationMode, RollPresentation } from '../../types/roll';
 
 interface BG3RollPopupProps {
   roll: RollPresentation | null;
@@ -9,6 +9,7 @@ interface BG3RollPopupProps {
   onVeto?: (rollId: string) => void;
   serverTimeOffsetMs?: number;
   syncRttMs?: number | null;
+  interpolationMode?: RollInterpolationMode;
 }
 
 const EMPTY_ROLL: RollPresentation = {
@@ -36,7 +37,7 @@ function getKeptFlags(allRolls: number[], keptRolls: number[]): boolean[] {
   });
 }
 
-export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOffsetMs = 0, syncRttMs = null }: BG3RollPopupProps) {
+export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOffsetMs = 0, syncRttMs = null, interpolationMode = 'smooth' }: BG3RollPopupProps) {
   const activeRoll = roll || EMPTY_ROLL;
 
   const shapeKey = useMemo(() => {
@@ -80,7 +81,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
     const preElapsed = Math.max(0, Date.now() + serverTimeOffsetMs - activeRoll.timestamp);
     // High-latency interpolation: when RTT is high, slightly bias toward replaying
     // more of the animation locally to avoid jarring phase jumps on join/reconnect.
-    const latencyInterpolationMs = syncRttMs && syncRttMs > 220 ? Math.min(450, Math.round((syncRttMs - 180) * 0.9)) : 0;
+    const latencyInterpolationMs = interpolationMode === 'smooth' && syncRttMs && syncRttMs > 220 ? Math.min(450, Math.round((syncRttMs - 180) * 0.9)) : 0;
     const preElapsedAdjusted = Math.max(0, preElapsed - latencyInterpolationMs);
     if (preElapsedAdjusted >= animationMs) {
       setAnimatedValues(activeRoll.allRolls);
@@ -123,7 +124,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
       }));
     }, tickMs);
     return () => clearInterval(timer);
-  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, activeRoll.timestamp, animationMs, dieStaggerMs, perDieSpinMs, serverTimeOffsetMs, syncRttMs]);
+  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, activeRoll.timestamp, animationMs, dieStaggerMs, perDieSpinMs, serverTimeOffsetMs, syncRttMs, interpolationMode]);
 
   useEffect(() => {
     if (document.getElementById('bg3-roll-popup-keyframes')) return;
@@ -244,7 +245,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+        <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
           <div className="rounded-lg border border-slate-700/60 bg-slate-800/50 px-3 py-2">
             <span className="text-slate-400">Roll</span>
             <div className="mt-0.5 font-semibold text-slate-100">{activeRoll.count > 1 ? `${activeRoll.count}x ` : ''}{activeRoll.die.toUpperCase()}</div>
@@ -253,6 +254,12 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
             <span className="text-slate-400">Mode</span>
             <div className={`mt-0.5 font-semibold ${activeRoll.advMode === 'advantage' ? 'text-emerald-300' : activeRoll.advMode === 'disadvantage' ? 'text-rose-300' : 'text-slate-100'}`}>
               {activeRoll.advMode === 'advantage' ? 'Advantage' : activeRoll.advMode === 'disadvantage' ? 'Disadvantage' : 'Normal'}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-700/60 bg-slate-800/50 px-3 py-2">
+            <span className="text-slate-400">Sync</span>
+            <div className={`mt-0.5 font-semibold ${interpolationMode === 'strict' ? 'text-sky-300' : 'text-amber-200'}`}>
+              {interpolationMode === 'strict' ? 'Strict' : 'Smooth'}
             </div>
           </div>
         </div>

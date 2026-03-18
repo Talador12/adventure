@@ -9,7 +9,7 @@ import DoodlePad, { type DoodlePadHandle, type DoodleStroke } from '../component
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { useGame, type DieType } from '../contexts/GameContext';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
-import type { RollPresentation } from '../types/roll';
+import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 
 interface LobbyPlayer {
   id: string;
@@ -79,6 +79,7 @@ export default function Lobby() {
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
   const [clockRttMs, setClockRttMs] = useState<number | null>(null);
+  const [rollInterpolationMode, setRollInterpolationMode] = useState<RollInterpolationMode>('smooth');
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -203,6 +204,9 @@ export default function Lobby() {
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
           if (Array.isArray(msg.spectators)) setSpectators(msg.spectators as { id: string; username: string; avatar?: string }[]);
           if (msg.dmSeatType) setDmSeatType(msg.dmSeatType as 'human' | 'ai');
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
+            setRollInterpolationMode(msg.rollInterpolationMode as RollInterpolationMode);
+          }
           if (msg.seatId) setMySeatId(msg.seatId as string);
           setIsSpectating(!!(msg.isSpectating));
           setIsDM((msg.isDM as boolean) ?? false);
@@ -324,6 +328,19 @@ export default function Lobby() {
           if (msg.dmSeatType) setDmSeatType(msg.dmSeatType as 'human' | 'ai');
           setDmPlayerId((msg.dmPlayerId as string) || null);
           setIsDM(!!msg.dmPlayerId && msg.dmPlayerId === wsPlayerId);
+          break;
+
+        case 'roll_interpolation_mode_changed':
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
+            setRollInterpolationMode(msg.rollInterpolationMode as RollInterpolationMode);
+            setChatMessages((prev) => [...prev, {
+              id: crypto.randomUUID(),
+              type: 'system',
+              username: 'System',
+              text: `Dice sync mode changed to ${msg.rollInterpolationMode}`,
+              timestamp: (msg.timestamp as number) || Date.now(),
+            }]);
+          }
           break;
 
         case 'kicked':
@@ -878,6 +895,9 @@ export default function Lobby() {
               sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
             </span>
           )}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${rollInterpolationMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+            roll sync {rollInterpolationMode}
+          </span>
           {isSpectating && (
             <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-900/30 border border-sky-700/30 text-sky-400 font-semibold animate-fade-in-up">
               Spectating
@@ -984,6 +1004,26 @@ export default function Lobby() {
               >
                 {campaignPassword ? 'Set' : 'Remove'}
               </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-[10px] text-slate-500 uppercase tracking-wider">Roll Sync</label>
+              <div className="inline-flex rounded-md border border-slate-700/70 overflow-hidden">
+                <button
+                  onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'smooth' })}
+                  className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'smooth' ? 'bg-amber-900/30 text-amber-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Smooth
+                </button>
+                <button
+                  onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'strict' })}
+                  className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'strict' ? 'bg-sky-900/30 text-sky-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Strict
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-500">
+                Smooth softens high-latency catch-up; strict favors lockstep timing.
+              </span>
             </div>
           </div>
         </div>
@@ -1268,6 +1308,7 @@ export default function Lobby() {
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
         serverTimeOffsetMs={serverTimeOffsetMs}
         syncRttMs={clockRttMs}
+        interpolationMode={rollInterpolationMode}
       />
     </div>
   );

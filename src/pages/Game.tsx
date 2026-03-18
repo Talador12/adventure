@@ -22,7 +22,7 @@ import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import type { Quest, MapPin } from '../types/game';
-import type { RollPresentation } from '../types/roll';
+import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
@@ -105,6 +105,7 @@ export default function Game() {
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
   const [clockRttMs, setClockRttMs] = useState<number | null>(null);
+  const [rollInterpolationMode, setRollInterpolationMode] = useState<RollInterpolationMode>('smooth');
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
@@ -480,6 +481,7 @@ export default function Game() {
     onServerTimeSync: (serverNowMs) => {
       setServerTimeOffsetMs(serverNowMs - Date.now());
     },
+    onRollInterpolationMode: setRollInterpolationMode,
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
@@ -1437,6 +1439,9 @@ export default function Game() {
               sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
             </span>
           )}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${rollInterpolationMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+            roll sync {rollInterpolationMode}
+          </span>
           <SessionTimer roomId={room} compact />
         </div>
         <div className="flex items-center gap-3">
@@ -2022,6 +2027,7 @@ export default function Game() {
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
         serverTimeOffsetMs={serverTimeOffsetMs}
         syncRttMs={clockRttMs}
+        interpolationMode={rollInterpolationMode}
       />
 
       {/* Keyboard Shortcut Help Overlay */}
