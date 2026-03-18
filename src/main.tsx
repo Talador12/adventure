@@ -7,6 +7,11 @@ import { GameProvider } from './contexts/GameContext';
 import Home from './pages/Home'; // Home is the landing page — keep eagerly loaded
 import './styles.css';
 
+// Apply Low-FX mode from localStorage on initial load (before React renders)
+if (typeof window !== 'undefined' && localStorage.getItem('adventure:lowfx') === '1') {
+  document.documentElement.classList.add('low-fx');
+}
+
 // Lazy-load heavy pages — Game (3266 lines), CharacterCreate (1838 lines), Lobby (897 lines)
 const Game = React.lazy(() => import('./pages/Game'));
 const Lobby = React.lazy(() => import('./pages/Lobby'));

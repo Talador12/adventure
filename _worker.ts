@@ -732,6 +732,43 @@ ${historyStr}`;
   }
 });
 
+// AI backstory hooks — generates narrative connections between party members
+app.post('/api/dm/backstory-hooks', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const characters = (body.characters as Array<Record<string, unknown>>) || [];
+    if (characters.length < 2) return c.json({ error: 'Need at least 2 characters' }, 400);
+
+    const charSummaries = characters.map((ch) => {
+      const parts = [`${ch.name} — Level ${ch.level} ${ch.race} ${ch.class} (${ch.background || 'Unknown'} background)`];
+      if (ch.personalityTraits) parts.push(`Personality: ${ch.personalityTraits}`);
+      if (ch.bonds) parts.push(`Bonds: ${ch.bonds}`);
+      if (ch.backstory) parts.push(`Backstory: ${String(ch.backstory).slice(0, 200)}`);
+      return parts.join('. ');
+    }).join('\n\n');
+
+    const prompt = `Given these D&D 5e party members:\n\n${charSummaries}\n\nGenerate 3-5 narrative hooks that connect these characters. Each hook should:\n- Link 2+ characters through shared history, conflicting goals, or complementary abilities\n- Be 1-2 sentences, evocative and specific\n- Reference their races, classes, backgrounds, or personality traits\n- Create dramatic tension or cooperative opportunity\n\nFormat: Return ONLY a JSON array of strings, each string being one hook. No other text.`;
+
+    const response = await (c.env.AI as { run: (model: string, options: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
+      '@cf/meta/llama-3.1-8b-instruct',
+      { messages: [
+        { role: 'system', content: 'You are a creative D&D narrative designer. Return valid JSON only.' },
+        { role: 'user', content: prompt },
+      ] },
+    );
+
+    const text = response?.response || '[]';
+    // Extract JSON array from response (LLM may wrap in markdown code fences)
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    const hooks: string[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    return c.json({ hooks });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Backstory hooks generation failed';
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // AI DM encounter generator — creates enemies with stats
 app.post('/api/dm/encounter', async (c) => {
   if (!c.env.AI) {

@@ -527,6 +527,36 @@ a:hover {
    ACCESSIBILITY — Reduced motion
    ============================================================ */
 
+/* Low-FX mode: manual toggle for accessibility — disable animations, boost contrast */
+.low-fx *, .low-fx *::before, .low-fx *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+.low-fx .hero-gradient,
+.low-fx .text-shimmer,
+.low-fx .animate-float,
+.low-fx .btn-glow,
+.low-fx .hp-bar-shimmer::after,
+.low-fx .weather-rain,
+.low-fx .weather-fog,
+.low-fx .weather-snow,
+.low-fx .weather-sandstorm { animation: none !important; }
+.low-fx .text-shimmer {
+  -webkit-text-fill-color: currentColor;
+  background: none !important;
+}
+.low-fx .backdrop-blur-sm,
+.low-fx .backdrop-blur-md { backdrop-filter: none !important; }
+.low-fx .card-glow::before { display: none !important; }
+/* High-contrast borders and text */
+.low-fx .border-slate-700\/50,
+.low-fx .border-slate-800\/60,
+.low-fx .border-slate-700\/60 { border-color: rgb(100, 116, 139) !important; }
+.low-fx .text-slate-500,
+.low-fx .text-slate-400 { color: rgb(203, 213, 225) !important; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
