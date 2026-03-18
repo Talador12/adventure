@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added D&D Beyond character import — auto-detects DDB JSON format (classes array or data.character wrapper) and routes through `parseDDBCharacter()` in `src/lib/ddbImport.ts`. Parses name, race (fuzzy-matches sub-races like "High Elf" → Elf), class (primary = highest level), stats (base + bonus + racial + overrides), HP (base + CON mod + removed), AC, XP, gold (currency conversion), personality traits, backstory, death saves, inspiration, exhaustion. Import button tooltip updated to mention D&D Beyond. Warnings shown for race/class mapping notes.
 - Added Torch/Light spell mechanic — two new condition types (`torchlit` at 8 cells/40ft, `darkvision` at 12 cells/60ft) integrated with the existing conditions system. `CONDITION_VISION_OVERRIDE` map exported from types/game.ts. BattleMap's vision computation applies condition-based overrides (max of base visionRange and condition override). CombatToolbar gets a Torch toggle button (free action, duration -1 = until extinguished). Condition colors and rule tooltips added.
 - Added ARIA accessibility pass across 7 files — 23 attributes added: `aria-label` on icon-only buttons (theme toggle, sound mute, zoom +/-, delete, close), `role="dialog"` + `aria-modal="true"` on modals (login, delete confirm, help overlay), `aria-label` on canvas elements (battle map, minimap), `aria-label` on form inputs (chat, room code, volume slider), `aria-expanded` on collapsible sections, landmark labels on `<aside>`.
 - Added campaign archive (soft delete + restore). DELETE endpoint now marks campaigns `archived: true` with `archivedAt` timestamp instead of removing them. `?permanent=1` query param hard-deletes. New `POST /api/campaigns/:roomId/restore` endpoint un-archives. Home page hides archived campaigns from main grid and shows a collapsible "Archived (N)" section with Restore + Delete Forever buttons. Confirmation modal dynamically shows "Archive" (amber) for active campaigns and "Delete Forever" (red) for already-archived ones. Public index auto-removes archived campaigns and re-syncs on restore.
@@ -794,7 +795,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AI Build shortcut (fills all fields, jumps to Review)
 - [x] Edit mode jumps directly to Review (all fields pre-filled)
 - [ ] AI-generated backstory hooks based on party composition
-- [ ] Import characters from D&D Beyond / Foundry VTT JSON
+- [x] Import characters from D&D Beyond / Foundry VTT JSON
+- [ ] Foundry VTT character import (similar parser for Foundry's actor JSON format)
+- [ ] D&D Beyond inventory/spell import (map DDB equipment + prepared spells to our Item/Spell types)
 
 **Game board:**
 - [x] Minimap with click-to-pan (4px/cell, terrain + token dots + viewport rect, toggle button)

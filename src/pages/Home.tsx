@@ -244,7 +244,12 @@ export default function Home() {
       // Assign a new ID and current player to avoid conflicts
       const imported = { ...result.character, id: crypto.randomUUID(), playerId: user.id || '', createdAt: Date.now() };
       addCharacter(imported);
-      toast(`Imported ${imported.name}!`, 'success');
+      const warnings = (result as { warnings?: string[] }).warnings;
+      if (warnings && warnings.length > 0) {
+        toast(`Imported ${imported.name} (${warnings.length} mapping note${warnings.length !== 1 ? 's' : ''})`, 'success');
+      } else {
+        toast(`Imported ${imported.name}!`, 'success');
+      }
     }
   };
 
@@ -631,7 +636,7 @@ export default function Home() {
               <button
                 onClick={handleImportCharacter}
                 className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-all"
-                title="Import character from .adventure.json file"
+                title="Import character from Adventure JSON or D&D Beyond export"
               >
                 Import
               </button>
