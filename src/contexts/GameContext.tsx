@@ -815,6 +815,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
             applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
             result.message = `${casterName} casts ${spell.name}! ${targetName} is ${spell.appliesCondition}!`;
           }
+        } else if (spell.appliesCondition && !targetUnitId) {
+          // Self-targeting condition spell (Daylight, Darkvision on self, etc.)
+          const casterUnit = units.find((u) => u.characterId === charId);
+          if (casterUnit) {
+            applyCondition(casterUnit.id, { type: spell.appliesCondition, duration: spell.conditionDuration || 10, source: casterName });
+            result.message = `${casterName} casts ${spell.name} on themselves! ${CONDITION_EFFECTS[spell.appliesCondition]?.description || ''}`;
+          } else {
+            result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
+          }
         } else {
           result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
         }

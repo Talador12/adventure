@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added Daylight + Darkvision self-cast spells with auto-condition application. `castSpell` in GameContext now handles self-targeting condition spells (no target required) — applies the condition to the caster's unit when cast without a target. Daylight (3rd level, 60ft/100ft, 10 rounds) and Darkvision (2nd level, 60ft dim, 10 rounds) added to SPELL_LIST with `appliesCondition`. Both integrate with the dynamic lighting propagation system. Casting Daylight makes your token emit a massive 12-cell bright + 20-cell dim light radius.
 - Added Foundry VTT character import — `foundryImport.ts` detects Foundry actor format (`type='character'` + `system.abilities`) and parses stats, HP, AC, death saves, class (from items array), race, level, XP, gold (multi-currency), biography→backstory, inventory (weapons/armor/shield/potions with stat extraction), auto-equip. Lazy-loaded via dynamic import in `export.ts`. Import button now handles 3 formats: native Adventure JSON, D&D Beyond, and Foundry VTT — all auto-detected.
 - Added D&D Beyond spell import — parses `classSpells` and `spells.class`/`spells.race` arrays from DDB JSON. Extracts name, level, school, description (HTML-stripped), range, duration, concentration, damage dice. Deduplicates by name. Reports cantrip + spell counts in import warnings. Spells available through the existing class spell list system in-game (DDB spells serve as validation that the import detected the right class/level).
 - Added starting equipment presets for all 12 classes — `STARTING_EQUIPMENT` map in data/items.ts gives each class a thematic D&D 5e PHB loadout (weapons, armor, light sources, potions) with class-appropriate gold. CharacterCreate.tsx auto-populates inventory + auto-equips best weapon/armor/shield on creation. Fighter gets chain mail + longsword + shield, Rogue gets leather + rapier + lantern, Wizard gets quarterstaff + candles, etc.
@@ -843,7 +844,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Add light source items to the shop (Supplies category with adventuring gear)
 - [x] Starting equipment presets by class (Fighter gets chain mail + longsword, Rogue gets leather + daggers, etc.)
 - [ ] "Re-roll equipment" button on character sheet to re-randomize starting gear variant
-- [ ] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
+- [x] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
+- [ ] Dispel Magic: remove light conditions from target units (counter to Daylight/Darkvision)
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes

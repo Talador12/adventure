@@ -52,6 +52,8 @@ export const SPELL_LIST: Spell[] = [
   { id: 'spirit-guardians', name: 'Spirit Guardians', level: 3, school: 'conjuration', description: 'Spirits swirl around you. Enemies in 15ft take 3d8 radiant.', damage: '3d8', range: 'Self (15ft radius)', duration: 'Concentration, 10 minutes', saveStat: 'WIS', isConcentration: true, classes: ['Cleric'], aoe: { shape: 'circle', radiusCells: 3, color: 'rgba(251,191,36,0.25)' } },
   { id: 'revivify', name: 'Revivify', level: 3, school: 'necromancy', description: 'Touch a creature dead for less than 1 minute. It returns with 1 HP.', healAmount: 1, range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Paladin', 'Druid'] },
   { id: 'counterspell', name: 'Counterspell', level: 3, school: 'abjuration', description: 'Reaction: interrupt a creature casting a spell of 3rd level or lower.', range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Warlock'] },
+  { id: 'daylight', name: 'Daylight', level: 3, school: 'evocation', description: '60ft bright light, 100ft dim. Dispels magical darkness.', range: 'Self', duration: '1 hour', isConcentration: false, classes: ['Cleric', 'Druid', 'Sorcerer', 'Paladin', 'Ranger'], appliesCondition: 'daylight', conditionDuration: 10 },
+  { id: 'darkvision-spell', name: 'Darkvision', level: 2, school: 'transmutation', description: 'Touch a willing creature. 60ft darkvision for 8 hours.', range: 'Touch', duration: '8 hours', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Druid', 'Ranger'], appliesCondition: 'darkvision', conditionDuration: 10 },
 ];
 
 export function getClassSpells(charClass: CharacterClass, level: number): Spell[] {
