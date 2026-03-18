@@ -1227,6 +1227,7 @@ export default function Lobby() {
         isDM={isDM}
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
         serverTimeOffsetMs={serverTimeOffsetMs}
+        syncRttMs={clockRttMs}
       />
     </div>
   );

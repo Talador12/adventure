@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added first-pass high-latency roll interpolation: BG3 popup now factors live RTT into phase catch-up (small latency compensation window) to reduce jarring animation jumps for reconnecting/high-ping clients while preserving server-authoritative timing.
 - Added live sync-quality telemetry in Lobby/Game headers (clock offset + RTT) using the new ping/pong time-sync channel so players can quickly tell when visual desync risk is network-related.
 - Added active clock-sync sampling over WebSocket ping/pong (with RTT-aware offset estimation) and wired both Lobby/Game roll popups to consume smoothed server-time offset so roll animation phases stay visually aligned across clients.
 - Implemented first cross-device parity layer in Lobby DO: durable persistence for lobby strokes/seats/DM/active-roll queue with restore-on-wake, welcome backfill for active roll state, and timestamp-based catch-up in BG3 popup for closer client sync on late join.
@@ -632,6 +633,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Add clock-skew compensation using server-time offset handshake so roll phase sync stays tight even on high-latency or drifted clients.
 - Add periodic paint snapshot checkpoints (plus stroke deltas) to speed up hydration in long sessions while preserving full artwork continuity.
 - Auto-tune roll animation interpolation for high-latency clients (reduce visual jumps when RTT spikes) while preserving shared server-authoritative timing.
+- Add adaptive interpolation modes (smooth/strict) with DM-toggle defaults so competitive tables can prefer stricter lockstep while narrative tables prefer visual smoothness.
 
 ### Dice Presentation: Character-Sheet Bonus Breakdown (PLANNED)
 - Show per-roll modifiers in the BG3 presentation window as animated + / - contributions (ability mod, proficiency, equipment, buffs/debuffs, situational effects).

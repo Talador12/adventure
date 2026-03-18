@@ -8,6 +8,7 @@ interface BG3RollPopupProps {
   isDM?: boolean;
   onVeto?: (rollId: string) => void;
   serverTimeOffsetMs?: number;
+  syncRttMs?: number | null;
 }
 
 const EMPTY_ROLL: RollPresentation = {
@@ -35,7 +36,7 @@ function getKeptFlags(allRolls: number[], keptRolls: number[]): boolean[] {
   });
 }
 
-export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOffsetMs = 0 }: BG3RollPopupProps) {
+export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOffsetMs = 0, syncRttMs = null }: BG3RollPopupProps) {
   const activeRoll = roll || EMPTY_ROLL;
 
   const shapeKey = useMemo(() => {
@@ -77,7 +78,11 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
   useEffect(() => {
     if (!visible) return;
     const preElapsed = Math.max(0, Date.now() + serverTimeOffsetMs - activeRoll.timestamp);
-    if (preElapsed >= animationMs) {
+    // High-latency interpolation: when RTT is high, slightly bias toward replaying
+    // more of the animation locally to avoid jarring phase jumps on join/reconnect.
+    const latencyInterpolationMs = syncRttMs && syncRttMs > 220 ? Math.min(450, Math.round((syncRttMs - 180) * 0.9)) : 0;
+    const preElapsedAdjusted = Math.max(0, preElapsed - latencyInterpolationMs);
+    if (preElapsedAdjusted >= animationMs) {
       setAnimatedValues(activeRoll.allRolls);
       setDisplayTotal(activeRoll.total);
       setShowBurst(false);
@@ -85,13 +90,13 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
       return;
     }
     setIsAnimating(true);
-    setElapsedMs(preElapsed);
+    setElapsedMs(preElapsedAdjusted);
     setDisplayTotal(null);
     setShowBurst(false);
     const tickMs = 52;
     const startedAt = Date.now();
     const timer = setInterval(() => {
-      const elapsed = preElapsed + (Date.now() - startedAt);
+      const elapsed = preElapsedAdjusted + (Date.now() - startedAt);
       setElapsedMs(elapsed);
       if (elapsed >= animationMs) {
         setAnimatedValues(activeRoll.allRolls);
@@ -118,7 +123,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
       }));
     }, tickMs);
     return () => clearInterval(timer);
-  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, activeRoll.timestamp, animationMs, dieStaggerMs, perDieSpinMs, serverTimeOffsetMs]);
+  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, activeRoll.timestamp, animationMs, dieStaggerMs, perDieSpinMs, serverTimeOffsetMs, syncRttMs]);
 
   useEffect(() => {
     if (document.getElementById('bg3-roll-popup-keyframes')) return;

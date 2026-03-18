@@ -1979,6 +1979,7 @@ export default function Game() {
         isDM={isDM}
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
         serverTimeOffsetMs={serverTimeOffsetMs}
+        syncRttMs={clockRttMs}
       />
 
       {/* Keyboard Shortcut Help Overlay */}
