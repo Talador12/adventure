@@ -789,7 +789,11 @@ export default function Game() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               characters: buildPartyPayload(),
-              context: adventureStarted ? 'The adventure is underway.' : '',
+              context: adventureStarted
+                ? 'The adventure is underway.'
+                : backstoryHooks.length > 0
+                  ? `This is the opening scene. Weave these party connections into the narrative naturally:\n${backstoryHooks.map((h, i) => `${i + 1}. ${h}`).join('\n')}`
+                  : '',
               action: action || '',
               history: dmHistory.slice(-10),
               scene: sceneName,
@@ -813,7 +817,7 @@ export default function Game() {
         setDmLoading(false);
       }
     },
-    [selectedCharacter, adventureStarted, dmHistory, addDmMessage, buildPartyPayload, sceneName]
+    [selectedCharacter, adventureStarted, dmHistory, addDmMessage, buildPartyPayload, sceneName, backstoryHooks]
   );
 
   // Call the NPC dialogue endpoint

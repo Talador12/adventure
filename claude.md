@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI backstory hook integration with DM narration — when the first narration fires (adventure not yet started) and backstory hooks have been generated, they're injected into the AI DM's context as numbered instructions to "weave these party connections into the narrative naturally." After the opening scene, subsequent narrations use the normal "adventure is underway" context.
 - Added lighting zone persistence in campaign save/load — `lightingGrid` included in `CampaignState` + `CampaignLoadResult` interfaces and wired through `useCampaignPersistence`. Auto-saved with the 2s debounce, restored on campaign load from both server and localStorage. DM-painted bright/dim/dark zones now survive page reload and session resume.
 - Added "How It Works" 3-step walkthrough section on Home page — positioned between hero and main content. Three numbered cards (Create or Join → Build Your Party → Play) with orange step badges, icons, and descriptive text. Responsive grid (1 col mobile, 3 cols desktop). Mentions guest play, D&D Beyond import, AI narration, live sync.
 - Added environmental lighting zones — DM can paint cells as bright/dim/dark using new Light toolbar (visible in DM mode). Three lighting DM tools (Bright, Dim, Dark) with erase resetting to normal. Lighting modifies vision range per-cell: bright=1.5x, dim=0.75x, dark=0.4x base radius. DM sees colored tint overlays (yellow for bright, amber for dim, dark slate for dark). `LightingLevel` type exported from BattleMap. Game.tsx manages a 20x20 lighting grid passed to BattleMap. Erase tool also resets lighting.
@@ -800,7 +801,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AI Build shortcut (fills all fields, jumps to Review)
 - [x] Edit mode jumps directly to Review (all fields pre-filled)
 - [x] AI-generated backstory hooks based on party composition
-- [ ] AI backstory hook integration with DM narration — automatically weave party connections into the opening narrative
+- [x] AI backstory hook integration with DM narration — automatically weave party connections into the opening narrative
+- [ ] Backstory hooks persist in campaign state so they survive reload before adventure starts
 - [x] Import characters from D&D Beyond / Foundry VTT JSON
 - [ ] Foundry VTT character import (similar parser for Foundry's actor JSON format)
 - [ ] D&D Beyond inventory/spell import (map DDB equipment + prepared spells to our Item/Spell types)
