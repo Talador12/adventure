@@ -73,6 +73,7 @@ export default function Lobby() {
   const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -153,6 +154,9 @@ export default function Lobby() {
     (msg: WSMessage) => {
       switch (msg.type) {
         case 'welcome':
+          if (typeof msg.timestamp === 'number') {
+            setServerTimeOffsetMs((msg.timestamp as number) - Date.now());
+          }
           setWsPlayerId(msg.playerId as string);
           setPlayers(msg.players as LobbyPlayer[]);
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
@@ -183,6 +187,54 @@ export default function Lobby() {
             setTimeout(() => {
               doodleRef.current?.replayStrokes(msg.strokeHistory as DoodleStroke[]);
             }, 100);
+          }
+          // Late-join catch-up: if a roll is currently presenting, show it immediately.
+          if (msg.activeRoll && typeof msg.activeRoll === 'object') {
+            const active = msg.activeRoll as Record<string, unknown>;
+            const rollId = (active.rollId as string) || crypto.randomUUID();
+            const rollTotal = Number((active.total as number) ?? (active.value as number) ?? 0);
+            const allRolls = (active.allRolls as number[] | undefined) || [rollTotal];
+            const keptRolls = (active.keptRolls as number[] | undefined) || [rollTotal];
+            pendingRollMessagesRef.current.set(rollId, {
+              id: crypto.randomUUID(),
+              type: 'roll',
+              playerId: active.playerId as string,
+              username: active.username as string,
+              avatar: active.avatar as string | undefined,
+              text: '',
+              timestamp: (active.timestamp as number) || Date.now(),
+              die: active.die as string,
+              sides: active.sides as number,
+              value: rollTotal,
+              rollCount: active.count as number | undefined,
+              allRolls,
+              keptRolls,
+              isCritical: active.isCritical as boolean,
+              isFumble: active.isFumble as boolean,
+              unitName: active.unitName as string | undefined,
+              advMode: active.advMode as string | undefined,
+            });
+            showRollPopup({
+              rollId,
+              playerId: active.playerId as string,
+              username: active.username as string,
+              avatar: active.avatar as string | undefined,
+              unitName: active.unitName as string | undefined,
+              die: active.die as string,
+              sides: active.sides as number,
+              count: (active.count as number) || 1,
+              allRolls,
+              keptRolls,
+              total: rollTotal,
+              advMode: active.advMode as 'advantage' | 'disadvantage' | undefined,
+              isCritical: active.isCritical as boolean,
+              isFumble: active.isFumble as boolean,
+              dc: active.dc as number | undefined,
+              bonuses: active.bonuses as { label: string; value: number }[] | undefined,
+              animationMs: active.animationMs as number | undefined,
+              presentationMs: active.presentationMs as number | undefined,
+              timestamp: (active.timestamp as number) || Date.now(),
+            });
           }
           break;
 
@@ -1164,6 +1216,7 @@ export default function Lobby() {
         visible={rollPopupVisible}
         isDM={isDM}
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
+        serverTimeOffsetMs={serverTimeOffsetMs}
       />
     </div>
   );

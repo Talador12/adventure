@@ -7,6 +7,7 @@ interface BG3RollPopupProps {
   visible: boolean;
   isDM?: boolean;
   onVeto?: (rollId: string) => void;
+  serverTimeOffsetMs?: number;
 }
 
 const EMPTY_ROLL: RollPresentation = {
@@ -34,7 +35,7 @@ function getKeptFlags(allRolls: number[], keptRolls: number[]): boolean[] {
   });
 }
 
-export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPopupProps) {
+export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOffsetMs = 0 }: BG3RollPopupProps) {
   const activeRoll = roll || EMPTY_ROLL;
 
   const shapeKey = useMemo(() => {
@@ -75,14 +76,22 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
 
   useEffect(() => {
     if (!visible) return;
+    const preElapsed = Math.max(0, Date.now() + serverTimeOffsetMs - activeRoll.timestamp);
+    if (preElapsed >= animationMs) {
+      setAnimatedValues(activeRoll.allRolls);
+      setDisplayTotal(activeRoll.total);
+      setShowBurst(false);
+      setIsAnimating(false);
+      return;
+    }
     setIsAnimating(true);
-    setElapsedMs(0);
+    setElapsedMs(preElapsed);
     setDisplayTotal(null);
     setShowBurst(false);
     const tickMs = 52;
     const startedAt = Date.now();
     const timer = setInterval(() => {
-      const elapsed = Date.now() - startedAt;
+      const elapsed = preElapsed + (Date.now() - startedAt);
       setElapsedMs(elapsed);
       if (elapsed >= animationMs) {
         setAnimatedValues(activeRoll.allRolls);
@@ -109,7 +118,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto }: BG3RollPop
       }));
     }, tickMs);
     return () => clearInterval(timer);
-  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, animationMs, dieStaggerMs, perDieSpinMs]);
+  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, activeRoll.timestamp, animationMs, dieStaggerMs, perDieSpinMs, serverTimeOffsetMs]);
 
   useEffect(() => {
     if (document.getElementById('bg3-roll-popup-keyframes')) return;

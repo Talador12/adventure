@@ -99,6 +99,7 @@ export default function Game() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
+  const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
@@ -432,6 +433,9 @@ export default function Game() {
     },
     onRollCleared: () => {
       hideRollPopup();
+    },
+    onServerTimeSync: (serverNowMs) => {
+      setServerTimeOffsetMs(serverNowMs - Date.now());
     },
   });
 
@@ -1964,6 +1968,7 @@ export default function Game() {
         visible={rollPopupVisible}
         isDM={isDM}
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
+        serverTimeOffsetMs={serverTimeOffsetMs}
       />
 
       {/* Keyboard Shortcut Help Overlay */}

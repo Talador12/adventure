@@ -72,6 +72,15 @@ interface QueuedRoll {
   timestamp: number;
 }
 
+interface PersistedLobbyState {
+  strokeHistory: StrokeEntry[];
+  seats: Seat[];
+  dmPlayerId: string | null;
+  dmSeatType: 'human' | 'ai';
+  activeRoll: QueuedRoll | null;
+  rollQueue: QueuedRoll[];
+}
+
 const MAX_STROKE_HISTORY = 5000; // cap memory usage
 const DEFAULT_SEAT_COUNT = 4;    // default player seats (DM is separate)
 const MAX_SEATS = 8;             // hard cap on player seats
@@ -143,6 +152,48 @@ export class Lobby {
     for (let i = 0; i < DEFAULT_SEAT_COUNT; i++) {
       this.seats.push({ id: `seat-${i}`, type: 'empty', ready: false });
     }
+    this.state.blockConcurrencyWhile(async () => {
+      await this.loadPersistedState();
+    });
+  }
+
+  private async loadPersistedState() {
+    const saved = await this.state.storage.get<PersistedLobbyState>('lobby_state');
+    if (!saved) return;
+    if (Array.isArray(saved.strokeHistory)) this.strokeHistory = saved.strokeHistory.slice(-MAX_STROKE_HISTORY);
+    if (Array.isArray(saved.seats) && saved.seats.length > 0) this.seats = saved.seats;
+    this.dmPlayerId = typeof saved.dmPlayerId === 'string' || saved.dmPlayerId === null ? saved.dmPlayerId : null;
+    this.dmSeatType = saved.dmSeatType === 'ai' ? 'ai' : 'human';
+    this.activeRoll = saved.activeRoll || null;
+    this.rollQueue = Array.isArray(saved.rollQueue) ? saved.rollQueue : [];
+
+    if (this.activeRoll) {
+      const elapsed = Math.max(0, Date.now() - this.activeRoll.timestamp);
+      const remaining = this.activeRoll.presentationMs - elapsed;
+      if (remaining <= 0) {
+        this.activeRoll = null;
+      } else {
+        this.rollTimer = setTimeout(() => {
+          this.finishActiveRoll('completed');
+        }, remaining);
+      }
+    }
+
+    if (!this.activeRoll && this.rollQueue.length > 0) {
+      this.startNextRoll();
+    }
+  }
+
+  private persistState() {
+    const payload: PersistedLobbyState = {
+      strokeHistory: this.strokeHistory,
+      seats: this.seats,
+      dmPlayerId: this.dmPlayerId,
+      dmSeatType: this.dmSeatType,
+      activeRoll: this.activeRoll,
+      rollQueue: this.rollQueue,
+    };
+    this.state.storage.put('lobby_state', payload).catch(() => {});
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -193,6 +244,8 @@ export class Lobby {
               seat.ready = false;
             }
           }
+
+          this.persistState();
 
           this.broadcast({
             type: 'player_left',
@@ -328,6 +381,8 @@ export class Lobby {
             spectators: this.getSpectatorList(),
             dmSeatType: this.dmSeatType,
             strokeHistory: this.strokeHistory,
+            activeRoll: this.activeRoll,
+            queuedRolls: this.rollQueue,
             isDM: finalId === this.dmPlayerId,
             dmPlayerId: this.dmPlayerId,
             seatId: assignedSeatId,
@@ -335,6 +390,18 @@ export class Lobby {
             timestamp: Date.now(),
           })
         );
+
+        const firstQueuedIdx = this.rollQueue.findIndex((r) => r.playerId === finalId);
+        if (firstQueuedIdx >= 0) {
+          server.send(JSON.stringify({
+            type: 'roll_queued',
+            rollId: this.rollQueue[firstQueuedIdx].rollId,
+            position: firstQueuedIdx + 1,
+            timestamp: Date.now(),
+          }));
+        }
+
+        this.persistState();
 
         // Broadcast join/reconnect to everyone else
         this.broadcast({
@@ -496,6 +563,7 @@ export class Lobby {
         if (this.strokeHistory.length > MAX_STROKE_HISTORY) {
           this.strokeHistory = this.strokeHistory.slice(-MAX_STROKE_HISTORY);
         }
+        this.persistState();
         const payload = JSON.stringify({
           type: 'draw',
           playerId: drawSession.id,
@@ -517,6 +585,7 @@ export class Lobby {
       case 'clear_canvas': {
         // Clear stroke history and broadcast canvas clear to all OTHER clients
         this.strokeHistory = [];
+        this.persistState();
         const clearPayload = JSON.stringify({ type: 'clear_canvas' });
         for (const [ws] of this.sessions) {
           if (ws === server) continue;
@@ -654,6 +723,7 @@ export class Lobby {
         const readySeat = this.seats.find((s) => s.id === readySession.seatId);
         if (!readySeat) return;
         readySeat.ready = !readySeat.ready;
+        this.persistState();
         this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
         break;
       }
@@ -669,6 +739,7 @@ export class Lobby {
         if (!charSeat) return;
         charSeat.characterId = (data.characterId as string) || undefined;
         charSeat.characterName = (data.characterName as string) || undefined;
+        this.persistState();
         this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
         break;
       }
@@ -707,6 +778,7 @@ export class Lobby {
           targetSeat.characterName = undefined;
           targetSeat.ready = false;
         }
+        this.persistState();
         this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
         break;
       }
@@ -719,6 +791,7 @@ export class Lobby {
         }
         const newSeatId = `seat-${this.seats.length}`;
         this.seats.push({ id: newSeatId, type: 'empty', ready: false });
+        this.persistState();
         this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
         break;
       }
@@ -742,6 +815,7 @@ export class Lobby {
           return;
         }
         this.seats = this.seats.filter((s) => s.id !== removeSeat.id);
+        this.persistState();
         this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
         break;
       }
@@ -788,6 +862,7 @@ export class Lobby {
           targetWs!.send(JSON.stringify({ type: 'kicked', message: 'You have been kicked by the DM', timestamp: Date.now() }));
           targetWs!.close();
         } catch { /* already dead */ }
+        this.persistState();
         // Broadcast updated state
         this.broadcast({
           type: 'player_kicked',
@@ -827,6 +902,7 @@ export class Lobby {
           this.dmSeatType = 'human';
           this.dmPlayerId = senderSession.id;
         }
+        this.persistState();
         this.broadcast({
           type: 'dm_type_changed',
           dmSeatType: this.dmSeatType,
@@ -855,6 +931,7 @@ export class Lobby {
           return;
         }
         this.dmPlayerId = targetId;
+        this.persistState();
         this.broadcast({
           type: 'dm_changed',
           dmPlayerId: targetId,
@@ -888,6 +965,7 @@ export class Lobby {
           specSession.seatId = undefined;
         }
         specSession.spectating = true;
+        this.persistState();
         server.send(JSON.stringify({ type: 'spectate_confirmed', timestamp: Date.now() }));
         this.broadcast({ type: 'seats_updated', seats: this.seats, spectators: this.getSpectatorList(), timestamp: Date.now() });
         break;
@@ -912,6 +990,7 @@ export class Lobby {
         claimSeat.ready = false;
         claimSession.seatId = claimSeat.id;
         claimSession.spectating = false;
+        this.persistState();
         server.send(JSON.stringify({ type: 'seat_claimed', seatId: claimSeat.id, timestamp: Date.now() }));
         this.broadcast({ type: 'seats_updated', seats: this.seats, spectators: this.getSpectatorList(), timestamp: Date.now() });
         break;
@@ -999,6 +1078,8 @@ export class Lobby {
 
   private enqueueRoll(roll: QueuedRoll, server?: WebSocket) {
     if (!this.activeRoll) {
+      const startedAt = Date.now();
+      roll.timestamp = startedAt;
       this.activeRoll = roll;
       this.broadcast({
         type: 'roll_result',
@@ -1027,10 +1108,12 @@ export class Lobby {
       this.rollTimer = setTimeout(() => {
         this.finishActiveRoll('completed');
       }, roll.presentationMs);
+      this.persistState();
       return;
     }
 
     this.rollQueue.push(roll);
+    this.persistState();
     if (server) {
       try {
         server.send(JSON.stringify({
@@ -1069,6 +1152,7 @@ export class Lobby {
       timestamp: Date.now(),
     });
 
+    this.persistState();
     this.startNextRoll();
   }
 
