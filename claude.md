@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added "How It Works" 3-step walkthrough section on Home page — positioned between hero and main content. Three numbered cards (Create or Join → Build Your Party → Play) with orange step badges, icons, and descriptive text. Responsive grid (1 col mobile, 3 cols desktop). Mentions guest play, D&D Beyond import, AI narration, live sync.
 - Added environmental lighting zones — DM can paint cells as bright/dim/dark using new Light toolbar (visible in DM mode). Three lighting DM tools (Bright, Dim, Dark) with erase resetting to normal. Lighting modifies vision range per-cell: bright=1.5x, dim=0.75x, dark=0.4x base radius. DM sees colored tint overlays (yellow for bright, amber for dim, dark slate for dark). `LightingLevel` type exported from BattleMap. Game.tsx manages a 20x20 lighting grid passed to BattleMap. Erase tool also resets lighting.
 - Added Low-FX accessibility mode — manual "FX" toggle in Home header (yellow when active). Adds `.low-fx` class to `<html>` which: disables all animations + transitions, removes backdrop blur effects, removes glow effects, increases contrast on borders (slate-700 → slate-500) and text (slate-400/500 → slate-300). Persisted in localStorage, applied on initial render via main.tsx before React hydrates. Stacks with `prefers-reduced-motion` CSS media query.
 - Added AI-generated backstory hooks — new `POST /api/dm/backstory-hooks` endpoint uses Workers AI (Llama 3.1 8B) to generate 3-5 narrative connections between party members based on their races, classes, backgrounds, bonds, and backstories. UI appears in the narration view before adventure starts: dashed "Generate Backstory Hooks" button → violet-themed panel with hooks as italic bordered list items. Supports regenerate and dismiss. Each hook links 2+ characters through shared history, conflicting goals, or complementary abilities.
@@ -740,7 +741,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Empty states with calls-to-action for both campaigns and characters
 - [x] Removed "AI-powered" branding from all surfaces
 - [x] Auth buttons (Discord + Google) in header — already done
-- [ ] "How it works" section (create campaign, invite friends, play) — deferred
+- [x] "How it works" section (create campaign, invite friends, play)
 
 **Seat model (DONE):**
 - [x] `Seat` interface: `{ id, type: human|ai|empty, playerId?, username?, avatar?, characterId?, characterName?, ready }`
