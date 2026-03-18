@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added "Supplies" shop category with light sources and adventuring gear — Candle (x10), Torch (x5), Hooded Lantern, Oil Flask (x3), Tinderbox, Rope (50ft), Healer's Kit (10 uses), Rations (x5). Light source items carry `appliesCondition` so buying and using a torch from the shop correctly lights it. `SHOP_CATEGORIES` extended with 'Supplies'.
 - Added auto-equip from DDB import — after parsing inventory, automatically slots the best weapon (highest avg damage die + attack/damage bonuses), best armor (highest AC bonus), best shield, and first ring into equipment slots. Adds a "Auto-equipped: ..." note to import warnings. Characters arrive ready to fight.
 - Added D&D Beyond inventory import — `ddbImport.ts` now parses the DDB `inventory` array into our Item type. Maps weapon/armor/shield/potion/ring/scroll/misc types from DDB type + subType. Extracts damage dice, attack bonus, AC bonus, ranged flag, range, heal amount. Maps rarity (common/uncommon/rare/legendary→epic). Strips HTML from descriptions. Healing potions get smart defaults (7/14/28 HP). Imported characters now arrive with their full inventory.
 - Added light source items in inventory — new `'light'` ItemType, `appliesCondition` and `consumable` fields on Item. Pre-built `LIGHT_SOURCE_ITEMS` array (Candle x5, Torch x3, Hooded Lantern, Tinderbox) exported from types/game.ts. `useItem` in GameContext updated: light source items apply their condition to the character's unit (toggle behavior — using again extinguishes). Consumable items (candles, torches) decrement quantity; non-consumable (lantern) stays in inventory. Non-consumable items skip inventory removal on use.
@@ -833,7 +834,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Darkvision spell light propagation (60ft dim-only radius, no bright zone)
 - [x] Multiple light source types (candle: 2/4 cells, lantern: 6/10 cells, daylight spell: 12/20 cells)
 - [x] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
-- [ ] Add light source items to the shop (DM shop or starting equipment presets)
+- [x] Add light source items to the shop (Supplies category with adventuring gear)
+- [ ] Starting equipment presets by class (Fighter gets chain mail + longsword, Rogue gets leather + daggers, etc.)
 - [ ] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
 
 **DM tools:**
