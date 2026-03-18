@@ -237,6 +237,7 @@ function computeVisibility(
   cols: number,
   defaultVisionRadius: number,
   isDM: boolean,
+  lightingGrid?: LightingLevel[][],
 ): boolean[][] {
   // DM sees everything
   if (isDM) return Array.from({ length: rows }, () => Array(cols).fill(true));
@@ -244,9 +245,15 @@ function computeVisibility(
   const visible: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
 
   for (const pp of playerPositions) {
-    const radius = pp.visionRange ?? defaultVisionRadius;
+    const baseRadius = pp.visionRange ?? defaultVisionRadius;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
+        // Lighting modifies effective vision range for each target cell
+        const cellLight = lightingGrid?.[r]?.[c] || 'normal';
+        const radius = cellLight === 'bright' ? baseRadius * 1.5
+          : cellLight === 'dim' ? baseRadius * 0.75
+          : cellLight === 'dark' ? baseRadius * 0.4
+          : baseRadius;
         const dist = Math.sqrt((r - pp.row) ** 2 + (c - pp.col) ** 2);
         if (dist > radius) continue;
         if (visible[r][c]) continue; // already visible
@@ -430,7 +437,8 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin' | 'light-bright' | 'light-dim' | 'light-dark';
+export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
 export interface ActiveAoE {
@@ -459,9 +467,12 @@ interface BattleMapProps {
   attackIndicators?: import('../../hooks/useAttackIndicators').AttackIndicator[];
   /** Unit ID of the player's own character — enables per-player fog (sees only from their token). When unset, falls back to shared party vision. */
   myUnitId?: string;
+  /** Environmental lighting grid — DM can paint bright/dim/dark zones */
+  lighting?: LightingLevel[][];
+  onLightingChange?: (lighting: LightingLevel[][]) => void;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId, lighting, onLightingChange }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -635,7 +646,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   // DM sees full vision when viewAsUnitId is null (normal DM mode)
   const effectiveDmMode = dmMode && !viewAsUnitId;
-  const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, effectiveDmMode);
+  const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, effectiveDmMode, lighting);
 
   // Update explored map as players reveal cells
   useEffect(() => {
@@ -727,6 +738,26 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         if (!effectiveDmMode && !isVisible && wasExplored) {
           ctx.fillStyle = 'rgba(15,23,42,0.6)';
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+      }
+    }
+
+    // Draw lighting overlays (DM sees tint; players experience through vision range)
+    if (lighting && effectiveDmMode) {
+      for (let r = 0; r < gridRows; r++) {
+        for (let c = 0; c < gridCols; c++) {
+          const level = lighting[r]?.[c];
+          if (!level || level === 'normal') continue;
+          const x = c * CELL_SIZE;
+          const y = r * CELL_SIZE;
+          if (level === 'bright') {
+            ctx.fillStyle = 'rgba(253, 224, 71, 0.12)'; // yellow tint
+          } else if (level === 'dim') {
+            ctx.fillStyle = 'rgba(217, 119, 6, 0.15)'; // amber tint
+          } else if (level === 'dark') {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.35)'; // dark overlay
+          }
+          ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
         }
       }
     }
@@ -965,7 +996,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, lighting]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -1130,11 +1161,28 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
-    // Erase also removes traps and pins at the cell
+    // Lighting zone painting
+    if (dmTool.startsWith('light-')) {
+      const level = dmTool.replace('light-', '') as LightingLevel;
+      if (!lighting || !onLightingChange) return;
+      if ((lighting[row]?.[col] || 'normal') === level) return;
+      const next = lighting.map((r) => [...r]);
+      next[row][col] = level;
+      onLightingChange(next);
+      return;
+    }
+
+    // Erase also removes traps, pins, and lighting at the cell
     if (dmTool === 'erase') {
       setTraps((prev) => prev.filter((t) => !(t.col === col && t.row === row)));
       const pinAtCell = mapPins.find((p) => p.col === col && p.row === row);
       if (pinAtCell) onPinRemove?.(pinAtCell.id);
+      // Reset lighting to normal
+      if (lighting && onLightingChange && lighting[row]?.[col] !== 'normal') {
+        const next = lighting.map((r) => [...r]);
+        next[row][col] = 'normal';
+        onLightingChange(next);
+      }
     }
 
     const terrainMap: Record<string, TerrainType | null> = {
@@ -1151,7 +1199,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       onTerrainChange?.(next);
       return next;
     });
-  }, [dmTool, gridCols, gridRows, terrain, traps, onTerrainChange, mapPins, onPinRemove]);
+  }, [dmTool, gridCols, gridRows, terrain, traps, onTerrainChange, mapPins, onPinRemove, lighting, onLightingChange]);
 
   // Confirm pin creation from the inline form
   const confirmPin = useCallback(() => {
@@ -1539,6 +1587,12 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     { tool: 'erase', label: 'Erase', color: 'text-red-400' },
   ];
 
+  const lightTools: { tool: DmTool; label: string; color: string }[] = [
+    { tool: 'light-bright', label: 'Bright', color: 'text-yellow-300' },
+    { tool: 'light-dim', label: 'Dim', color: 'text-amber-500' },
+    { tool: 'light-dark', label: 'Dark', color: 'text-slate-500' },
+  ];
+
   const trapTools: { tool: DmTool; label: string; color: string }[] = [
     { tool: 'trap-spike', label: 'Spike', color: 'text-slate-300' },
     { tool: 'trap-fire', label: 'Fire', color: 'text-orange-400' },
@@ -1633,6 +1687,23 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 {traps.filter((t) => !t.triggered).length > 0 && (
                   <span className="text-[9px] text-red-400/60 font-mono">{traps.filter((t) => !t.triggered).length} set</span>
                 )}
+                {/* Lighting tools */}
+                {onLightingChange && (
+                  <>
+                    <div className="w-px h-4 bg-slate-700 mx-1" />
+                    <span className="text-[9px] text-yellow-500/70 uppercase tracking-wider font-semibold">Light</span>
+                    {lightTools.map((t) => (
+                      <button
+                        key={t.tool}
+                        onClick={() => setDmTool(t.tool)}
+                        className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === t.tool ? 'bg-yellow-900/60 text-white ring-1 ring-yellow-500/50' : `bg-yellow-950/30 ${t.color} hover:bg-yellow-900/30`}`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </>
+                )}
+
                 <div className="w-px h-4 bg-slate-700 mx-1" />
                 <span className="text-[9px] text-emerald-500/70 uppercase tracking-wider font-semibold">Map</span>
                 <input

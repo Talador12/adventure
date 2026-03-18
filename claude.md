@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added environmental lighting zones — DM can paint cells as bright/dim/dark using new Light toolbar (visible in DM mode). Three lighting DM tools (Bright, Dim, Dark) with erase resetting to normal. Lighting modifies vision range per-cell: bright=1.5x, dim=0.75x, dark=0.4x base radius. DM sees colored tint overlays (yellow for bright, amber for dim, dark slate for dark). `LightingLevel` type exported from BattleMap. Game.tsx manages a 20x20 lighting grid passed to BattleMap. Erase tool also resets lighting.
 - Added Low-FX accessibility mode — manual "FX" toggle in Home header (yellow when active). Adds `.low-fx` class to `<html>` which: disables all animations + transitions, removes backdrop blur effects, removes glow effects, increases contrast on borders (slate-700 → slate-500) and text (slate-400/500 → slate-300). Persisted in localStorage, applied on initial render via main.tsx before React hydrates. Stacks with `prefers-reduced-motion` CSS media query.
 - Added AI-generated backstory hooks — new `POST /api/dm/backstory-hooks` endpoint uses Workers AI (Llama 3.1 8B) to generate 3-5 narrative connections between party members based on their races, classes, backgrounds, bonds, and backstories. UI appears in the narration view before adventure starts: dashed "Generate Backstory Hooks" button → violet-themed panel with hooks as italic bordered list items. Supports regenerate and dismiss. Each hook links 2+ characters through shared history, conflicting goals, or complementary abilities.
 - Added D&D Beyond character import — auto-detects DDB JSON format (classes array or data.character wrapper) and routes through `parseDDBCharacter()` in `src/lib/ddbImport.ts`. Parses name, race (fuzzy-matches sub-races like "High Elf" → Elf), class (primary = highest level), stats (base + bonus + racial + overrides), HP (base + CON mod + removed), AC, XP, gold (currency conversion), personality traits, backstory, death saves, inspiration, exhaustion. Import button tooltip updated to mention D&D Beyond. Warnings shown for race/class mapping notes.
@@ -814,7 +815,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
 - [x] Torch/Light spell mechanic — consumable item or spell that temporarily boosts vision range for the carrier
 - [ ] Lantern item type with fuel tracking (burns for N turns, can be refilled from inventory)
-- [ ] Environmental lighting zones (DM can paint bright/dim/dark areas on the battle map)
+- [x] Environmental lighting zones (DM can paint bright/dim/dark areas on the battle map)
+- [ ] Lighting zone persistence in campaign save/load (currently resets on page reload)
+- [ ] Light source propagation — torch conditions auto-paint bright/dim zones around the carrier token
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes
