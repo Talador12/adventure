@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added auto-equip from DDB import — after parsing inventory, automatically slots the best weapon (highest avg damage die + attack/damage bonuses), best armor (highest AC bonus), best shield, and first ring into equipment slots. Adds a "Auto-equipped: ..." note to import warnings. Characters arrive ready to fight.
 - Added D&D Beyond inventory import — `ddbImport.ts` now parses the DDB `inventory` array into our Item type. Maps weapon/armor/shield/potion/ring/scroll/misc types from DDB type + subType. Extracts damage dice, attack bonus, AC bonus, ranged flag, range, heal amount. Maps rarity (common/uncommon/rare/legendary→epic). Strips HTML from descriptions. Healing potions get smart defaults (7/14/28 HP). Imported characters now arrive with their full inventory.
 - Added light source items in inventory — new `'light'` ItemType, `appliesCondition` and `consumable` fields on Item. Pre-built `LIGHT_SOURCE_ITEMS` array (Candle x5, Torch x3, Hooded Lantern, Tinderbox) exported from types/game.ts. `useItem` in GameContext updated: light source items apply their condition to the character's unit (toggle behavior — using again extinguishes). Consumable items (candles, torches) decrement quantity; non-consumable (lantern) stays in inventory. Non-consumable items skip inventory removal on use.
 - Added multiple light source types — 5 light-bearing conditions with distinct propagation radii: candle (10ft/20ft), torch (20ft/30ft), lantern (30ft/50ft), darkvision spell (0ft/60ft dim only), daylight spell (60ft/100ft). `LIGHT_SOURCE_RADII` map in types/game.ts drives BattleMap's `effectiveLighting` computation. Each source emits bright + dim zones. `CONDITION_VISION_OVERRIDE` updated with matching per-condition vision ranges. Condition colors, effects, and rule tooltips added for all 3 new types.
@@ -812,7 +813,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Foundry VTT character import (similar parser for Foundry's actor JSON format)
 - [x] D&D Beyond inventory import (map DDB equipment to our Item types with full stat extraction)
 - [ ] D&D Beyond spell import (map DDB prepared/known spells to our Spell types with slot levels)
-- [ ] Auto-equip best weapon/armor from DDB import into equipment slots
+- [x] Auto-equip best weapon/armor from DDB import into equipment slots
 
 **Game board:**
 - [x] Minimap with click-to-pan (4px/cell, terrain + token dots + viewport rect, toggle button)

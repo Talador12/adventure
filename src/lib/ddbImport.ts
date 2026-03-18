@@ -209,6 +209,39 @@ export function parseDDBCharacter(json: Record<string, unknown>, playerId: strin
     return item;
   }).filter((item) => item.name !== 'Unknown Item');
 
+  // Auto-equip: pick best weapon (highest avg damage), best armor (highest AC), best shield
+  const damageDieAvg = (die: string): number => {
+    const match = die.match(/(\d+)d(\d+)/);
+    if (!match) return 0;
+    return Number(match[1]) * (Number(match[2]) + 1) / 2;
+  };
+  const weapons = inventory.filter((i) => i.type === 'weapon');
+  const armors = inventory.filter((i) => i.type === 'armor');
+  const shields = inventory.filter((i) => i.type === 'shield');
+  const rings = inventory.filter((i) => i.type === 'ring');
+  const bestWeapon = weapons.length > 0 ? weapons.reduce((a, b) => {
+    const aAvg = damageDieAvg(a.damageDie || '0d0') + (a.attackBonus || 0) + (a.damageBonus || 0);
+    const bAvg = damageDieAvg(b.damageDie || '0d0') + (b.attackBonus || 0) + (b.damageBonus || 0);
+    return bAvg > aAvg ? b : a;
+  }) : null;
+  const bestArmor = armors.length > 0 ? armors.reduce((a, b) => (b.acBonus || 0) > (a.acBonus || 0) ? b : a) : null;
+  const bestShield = shields.length > 0 ? shields.reduce((a, b) => (b.acBonus || 0) > (a.acBonus || 0) ? b : a) : null;
+  const bestRing = rings.length > 0 ? rings[0] : null;
+  const autoEquipment = {
+    weapon: bestWeapon,
+    armor: bestArmor,
+    shield: bestShield,
+    ring: bestRing,
+  };
+  if (bestWeapon || bestArmor || bestShield || bestRing) {
+    const equipped: string[] = [];
+    if (bestWeapon) equipped.push(bestWeapon.name);
+    if (bestArmor) equipped.push(bestArmor.name);
+    if (bestShield) equipped.push(bestShield.name);
+    if (bestRing) equipped.push(bestRing.name);
+    warnings.push(`Auto-equipped: ${equipped.join(', ')}`);
+  }
+
   const character: Character = {
     id: crypto.randomUUID(),
     name,
@@ -233,7 +266,7 @@ export function parseDDBCharacter(json: Record<string, unknown>, playerId: strin
     playerId,
     gold: Math.round(gold * 100) / 100,
     inventory,
-    equipment: { ...EMPTY_EQUIPMENT },
+    equipment: autoEquipment,
     spellSlotsUsed: {},
     classAbilityUsed: false,
     feats: [],
