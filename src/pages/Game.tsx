@@ -359,8 +359,8 @@ export default function Game() {
   // Campaign persistence — auto-save, server load, registration (extracted hook)
   const getCampaignState = useCallback(() => ({
     dmHistory, sceneName, selectedCharacterId, combatLog,
-    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid,
-  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid]);
+    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks,
+  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks]);
 
   const handleCampaignLoad = useCallback((data: CampaignLoadResult) => {
     if (data.dmHistory) setDmHistory(data.dmHistory);
@@ -375,6 +375,7 @@ export default function Game() {
     if (data.quests) setQuests(data.quests);
     if (data.combatLog) setCombatLog(data.combatLog);
     if (data.lightingGrid) setLightingGrid(data.lightingGrid);
+    if (data.backstoryHooks && data.backstoryHooks.length > 0) setBackstoryHooks(data.backstoryHooks);
   }, [setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl]);
 
   // Ref for auto-select — avoids stale closure since handleSelectCharacter is defined later
