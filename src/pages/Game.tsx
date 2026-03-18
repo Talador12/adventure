@@ -22,7 +22,7 @@ import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import type { Quest, MapPin } from '../types/game';
-import type { RollPresentation } from '../types/roll';
+import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
@@ -97,8 +97,19 @@ export default function Game() {
   const animateMoveRef = useRef<((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number) => void) | null>(null);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [oldestChatTs, setOldestChatTs] = useState<number | null>(null);
+  const [canLoadOlderChat, setCanLoadOlderChat] = useState(true);
+  const [loadingOlderChat, setLoadingOlderChat] = useState(false);
+  const [initialReadAnchorTs, setInitialReadAnchorTs] = useState<number | null>(null);
   const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
+  const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
+  const [clockRttMs, setClockRttMs] = useState<number | null>(null);
+  const [rollInterpolationMode, setRollInterpolationMode] = useState<RollInterpolationMode>('smooth');
+  const [autoStrictRttMs, setAutoStrictRttMs] = useState(260);
+  const [autoStrictJitterMs, setAutoStrictJitterMs] = useState(90);
+  const rttHistoryRef = useRef<number[]>([]);
+  const [playerLatency, setPlayerLatency] = useState<Record<string, number>>({});
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
@@ -252,16 +263,54 @@ export default function Game() {
 
   // Load persistent chat history from D1 on mount
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`adventure:chatRead:game:${room}:${currentPlayer.id}`);
+      setInitialReadAnchorTs(stored ? Number(stored) : null);
+    } catch {
+      setInitialReadAnchorTs(null);
+    }
     loadChatHistory(room).then((history) => {
       if (history.length > 0) {
+        setOldestChatTs(history[0].timestamp);
+        setCanLoadOlderChat(history.length >= 100);
         setChatMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
           const newMsgs = history.filter((m) => !existingIds.has(m.id));
           return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
         });
+      } else {
+        setCanLoadOlderChat(false);
       }
     });
-  }, [room]);
+  }, [room, currentPlayer.id]);
+
+  const handleMarkRead = useCallback((timestamp: number) => {
+    try {
+      localStorage.setItem(`adventure:chatRead:game:${room}:${currentPlayer.id}`, String(timestamp));
+    } catch {
+      // ignore storage failures
+    }
+  }, [room, currentPlayer.id]);
+
+  const handleLoadOlderChat = useCallback(() => {
+    if (loadingOlderChat || !canLoadOlderChat || !oldestChatTs) return;
+    setLoadingOlderChat(true);
+    loadChatHistory(room, 100, oldestChatTs)
+      .then((history) => {
+        if (history.length === 0) {
+          setCanLoadOlderChat(false);
+          return;
+        }
+        setOldestChatTs(history[0].timestamp);
+        setCanLoadOlderChat(history.length >= 100);
+        setChatMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMsgs = history.filter((m) => !existingIds.has(m.id));
+          return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
+        });
+      })
+      .finally(() => setLoadingOlderChat(false));
+  }, [loadingOlderChat, canLoadOlderChat, oldestChatTs, room]);
 
   // Derived: is it currently the human player's turn? AI player turns are auto-played.
   const currentTurnUnit = units.find((u) => u.isCurrentTurn);
@@ -433,6 +482,15 @@ export default function Game() {
     onRollCleared: () => {
       hideRollPopup();
     },
+    onServerTimeSync: (serverNowMs) => {
+      setServerTimeOffsetMs(serverNowMs - Date.now());
+    },
+    onRollInterpolationMode: (mode, rttThreshold, jitterThreshold) => {
+      setRollInterpolationMode(mode);
+      if (typeof rttThreshold === 'number') setAutoStrictRttMs(rttThreshold);
+      if (typeof jitterThreshold === 'number') setAutoStrictJitterMs(jitterThreshold);
+    },
+    onLatencyUpdate: setPlayerLatency,
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
@@ -1058,12 +1116,29 @@ export default function Game() {
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
     onMessage: handleWsMessage,
+    onTimeSync: (offsetMs, rttMs) => {
+      setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
+      setClockRttMs(Math.round(rttMs));
+      const hist = rttHistoryRef.current;
+      hist.push(rttMs);
+      if (hist.length > 8) hist.shift();
+    },
   });
   sendRef.current = send;
   // Track connection status for canUseDMTools (must be after hook call)
   useEffect(() => {
     setWsConnected(status === 'connected');
   }, [status]);
+
+  // Compute effective interpolation mode for auto policy
+  const effectiveMode: 'smooth' | 'strict' = (() => {
+    if (rollInterpolationMode !== 'auto') return rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
+    const hist = rttHistoryRef.current;
+    if (hist.length < 3) return 'smooth';
+    const avgRtt = hist.reduce((a, b) => a + b, 0) / hist.length;
+    const jitter = Math.sqrt(hist.reduce((s, v) => s + (v - avgRtt) ** 2, 0) / hist.length);
+    return (avgRtt > autoStrictRttMs || jitter > autoStrictJitterMs) ? 'strict' : 'smooth';
+  })();
 
   const handleChatSend = useCallback(
     (text: string) => {
@@ -1381,6 +1456,14 @@ export default function Game() {
             <div className={`w-2 h-2 rounded-full ${statusColor}`} />
             <span className="text-[10px] text-slate-500">{status}</span>
           </div>
+          {status === 'connected' && clockRttMs !== null && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
+              sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
+            </span>
+          )}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+            {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
+          </span>
           <SessionTimer roomId={room} compact />
         </div>
         <div className="flex items-center gap-3">
@@ -1517,6 +1600,13 @@ export default function Game() {
             setDynamicDifficultyEnabled={(v) => {
               setDynamicDifficultyEnabled(v);
               try { localStorage.setItem(`adventure:dynDiff:${room}`, v ? '1' : '0'); } catch { /* ok */ }
+            }}
+            rollInterpolationMode={rollInterpolationMode}
+            effectiveMode={effectiveMode}
+            autoStrictRttMs={autoStrictRttMs}
+            autoStrictJitterMs={autoStrictJitterMs}
+            onSetRollSyncMode={(mode, rttMs, jitterMs) => {
+              send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: mode, autoStrictRttMs: rttMs, autoStrictJitterMs: jitterMs });
             }}
           />
         )}
@@ -1952,7 +2042,7 @@ export default function Game() {
                   send({ type: 'whisper', targetUsername: target, message: msg });
                 }} onReaction={(messageId, emoji) => {
                   send({ type: 'chat_reaction', messageId, emoji });
-                }} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
+                }} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
               </div>
             </>
           )}
@@ -1964,6 +2054,10 @@ export default function Game() {
         visible={rollPopupVisible}
         isDM={isDM}
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
+        serverTimeOffsetMs={serverTimeOffsetMs}
+        syncRttMs={clockRttMs}
+        interpolationMode={rollInterpolationMode}
+        effectiveInterpolationMode={effectiveMode}
       />
 
       {/* Keyboard Shortcut Help Overlay */}

@@ -1,4 +1,5 @@
 export type AdvantageMode = 'advantage' | 'disadvantage';
+export type RollInterpolationMode = 'smooth' | 'strict' | 'auto';
 
 export interface RollBonus {
   label: string;
@@ -24,6 +25,7 @@ export interface RollPresentation {
   bonuses?: RollBonus[];
   animationMs?: number;
   presentationMs?: number;
+  rollInterpolationMode?: RollInterpolationMode;
   timestamp: number;
   vetoed?: boolean;
   vetoedBy?: string;

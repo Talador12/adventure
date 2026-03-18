@@ -55,6 +55,17 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added animated bonus breakdown in BG3 roll presentation — when a roll has bonuses (proficiency, ability mod, equipment, etc.), individual pills appear one-by-one after dice resolve with 280ms stagger. Each pill is color-coded (emerald for positive, red for negative) with label + value. The displayed total counts up in real-time as each bonus reveals, building from dice raw sum to final total. A "N more..." hint pulses while bonuses are still revealing. Uses existing `diceSettle` animation for smooth entrance.
+- Added per-player latency indicators in Lobby seat cards — color-coded RTT badges (green <150ms, amber <300ms, red >300ms) appear on each seated player. Clients report their measured RTT to the Lobby DO via `report_rtt`, which stores it per-session and broadcasts a `latency_update` snapshot. Player list REST endpoint now also includes `rttMs`. Game.tsx receives latency via `useGameWebSocket` for future use in DMSidebar. Helps DMs make informed roll sync policy decisions.
+- Added `auto` roll sync policy with DM-tunable RTT and jitter thresholds. Auto mode computes an effective policy (`smooth` or `strict`) per-client by sampling the last 8 RTT pings and comparing average RTT + jitter stdev against configurable thresholds (default 260ms RTT, 90ms jitter). Thresholds are durably persisted in the Lobby DO and synced via welcome + live broadcast. DM settings panel exposes range sliders for both thresholds when auto is selected. Header badge shows `auto (smooth)` or `auto (strict)` reflecting the live client-side decision.
+- Added DM-controlled roll interpolation policy (`smooth`/`strict`/`auto`) with durable Lobby DO persistence and live broadcast updates. Both Lobby and Game now surface the active sync policy in the header, and BG3 roll presentation honors the mode (smooth keeps RTT catch-up interpolation; strict disables it for closer lockstep timing).
+- Added chat read-anchor behavior for long campaigns: Lobby/Game now persist a per-room per-user last-read timestamp locally, auto-jump to first unread on hydrate, and mark-read when users catch up at the bottom.
+- Added incremental chat history pagination in Lobby + Game: users can load older campaign messages on demand, backed by `before` cursor support in `loadChatHistory()` to improve cross-device continuity for long campaigns.
+- Added first-pass high-latency roll interpolation: BG3 popup now factors live RTT into phase catch-up (small latency compensation window) to reduce jarring animation jumps for reconnecting/high-ping clients while preserving server-authoritative timing.
+- Added live sync-quality telemetry in Lobby/Game headers (clock offset + RTT) using the new ping/pong time-sync channel so players can quickly tell when visual desync risk is network-related.
+- Added active clock-sync sampling over WebSocket ping/pong (with RTT-aware offset estimation) and wired both Lobby/Game roll popups to consume smoothed server-time offset so roll animation phases stay visually aligned across clients.
+- Implemented first cross-device parity layer in Lobby DO: durable persistence for lobby strokes/seats/DM/active-roll queue with restore-on-wake, welcome backfill for active roll state, and timestamp-based catch-up in BG3 popup for closer client sync on late join.
+- Cross-device lobby parity pass: DO now snapshots lobby state (stroke history, seat/DM state, active/queued rolls) to durable storage and restores it on wake/restart. Welcome payload now backfills active roll + queued roll info for late joiners, and roll presentation uses server timestamps so animation phase is closer to in-sync across clients.
 - d2 coin flow finalized: coin faces now render as H/T per-die in chat/presentation while totals remain numeric sums, and d2 crit/fumble logic is single-coin only (multi-coin rolls like 2d2 no longer trigger full critical states).
 - Added `d2` coin die support across roller/presentation/stats with coin face rendering (`H`/`T`), plus outcome semantics update: Heads = success, Tails = failure. Also updated dice button layout so d20 occupies the full bottom row for faster primary-roll access.
 - BG3-style center roll presentation shipped for Lobby + Game with DM veto flow, single active roll queue, delayed chat insert until presentation clears, and softer non-startling popup transitions. Added shared `RollPresentation` model + `BG3RollPopup` component, moved roll UX out of sidebar, and blocked dice panel interactions during active presentation.
@@ -614,6 +625,30 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Architecture: BattleMap still owns rendering, drag/drop, fog, DM tools, traps; GameContext now owns terrain grid and token positions
 
 ## Backlog / Roadmap
+
+### Cross-Device Chat History by Campaign ID (PLANNED)
+- Ensure chat history is fully persisted and loaded by campaign ID so players see the same timeline when they switch machines/browsers.
+- Remove any remaining local-only fallback behavior that can hide server-backed history for authenticated users.
+- Add pagination + lazy loading for long-running campaigns so history stays fast while remaining complete.
+- Add a persisted "return-to-last-read" anchor per campaign/user so rejoining players resume at their previous unread boundary.
+- Add a true browser E2E smoke suite (Playwright) for create/join lobby, chat hydrate, paint hydrate, and synchronized roll presentation checks.
+
+### Cross-Device Session Parity: Paint + Chat + Dice Playback (PLANNED)
+- Persist lobby doodle/paint state by campaign/session ID so anyone joining (or rejoining on another computer) sees identical lobby art.
+- Guarantee chat history + paint state hydrate together on connect so session context is consistent immediately.
+- Make dice presentation playback synchronized for all participants (same start time, animation phase, and resolve timing) so everyone sees rolls unfold in lockstep.
+- Backfill late joiners with the active/queued roll state so they do not miss ongoing roll presentations.
+- Add clock-skew compensation using server-time offset handshake so roll phase sync stays tight even on high-latency or drifted clients.
+- Add periodic paint snapshot checkpoints (plus stroke deltas) to speed up hydration in long sessions while preserving full artwork continuity.
+- Auto-tune roll animation interpolation for high-latency clients (reduce visual jumps when RTT spikes) while preserving shared server-authoritative timing.
+- [x] Add adaptive interpolation modes (smooth/strict/auto) with DM-toggle defaults so competitive tables can prefer stricter lockstep while narrative tables prefer visual smoothness.
+- [x] Add optional `auto` roll sync policy that switches between smooth/strict based on rolling RTT + jitter windows, with DM-tunable thresholds and per-campaign defaults.
+- [x] Add DM roll sync mode toggle in Game.tsx DMSidebar (currently only configurable from Lobby settings).
+- [x] Add animated bonus breakdown in roll presentation — show modifier contributions (proficiency, ability mod, magic weapon) stacking up to the total with per-bonus animated pills.
+- Add roll history replay in BG3 popup — click any recent roll in chat to re-watch its presentation animation.
+- [x] Add per-player latency indicators in the party roster so DM can see who has high ping before choosing sync policy.
+- Add latency heatmap to DM sidebar showing all player RTTs at a glance with visual severity.
+- Add WebSocket heartbeat failure detection — show disconnection warning for players whose RTT exceeds 10s or who miss 3 consecutive pings.
 
 ### Dice Presentation: Character-Sheet Bonus Breakdown (PLANNED)
 - Show per-roll modifiers in the BG3 presentation window as animated + / - contributions (ability mod, proficiency, equipment, buffs/debuffs, situational effects).

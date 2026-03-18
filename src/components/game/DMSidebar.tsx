@@ -11,6 +11,7 @@ import DowntimeActivities from './DowntimeActivities';
 import CustomMonsterCreator from './CustomMonsterCreator';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
+import type { RollInterpolationMode } from '../../types/roll';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -57,6 +58,12 @@ interface DMSidebarProps {
   // Dynamic difficulty
   dynamicDifficultyEnabled: boolean;
   setDynamicDifficultyEnabled: (v: boolean) => void;
+  // Roll sync policy
+  rollInterpolationMode?: RollInterpolationMode;
+  effectiveMode?: 'smooth' | 'strict';
+  autoStrictRttMs?: number;
+  autoStrictJitterMs?: number;
+  onSetRollSyncMode?: (mode: RollInterpolationMode, rttMs?: number, jitterMs?: number) => void;
 }
 
 export default function DMSidebar({
@@ -96,6 +103,11 @@ export default function DMSidebar({
   onSpawnMonster,
   dynamicDifficultyEnabled,
   setDynamicDifficultyEnabled,
+  rollInterpolationMode,
+  effectiveMode,
+  autoStrictRttMs,
+  autoStrictJitterMs,
+  onSetRollSyncMode,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter, grantXP } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -389,6 +401,35 @@ export default function DMSidebar({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Roll Sync Policy — DM can change during game */}
+            {onSetRollSyncMode && rollInterpolationMode && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Roll Sync</label>
+                <div className="inline-flex rounded-md border border-slate-700/70 overflow-hidden">
+                  {(['smooth', 'auto', 'strict'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => onSetRollSyncMode(mode, autoStrictRttMs, autoStrictJitterMs)}
+                      className={`text-[10px] px-2.5 py-1 font-semibold transition-colors capitalize ${
+                        rollInterpolationMode === mode
+                          ? mode === 'strict' ? 'bg-sky-900/30 text-sky-200' : mode === 'auto' ? 'bg-violet-900/30 text-violet-200' : 'bg-amber-900/30 text-amber-200'
+                          : 'bg-slate-800 text-slate-500 hover:text-slate-200'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-slate-600">
+                  {rollInterpolationMode === 'auto'
+                    ? `Auto: currently ${effectiveMode || 'smooth'} (RTT>${autoStrictRttMs || 260}ms → strict)`
+                    : rollInterpolationMode === 'strict'
+                      ? 'Strict: lockstep timing, no catch-up interpolation'
+                      : 'Smooth: softens high-latency visual jumps'}
+                </p>
               </div>
             )}
 

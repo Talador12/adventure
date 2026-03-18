@@ -97,6 +97,11 @@ interface ChatPanelProps {
   onWhisper?: (targetUsername: string, message: string) => void;
   onTyping?: () => void;
   onReaction?: (messageId: string, emoji: string) => void;
+  onLoadOlder?: () => void;
+  canLoadOlder?: boolean;
+  loadingOlder?: boolean;
+  initialReadAnchorTs?: number | null;
+  onMarkRead?: (timestamp: number) => void;
   typingUsers?: string[]; // usernames of people currently typing
   currentPlayerId?: string;
 }
@@ -311,13 +316,14 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, typingUsers, currentPlayerId }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, initialReadAnchorTs, onMarkRead, typingUsers, currentPlayerId }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMsgCount, setNewMsgCount] = useState(0);
   const typingThrottleRef = useRef<number>(0);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const appliedAnchorRef = useRef<number | null>(null);
 
   // Track scroll position to decide auto-scroll behavior
   const handleScroll = () => {
@@ -332,10 +338,31 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
   useEffect(() => {
     if (isAtBottom && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const lastTs = messages[messages.length - 1]?.timestamp;
+      if (typeof lastTs === 'number') onMarkRead?.(lastTs);
     } else {
       setNewMsgCount((n) => n + 1);
     }
-  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages.length, isAtBottom, messages, onMarkRead]);
+
+  // On initial hydrate, if we have a stored read anchor, scroll to first unread.
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    if (typeof initialReadAnchorTs !== 'number') return;
+    if (appliedAnchorRef.current === initialReadAnchorTs) return;
+    if (messages.length === 0) return;
+    const unread = messages.find((m) => m.timestamp > initialReadAnchorTs);
+    if (!unread) {
+      appliedAnchorRef.current = initialReadAnchorTs;
+      return;
+    }
+    const node = scrollRef.current.querySelector(`[data-msg-id="${unread.id}"]`) as HTMLElement | null;
+    if (node) {
+      node.scrollIntoView({ block: 'center' });
+      setIsAtBottom(false);
+      appliedAnchorRef.current = initialReadAnchorTs;
+    }
+  }, [messages, initialReadAnchorTs]);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -389,6 +416,17 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
       {/* Messages */}
       <div className="flex-1 relative min-h-0">
         <div ref={scrollRef} onScroll={handleScroll} className="absolute inset-0 overflow-y-auto space-y-1 pr-1">
+          {onLoadOlder && (
+            <div className="py-1 text-center">
+              <button
+                onClick={onLoadOlder}
+                disabled={loadingOlder || !canLoadOlder}
+                className="text-[10px] px-2 py-1 rounded border border-slate-700/60 bg-slate-800/60 text-slate-300 disabled:text-slate-600 disabled:cursor-not-allowed hover:border-slate-600/70"
+              >
+                {loadingOlder ? 'Loading older...' : canLoadOlder ? 'Load older messages' : 'No older messages'}
+              </button>
+            </div>
+          )}
           {messages.length === 0 && <div className="text-xs text-slate-600 text-center py-8">No messages yet. Say hello!</div>}
 
           {messages.map((msg, idx) => {
@@ -402,7 +440,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
 
             if (msg.type === 'dm') {
               return (
-                <div key={msg.id} className="relative group" onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
+                <div key={msg.id} data-msg-id={msg.id} className="relative group" onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
                   <DmMessage msg={msg} />
                   {reactionBar}
                   {showPicker && onReaction && (
@@ -416,7 +454,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
 
             if (msg.type === 'roll') {
               return (
-                <div key={msg.id} className="relative group" onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
+                <div key={msg.id} data-msg-id={msg.id} className="relative group" onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
                   <RollMessage msg={msg} />
                   {reactionBar}
                   {showPicker && onReaction && (
@@ -431,7 +469,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
             if (msg.type === 'whisper') {
               const isSender = msg.playerId === currentPlayerId;
               return (
-                <div key={msg.id} className="rounded-lg px-3 py-2 border border-pink-700/30 bg-pink-950/20 text-xs">
+                <div key={msg.id} data-msg-id={msg.id} className="rounded-lg px-3 py-2 border border-pink-700/30 bg-pink-950/20 text-xs">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="text-[9px] font-bold text-pink-400 uppercase tracking-wider">Whisper</span>
                     <span className="text-pink-300 font-semibold text-[10px]">
@@ -446,7 +484,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
 
             if (msg.type === 'system' || msg.type === 'join' || msg.type === 'leave') {
               return (
-                <div key={msg.id} className="text-[11px] text-slate-600 text-center py-0.5 italic">
+                <div key={msg.id} data-msg-id={msg.id} className="text-[11px] text-slate-600 text-center py-0.5 italic">
                   {msg.text}
                 </div>
               );
@@ -459,7 +497,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
 
             if (isGrouped) {
               return (
-                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} relative group`} onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
+                <div key={msg.id} data-msg-id={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} relative group`} onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
                   <div className={`${isMe ? 'mr-8' : 'ml-8'}`}>
                     <div className={`px-3 py-1 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
                     {reactionBar}
@@ -474,7 +512,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
             }
 
             return (
-              <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${isGrouped ? '' : 'mt-1'} relative group`} onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
+              <div key={msg.id} data-msg-id={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${isGrouped ? '' : 'mt-1'} relative group`} onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
                 {msg.avatar ? (
                   <img src={msg.avatar} alt="" className="w-6 h-6 rounded-full shrink-0 mt-0.5" />
                 ) : (

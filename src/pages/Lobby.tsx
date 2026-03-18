@@ -9,7 +9,7 @@ import DoodlePad, { type DoodlePadHandle, type DoodleStroke } from '../component
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
 import { useGame, type DieType } from '../contexts/GameContext';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
-import type { RollPresentation } from '../types/roll';
+import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 
 interface LobbyPlayer {
   id: string;
@@ -58,6 +58,10 @@ export default function Lobby() {
   const [isSpectating, setIsSpectating] = useState(false);
   const [dmSeatType, setDmSeatType] = useState<'human' | 'ai'>('human');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [oldestChatTs, setOldestChatTs] = useState<number | null>(null);
+  const [canLoadOlderChat, setCanLoadOlderChat] = useState(true);
+  const [loadingOlderChat, setLoadingOlderChat] = useState(false);
+  const [initialReadAnchorTs, setInitialReadAnchorTs] = useState<number | null>(null);
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
   const [mySeatId, setMySeatId] = useState<string | null>(null);
   const [isDM, setIsDM] = useState(false);
@@ -73,6 +77,15 @@ export default function Lobby() {
   const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
+  const [clockRttMs, setClockRttMs] = useState<number | null>(null);
+  const [rollInterpolationMode, setRollInterpolationMode] = useState<RollInterpolationMode>('smooth');
+  const [autoStrictRttMs, setAutoStrictRttMs] = useState(260);
+  const [autoStrictJitterMs, setAutoStrictJitterMs] = useState(90);
+  // RTT jitter tracking for auto mode
+  const rttHistoryRef = useRef<number[]>([]);
+  // Per-player latency map (playerId -> rttMs)
+  const [playerLatency, setPlayerLatency] = useState<Record<string, number>>({});
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -136,16 +149,52 @@ export default function Lobby() {
 
   // Load persistent chat history from D1 on mount (skip for temp users — no auth cookie)
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`adventure:chatRead:lobby:${room}:${currentPlayer.id}`);
+      setInitialReadAnchorTs(stored ? Number(stored) : null);
+    } catch {
+      setInitialReadAnchorTs(null);
+    }
     if (currentPlayer.id.startsWith('temp-')) return;
     loadChatHistory(room).then((history) => {
       if (history.length > 0) {
+        setOldestChatTs(history[0].timestamp);
+        setCanLoadOlderChat(history.length >= 100);
         setChatMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
           const newMsgs = history.filter((m) => !existingIds.has(m.id));
           return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
         });
+      } else {
+        setCanLoadOlderChat(false);
       }
     });
+  }, [room, currentPlayer.id]);
+
+  const handleLoadOlderChat = useCallback(() => {
+    if (loadingOlderChat || !canLoadOlderChat || !oldestChatTs) return;
+    setLoadingOlderChat(true);
+    loadChatHistory(room, 100, oldestChatTs).then((history) => {
+      if (history.length === 0) {
+        setCanLoadOlderChat(false);
+        return;
+      }
+      setOldestChatTs(history[0].timestamp);
+      setCanLoadOlderChat(history.length >= 100);
+      setChatMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const newMsgs = history.filter((m) => !existingIds.has(m.id));
+        return newMsgs.length > 0 ? [...newMsgs, ...prev] : prev;
+      });
+    }).finally(() => setLoadingOlderChat(false));
+  }, [loadingOlderChat, canLoadOlderChat, oldestChatTs, room]);
+
+  const handleMarkRead = useCallback((timestamp: number) => {
+    try {
+      localStorage.setItem(`adventure:chatRead:lobby:${room}:${currentPlayer.id}`, String(timestamp));
+    } catch {
+      // ignore storage failures
+    }
   }, [room, currentPlayer.id]);
 
   // WebSocket message handler
@@ -153,11 +202,19 @@ export default function Lobby() {
     (msg: WSMessage) => {
       switch (msg.type) {
         case 'welcome':
+          if (typeof msg.timestamp === 'number') {
+            setServerTimeOffsetMs((msg.timestamp as number) - Date.now());
+          }
           setWsPlayerId(msg.playerId as string);
           setPlayers(msg.players as LobbyPlayer[]);
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
           if (Array.isArray(msg.spectators)) setSpectators(msg.spectators as { id: string; username: string; avatar?: string }[]);
           if (msg.dmSeatType) setDmSeatType(msg.dmSeatType as 'human' | 'ai');
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth' || msg.rollInterpolationMode === 'auto') {
+            setRollInterpolationMode(msg.rollInterpolationMode as RollInterpolationMode);
+          }
+          if (typeof msg.autoStrictRttMs === 'number') setAutoStrictRttMs(msg.autoStrictRttMs as number);
+          if (typeof msg.autoStrictJitterMs === 'number') setAutoStrictJitterMs(msg.autoStrictJitterMs as number);
           if (msg.seatId) setMySeatId(msg.seatId as string);
           setIsSpectating(!!(msg.isSpectating));
           setIsDM((msg.isDM as boolean) ?? false);
@@ -183,6 +240,54 @@ export default function Lobby() {
             setTimeout(() => {
               doodleRef.current?.replayStrokes(msg.strokeHistory as DoodleStroke[]);
             }, 100);
+          }
+          // Late-join catch-up: if a roll is currently presenting, show it immediately.
+          if (msg.activeRoll && typeof msg.activeRoll === 'object') {
+            const active = msg.activeRoll as Record<string, unknown>;
+            const rollId = (active.rollId as string) || crypto.randomUUID();
+            const rollTotal = Number((active.total as number) ?? (active.value as number) ?? 0);
+            const allRolls = (active.allRolls as number[] | undefined) || [rollTotal];
+            const keptRolls = (active.keptRolls as number[] | undefined) || [rollTotal];
+            pendingRollMessagesRef.current.set(rollId, {
+              id: crypto.randomUUID(),
+              type: 'roll',
+              playerId: active.playerId as string,
+              username: active.username as string,
+              avatar: active.avatar as string | undefined,
+              text: '',
+              timestamp: (active.timestamp as number) || Date.now(),
+              die: active.die as string,
+              sides: active.sides as number,
+              value: rollTotal,
+              rollCount: active.count as number | undefined,
+              allRolls,
+              keptRolls,
+              isCritical: active.isCritical as boolean,
+              isFumble: active.isFumble as boolean,
+              unitName: active.unitName as string | undefined,
+              advMode: active.advMode as string | undefined,
+            });
+            showRollPopup({
+              rollId,
+              playerId: active.playerId as string,
+              username: active.username as string,
+              avatar: active.avatar as string | undefined,
+              unitName: active.unitName as string | undefined,
+              die: active.die as string,
+              sides: active.sides as number,
+              count: (active.count as number) || 1,
+              allRolls,
+              keptRolls,
+              total: rollTotal,
+              advMode: active.advMode as 'advantage' | 'disadvantage' | undefined,
+              isCritical: active.isCritical as boolean,
+              isFumble: active.isFumble as boolean,
+              dc: active.dc as number | undefined,
+              bonuses: active.bonuses as { label: string; value: number }[] | undefined,
+              animationMs: active.animationMs as number | undefined,
+              presentationMs: active.presentationMs as number | undefined,
+              timestamp: (active.timestamp as number) || Date.now(),
+            });
           }
           break;
 
@@ -231,6 +336,30 @@ export default function Lobby() {
           if (msg.dmSeatType) setDmSeatType(msg.dmSeatType as 'human' | 'ai');
           setDmPlayerId((msg.dmPlayerId as string) || null);
           setIsDM(!!msg.dmPlayerId && msg.dmPlayerId === wsPlayerId);
+          break;
+
+        case 'roll_interpolation_mode_changed':
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth' || msg.rollInterpolationMode === 'auto') {
+            setRollInterpolationMode(msg.rollInterpolationMode as RollInterpolationMode);
+            if (typeof msg.autoStrictRttMs === 'number') setAutoStrictRttMs(msg.autoStrictRttMs as number);
+            if (typeof msg.autoStrictJitterMs === 'number') setAutoStrictJitterMs(msg.autoStrictJitterMs as number);
+            const modeLabel = msg.rollInterpolationMode === 'auto'
+              ? `auto (RTT>${msg.autoStrictRttMs || autoStrictRttMs}ms → strict)`
+              : String(msg.rollInterpolationMode);
+            setChatMessages((prev) => [...prev, {
+              id: crypto.randomUUID(),
+              type: 'system',
+              username: 'System',
+              text: `Dice sync mode changed to ${modeLabel}`,
+              timestamp: (msg.timestamp as number) || Date.now(),
+            }]);
+          }
+          break;
+
+        case 'latency_update':
+          if (msg.latency && typeof msg.latency === 'object') {
+            setPlayerLatency(msg.latency as Record<string, number>);
+          }
           break;
 
         case 'kicked':
@@ -460,6 +589,14 @@ export default function Lobby() {
     avatar: currentPlayer.avatar,
     spectate: wantsSpectate,
     onMessage: handleWsMessage,
+    onTimeSync: (offsetMs, rttMs) => {
+      setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
+      setClockRttMs(Math.round(rttMs));
+      // Track RTT samples for auto mode jitter calculation (last 8 samples)
+      const hist = rttHistoryRef.current;
+      hist.push(rttMs);
+      if (hist.length > 8) hist.shift();
+    },
     enabled: passwordVerified, // don't connect until password is verified (or not needed)
   });
 
@@ -497,6 +634,16 @@ export default function Lobby() {
     },
     [send]
   );
+
+  // Compute effective interpolation mode for auto policy
+  const effectiveMode: 'smooth' | 'strict' = (() => {
+    if (rollInterpolationMode !== 'auto') return rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
+    const hist = rttHistoryRef.current;
+    if (hist.length < 3) return 'smooth'; // not enough data yet
+    const avgRtt = hist.reduce((a, b) => a + b, 0) / hist.length;
+    const jitter = Math.sqrt(hist.reduce((s, v) => s + (v - avgRtt) ** 2, 0) / hist.length);
+    return (avgRtt > autoStrictRttMs || jitter > autoStrictJitterMs) ? 'strict' : 'smooth';
+  })();
 
   // Fun default names for lobby (no character selected yet)
   const LOBBY_DEFAULTS = ['A Curious Onlooker', 'Someone at the Bar', "The Innkeeper's Cat", 'A Dice-Obsessed Patron', 'Definitely Not a Mimic'];
@@ -776,6 +923,14 @@ export default function Lobby() {
             <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
             <span className="font-medium">{status}</span>
           </div>
+          {status === 'connected' && clockRttMs !== null && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
+              sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
+            </span>
+          )}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+            {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
+          </span>
           {isSpectating && (
             <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-900/30 border border-sky-700/30 text-sky-400 font-semibold animate-fade-in-up">
               Spectating
@@ -883,6 +1038,66 @@ export default function Lobby() {
                 {campaignPassword ? 'Set' : 'Remove'}
               </button>
             </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Roll Sync</label>
+                <div className="inline-flex rounded-md border border-slate-700/70 overflow-hidden">
+                  <button
+                    onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'smooth' })}
+                    className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'smooth' ? 'bg-amber-900/30 text-amber-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Smooth
+                  </button>
+                  <button
+                    onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'auto' })}
+                    className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'auto' ? 'bg-violet-900/30 text-violet-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Auto
+                  </button>
+                  <button
+                    onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'strict' })}
+                    className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'strict' ? 'bg-sky-900/30 text-sky-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Strict
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500">
+                  {rollInterpolationMode === 'auto' ? `Auto switches based on RTT (>${autoStrictRttMs}ms → strict)` : rollInterpolationMode === 'strict' ? 'Strict: lockstep timing, no catch-up' : 'Smooth: softens high-latency catch-up'}
+                </span>
+              </div>
+              {rollInterpolationMode === 'auto' && (
+                <div className="flex items-center gap-4 pl-[72px]">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] text-slate-500 w-16">RTT &gt;</label>
+                    <input
+                      type="range"
+                      min={120}
+                      max={800}
+                      step={20}
+                      value={autoStrictRttMs}
+                      onChange={(e) => setAutoStrictRttMs(Number(e.target.value))}
+                      onMouseUp={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'auto', autoStrictRttMs, autoStrictJitterMs })}
+                      className="w-24 h-1 accent-violet-500 cursor-pointer"
+                    />
+                    <span className="text-[9px] text-slate-400 w-12">{autoStrictRttMs}ms</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] text-slate-500 w-16">Jitter &gt;</label>
+                    <input
+                      type="range"
+                      min={20}
+                      max={300}
+                      step={10}
+                      value={autoStrictJitterMs}
+                      onChange={(e) => setAutoStrictJitterMs(Number(e.target.value))}
+                      onMouseUp={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'auto', autoStrictRttMs, autoStrictJitterMs })}
+                      className="w-24 h-1 accent-violet-500 cursor-pointer"
+                    />
+                    <span className="text-[9px] text-slate-400 w-12">{autoStrictJitterMs}ms</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -954,8 +1169,17 @@ export default function Lobby() {
                       <div className="w-7 h-7 rounded-full bg-slate-800 border border-dashed border-slate-600 flex items-center justify-center text-[10px] text-slate-600">?</div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-slate-200 truncate">
-                        {seat.type === 'human' ? seat.username || 'Joining...' : seat.type === 'ai' ? 'AI Player' : 'Empty Seat'}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium text-slate-200 truncate">
+                          {seat.type === 'human' ? seat.username || 'Joining...' : seat.type === 'ai' ? 'AI Player' : 'Empty Seat'}
+                        </span>
+                        {seat.type === 'human' && seat.playerId && playerLatency[seat.playerId] !== undefined && (
+                          <span className={`text-[8px] font-mono px-1 py-0.5 rounded ${
+                            playerLatency[seat.playerId] > 300 ? 'bg-red-900/30 text-red-400' : playerLatency[seat.playerId] > 150 ? 'bg-amber-900/30 text-amber-400' : 'bg-emerald-900/30 text-emerald-400'
+                          }`} title={`RTT: ${playerLatency[seat.playerId]}ms`}>
+                            {playerLatency[seat.playerId]}ms
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] text-slate-500 truncate">
                         {seat.characterName || (seat.type !== 'empty' ? 'No character' : 'Open')}
@@ -1155,7 +1379,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
         <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
-          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
+          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
 
@@ -1164,6 +1388,10 @@ export default function Lobby() {
         visible={rollPopupVisible}
         isDM={isDM}
         onVeto={(rollId) => send({ type: 'veto_roll', rollId })}
+        serverTimeOffsetMs={serverTimeOffsetMs}
+        syncRttMs={clockRttMs}
+        interpolationMode={rollInterpolationMode}
+        effectiveInterpolationMode={effectiveMode}
       />
     </div>
   );

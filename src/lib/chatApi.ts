@@ -38,10 +38,14 @@ function isTempUser(): boolean {
 }
 
 // Load recent chat history for a room from D1 (skips for temp users)
-export async function loadChatHistory(roomId: string, limit = 100): Promise<ChatMessage[]> {
+export async function loadChatHistory(roomId: string, limit = 100, beforeTsMs?: number): Promise<ChatMessage[]> {
   if (isTempUser()) return []; // no auth cookie — would 401
   try {
-    const res = await fetch(`/api/chat/${encodeURIComponent(roomId)}?limit=${limit}`, {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (typeof beforeTsMs === 'number' && beforeTsMs > 0) {
+      params.set('before', new Date(beforeTsMs).toISOString());
+    }
+    const res = await fetch(`/api/chat/${encodeURIComponent(roomId)}?${params.toString()}`, {
       credentials: 'include',
     });
     if (!res.ok) return [];
