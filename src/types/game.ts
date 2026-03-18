@@ -238,7 +238,7 @@ export function calculateEncounterBudget(partyLevels: number[]): { easy: number;
 export type Condition = 'normal' | 'unconscious' | 'dead' | 'stabilized';
 
 // --- Items ---
-export type ItemType = 'weapon' | 'armor' | 'shield' | 'potion' | 'ring' | 'scroll' | 'misc';
+export type ItemType = 'weapon' | 'armor' | 'shield' | 'potion' | 'ring' | 'scroll' | 'misc' | 'light';
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic';
 export type EquipSlot = 'weapon' | 'armor' | 'shield' | 'ring';
 export type ArmorCategory = 'light' | 'medium' | 'heavy';
@@ -261,6 +261,8 @@ export interface Item {
   healAmount?: number;
   statBonus?: Partial<Stats>;
   quantity?: number;
+  appliesCondition?: ConditionType; // condition applied when used (e.g. torchlit, candlelit)
+  consumable?: boolean;             // removed from inventory after use
 }
 
 export interface EquipmentSlots {
@@ -271,6 +273,14 @@ export interface EquipmentSlots {
 }
 
 export const EMPTY_EQUIPMENT: EquipmentSlots = { weapon: null, armor: null, shield: null, ring: null };
+
+// Pre-built light source items for quick inventory addition
+export const LIGHT_SOURCE_ITEMS: Omit<Item, 'id'>[] = [
+  { name: 'Candle', type: 'light', rarity: 'common', description: '10ft bright, 20ft dim. Burns for 1 hour.', value: 0.01, appliesCondition: 'candlelit', consumable: true, quantity: 5 },
+  { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim. Burns for 1 hour.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 3 },
+  { name: 'Hooded Lantern', type: 'light', rarity: 'common', description: '30ft bright, 50ft dim. Burns 6 hours on 1 pint of oil.', value: 5, appliesCondition: 'lantern' },
+  { name: 'Tinderbox', type: 'misc', rarity: 'common', description: 'Flint, steel, and tinder. Used to light torches, candles, and lanterns.', value: 0.5 },
+];
 
 export const RARITY_COLORS: Record<ItemRarity, string> = {
   common: 'text-slate-300', uncommon: 'text-green-400', rare: 'text-blue-400', epic: 'text-purple-400',

@@ -455,21 +455,41 @@ export function GameProvider({ children }: { children: ReactNode }) {
             updated.deathSaves = { successes: 0, failures: 0 };
           }
           msg = `${c.name} drinks ${item.name}, restoring ${healed} HP! (${updated.hp}/${c.maxHp})`;
+        } else if (item.appliesCondition) {
+          // Light source or condition-applying item — apply condition to the character's unit
+          const condType = item.appliesCondition;
+          const condDesc = CONDITION_EFFECTS[condType]?.description || condType;
+          msg = `${c.name} lights their ${item.name}! (${condDesc})`;
+          // Apply condition via setUnits (deferred — runs after this character update)
+          setTimeout(() => {
+            setUnits((prevUnits: Unit[]) => {
+              const unitId = prevUnits.find((u) => u.characterId === charId)?.id;
+              if (!unitId) return prevUnits;
+              // Toggle: if already has the condition, remove it instead
+              const existing = prevUnits.find((u) => u.id === unitId);
+              if (existing?.conditions?.some((cnd) => cnd.type === condType)) {
+                return prevUnits.map((u) => u.id === unitId ? { ...u, conditions: (u.conditions || []).filter((cnd) => cnd.type !== condType) } : u);
+              }
+              return prevUnits.map((u) => u.id === unitId ? { ...u, conditions: [...(u.conditions || []), { type: condType, duration: -1, source: item.name }] } : u);
+            });
+          }, 0);
         } else {
           msg = `${c.name} uses ${item.name}.`;
         }
 
-        // Remove or decrement
-        if (item.quantity && item.quantity > 1) {
-          updated.inventory = inv.map((i) => (i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i));
-        } else {
-          updated.inventory = inv.filter((i) => i.id !== itemId);
+        // Remove or decrement (only for consumables or potions)
+        if (item.consumable || item.type === 'potion') {
+          if (item.quantity && item.quantity > 1) {
+            updated.inventory = inv.map((i) => (i.id === itemId ? { ...i, quantity: (i.quantity || 1) - 1 } : i));
+          } else {
+            updated.inventory = inv.filter((i) => i.id !== itemId);
+          }
         }
         return updated;
       })
     );
     return { message: msg };
-  }, []);
+  }, [setUnits]);
 
   // Shop: buy an item (deduct gold, add to inventory)
   const buyItem = useCallback((charId: string, shopItem: Omit<Item, 'id'>): { success: boolean; message: string } => {
