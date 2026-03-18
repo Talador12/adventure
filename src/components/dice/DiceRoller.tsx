@@ -510,9 +510,9 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
 
       {/* Dice count selector */}
       <div className="flex items-center justify-center gap-2 py-1">
-        <button onClick={() => setDiceCount((c) => Math.max(1, c - 1))} className="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-colors flex items-center justify-center">-</button>
+        <button onClick={() => setDiceCount((c) => Math.max(1, c - 1))} aria-label="Decrease dice count" className="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-colors flex items-center justify-center">-</button>
         <span className="text-sm font-mono font-bold text-white w-8 text-center">{diceCount}{advMode !== 'normal' ? <span className="text-slate-500">×2</span> : ''}</span>
-        <button onClick={() => setDiceCount((c) => Math.min(10, c + 1))} className="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-colors flex items-center justify-center">+</button>
+        <button onClick={() => setDiceCount((c) => Math.min(10, c + 1))} aria-label="Increase dice count" className="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 text-sm font-bold transition-colors flex items-center justify-center">+</button>
         <span className="text-[10px] text-slate-500">dice</span>
       </div>
 

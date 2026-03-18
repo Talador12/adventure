@@ -1701,6 +1701,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         <button
           onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - 0.2))}
           className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
+          aria-label="Zoom out"
         >
           -
         </button>
@@ -1708,6 +1709,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         <button
           onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 0.2))}
           className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
+          aria-label="Zoom in"
         >
           +
         </button>
@@ -1749,6 +1751,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
           <canvas
             ref={canvasRef}
             className="rounded-lg border border-slate-800"
+            aria-label="Tactical battle map"
+            role="img"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -1796,6 +1800,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                   onClick={(e) => { e.stopPropagation(); onPinRemove(pin.id); }}
                   className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-600 text-white text-[7px] font-bold leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
                   title="Remove pin"
+                  aria-label="Remove map pin"
                 >
                   ×
                 </button>
@@ -1872,6 +1877,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             <canvas
               ref={minimapRef}
               className="cursor-crosshair"
+              aria-label="Minimap overview"
+              role="img"
               onClick={handleMinimapClick}
               style={{ width: gridCols * MINIMAP_CELL, height: gridRows * MINIMAP_CELL }}
             />

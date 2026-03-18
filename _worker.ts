@@ -1369,8 +1369,43 @@ app.patch('/api/campaigns/:roomId', async (c) => {
   }
 });
 
-// DELETE /api/campaigns/:roomId — remove a campaign from user's list
+// DELETE /api/campaigns/:roomId — soft-delete (archive) a campaign
 app.delete('/api/campaigns/:roomId', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
+  try {
+    const roomId = c.req.param('roomId');
+    const permanent = c.req.query('permanent') === '1';
+    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
+    const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
+
+    if (permanent) {
+      // Hard delete — remove from list and delete state
+      const filtered = campaigns.filter((cp) => cp.roomId !== roomId);
+      await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(filtered));
+      await c.env.CAMPAIGNS.delete(`campaign:${roomId}`);
+      await syncPublicIndex(c.env.CAMPAIGNS, roomId, { visibility: 'private' });
+    } else {
+      // Soft delete — mark as archived
+      const campaign = campaigns.find((cp) => cp.roomId === roomId);
+      if (campaign) {
+        campaign.archived = true;
+        campaign.archivedAt = Date.now();
+        await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+        // Remove from public index while archived
+        await syncPublicIndex(c.env.CAMPAIGNS, roomId, { visibility: 'private' });
+      }
+    }
+    return c.json({ ok: true, permanent });
+  } catch (err) {
+    logError('DELETE /api/campaigns/:roomId', err);
+    return c.json({ error: 'Failed to delete campaign' }, 500);
+  }
+});
+
+// POST /api/campaigns/:roomId/restore — restore an archived campaign
+app.post('/api/campaigns/:roomId/restore', async (c) => {
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
@@ -1378,15 +1413,17 @@ app.delete('/api/campaigns/:roomId', async (c) => {
     const roomId = c.req.param('roomId');
     const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
-    const filtered = campaigns.filter((c) => c.roomId !== roomId);
-    await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(filtered));
-    // Also delete campaign state + remove from public index
-    await c.env.CAMPAIGNS.delete(`campaign:${roomId}`);
-    await syncPublicIndex(c.env.CAMPAIGNS, roomId, { visibility: 'private' });
-    return c.json({ ok: true });
+    const campaign = campaigns.find((cp) => cp.roomId === roomId);
+    if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
+    delete campaign.archived;
+    delete campaign.archivedAt;
+    await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+    // Re-sync public index if it was public
+    await syncPublicIndex(c.env.CAMPAIGNS, roomId, campaign);
+    return c.json({ ok: true, campaign });
   } catch (err) {
-    logError('DELETE /api/campaigns/:roomId', err);
-    return c.json({ error: 'Failed to delete campaign' }, 500);
+    logError('POST /api/campaigns/:roomId/restore', err);
+    return c.json({ error: 'Failed to restore campaign' }, 500);
   }
 });
 

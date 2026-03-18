@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v0.3.0
+## Current Version: v0.3.1
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added ARIA accessibility pass across 7 files — 23 attributes added: `aria-label` on icon-only buttons (theme toggle, sound mute, zoom +/-, delete, close), `role="dialog"` + `aria-modal="true"` on modals (login, delete confirm, help overlay), `aria-label` on canvas elements (battle map, minimap), `aria-label` on form inputs (chat, room code, volume slider), `aria-expanded` on collapsible sections, landmark labels on `<aside>`.
+- Added campaign archive (soft delete + restore). DELETE endpoint now marks campaigns `archived: true` with `archivedAt` timestamp instead of removing them. `?permanent=1` query param hard-deletes. New `POST /api/campaigns/:roomId/restore` endpoint un-archives. Home page hides archived campaigns from main grid and shows a collapsible "Archived (N)" section with Restore + Delete Forever buttons. Confirmation modal dynamically shows "Archive" (amber) for active campaigns and "Delete Forever" (red) for already-archived ones. Public index auto-removes archived campaigns and re-syncs on restore.
 - Added keyboard shortcuts for combat actions — A (attack), E (end turn), P (potion), G (dodge), H (dash), F (class ability). Only active during player's turn in combat. Uses `data-combat-action` attributes on CombatToolbar buttons for click delegation. Help overlay (?) updated with combat shortcut section.
 - Added mobile-responsive lobby layout — tab bar at top toggles between "Party & Dice" and "Chat" on small screens. Seat cards wrap on mobile instead of horizontal scroll. Doodle pad capped at 40vh on mobile. Settings panel scrollable with stacked form inputs on mobile. Chat panel goes full-width when active. Desktop layout unchanged.
 - Added mobile-responsive game layout — fixed bottom tab bar (Game/Chat/Sheet) visible on screens <768px. Tapping a tab shows only that panel. The right sidebar (chat + character sheet) hides on mobile and becomes a full-width panel when its tab is active. DM sidebar hidden on mobile. Header compacted (smaller text, lobby label hidden). Main content area adds bottom padding to avoid tab bar overlap. Desktop layout unchanged.
@@ -778,7 +780,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Falls back to campaign-saved characterId if no seat assignment
 
 **Campaign management (remaining — deferred):**
-- [ ] Campaign archive (soft delete, can restore)
+- [x] Campaign archive (soft delete, can restore)
 - [x] Public/private visibility toggle
 - [x] Campaign browser API
 
@@ -938,7 +940,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
 - [x] `prefers-reduced-motion` media query: disable all animations automatically
 - [x] Keyboard navigation for combat actions
-- [ ] ARIA labels on interactive elements
+- [x] ARIA labels on interactive elements
 
 ### v0.4.0: Cloudflare Access/IDP + Campaign Invites (PLANNED)
 **Goal:** Corporate/team login, campaign sharing via Discord DM.
@@ -946,7 +948,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Cloudflare Access login (waiting on external setup)
 - [ ] Campaign invite links via Discord DM (bot or webhook)
 - [x] Lobby chat reactions (emoji reactions on messages)
-- [ ] Campaign archive (soft delete, can restore)
+- [x] Campaign archive (soft delete, can restore)
 
 ### Future versions
 

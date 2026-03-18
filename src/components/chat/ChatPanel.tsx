@@ -562,7 +562,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
 
       {/* Input */}
       <div className="mt-3 shrink-0 flex gap-2">
-        <input type="text" value={input} onChange={(e) => {
+        <input type="text" value={input} aria-label="Chat message" onChange={(e) => {
           setInput(e.target.value);
           // Throttled typing indicator — max once per 2s
           if (onTyping && e.target.value.trim() && Date.now() - typingThrottleRef.current > 2000) {
