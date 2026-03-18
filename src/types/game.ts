@@ -14,7 +14,7 @@ export interface Player {
 }
 
 // --- Conditions ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'torchlit' | 'darkvision';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -34,6 +34,14 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   inspired: { attackMod: 2, acMod: 0, saveMod: 2, description: 'Inspired — +2 to attacks and saves', color: 'text-indigo-400' },
   helping: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Helping an ally — next ally attack vs target has advantage', color: 'text-teal-400' },
   hidden: { attackMod: 2, acMod: 0, saveMod: 0, description: 'Hidden — advantage on next attack, enemies can\'t target you', color: 'text-slate-300' },
+  torchlit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a torch — 40ft bright light (8 cells)', color: 'text-amber-300' },
+  darkvision: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Darkvision spell — 60ft vision in darkness (12 cells)', color: 'text-indigo-300' },
+};
+
+// Vision range overrides from conditions (cells). Higher value wins.
+export const CONDITION_VISION_OVERRIDE: Partial<Record<ConditionType, number>> = {
+  torchlit: 8,    // 40ft = 8 cells
+  darkvision: 12, // 60ft = 12 cells
 };
 
 // --- Combat roll helpers ---

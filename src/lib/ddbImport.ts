@@ -1,0 +1,178 @@
+// D&D Beyond character JSON import parser.
+// Maps the DDB export schema to our Character type.
+// Handles the public API shape (/character/v5/{id}/json).
+
+import type { Character, Race, CharacterClass } from '../types/game';
+import { RACES, CLASSES, DEFAULT_APPEARANCE, EMPTY_EQUIPMENT } from '../types/game';
+
+// Normalize a DDB race name to our Race type (best-effort fuzzy match)
+function parseRace(ddbRace: string): Race {
+  const lower = ddbRace.toLowerCase().replace(/[^a-z]/g, '');
+  for (const race of RACES) {
+    if (lower.includes(race.toLowerCase().replace(/[^a-z]/g, ''))) return race;
+  }
+  // Sub-race fallback: "High Elf" → Elf, "Hill Dwarf" → Dwarf, etc.
+  if (lower.includes('elf')) return 'Elf';
+  if (lower.includes('dwarf')) return 'Dwarf';
+  if (lower.includes('halfling')) return 'Halfling';
+  if (lower.includes('gnome')) return 'Gnome';
+  if (lower.includes('orc')) return 'Half-Orc';
+  if (lower.includes('tiefling')) return 'Tiefling';
+  if (lower.includes('dragonborn')) return 'Dragonborn';
+  return 'Human'; // safe default
+}
+
+// Normalize a DDB class name to our CharacterClass type
+function parseClass(ddbClass: string): CharacterClass {
+  const lower = ddbClass.toLowerCase().replace(/[^a-z]/g, '');
+  for (const cls of CLASSES) {
+    if (lower.includes(cls.toLowerCase())) return cls;
+  }
+  return 'Fighter'; // safe default
+}
+
+// Extract ability score total from DDB stat structure
+function extractStat(stats: Array<{ id?: number; value?: number }>, statId: number): number {
+  const stat = stats.find((s) => s.id === statId);
+  return stat?.value ?? 10;
+}
+
+// DDB stat IDs: 1=STR 2=DEX 3=CON 4=INT 5=WIS 6=CHA
+const DDB_STAT_MAP: Record<number, 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'> = {
+  1: 'STR', 2: 'DEX', 3: 'CON', 4: 'INT', 5: 'WIS', 6: 'CHA',
+};
+
+export interface DDBImportResult {
+  character: Character;
+  warnings: string[];
+}
+
+// Parse a D&D Beyond character JSON export into our Character type.
+// Accepts the full DDB JSON (either the top-level object or the data.character sub-object).
+export function parseDDBCharacter(json: Record<string, unknown>, playerId: string): DDBImportResult {
+  const warnings: string[] = [];
+
+  // Navigate to the character data (DDB wraps it in `data` sometimes)
+  const charData = (json.data as Record<string, unknown>)?.character
+    ? ((json.data as Record<string, unknown>).character as Record<string, unknown>)
+    : json;
+
+  const name = String(charData.name || 'Imported Character');
+
+  // Race
+  const raceName = (charData.race as Record<string, unknown>)?.fullName
+    || (charData.race as Record<string, unknown>)?.baseName
+    || String(charData.race || '');
+  const race = parseRace(typeof raceName === 'string' ? raceName : String(raceName));
+  if (typeof raceName === 'string' && raceName && !RACES.includes(race)) {
+    warnings.push(`Race "${raceName}" mapped to ${race}`);
+  }
+
+  // Class — use first class entry (multiclass: take highest level class)
+  const classes = (charData.classes as Array<Record<string, unknown>>) || [];
+  const primaryClass = classes.length > 0
+    ? classes.reduce((a, b) => ((b.level as number) || 0) > ((a.level as number) || 0) ? b : a)
+    : null;
+  const className = primaryClass
+    ? ((primaryClass.definition as Record<string, unknown>)?.name as string || String(primaryClass.name || ''))
+    : '';
+  const characterClass = parseClass(className);
+  const level = classes.reduce((sum, c) => sum + ((c.level as number) || 0), 0) || 1;
+
+  // Stats — DDB uses overrideStats + bonusStats + racial modifiers
+  const baseStats = (charData.stats as Array<{ id?: number; value?: number }>) || [];
+  const bonusStats = (charData.bonusStats as Array<{ id?: number; value?: number }>) || [];
+  const overrideStats = (charData.overrideStats as Array<{ id?: number; value?: number }>) || [];
+  const racialBonuses = (charData.modifiers as Record<string, Array<{ type?: string; subType?: string; value?: number; statId?: number }>>)?.race || [];
+
+  const stats: Record<string, number> = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 };
+  for (let id = 1; id <= 6; id++) {
+    const key = DDB_STAT_MAP[id];
+    const override = extractStat(overrideStats, id);
+    const base = override > 0 && overrideStats.some((s) => s.id === id && s.value) ? override : extractStat(baseStats, id);
+    const bonus = extractStat(bonusStats, id);
+    const racialBonus = racialBonuses
+      .filter((m) => m.type === 'bonus' && m.subType?.includes(key.toLowerCase()) && m.statId === id)
+      .reduce((sum, m) => sum + (m.value || 0), 0);
+    stats[key] = base + bonus + racialBonus;
+  }
+
+  // HP
+  const baseHp = (charData.baseHitPoints as number) || 0;
+  const bonusHp = (charData.bonusHitPoints as number) || 0;
+  const overrideHp = charData.overrideHitPoints as number | null;
+  const conMod = Math.floor((stats.CON - 10) / 2);
+  const maxHp = overrideHp ?? (baseHp + bonusHp + (conMod * level));
+  const removedHp = (charData.removedHitPoints as number) || 0;
+  const hp = Math.max(0, maxHp - removedHp);
+
+  // AC — DDB has complex AC calculation; we'll take their computed value if available
+  const armorClass = ((charData.armorClass as number)
+    || (charData.decorations as Record<string, unknown>)?.armorClass as number)
+    || (10 + Math.floor((stats.DEX - 10) / 2)); // fallback to unarmored
+
+  // Background
+  const bgData = charData.background as Record<string, unknown>;
+  const backgroundName = bgData?.definition
+    ? (bgData.definition as Record<string, unknown>)?.name as string || ''
+    : '';
+
+  // XP
+  const xp = (charData.currentXp as number) || 0;
+
+  // Gold — DDB stores currency as separate fields
+  const currencies = (charData.currencies as Record<string, number>) || {};
+  const gold = (currencies.gp || 0) + (currencies.pp || 0) * 10 + (currencies.ep || 0) * 0.5 + (currencies.sp || 0) * 0.1 + (currencies.cp || 0) * 0.01;
+
+  // Notes / traits
+  const traits = charData.traits as Record<string, string> | undefined;
+  const personalityTraits = traits?.personalityTraits || '';
+  const ideals = traits?.ideals || '';
+  const bonds = traits?.bonds || '';
+  const flaws = traits?.flaws || '';
+  const backstory = (charData.notes as Record<string, string>)?.backstory
+    || traits?.backstory || '';
+
+  // Death saves
+  const deathSaves = {
+    successes: (charData.deathSaves as Record<string, number>)?.successCount || 0,
+    failures: (charData.deathSaves as Record<string, number>)?.failCount || 0,
+  };
+
+  const character: Character = {
+    id: crypto.randomUUID(),
+    name,
+    race,
+    class: characterClass,
+    level: Math.max(1, Math.min(20, level)),
+    xp,
+    stats: stats as Character['stats'],
+    hp,
+    maxHp,
+    ac: armorClass,
+    deathSaves,
+    condition: 'normal',
+    appearance: { ...DEFAULT_APPEARANCE },
+    background: (backgroundName || 'Folk Hero') as Character['background'],
+    alignment: 'True Neutral' as Character['alignment'],
+    personalityTraits,
+    ideals,
+    bonds,
+    flaws,
+    backstory,
+    playerId,
+    gold: Math.round(gold * 100) / 100,
+    inventory: [],
+    equipment: { ...EMPTY_EQUIPMENT },
+    spellSlotsUsed: {},
+    classAbilityUsed: false,
+    feats: [],
+    asiChoicesMade: 0,
+    hitDiceRemaining: level,
+    inspiration: !!(charData.inspiration as boolean),
+    exhaustion: (charData.exhaustionLevel as number) || 0,
+    createdAt: Date.now(),
+  };
+
+  return { character, warnings };
+}

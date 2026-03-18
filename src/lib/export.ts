@@ -131,7 +131,7 @@ export function validateCharacterJSON(data: unknown): { valid: boolean; characte
   return { valid: true, character: char, errors: [] };
 }
 
-export function importJSONFile(): Promise<{ character?: Character; errors: string[] }> {
+export function importJSONFile(): Promise<{ character?: Character; errors: string[]; warnings?: string[] }> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -142,6 +142,18 @@ export function importJSONFile(): Promise<{ character?: Character; errors: strin
       try {
         const text = await file.text();
         const data = JSON.parse(text);
+
+        // Auto-detect D&D Beyond format (has classes array or data.character wrapper)
+        const isDDB = Array.isArray((data as Record<string, unknown>).classes)
+          || (data?.data && typeof data.data === 'object' && (data.data as Record<string, unknown>).character);
+        if (isDDB) {
+          const { parseDDBCharacter } = await import('./ddbImport');
+          const result = parseDDBCharacter(data, '');
+          resolve({ character: result.character, errors: [], warnings: result.warnings });
+          return;
+        }
+
+        // Native Adventure format
         const result = validateCharacterJSON(data);
         resolve(result.valid ? { character: result.character, errors: [] } : { errors: result.errors });
       } catch (e) {
