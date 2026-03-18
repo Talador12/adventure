@@ -10,6 +10,7 @@ interface BG3RollPopupProps {
   serverTimeOffsetMs?: number;
   syncRttMs?: number | null;
   interpolationMode?: RollInterpolationMode;
+  effectiveInterpolationMode?: 'smooth' | 'strict';
 }
 
 const EMPTY_ROLL: RollPresentation = {
@@ -37,7 +38,16 @@ function getKeptFlags(allRolls: number[], keptRolls: number[]): boolean[] {
   });
 }
 
-export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOffsetMs = 0, syncRttMs = null, interpolationMode = 'smooth' }: BG3RollPopupProps) {
+export default function BG3RollPopup({
+  roll,
+  visible,
+  isDM,
+  onVeto,
+  serverTimeOffsetMs = 0,
+  syncRttMs = null,
+  interpolationMode = 'smooth',
+  effectiveInterpolationMode,
+}: BG3RollPopupProps) {
   const activeRoll = roll || EMPTY_ROLL;
 
   const shapeKey = useMemo(() => {
@@ -70,6 +80,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
     activeRoll.presentationMs || 3000,
   );
   const resultPhase = !isAnimating && displayTotal !== null;
+  const resolvedMode: 'smooth' | 'strict' = effectiveInterpolationMode || (interpolationMode === 'strict' ? 'strict' : 'smooth');
 
   useEffect(() => {
     setAnimatedValues(activeRoll.allRolls);
@@ -81,7 +92,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
     const preElapsed = Math.max(0, Date.now() + serverTimeOffsetMs - activeRoll.timestamp);
     // High-latency interpolation: when RTT is high, slightly bias toward replaying
     // more of the animation locally to avoid jarring phase jumps on join/reconnect.
-    const latencyInterpolationMs = interpolationMode === 'smooth' && syncRttMs && syncRttMs > 220 ? Math.min(450, Math.round((syncRttMs - 180) * 0.9)) : 0;
+    const latencyInterpolationMs = resolvedMode === 'smooth' && syncRttMs && syncRttMs > 220 ? Math.min(450, Math.round((syncRttMs - 180) * 0.9)) : 0;
     const preElapsedAdjusted = Math.max(0, preElapsed - latencyInterpolationMs);
     if (preElapsedAdjusted >= animationMs) {
       setAnimatedValues(activeRoll.allRolls);
@@ -124,7 +135,7 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
       }));
     }, tickMs);
     return () => clearInterval(timer);
-  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, activeRoll.timestamp, animationMs, dieStaggerMs, perDieSpinMs, serverTimeOffsetMs, syncRttMs, interpolationMode]);
+  }, [visible, activeRoll.rollId, activeRoll.sides, activeRoll.allRolls, activeRoll.total, activeRoll.isCritical, activeRoll.isFumble, activeRoll.timestamp, animationMs, dieStaggerMs, perDieSpinMs, serverTimeOffsetMs, syncRttMs, resolvedMode]);
 
   useEffect(() => {
     if (document.getElementById('bg3-roll-popup-keyframes')) return;
@@ -258,8 +269,8 @@ export default function BG3RollPopup({ roll, visible, isDM, onVeto, serverTimeOf
           </div>
           <div className="rounded-lg border border-slate-700/60 bg-slate-800/50 px-3 py-2">
             <span className="text-slate-400">Sync</span>
-            <div className={`mt-0.5 font-semibold ${interpolationMode === 'strict' ? 'text-sky-300' : 'text-amber-200'}`}>
-              {interpolationMode === 'strict' ? 'Strict' : 'Smooth'}
+            <div className={`mt-0.5 font-semibold ${resolvedMode === 'strict' ? 'text-sky-300' : 'text-amber-200'}`}>
+              {interpolationMode === 'auto' ? `Auto (${resolvedMode})` : interpolationMode === 'strict' ? 'Strict' : 'Smooth'}
             </div>
           </div>
         </div>

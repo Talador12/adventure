@@ -78,7 +78,7 @@ export interface GameWebSocketDeps {
   onRollVetoed?: (rollId: string, vetoedBy?: string) => void;
   onRollCleared?: (rollId: string, reason?: string) => void;
   onServerTimeSync?: (serverNowMs: number) => void;
-  onRollInterpolationMode?: (mode: RollInterpolationMode) => void;
+  onRollInterpolationMode?: (mode: RollInterpolationMode, autoStrictRttMs?: number, autoStrictJitterMs?: number) => void;
 }
 
 export interface GameWebSocketState {
@@ -144,8 +144,8 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           setIsDM((msg.isDM as boolean) ?? false);
           setIsSpectating(!!(msg.isSpectating));
           if (msg.dmPlayerId) setDmPlayerId(msg.dmPlayerId as string);
-          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
-            onRollInterpolationMode?.(msg.rollInterpolationMode as RollInterpolationMode);
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth' || msg.rollInterpolationMode === 'auto') {
+            onRollInterpolationMode?.(msg.rollInterpolationMode as RollInterpolationMode, msg.autoStrictRttMs as number | undefined, msg.autoStrictJitterMs as number | undefined);
           }
           // Auto-join campaign party in D1 (fire-and-forget)
           fetch(`/api/party/${encodeURIComponent(room)}/join`, {
@@ -352,8 +352,8 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
         }
 
         case 'roll_interpolation_mode_changed': {
-          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
-            onRollInterpolationMode?.(msg.rollInterpolationMode as RollInterpolationMode);
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth' || msg.rollInterpolationMode === 'auto') {
+            onRollInterpolationMode?.(msg.rollInterpolationMode as RollInterpolationMode, msg.autoStrictRttMs as number | undefined, msg.autoStrictJitterMs as number | undefined);
           }
           break;
         }

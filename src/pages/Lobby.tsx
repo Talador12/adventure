@@ -80,6 +80,10 @@ export default function Lobby() {
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
   const [clockRttMs, setClockRttMs] = useState<number | null>(null);
   const [rollInterpolationMode, setRollInterpolationMode] = useState<RollInterpolationMode>('smooth');
+  const [autoStrictRttMs, setAutoStrictRttMs] = useState(260);
+  const [autoStrictJitterMs, setAutoStrictJitterMs] = useState(90);
+  // RTT jitter tracking for auto mode
+  const rttHistoryRef = useRef<number[]>([]);
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -204,9 +208,11 @@ export default function Lobby() {
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
           if (Array.isArray(msg.spectators)) setSpectators(msg.spectators as { id: string; username: string; avatar?: string }[]);
           if (msg.dmSeatType) setDmSeatType(msg.dmSeatType as 'human' | 'ai');
-          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth' || msg.rollInterpolationMode === 'auto') {
             setRollInterpolationMode(msg.rollInterpolationMode as RollInterpolationMode);
           }
+          if (typeof msg.autoStrictRttMs === 'number') setAutoStrictRttMs(msg.autoStrictRttMs as number);
+          if (typeof msg.autoStrictJitterMs === 'number') setAutoStrictJitterMs(msg.autoStrictJitterMs as number);
           if (msg.seatId) setMySeatId(msg.seatId as string);
           setIsSpectating(!!(msg.isSpectating));
           setIsDM((msg.isDM as boolean) ?? false);
@@ -331,13 +337,18 @@ export default function Lobby() {
           break;
 
         case 'roll_interpolation_mode_changed':
-          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth') {
+          if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth' || msg.rollInterpolationMode === 'auto') {
             setRollInterpolationMode(msg.rollInterpolationMode as RollInterpolationMode);
+            if (typeof msg.autoStrictRttMs === 'number') setAutoStrictRttMs(msg.autoStrictRttMs as number);
+            if (typeof msg.autoStrictJitterMs === 'number') setAutoStrictJitterMs(msg.autoStrictJitterMs as number);
+            const modeLabel = msg.rollInterpolationMode === 'auto'
+              ? `auto (RTT>${msg.autoStrictRttMs || autoStrictRttMs}ms → strict)`
+              : String(msg.rollInterpolationMode);
             setChatMessages((prev) => [...prev, {
               id: crypto.randomUUID(),
               type: 'system',
               username: 'System',
-              text: `Dice sync mode changed to ${msg.rollInterpolationMode}`,
+              text: `Dice sync mode changed to ${modeLabel}`,
               timestamp: (msg.timestamp as number) || Date.now(),
             }]);
           }
@@ -573,6 +584,10 @@ export default function Lobby() {
     onTimeSync: (offsetMs, rttMs) => {
       setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
       setClockRttMs(Math.round(rttMs));
+      // Track RTT samples for auto mode jitter calculation (last 8 samples)
+      const hist = rttHistoryRef.current;
+      hist.push(rttMs);
+      if (hist.length > 8) hist.shift();
     },
     enabled: passwordVerified, // don't connect until password is verified (or not needed)
   });
@@ -611,6 +626,16 @@ export default function Lobby() {
     },
     [send]
   );
+
+  // Compute effective interpolation mode for auto policy
+  const effectiveMode: 'smooth' | 'strict' = (() => {
+    if (rollInterpolationMode !== 'auto') return rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
+    const hist = rttHistoryRef.current;
+    if (hist.length < 3) return 'smooth'; // not enough data yet
+    const avgRtt = hist.reduce((a, b) => a + b, 0) / hist.length;
+    const jitter = Math.sqrt(hist.reduce((s, v) => s + (v - avgRtt) ** 2, 0) / hist.length);
+    return (avgRtt > autoStrictRttMs || jitter > autoStrictJitterMs) ? 'strict' : 'smooth';
+  })();
 
   // Fun default names for lobby (no character selected yet)
   const LOBBY_DEFAULTS = ['A Curious Onlooker', 'Someone at the Bar', "The Innkeeper's Cat", 'A Dice-Obsessed Patron', 'Definitely Not a Mimic'];
@@ -895,8 +920,8 @@ export default function Lobby() {
               sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
             </span>
           )}
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${rollInterpolationMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
-            roll sync {rollInterpolationMode}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+            {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
           </span>
           {isSpectating && (
             <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-900/30 border border-sky-700/30 text-sky-400 font-semibold animate-fade-in-up">
@@ -1005,25 +1030,65 @@ export default function Lobby() {
                 {campaignPassword ? 'Set' : 'Remove'}
               </button>
             </div>
-            <div className="flex items-center gap-3">
-              <label className="text-[10px] text-slate-500 uppercase tracking-wider">Roll Sync</label>
-              <div className="inline-flex rounded-md border border-slate-700/70 overflow-hidden">
-                <button
-                  onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'smooth' })}
-                  className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'smooth' ? 'bg-amber-900/30 text-amber-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
-                >
-                  Smooth
-                </button>
-                <button
-                  onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'strict' })}
-                  className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'strict' ? 'bg-sky-900/30 text-sky-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
-                >
-                  Strict
-                </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Roll Sync</label>
+                <div className="inline-flex rounded-md border border-slate-700/70 overflow-hidden">
+                  <button
+                    onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'smooth' })}
+                    className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'smooth' ? 'bg-amber-900/30 text-amber-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Smooth
+                  </button>
+                  <button
+                    onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'auto' })}
+                    className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'auto' ? 'bg-violet-900/30 text-violet-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Auto
+                  </button>
+                  <button
+                    onClick={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'strict' })}
+                    className={`text-xs px-3 py-1.5 font-semibold transition-colors ${rollInterpolationMode === 'strict' ? 'bg-sky-900/30 text-sky-200' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Strict
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500">
+                  {rollInterpolationMode === 'auto' ? `Auto switches based on RTT (>${autoStrictRttMs}ms → strict)` : rollInterpolationMode === 'strict' ? 'Strict: lockstep timing, no catch-up' : 'Smooth: softens high-latency catch-up'}
+                </span>
               </div>
-              <span className="text-[10px] text-slate-500">
-                Smooth softens high-latency catch-up; strict favors lockstep timing.
-              </span>
+              {rollInterpolationMode === 'auto' && (
+                <div className="flex items-center gap-4 pl-[72px]">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] text-slate-500 w-16">RTT &gt;</label>
+                    <input
+                      type="range"
+                      min={120}
+                      max={800}
+                      step={20}
+                      value={autoStrictRttMs}
+                      onChange={(e) => setAutoStrictRttMs(Number(e.target.value))}
+                      onMouseUp={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'auto', autoStrictRttMs, autoStrictJitterMs })}
+                      className="w-24 h-1 accent-violet-500 cursor-pointer"
+                    />
+                    <span className="text-[9px] text-slate-400 w-12">{autoStrictRttMs}ms</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] text-slate-500 w-16">Jitter &gt;</label>
+                    <input
+                      type="range"
+                      min={20}
+                      max={300}
+                      step={10}
+                      value={autoStrictJitterMs}
+                      onChange={(e) => setAutoStrictJitterMs(Number(e.target.value))}
+                      onMouseUp={() => send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: 'auto', autoStrictRttMs, autoStrictJitterMs })}
+                      className="w-24 h-1 accent-violet-500 cursor-pointer"
+                    />
+                    <span className="text-[9px] text-slate-400 w-12">{autoStrictJitterMs}ms</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1309,6 +1374,7 @@ export default function Lobby() {
         serverTimeOffsetMs={serverTimeOffsetMs}
         syncRttMs={clockRttMs}
         interpolationMode={rollInterpolationMode}
+        effectiveInterpolationMode={effectiveMode}
       />
     </div>
   );

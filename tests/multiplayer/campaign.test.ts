@@ -748,6 +748,18 @@ describe('Seat model — party configuration', () => {
     const errMsg = await err;
     expect(errMsg.message).toContain('Only the DM');
 
+    // DM switches to auto with custom thresholds.
+    const autoChanged = waitForMessage(ws1, 'roll_interpolation_mode_changed');
+    send(ws1, { type: 'set_roll_interpolation_mode', rollInterpolationMode: 'auto', autoStrictRttMs: 300, autoStrictJitterMs: 120 });
+    const autoMsg = await autoChanged;
+    expect(autoMsg.rollInterpolationMode).toBe('auto');
+    expect(autoMsg.autoStrictRttMs).toBe(300);
+    expect(autoMsg.autoStrictJitterMs).toBe(120);
+
+    // Player 2 also gets the broadcast.
+    const autoP2 = await waitForMessage(ws2, 'roll_interpolation_mode_changed');
+    expect(autoP2.rollInterpolationMode).toBe('auto');
+
     await closeAndWait(ws2);
     await closeAndWait(ws1);
   });
@@ -790,11 +802,13 @@ describe('Seat model — party configuration', () => {
     const id = env.LOBBY.idFromName(room);
     const stub = env.LOBBY.get(id);
     const resp = await stub.fetch('http://fake/players');
-    const data = (await resp.json()) as { players: unknown[]; seats: unknown[]; dmSeatType: string; rollInterpolationMode: string };
+    const data = (await resp.json()) as { players: unknown[]; seats: unknown[]; dmSeatType: string; rollInterpolationMode: string; autoStrictRttMs: number; autoStrictJitterMs: number };
 
     expect(data.seats.length).toBe(4);
     expect(data.dmSeatType).toBe('human');
     expect(data.rollInterpolationMode).toBe('smooth');
+    expect(data.autoStrictRttMs).toBe(260);
+    expect(data.autoStrictJitterMs).toBe(90);
     expect(data.players.length).toBe(1);
 
     await closeAndWait(ws);

@@ -106,6 +106,9 @@ export default function Game() {
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
   const [clockRttMs, setClockRttMs] = useState<number | null>(null);
   const [rollInterpolationMode, setRollInterpolationMode] = useState<RollInterpolationMode>('smooth');
+  const [autoStrictRttMs, setAutoStrictRttMs] = useState(260);
+  const [autoStrictJitterMs, setAutoStrictJitterMs] = useState(90);
+  const rttHistoryRef = useRef<number[]>([]);
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
@@ -481,7 +484,11 @@ export default function Game() {
     onServerTimeSync: (serverNowMs) => {
       setServerTimeOffsetMs(serverNowMs - Date.now());
     },
-    onRollInterpolationMode: setRollInterpolationMode,
+    onRollInterpolationMode: (mode, rttThreshold, jitterThreshold) => {
+      setRollInterpolationMode(mode);
+      if (typeof rttThreshold === 'number') setAutoStrictRttMs(rttThreshold);
+      if (typeof jitterThreshold === 'number') setAutoStrictJitterMs(jitterThreshold);
+    },
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
@@ -1110,6 +1117,9 @@ export default function Game() {
     onTimeSync: (offsetMs, rttMs) => {
       setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
       setClockRttMs(Math.round(rttMs));
+      const hist = rttHistoryRef.current;
+      hist.push(rttMs);
+      if (hist.length > 8) hist.shift();
     },
   });
   sendRef.current = send;
@@ -1117,6 +1127,16 @@ export default function Game() {
   useEffect(() => {
     setWsConnected(status === 'connected');
   }, [status]);
+
+  // Compute effective interpolation mode for auto policy
+  const effectiveMode: 'smooth' | 'strict' = (() => {
+    if (rollInterpolationMode !== 'auto') return rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
+    const hist = rttHistoryRef.current;
+    if (hist.length < 3) return 'smooth';
+    const avgRtt = hist.reduce((a, b) => a + b, 0) / hist.length;
+    const jitter = Math.sqrt(hist.reduce((s, v) => s + (v - avgRtt) ** 2, 0) / hist.length);
+    return (avgRtt > autoStrictRttMs || jitter > autoStrictJitterMs) ? 'strict' : 'smooth';
+  })();
 
   const handleChatSend = useCallback(
     (text: string) => {
@@ -1439,8 +1459,8 @@ export default function Game() {
               sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
             </span>
           )}
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${rollInterpolationMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
-            roll sync {rollInterpolationMode}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+            {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
           </span>
           <SessionTimer roomId={room} compact />
         </div>
@@ -2028,6 +2048,7 @@ export default function Game() {
         serverTimeOffsetMs={serverTimeOffsetMs}
         syncRttMs={clockRttMs}
         interpolationMode={rollInterpolationMode}
+        effectiveInterpolationMode={effectiveMode}
       />
 
       {/* Keyboard Shortcut Help Overlay */}

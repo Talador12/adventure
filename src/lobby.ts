@@ -4,7 +4,7 @@
 
 // --- Seat model: configurable table with human/AI/empty seats ---
 type SeatType = 'human' | 'ai' | 'empty';
-type RollInterpolationMode = 'smooth' | 'strict';
+type RollInterpolationMode = 'smooth' | 'strict' | 'auto';
 
 interface Seat {
   id: string;            // stable ID: "seat-0", "seat-1", etc.
@@ -82,6 +82,8 @@ interface PersistedLobbyState {
   activeRoll: QueuedRoll | null;
   rollQueue: QueuedRoll[];
   rollInterpolationMode: RollInterpolationMode;
+  autoStrictRttMs: number;
+  autoStrictJitterMs: number;
 }
 
 const MAX_STROKE_HISTORY = 5000; // cap memory usage
@@ -96,6 +98,18 @@ const MIN_ROLL_ANIMATION_MS = 900;
 const MAX_ROLL_ANIMATION_MS = 10000;
 const BASE_ROLL_HOLD_MS = 1000;
 const OUTCOME_ANIMATION_EXTRA_MS = 1000;
+const DEFAULT_AUTO_STRICT_RTT_MS = 260;
+const DEFAULT_AUTO_STRICT_JITTER_MS = 90;
+
+function normalizeInterpolationMode(mode: unknown): RollInterpolationMode {
+  return mode === 'strict' || mode === 'auto' ? mode : 'smooth';
+}
+
+function clampThreshold(value: unknown, min: number, max: number, fallback: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(parsed)));
+}
 
 function getRollPresentationTiming(roll: {
   totalDice: number;
@@ -140,6 +154,8 @@ export class Lobby {
   rollQueue: QueuedRoll[];
   rollTimer: ReturnType<typeof setTimeout> | null;
   rollInterpolationMode: RollInterpolationMode;
+  autoStrictRttMs: number;
+  autoStrictJitterMs: number;
 
   constructor(state: DurableObjectState, env: unknown) {
     this.state = state;
@@ -152,6 +168,8 @@ export class Lobby {
     this.rollQueue = [];
     this.rollTimer = null;
     this.rollInterpolationMode = 'smooth';
+    this.autoStrictRttMs = DEFAULT_AUTO_STRICT_RTT_MS;
+    this.autoStrictJitterMs = DEFAULT_AUTO_STRICT_JITTER_MS;
     // Initialize default player seats — all empty
     this.seats = [];
     for (let i = 0; i < DEFAULT_SEAT_COUNT; i++) {
@@ -171,15 +189,17 @@ export class Lobby {
     this.dmSeatType = saved.dmSeatType === 'ai' ? 'ai' : 'human';
     this.activeRoll = saved.activeRoll || null;
     if (this.activeRoll) {
-      this.activeRoll.rollInterpolationMode = this.activeRoll.rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
+      this.activeRoll.rollInterpolationMode = normalizeInterpolationMode(this.activeRoll.rollInterpolationMode);
     }
     this.rollQueue = Array.isArray(saved.rollQueue)
       ? saved.rollQueue.map((roll) => ({
         ...roll,
-        rollInterpolationMode: roll.rollInterpolationMode === 'strict' ? 'strict' : 'smooth',
+        rollInterpolationMode: normalizeInterpolationMode(roll.rollInterpolationMode),
       }))
       : [];
-    this.rollInterpolationMode = saved.rollInterpolationMode === 'strict' ? 'strict' : 'smooth';
+    this.rollInterpolationMode = normalizeInterpolationMode(saved.rollInterpolationMode);
+    this.autoStrictRttMs = clampThreshold(saved.autoStrictRttMs, 120, 800, DEFAULT_AUTO_STRICT_RTT_MS);
+    this.autoStrictJitterMs = clampThreshold(saved.autoStrictJitterMs, 20, 300, DEFAULT_AUTO_STRICT_JITTER_MS);
 
     if (this.activeRoll) {
       const elapsed = Math.max(0, Date.now() - this.activeRoll.timestamp);
@@ -207,6 +227,8 @@ export class Lobby {
       activeRoll: this.activeRoll,
       rollQueue: this.rollQueue,
       rollInterpolationMode: this.rollInterpolationMode,
+      autoStrictRttMs: this.autoStrictRttMs,
+      autoStrictJitterMs: this.autoStrictJitterMs,
     };
     this.state.storage.put('lobby_state', payload).catch(() => {});
   }
@@ -296,7 +318,15 @@ export class Lobby {
 
     // REST: get player list + seats + spectators
     if (url.pathname.endsWith('/players')) {
-      return Response.json({ players: this.getPlayerList(), seats: this.seats, spectators: this.getSpectatorList(), dmSeatType: this.dmSeatType, rollInterpolationMode: this.rollInterpolationMode });
+      return Response.json({
+        players: this.getPlayerList(),
+        seats: this.seats,
+        spectators: this.getSpectatorList(),
+        dmSeatType: this.dmSeatType,
+        rollInterpolationMode: this.rollInterpolationMode,
+        autoStrictRttMs: this.autoStrictRttMs,
+        autoStrictJitterMs: this.autoStrictJitterMs,
+      });
     }
 
     return Response.json({ status: 'ok', players: this.sessions.size, seats: this.seats.length });
@@ -399,6 +429,8 @@ export class Lobby {
             activeRoll: this.activeRoll,
             queuedRolls: this.rollQueue,
             rollInterpolationMode: this.rollInterpolationMode,
+            autoStrictRttMs: this.autoStrictRttMs,
+            autoStrictJitterMs: this.autoStrictJitterMs,
             isDM: finalId === this.dmPlayerId,
             dmPlayerId: this.dmPlayerId,
             seatId: assignedSeatId,
@@ -931,15 +963,19 @@ export class Lobby {
 
       case 'set_roll_interpolation_mode': {
         const mode = data.rollInterpolationMode as string;
-        if (mode !== 'smooth' && mode !== 'strict') {
-          server.send(JSON.stringify({ type: 'error', message: 'rollInterpolationMode must be "smooth" or "strict"', timestamp: Date.now() }));
+        if (mode !== 'smooth' && mode !== 'strict' && mode !== 'auto') {
+          server.send(JSON.stringify({ type: 'error', message: 'rollInterpolationMode must be "smooth", "strict", or "auto"', timestamp: Date.now() }));
           return;
         }
         this.rollInterpolationMode = mode;
+        this.autoStrictRttMs = clampThreshold(data.autoStrictRttMs, 120, 800, this.autoStrictRttMs);
+        this.autoStrictJitterMs = clampThreshold(data.autoStrictJitterMs, 20, 300, this.autoStrictJitterMs);
         this.persistState();
         this.broadcast({
           type: 'roll_interpolation_mode_changed',
           rollInterpolationMode: this.rollInterpolationMode,
+          autoStrictRttMs: this.autoStrictRttMs,
+          autoStrictJitterMs: this.autoStrictJitterMs,
           timestamp: Date.now(),
         });
         break;

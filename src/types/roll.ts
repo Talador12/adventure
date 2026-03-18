@@ -1,5 +1,5 @@
 export type AdvantageMode = 'advantage' | 'disadvantage';
-export type RollInterpolationMode = 'smooth' | 'strict';
+export type RollInterpolationMode = 'smooth' | 'strict' | 'auto';
 
 export interface RollBonus {
   label: string;
