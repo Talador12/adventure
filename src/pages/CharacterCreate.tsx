@@ -6,6 +6,7 @@ import { useGame, STAT_NAMES, RACES, CLASSES, BACKGROUNDS, ALIGNMENTS, HAIR_STYL
 import { SKIN_PALETTES, HAIR_PALETTES, EYE_PALETTES } from '../lib/palettes'; // still used in edit-mode init + identity step
 import { randomFantasyName } from '../lib/names';
 import { buildRacePortraitSvg } from '../lib/portrait';
+import { STARTING_EQUIPMENT } from '../data/items';
 import { EXPORT_FORMATS, runExport, type ExportFormat } from '../lib/export';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import AppearanceStep, { type PortraitStyle } from '../components/character/AppearanceStep';
@@ -673,9 +674,15 @@ export default function CharacterCreate() {
         backstory,
         appearanceDescription: (analyzeUpload && aiDescription) || undefined,
         playerId: currentPlayer.id,
-        gold: 15,
-        inventory: [],
-        equipment: { weapon: null, armor: null, shield: null, ring: null },
+        gold: STARTING_EQUIPMENT[charClass]?.gold ?? 15,
+        inventory: (STARTING_EQUIPMENT[charClass]?.items || []).map((i) => ({ ...i, id: crypto.randomUUID() })),
+        equipment: (() => {
+          const kit = STARTING_EQUIPMENT[charClass]?.items || [];
+          const w = kit.find((i) => i.type === 'weapon');
+          const a = kit.find((i) => i.type === 'armor');
+          const s = kit.find((i) => i.type === 'shield');
+          return { weapon: w ? { ...w, id: crypto.randomUUID() } : null, armor: a ? { ...a, id: crypto.randomUUID() } : null, shield: s ? { ...s, id: crypto.randomUUID() } : null, ring: null };
+        })(),
         spellSlotsUsed: {},
         classAbilityUsed: false,
         feats: [],

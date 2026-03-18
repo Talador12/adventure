@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added starting equipment presets for all 12 classes — `STARTING_EQUIPMENT` map in data/items.ts gives each class a thematic D&D 5e PHB loadout (weapons, armor, light sources, potions) with class-appropriate gold. CharacterCreate.tsx auto-populates inventory + auto-equips best weapon/armor/shield on creation. Fighter gets chain mail + longsword + shield, Rogue gets leather + rapier + lantern, Wizard gets quarterstaff + candles, etc.
 - Added Service Worker for offline-first static assets — `public/sw.js` with stale-while-revalidate strategy for JS/CSS/images/fonts, network-first for API calls, SPA navigation fallback to cached index.html. Pre-caches app shell on install. Auto-cleans old caches on activate. Registered on window load in `main.tsx` with silent fail. Skips WebSocket upgrade requests.
 - Added "Supplies" shop category with light sources and adventuring gear — Candle (x10), Torch (x5), Hooded Lantern, Oil Flask (x3), Tinderbox, Rope (50ft), Healer's Kit (10 uses), Rations (x5). Light source items carry `appliesCondition` so buying and using a torch from the shop correctly lights it. `SHOP_CATEGORIES` extended with 'Supplies'.
 - Added auto-equip from DDB import — after parsing inventory, automatically slots the best weapon (highest avg damage die + attack/damage bonuses), best armor (highest AC bonus), best shield, and first ring into equipment slots. Adds a "Auto-equipped: ..." note to import warnings. Characters arrive ready to fight.
@@ -836,7 +837,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Multiple light source types (candle: 2/4 cells, lantern: 6/10 cells, daylight spell: 12/20 cells)
 - [x] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
 - [x] Add light source items to the shop (Supplies category with adventuring gear)
-- [ ] Starting equipment presets by class (Fighter gets chain mail + longsword, Rogue gets leather + daggers, etc.)
+- [x] Starting equipment presets by class (Fighter gets chain mail + longsword, Rogue gets leather + daggers, etc.)
+- [ ] "Re-roll equipment" button on character sheet to re-randomize starting gear variant
 - [ ] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
 
 **DM tools:**
