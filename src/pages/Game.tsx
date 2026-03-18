@@ -549,10 +549,49 @@ export default function Game() {
       if (e.key === '8') { setActiveView('dicestats'); return; }
       if (e.key === '9') { setActiveView('timeline'); return; }
       if (e.key === '0') { setActiveView('achievements'); return; }
+      // Combat shortcuts (only when it's the player's turn)
+      if (inCombat && isPlayerTurn && selectedCharacter) {
+        // A — quick attack
+        if (e.key === 'a' || e.key === 'A') {
+          const attackBtn = document.querySelector('[data-combat-action="attack"]') as HTMLButtonElement | null;
+          if (attackBtn && !attackBtn.disabled) attackBtn.click();
+          return;
+        }
+        // E — end turn
+        if (e.key === 'e' || e.key === 'E') {
+          const endBtn = document.querySelector('[data-combat-action="end-turn"]') as HTMLButtonElement | null;
+          if (endBtn && !endBtn.disabled) endBtn.click();
+          return;
+        }
+        // P — use potion
+        if (e.key === 'p' || e.key === 'P') {
+          const potionBtn = document.querySelector('[data-combat-action="potion"]') as HTMLButtonElement | null;
+          if (potionBtn && !potionBtn.disabled) potionBtn.click();
+          return;
+        }
+        // G — dodge
+        if (e.key === 'g' || e.key === 'G') {
+          const dodgeBtn = document.querySelector('[data-combat-action="dodge"]') as HTMLButtonElement | null;
+          if (dodgeBtn && !dodgeBtn.disabled) dodgeBtn.click();
+          return;
+        }
+        // H — dash
+        if (e.key === 'h' || e.key === 'H') {
+          const dashBtn = document.querySelector('[data-combat-action="dash"]') as HTMLButtonElement | null;
+          if (dashBtn && !dashBtn.disabled) dashBtn.click();
+          return;
+        }
+        // F — class ability
+        if (e.key === 'f' || e.key === 'F') {
+          const abilityBtn = document.querySelector('[data-combat-action="class-ability"]') as HTMLButtonElement | null;
+          if (abilityBtn && !abilityBtn.disabled) abilityBtn.click();
+          return;
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showLevelUpModal, showDMSidebar, showCombatLog, showQuests, showHelpOverlay, showRulesRef, soundMuted, canUseDMTools, inCombat]);
+  }, [showLevelUpModal, showDMSidebar, showCombatLog, showQuests, showHelpOverlay, showRulesRef, soundMuted, canUseDMTools, inCombat, isPlayerTurn, selectedCharacter]);
 
   // Delayed broadcast — reads from refs after React processes state batches.
   // Use this when you can't easily capture return values (e.g. player UI actions).
@@ -2115,6 +2154,13 @@ export default function Game() {
                 ['7', 'NPC relationship tracker'],
                 ['8', 'Dice roll statistics'],
                 ['B', 'Monster manual (DM only)'],
+                ['—', '— Combat (your turn) —'],
+                ['A', 'Quick attack selected target'],
+                ['E', 'End turn / Next turn'],
+                ['P', 'Use healing potion'],
+                ['G', 'Dodge (+2 AC)'],
+                ['H', 'Dash (double movement)'],
+                ['F', 'Use class ability'],
               ].map(([key, desc]) => (
                 <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
                   <kbd className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-md text-xs font-mono text-slate-300 shadow-sm">{key}</kbd>

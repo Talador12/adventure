@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v0.2.0
+## Current Version: v0.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added keyboard shortcuts for combat actions — A (attack), E (end turn), P (potion), G (dodge), H (dash), F (class ability). Only active during player's turn in combat. Uses `data-combat-action` attributes on CombatToolbar buttons for click delegation. Help overlay (?) updated with combat shortcut section.
+- Added mobile-responsive lobby layout — tab bar at top toggles between "Party & Dice" and "Chat" on small screens. Seat cards wrap on mobile instead of horizontal scroll. Doodle pad capped at 40vh on mobile. Settings panel scrollable with stacked form inputs on mobile. Chat panel goes full-width when active. Desktop layout unchanged.
 - Added mobile-responsive game layout — fixed bottom tab bar (Game/Chat/Sheet) visible on screens <768px. Tapping a tab shows only that panel. The right sidebar (chat + character sheet) hides on mobile and becomes a full-width panel when its tab is active. DM sidebar hidden on mobile. Header compacted (smaller text, lobby label hidden). Main content area adds bottom padding to avoid tab bar overlap. Desktop layout unchanged.
 - Added per-unit vision range based on racial darkvision. `Unit.visionRange` field (cells, default 6 = 30ft). D&D 5e darkvision races (Elf, Dwarf, Gnome, Half-Orc, Tiefling, Dragonborn) get 12 cells (60ft). Humans and Halflings keep 30ft. `computeVisibility` now reads `visionRange` per-position instead of using a global constant. Constants exported from `types/game.ts`: `DARKVISION_RACES`, `DARKVISION_RANGE`, `NORMAL_VISION_RANGE`.
 - Added DM "View As" dropdown — when DM mode is on, a dropdown appears next to the toggle listing all living player characters. Selecting one previews the map from that player's fog perspective (only their token's vision). "Full Vision" restores normal DM view. All fog rendering paths (terrain, tokens, traps, minimap) respect `effectiveDmMode` so the preview is accurate. Toggling DM mode off auto-clears the View As selection.
@@ -929,13 +931,13 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v0.3.0: Mobile + Accessibility (PLANNED)
 **Goal:** Touch-friendly on phones/tablets, accessible to all players.
 
-- [ ] Mobile-responsive lobby (collapsible panels, touch-friendly seat cards)
+- [x] Mobile-responsive lobby (collapsible panels, touch-friendly seat cards)
 - [x] Mobile-responsive game (bottom tab bar: game/chat/sheet panels)
-- [ ] Mobile-responsive lobby (collapsible panels, stacked layout on small screens)
-- [ ] Touch-friendly battle map (pinch zoom, tap to select, long-press to move)
+- [x] Mobile-responsive lobby (collapsible panels, stacked layout on small screens)
+- [x] Touch-friendly battle map (pinch zoom, tap to select, long-press to move)
 - [ ] Accessibility "Low-FX" mode (reduced motion, high contrast, screen reader hints)
 - [x] `prefers-reduced-motion` media query: disable all animations automatically
-- [ ] Keyboard navigation for combat actions
+- [x] Keyboard navigation for combat actions
 - [ ] ARIA labels on interactive elements
 
 ### v0.4.0: Cloudflare Access/IDP + Campaign Invites (PLANNED)

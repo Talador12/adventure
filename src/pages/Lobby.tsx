@@ -87,6 +87,8 @@ export default function Lobby() {
   // Per-player latency map (playerId -> rttMs) and stale set
   const [playerLatency, setPlayerLatency] = useState<Record<string, number>>({});
   const [stalePlayers, setStalePlayers] = useState<Set<string>>(new Set());
+  // Mobile layout: toggle between party area and chat
+  const [lobbyMobilePanel, setLobbyMobilePanel] = useState<'party' | 'chat'>('party');
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -974,13 +976,13 @@ export default function Lobby() {
 
       {/* Campaign settings panel — collapsible, DM only */}
       {showSettings && isDM && (
-        <div className="bg-slate-900/80 border-b border-slate-800/80 px-6 py-3 shrink-0 backdrop-blur-sm animate-slide-in">
+        <div className="bg-slate-900/80 border-b border-slate-800/80 px-3 sm:px-6 py-3 shrink-0 backdrop-blur-sm animate-slide-in max-h-[50vh] sm:max-h-none overflow-y-auto">
           <div className="max-w-2xl mx-auto space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Campaign Settings</h3>
               <button onClick={() => setShowSettings(false)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Close</button>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
                 <label className="text-[10px] text-slate-500 uppercase tracking-wider">Name</label>
                 <input
@@ -1115,10 +1117,25 @@ export default function Lobby() {
         </div>
       )}
 
+      {/* Mobile tab bar — toggle party/chat on small screens */}
+      <div className="sm:hidden flex border-b border-slate-800/60 bg-slate-900/60 shrink-0">
+        {(['party', 'chat'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setLobbyMobilePanel(tab)}
+            className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+              lobbyMobilePanel === tab ? 'text-[#F38020] border-b-2 border-[#F38020] bg-[#F38020]/5' : 'text-slate-500'
+            }`}
+          >
+            {tab === 'party' ? 'Party & Dice' : 'Chat'}
+          </button>
+        ))}
+      </div>
+
       {/* Main content */}
       <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
-        {/* Left side: seat roster + activity area (doodle/dice) */}
-        <div className={`flex-1 flex flex-col overflow-hidden min-h-0 transition-opacity duration-200 ${rollPopupVisible ? 'opacity-45' : 'opacity-100'}`}>
+        {/* Left side: seat roster + activity area (doodle/dice) — hidden on mobile when chat active */}
+        <div className={`flex-1 flex flex-col overflow-hidden min-h-0 transition-opacity duration-200 ${rollPopupVisible ? 'opacity-45' : 'opacity-100'} ${lobbyMobilePanel !== 'party' ? 'hidden sm:flex' : ''}`}>
           {/* Seat roster + invite bar */}
           <div className="bg-slate-900/40 border-b border-slate-800/60 px-4 py-3 shrink-0 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-3">
@@ -1151,12 +1168,12 @@ export default function Lobby() {
               </button>
             </div>
 
-            {/* Seat grid */}
-            <div className="flex gap-2.5 overflow-x-auto pb-1 stagger-children">
+            {/* Seat grid — wraps on mobile, scrolls on desktop */}
+            <div className="flex flex-wrap sm:flex-nowrap gap-2.5 overflow-x-auto pb-1 stagger-children">
               {seats.map((seat) => (
                 <div
                   key={seat.id}
-                  className={`seat-card flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl border min-w-[130px] transition-all backdrop-blur-sm animate-card-reveal ${
+                  className={`seat-card flex flex-col items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border min-w-[110px] sm:min-w-[130px] transition-all backdrop-blur-sm animate-card-reveal ${
                     seat.ready ? 'seat-ready' : ''
                   } ${
                     seat.type === 'human' && seat.playerId === wsPlayerId
@@ -1367,8 +1384,8 @@ export default function Lobby() {
             )}
           </div>
 
-          {/* Dice + Doodle Pad side by side */}
-          <div className="flex-1 flex overflow-hidden min-h-0">
+          {/* Dice + Doodle Pad side by side — capped height on mobile */}
+          <div className="flex-1 flex overflow-hidden min-h-0 max-h-[40vh] sm:max-h-none">
             {/* Dice roller — left (hidden on mobile, dice available via chat) */}
             <div className="hidden sm:flex relative w-64 shrink-0 border-r border-slate-800/60 p-4 flex-col items-center overflow-y-auto bg-slate-900/20">
               <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Dice</h3>
@@ -1395,8 +1412,8 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Right sidebar: chat — full width on mobile, fixed width on desktop */}
-        <div className="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0">
+        {/* Right sidebar: chat — full-width on mobile when chat tab active, fixed width on desktop */}
+        <div className={`w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0 ${lobbyMobilePanel !== 'chat' ? 'hidden sm:flex' : ''}`}>
           <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
         </div>
       </div>
