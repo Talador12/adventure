@@ -8,6 +8,7 @@ import type { Unit } from '../contexts/GameContext';
 import type { TerrainType, TokenPosition } from '../lib/mapUtils';
 import type { Quest } from '../types/game';
 import type { Character } from '../contexts/GameContext';
+import type { LightingLevel } from '../components/combat/BattleMap';
 
 function apiBase(): string {
   return '';
@@ -25,6 +26,7 @@ export interface CampaignState {
   mapPositions: TokenPosition[];
   mapImageUrl: string | null;
   quests: Quest[];
+  lightingGrid?: LightingLevel[][];
 }
 
 export interface CampaignLoadResult {
@@ -40,6 +42,7 @@ export interface CampaignLoadResult {
   mapPositions?: TokenPosition[];
   mapImageUrl?: string;
   quests?: Quest[];
+  lightingGrid?: LightingLevel[][];
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -210,6 +213,7 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (c.mapImageUrl && typeof c.mapImageUrl === 'string') result.mapImageUrl = c.mapImageUrl;
       if (c.quests && Array.isArray(c.quests)) result.quests = c.quests as Quest[];
       if (c.combatLog && Array.isArray(c.combatLog)) result.combatLog = c.combatLog as string[];
+      if (c.lightingGrid && Array.isArray(c.lightingGrid)) result.lightingGrid = c.lightingGrid as LightingLevel[][];
       return { result, raw: c };
     };
 
