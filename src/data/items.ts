@@ -1,7 +1,7 @@
 // Loot tables and shop inventory.
 // Extracted from GameContext.tsx for maintainability.
 
-import type { Item } from '../types/game';
+import type { Item, CharacterClass } from '../types/game';
 
 // --- Loot tables ---
 const COMMON_LOOT: Omit<Item, 'id'>[] = [
@@ -107,3 +107,84 @@ export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
 ];
 
 export const SHOP_CATEGORIES = ['Weapons', 'Armor', 'Potions', 'Accessories', 'Supplies'] as const;
+
+// --- Starting equipment presets by class (D&D 5e PHB) ---
+// Each class gets a thematic loadout. Items reference shop items where possible.
+type StartingKit = { items: Omit<Item, 'id'>[]; gold: number };
+export const STARTING_EQUIPMENT: Record<CharacterClass, StartingKit> = {
+  Fighter: { gold: 15, items: [
+    { name: 'Longsword', type: 'weapon', rarity: 'common', description: 'Versatile and dependable.', value: 15, equipSlot: 'weapon', damageDie: '1d8', attackBonus: 0, range: 1 },
+    { name: 'Chain Mail', type: 'armor', rarity: 'uncommon', description: 'Heavy armor.', value: 75, equipSlot: 'armor', acBonus: 16, armorCategory: 'heavy' },
+    { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2 },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 3 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Barbarian: { gold: 10, items: [
+    { name: 'Greataxe', type: 'weapon', rarity: 'common', description: 'Heavy, two-handed.', value: 30, equipSlot: 'weapon', damageDie: '1d12', attackBonus: 0, range: 1 },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 5 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Rogue: { gold: 20, items: [
+    { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'Finesse, light.', value: 10, equipSlot: 'weapon', damageDie: '1d6', attackBonus: 0, range: 1 },
+    { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Thrown range 20/60.', value: 2, equipSlot: 'weapon', damageDie: '1d4', attackBonus: 0, range: 1 },
+    { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light' },
+    { name: 'Hooded Lantern', type: 'light', rarity: 'common', description: '30ft bright, 50ft dim.', value: 5, appliesCondition: 'lantern' },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Wizard: { gold: 15, items: [
+    { name: 'Quarterstaff', type: 'weapon', rarity: 'common', description: 'Versatile (1d8).', value: 0.2, equipSlot: 'weapon', damageDie: '1d6', attackBonus: 0, range: 1 },
+    { name: 'Candle', type: 'light', rarity: 'common', description: '10ft bright, 20ft dim.', value: 0.01, appliesCondition: 'candlelit', consumable: true, quantity: 10 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Cleric: { gold: 15, items: [
+    { name: 'Mace', type: 'weapon', rarity: 'common', description: 'Simple, reliable.', value: 5, equipSlot: 'weapon', damageDie: '1d6', attackBonus: 0, range: 1 },
+    { name: 'Scale Mail', type: 'armor', rarity: 'uncommon', description: 'Sturdy medium armor.', value: 50, equipSlot: 'armor', acBonus: 14, armorCategory: 'medium' },
+    { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2 },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 3 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 2 },
+  ]},
+  Ranger: { gold: 15, items: [
+    { name: 'Longbow', type: 'weapon', rarity: 'common', description: 'Range 150/600ft.', value: 50, equipSlot: 'weapon', damageDie: '1d8', attackBonus: 0, isRanged: true, range: 30 },
+    { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'Finesse backup.', value: 10, equipSlot: 'weapon', damageDie: '1d6', attackBonus: 0, range: 1 },
+    { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light' },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 3 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Paladin: { gold: 15, items: [
+    { name: 'Longsword', type: 'weapon', rarity: 'common', description: 'Versatile and dependable.', value: 15, equipSlot: 'weapon', damageDie: '1d8', attackBonus: 0, range: 1 },
+    { name: 'Chain Mail', type: 'armor', rarity: 'uncommon', description: 'Heavy armor.', value: 75, equipSlot: 'armor', acBonus: 16, armorCategory: 'heavy' },
+    { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2 },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 3 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 2 },
+  ]},
+  Bard: { gold: 20, items: [
+    { name: 'Rapier', type: 'weapon', rarity: 'common', description: 'Finesse, elegant.', value: 25, equipSlot: 'weapon', damageDie: '1d8', attackBonus: 0, range: 1 },
+    { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light' },
+    { name: 'Candle', type: 'light', rarity: 'common', description: '10ft bright, 20ft dim.', value: 0.01, appliesCondition: 'candlelit', consumable: true, quantity: 5 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Sorcerer: { gold: 15, items: [
+    { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Thrown range 20/60.', value: 2, equipSlot: 'weapon', damageDie: '1d4', attackBonus: 0, range: 1 },
+    { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d8', attackBonus: 0, isRanged: true, range: 16 },
+    { name: 'Candle', type: 'light', rarity: 'common', description: '10ft bright, 20ft dim.', value: 0.01, appliesCondition: 'candlelit', consumable: true, quantity: 5 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Warlock: { gold: 15, items: [
+    { name: 'Light Crossbow', type: 'weapon', rarity: 'common', description: 'Range 80/320ft.', value: 25, equipSlot: 'weapon', damageDie: '1d8', attackBonus: 0, isRanged: true, range: 16 },
+    { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light' },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 3 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+  Druid: { gold: 10, items: [
+    { name: 'Quarterstaff', type: 'weapon', rarity: 'common', description: 'Versatile (1d8).', value: 0.2, equipSlot: 'weapon', damageDie: '1d6', attackBonus: 0, range: 1 },
+    { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light' },
+    { name: 'Wooden Shield', type: 'shield', rarity: 'common', description: '+2 AC.', value: 10, equipSlot: 'shield', acBonus: 2 },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 3 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9, quantity: 2 },
+  ]},
+  Monk: { gold: 5, items: [
+    { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'Finesse, light.', value: 10, equipSlot: 'weapon', damageDie: '1d6', attackBonus: 0, range: 1 },
+    { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 5 },
+    { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
+  ]},
+};
