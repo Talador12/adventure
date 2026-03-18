@@ -512,6 +512,9 @@ export default function Lobby() {
     avatar: currentPlayer.avatar,
     spectate: wantsSpectate,
     onMessage: handleWsMessage,
+    onTimeSync: (offsetMs) => {
+      setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
+    },
     enabled: passwordVerified, // don't connect until password is verified (or not needed)
   });
 

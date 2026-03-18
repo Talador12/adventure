@@ -16,6 +16,7 @@ interface UseWebSocketOptions {
   avatar?: string;
   spectate?: boolean; // join as spectator (no seat)
   onMessage?: (msg: WSMessage) => void;
+  onTimeSync?: (offsetMs: number, rttMs: number) => void;
   enabled?: boolean; // default true, set false to defer connection
 }
 
@@ -32,7 +33,7 @@ const PING_INTERVAL = 25000; // 25s keepalive
 // Session storage key for stable player ID across reconnects
 const PLAYER_ID_KEY = 'adventure:playerId';
 
-export function useWebSocket({ roomId, username, avatar, spectate, onMessage, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
+export function useWebSocket({ roomId, username, avatar, spectate, onMessage, onTimeSync, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -48,6 +49,8 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, en
   // Keep latest values in refs so connect() doesn't need them as deps
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
+  const onTimeSyncRef = useRef(onTimeSync);
+  onTimeSyncRef.current = onTimeSync;
   const usernameRef = useRef(username);
   const avatarRef = useRef(avatar);
   avatarRef.current = avatar;
@@ -101,16 +104,29 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, en
       stopPing();
       pingTimer.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
+          ws.send(JSON.stringify({ type: 'ping', clientTs: Date.now() }));
         }
       }, PING_INTERVAL);
+
+      // Initial clock sync sample immediately after connect.
+      ws.send(JSON.stringify({ type: 'ping', clientTs: Date.now() }));
     });
 
     ws.addEventListener('message', (event) => {
       try {
         const data = JSON.parse(event.data) as WSMessage;
-        // Silently consume pong responses
-        if (data.type === 'pong') return;
+        // Consume pong responses and update server clock offset estimate.
+        if (data.type === 'pong') {
+          if (typeof data.timestamp === 'number') {
+            const recvTs = Date.now();
+            const sentTs = typeof data.clientTs === 'number' ? (data.clientTs as number) : recvTs;
+            const rttMs = Math.max(0, recvTs - sentTs);
+            const midpointTs = sentTs + rttMs / 2;
+            const offsetMs = (data.timestamp as number) - midpointTs;
+            onTimeSyncRef.current?.(offsetMs, rttMs);
+          }
+          return;
+        }
         // Capture stable playerId from welcome (Phase 8.1)
         if (data.type === 'welcome' && typeof data.playerId === 'string') {
           playerIdRef.current = data.playerId;

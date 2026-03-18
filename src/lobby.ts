@@ -1055,7 +1055,8 @@ export class Lobby {
       }
 
       case 'ping': {
-        server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+        const clientTs = typeof data.clientTs === 'number' ? (data.clientTs as number) : undefined;
+        server.send(JSON.stringify({ type: 'pong', timestamp: Date.now(), clientTs }));
         break;
       }
 

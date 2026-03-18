@@ -1062,6 +1062,9 @@ export default function Game() {
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
     onMessage: handleWsMessage,
+    onTimeSync: (offsetMs) => {
+      setServerTimeOffsetMs((prev) => Math.round(prev * 0.8 + offsetMs * 0.2));
+    },
   });
   sendRef.current = send;
   // Track connection status for canUseDMTools (must be after hook call)
