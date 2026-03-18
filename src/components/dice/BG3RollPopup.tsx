@@ -71,6 +71,9 @@ export default function BG3RollPopup({
   const [displayTotal, setDisplayTotal] = useState<number | null>(null);
   const [showBurst, setShowBurst] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
+  // Animated bonus breakdown: how many bonuses have been revealed so far
+  const [revealedBonusCount, setRevealedBonusCount] = useState(0);
+  const [bonusAnimRunning, setBonusAnimRunning] = useState(false);
   const dieStaggerMs = 500;
   const staggerWindowMs = Math.max(0, activeRoll.allRolls.length - 1) * dieStaggerMs;
   const animationMs = Math.max(700, activeRoll.animationMs || (900 + staggerWindowMs));
@@ -85,7 +88,27 @@ export default function BG3RollPopup({
   useEffect(() => {
     setAnimatedValues(activeRoll.allRolls);
     setDisplayTotal(activeRoll.total);
+    setRevealedBonusCount(0);
+    setBonusAnimRunning(false);
   }, [activeRoll.rollId, activeRoll.allRolls, activeRoll.total]);
+
+  // Animate bonuses one-by-one after dice resolve (resultPhase)
+  useEffect(() => {
+    const bonuses = activeRoll.bonuses;
+    if (!resultPhase || !bonuses || bonuses.length === 0 || bonusAnimRunning) return;
+    setBonusAnimRunning(true);
+    setRevealedBonusCount(0);
+    let idx = 0;
+    const bonusStagger = 280; // ms between each bonus reveal
+    const timer = setInterval(() => {
+      idx++;
+      setRevealedBonusCount(idx);
+      if (idx >= bonuses.length) {
+        clearInterval(timer);
+      }
+    }, bonusStagger);
+    return () => clearInterval(timer);
+  }, [resultPhase, activeRoll.bonuses, activeRoll.rollId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!visible) return;
@@ -234,8 +257,15 @@ export default function BG3RollPopup({
 
   const keptFlags = getKeptFlags(activeRoll.allRolls, activeRoll.keptRolls);
   const rollerLabel = activeRoll.unitName ? `${activeRoll.unitName} [${activeRoll.username}]` : activeRoll.username;
-  const bonusTotal = (activeRoll.bonuses || []).reduce((sum, b) => sum + b.value, 0);
+  const bonuses = activeRoll.bonuses || [];
+  const bonusTotal = bonuses.reduce((sum, b) => sum + b.value, 0);
   const hasDC = typeof activeRoll.dc === 'number';
+  // Running total = dice raw sum + sum of revealed bonuses so far
+  const diceRawTotal = activeRoll.keptRolls.reduce((a, b) => a + b, 0);
+  const revealedBonusTotal = bonuses.slice(0, revealedBonusCount).reduce((sum, b) => sum + b.value, 0);
+  const animatedTotal = resultPhase && bonuses.length > 0
+    ? (revealedBonusCount >= bonuses.length ? activeRoll.total : diceRawTotal + revealedBonusTotal)
+    : displayTotal;
   if (!roll) return null;
 
   return (
@@ -359,8 +389,8 @@ export default function BG3RollPopup({
         <div className="mt-4 flex flex-wrap items-center gap-3 text-xs" style={activeRoll.isFumble && showBurst ? { animation: 'fumbleShake 0.6s ease-out' } : undefined}>
           <div className="rounded-lg border border-slate-600/50 bg-slate-800/50 px-3 py-2">
             <span className="text-slate-300/80">Total</span>
-            <div className={`text-lg font-extrabold leading-none ${activeRoll.isCritical ? 'text-yellow-300' : activeRoll.isFumble ? 'text-red-300' : 'text-white'}`}>
-              {displayTotal ?? '...'}
+            <div className={`text-lg font-extrabold leading-none transition-all duration-200 ${activeRoll.isCritical ? 'text-yellow-300' : activeRoll.isFumble ? 'text-red-300' : 'text-white'}`}>
+              {animatedTotal ?? '...'}
             </div>
           </div>
           {hasDC && (
@@ -369,11 +399,26 @@ export default function BG3RollPopup({
               <div className="text-lg font-extrabold text-sky-100 leading-none">{activeRoll.dc}</div>
             </div>
           )}
-          {activeRoll.bonuses && activeRoll.bonuses.length > 0 && (
-            <div className="rounded-lg border border-violet-700/40 bg-violet-900/20 px-3 py-2">
-              <span className="text-violet-300/80">Bonuses</span>
-              <div className="text-sm font-bold text-violet-100 leading-none">{bonusTotal >= 0 ? `+${bonusTotal}` : bonusTotal}</div>
+          {/* Animated per-bonus pills — appear one-by-one after dice resolve */}
+          {resultPhase && bonuses.length > 0 && bonuses.slice(0, revealedBonusCount).map((bonus, idx) => (
+            <div
+              key={`${activeRoll.rollId}-bonus-${idx}`}
+              className={`rounded-lg border px-2.5 py-1.5 transition-all duration-200 ${
+                bonus.value >= 0
+                  ? 'border-emerald-700/40 bg-emerald-900/20'
+                  : 'border-red-700/40 bg-red-900/20'
+              }`}
+              style={{ animation: 'diceSettle 0.3s ease-out' }}
+            >
+              <span className={`text-[9px] ${bonus.value >= 0 ? 'text-emerald-300/80' : 'text-red-300/80'}`}>{bonus.label}</span>
+              <div className={`text-sm font-bold leading-none ${bonus.value >= 0 ? 'text-emerald-100' : 'text-red-100'}`}>
+                {bonus.value >= 0 ? `+${bonus.value}` : bonus.value}
+              </div>
             </div>
+          ))}
+          {/* Remaining bonuses hint — shows count of unrevealed bonuses */}
+          {resultPhase && bonuses.length > 0 && revealedBonusCount < bonuses.length && (
+            <span className="text-[10px] text-slate-500 animate-pulse">+{bonuses.length - revealedBonusCount} more...</span>
           )}
           {resultPhase && activeRoll.isCritical && (
             <span className="text-[11px] px-2 py-1 rounded bg-yellow-500/20 border border-yellow-500/40 font-bold text-yellow-200" style={{ animation: 'diceSettle 0.35s ease-out' }}>
