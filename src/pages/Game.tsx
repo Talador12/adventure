@@ -1948,6 +1948,7 @@ export default function Game() {
                   <div className="relative flex-1 overflow-hidden">
                     <BattleMap
                       canUseDMTools={canUseDMTools}
+                      myUnitId={wsConnected && !isDM && selectedCharacterId ? selectedCharacterId : undefined}
                       onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                       onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
                       onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}

@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added per-player fog of war in multiplayer — non-DM players now see only from their own character's token when connected to a multiplayer session. DM retains full map vision. Solo/offline play keeps shared party vision. Implemented via `myUnitId` prop on BattleMap: when set, `playerPositions` filter restricts vision computation to only that player's unit. Game.tsx passes `selectedCharacterId` when `wsConnected && !isDM`. No WebSocket changes needed — fog is computed purely client-side from each player's local unit position.
 - Added latency heatmap to Game DMSidebar Notes tab — compact horizontal bar chart showing all connected players' RTT with color-coded severity bars (emerald/amber/red). Stale/disconnected players show a pulsing red bar with "DC" label. Bar width scales relative to the worst latency in the party. Uses the existing `playerLatency` + `stalePlayers` state from `useGameWebSocket`.
 - Added WebSocket heartbeat failure detection — server tracks `lastPongAt` per session and checks all players for staleness (45s threshold, ~2 missed keepalive cycles). Stale players get a `player_stale` broadcast; recovery triggers `player_recovered`. Lobby seat cards show a pulsing red "DC" badge for disconnected players, replacing the normal RTT badge. Game.tsx also tracks stale state via `useGameWebSocket`. REST `/players` endpoint includes `stale` field.
 - Added animated bonus breakdown in BG3 roll presentation — when a roll has bonuses (proficiency, ability mod, equipment, etc.), individual pills appear one-by-one after dice resolve with 280ms stagger. Each pill is color-coded (emerald for positive, red for negative) with label + value. The displayed total counts up in real-time as each bonus reveals, building from dice raw sum to final total. A "N more..." hint pulses while bonuses are still revealing. Uses existing `diceSettle` animation for smooth entrance.
@@ -773,8 +774,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 **Campaign management (remaining — deferred):**
 - [ ] Campaign archive (soft delete, can restore)
-- [ ] Public/private visibility toggle
-- [ ] Campaign browser API
+- [x] Public/private visibility toggle
+- [x] Campaign browser API
 
 ### Character + Game Board + DM Tools Polish (DONE)
 **Goal:** Enhance the character creation experience, improve the battle map, and give DMs better tools.
@@ -794,7 +795,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] **AoE wired into Game.tsx** — `activeAoE`/`pendingAoESpell` state, spell click enters targeting mode + switches to map view, `onAoEConfirm` applies multi-target damage with per-unit saves, AoE badge on spell list, targeting banner with cancel
 - [x] Animated token movement — easeInOutQuad interpolation between grid cells, requestAnimationFrame loop during animation, `animateMoveRef` callback for Game.tsx to trigger enemy AI animations, remote `token_move` events also animate
 - [x] Hover tooltips on initiative bar (HP, AC, abilities with cooldowns, conditions with durations, speed, CR, concentration)
-- [ ] Fog of war per-player (each player sees only from their token — currently global fog)
+- [x] Fog of war per-player (each player sees only from their token — currently global fog)
+- [ ] DM "View As" dropdown — DM can preview the map from any specific player's perspective
+- [ ] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes

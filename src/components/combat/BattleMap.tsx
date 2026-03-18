@@ -454,9 +454,11 @@ interface BattleMapProps {
   onPinRemove?: (pinId: string) => void;
   // Attack indicators
   attackIndicators?: import('../../hooks/useAttackIndicators').AttackIndicator[];
+  /** Unit ID of the player's own character — enables per-player fog (sees only from their token). When unset, falls back to shared party vision. */
+  myUnitId?: string;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [] }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -606,11 +608,14 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     });
   }, [units, terrain, gridCols, gridRows]);
 
-  // Compute visibility from player positions
+  // Compute visibility — per-player fog when myUnitId set, shared party vision otherwise
   const playerPositions = positions
     .filter((p) => {
       const u = units.find((u) => u.id === p.unitId);
-      return u && u.type === 'player' && u.hp > 0;
+      if (!u || u.type !== 'player' || u.hp <= 0) return false;
+      // Per-player fog: only this player's token(s) contribute to vision
+      if (myUnitId) return u.id === myUnitId;
+      return true; // shared party vision fallback
     })
     .map((p) => ({ col: p.col, row: p.row }));
 
