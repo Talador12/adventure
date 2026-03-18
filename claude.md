@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added WebSocket heartbeat failure detection — server tracks `lastPongAt` per session and checks all players for staleness (45s threshold, ~2 missed keepalive cycles). Stale players get a `player_stale` broadcast; recovery triggers `player_recovered`. Lobby seat cards show a pulsing red "DC" badge for disconnected players, replacing the normal RTT badge. Game.tsx also tracks stale state via `useGameWebSocket`. REST `/players` endpoint includes `stale` field.
 - Added animated bonus breakdown in BG3 roll presentation — when a roll has bonuses (proficiency, ability mod, equipment, etc.), individual pills appear one-by-one after dice resolve with 280ms stagger. Each pill is color-coded (emerald for positive, red for negative) with label + value. The displayed total counts up in real-time as each bonus reveals, building from dice raw sum to final total. A "N more..." hint pulses while bonuses are still revealing. Uses existing `diceSettle` animation for smooth entrance.
 - Added per-player latency indicators in Lobby seat cards — color-coded RTT badges (green <150ms, amber <300ms, red >300ms) appear on each seated player. Clients report their measured RTT to the Lobby DO via `report_rtt`, which stores it per-session and broadcasts a `latency_update` snapshot. Player list REST endpoint now also includes `rttMs`. Game.tsx receives latency via `useGameWebSocket` for future use in DMSidebar. Helps DMs make informed roll sync policy decisions.
 - Added `auto` roll sync policy with DM-tunable RTT and jitter thresholds. Auto mode computes an effective policy (`smooth` or `strict`) per-client by sampling the last 8 RTT pings and comparing average RTT + jitter stdev against configurable thresholds (default 260ms RTT, 90ms jitter). Thresholds are durably persisted in the Lobby DO and synced via welcome + live broadcast. DM settings panel exposes range sliders for both thresholds when auto is selected. Header badge shows `auto (smooth)` or `auto (strict)` reflecting the live client-side decision.
@@ -648,7 +649,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Add roll history replay in BG3 popup — click any recent roll in chat to re-watch its presentation animation.
 - [x] Add per-player latency indicators in the party roster so DM can see who has high ping before choosing sync policy.
 - Add latency heatmap to DM sidebar showing all player RTTs at a glance with visual severity.
-- Add WebSocket heartbeat failure detection — show disconnection warning for players whose RTT exceeds 10s or who miss 3 consecutive pings.
+- [x] Add WebSocket heartbeat failure detection — show disconnection warning for players whose RTT exceeds 10s or who miss 3 consecutive pings.
 
 ### Dice Presentation: Character-Sheet Bonus Breakdown (PLANNED)
 - Show per-roll modifiers in the BG3 presentation window as animated + / - contributions (ability mod, proficiency, equipment, buffs/debuffs, situational effects).

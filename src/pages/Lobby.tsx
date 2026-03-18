@@ -84,8 +84,9 @@ export default function Lobby() {
   const [autoStrictJitterMs, setAutoStrictJitterMs] = useState(90);
   // RTT jitter tracking for auto mode
   const rttHistoryRef = useRef<number[]>([]);
-  // Per-player latency map (playerId -> rttMs)
+  // Per-player latency map (playerId -> rttMs) and stale set
   const [playerLatency, setPlayerLatency] = useState<Record<string, number>>({});
+  const [stalePlayers, setStalePlayers] = useState<Set<string>>(new Set());
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -360,6 +361,18 @@ export default function Lobby() {
           if (msg.latency && typeof msg.latency === 'object') {
             setPlayerLatency(msg.latency as Record<string, number>);
           }
+          break;
+
+        case 'player_stale':
+          setStalePlayers((prev) => new Set([...prev, msg.playerId as string]));
+          break;
+
+        case 'player_recovered':
+          setStalePlayers((prev) => {
+            const next = new Set(prev);
+            next.delete(msg.playerId as string);
+            return next;
+          });
           break;
 
         case 'kicked':
@@ -1173,7 +1186,12 @@ export default function Lobby() {
                         <span className="text-xs font-medium text-slate-200 truncate">
                           {seat.type === 'human' ? seat.username || 'Joining...' : seat.type === 'ai' ? 'AI Player' : 'Empty Seat'}
                         </span>
-                        {seat.type === 'human' && seat.playerId && playerLatency[seat.playerId] !== undefined && (
+                        {seat.type === 'human' && seat.playerId && stalePlayers.has(seat.playerId) && (
+                          <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-red-900/40 text-red-300 animate-pulse" title="Player not responding to heartbeat">
+                            DC
+                          </span>
+                        )}
+                        {seat.type === 'human' && seat.playerId && !stalePlayers.has(seat.playerId) && playerLatency[seat.playerId] !== undefined && (
                           <span className={`text-[8px] font-mono px-1 py-0.5 rounded ${
                             playerLatency[seat.playerId] > 300 ? 'bg-red-900/30 text-red-400' : playerLatency[seat.playerId] > 150 ? 'bg-amber-900/30 text-amber-400' : 'bg-emerald-900/30 text-emerald-400'
                           }`} title={`RTT: ${playerLatency[seat.playerId]}ms`}>
