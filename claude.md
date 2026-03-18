@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added chat read-anchor behavior for long campaigns: Lobby/Game now persist a per-room per-user last-read timestamp locally, auto-jump to first unread on hydrate, and mark-read when users catch up at the bottom.
 - Added incremental chat history pagination in Lobby + Game: users can load older campaign messages on demand, backed by `before` cursor support in `loadChatHistory()` to improve cross-device continuity for long campaigns.
 - Added first-pass high-latency roll interpolation: BG3 popup now factors live RTT into phase catch-up (small latency compensation window) to reduce jarring animation jumps for reconnecting/high-ping clients while preserving server-authoritative timing.
 - Added live sync-quality telemetry in Lobby/Game headers (clock offset + RTT) using the new ping/pong time-sync channel so players can quickly tell when visual desync risk is network-related.
@@ -626,6 +627,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Remove any remaining local-only fallback behavior that can hide server-backed history for authenticated users.
 - Add pagination + lazy loading for long-running campaigns so history stays fast while remaining complete.
 - Add a persisted "return-to-last-read" anchor per campaign/user so rejoining players resume at their previous unread boundary.
+- Add a true browser E2E smoke suite (Playwright) for create/join lobby, chat hydrate, paint hydrate, and synchronized roll presentation checks.
 
 ### Cross-Device Session Parity: Paint + Chat + Dice Playback (PLANNED)
 - Persist lobby doodle/paint state by campaign/session ID so anyone joining (or rejoining on another computer) sees identical lobby art.

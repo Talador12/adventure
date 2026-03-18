@@ -100,6 +100,7 @@ export default function Game() {
   const [oldestChatTs, setOldestChatTs] = useState<number | null>(null);
   const [canLoadOlderChat, setCanLoadOlderChat] = useState(true);
   const [loadingOlderChat, setLoadingOlderChat] = useState(false);
+  const [initialReadAnchorTs, setInitialReadAnchorTs] = useState<number | null>(null);
   const [activeRollPopup, setActiveRollPopup] = useState<RollPresentation | null>(null);
   const [rollPopupVisible, setRollPopupVisible] = useState(false);
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
@@ -257,6 +258,12 @@ export default function Game() {
 
   // Load persistent chat history from D1 on mount
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`adventure:chatRead:game:${room}:${currentPlayer.id}`);
+      setInitialReadAnchorTs(stored ? Number(stored) : null);
+    } catch {
+      setInitialReadAnchorTs(null);
+    }
     loadChatHistory(room).then((history) => {
       if (history.length > 0) {
         setOldestChatTs(history[0].timestamp);
@@ -270,7 +277,15 @@ export default function Game() {
         setCanLoadOlderChat(false);
       }
     });
-  }, [room]);
+  }, [room, currentPlayer.id]);
+
+  const handleMarkRead = useCallback((timestamp: number) => {
+    try {
+      localStorage.setItem(`adventure:chatRead:game:${room}:${currentPlayer.id}`, String(timestamp));
+    } catch {
+      // ignore storage failures
+    }
+  }, [room, currentPlayer.id]);
 
   const handleLoadOlderChat = useCallback(() => {
     if (loadingOlderChat || !canLoadOlderChat || !oldestChatTs) return;
@@ -1993,7 +2008,7 @@ export default function Game() {
                   send({ type: 'whisper', targetUsername: target, message: msg });
                 }} onReaction={(messageId, emoji) => {
                   send({ type: 'chat_reaction', messageId, emoji });
-                }} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
+                }} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
               </div>
             </>
           )}
