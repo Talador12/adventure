@@ -19,6 +19,9 @@ export const CONDITION_TOOLTIPS: Record<ConditionType, string> = {
   hidden: 'Hidden: You cannot be seen. Advantage on attack rolls (+2 to attacks). Ends after you attack or are found.',
   torchlit: 'Torchlit: Carrying a torch that sheds 40ft of bright light (8 cells vision range). Free action to light/extinguish.',
   darkvision: 'Darkvision (spell): Can see in darkness as if it were dim light. 60ft range (12 cells vision). Lasts 8 hours.',
+  candlelit: 'Candlelit: Carrying a candle that sheds 10ft of bright light and 20ft of dim light. Easily extinguished.',
+  lantern: 'Hooded Lantern: Sheds 30ft of bright light and 50ft of dim light. Burns 6 hours on a pint of oil.',
+  daylight: 'Daylight (3rd level spell): 60ft of bright light and 100ft of dim light. Dispels magical darkness.',
 };
 
 // --- Combat actions (D&D 5e PHB actions in combat) ---

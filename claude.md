@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added multiple light source types — 5 light-bearing conditions with distinct propagation radii: candle (10ft/20ft), torch (20ft/30ft), lantern (30ft/50ft), darkvision spell (0ft/60ft dim only), daylight spell (60ft/100ft). `LIGHT_SOURCE_RADII` map in types/game.ts drives BattleMap's `effectiveLighting` computation. Each source emits bright + dim zones. `CONDITION_VISION_OVERRIDE` updated with matching per-condition vision ranges. Condition colors, effects, and rule tooltips added for all 3 new types.
 - Added backstory hooks persistence — `backstoryHooks` string array saved/loaded with campaign state. Hooks generated before the adventure starts now survive page reload and session resume, so the DM doesn't lose them by refreshing.
 - Added dynamic light source propagation — torchlit units emit bright light (4 cells/20ft) and dim light (6 cells/30ft) computed at render time via `effectiveLighting` useMemo. Merges with DM-painted static lighting grid (higher rank wins: dark < normal < dim < bright). Optimized with bounded iteration (only scans cells within torch radius). DM sees the combined overlay. Vision computation uses `effectiveLighting` so torch carriers dynamically illuminate dark areas as they move.
 - Added AI backstory hook integration with DM narration — when the first narration fires (adventure not yet started) and backstory hooks have been generated, they're injected into the AI DM's context as numbered instructions to "weave these party connections into the narrative naturally." After the opening scene, subsequent narrations use the normal "adventure is underway" context.
@@ -824,8 +825,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Environmental lighting zones (DM can paint bright/dim/dark areas on the battle map)
 - [x] Lighting zone persistence in campaign save/load (survives reload and session resume)
 - [x] Light source propagation — torch conditions auto-paint bright/dim zones around the carrier token
-- [ ] Darkvision spell light propagation (similar to torch but 60ft radius, no bright zone)
-- [ ] Multiple light source types (candle: 2/4 cells, lantern: 6/10 cells, daylight spell: 12/20 cells)
+- [x] Darkvision spell light propagation (60ft dim-only radius, no bright zone)
+- [x] Multiple light source types (candle: 2/4 cells, lantern: 6/10 cells, daylight spell: 12/20 cells)
+- [ ] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
+- [ ] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
 
 **DM tools:**
 - [x] DM sidebar panel (collapsible w-72, left side) with 3 tabs: Encounter, NPC, Notes

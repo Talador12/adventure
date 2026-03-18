@@ -1,7 +1,7 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
 import React, { useRef, useEffect, useState, useCallback, useMemo, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
-import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
+import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, LIGHT_SOURCE_RADII, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
@@ -39,6 +39,9 @@ const CONDITION_COLORS: Record<string, string> = {
   hidden: '#94a3b8',     // slate-400
   torchlit: '#fcd34d',   // amber-300
   darkvision: '#a5b4fc', // indigo-300
+  candlelit: '#fed7aa',  // orange-200
+  lantern: '#facc15',    // yellow-400
+  daylight: '#f8fafc',   // slate-50
 };
 
 // Short abbreviation for condition overlays on map tokens
@@ -623,24 +626,30 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     });
   }, [units, terrain, gridCols, gridRows]);
 
-  // Compute dynamic lighting from torchlit units — bright within 4 cells, dim within 6
+  // Compute dynamic lighting from light-bearing units (torch, candle, lantern, darkvision, daylight)
   const effectiveLighting = useMemo(() => {
     const base = lighting || Array.from({ length: gridRows }, () => Array(gridCols).fill('normal') as LightingLevel[]);
-    const torchUnits = positions.filter((p) => {
+    // Collect all units carrying any light source condition
+    const lightConditionTypes = Object.keys(LIGHT_SOURCE_RADII) as ConditionType[];
+    const lightUnits: Array<{ col: number; row: number; brightR: number; dimR: number }> = [];
+    for (const p of positions) {
       const u = units.find((u) => u.id === p.unitId);
-      return u && u.hp > 0 && u.conditions?.some((c) => c.type === 'torchlit');
-    });
-    if (torchUnits.length === 0) return base;
-    const TORCH_BRIGHT_R = 4; // 20ft bright
-    const TORCH_DIM_R = 6;    // 30ft dim
+      if (!u || u.hp <= 0) continue;
+      for (const cond of u.conditions || []) {
+        const radii = LIGHT_SOURCE_RADII[cond.type];
+        if (radii) lightUnits.push({ col: p.col, row: p.row, brightR: radii.bright, dimR: radii.dim });
+      }
+    }
+    if (lightUnits.length === 0) return base;
     const rank: Record<LightingLevel, number> = { dark: 0, normal: 1, dim: 2, bright: 3 };
     const merged = base.map((row) => [...row]);
-    for (const tp of torchUnits) {
-      for (let r = Math.max(0, tp.row - TORCH_DIM_R); r <= Math.min(gridRows - 1, tp.row + TORCH_DIM_R); r++) {
-        for (let c = Math.max(0, tp.col - TORCH_DIM_R); c <= Math.min(gridCols - 1, tp.col + TORCH_DIM_R); c++) {
-          const dist = Math.sqrt((r - tp.row) ** 2 + (c - tp.col) ** 2);
-          const tl: LightingLevel = dist <= TORCH_BRIGHT_R ? 'bright' : dist <= TORCH_DIM_R ? 'dim' : 'normal';
-          if (rank[tl] > rank[merged[r][c]]) merged[r][c] = tl;
+    for (const lu of lightUnits) {
+      const maxR = Math.max(lu.brightR, lu.dimR);
+      for (let r = Math.max(0, lu.row - maxR); r <= Math.min(gridRows - 1, lu.row + maxR); r++) {
+        for (let c = Math.max(0, lu.col - maxR); c <= Math.min(gridCols - 1, lu.col + maxR); c++) {
+          const dist = Math.sqrt((r - lu.row) ** 2 + (c - lu.col) ** 2);
+          const ll: LightingLevel = lu.brightR > 0 && dist <= lu.brightR ? 'bright' : dist <= lu.dimR ? 'dim' : 'normal';
+          if (rank[ll] > rank[merged[r][c]]) merged[r][c] = ll;
         }
       }
     }

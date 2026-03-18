@@ -14,7 +14,7 @@ export interface Player {
 }
 
 // --- Conditions ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'torchlit' | 'darkvision';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -36,12 +36,27 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   hidden: { attackMod: 2, acMod: 0, saveMod: 0, description: 'Hidden — advantage on next attack, enemies can\'t target you', color: 'text-slate-300' },
   torchlit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a torch — 40ft bright light (8 cells)', color: 'text-amber-300' },
   darkvision: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Darkvision spell — 60ft vision in darkness (12 cells)', color: 'text-indigo-300' },
+  candlelit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a candle — 10ft bright, 20ft dim', color: 'text-orange-200' },
+  lantern: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Hooded lantern — 30ft bright, 50ft dim', color: 'text-yellow-400' },
+  daylight: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Daylight spell — 60ft bright, 100ft dim (dispels darkness)', color: 'text-white' },
 };
 
 // Vision range overrides from conditions (cells). Higher value wins.
 export const CONDITION_VISION_OVERRIDE: Partial<Record<ConditionType, number>> = {
+  candlelit: 4,   // 20ft = 4 cells
   torchlit: 8,    // 40ft = 8 cells
+  lantern: 10,    // 50ft = 10 cells
   darkvision: 12, // 60ft = 12 cells
+  daylight: 20,   // 100ft = 20 cells
+};
+
+// Light source propagation radii (cells): { bright, dim } per condition
+export const LIGHT_SOURCE_RADII: Partial<Record<ConditionType, { bright: number; dim: number }>> = {
+  candlelit: { bright: 2, dim: 4 },    // 10ft bright, 20ft dim
+  torchlit: { bright: 4, dim: 6 },     // 20ft bright, 30ft dim
+  lantern: { bright: 6, dim: 10 },     // 30ft bright, 50ft dim
+  darkvision: { bright: 0, dim: 12 },  // no bright, 60ft dim (sees in darkness)
+  daylight: { bright: 12, dim: 20 },   // 60ft bright, 100ft dim
 };
 
 // --- Combat roll helpers ---
