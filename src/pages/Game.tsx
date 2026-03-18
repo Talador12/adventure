@@ -194,6 +194,9 @@ export default function Game() {
   });
   const [currentAmbient, setCurrentAmbient] = useState<AmbientMood>(getAmbientMood());
 
+  // AI backstory hooks
+  const [backstoryHooks, setBackstoryHooks] = useState<string[]>([]);
+  const [hooksLoading, setHooksLoading] = useState(false);
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   // Keyboard shortcut help overlay
@@ -1014,6 +1017,29 @@ export default function Game() {
       await callDmNarrate(text);
     }
   }, [actionInput, currentPlayer.id, currentPlayer.username, currentPlayer.avatar, selectedCharacter, callDmNarrate, callNpcDialogue, npcMode, room]);
+
+  // Generate AI backstory hooks for the party
+  const handleGenerateBackstoryHooks = useCallback(async () => {
+    if (characters.length < 2) return;
+    setHooksLoading(true);
+    try {
+      const charData = characters.map((c) => ({
+        name: c.name, race: c.race, class: c.class, level: c.level,
+        background: c.background, personalityTraits: c.personalityTraits,
+        bonds: c.bonds, backstory: c.backstory,
+      }));
+      const resp = await fetch('/api/dm/backstory-hooks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ characters: charData }),
+      });
+      if (resp.ok) {
+        const data = await resp.json() as { hooks?: string[] };
+        if (data.hooks && data.hooks.length > 0) setBackstoryHooks(data.hooks);
+      }
+    } catch { /* ok */ }
+    setHooksLoading(false);
+  }, [characters]);
 
   // Generate encounter — spawn enemy units with stat blocks from templates
   const handleGenerateEncounter = useCallback(async () => {
@@ -1920,6 +1946,43 @@ export default function Game() {
                   <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-950/20 border border-amber-800/20">
                     <div className="w-3 h-3 border border-amber-500 border-t-transparent rounded-full animate-spin" />
                     <span className="text-[10px] text-amber-500/70">Recalling the story so far...</span>
+                  </div>
+                )}
+
+                {/* AI Backstory Hooks — party narrative connections */}
+                {activeView === 'narration' && !adventureStarted && characters.length >= 2 && (
+                  <div className="mx-4 mb-2">
+                    {backstoryHooks.length > 0 ? (
+                      <div className="rounded-xl border border-violet-600/30 bg-gradient-to-br from-violet-950/40 to-indigo-900/30 px-5 py-4 shadow-lg animate-fade-in-up">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-violet-400 text-sm">🔗</span>
+                            <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Party Connections</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={handleGenerateBackstoryHooks} disabled={hooksLoading} className="text-[10px] text-slate-500 hover:text-violet-400 transition-colors disabled:opacity-50">Regenerate</button>
+                            <button onClick={() => setBackstoryHooks([])} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors">Dismiss</button>
+                          </div>
+                        </div>
+                        <ul className="space-y-2">
+                          {backstoryHooks.map((hook, i) => (
+                            <li key={i} className="text-sm text-violet-100/80 italic leading-relaxed pl-3 border-l-2 border-violet-700/40">{hook}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleGenerateBackstoryHooks}
+                        disabled={hooksLoading}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-violet-700/40 text-violet-400 text-xs font-semibold hover:bg-violet-900/20 hover:border-violet-600/50 transition-all disabled:opacity-50"
+                      >
+                        {hooksLoading ? (
+                          <><div className="w-3 h-3 border border-violet-400 border-t-transparent rounded-full animate-spin" /> Generating party connections...</>
+                        ) : (
+                          <><span>🔗</span> Generate Backstory Hooks</>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
 
