@@ -84,6 +84,8 @@ export default function Lobby() {
   const [autoStrictJitterMs, setAutoStrictJitterMs] = useState(90);
   // RTT jitter tracking for auto mode
   const rttHistoryRef = useRef<number[]>([]);
+  // Per-player latency map (playerId -> rttMs)
+  const [playerLatency, setPlayerLatency] = useState<Record<string, number>>({});
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -351,6 +353,12 @@ export default function Lobby() {
               text: `Dice sync mode changed to ${modeLabel}`,
               timestamp: (msg.timestamp as number) || Date.now(),
             }]);
+          }
+          break;
+
+        case 'latency_update':
+          if (msg.latency && typeof msg.latency === 'object') {
+            setPlayerLatency(msg.latency as Record<string, number>);
           }
           break;
 
@@ -1161,8 +1169,17 @@ export default function Lobby() {
                       <div className="w-7 h-7 rounded-full bg-slate-800 border border-dashed border-slate-600 flex items-center justify-center text-[10px] text-slate-600">?</div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-slate-200 truncate">
-                        {seat.type === 'human' ? seat.username || 'Joining...' : seat.type === 'ai' ? 'AI Player' : 'Empty Seat'}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium text-slate-200 truncate">
+                          {seat.type === 'human' ? seat.username || 'Joining...' : seat.type === 'ai' ? 'AI Player' : 'Empty Seat'}
+                        </span>
+                        {seat.type === 'human' && seat.playerId && playerLatency[seat.playerId] !== undefined && (
+                          <span className={`text-[8px] font-mono px-1 py-0.5 rounded ${
+                            playerLatency[seat.playerId] > 300 ? 'bg-red-900/30 text-red-400' : playerLatency[seat.playerId] > 150 ? 'bg-amber-900/30 text-amber-400' : 'bg-emerald-900/30 text-emerald-400'
+                          }`} title={`RTT: ${playerLatency[seat.playerId]}ms`}>
+                            {playerLatency[seat.playerId]}ms
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] text-slate-500 truncate">
                         {seat.characterName || (seat.type !== 'empty' ? 'No character' : 'Open')}

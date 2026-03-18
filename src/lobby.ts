@@ -25,6 +25,7 @@ interface Session {
   seatId?: string;       // which seat this player occupies (if any)
   spectating: boolean;   // true if explicitly spectating (no seat, chat-only)
   lastGameEvents: number[]; // timestamps for rate limiting (Phase 8.4)
+  rttMs?: number;        // latest client-reported RTT (via report_rtt)
 }
 
 interface PlayerInfo {
@@ -37,6 +38,7 @@ interface PlayerInfo {
   ready?: boolean;
   characterId?: string;
   characterName?: string;
+  rttMs?: number;
 }
 
 interface StrokeEntry {
@@ -1123,6 +1125,22 @@ export class Lobby {
         break;
       }
 
+      case 'report_rtt': {
+        // Client reports its computed RTT — store on session and broadcast latency update
+        const rtt = Number(data.rttMs);
+        const rttSession = this.sessions.get(server);
+        if (rttSession && Number.isFinite(rtt) && rtt >= 0 && rtt <= 30000) {
+          rttSession.rttMs = Math.round(rtt);
+          // Broadcast latency snapshot to all (throttled by client ping interval ~25s)
+          const latencyMap: Record<string, number> = {};
+          for (const s of this.sessions.values()) {
+            if (s.rttMs !== undefined) latencyMap[s.id] = s.rttMs;
+          }
+          this.broadcast({ type: 'latency_update', latency: latencyMap, timestamp: Date.now() });
+        }
+        break;
+      }
+
       case 'ping': {
         const clientTs = typeof data.clientTs === 'number' ? (data.clientTs as number) : undefined;
         server.send(JSON.stringify({ type: 'pong', timestamp: Date.now(), clientTs }));
@@ -1240,6 +1258,7 @@ export class Lobby {
         ready: seat?.ready,
         characterId: seat?.characterId,
         characterName: seat?.characterName,
+        rttMs: s.rttMs,
       };
     });
   }

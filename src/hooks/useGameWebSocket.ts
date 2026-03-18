@@ -79,6 +79,7 @@ export interface GameWebSocketDeps {
   onRollCleared?: (rollId: string, reason?: string) => void;
   onServerTimeSync?: (serverNowMs: number) => void;
   onRollInterpolationMode?: (mode: RollInterpolationMode, autoStrictRttMs?: number, autoStrictJitterMs?: number) => void;
+  onLatencyUpdate?: (latency: Record<string, number>) => void;
 }
 
 export interface GameWebSocketState {
@@ -118,6 +119,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     onRollCleared,
     onServerTimeSync,
     onRollInterpolationMode,
+    onLatencyUpdate,
   } = deps;
 
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
@@ -604,6 +606,13 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           break;
         }
 
+        case 'latency_update': {
+          if (msg.latency && typeof msg.latency === 'object') {
+            onLatencyUpdate?.(msg.latency as Record<string, number>);
+          }
+          break;
+        }
+
         case 'typing': {
           const typerId = msg.playerId as string;
           const typerName = msg.username as string;
@@ -628,7 +637,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     },
     // Use refs for frequently-changing state to avoid re-creating the callback on every state change.
     // wsPlayerId is tracked via wsPlayerIdRef, and state_request uses getStateForResponse callback.
-    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync, onRollInterpolationMode]
+    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync, onRollInterpolationMode, onLatencyUpdate]
   );
 
   return {

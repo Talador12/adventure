@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added per-player latency indicators in Lobby seat cards — color-coded RTT badges (green <150ms, amber <300ms, red >300ms) appear on each seated player. Clients report their measured RTT to the Lobby DO via `report_rtt`, which stores it per-session and broadcasts a `latency_update` snapshot. Player list REST endpoint now also includes `rttMs`. Game.tsx receives latency via `useGameWebSocket` for future use in DMSidebar. Helps DMs make informed roll sync policy decisions.
 - Added `auto` roll sync policy with DM-tunable RTT and jitter thresholds. Auto mode computes an effective policy (`smooth` or `strict`) per-client by sampling the last 8 RTT pings and comparing average RTT + jitter stdev against configurable thresholds (default 260ms RTT, 90ms jitter). Thresholds are durably persisted in the Lobby DO and synced via welcome + live broadcast. DM settings panel exposes range sliders for both thresholds when auto is selected. Header badge shows `auto (smooth)` or `auto (strict)` reflecting the live client-side decision.
 - Added DM-controlled roll interpolation policy (`smooth`/`strict`/`auto`) with durable Lobby DO persistence and live broadcast updates. Both Lobby and Game now surface the active sync policy in the header, and BG3 roll presentation honors the mode (smooth keeps RTT catch-up interpolation; strict disables it for closer lockstep timing).
 - Added chat read-anchor behavior for long campaigns: Lobby/Game now persist a per-room per-user last-read timestamp locally, auto-jump to first unread on hydrate, and mark-read when users catch up at the bottom.
@@ -641,10 +642,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Auto-tune roll animation interpolation for high-latency clients (reduce visual jumps when RTT spikes) while preserving shared server-authoritative timing.
 - [x] Add adaptive interpolation modes (smooth/strict/auto) with DM-toggle defaults so competitive tables can prefer stricter lockstep while narrative tables prefer visual smoothness.
 - [x] Add optional `auto` roll sync policy that switches between smooth/strict based on rolling RTT + jitter windows, with DM-tunable thresholds and per-campaign defaults.
-- Add DM roll sync mode toggle in Game.tsx DMSidebar (currently only configurable from Lobby settings).
+- [x] Add DM roll sync mode toggle in Game.tsx DMSidebar (currently only configurable from Lobby settings).
 - Add animated bonus breakdown in roll presentation — show modifier contributions (proficiency, ability mod, magic weapon) stacking up to the total with per-bonus animated pills.
 - Add roll history replay in BG3 popup — click any recent roll in chat to re-watch its presentation animation.
-- Add per-player latency indicators in the party roster so DM can see who has high ping before choosing sync policy.
+- [x] Add per-player latency indicators in the party roster so DM can see who has high ping before choosing sync policy.
+- Add latency heatmap to DM sidebar showing all player RTTs at a glance with visual severity.
+- Add WebSocket heartbeat failure detection — show disconnection warning for players whose RTT exceeds 10s or who miss 3 consecutive pings.
 
 ### Dice Presentation: Character-Sheet Bonus Breakdown (PLANNED)
 - Show per-roll modifiers in the BG3 presentation window as animated + / - contributions (ability mod, proficiency, equipment, buffs/debuffs, situational effects).

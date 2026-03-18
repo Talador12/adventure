@@ -124,6 +124,10 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
             const midpointTs = sentTs + rttMs / 2;
             const offsetMs = (data.timestamp as number) - midpointTs;
             onTimeSyncRef.current?.(offsetMs, rttMs);
+            // Report RTT back to server for per-player latency visibility
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'report_rtt', rttMs }));
+            }
           }
           return;
         }

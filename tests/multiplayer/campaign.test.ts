@@ -296,6 +296,35 @@ describe('multiplayer edge cases', () => {
     await closeAndWait(ws);
   });
 
+  it('report_rtt stores latency and broadcasts latency_update', async () => {
+    const room = 'edge-latency-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'Player1' });
+    const w1 = await waitForMessage(ws1, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    send(ws2, { type: 'join', username: 'Player2' });
+    await waitForMessage(ws2, 'welcome');
+
+    // Player 1 reports RTT
+    const latencyPromise = waitForMessage(ws2, 'latency_update');
+    send(ws1, { type: 'report_rtt', rttMs: 42 });
+    const latencyMsg = await latencyPromise;
+    const latency = latencyMsg.latency as Record<string, number>;
+    expect(latency[w1.playerId as string]).toBe(42);
+
+    // REST endpoint includes rttMs on player
+    const id = env.LOBBY.idFromName(room);
+    const stub = env.LOBBY.get(id);
+    const resp = await stub.fetch('http://fake/players');
+    const data = (await resp.json()) as { players: Array<{ id: string; rttMs?: number }> };
+    const p1 = data.players.find((p) => p.id === w1.playerId);
+    expect(p1?.rttMs).toBe(42);
+
+    await closeAndWait(ws2);
+    await closeAndWait(ws1);
+  });
+
   it('REST /players endpoint returns player list', async () => {
     const room = 'edge-rest-' + Date.now();
     const ws = await connectPlayer(room);

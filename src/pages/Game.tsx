@@ -109,6 +109,7 @@ export default function Game() {
   const [autoStrictRttMs, setAutoStrictRttMs] = useState(260);
   const [autoStrictJitterMs, setAutoStrictJitterMs] = useState(90);
   const rttHistoryRef = useRef<number[]>([]);
+  const [playerLatency, setPlayerLatency] = useState<Record<string, number>>({});
   const rollPopupHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
@@ -489,6 +490,7 @@ export default function Game() {
       if (typeof rttThreshold === 'number') setAutoStrictRttMs(rttThreshold);
       if (typeof jitterThreshold === 'number') setAutoStrictJitterMs(jitterThreshold);
     },
+    onLatencyUpdate: setPlayerLatency,
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
