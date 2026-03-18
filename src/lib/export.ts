@@ -153,6 +153,14 @@ export function importJSONFile(): Promise<{ character?: Character; errors: strin
           return;
         }
 
+        // Auto-detect Foundry VTT actor format (type='character' + system.abilities)
+        const { isFoundryActor, parseFoundryActor } = await import('./foundryImport');
+        if (isFoundryActor(data as Record<string, unknown>)) {
+          const result = parseFoundryActor(data as Record<string, unknown>, '');
+          resolve({ character: result.character, errors: [], warnings: result.warnings });
+          return;
+        }
+
         // Native Adventure format
         const result = validateCharacterJSON(data);
         resolve(result.valid ? { character: result.character, errors: [] } : { errors: result.errors });
