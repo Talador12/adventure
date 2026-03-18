@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added backstory hooks persistence — `backstoryHooks` string array saved/loaded with campaign state. Hooks generated before the adventure starts now survive page reload and session resume, so the DM doesn't lose them by refreshing.
 - Added dynamic light source propagation — torchlit units emit bright light (4 cells/20ft) and dim light (6 cells/30ft) computed at render time via `effectiveLighting` useMemo. Merges with DM-painted static lighting grid (higher rank wins: dark < normal < dim < bright). Optimized with bounded iteration (only scans cells within torch radius). DM sees the combined overlay. Vision computation uses `effectiveLighting` so torch carriers dynamically illuminate dark areas as they move.
 - Added AI backstory hook integration with DM narration — when the first narration fires (adventure not yet started) and backstory hooks have been generated, they're injected into the AI DM's context as numbered instructions to "weave these party connections into the narrative naturally." After the opening scene, subsequent narrations use the normal "adventure is underway" context.
 - Added lighting zone persistence in campaign save/load — `lightingGrid` included in `CampaignState` + `CampaignLoadResult` interfaces and wired through `useCampaignPersistence`. Auto-saved with the 2s debounce, restored on campaign load from both server and localStorage. DM-painted bright/dim/dark zones now survive page reload and session resume.
@@ -803,7 +804,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Edit mode jumps directly to Review (all fields pre-filled)
 - [x] AI-generated backstory hooks based on party composition
 - [x] AI backstory hook integration with DM narration — automatically weave party connections into the opening narrative
-- [ ] Backstory hooks persist in campaign state so they survive reload before adventure starts
+- [x] Backstory hooks persist in campaign state so they survive reload before adventure starts
 - [x] Import characters from D&D Beyond / Foundry VTT JSON
 - [ ] Foundry VTT character import (similar parser for Foundry's actor JSON format)
 - [ ] D&D Beyond inventory/spell import (map DDB equipment + prepared spells to our Item/Spell types)

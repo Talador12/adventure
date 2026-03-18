@@ -27,6 +27,7 @@ export interface CampaignState {
   mapImageUrl: string | null;
   quests: Quest[];
   lightingGrid?: LightingLevel[][];
+  backstoryHooks?: string[];
 }
 
 export interface CampaignLoadResult {
@@ -43,6 +44,7 @@ export interface CampaignLoadResult {
   mapImageUrl?: string;
   quests?: Quest[];
   lightingGrid?: LightingLevel[][];
+  backstoryHooks?: string[];
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -214,6 +216,7 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (c.quests && Array.isArray(c.quests)) result.quests = c.quests as Quest[];
       if (c.combatLog && Array.isArray(c.combatLog)) result.combatLog = c.combatLog as string[];
       if (c.lightingGrid && Array.isArray(c.lightingGrid)) result.lightingGrid = c.lightingGrid as LightingLevel[][];
+      if (c.backstoryHooks && Array.isArray(c.backstoryHooks)) result.backstoryHooks = c.backstoryHooks as string[];
       return { result, raw: c };
     };
 
