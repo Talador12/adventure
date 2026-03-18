@@ -1,6 +1,6 @@
 // BattleMap — canvas-based tactical grid with terrain, procedural dungeon generation,
 // vision-based fog of war, DM tools, and zoom/pan support.
-import React, { useRef, useEffect, useState, useCallback, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
@@ -623,6 +623,30 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     });
   }, [units, terrain, gridCols, gridRows]);
 
+  // Compute dynamic lighting from torchlit units — bright within 4 cells, dim within 6
+  const effectiveLighting = useMemo(() => {
+    const base = lighting || Array.from({ length: gridRows }, () => Array(gridCols).fill('normal') as LightingLevel[]);
+    const torchUnits = positions.filter((p) => {
+      const u = units.find((u) => u.id === p.unitId);
+      return u && u.hp > 0 && u.conditions?.some((c) => c.type === 'torchlit');
+    });
+    if (torchUnits.length === 0) return base;
+    const TORCH_BRIGHT_R = 4; // 20ft bright
+    const TORCH_DIM_R = 6;    // 30ft dim
+    const rank: Record<LightingLevel, number> = { dark: 0, normal: 1, dim: 2, bright: 3 };
+    const merged = base.map((row) => [...row]);
+    for (const tp of torchUnits) {
+      for (let r = Math.max(0, tp.row - TORCH_DIM_R); r <= Math.min(gridRows - 1, tp.row + TORCH_DIM_R); r++) {
+        for (let c = Math.max(0, tp.col - TORCH_DIM_R); c <= Math.min(gridCols - 1, tp.col + TORCH_DIM_R); c++) {
+          const dist = Math.sqrt((r - tp.row) ** 2 + (c - tp.col) ** 2);
+          const tl: LightingLevel = dist <= TORCH_BRIGHT_R ? 'bright' : dist <= TORCH_DIM_R ? 'dim' : 'normal';
+          if (rank[tl] > rank[merged[r][c]]) merged[r][c] = tl;
+        }
+      }
+    }
+    return merged;
+  }, [lighting, positions, units, gridRows, gridCols]);
+
   // Compute visibility — per-player fog when myUnitId set, shared party vision otherwise
   // DM "View As" overrides: when DM picks a player to preview, show their fog
   const effectiveViewUnit = viewAsUnitId || myUnitId;
@@ -646,7 +670,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   // DM sees full vision when viewAsUnitId is null (normal DM mode)
   const effectiveDmMode = dmMode && !viewAsUnitId;
-  const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, effectiveDmMode, lighting);
+  const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, effectiveDmMode, effectiveLighting);
 
   // Update explored map as players reveal cells
   useEffect(() => {
@@ -742,11 +766,11 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       }
     }
 
-    // Draw lighting overlays (DM sees tint; players experience through vision range)
-    if (lighting && effectiveDmMode) {
+    // Draw lighting overlays (DM sees tint from both static + dynamic torch light)
+    if (effectiveLighting && effectiveDmMode) {
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
-          const level = lighting[r]?.[c];
+          const level = effectiveLighting[r]?.[c];
           if (!level || level === 'normal') continue;
           const x = c * CELL_SIZE;
           const y = r * CELL_SIZE;
@@ -996,7 +1020,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, lighting]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
