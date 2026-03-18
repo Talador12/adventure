@@ -2,7 +2,7 @@
 // Maps the DDB export schema to our Character type.
 // Handles the public API shape (/character/v5/{id}/json).
 
-import type { Character, Race, CharacterClass } from '../types/game';
+import type { Character, Race, CharacterClass, Item, ItemType, ItemRarity } from '../types/game';
 import { RACES, CLASSES, DEFAULT_APPEARANCE, EMPTY_EQUIPMENT } from '../types/game';
 
 // Normalize a DDB race name to our Race type (best-effort fuzzy match)
@@ -139,6 +139,76 @@ export function parseDDBCharacter(json: Record<string, unknown>, playerId: strin
     failures: (charData.deathSaves as Record<string, number>)?.failCount || 0,
   };
 
+  // Inventory — parse DDB inventory items into our Item type
+  const ddbInventory = (charData.inventory as Array<Record<string, unknown>>) || [];
+  const inventory: Item[] = ddbInventory.map((ddbItem) => {
+    const def = (ddbItem.definition as Record<string, unknown>) || ddbItem;
+    const itemName = String(def.name || ddbItem.name || 'Unknown Item');
+    const desc = String(def.description || def.snippet || '').replace(/<[^>]+>/g, '').slice(0, 200);
+    const qty = (ddbItem.quantity as number) || 1;
+
+    // Map DDB item type to our ItemType
+    const ddbType = String(def.type || def.filterType || '').toLowerCase();
+    const ddbSubType = String(def.subType || def.armorTypeId || '').toLowerCase();
+    let itemType: ItemType = 'misc';
+    if (ddbType.includes('weapon') || ddbSubType.includes('weapon')) itemType = 'weapon';
+    else if (ddbType.includes('armor') || ddbSubType.includes('armor') || ddbType.includes('shield')) itemType = ddbType.includes('shield') ? 'shield' : 'armor';
+    else if (ddbType.includes('potion')) itemType = 'potion';
+    else if (ddbType.includes('ring')) itemType = 'ring';
+    else if (ddbType.includes('scroll')) itemType = 'scroll';
+
+    // Map DDB rarity
+    const ddbRarity = String(def.rarity || '').toLowerCase();
+    let rarity: ItemRarity = 'common';
+    if (ddbRarity.includes('uncommon')) rarity = 'uncommon';
+    else if (ddbRarity.includes('rare')) rarity = 'rare';
+    else if (ddbRarity.includes('epic') || ddbRarity.includes('legendary') || ddbRarity.includes('very rare')) rarity = 'epic';
+
+    const item: Item = {
+      id: crypto.randomUUID(),
+      name: itemName,
+      type: itemType,
+      rarity,
+      description: desc || itemName,
+      value: (def.cost as number) || 0,
+      quantity: qty > 1 ? qty : undefined,
+    };
+
+    // Weapon stats
+    if (itemType === 'weapon') {
+      const dmg = (def.damage as Record<string, unknown>);
+      if (dmg) {
+        item.damageDie = String(dmg.diceString || dmg.diceValue || '1d6');
+      }
+      item.attackBonus = (def.attackBonus as number) || (def.bonusModifier as number) || 0;
+      const props = (def.properties as Array<Record<string, unknown>>) || [];
+      item.isRanged = props.some((p) => String(p.name || '').toLowerCase().includes('range'));
+      if (item.isRanged) {
+        item.range = (def.range as number) || (def.longRange as number) || 6;
+      }
+    }
+
+    // Armor stats
+    if (itemType === 'armor' || itemType === 'shield') {
+      item.acBonus = (def.armorClass as number) || 0;
+      item.equipSlot = itemType === 'shield' ? 'shield' : 'armor';
+    }
+
+    // Potion healing
+    if (itemType === 'potion') {
+      // DDB healing potions have grantedModifiers with healing info
+      const mods = (def.grantedModifiers as Array<Record<string, unknown>>) || [];
+      const healMod = mods.find((m) => String(m.type || '').includes('heal'));
+      if (healMod) item.healAmount = (healMod.value as number) || (healMod.fixedValue as number) || 0;
+      // Default healing potion fallback
+      if (!item.healAmount && itemName.toLowerCase().includes('healing')) {
+        item.healAmount = itemName.toLowerCase().includes('greater') ? 14 : itemName.toLowerCase().includes('superior') ? 28 : 7;
+      }
+    }
+
+    return item;
+  }).filter((item) => item.name !== 'Unknown Item');
+
   const character: Character = {
     id: crypto.randomUUID(),
     name,
@@ -162,7 +232,7 @@ export function parseDDBCharacter(json: Record<string, unknown>, playerId: strin
     backstory,
     playerId,
     gold: Math.round(gold * 100) / 100,
-    inventory: [],
+    inventory,
     equipment: { ...EMPTY_EQUIPMENT },
     spellSlotsUsed: {},
     classAbilityUsed: false,

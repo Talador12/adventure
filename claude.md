@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added D&D Beyond inventory import — `ddbImport.ts` now parses the DDB `inventory` array into our Item type. Maps weapon/armor/shield/potion/ring/scroll/misc types from DDB type + subType. Extracts damage dice, attack bonus, AC bonus, ranged flag, range, heal amount. Maps rarity (common/uncommon/rare/legendary→epic). Strips HTML from descriptions. Healing potions get smart defaults (7/14/28 HP). Imported characters now arrive with their full inventory.
 - Added light source items in inventory — new `'light'` ItemType, `appliesCondition` and `consumable` fields on Item. Pre-built `LIGHT_SOURCE_ITEMS` array (Candle x5, Torch x3, Hooded Lantern, Tinderbox) exported from types/game.ts. `useItem` in GameContext updated: light source items apply their condition to the character's unit (toggle behavior — using again extinguishes). Consumable items (candles, torches) decrement quantity; non-consumable (lantern) stays in inventory. Non-consumable items skip inventory removal on use.
 - Added multiple light source types — 5 light-bearing conditions with distinct propagation radii: candle (10ft/20ft), torch (20ft/30ft), lantern (30ft/50ft), darkvision spell (0ft/60ft dim only), daylight spell (60ft/100ft). `LIGHT_SOURCE_RADII` map in types/game.ts drives BattleMap's `effectiveLighting` computation. Each source emits bright + dim zones. `CONDITION_VISION_OVERRIDE` updated with matching per-condition vision ranges. Condition colors, effects, and rule tooltips added for all 3 new types.
 - Added backstory hooks persistence — `backstoryHooks` string array saved/loaded with campaign state. Hooks generated before the adventure starts now survive page reload and session resume, so the DM doesn't lose them by refreshing.
@@ -809,7 +810,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Backstory hooks persist in campaign state so they survive reload before adventure starts
 - [x] Import characters from D&D Beyond / Foundry VTT JSON
 - [ ] Foundry VTT character import (similar parser for Foundry's actor JSON format)
-- [ ] D&D Beyond inventory/spell import (map DDB equipment + prepared spells to our Item/Spell types)
+- [x] D&D Beyond inventory import (map DDB equipment to our Item types with full stat extraction)
+- [ ] D&D Beyond spell import (map DDB prepared/known spells to our Spell types with slot levels)
+- [ ] Auto-equip best weapon/armor from DDB import into equipment slots
 
 **Game board:**
 - [x] Minimap with click-to-pan (4px/cell, terrain + token dots + viewport rect, toggle button)
