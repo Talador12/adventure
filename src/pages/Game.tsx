@@ -1599,6 +1599,13 @@ export default function Game() {
               setDynamicDifficultyEnabled(v);
               try { localStorage.setItem(`adventure:dynDiff:${room}`, v ? '1' : '0'); } catch { /* ok */ }
             }}
+            rollInterpolationMode={rollInterpolationMode}
+            effectiveMode={effectiveMode}
+            autoStrictRttMs={autoStrictRttMs}
+            autoStrictJitterMs={autoStrictJitterMs}
+            onSetRollSyncMode={(mode, rttMs, jitterMs) => {
+              send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: mode, autoStrictRttMs: rttMs, autoStrictJitterMs: jitterMs });
+            }}
           />
         )}
 
