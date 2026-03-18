@@ -1611,6 +1611,8 @@ export default function Game() {
             onSetRollSyncMode={(mode, rttMs, jitterMs) => {
               send({ type: 'set_roll_interpolation_mode', rollInterpolationMode: mode, autoStrictRttMs: rttMs, autoStrictJitterMs: jitterMs });
             }}
+            playerLatency={playerLatency}
+            stalePlayers={stalePlayers}
           />
         )}
 
