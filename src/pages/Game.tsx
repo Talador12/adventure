@@ -2298,6 +2298,7 @@ export default function Game() {
                   <WorldWiki
                     pages={wikiPages}
                     playerName={currentPlayer.username || 'Unknown'}
+                    sceneName={sceneName}
                     onAddPage={(page) => setWikiPages((prev) => [...prev, page])}
                     onUpdatePage={(id, updates) => setWikiPages((prev) => prev.map((p) => p.id === id ? { ...p, ...updates } : p))}
                     onDeletePage={(id) => setWikiPages((prev) => prev.filter((p) => p.id !== id))}

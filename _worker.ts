@@ -913,6 +913,31 @@ app.delete('/api/npc-memory/:roomId/:npcName', async (c) => {
   } catch { return c.json({ error: 'Failed' }, 500); }
 });
 
+// AI wiki lore generation — generate content for wiki pages
+app.post('/api/dm/generate-lore', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const title = String(body.title || 'Unknown');
+    const category = String(body.category || 'lore');
+    const tags = Array.isArray(body.tags) ? (body.tags as string[]).join(', ') : '';
+    const sceneName = String(body.sceneName || '');
+    const existingPages = Array.isArray(body.existingPages) ? (body.existingPages as string[]).slice(0, 10).join(', ') : '';
+
+    const prompt = `Generate a D&D 5e wiki entry for a ${category} called "${title}".${tags ? ` Tags: ${tags}.` : ''}${sceneName ? ` Scene: ${sceneName}.` : ''}${existingPages ? ` Other entries: ${existingPages}.` : ''}
+
+Write 2-4 paragraphs of rich lore. Include physical description, history, current state, and a secret/hook. Encyclopedic but vivid. No meta-commentary.`;
+
+    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
+      '@cf/meta/llama-3.1-8b-instruct',
+      { messages: [{ role: 'system', content: 'D&D world-builder. Write rich lore.' }, { role: 'user', content: prompt }] },
+    );
+    return c.json({ content: (resp?.response || '').trim() });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Failed' }, 500);
+  }
+});
+
 // AI relationship suggestion — analyze backstories to suggest party connections
 app.post('/api/dm/suggest-relationships', async (c) => {
   if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
