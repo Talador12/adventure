@@ -82,6 +82,60 @@ interface DMSidebarProps {
   onSetDmPersonality?: (p: string) => void;
 }
 
+function NpcMemoryViewer({ roomId }: { roomId: string }) {
+  const [memories, setMemories] = useState<Array<{ npcName: string; lineCount: number; lastLine?: string }>>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expandedLines, setExpandedLines] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadList = () => {
+    setLoading(true);
+    fetch(`/api/npc-memory/${encodeURIComponent(roomId)}`).then((r) => r.json() as Promise<{ memories: typeof memories }>).then((d) => setMemories(d.memories || [])).catch(() => {}).finally(() => setLoading(false));
+  };
+
+  const loadNpc = (npcName: string) => {
+    fetch(`/api/npc-memory/${encodeURIComponent(roomId)}/${encodeURIComponent(npcName)}`).then((r) => r.json() as Promise<{ lines: string[] }>).then((d) => setExpandedLines(d.lines || []));
+  };
+
+  const clearNpc = (npcName: string) => {
+    if (!confirm(`Clear all memories for ${npcName}?`)) return;
+    fetch(`/api/npc-memory/${encodeURIComponent(roomId)}/${encodeURIComponent(npcName)}`, { method: 'DELETE' }).then(() => {
+      setMemories((prev) => prev.filter((m) => m.npcName !== npcName));
+      if (expanded === npcName) { setExpanded(null); setExpandedLines([]); }
+    });
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] text-slate-500 font-semibold uppercase">NPC Memories</label>
+        <button onClick={loadList} className="text-[8px] text-teal-400 hover:text-teal-300 font-semibold">{loading ? '...' : 'Load'}</button>
+      </div>
+      {memories.length === 0 ? (
+        <p className="text-[8px] text-slate-600 italic">Click Load to view NPC memories</p>
+      ) : (
+        <div className="space-y-0.5 max-h-32 overflow-y-auto">
+          {memories.map((m) => (
+            <div key={m.npcName}>
+              <div className="flex items-center justify-between text-[9px] px-2 py-0.5 rounded bg-slate-800/30">
+                <button onClick={() => { if (expanded === m.npcName) { setExpanded(null); } else { setExpanded(m.npcName); loadNpc(m.npcName); } }} className="text-teal-300 font-medium truncate text-left">
+                  {m.npcName.replace(/-/g, ' ')} <span className="text-slate-600">({m.lineCount})</span>
+                </button>
+                <button onClick={() => clearNpc(m.npcName)} className="text-red-500 hover:text-red-400 text-[8px]" title="Clear memory">×</button>
+              </div>
+              {expanded === m.npcName && expandedLines.length > 0 && (
+                <div className="ml-2 mt-0.5 space-y-0.5 max-h-20 overflow-y-auto text-[8px] text-slate-400 border-l border-slate-700/50 pl-2">
+                  {expandedLines.map((line, i) => <div key={i} className="leading-tight">{line}</div>)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DMSidebar({
   onClose,
   encounterDifficulty,
@@ -457,6 +511,11 @@ export default function DMSidebar({
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* NPC Memory Viewer */}
+            {roomId && (
+              <NpcMemoryViewer roomId={roomId} />
             )}
 
             {/* Roll Sync Policy — DM can change during game */}

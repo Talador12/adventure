@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v2.4.0
+## Current Version: v2.5.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added NPC memory viewer in DMSidebar — "NPC Memories" section with Load button fetches all NPCs with saved memories from the index. Expandable per-NPC: click to view full conversation history, × to clear memory. 3 API endpoints: `GET /api/npc-memory/:roomId` (list), `GET /api/npc-memory/:roomId/:npcName` (view), `DELETE /api/npc-memory/:roomId/:npcName` (clear). NPC memory index maintained alongside individual memory writes.
 - Added AI NPC memory — NPC conversation history persisted in KV per-NPC per-campaign (`npc-memory:{roomId}:{npcName}`). On each NPC dialogue call, server loads persistent memory, merges with client-sent history (deduped, last 12 entries), includes as "Conversation history ({NPC} remembers all of this)" in the system prompt. After AI response, updated memory (last 20 lines) saved back to KV. NPCs now remember past conversations across page reloads and sessions. Response includes `memoryLength` for debugging.
 - Added quest tracker with world map — `QuestMap` component in the Journal tab. Enhanced `Quest` type with location, mapX/mapY coordinates, priority (main/side/personal), and giver NPC. Parchment-styled world map with SVG pin markers (color-coded by priority: amber main, blue side, violet personal). Clickable pins open detail popups with description, giver, complete/reopen buttons. Quest list panel below with priority dot indicators and collapsible view. DM can add quests with locations that auto-appear on the map.
 - Added AI-suggested relationships — `POST /api/dm/suggest-relationships` analyzes party backstories, bonds, flaws, and personalities via Workers AI (Llama 3.1 8B) and returns 2-4 typed relationship suggestions. "✨ AI Suggest" button in the Bonds tab generates connections automatically. Results added as edges to the graph. DM can then edit/remove as needed.
@@ -1001,7 +1002,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v3.0 Feature Ideas
 - [ ] Replay mode — record and replay full combat encounters as animations
 - [x] AI NPC memory — NPCs remember past conversations across sessions (KV-persisted, 20-entry rolling window)
-- [ ] NPC memory viewer — DM can inspect/edit/clear an NPC's memory from the sidebar
+- [x] NPC memory viewer — DM can inspect/clear NPC memories from sidebar (expandable list + clear button)
 - [x] Quest tracker with world map pins (SVG markers, priority colors, clickable detail popups)
 - [x] Spell slot visual tracker (clickable pip circles per level — already implemented)
 - [x] Ambient weather effects on battle map (5 types: rain/fog/snow/sandstorm/none — already implemented with CSS particles + DM controls + WebSocket broadcast)

@@ -796,8 +796,17 @@ ${historyStr}`;
 
     // Save updated NPC memory to KV (persist conversation across sessions)
     if (memoryKey && c.env.CAMPAIGNS && response.trim()) {
+      const npcSlug = npcName.toLowerCase().replace(/\s+/g, '-');
       const updatedMemory = [...history, `${playerName}: ${playerMessage}`, `${npcName}: ${response.trim()}`].slice(-20);
       c.env.CAMPAIGNS.put(memoryKey, JSON.stringify(updatedMemory)).catch(() => {});
+      // Update NPC memory index
+      if (roomId) {
+        const idxKey = `npc-memory-index:${roomId}`;
+        c.env.CAMPAIGNS.get(idxKey).then((raw) => {
+          const idx: string[] = raw ? JSON.parse(raw as string) : [];
+          if (!idx.includes(npcSlug)) { idx.push(npcSlug); c.env.CAMPAIGNS!.put(idxKey, JSON.stringify(idx)).catch(() => {}); }
+        }).catch(() => {});
+      }
     }
 
     return c.json({ dialogue: response.trim(), npcName, memoryLength: history.length });
@@ -867,6 +876,42 @@ const XP_THRESHOLDS_BY_LEVEL: Record<number, { easy: number; medium: number; har
   19: { easy: 2400, medium: 4900, hard: 7300, deadly: 10900 },
   20: { easy: 2800, medium: 5700, hard: 8500, deadly: 12700 },
 };
+
+// NPC memory management — DM views/clears NPC conversation memories
+app.get('/api/npc-memory/:roomId', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ memories: [] });
+  try {
+    const roomId = c.req.param('roomId');
+    // Load NPC memory index (maintained alongside individual memories)
+    const indexRaw = (await c.env.CAMPAIGNS.get(`npc-memory-index:${roomId}`)) as string | null;
+    const npcNames: string[] = indexRaw ? JSON.parse(indexRaw) : [];
+    const memories: Array<{ npcName: string; lineCount: number; lastLine?: string }> = [];
+    for (const name of npcNames) {
+      const raw = (await c.env.CAMPAIGNS.get(`npc-memory:${roomId}:${name}`)) as string | null;
+      if (raw) {
+        const lines = JSON.parse(raw) as string[];
+        memories.push({ npcName: name, lineCount: lines.length, lastLine: lines[lines.length - 1] });
+      }
+    }
+    return c.json({ memories });
+  } catch { return c.json({ memories: [] }); }
+});
+
+app.get('/api/npc-memory/:roomId/:npcName', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ lines: [] });
+  try {
+    const raw = (await c.env.CAMPAIGNS.get(`npc-memory:${c.req.param('roomId')}:${c.req.param('npcName')}`)) as string | null;
+    return c.json({ lines: raw ? JSON.parse(raw) : [] });
+  } catch { return c.json({ lines: [] }); }
+});
+
+app.delete('/api/npc-memory/:roomId/:npcName', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Storage not available' }, 503);
+  try {
+    await c.env.CAMPAIGNS.delete(`npc-memory:${c.req.param('roomId')}:${c.req.param('npcName')}`);
+    return c.json({ ok: true });
+  } catch { return c.json({ error: 'Failed' }, 500); }
+});
 
 // AI relationship suggestion — analyze backstories to suggest party connections
 app.post('/api/dm/suggest-relationships', async (c) => {
