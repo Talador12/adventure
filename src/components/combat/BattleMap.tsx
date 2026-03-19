@@ -599,6 +599,38 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
+  // Theater mode: auto-zoom + pan to focus on current turn unit
+  const [theaterMode, setTheaterMode] = useState(false);
+
+  useEffect(() => {
+    if (!theaterMode || !inCombat) return;
+    const currentUnit = units.find((u) => u.isCurrentTurn);
+    if (!currentUnit) return;
+    const pos = positions.find((p) => p.unitId === currentUnit.id);
+    if (!pos) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const targetZoom = 2;
+    const unitPx = pos.col * CELL_SIZE + CELL_SIZE / 2;
+    const unitPy = pos.row * CELL_SIZE + CELL_SIZE / 2;
+    const targetX = canvas.width / (2 * window.devicePixelRatio || 1) - unitPx * targetZoom;
+    const targetY = canvas.height / (2 * window.devicePixelRatio || 1) - unitPy * targetZoom;
+    const startZ = zoom;
+    const startX = panOffset.x;
+    const startY = panOffset.y;
+    const startMs = performance.now();
+    let raf: number;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - startMs) / 400);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      setZoom(startZ + (targetZoom - startZ) * e);
+      setPanOffset({ x: startX + (targetX - startX) * e, y: startY + (targetY - startY) * e });
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [theaterMode, inCombat, units.find((u) => u.isCurrentTurn)?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // --- Touch support refs (handlers defined after mouse handlers) ---
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const pinchStartRef = useRef<{ dist: number; zoom: number; midX: number; midY: number } | null>(null);
@@ -2032,8 +2064,17 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         >
           +
         </button>
+        {inCombat && (
+          <button
+            onClick={() => setTheaterMode(!theaterMode)}
+            className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${theaterMode ? 'bg-amber-900/50 text-amber-300 ring-1 ring-amber-500/50' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+            title="Theater mode: auto-zoom + pan to focus on current turn"
+          >
+            {theaterMode ? '🎬 Theater ON' : '🎬'}
+          </button>
+        )}
         <button
-          onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }}
+          onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); setTheaterMode(false); }}
           className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
           title="Reset zoom and position"
         >

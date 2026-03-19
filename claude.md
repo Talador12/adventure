@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v1.7.0
+## Current Version: v1.8.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added encounter theater mode — "🎬 Theater" toggle in zoom controls (visible during combat). When ON, the camera auto-zooms to 2x and smoothly pans to center on the current turn unit using easeInOutQuad animation (400ms). Triggers on turn change. Reset button also disables theater mode. Creates a cinematic "camera follows the action" effect during combat.
 - Added fog reveal animation — newly-explored cells get a 0.5s fade transition instead of instantly revealing. `fogRevealRef` tracks recently-revealed cells with progress 1.0→0.0. requestAnimationFrame loop decays progress at 2x/second. During canvas draw, cells with active reveal progress get an overlaid `rgba(15,23,42, progress*0.7)`. Result: fog dissolves smoothly as tokens move into new areas. Respects `effectiveDmMode` (DM sees no fog). Respects `prefers-reduced-motion` via Low-FX class (animations disabled).
 - Added custom token images — `tokenImage?: string` field on Unit. BattleMap renders images in clipped circles instead of plain initials. Falls back to character portrait for player units, then to initial letter. DM double-clicks a token to set its image URL (prompt dialog, clear to remove). Image cache via ref Map with lazy loading + error handling. Works for enemies, NPCs, and players. Images auto-render on next canvas draw after loading.
 - Added initiative tiebreaker rules — sort by initiative descending, then DEX modifier (higher goes first), then stable ID comparison. Matches D&D 5e RAW tiebreaker rules. Works for both player characters (looks up DEX from Character stats) and enemies (uses unit.dexMod).
@@ -973,7 +974,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Character relationship graph (party dynamics visualization, NPC connections)
 - [ ] Voice chat integration (WebRTC peer-to-peer audio with push-to-talk)
 - [x] Map fog-of-war reveal animation (0.5s fade dissolve via requestAnimationFrame)
-- [ ] Encounter theater mode (cinematic view during combat with zoom + pan)
+- [x] Encounter theater mode (auto-zoom 2x + smooth pan to current turn unit)
 - [x] AI DM personality presets (6 styles: theatrical, comedic, grimdark, tolkien, noir, horror)
 - [x] Character multiclassing support (classLevels field + merged spellbook + UI)
 - [ ] Multiclass ability score requirements validation (D&D 5e prereqs for multiclassing)
