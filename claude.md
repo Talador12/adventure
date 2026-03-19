@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v1.2.1
+## Current Version: v1.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added campaign session log export — `exportSessionLog()` in export.ts generates a formatted markdown file with party roster, DM narration (blockquotes), timestamped chat log (with system/roll/message types), and combat log (bullet list). "Export Log" button in Game header (lazy-loaded). Downloads as `{campaign-name}-session-log.md`. Includes all data from the current session.
+- Enhanced initiative roll automation — the existing "Roll Initiative" button now shows individual initiative values in the combat log and DM narration (e.g., "Order: Thorin: 18, Goblin: 12, Elara: 8"). Added "Re-roll Init" button (DM only, visible during combat) for re-rolling when new enemies join mid-fight. Re-roll resets turn order and broadcasts updated state.
 - Added ETag cache invalidation — `GET /api/characters` and `GET /api/campaign/:roomId` now compute SHA-256 ETags from response data and return `ETag` + `Cache-Control: private, no-cache` headers. Client sends `If-None-Match` on subsequent requests; server returns 304 Not Modified if data unchanged. Client stores ETags in localStorage. Saves bandwidth on unchanged data while still checking freshness on every request.
 - Added encounter-specific loot overrides — "Staged Loot" section in DMSidebar Notes tab lets the DM pre-assign items (with name + rarity) for the next encounter. When combat ends, if staged loot exists, it's used instead of random table rolls. Items go to party inventory, staged list auto-clears. Chat message shows "(DM-assigned)" label. If no staged loot, falls back to normal `rollLoot()` table behavior. DM can also clear all staged loot manually.
 - Added per-floor terrain/lighting persistence — `floorDataRef` stores terrain + lighting grids per floor index. Switching floors saves the current floor's state and restores the target floor's (or creates a fresh blank floor). `floorData` array, `floorNames`, and `currentFloor` all included in campaign save/load via `useCampaignPersistence`. New floors start as all-floor terrain with normal lighting. Multi-floor dungeons now fully survive page reload.
@@ -947,11 +949,11 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AI encounter balancing (DMG XP budget calculation + party composition awareness)
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)
 - [ ] Community map sharing (upload/download presets via API, rate + tag)
-- [ ] Turn timer (configurable countdown per player turn, auto-end on expiry)
-- [ ] Initiative roll automation (roll initiative for all units with one click)
-- [ ] Condition duration countdown in initiative bar (show remaining rounds)
+- [x] Turn timer (configurable countdown per player turn, auto-end on expiry — already implemented)
+- [x] Initiative roll automation (shows order in combat log + DM re-roll during combat)
+- [x] Condition duration countdown in initiative bar (already shows round count + tooltip)
 - [ ] Sound effects library (ambient music + combat/spell/dice SFX via Web Audio API)
-- [ ] Campaign session log export (full chat + DM history as markdown file)
+- [x] Campaign session log export (markdown with party roster, narration, chat, combat log)
 - [ ] Player notes panel (personal notes visible only to the player, not the DM)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout

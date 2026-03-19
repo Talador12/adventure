@@ -209,8 +209,9 @@ export default function CombatToolbar({
                           onClick={() => {
                             const sorted = rollInitiative();
                             playTurnChange();
-                            setCombatLog((prev) => [...prev, 'Initiative rolled! Combat begins.']);
-                            addDmMessage('Roll for initiative!');
+                            const initOrder = sorted.map((u) => `${u.name}: ${u.initiative}`).join(', ');
+                            setCombatLog((prev) => [...prev, `Initiative rolled! ${initOrder}`]);
+                            addDmMessage(`Roll for initiative! Order: ${initOrder}`);
                             broadcastCombatSync(sorted, true, 1, 0);
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-900/40 hover:bg-yellow-900/60 border border-yellow-700/50 text-yellow-300 text-xs font-semibold rounded-lg transition-all"
@@ -751,6 +752,23 @@ export default function CombatToolbar({
                             </button>
                           );
                         })()}
+
+                      {/* Re-roll Initiative (during combat, for when new enemies join) */}
+                      {inCombat && canUseDMTools && (
+                        <button
+                          data-combat-action="reroll-init"
+                          onClick={() => {
+                            const sorted = rollInitiative();
+                            setCombatLog((prev) => [...prev, 'Initiative re-rolled!']);
+                            addDmMessage('Initiative re-rolled — new turn order!');
+                            broadcastCombatSync(sorted, true, combatRound, 0);
+                          }}
+                          className="flex items-center gap-1.5 px-2 py-1.5 bg-yellow-900/20 hover:bg-yellow-900/40 border border-yellow-700/30 text-yellow-400 text-[10px] font-semibold rounded-lg transition-all"
+                          title="Re-roll initiative for all units (DM only)"
+                        >
+                          Re-roll Init
+                        </button>
+                      )}
 
                       {/* End Combat button */}
                       {inCombat && (

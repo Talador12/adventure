@@ -1585,6 +1585,17 @@ export default function Game() {
             {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
           </span>
           <SessionTimer roomId={room} compact />
+          <button
+            onClick={() => {
+              import('../lib/export').then(({ exportSessionLog }) => {
+                exportSessionLog(sceneName || room, dmHistory, chatMessages, combatLog, characters);
+              });
+            }}
+            className="text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
+            title="Export full session log as markdown"
+          >
+            Export Log
+          </button>
         </div>
         <div className="flex items-center gap-3">
           {/* Sound controls — mute toggle + volume slider */}
