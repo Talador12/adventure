@@ -896,35 +896,80 @@ export default function Game() {
       if (!selectedCharacter) return;
       setDmLoading(true);
       try {
-        const res = await fetchWithTimeout(
-          `${apiBase()}/api/dm/narrate`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              characters: buildPartyPayload(),
-              context: adventureStarted
-                ? 'The adventure is underway.'
-                : backstoryHooks.length > 0
-                  ? `This is the opening scene. Weave these party connections into the narrative naturally:\n${backstoryHooks.map((h, i) => `${i + 1}. ${h}`).join('\n')}`
-                  : '',
-              action: action || '',
-              history: dmHistory.slice(-10),
-              scene: sceneName,
-              personality: dmPersonality,
-            }),
-          },
-          35_000
-        );
-        const data = (await res.json()) as { narration?: string; error?: string };
-        if (data.narration) {
-          addDmMessage(data.narration);
-          // Broadcast narration to all players via WebSocket
-          sendRef.current({ type: 'dm_narrate', narration: data.narration });
-          // Persist DM narration to D1
-          persistChatMessage(room, { username: 'Dungeon Master', type: 'dm', text: data.narration });
-        } else {
-          addDmMessage(data.error || 'The DM pauses, lost in thought...');
+        const payload = {
+          characters: buildPartyPayload(),
+          context: adventureStarted
+            ? 'The adventure is underway.'
+            : backstoryHooks.length > 0
+              ? `This is the opening scene. Weave these party connections into the narrative naturally:\n${backstoryHooks.map((h, i) => `${i + 1}. ${h}`).join('\n')}`
+              : '',
+          action: action || '',
+          history: dmHistory.slice(-10),
+          scene: sceneName,
+          personality: dmPersonality,
+        };
+
+        // Try streaming endpoint first for typewriter effect
+        let narration = '';
+        try {
+          const streamRes = await fetch(`${apiBase()}/api/dm/narrate-stream`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+          });
+          if (streamRes.ok && streamRes.body) {
+            const reader = streamRes.body.getReader();
+            const decoder = new TextDecoder();
+            // Add a placeholder message that we'll update as tokens arrive
+            const placeholderId = crypto.randomUUID();
+            addDmMessage('▍');
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value, { stream: true });
+              // Parse SSE data lines: "data: {"response":"token"}"
+              for (const line of chunk.split('\n')) {
+                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                  try {
+                    const d = JSON.parse(line.slice(6)) as { response?: string };
+                    if (d.response) narration += d.response;
+                  } catch { /* partial JSON, skip */ }
+                }
+              }
+              // Update the last DM message in-place for typewriter effect
+              if (narration) {
+                setDmHistory((prev) => {
+                  const copy = [...prev];
+                  copy[copy.length - 1] = narration + '▍';
+                  return copy;
+                });
+              }
+            }
+            // Remove cursor from final message
+            if (narration) {
+              setDmHistory((prev) => {
+                const copy = [...prev];
+                copy[copy.length - 1] = narration;
+                return copy;
+              });
+            }
+          }
+        } catch {
+          // Streaming failed — fall back to regular endpoint
+        }
+
+        // Fallback: non-streaming if stream produced nothing
+        if (!narration) {
+          const res = await fetchWithTimeout(`${apiBase()}/api/dm/narrate`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+          }, 35_000);
+          const data = (await res.json()) as { narration?: string; error?: string };
+          narration = data.narration || '';
+          if (narration) addDmMessage(narration);
+          else addDmMessage(data.error || 'The DM pauses, lost in thought...');
+        }
+
+        if (narration) {
+          sendRef.current({ type: 'dm_narrate', narration });
+          persistChatMessage(room, { username: 'Dungeon Master', type: 'dm', text: narration });
         }
       } catch {
         addDmMessage('*The DM\u2019s connection to the ethereal plane wavers...*');

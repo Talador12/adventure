@@ -1054,6 +1054,16 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.lineWidth = isSelected ? 3 : 2;
       ctx.stroke();
 
+      // Concentration ring — pulsing blue outer ring for concentrating units
+      if (unit.concentratingOn) {
+        const pulseAlpha = 0.4 + 0.3 * Math.sin(Date.now() / 300);
+        ctx.beginPath();
+        ctx.arc(cx, cy, TOKEN_RADIUS + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(96, 165, 250, ${pulseAlpha})`; // blue-400
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
       // Name initial (only when no image)
       if (!drewImage) {
         ctx.fillStyle = '#fff';
