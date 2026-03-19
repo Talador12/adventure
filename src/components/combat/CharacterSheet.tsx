@@ -496,8 +496,31 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         />
         <div>
           <div className="font-bold text-white text-lg">{character.name}</div>
-          <div className="text-slate-400 text-xs">Level {character.level} {character.race} {character.class}</div>
-          <div className="text-xs text-slate-500">Proficiency Bonus: +{prof}</div>
+          <div className="text-slate-400 text-xs">
+            Level {character.level} {character.race}{' '}
+            {character.classLevels && Object.keys(character.classLevels).length > 1
+              ? Object.entries(character.classLevels).map(([cls, lvl]) => `${cls} ${lvl}`).join(' / ')
+              : character.class}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500">Proficiency Bonus: +{prof}</span>
+            <button
+              onClick={() => {
+                const cls = prompt(`Add multiclass level. Enter class name:\n(${['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Bard', 'Barbarian', 'Sorcerer', 'Warlock', 'Druid', 'Monk'].join(', ')})`);
+                if (!cls?.trim()) return;
+                const validClass = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Bard', 'Barbarian', 'Sorcerer', 'Warlock', 'Druid', 'Monk'].find((c) => c.toLowerCase() === cls.trim().toLowerCase());
+                if (!validClass) { alert('Invalid class name'); return; }
+                const current = character.classLevels || { [character.class]: character.level };
+                const updated = { ...current, [validClass]: (current[validClass as CharacterClass] || 0) + 1 };
+                const totalLevel = Object.values(updated).reduce((s, v) => s + (v || 0), 0);
+                updateCharacter(character.id, { classLevels: updated, level: totalLevel } as Partial<typeof character>);
+              }}
+              className="text-[8px] text-violet-400 hover:text-violet-300 transition-colors font-semibold"
+              title="Add a level in another class (multiclass)"
+            >
+              + Multiclass
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1016,8 +1039,14 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
       {[...FULL_CASTERS, ...HALF_CASTERS].includes(character.class) && (() => {
         const slots = getSpellSlots(character.class, character.level);
         const used = character.spellSlotsUsed || {};
-        // Merge class spells + custom/imported spells (deduped by name)
-        const classSpells = getClassSpells(character.class, character.level);
+        // Merge class spells from all multiclass classes + custom/imported spells (deduped by name)
+        const allClassSpells: Spell[] = [];
+        if (character.classLevels && Object.keys(character.classLevels).length > 1) {
+          for (const [cls, lvl] of Object.entries(character.classLevels)) {
+            allClassSpells.push(...getClassSpells(cls as CharacterClass, lvl || 1));
+          }
+        }
+        const classSpells = allClassSpells.length > 0 ? allClassSpells : getClassSpells(character.class, character.level);
         const customSpells = character.customSpells || [];
         const spellNames = new Set(classSpells.map((s) => s.name));
         const spells = [...classSpells, ...customSpells.filter((s) => !spellNames.has(s.name))];

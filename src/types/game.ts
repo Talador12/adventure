@@ -383,6 +383,7 @@ export interface Character {
   race: Race;
   class: CharacterClass;
   level: number;
+  classLevels?: Partial<Record<CharacterClass, number>>; // multiclass: levels per class (total = level)
   xp: number;
   stats: Stats;
   hp: number;
