@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI NPC memory — NPC conversation history persisted in KV per-NPC per-campaign (`npc-memory:{roomId}:{npcName}`). On each NPC dialogue call, server loads persistent memory, merges with client-sent history (deduped, last 12 entries), includes as "Conversation history ({NPC} remembers all of this)" in the system prompt. After AI response, updated memory (last 20 lines) saved back to KV. NPCs now remember past conversations across page reloads and sessions. Response includes `memoryLength` for debugging.
 - Added quest tracker with world map — `QuestMap` component in the Journal tab. Enhanced `Quest` type with location, mapX/mapY coordinates, priority (main/side/personal), and giver NPC. Parchment-styled world map with SVG pin markers (color-coded by priority: amber main, blue side, violet personal). Clickable pins open detail popups with description, giver, complete/reopen buttons. Quest list panel below with priority dot indicators and collapsible view. DM can add quests with locations that auto-appear on the map.
 - Added AI-suggested relationships — `POST /api/dm/suggest-relationships` analyzes party backstories, bonds, flaws, and personalities via Workers AI (Llama 3.1 8B) and returns 2-4 typed relationship suggestions. "✨ AI Suggest" button in the Bonds tab generates connections automatically. Results added as edges to the graph. DM can then edit/remove as needed.
 - Added WebRTC voice chat — `useVoiceChat` hook with full peer-to-peer audio mesh. Push-to-talk via `V` key (skips when typing in input/textarea). Signaling via existing Lobby DO WebSocket (`voice_signal` for offer/answer/ICE relay, `voice_state` for talking/muted broadcasts). STUN servers via Google. Header UI: 🎤 Voice join button, mute toggle, LIVE indicator when talking, 🔊 indicators for peers talking, ✕ leave button. Mic tracks disabled by default, enabled only during PTT. Clean shutdown on unmount. Discord voice integration planned as a toggle alongside this.
@@ -999,7 +1000,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ### v3.0 Feature Ideas
 - [ ] Replay mode — record and replay full combat encounters as animations
-- [ ] AI NPC memory — NPCs remember past conversations across sessions
+- [x] AI NPC memory — NPCs remember past conversations across sessions (KV-persisted, 20-entry rolling window)
+- [ ] NPC memory viewer — DM can inspect/edit/clear an NPC's memory from the sidebar
 - [x] Quest tracker with world map pins (SVG markers, priority colors, clickable detail popups)
 - [x] Spell slot visual tracker (clickable pip circles per level — already implemented)
 - [x] Ambient weather effects on battle map (5 types: rain/fog/snow/sandstorm/none — already implemented with CSS particles + DM controls + WebSocket broadcast)

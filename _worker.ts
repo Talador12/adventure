@@ -748,9 +748,26 @@ app.post('/api/dm/npc', async (c) => {
   const playerName = String(body.playerName || 'Adventurer');
   const playerClass = String(body.playerClass || '');
   const scene = String(body.scene || '');
-  const history = (body.dialogueHistory as string[]) || [];
+  const roomId = String(body.roomId || '');
+  const clientHistory = (body.dialogueHistory as string[]) || [];
 
-  const historyStr = history.length > 0 ? `\nConversation so far:\n${history.slice(-8).join('\n')}` : '';
+  // NPC memory: load persistent conversation history from KV (per NPC per campaign)
+  let persistedMemory: string[] = [];
+  const memoryKey = roomId ? `npc-memory:${roomId}:${npcName.toLowerCase().replace(/\s+/g, '-')}` : '';
+  if (memoryKey && c.env.CAMPAIGNS) {
+    try {
+      const raw = (await c.env.CAMPAIGNS.get(memoryKey)) as string | null;
+      if (raw) persistedMemory = JSON.parse(raw) as string[];
+    } catch { /* ok */ }
+  }
+
+  // Merge: persisted memory + client-sent history (deduped, last 12 entries)
+  const allHistory = [...persistedMemory];
+  for (const line of clientHistory) {
+    if (!allHistory.includes(line)) allHistory.push(line);
+  }
+  const history = allHistory.slice(-12);
+  const historyStr = history.length > 0 ? `\nConversation history (${npcName} remembers all of this):\n${history.join('\n')}` : '';
 
   const systemPrompt = `You are ${npcName}, ${npcRole} in a D&D 5e world. Stay completely in character.
 
@@ -776,7 +793,14 @@ ${historyStr}`;
     });
 
     const response = ((result as Record<string, unknown>).response as string) || '';
-    return c.json({ dialogue: response.trim(), npcName });
+
+    // Save updated NPC memory to KV (persist conversation across sessions)
+    if (memoryKey && c.env.CAMPAIGNS && response.trim()) {
+      const updatedMemory = [...history, `${playerName}: ${playerMessage}`, `${npcName}: ${response.trim()}`].slice(-20);
+      c.env.CAMPAIGNS.put(memoryKey, JSON.stringify(updatedMemory)).catch(() => {});
+    }
+
+    return c.json({ dialogue: response.trim(), npcName, memoryLength: history.length });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'NPC dialogue failed';
     return c.json({ error: msg }, 500);
