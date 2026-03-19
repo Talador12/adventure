@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added per-floor terrain/lighting persistence — `floorDataRef` stores terrain + lighting grids per floor index. Switching floors saves the current floor's state and restores the target floor's (or creates a fresh blank floor). `floorData` array, `floorNames`, and `currentFloor` all included in campaign save/load via `useCampaignPersistence`. New floors start as all-floor terrain with normal lighting. Multi-floor dungeons now fully survive page reload.
 - Added loot rarity glow on party inventory items — color-coded borders and box-shadow glow per rarity tier in the DMSidebar Party Loot section. Common: slate border, Uncommon: emerald border + subtle green glow, Rare: blue border + blue glow, Epic: purple border + purple glow. Item name text also color-coded per rarity. Replaces the flat amber text with distinct visual hierarchy.
 - Added stair click navigation — clicking a stairs_up cell switches to the floor above, stairs_down switches below. Only active when multiple floors exist. `onStairClick` prop on BattleMap triggers `setCurrentFloor` in Game.tsx. Bounds-checked (can't go above floor 0 or below the last floor). Integrated into the mouseDown handler before token interaction so stairs always respond.
 - Added multi-floor dungeon support — `stairs_up` and `stairs_down` terrain types with green/red arrow rendering, walkable movement cost. DM toolbar gains ↑Stairs / ↓Stairs paint tools. Floor navigation bar appears above the battle map when multiple floors exist (tab buttons per floor, DM can add floors via prompt). Single-floor dungeons show a subtle "+ Floor" button for DMs. `currentFloor` and `floorNames` state in Game.tsx. Terrain cost, colors, and patterns all updated for stairs.
@@ -946,7 +947,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout
 - [x] Multi-floor dungeons (stairs terrain types + floor navigation bar)
-- [ ] Per-floor terrain/lighting persistence (each floor has its own grid stored in campaign state)
+- [x] Per-floor terrain/lighting persistence (each floor stored in floorData array, saved/loaded with campaign)
 - [x] Stair click navigation (clicking stairs auto-switches to the connected floor)
 
 **Server persistence coverage:**
