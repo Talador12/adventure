@@ -3,6 +3,7 @@
 ## Rules
 - Update `claude.md` with every commit.
 - Keep this file (`AGENTS.md`) stable — architecture and conventions only.
+- **Always keep the local dev server running** (`make dev`) so the user can view the app at `http://localhost:5173` and give live feedback as you iterate. If the dev server isn't running, start it before making changes. After code changes, Vite hot-reloads automatically — no restart needed unless you change `_worker.ts` or `wrangler.toml`.
 
 ## Quick Reference
 
