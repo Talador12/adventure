@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added dungeon seed sharing — generating a random dungeon now saves the seed and displays it as a monospace `#seed` button (click to copy to clipboard). A seed input field lets DMs enter a seed number and press Enter to regenerate the exact same dungeon layout. Seeded RNG (mulberry32) guarantees identical room/corridor/door/hazard placement for any given seed. DMs can share seeds in chat for collaborative play.
 - Enhanced character PDF export — the printable HTML sheet now includes Equipment (weapon with damage die, armor with AC, shield), Inventory (2-column list with name/quantity/type/value), and Spellbook (2-column list with name/level/school/damage/concentration). Sections only render when the character has data. Print/Save-as-PDF button at bottom for browser print dialog.
 - Added procedural dungeon generator — `src/lib/dungeonGen.ts` implements BSP (Binary Space Partitioning) tree algorithm with seeded RNG (mulberry32). Recursively splits the grid into leaves, places rooms inside each leaf, connects all rooms with L-shaped corridors, adds doors at room entrances, and scatters pits/water for variety. Configurable grid size, optional seed for reproducible dungeons. "🎲 Random" button in DM toolbar generates a new dungeon each click with fog reset. Replaces the old inline dungeon generator.
 - Added shared party inventory (group loot pool) — `partyInventory: Item[]` in campaign state, persisted via save/load. DMSidebar "Party Loot" section with item count, "+ Add" button (prompt for name), per-item "Give..." dropdown to transfer to any player character, and × remove button. `onGiveItemToPlayer` moves item from pool to character's personal inventory with a fresh UUID. Scrollable 32px-high item list. Integrated with campaign persistence.
@@ -937,7 +938,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)
 - [ ] Community map sharing (upload/download presets via API, rate + tag)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
-- [ ] Dungeon seed sharing — save/share the seed so others can generate the same layout
+- [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout
 - [ ] Multi-floor dungeons (stairs connect separate terrain grids)
 
 **Server persistence coverage:**
