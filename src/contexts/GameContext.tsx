@@ -761,7 +761,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const castSpell = useCallback(
     (charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
       let result = { success: false, message: '' };
-      const spell = SPELL_LIST.find((s) => s.id === spellId);
+      // Search both the global spell list and the caster's custom spellbook
+      const casterChar = characters.find((c) => c.id === charId);
+      const spell = SPELL_LIST.find((s) => s.id === spellId) || (casterChar?.customSpells || []).find((s) => s.id === spellId);
       if (!spell) {
         return { success: false, message: 'Unknown spell.' };
       }

@@ -317,6 +317,7 @@ export function parseDDBCharacter(json: Record<string, unknown>, playerId: strin
     inventory,
     equipment: autoEquipment,
     spellSlotsUsed: {},
+    customSpells: uniqueSpells.length > 0 ? uniqueSpells : undefined,
     classAbilityUsed: false,
     feats: [],
     asiChoicesMade: 0,

@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added custom spellbook field on Character — `customSpells?: Spell[]` stores imported or homebrew spells beyond the class list. DDB import now populates `customSpells` with parsed spells. CharacterSheet merges class spells + custom spells (deduped by name) for the spellbook display. `castSpell` in GameContext searches both SPELL_LIST and `casterChar.customSpells`. Imported characters arrive with their full spell repertoire visible.
 - Added torch/candle burnout timer — torches burn for 10 turns, candles for 6. Each turn in `tickConditions`, the burn counter increments (tracked in condition `source` field). When a torch/candle burns out, one is consumed from the inventory stack. If more remain, a new one auto-lights with a reset counter. When the last one burns out, the condition is removed and a "last torch burns out!" message appears. The combat log shows remaining count after each burnout.
 - Added fuel indicator on character sheet inventory — color-coded badge shows `remaining/max` turns for fuel-tracked items (green >25%, amber <25%, red empty). Added "Light" / "Refuel" action buttons for light source items and Oil Flasks in the inventory UI (previously only potions/scrolls had Use buttons). Lantern button shows amber styling, Oil Flask button labeled "Refuel".
 - Added Dispel Magic (3rd level abjuration) — targets a unit and strips all magical conditions: blessed, hexed, darkvision, daylight, frightened, stunned, inspired, burning. Also clears concentration. Reports how many effects were removed and lists them. Available to 7 classes. If no magical effects exist on the target, reports that clearly.
@@ -824,7 +825,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Foundry VTT spell import (parse spell items from Foundry actor)
 - [x] D&D Beyond inventory import (map DDB equipment to our Item types with full stat extraction)
 - [x] D&D Beyond spell import (parse + report cantrips/spells from DDB classSpells array)
-- [ ] Custom spellbook field on Character — store imported/custom spells beyond the class list
+- [x] Custom spellbook field on Character — store imported/custom spells beyond the class list
+- [ ] Spell management UI on character sheet — add/remove custom spells, mark prepared
 - [x] Auto-equip best weapon/armor from DDB import into equipment slots
 
 **Game board:**
