@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added ETag cache invalidation — `GET /api/characters` and `GET /api/campaign/:roomId` now compute SHA-256 ETags from response data and return `ETag` + `Cache-Control: private, no-cache` headers. Client sends `If-None-Match` on subsequent requests; server returns 304 Not Modified if data unchanged. Client stores ETags in localStorage. Saves bandwidth on unchanged data while still checking freshness on every request.
 - Added encounter-specific loot overrides — "Staged Loot" section in DMSidebar Notes tab lets the DM pre-assign items (with name + rarity) for the next encounter. When combat ends, if staged loot exists, it's used instead of random table rolls. Items go to party inventory, staged list auto-clears. Chat message shows "(DM-assigned)" label. If no staged loot, falls back to normal `rollLoot()` table behavior. DM can also clear all staged loot manually.
 - Added per-floor terrain/lighting persistence — `floorDataRef` stores terrain + lighting grids per floor index. Switching floors saves the current floor's state and restores the target floor's (or creates a fresh blank floor). `floorData` array, `floorNames`, and `currentFloor` all included in campaign save/load via `useCampaignPersistence`. New floors start as all-floor terrain with normal lighting. Multi-floor dungeons now fully survive page reload.
 - Added loot rarity glow on party inventory items — color-coded borders and box-shadow glow per rarity tier in the DMSidebar Party Loot section. Common: slate border, Uncommon: emerald border + subtle green glow, Rare: blue border + blue glow, Epic: purple border + purple glow. Item name text also color-coded per rarity. Replaces the flat amber text with distinct visual hierarchy.
@@ -936,7 +937,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Service Worker for offline-first static assets
 - [x] IndexedDB for local cache of characters, campaigns, campaign state
 - [x] Optimistic UI: show IndexedDB-cached state immediately, server fetch overwrites in background
-- [ ] Cache invalidation via ETags or Last-Modified headers
+- [x] Cache invalidation via ETags (SHA-256 hash, 304 Not Modified support)
+- [ ] ETag support on campaign list endpoint (`GET /api/campaigns`)
 - [x] Character export to PDF (printable sheet with stats, equipment, inventory, spells)
 - [x] Shared party inventory (DM-managed loot pool with give-to-player transfers)
 - [x] Loot roll table integration — weighted random loot from 4-tier table, auto-populates party inventory
@@ -945,6 +947,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AI encounter balancing (DMG XP budget calculation + party composition awareness)
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)
 - [ ] Community map sharing (upload/download presets via API, rate + tag)
+- [ ] Turn timer (configurable countdown per player turn, auto-end on expiry)
+- [ ] Initiative roll automation (roll initiative for all units with one click)
+- [ ] Condition duration countdown in initiative bar (show remaining rounds)
+- [ ] Sound effects library (ambient music + combat/spell/dice SFX via Web Audio API)
+- [ ] Campaign session log export (full chat + DM history as markdown file)
+- [ ] Player notes panel (personal notes visible only to the player, not the DM)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout
 - [x] Multi-floor dungeons (stairs terrain types + floor navigation bar)

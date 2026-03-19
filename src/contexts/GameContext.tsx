@@ -269,8 +269,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isTempUser) return;
     syncingRef.current = true;
-    fetch('/api/characters')
-      .then((r) => (r.ok ? (r.json() as Promise<{ characters?: Character[] }>) : null))
+    const charEtagKey = 'adventure:chars-etag';
+    const headers: HeadersInit = {};
+    try { const etag = localStorage.getItem(charEtagKey); if (etag) headers['If-None-Match'] = etag; } catch { /* ok */ }
+    fetch('/api/characters', { headers })
+      .then((r) => {
+        if (r.status === 304) return null; // not modified, use local data
+        const etag = r.headers.get('etag');
+        if (etag) try { localStorage.setItem(charEtagKey, etag); } catch { /* ok */ }
+        return r.ok ? (r.json() as Promise<{ characters?: Character[] }>) : null;
+      })
       .then((data) => {
         if (data?.characters?.length) {
           const serverChars = data.characters;
