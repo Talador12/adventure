@@ -2227,6 +2227,7 @@ export default function Game() {
                     characters={characters}
                     edges={relationships}
                     onAddEdge={(edge) => setRelationships((prev) => [...prev, edge])}
+                    onAddEdges={(newEdges) => setRelationships((prev) => [...prev, ...newEdges])}
                     onRemoveEdge={(from, to) => setRelationships((prev) => prev.filter((e) => !(e.from === from && e.to === to)))}
                   />
                 ) : activeView === 'achievements' ? (

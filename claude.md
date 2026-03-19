@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v2.1.0
+## Current Version: v2.2.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI-suggested relationships — `POST /api/dm/suggest-relationships` analyzes party backstories, bonds, flaws, and personalities via Workers AI (Llama 3.1 8B) and returns 2-4 typed relationship suggestions. "✨ AI Suggest" button in the Bonds tab generates connections automatically. Results added as edges to the graph. DM can then edit/remove as needed.
 - Added WebRTC voice chat — `useVoiceChat` hook with full peer-to-peer audio mesh. Push-to-talk via `V` key (skips when typing in input/textarea). Signaling via existing Lobby DO WebSocket (`voice_signal` for offer/answer/ICE relay, `voice_state` for talking/muted broadcasts). STUN servers via Google. Header UI: 🎤 Voice join button, mute toggle, LIVE indicator when talking, 🔊 indicators for peers talking, ✕ leave button. Mic tracks disabled by default, enabled only during PTT. Clean shutdown on unmount. Discord voice integration planned as a toggle alongside this.
 - Added character relationship graph — "Bonds" tab in the game view with a canvas-rendered node graph. Characters and NPCs arranged in a circle layout with draggable nodes. Five edge types (ally/bond/neutral/rival/enemy) with color-coded lines (solid for positive, dashed for negative). "+ Connection" button lets DM define relationships between any pair. Edge labels shown at midpoints. Legend at bottom. Relationships persisted in campaign save/load.
 - Added multiclass proficiency rules — `MULTICLASS_PROFICIENCIES` map in types/game.ts defines the limited proficiencies gained when multiclassing into each class (PHB p164). When multiclassing, a confirmation dialog shows the gained proficiencies (armor, weapons, skills, tools) before proceeding. Sorcerer and Wizard gain no new proficiencies. Lazy-loaded alongside `canMulticlassInto`.
@@ -980,7 +981,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v2.0 Feature Ideas
 - [x] Campaign timeline view (339-line component with combat/narration/milestone events — already implemented)
 - [x] Character relationship graph (canvas node graph with 5 edge types, draggable, persisted)
-- [ ] AI-suggested relationships based on backstory analysis (Workers AI parses bonds/flaws for connections)
+- [x] AI-suggested relationships based on backstory analysis (Llama 3.1 8B, ✨ AI Suggest button)
 - [x] Voice chat: in-client WebRTC audio with push-to-talk (V key) + peer state indicators
 - [ ] Discord voice channel toggle alongside WebRTC (switch between in-client and Discord voice)
 - [ ] Discord voice widget embed — show who's talking in the game UI via Discord's embedded voice widget
@@ -994,6 +995,18 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Spell concentration auto-tracking (CON save on damage + War Caster feat — already implemented)
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
+
+### v3.0 Feature Ideas
+- [ ] Replay mode — record and replay full combat encounters as animations
+- [ ] AI NPC memory — NPCs remember past conversations across sessions
+- [ ] Quest tracker with world map pins (click pin → quest details)
+- [ ] Spell slot visual tracker (horizontal pip bar with drag-to-spend)
+- [ ] Ambient weather effects on battle map (rain particles, fog overlay, snow)
+- [ ] DM screen mode — separate browser tab with stat blocks + initiative + notes
+- [ ] Player quick-reference cards (conditions, actions, bonus actions)
+- [ ] Encounter history analytics (damage dealt/taken per session, kill counts)
+- [ ] Collaborative world-building wiki (party-editable lore pages)
+- [ ] Mobile companion app mode (join as player from phone, streamlined UI)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
 - [x] AI-generated enemy portraits (FLUX-1-schnell, fire-and-forget parallel gen on encounter spawn)
 - [x] Initiative tiebreaker rules (DEX mod, then stable ID comparison)

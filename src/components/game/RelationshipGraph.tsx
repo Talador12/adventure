@@ -26,6 +26,7 @@ interface Props {
   npcNames?: string[];
   edges: RelationshipEdge[];
   onAddEdge?: (edge: RelationshipEdge) => void;
+  onAddEdges?: (edges: RelationshipEdge[]) => void;
   onRemoveEdge?: (from: string, to: string) => void;
 }
 
@@ -39,7 +40,8 @@ const EDGE_COLORS: Record<RelationshipEdge['type'], string> = {
 
 const NODE_RADIUS = 24;
 
-export default function RelationshipGraph({ characters, npcNames = [], edges, onAddEdge, onRemoveEdge }: Props) {
+export default function RelationshipGraph({ characters, npcNames = [], edges, onAddEdge, onAddEdges, onRemoveEdge }: Props) {
+  const [suggesting, setSuggesting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -150,6 +152,30 @@ export default function RelationshipGraph({ characters, npcNames = [], edges, on
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Party Relationships</span>
+        <div className="flex gap-2">
+        {onAddEdges && characters.length >= 2 && (
+          <button
+            disabled={suggesting}
+            onClick={async () => {
+              setSuggesting(true);
+              try {
+                const res = await fetch('/api/dm/suggest-relationships', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ characters: characters.map((c) => ({ name: c.name, race: c.race, class: c.class, background: c.background, bonds: c.bonds, flaws: c.flaws, personalityTraits: c.personalityTraits, backstory: c.backstory })) }),
+                });
+                if (res.ok) {
+                  const data = await res.json() as { suggestions?: RelationshipEdge[] };
+                  if (data.suggestions?.length) onAddEdges(data.suggestions);
+                }
+              } catch { /* ok */ }
+              setSuggesting(false);
+            }}
+            className="text-[8px] text-violet-400 hover:text-violet-300 font-semibold disabled:opacity-50"
+          >
+            {suggesting ? '...' : '✨ AI Suggest'}
+          </button>
+        )}
         {onAddEdge && (
           <button
             onClick={() => {
@@ -167,6 +193,7 @@ export default function RelationshipGraph({ characters, npcNames = [], edges, on
             + Connection
           </button>
         )}
+        </div>
       </div>
 
       <canvas
