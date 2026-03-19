@@ -54,6 +54,7 @@ export const SPELL_LIST: Spell[] = [
   { id: 'counterspell', name: 'Counterspell', level: 3, school: 'abjuration', description: 'Reaction: interrupt a creature casting a spell of 3rd level or lower.', range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Warlock'] },
   { id: 'daylight', name: 'Daylight', level: 3, school: 'evocation', description: '60ft bright light, 100ft dim. Dispels magical darkness.', range: 'Self', duration: '1 hour', isConcentration: false, classes: ['Cleric', 'Druid', 'Sorcerer', 'Paladin', 'Ranger'], appliesCondition: 'daylight', conditionDuration: 10 },
   { id: 'darkvision-spell', name: 'Darkvision', level: 2, school: 'transmutation', description: 'Touch a willing creature. 60ft darkvision for 8 hours.', range: 'Touch', duration: '8 hours', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Druid', 'Ranger'], appliesCondition: 'darkvision', conditionDuration: 10 },
+  { id: 'dispel-magic', name: 'Dispel Magic', level: 3, school: 'abjuration', description: 'End magical conditions on a target. Removes buffs, debuffs, and light spells.', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Cleric', 'Bard', 'Warlock', 'Druid', 'Paladin'] },
 ];
 
 export function getClassSpells(charClass: CharacterClass, level: number): Spell[] {

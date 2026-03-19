@@ -862,6 +862,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
             applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
             result.message = `${casterName} casts ${spell.name}! ${targetName} is ${spell.appliesCondition}!`;
           }
+        } else if (spell.id === 'dispel-magic' && targetUnitId) {
+          // Dispel Magic: strip all magical conditions from target
+          const MAGICAL_CONDITIONS: Set<string> = new Set(['blessed', 'hexed', 'darkvision', 'daylight', 'frightened', 'stunned', 'inspired', 'burning']);
+          const target = units.find((u) => u.id === targetUnitId);
+          if (target) {
+            const magicalConds = (target.conditions || []).filter((c) => MAGICAL_CONDITIONS.has(c.type));
+            if (magicalConds.length > 0) {
+              setUnits((prev) => prev.map((u) => u.id === targetUnitId
+                ? { ...u, conditions: (u.conditions || []).filter((c) => !MAGICAL_CONDITIONS.has(c.type)), concentratingOn: undefined }
+                : u));
+              result.message = `${casterName} casts Dispel Magic! ${magicalConds.length} effect${magicalConds.length !== 1 ? 's' : ''} removed from ${target.name}: ${magicalConds.map((c) => c.type).join(', ')}.`;
+            } else {
+              result.message = `${casterName} casts Dispel Magic on ${target.name}, but there are no magical effects to dispel.`;
+            }
+          }
         } else if (spell.appliesCondition && !targetUnitId) {
           // Self-targeting condition spell (Daylight, Darkvision on self, etc.)
           const casterUnit = units.find((u) => u.characterId === charId);
