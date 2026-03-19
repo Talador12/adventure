@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added multiclass ability score prerequisites — `MULTICLASS_PREREQS` map and `canMulticlassInto()` function in types/game.ts. Validates D&D 5e PHB p163 requirements before allowing multiclass. Fighter special case: STR 13 OR DEX 13. Alert shows missing prereqs with current values. Lazy-loaded via dynamic import for bundle efficiency.
 - Added shareable player notes — "Share with Party" button appears on the notes panel when connected to multiplayer and notes are non-empty. Prompts for a title, then sends `share_note` via WebSocket. Lobby DO broadcasts `shared_note` to all clients. Appears as a 📋 system message in chat (Lobby, Game, and useGameWebSocket all handle it). Text truncated to 500 chars. Fully opt-in — notes remain private until explicitly shared.
 - Added encounter theater mode — "🎬 Theater" toggle in zoom controls (visible during combat). When ON, the camera auto-zooms to 2x and smoothly pans to center on the current turn unit using easeInOutQuad animation (400ms). Triggers on turn change. Reset button also disables theater mode. Creates a cinematic "camera follows the action" effect during combat.
 - Added fog reveal animation — newly-explored cells get a 0.5s fade transition instead of instantly revealing. `fogRevealRef` tracks recently-revealed cells with progress 1.0→0.0. requestAnimationFrame loop decays progress at 2x/second. During canvas draw, cells with active reveal progress get an overlaid `rgba(15,23,42, progress*0.7)`. Result: fog dissolves smoothly as tokens move into new areas. Respects `effectiveDmMode` (DM sees no fog). Respects `prefers-reduced-motion` via Low-FX class (animations disabled).
@@ -978,7 +979,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Encounter theater mode (auto-zoom 2x + smooth pan to current turn unit)
 - [x] AI DM personality presets (6 styles: theatrical, comedic, grimdark, tolkien, noir, horror)
 - [x] Character multiclassing support (classLevels field + merged spellbook + UI)
-- [ ] Multiclass ability score requirements validation (D&D 5e prereqs for multiclassing)
+- [x] Multiclass ability score requirements validation (PHB p163, Fighter STR/DEX special case)
 - [ ] Multiclass proficiency rules (only gain some proficiencies from secondary class)
 - [x] Spell concentration auto-tracking (CON save on damage + War Caster feat — already implemented)
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
