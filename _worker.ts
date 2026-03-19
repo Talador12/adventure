@@ -1347,6 +1347,113 @@ async function syncPublicIndex(kv: KVNamespace, roomId: string, campaign: Record
   await kv.put('campaigns:public', JSON.stringify(index));
 }
 
+// ============================================================================
+//  Community Map Sharing — upload/download/rate map presets
+// ============================================================================
+
+// POST /api/maps — upload a community map preset
+app.post('/api/maps', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Storage not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const name = String(body.name || '').trim();
+    const tags = Array.isArray(body.tags) ? (body.tags as string[]).slice(0, 5).map((t) => String(t).trim().toLowerCase()) : [];
+    const terrain = body.terrain;
+    if (!name || !Array.isArray(terrain)) return c.json({ error: 'name and terrain required' }, 400);
+
+    const mapId = crypto.randomUUID().slice(0, 8);
+    const mapData = {
+      id: mapId,
+      name,
+      author: userId,
+      tags,
+      terrain,
+      rating: 0,
+      ratingCount: 0,
+      downloads: 0,
+      createdAt: Date.now(),
+    };
+    await c.env.CAMPAIGNS.put(`community-map:${mapId}`, JSON.stringify(mapData));
+
+    // Update index
+    const indexRaw = (await c.env.CAMPAIGNS.get('community-maps:index')) as string | null;
+    const index: Array<{ id: string; name: string; author: string; tags: string[]; rating: number; downloads: number; createdAt: number }> = indexRaw ? JSON.parse(indexRaw) : [];
+    index.unshift({ id: mapId, name, author: userId, tags, rating: 0, downloads: 0, createdAt: Date.now() });
+    // Keep index at 200 max
+    if (index.length > 200) index.length = 200;
+    await c.env.CAMPAIGNS.put('community-maps:index', JSON.stringify(index));
+
+    return c.json({ ok: true, mapId });
+  } catch (err) {
+    logError('POST /api/maps', err);
+    return c.json({ error: 'Failed to upload map' }, 500);
+  }
+});
+
+// GET /api/maps — browse community maps
+app.get('/api/maps', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ maps: [] });
+  try {
+    const indexRaw = (await c.env.CAMPAIGNS.get('community-maps:index')) as string | null;
+    const index = indexRaw ? JSON.parse(indexRaw) : [];
+    const tag = c.req.query('tag');
+    const filtered = tag ? index.filter((m: Record<string, unknown>) => Array.isArray(m.tags) && (m.tags as string[]).includes(tag)) : index;
+    return c.json({ maps: filtered.slice(0, 50) });
+  } catch (err) {
+    logError('GET /api/maps', err);
+    return c.json({ maps: [] });
+  }
+});
+
+// GET /api/maps/:id — download a specific community map
+app.get('/api/maps/:id', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Storage not available' }, 503);
+  try {
+    const raw = (await c.env.CAMPAIGNS.get(`community-map:${c.req.param('id')}`)) as string | null;
+    if (!raw) return c.json({ error: 'Map not found' }, 404);
+    const map = JSON.parse(raw);
+    // Increment downloads
+    map.downloads = (map.downloads || 0) + 1;
+    await c.env.CAMPAIGNS.put(`community-map:${c.req.param('id')}`, JSON.stringify(map));
+    return c.json({ map });
+  } catch (err) {
+    logError('GET /api/maps/:id', err);
+    return c.json({ error: 'Failed to load map' }, 500);
+  }
+});
+
+// POST /api/maps/:id/rate — rate a community map (1-5)
+app.post('/api/maps/:id/rate', async (c) => {
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'Storage not available' }, 503);
+  try {
+    const body = await c.req.json<{ rating: number }>();
+    const rating = Math.min(5, Math.max(1, Math.round(body.rating)));
+    const raw = (await c.env.CAMPAIGNS.get(`community-map:${c.req.param('id')}`)) as string | null;
+    if (!raw) return c.json({ error: 'Map not found' }, 404);
+    const map = JSON.parse(raw);
+    // Simple running average
+    const totalRating = (map.rating || 0) * (map.ratingCount || 0) + rating;
+    map.ratingCount = (map.ratingCount || 0) + 1;
+    map.rating = Math.round((totalRating / map.ratingCount) * 10) / 10;
+    await c.env.CAMPAIGNS.put(`community-map:${c.req.param('id')}`, JSON.stringify(map));
+    // Update index rating
+    const indexRaw = (await c.env.CAMPAIGNS.get('community-maps:index')) as string | null;
+    if (indexRaw) {
+      const index = JSON.parse(indexRaw) as Array<Record<string, unknown>>;
+      const entry = index.find((m) => m.id === c.req.param('id'));
+      if (entry) { entry.rating = map.rating; await c.env.CAMPAIGNS.put('community-maps:index', JSON.stringify(index)); }
+    }
+    return c.json({ ok: true, rating: map.rating, ratingCount: map.ratingCount });
+  } catch (err) {
+    logError('POST /api/maps/:id/rate', err);
+    return c.json({ error: 'Failed to rate map' }, 500);
+  }
+});
+
 // GET /api/campaigns/public — browse public campaigns (no auth required)
 app.get('/api/campaigns/public', async (c) => {
   if (!c.env.CAMPAIGNS) return c.json({ campaigns: [] });
