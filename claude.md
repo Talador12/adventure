@@ -1007,7 +1007,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Ambient weather effects on battle map (5 types: rain/fog/snow/sandstorm/none — already implemented with CSS particles + DM controls + WebSocket broadcast)
 - [ ] DM screen mode — separate browser tab with stat blocks + initiative + notes
 - [x] Player quick-reference cards (228-line RulesReference component with Conditions/Actions/Spells/Mechanics tabs — already implemented, R shortcut)
-- [ ] Encounter history analytics (damage dealt/taken per session, kill counts)
+- [x] Encounter history analytics (Achievements component tracks kills, damage, healing, crits, fumbles, spells — already implemented)
 - [ ] Collaborative world-building wiki (party-editable lore pages)
 - [ ] Mobile companion app mode (join as player from phone, streamlined UI)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
