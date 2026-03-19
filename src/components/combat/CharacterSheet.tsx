@@ -1,6 +1,7 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
 import { type Character, type CharacterClass, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell, type SpellSchool } from '../../contexts/GameContext';
 import { CONDITION_TOOLTIPS, EXHAUSTION_LEVELS } from '../../data/rules';
+import { STARTING_EQUIPMENT } from '../../data/items';
 import CharacterCard from '../game/CharacterCard';
 import { useState, useCallback, useMemo } from 'react';
 
@@ -790,7 +791,30 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
 
       {/* Equipment Slots */}
       <div>
-        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Equipment</div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Equipment</div>
+          {STARTING_EQUIPMENT[character.class] && (
+            <button
+              onClick={() => {
+                const kit = STARTING_EQUIPMENT[character.class];
+                if (!kit) return;
+                const newInv = kit.items.map((i) => ({ ...i, id: crypto.randomUUID() }));
+                const w = newInv.find((i) => i.type === 'weapon') || null;
+                const a = newInv.find((i) => i.type === 'armor') || null;
+                const s = newInv.find((i) => i.type === 'shield') || null;
+                updateCharacter(character.id, {
+                  inventory: newInv,
+                  equipment: { weapon: w, armor: a, shield: s, ring: null },
+                  gold: kit.gold,
+                } as Partial<typeof character>);
+              }}
+              className="text-[8px] text-amber-400 hover:text-amber-300 transition-colors font-semibold px-1.5 py-0.5 rounded hover:bg-amber-900/20"
+              title={`Reset to ${character.class} starting equipment`}
+            >
+              Re-roll Gear
+            </button>
+          )}
+        </div>
         <div className="space-y-1.5">
           {(['weapon', 'armor', 'shield', 'ring'] as EquipSlot[]).map((slot) => {
             const equipped = (character.equipment || EMPTY_EQUIPMENT)[slot];

@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v0.8.1
+## Current Version: v0.9.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added optimistic UI for campaign state loading — `useCampaignPersistence` now shows IndexedDB-cached game state immediately on mount while the server fetch runs in background. Server response overwrites cached data when it arrives. Campaign state also cached to IndexedDB on every save (alongside the debounced server PUT). Server load response cached for next optimistic load. Combined with the existing character + campaign list caching, the entire app loads instantly from cache on repeat visits.
+- Added "Re-roll Gear" button on character sheet Equipment section — resets inventory + equipment + gold to the `STARTING_EQUIPMENT` preset for the character's class. Generates new UUIDs for all items, auto-equips best weapon/armor/shield. Appears as amber "Re-roll Gear" link next to the Equipment header. Useful for resetting a character's loadout after testing or before a new campaign.
 - Added "Add Custom Spell" form on character sheet — collapsible form with name, level (0-9), school (8 options), damage dice, range, concentration checkbox, and description. Creates a new Spell with randomUUID, adds to `customSpells` via `updateCharacter`. Form resets and collapses on submit.
 - Added prepared-only filter toggle — "Prepared" pill button in the spellbook filter bar (emerald when active). When toggled, only shows spells in `preparedSpellIds`. Works alongside existing search, school, and level filters.
 - Added spell management UI on character sheet — each spell row now has a circular prepare toggle (green dot when prepared, empty when not) and custom spells show a "custom" label + red × remove button. `preparedSpellIds?: string[]` field on Character tracks which spells are prepared. Prepare/unprepare toggles update the character via `updateCharacter`. Remove button strips the spell from `customSpells` and `preparedSpellIds`. Both cantrip and leveled spell sections include these controls.
@@ -858,7 +860,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
 - [x] Add light source items to the shop (Supplies category with adventuring gear)
 - [x] Starting equipment presets by class (Fighter gets chain mail + longsword, Rogue gets leather + daggers, etc.)
-- [ ] "Re-roll equipment" button on character sheet to re-randomize starting gear variant
+- [x] "Re-roll equipment" button on character sheet to reset to class starting gear
 - [x] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
 - [x] Dispel Magic: remove magical conditions from target units (counter to buffs/debuffs/light spells)
 
@@ -921,8 +923,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Browser cache strategy:**
 - [x] Service Worker for offline-first static assets
 - [x] IndexedDB for local cache of characters, campaigns, campaign state
-- [ ] Optimistic UI: show cached data immediately, sync in background
+- [x] Optimistic UI: show IndexedDB-cached state immediately, server fetch overwrites in background
 - [ ] Cache invalidation via ETags or Last-Modified headers
+- [ ] Character export to PDF (printable character sheet with portrait, stats, inventory, spells)
+- [ ] Shared party inventory (group loot pool managed by DM, players request items)
+- [ ] AI encounter balancing (adjust enemy CR based on party level + composition)
+- [ ] Map preset library (tavern, dungeon, forest, cave, castle templates)
 
 **Server persistence coverage:**
 | Feature | Currently | Target | Status |
