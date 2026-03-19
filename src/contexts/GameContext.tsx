@@ -258,7 +258,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ characters }),
       }).catch(() => {}); // server unavailable — localStorage is the fallback
     }
-  }, [characters, isTempUser]);
+    // Also write to IndexedDB for instant load on next visit
+    import('../lib/localCache').then(({ cacheCharacters }) => {
+      cacheCharacters(currentPlayer.id, characters).catch(() => {});
+    }).catch(() => {});
+  }, [characters, isTempUser, currentPlayer.id]);
 
   // Try to load from server on mount (merge: server data fills in any missing characters)
   // Skip for temp users — they have no server-side characters
@@ -761,7 +765,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const castSpell = useCallback(
     (charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
       let result = { success: false, message: '' };
-      const spell = SPELL_LIST.find((s) => s.id === spellId);
+      // Search both the global spell list and the caster's custom spellbook
+      const casterChar = characters.find((c) => c.id === charId);
+      const spell = SPELL_LIST.find((s) => s.id === spellId) || (casterChar?.customSpells || []).find((s) => s.id === spellId);
       if (!spell) {
         return { success: false, message: 'Unknown spell.' };
       }

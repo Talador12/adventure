@@ -862,7 +862,11 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
       {[...FULL_CASTERS, ...HALF_CASTERS].includes(character.class) && (() => {
         const slots = getSpellSlots(character.class, character.level);
         const used = character.spellSlotsUsed || {};
-        const spells = getClassSpells(character.class, character.level);
+        // Merge class spells + custom/imported spells (deduped by name)
+        const classSpells = getClassSpells(character.class, character.level);
+        const customSpells = character.customSpells || [];
+        const spellNames = new Set(classSpells.map((s) => s.name));
+        const spells = [...classSpells, ...customSpells.filter((s) => !spellNames.has(s.name))];
 
         // Spell save DC and attack bonus
         const castingStat = CASTING_STAT[character.class];
