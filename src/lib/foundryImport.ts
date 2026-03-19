@@ -2,7 +2,7 @@
 // Maps the Foundry dnd5e actor schema to our Character type.
 // Detects Foundry format via `type: 'character'` + `system.abilities`.
 
-import type { Character, Race, CharacterClass, Item, ItemType, ItemRarity } from '../types/game';
+import type { Character, Race, CharacterClass, Item, ItemType, ItemRarity, Spell, SpellSchool } from '../types/game';
 import { RACES, CLASSES, DEFAULT_APPEARANCE, EMPTY_EQUIPMENT } from '../types/game';
 
 function parseRace(raw: string): Race {
@@ -142,6 +142,56 @@ export function parseFoundryActor(json: Record<string, unknown>, playerId: strin
   if (raceName && !RACES.includes(race)) warnings.push(`Race "${raceName}" mapped to ${race}`);
   if (className && !CLASSES.includes(characterClass)) warnings.push(`Class "${className}" mapped to ${characterClass}`);
 
+  // Spells — parse Foundry spell items
+  const DDB_SCHOOL_MAP: Record<string, SpellSchool> = {
+    abj: 'abjuration', con: 'conjuration', div: 'divination', enc: 'enchantment',
+    evo: 'evocation', ill: 'illusion', nec: 'necromancy', trs: 'transmutation',
+    abjuration: 'abjuration', conjuration: 'conjuration', divination: 'divination',
+    enchantment: 'enchantment', evocation: 'evocation', illusion: 'illusion',
+    necromancy: 'necromancy', transmutation: 'transmutation',
+  };
+  const spellItems = items.filter((i) => i.type === 'spell');
+  const customSpells: Spell[] = spellItems.map((si) => {
+    const siSys = (si.system as Record<string, unknown>) || {};
+    const spellName = String(si.name || 'Unknown Spell');
+    const desc = String(siSys.description?.toString() || '').replace(/<[^>]+>/g, '').slice(0, 300);
+    const schoolKey = String((siSys.school as string) || 'evo').toLowerCase();
+    const spellLevel = (siSys.level as number) ?? 0;
+    const conc = !!(siSys.components as Record<string, boolean>)?.concentration;
+    // Duration
+    const durObj = siSys.duration as Record<string, unknown> | undefined;
+    const durStr = durObj ? `${durObj.value || ''} ${durObj.units || 'instantaneous'}`.trim() : 'Instantaneous';
+    // Range
+    const rangeObj = siSys.range as Record<string, unknown> | undefined;
+    const rangeStr = rangeObj ? `${rangeObj.value || ''} ${rangeObj.units || 'self'}`.trim() : 'Self';
+    // Damage
+    const dmgParts = (siSys.damage as Record<string, unknown>)?.parts;
+    const dmgStr = Array.isArray(dmgParts) && dmgParts.length > 0 ? String((dmgParts[0] as string[])?.[0] || '') : undefined;
+
+    return {
+      id: crypto.randomUUID(),
+      name: spellName,
+      level: spellLevel,
+      school: DDB_SCHOOL_MAP[schoolKey] || 'evocation',
+      description: desc || spellName,
+      range: rangeStr,
+      duration: durStr,
+      isConcentration: conc,
+      classes: [characterClass],
+      damage: dmgStr || undefined,
+    } satisfies Spell;
+  }).filter((s) => s.name !== 'Unknown Spell');
+  // Deduplicate
+  const uniqueSpells = customSpells.filter((s, i, arr) => arr.findIndex((x) => x.name === s.name) === i);
+  if (uniqueSpells.length > 0) {
+    const cantrips = uniqueSpells.filter((s) => s.level === 0);
+    const leveled = uniqueSpells.filter((s) => s.level > 0);
+    const parts: string[] = [];
+    if (cantrips.length > 0) parts.push(`${cantrips.length} cantrip${cantrips.length !== 1 ? 's' : ''}`);
+    if (leveled.length > 0) parts.push(`${leveled.length} spell${leveled.length !== 1 ? 's' : ''}`);
+    warnings.push(`Found ${parts.join(' + ')} from Foundry VTT`);
+  }
+
   // Auto-equip best weapon/armor/shield
   const bestWeapon = inventory.filter((i) => i.type === 'weapon').sort((a, b) => (b.attackBonus || 0) - (a.attackBonus || 0))[0] || null;
   const bestArmor = inventory.filter((i) => i.type === 'armor').sort((a, b) => (b.acBonus || 0) - (a.acBonus || 0))[0] || null;
@@ -173,6 +223,7 @@ export function parseFoundryActor(json: Record<string, unknown>, playerId: strin
     inventory,
     equipment: { weapon: bestWeapon, armor: bestArmor, shield: bestShield, ring: null },
     spellSlotsUsed: {},
+    customSpells: uniqueSpells.length > 0 ? uniqueSpells : undefined,
     classAbilityUsed: false,
     feats: [],
     asiChoicesMade: 0,

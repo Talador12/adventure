@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added Foundry VTT spell import — parses `type: 'spell'` items from Foundry actor JSON. Extracts name, level, school (maps 3-letter Foundry codes to our SpellSchool), description (HTML-stripped), range, duration, concentration, damage from parts array. Deduplicates by name. Stores in `customSpells` on the Character. Reports cantrip + spell counts in import warnings. Both DDB and Foundry imports now produce fully-populated characters with inventory + spells.
 - Added IndexedDB local cache (`src/lib/localCache.ts`) — three object stores: characters, campaigns, campaignState. Async get/put with configurable maxAge (5min for chars/campaigns, 10min for state). Characters auto-cached on save in GameContext. Campaigns cached on load in Home.tsx with instant display from cache while server fetch runs in background. `clearCache()` for logout. All cache ops are best-effort with silent failure — degrades gracefully if IndexedDB is unavailable.
 - Added custom spellbook field on Character — `customSpells?: Spell[]` stores imported or homebrew spells beyond the class list. DDB import now populates `customSpells` with parsed spells. CharacterSheet merges class spells + custom spells (deduped by name) for the spellbook display. `castSpell` in GameContext searches both SPELL_LIST and `casterChar.customSpells`. Imported characters arrive with their full spell repertoire visible.
 - Added torch/candle burnout timer — torches burn for 10 turns, candles for 6. Each turn in `tickConditions`, the burn counter increments (tracked in condition `source` field). When a torch/candle burns out, one is consumed from the inventory stack. If more remain, a new one auto-lights with a reset counter. When the last one burns out, the condition is removed and a "last torch burns out!" message appears. The combat log shows remaining count after each burnout.
@@ -823,7 +824,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Backstory hooks persist in campaign state so they survive reload before adventure starts
 - [x] Import characters from D&D Beyond / Foundry VTT JSON
 - [x] Foundry VTT character import (full parser for Foundry dnd5e actor JSON)
-- [ ] Foundry VTT spell import (parse spell items from Foundry actor)
+- [x] Foundry VTT spell import (parse spell items with school/damage/concentration)
 - [x] D&D Beyond inventory import (map DDB equipment to our Item types with full stat extraction)
 - [x] D&D Beyond spell import (parse + report cantrips/spells from DDB classSpells array)
 - [x] Custom spellbook field on Character — store imported/custom spells beyond the class list
