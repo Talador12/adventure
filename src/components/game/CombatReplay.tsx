@@ -1,7 +1,7 @@
 // Combat replay viewer — step through recorded combat events.
 // Shows a timeline scrubber and event descriptions with unit state snapshots.
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CombatRecording, CombatEvent } from '../../lib/combatRecorder';
 
 interface Props {
@@ -29,6 +29,58 @@ export default function CombatReplay({ recording, onClose }: Props) {
   const events = recording.events;
   const currentEvent = events[currentIdx];
   const progress = events.length > 0 ? (currentIdx / (events.length - 1)) * 100 : 0;
+  const miniMapRef = useRef<HTMLCanvasElement>(null);
+
+  // Render mini map with unit positions from current event
+  const drawMiniMap = useCallback(() => {
+    const canvas = miniMapRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    // Background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, W, H);
+    // Grid lines
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 0.5;
+    const cellW = W / 20;
+    const cellH = H / 20;
+    for (let i = 0; i <= 20; i++) {
+      ctx.beginPath(); ctx.moveTo(i * cellW, 0); ctx.lineTo(i * cellW, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * cellH); ctx.lineTo(W, i * cellH); ctx.stroke();
+    }
+    // Draw units from event positions
+    const positions = currentEvent?.positions;
+    const units = currentEvent?.units;
+    if (!positions || !units) return;
+    for (const pos of positions) {
+      const unit = units.find((u) => u.id === pos.unitId);
+      if (!unit || unit.hp <= 0) continue;
+      const cx = pos.col * cellW + cellW / 2;
+      const cy = pos.row * cellH + cellH / 2;
+      const r = Math.min(cellW, cellH) * 0.35;
+      // Circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = unit.type === 'player' ? '#F38020' : '#ef4444';
+      if (unit.isCurrentTurn) ctx.fillStyle = '#fbbf24';
+      ctx.fill();
+      ctx.strokeStyle = unit.isCurrentTurn ? '#fbbf24' : '#475569';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Initial
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.round(r)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(unit.name.charAt(0), cx, cy);
+    }
+  }, [currentEvent]);
+
+  useEffect(() => { drawMiniMap(); }, [drawMiniMap]);
 
   // Auto-play
   useEffect(() => {
@@ -87,6 +139,18 @@ export default function CombatReplay({ recording, onClose }: Props) {
             <span className="text-slate-600 italic text-sm">No events recorded</span>
           )}
         </div>
+
+        {/* Mini battle map showing unit positions */}
+        {currentEvent?.positions && currentEvent.positions.length > 0 && (
+          <div className="flex justify-center pb-2">
+            <canvas
+              ref={miniMapRef}
+              width={200}
+              height={200}
+              className="rounded-lg border border-slate-700/50"
+            />
+          </div>
+        )}
 
         {/* Unit HP snapshot */}
         {currentEvent?.units && (
