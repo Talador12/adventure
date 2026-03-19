@@ -158,10 +158,35 @@ export default function Game() {
   // Multi-floor dungeon state
   const [currentFloor, setCurrentFloor] = useState(0);
   const [floorNames, setFloorNames] = useState<string[]>(['Ground Floor']);
+  // Per-floor terrain + lighting storage
+  type FloorData = { terrain: import('../lib/mapUtils').TerrainType[][]; lighting: import('../components/combat/BattleMap').LightingLevel[][] };
+  const floorDataRef = useRef<FloorData[]>([]);
   // Environmental lighting grid (DM paints bright/dim/dark zones)
   const [lightingGrid, setLightingGrid] = useState<import('../components/combat/BattleMap').LightingLevel[][]>(
     () => Array.from({ length: 20 }, () => Array(20).fill('normal'))
   );
+
+  // Save/restore floor data when switching floors
+  const prevFloorRef = useRef(0);
+  useEffect(() => {
+    const prev = prevFloorRef.current;
+    if (prev === currentFloor) return;
+    // Save current floor's data
+    floorDataRef.current[prev] = { terrain: terrain.map((r) => [...r]), lighting: lightingGrid.map((r) => [...r]) };
+    // Load new floor's data (or create fresh)
+    const saved = floorDataRef.current[currentFloor];
+    if (saved) {
+      setTerrain(saved.terrain);
+      setLightingGrid(saved.lighting);
+    } else {
+      // New floor — blank grid
+      const rows = terrain.length;
+      const cols = terrain[0]?.length || 20;
+      setTerrain(Array.from({ length: rows }, () => Array(cols).fill('floor')));
+      setLightingGrid(Array.from({ length: rows }, () => Array(cols).fill('normal')));
+    }
+    prevFloorRef.current = currentFloor;
+  }, [currentFloor]); // eslint-disable-line react-hooks/exhaustive-deps
   // Persist DM history to localStorage keyed by room ID
   const dmStorageKey = `adventure:dm-history:${room}`;
   const [dmHistory, setDmHistory] = useState<string[]>(() => {
@@ -364,7 +389,9 @@ export default function Game() {
   const getCampaignState = useCallback(() => ({
     dmHistory, sceneName, selectedCharacterId, combatLog,
     units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory,
-  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory]);
+    floorNames, currentFloor,
+    floorData: (() => { const fd = [...floorDataRef.current]; fd[currentFloor] = { terrain: terrain.map((r) => [...r]), lighting: lightingGrid.map((r) => [...r]) }; return fd; })(),
+  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, floorNames, currentFloor]);
 
   const handleCampaignLoad = useCallback((data: CampaignLoadResult) => {
     if (data.dmHistory) setDmHistory(data.dmHistory);
@@ -381,6 +408,11 @@ export default function Game() {
     if (data.lightingGrid) setLightingGrid(data.lightingGrid);
     if (data.backstoryHooks && data.backstoryHooks.length > 0) setBackstoryHooks(data.backstoryHooks);
     if (data.partyInventory) setPartyInventory(data.partyInventory);
+    if (data.floorNames && Array.isArray(data.floorNames)) setFloorNames(data.floorNames as string[]);
+    if (typeof data.currentFloor === 'number') setCurrentFloor(data.currentFloor as number);
+    if (data.floorData && Array.isArray(data.floorData)) {
+      floorDataRef.current = (data.floorData as FloorData[]);
+    }
   }, [setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl]);
 
   // Ref for auto-select — avoids stale closure since handleSelectCharacter is defined later
@@ -2143,6 +2175,10 @@ export default function Game() {
                       myUnitId={wsConnected && !isDM && selectedCharacterId ? selectedCharacterId : undefined}
                       lighting={lightingGrid}
                       onLightingChange={canUseDMTools ? setLightingGrid : undefined}
+                      onStairClick={floorNames.length > 1 ? (dir) => {
+                        if (dir === 'up' && currentFloor > 0) setCurrentFloor(currentFloor - 1);
+                        else if (dir === 'down' && currentFloor < floorNames.length - 1) setCurrentFloor(currentFloor + 1);
+                      } : undefined}
                       onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                       onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
                       onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}

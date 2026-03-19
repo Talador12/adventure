@@ -510,9 +510,22 @@ export default function DMSidebar({
                 </div>
                 {(partyInventory || []).length > 0 ? (
                   <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                    {(partyInventory || []).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-[9px] px-2 py-0.5 rounded bg-slate-800/30">
-                        <span className="text-amber-200 font-medium truncate">{item.name}{item.quantity && item.quantity > 1 ? ` ×${item.quantity}` : ''}</span>
+                    {(partyInventory || []).map((item) => {
+                      const rarityStyle: Record<string, string> = {
+                        common: 'border-slate-700/30',
+                        uncommon: 'border-emerald-700/50 shadow-[0_0_4px_rgba(16,185,129,0.15)]',
+                        rare: 'border-blue-600/50 shadow-[0_0_6px_rgba(59,130,246,0.2)]',
+                        epic: 'border-purple-500/60 shadow-[0_0_8px_rgba(168,85,247,0.25)]',
+                      };
+                      const rarityText: Record<string, string> = {
+                        common: 'text-slate-300',
+                        uncommon: 'text-emerald-300',
+                        rare: 'text-blue-300',
+                        epic: 'text-purple-300',
+                      };
+                      return (
+                      <div key={item.id} className={`flex items-center justify-between text-[9px] px-2 py-0.5 rounded border bg-slate-800/30 ${rarityStyle[item.rarity] || rarityStyle.common}`}>
+                        <span className={`font-medium truncate ${rarityText[item.rarity] || rarityText.common}`}>{item.name}{item.quantity && item.quantity > 1 ? ` ×${item.quantity}` : ''}</span>
                         <div className="flex gap-1 shrink-0">
                           {characters.length > 0 && (
                             <select
@@ -528,7 +541,8 @@ export default function DMSidebar({
                           <button onClick={() => onRemoveFromPartyInventory?.(item.id)} className="text-red-500 hover:text-red-400" title="Remove">×</button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-[8px] text-slate-600 italic">No loot in party pool</p>

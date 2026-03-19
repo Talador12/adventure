@@ -29,6 +29,9 @@ export interface CampaignState {
   lightingGrid?: LightingLevel[][];
   backstoryHooks?: string[];
   partyInventory?: Item[];
+  floorNames?: string[];
+  currentFloor?: number;
+  floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
 }
 
 export interface CampaignLoadResult {
@@ -47,6 +50,9 @@ export interface CampaignLoadResult {
   lightingGrid?: LightingLevel[][];
   backstoryHooks?: string[];
   partyInventory?: Item[];
+  floorNames?: string[];
+  currentFloor?: number;
+  floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -223,6 +229,9 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (c.lightingGrid && Array.isArray(c.lightingGrid)) result.lightingGrid = c.lightingGrid as LightingLevel[][];
       if (c.backstoryHooks && Array.isArray(c.backstoryHooks)) result.backstoryHooks = c.backstoryHooks as string[];
       if (c.partyInventory && Array.isArray(c.partyInventory)) result.partyInventory = c.partyInventory as Item[];
+      if (c.floorNames && Array.isArray(c.floorNames)) result.floorNames = c.floorNames as string[];
+      if (typeof c.currentFloor === 'number') result.currentFloor = c.currentFloor as number;
+      if (c.floorData && Array.isArray(c.floorData)) result.floorData = c.floorData as Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
       return { result, raw: c };
     };
 

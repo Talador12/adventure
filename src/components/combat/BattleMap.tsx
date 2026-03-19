@@ -495,9 +495,11 @@ interface BattleMapProps {
   /** Environmental lighting grid — DM can paint bright/dim/dark zones */
   lighting?: LightingLevel[][];
   onLightingChange?: (lighting: LightingLevel[][]) => void;
+  /** Called when a player clicks on stairs (for floor navigation) */
+  onStairClick?: (direction: 'up' | 'down') => void;
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId, lighting, onLightingChange }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId, lighting, onLightingChange, onStairClick }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1308,6 +1310,13 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       paintTerrain(col, row);
       setPainting(true);
       return;
+    }
+
+    // Stair navigation: click on stairs to switch floors
+    if (dmTool === 'select' && onStairClick) {
+      const cell = terrain[row]?.[col];
+      if (cell === 'stairs_up') { onStairClick('up'); return; }
+      if (cell === 'stairs_down') { onStairClick('down'); return; }
     }
 
     // Door toggle: click on a door cell with no token on it to open/close
