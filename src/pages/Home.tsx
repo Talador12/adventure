@@ -65,10 +65,20 @@ export default function Home() {
       } catch { /* ok */ }
       setCampaignsLoading(false);
     } else {
+      // Try IndexedDB cache for instant display
+      import('../lib/localCache').then(({ getCachedCampaigns }) => {
+        getCachedCampaigns('default').then((cached) => {
+          if (cached?.length && !campaigns.length) setCampaigns(cached as typeof campaigns);
+        });
+      }).catch(() => {});
+      // Then fetch fresh from server (overwrites cache)
       fetch('/api/campaigns')
         .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; createdAt: number }> }>) : null))
         .then((data) => {
-          if (data?.campaigns?.length) setCampaigns(data.campaigns);
+          if (data?.campaigns?.length) {
+            setCampaigns(data.campaigns);
+            import('../lib/localCache').then(({ cacheCampaigns }) => cacheCampaigns('default', data.campaigns!)).catch(() => {});
+          }
         })
         .catch(() => {})
         .finally(() => setCampaignsLoading(false));

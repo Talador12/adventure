@@ -258,7 +258,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ characters }),
       }).catch(() => {}); // server unavailable — localStorage is the fallback
     }
-  }, [characters, isTempUser]);
+    // Also write to IndexedDB for instant load on next visit
+    import('../lib/localCache').then(({ cacheCharacters }) => {
+      cacheCharacters(currentPlayer.id, characters).catch(() => {});
+    }).catch(() => {});
+  }, [characters, isTempUser, currentPlayer.id]);
 
   // Try to load from server on mount (merge: server data fills in any missing characters)
   // Skip for temp users — they have no server-side characters

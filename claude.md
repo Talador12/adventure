@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added IndexedDB local cache (`src/lib/localCache.ts`) — three object stores: characters, campaigns, campaignState. Async get/put with configurable maxAge (5min for chars/campaigns, 10min for state). Characters auto-cached on save in GameContext. Campaigns cached on load in Home.tsx with instant display from cache while server fetch runs in background. `clearCache()` for logout. All cache ops are best-effort with silent failure — degrades gracefully if IndexedDB is unavailable.
 - Added custom spellbook field on Character — `customSpells?: Spell[]` stores imported or homebrew spells beyond the class list. DDB import now populates `customSpells` with parsed spells. CharacterSheet merges class spells + custom spells (deduped by name) for the spellbook display. `castSpell` in GameContext searches both SPELL_LIST and `casterChar.customSpells`. Imported characters arrive with their full spell repertoire visible.
 - Added torch/candle burnout timer — torches burn for 10 turns, candles for 6. Each turn in `tickConditions`, the burn counter increments (tracked in condition `source` field). When a torch/candle burns out, one is consumed from the inventory stack. If more remain, a new one auto-lights with a reset counter. When the last one burns out, the condition is removed and a "last torch burns out!" message appears. The combat log shows remaining count after each burnout.
 - Added fuel indicator on character sheet inventory — color-coded badge shows `remaining/max` turns for fuel-tracked items (green >25%, amber <25%, red empty). Added "Light" / "Refuel" action buttons for light source items and Oil Flasks in the inventory UI (previously only potions/scrolls had Use buttons). Lantern button shows amber styling, Oil Flask button labeled "Refuel".
@@ -913,7 +914,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 **Browser cache strategy:**
 - [x] Service Worker for offline-first static assets
-- [ ] IndexedDB for local cache of characters, campaign state, chat
+- [x] IndexedDB for local cache of characters, campaigns, campaign state
 - [ ] Optimistic UI: show cached data immediately, sync in background
 - [ ] Cache invalidation via ETags or Last-Modified headers
 
