@@ -98,8 +98,8 @@ export const SHOP_ITEMS: (Omit<Item, 'id'> & { category: string })[] = [
   // Light sources & supplies
   { name: 'Candle', type: 'light', rarity: 'common', description: '10ft bright, 20ft dim. Burns 1 hour.', value: 0.01, appliesCondition: 'candlelit', consumable: true, quantity: 10, category: 'Supplies' },
   { name: 'Torch', type: 'light', rarity: 'common', description: '20ft bright, 30ft dim. Burns 1 hour.', value: 0.01, appliesCondition: 'torchlit', consumable: true, quantity: 5, category: 'Supplies' },
-  { name: 'Hooded Lantern', type: 'light', rarity: 'common', description: '30ft bright, 50ft dim. Burns 6 hours on oil.', value: 5, appliesCondition: 'lantern', category: 'Supplies' },
-  { name: 'Oil Flask', type: 'misc', rarity: 'common', description: 'Fuel for lanterns. Burns 6 hours per flask.', value: 0.1, quantity: 3, category: 'Supplies' },
+  { name: 'Hooded Lantern', type: 'light', rarity: 'common', description: '30ft bright, 50ft dim. Burns 60 turns on oil.', value: 5, appliesCondition: 'lantern', fuelMax: 60, fuelRemaining: 60, category: 'Supplies' },
+  { name: 'Oil Flask', type: 'misc', rarity: 'common', description: 'Refuels a lantern (+60 turns). Burns 6 hours per flask.', value: 0.1, quantity: 3, category: 'Supplies' },
   { name: 'Tinderbox', type: 'misc', rarity: 'common', description: 'Flint, steel, and tinder for lighting fires.', value: 0.5, category: 'Supplies' },
   { name: 'Rope (50ft)', type: 'misc', rarity: 'common', description: 'Hempen rope, 50 feet. 2 HP, AC 10.', value: 1, category: 'Supplies' },
   { name: "Healer's Kit", type: 'misc', rarity: 'common', description: '10 uses. Stabilize a dying creature as an action.', value: 5, quantity: 10, category: 'Supplies' },
@@ -128,7 +128,7 @@ export const STARTING_EQUIPMENT: Record<CharacterClass, StartingKit> = {
     { name: 'Shortsword', type: 'weapon', rarity: 'common', description: 'Finesse, light.', value: 10, equipSlot: 'weapon', damageDie: '1d6', attackBonus: 0, range: 1 },
     { name: 'Dagger', type: 'weapon', rarity: 'common', description: 'Thrown range 20/60.', value: 2, equipSlot: 'weapon', damageDie: '1d4', attackBonus: 0, range: 1 },
     { name: 'Leather Armor', type: 'armor', rarity: 'common', description: 'Light and flexible.', value: 10, equipSlot: 'armor', acBonus: 11, armorCategory: 'light' },
-    { name: 'Hooded Lantern', type: 'light', rarity: 'common', description: '30ft bright, 50ft dim.', value: 5, appliesCondition: 'lantern' },
+    { name: 'Hooded Lantern', type: 'light', rarity: 'common', description: '30ft bright, 50ft dim.', value: 5, appliesCondition: 'lantern', fuelMax: 60, fuelRemaining: 60 },
     { name: 'Healing Potion', type: 'potion', rarity: 'common', description: 'Restores 2d4+2 HP.', value: 50, healAmount: 9 },
   ]},
   Wizard: { gold: 15, items: [
