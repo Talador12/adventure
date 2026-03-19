@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v2.5.1
+## Current Version: v2.6.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added combat replay mode — `combatRecorder.ts` records combat events (start/move/attack/damage/death/turn/spell/heal/end) with timestamps, unit positions, and HP snapshots. Auto-records when combat starts, auto-stops when combat ends. `CombatReplay` viewer: fullscreen modal with step-through scrubber, play/pause, speed control (0.5x-4x), keyboard nav (←→ step, Space play, Esc close). Shows event icons + descriptions, unit HP bars at each step. "▶ Replay" button in Game header plays the most recent recording.
 - Added DM screen mode — separate `/dm-screen` route that opens in a new window. Shows initiative order (sorted, current turn highlighted), party status (HP bars with color coding + condition badges), enemy stat blocks (HP/AC/attack/damage/CR + conditions), and a large current-turn callout. Synced from Game tab via BroadcastChannel in real-time. "DM Screen" button in Game header (DM-only) opens it in a 900×600 popup. Auto-syncs on every combat state change. 3-column responsive grid layout.
 - Added NPC memory viewer in DMSidebar — "NPC Memories" section with Load button fetches all NPCs with saved memories from the index. Expandable per-NPC: click to view full conversation history, × to clear memory. 3 API endpoints: `GET /api/npc-memory/:roomId` (list), `GET /api/npc-memory/:roomId/:npcName` (view), `DELETE /api/npc-memory/:roomId/:npcName` (clear). NPC memory index maintained alongside individual memory writes.
 - Added AI NPC memory — NPC conversation history persisted in KV per-NPC per-campaign (`npc-memory:{roomId}:{npcName}`). On each NPC dialogue call, server loads persistent memory, merges with client-sent history (deduped, last 12 entries), includes as "Conversation history ({NPC} remembers all of this)" in the system prompt. After AI response, updated memory (last 20 lines) saved back to KV. NPCs now remember past conversations across page reloads and sessions. Response includes `memoryLength` for debugging.
@@ -1001,7 +1002,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
 
 ### v3.0 Feature Ideas
-- [ ] Replay mode — record and replay full combat encounters as animations
+- [x] Replay mode — auto-record combat events + step-through viewer with scrubber + speed control
+- [ ] Replay mode: save recordings in campaign state for permanent access
+- [ ] Replay mode: render unit movements on the battle map canvas during replay
 - [x] AI NPC memory — NPCs remember past conversations across sessions (KV-persisted, 20-entry rolling window)
 - [x] NPC memory viewer — DM can inspect/clear NPC memories from sidebar (expandable list + clear button)
 - [x] Quest tracker with world map pins (SVG markers, priority colors, clickable detail popups)
