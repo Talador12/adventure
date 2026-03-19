@@ -527,7 +527,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   // Token image cache for custom portraits
   const tokenImageCacheRef = useRef<Map<string, HTMLImageElement | null>>(new Map());
   const [showCommunityMaps, setShowCommunityMaps] = useState(false);
-  const [communityMaps, setCommunityMaps] = useState<Array<{ id: string; name: string; tags: string[]; rating: number; downloads: number }>>([]);
+  const [communityMaps, setCommunityMaps] = useState<Array<{ id: string; name: string; tags: string[]; rating: number; downloads: number; thumbnail?: string }>>([]);
   const [communityLoading, setCommunityLoading] = useState(false);
   const [mapSearch, setMapSearch] = useState('');
 
@@ -1974,10 +1974,11 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                     const name = prompt('Map name (for sharing):');
                     if (!name?.trim()) return;
                     const tags = (prompt('Tags (comma-separated):', 'dungeon') || '').split(',').map((t) => t.trim()).filter(Boolean);
+                    const thumbnail = generateMapThumbnail(terrain);
                     fetch('/api/maps', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ name: name.trim(), tags, terrain }),
+                      body: JSON.stringify({ name: name.trim(), tags, terrain, thumbnail }),
                     }).then((r) => r.json() as Promise<Record<string, unknown>>).then((d) => {
                       if (d.ok) alert(`Map shared! ID: ${d.mapId}`);
                     }).catch(() => {});
@@ -2287,9 +2288,12 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                         }
                       }).catch(() => {});
                     }}
-                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-teal-900/20 border border-transparent hover:border-teal-700/30 transition-all text-left"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-teal-900/20 border border-transparent hover:border-teal-700/30 transition-all text-left"
                   >
-                    <div className="min-w-0">
+                    {m.thumbnail && (
+                      <img src={m.thumbnail} alt="" className="w-8 h-8 rounded border border-slate-700/50 shrink-0 object-cover" />
+                    )}
+                    <div className="min-w-0 flex-1">
                       <div className="text-[10px] font-semibold text-slate-200 truncate">{m.name}</div>
                       <div className="text-[8px] text-slate-500">{m.tags.join(', ')}{m.tags.length > 0 ? ' · ' : ''}{m.downloads} dl</div>
                     </div>
@@ -2364,4 +2368,25 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       </div>
     </div>
   );
+}
+
+/** Generate a tiny thumbnail data URL from a terrain grid (for community map sharing). */
+export function generateMapThumbnail(terrain: TerrainType[][], size = 80): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+  const rows = terrain.length;
+  const cols = terrain[0]?.length || 20;
+  const cellW = size / cols;
+  const cellH = size / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = terrain[r]?.[c] || 'void';
+      ctx.fillStyle = TERRAIN_COLORS[cell]?.fill || '#0f172a';
+      ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
+    }
+  }
+  return canvas.toDataURL('image/png');
 }

@@ -1414,6 +1414,7 @@ app.post('/api/maps', async (c) => {
     const terrain = body.terrain;
     if (!name || !Array.isArray(terrain)) return c.json({ error: 'name and terrain required' }, 400);
 
+    const thumbnail = typeof body.thumbnail === 'string' ? (body.thumbnail as string).slice(0, 20000) : undefined; // max ~15KB base64 PNG
     const mapId = crypto.randomUUID().slice(0, 8);
     const mapData = {
       id: mapId,
@@ -1421,6 +1422,7 @@ app.post('/api/maps', async (c) => {
       author: userId,
       tags,
       terrain,
+      thumbnail,
       rating: 0,
       ratingCount: 0,
       downloads: 0,
@@ -1430,8 +1432,8 @@ app.post('/api/maps', async (c) => {
 
     // Update index
     const indexRaw = (await c.env.CAMPAIGNS.get('community-maps:index')) as string | null;
-    const index: Array<{ id: string; name: string; author: string; tags: string[]; rating: number; downloads: number; createdAt: number }> = indexRaw ? JSON.parse(indexRaw) : [];
-    index.unshift({ id: mapId, name, author: userId, tags, rating: 0, downloads: 0, createdAt: Date.now() });
+    const index: Array<{ id: string; name: string; author: string; tags: string[]; rating: number; downloads: number; createdAt: number; thumbnail?: string }> = indexRaw ? JSON.parse(indexRaw) : [];
+    index.unshift({ id: mapId, name, author: userId, tags, rating: 0, downloads: 0, createdAt: Date.now(), thumbnail });
     // Keep index at 200 max
     if (index.length > 200) index.length = 200;
     await c.env.CAMPAIGNS.put('community-maps:index', JSON.stringify(index));

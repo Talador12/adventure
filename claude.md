@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added map preview thumbnails — `generateMapThumbnail()` renders terrain to an 80×80 canvas and returns a base64 PNG data URL. Thumbnails generated client-side on Share and sent to the API. Stored in both the map data and the index (max 20KB). Community browser displays 32×32 thumbnail previews next to each map card. Maps uploaded before this version show without thumbnails (graceful fallback).
 - Added map search in community browser — search input at the top of the Browse panel filters maps by name or tag in real-time. Auto-focuses on open. Client-side filtering for instant results.
 - Added AI-generated enemy portraits — new `POST /api/portrait/enemy` endpoint generates combat-themed token portraits via Workers AI FLUX-1-schnell. Prompt includes enemy name + description with "circular token style, dark dramatic lighting, menacing expression" art direction. Encounter generator now fires parallel portrait requests for each spawned enemy (fire-and-forget, non-blocking). Portraits set as `tokenImage` on units as they resolve — enemies appear with generic initials first, then their AI portrait fades in when ready.
 - Added multiclass ability score prerequisites — `MULTICLASS_PREREQS` map and `canMulticlassInto()` function in types/game.ts. Validates D&D 5e PHB p163 requirements before allowing multiclass. Fighter special case: STR 13 OR DEX 13. Alert shows missing prereqs with current values. Lazy-loaded via dynamic import for bundle efficiency.
@@ -963,7 +964,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AI encounter balancing (DMG XP budget calculation + party composition awareness)
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)
 - [x] Community map sharing (upload/download/rate via API + Browse panel in DM toolbar)
-- [ ] Map preview thumbnails in community browser (canvas snapshot on upload)
+- [x] Map preview thumbnails in community browser (80×80 canvas snapshot on upload)
 - [x] Map search by name/tag (client-side filter in community browser panel)
 - [x] Turn timer (configurable countdown per player turn, auto-end on expiry — already implemented)
 - [x] Initiative roll automation (shows order in combat log + DM re-roll during combat)
