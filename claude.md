@@ -1101,7 +1101,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v0.4.0: Cloudflare Access/IDP + Campaign Invites (PLANNED)
 **Goal:** Corporate/team login, campaign sharing via Discord DM.
 
-- [ ] Cloudflare Access login (waiting on external setup)
+- ~~Cloudflare Access login~~ — removed, CF is not a public IdP. Discord OAuth is the right auth path for a public app.
 - [ ] Campaign invite links via Discord DM (bot or webhook)
 - [x] Lobby chat reactions (emoji reactions on messages)
 - [x] Campaign archive (soft delete, can restore)
