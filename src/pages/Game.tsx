@@ -38,6 +38,7 @@ import DiceStats from '../components/game/DiceStats';
 import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
 import CampaignTimeline from '../components/game/CampaignTimeline';
+import RelationshipGraph from '../components/game/RelationshipGraph';
 import Achievements from '../components/game/Achievements';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
@@ -204,7 +205,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships'>('narration');
   // Mobile layout: bottom tab bar controls which panel is visible
   const [mobilePanel, setMobilePanel] = useState<'game' | 'chat' | 'sheet'>('game');
 
@@ -242,6 +243,7 @@ export default function Game() {
   const [hooksLoading, setHooksLoading] = useState(false);
   const [partyInventory, setPartyInventory] = useState<import('../types/game').Item[]>([]);
   const [stagedLoot, setStagedLoot] = useState<import('../types/game').Item[]>([]);
+  const [relationships, setRelationships] = useState<import('../components/game/RelationshipGraph').RelationshipEdge[]>([]);
   const [dmPersonality, setDmPersonality] = useState<string>(() => {
     try { return localStorage.getItem(`adventure:dm-personality:${room}`) || 'theatrical'; } catch { return 'theatrical'; }
   });
@@ -403,10 +405,10 @@ export default function Game() {
   // Campaign persistence — auto-save, server load, registration (extracted hook)
   const getCampaignState = useCallback(() => ({
     dmHistory, sceneName, selectedCharacterId, combatLog,
-    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory,
+    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships,
     floorNames, currentFloor,
     floorData: (() => { const fd = [...floorDataRef.current]; fd[currentFloor] = { terrain: terrain.map((r) => [...r]), lighting: lightingGrid.map((r) => [...r]) }; return fd; })(),
-  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, floorNames, currentFloor]);
+  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships, floorNames, currentFloor]);
 
   const handleCampaignLoad = useCallback((data: CampaignLoadResult) => {
     if (data.dmHistory) setDmHistory(data.dmHistory);
@@ -423,6 +425,7 @@ export default function Game() {
     if (data.lightingGrid) setLightingGrid(data.lightingGrid);
     if (data.backstoryHooks && data.backstoryHooks.length > 0) setBackstoryHooks(data.backstoryHooks);
     if (data.partyInventory) setPartyInventory(data.partyInventory);
+    if (data.relationships && Array.isArray(data.relationships)) setRelationships(data.relationships as typeof relationships);
     if (data.floorNames && Array.isArray(data.floorNames)) setFloorNames(data.floorNames as string[]);
     if (typeof data.currentFloor === 'number') setCurrentFloor(data.currentFloor as number);
     if (data.floorData && Array.isArray(data.floorData)) {
@@ -1952,6 +1955,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('timeline')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'timeline' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Timeline
                   </button>
+                  <button onClick={() => setActiveView('relationships')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'relationships' ? 'border-teal-500 text-teal-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    Bonds
+                  </button>
                   <button onClick={() => setActiveView('achievements')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'achievements' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Badges
                   </button>
@@ -2168,6 +2174,13 @@ export default function Game() {
                     combatLog={combatLog}
                     inCombat={inCombat}
                     characters={characters.map((c) => ({ name: c.name, level: c.level, class: c.class, gold: c.gold }))}
+                  />
+                ) : activeView === 'relationships' ? (
+                  <RelationshipGraph
+                    characters={characters}
+                    edges={relationships}
+                    onAddEdge={(edge) => setRelationships((prev) => [...prev, edge])}
+                    onRemoveEdge={(from, to) => setRelationships((prev) => prev.filter((e) => !(e.from === from && e.to === to)))}
                   />
                 ) : activeView === 'achievements' ? (
                   <Achievements
