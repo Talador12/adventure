@@ -844,6 +844,34 @@ const XP_THRESHOLDS_BY_LEVEL: Record<number, { easy: number; medium: number; har
   20: { easy: 2800, medium: 5700, hard: 8500, deadly: 12700 },
 };
 
+// AI relationship suggestion — analyze backstories to suggest party connections
+app.post('/api/dm/suggest-relationships', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const chars = (body.characters as Array<Record<string, unknown>>) || [];
+    if (chars.length < 2) return c.json({ error: 'Need at least 2 characters' }, 400);
+    const summaries = chars.map((ch) => {
+      const p = [`${ch.name} — ${ch.race} ${ch.class} (${ch.background || 'Unknown'})`];
+      if (ch.bonds) p.push(`Bonds: ${ch.bonds}`);
+      if (ch.flaws) p.push(`Flaws: ${ch.flaws}`);
+      if (ch.personalityTraits) p.push(`Personality: ${ch.personalityTraits}`);
+      if (ch.backstory) p.push(`Backstory: ${String(ch.backstory).slice(0, 150)}`);
+      return p.join('. ');
+    }).join('\n\n');
+    const prompt = `Analyze these D&D characters and suggest relationships:\n\n${summaries}\n\nSuggest 2-4 connections based on bonds, flaws, backstories, races, classes.\nReturn ONLY JSON: [{"from":"Name1","to":"Name2","type":"ally|rival|bond|neutral|enemy","label":"brief reason"}]`;
+    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
+      '@cf/meta/llama-3.1-8b-instruct',
+      { messages: [{ role: 'system', content: 'D&D narrative designer. Return valid JSON only.' }, { role: 'user', content: prompt }] },
+    );
+    const text = resp?.response || '[]';
+    const match = text.match(/\[[\s\S]*\]/);
+    return c.json({ suggestions: match ? JSON.parse(match[0]) : [] });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Suggestion failed' }, 500);
+  }
+});
+
 // AI DM encounter generator — creates enemies with stats, balanced to XP budget
 app.post('/api/dm/encounter', async (c) => {
   if (!c.env.AI) {
