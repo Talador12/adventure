@@ -455,11 +455,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
             updated.deathSaves = { successes: 0, failures: 0 };
           }
           msg = `${c.name} drinks ${item.name}, restoring ${healed} HP! (${updated.hp}/${c.maxHp})`;
+        } else if (item.name === 'Oil Flask') {
+          // Oil Flask: refuel a lantern in inventory
+          const lantern = inv.find((i) => i.appliesCondition === 'lantern' && i.fuelMax);
+          if (lantern) {
+            const refuelAmount = lantern.fuelMax || 60;
+            updated.inventory = inv.map((i) => {
+              if (i.id === lantern.id) return { ...i, fuelRemaining: Math.min(i.fuelMax || 60, (i.fuelRemaining || 0) + refuelAmount) };
+              if (i.id === itemId) return i.quantity && i.quantity > 1 ? { ...i, quantity: i.quantity - 1 } : i;
+              return i;
+            }).filter((i) => !(i.id === itemId && (!i.quantity || i.quantity <= 1)));
+            msg = `${c.name} refuels their ${lantern.name}! (${Math.min(lantern.fuelMax || 60, (lantern.fuelRemaining || 0) + refuelAmount)} turns remaining)`;
+          } else {
+            msg = `${c.name} has no lantern to refuel.`;
+          }
         } else if (item.appliesCondition) {
           // Light source or condition-applying item — apply condition to the character's unit
           const condType = item.appliesCondition;
+          // Check fuel for fuel-tracked items
+          if (item.fuelMax !== undefined && (item.fuelRemaining ?? 0) <= 0) {
+            msg = `${c.name}'s ${item.name} is out of fuel! Use Oil Flask to refuel.`;
+            return c; // don't apply condition
+          }
           const condDesc = CONDITION_EFFECTS[condType]?.description || condType;
-          msg = `${c.name} lights their ${item.name}! (${condDesc})`;
+          const fuelNote = item.fuelRemaining !== undefined ? ` (${item.fuelRemaining} turns of fuel)` : '';
+          msg = `${c.name} lights their ${item.name}!${fuelNote} (${condDesc})`;
           // Apply condition via setUnits (deferred — runs after this character update)
           setTimeout(() => {
             setUnits((prevUnits: Unit[]) => {
@@ -677,7 +697,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
             messages.push(`${mutated.name} takes ${burnDmg} fire damage from burning!`);
             mutated = { ...mutated, hp: Math.max(0, mutated.hp - burnDmg) };
           }
-          if (cond.duration === -1) {
+          // Fuel consumption: decrement lantern fuel each turn
+          if (cond.type === 'lantern' && cond.duration === -1) {
+            // Find the character who owns this unit and tick their lantern fuel
+            const ownerChar = characters.find((c) => units.some((un) => un.id === unitId && un.characterId === c.id));
+            if (ownerChar) {
+              const lanternItem = ownerChar.inventory?.find((i) => i.appliesCondition === 'lantern' && i.fuelMax);
+              if (lanternItem && (lanternItem.fuelRemaining ?? 0) > 0) {
+                // Decrement fuel (deferred to avoid nested setState)
+                setTimeout(() => {
+                  setCharacters((prevChars) => prevChars.map((ch) => {
+                    if (ch.id !== ownerChar.id) return ch;
+                    return { ...ch, inventory: ch.inventory.map((i) => i.id === lanternItem.id ? { ...i, fuelRemaining: Math.max(0, (i.fuelRemaining || 0) - 1) } : i) };
+                  }));
+                }, 0);
+                if ((lanternItem.fuelRemaining ?? 0) <= 1) {
+                  messages.push(`${mutated.name}'s lantern sputters out — no fuel remaining!`);
+                  // Don't keep the condition — skip to removal
+                } else {
+                  remaining.push(cond);
+                }
+              } else {
+                messages.push(`${mutated.name}'s lantern is out of fuel!`);
+                // Remove condition
+              }
+            } else {
+              remaining.push(cond);
+            }
+          } else if (cond.duration === -1) {
             remaining.push(cond); // permanent until cured
           } else if (cond.duration > 1) {
             remaining.push({ ...cond, duration: cond.duration - 1 });
@@ -690,7 +737,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return result;
     });
     return { messages, units: result };
-  }, []);
+  }, [characters, units, setCharacters]);
 
   // Spells: cast a spell (check slots, apply damage/healing, consume slot)
   const castSpell = useCallback(

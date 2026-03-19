@@ -263,6 +263,8 @@ export interface Item {
   quantity?: number;
   appliesCondition?: ConditionType; // condition applied when used (e.g. torchlit, candlelit)
   consumable?: boolean;             // removed from inventory after use
+  fuelMax?: number;                 // max fuel charges (e.g. lantern = 60 turns = 6 hours at 6s/turn)
+  fuelRemaining?: number;           // current fuel charges remaining
 }
 
 export interface EquipmentSlots {
