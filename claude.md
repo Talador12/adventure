@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added initiative tiebreaker rules — sort by initiative descending, then DEX modifier (higher goes first), then stable ID comparison. Matches D&D 5e RAW tiebreaker rules. Works for both player characters (looks up DEX from Character stats) and enemies (uses unit.dexMod).
+- Added character multiclassing support — `classLevels?: Partial<Record<CharacterClass, number>>` field on Character. "+ Multiclass" button on character sheet adds a level in any class (validates class name). Total level auto-computed from sum of class levels. Character sheet shows "Fighter 5 / Wizard 3" format. Spellbook merges spells from all multiclassed classes at their respective levels. DDB import already handles multiclass via the primary class heuristic.
 - Added AI DM personality presets — 6 distinct narration styles: Theatrical (default), Comedic (Terry Pratchett), Grimdark (harsh/costly), Tolkien (epic/literary), Noir (hardboiled/cynical), Horror (psychological dread). Each has a unique system prompt that shapes the AI DM's tone, NPC behavior, and world description. DM selects style from "AI DM Style" button group in DMSidebar Notes tab. Personality persisted per-campaign in localStorage. Passed as `personality` field to `POST /api/dm/narrate`.
 - Added death save automation — when an unconscious player unit (0 HP) starts their turn, a d20 death save auto-rolls following D&D 5e rules: 10+ = success, <10 = failure, nat 20 = regain 1 HP + conscious, nat 1 = 2 failures. 3 successes = stabilize, 3 failures = death (hp set to -1). `nextTurn` in GameContext modified to include unconscious player units in turn order (enemies still skipped). Death save result returned as `deathSaveMessage` from `nextTurn()`, logged to combat log + DM narration. Character `deathSaves` and `condition` updated in real-time.
 - Added community map sharing — full backend + frontend. 4 API endpoints: `POST /api/maps` (upload with name/tags/terrain), `GET /api/maps` (browse with optional tag filter), `GET /api/maps/:id` (download + increment counter), `POST /api/maps/:id/rate` (1-5 rating with running average). Maps stored in KV with metadata index (200 max). BattleMap DM toolbar gets "Share" button (uploads current terrain with name + tags) and "Browse" button (teal-themed dropdown panel with map cards showing name, tags, downloads, star rating). Clicking a map loads its terrain + resets fog.
@@ -971,12 +973,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Map fog-of-war reveal animation (smooth fog dissolve as tokens move)
 - [ ] Encounter theater mode (cinematic view during combat with zoom + pan)
 - [x] AI DM personality presets (6 styles: theatrical, comedic, grimdark, tolkien, noir, horror)
-- [ ] Character multiclassing support (track levels per class)
+- [x] Character multiclassing support (classLevels field + merged spellbook + UI)
+- [ ] Multiclass ability score requirements validation (D&D 5e prereqs for multiclassing)
+- [ ] Multiclass proficiency rules (only gain some proficiencies from secondary class)
 - [x] Spell concentration auto-tracking (CON save on damage + War Caster feat — already implemented)
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
 - [ ] Custom token images (upload portraits for enemies/NPCs)
-- [ ] Initiative tiebreaker rules (DEX, then coin flip)
+- [x] Initiative tiebreaker rules (DEX mod, then stable ID comparison)
 - [x] Rest mechanics (short rest hit dice, long rest full restore — already implemented with full UI)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout

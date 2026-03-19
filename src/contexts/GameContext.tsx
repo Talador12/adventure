@@ -1152,8 +1152,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
         return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, reactionUsed: false, disengaged: false, speed };
       });
-      // Sort descending by initiative (higher goes first)
-      withInitiative.sort((a, b) => b.initiative - a.initiative);
+      // Sort by initiative descending, then DEX mod tiebreaker, then stable ID comparison
+      withInitiative.sort((a, b) => {
+        if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+        const aDex = a.characterId ? Math.floor(((characters.find((c) => c.id === a.characterId)?.stats.DEX ?? 10) - 10) / 2) : (a.dexMod || 0);
+        const bDex = b.characterId ? Math.floor(((characters.find((c) => c.id === b.characterId)?.stats.DEX ?? 10) - 10) / 2) : (b.dexMod || 0);
+        if (bDex !== aDex) return bDex - aDex;
+        return a.id < b.id ? -1 : 1; // stable tiebreaker
+      });
       // Mark first unit as current turn
       if (withInitiative.length > 0) {
         withInitiative[0].isCurrentTurn = true;
