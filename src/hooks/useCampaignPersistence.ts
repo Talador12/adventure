@@ -34,6 +34,7 @@ export interface CampaignState {
   floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
   relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
   wikiPages?: Array<{ id: string; title: string; content: string; category: string; createdBy: string; updatedAt: number; tags?: string[] }>;
+  recordings?: unknown[];
 }
 
 export interface CampaignLoadResult {
@@ -57,6 +58,7 @@ export interface CampaignLoadResult {
   floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
   relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
   wikiPages?: Array<{ id: string; title: string; content: string; category: string; createdBy: string; updatedAt: number; tags?: string[] }>;
+  recordings?: unknown[];
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -238,6 +240,7 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (c.floorData && Array.isArray(c.floorData)) result.floorData = c.floorData as Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
       if (c.relationships && Array.isArray(c.relationships)) result.relationships = c.relationships as Array<{ from: string; to: string; type: string; label?: string }>;
       if (c.wikiPages && Array.isArray(c.wikiPages)) result.wikiPages = c.wikiPages as typeof result.wikiPages;
+      if (c.recordings && Array.isArray(c.recordings)) result.recordings = c.recordings as unknown[];
       return { result, raw: c };
     };
 

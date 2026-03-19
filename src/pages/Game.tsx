@@ -414,7 +414,7 @@ export default function Game() {
   // Campaign persistence — auto-save, server load, registration (extracted hook)
   const getCampaignState = useCallback(() => ({
     dmHistory, sceneName, selectedCharacterId, combatLog,
-    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships, wikiPages,
+    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships, wikiPages, recordings: recordings.slice(-5),
     floorNames, currentFloor,
     floorData: (() => { const fd = [...floorDataRef.current]; fd[currentFloor] = { terrain: terrain.map((r) => [...r]), lighting: lightingGrid.map((r) => [...r]) }; return fd; })(),
   }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships, floorNames, currentFloor]);
@@ -436,6 +436,7 @@ export default function Game() {
     if (data.partyInventory) setPartyInventory(data.partyInventory);
     if (data.relationships && Array.isArray(data.relationships)) setRelationships(data.relationships as typeof relationships);
     if (data.wikiPages && Array.isArray(data.wikiPages)) setWikiPages(data.wikiPages as WikiPage[]);
+    if (data.recordings && Array.isArray(data.recordings)) setRecordings(data.recordings as CombatRecording[]);
     if (data.floorNames && Array.isArray(data.floorNames)) setFloorNames(data.floorNames as string[]);
     if (typeof data.currentFloor === 'number') setCurrentFloor(data.currentFloor as number);
     if (data.floorData && Array.isArray(data.floorData)) {
@@ -1715,13 +1716,28 @@ export default function Game() {
             </div>
           )}
           {recordings.length > 0 && (
-            <button
-              onClick={() => setShowReplay(recordings[recordings.length - 1])}
-              className="text-[9px] px-2 py-0.5 rounded bg-indigo-900/30 border border-indigo-700/40 text-indigo-300 hover:bg-indigo-900/50 font-semibold transition-colors"
-              title={`Replay last combat (${recordings.length} recorded)`}
-            >
-              ▶ Replay
-            </button>
+            <div className="relative group">
+              <button
+                onClick={() => setShowReplay(recordings[recordings.length - 1])}
+                className="text-[9px] px-2 py-0.5 rounded bg-indigo-900/30 border border-indigo-700/40 text-indigo-300 hover:bg-indigo-900/50 font-semibold transition-colors"
+                title={`Replay combat (${recordings.length} saved)`}
+              >
+                ▶ Replay ({recordings.length})
+              </button>
+              {recordings.length > 1 && (
+                <div className="hidden group-hover:block absolute top-full right-0 mt-1 z-50 bg-slate-900/95 border border-indigo-700/30 rounded-lg shadow-xl p-1 min-w-[140px]">
+                  {recordings.slice().reverse().map((rec, i) => (
+                    <button
+                      key={rec.id}
+                      onClick={() => setShowReplay(rec)}
+                      className="w-full text-left text-[8px] px-2 py-1 rounded hover:bg-indigo-900/30 text-slate-300"
+                    >
+                      Combat #{recordings.length - i} · {rec.events.length} events · {rec.endedAt ? `${Math.round((rec.endedAt - rec.startedAt) / 1000)}s` : 'ongoing'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           {canUseDMTools && (
             <button
