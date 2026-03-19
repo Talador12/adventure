@@ -33,6 +33,7 @@ export interface CampaignState {
   currentFloor?: number;
   floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
   relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
+  wikiPages?: Array<{ id: string; title: string; content: string; category: string; createdBy: string; updatedAt: number; tags?: string[] }>;
 }
 
 export interface CampaignLoadResult {
@@ -55,6 +56,7 @@ export interface CampaignLoadResult {
   currentFloor?: number;
   floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
   relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
+  wikiPages?: Array<{ id: string; title: string; content: string; category: string; createdBy: string; updatedAt: number; tags?: string[] }>;
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -235,6 +237,7 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (typeof c.currentFloor === 'number') result.currentFloor = c.currentFloor as number;
       if (c.floorData && Array.isArray(c.floorData)) result.floorData = c.floorData as Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
       if (c.relationships && Array.isArray(c.relationships)) result.relationships = c.relationships as Array<{ from: string; to: string; type: string; label?: string }>;
+      if (c.wikiPages && Array.isArray(c.wikiPages)) result.wikiPages = c.wikiPages as typeof result.wikiPages;
       return { result, raw: c };
     };
 
