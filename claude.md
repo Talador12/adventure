@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added multi-floor dungeon support — `stairs_up` and `stairs_down` terrain types with green/red arrow rendering, walkable movement cost. DM toolbar gains ↑Stairs / ↓Stairs paint tools. Floor navigation bar appears above the battle map when multiple floors exist (tab buttons per floor, DM can add floors via prompt). Single-floor dungeons show a subtle "+ Floor" button for DMs. `currentFloor` and `floorNames` state in Game.tsx. Terrain cost, colors, and patterns all updated for stairs.
 - Added loot roll tables (`data/lootTables.ts`) — D&D 5e-inspired weighted random loot with 4 tiers: common (all difficulties), uncommon (medium+), rare (hard+), epic (deadly). Gold ranges scale by difficulty (5-25gp easy → 100-500gp deadly). Items include potions, weapons, armor, scrolls, wondrous items with full stat blocks. End-of-combat loot now uses table-based `rollLoot()` instead of the old inline generator. Loot items auto-added to party inventory (shared loot pool) instead of personal inventory. Gold awarded directly to the character.
 - Added dungeon seed sharing — generating a random dungeon now saves the seed and displays it as a monospace `#seed` button (click to copy to clipboard). A seed input field lets DMs enter a seed number and press Enter to regenerate the exact same dungeon layout. Seeded RNG (mulberry32) guarantees identical room/corridor/door/hazard placement for any given seed. DMs can share seeds in chat for collaborative play.
 - Enhanced character PDF export — the printable HTML sheet now includes Equipment (weapon with damage die, armor with AC, shield), Inventory (2-column list with name/quantity/type/value), and Spellbook (2-column list with name/level/school/damage/concentration). Sections only render when the character has data. Print/Save-as-PDF button at bottom for browser print dialog.
@@ -942,7 +943,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Community map sharing (upload/download presets via API, rate + tag)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout
-- [ ] Multi-floor dungeons (stairs connect separate terrain grids)
+- [x] Multi-floor dungeons (stairs terrain types + floor navigation bar)
+- [ ] Per-floor terrain/lighting persistence (each floor has its own grid stored in campaign state)
+- [ ] Stair click navigation (clicking stairs auto-switches to the connected floor)
 
 **Server persistence coverage:**
 | Feature | Currently | Target | Status |

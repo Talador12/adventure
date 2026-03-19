@@ -21,8 +21,10 @@ const TERRAIN_COLORS: Record<TerrainType, { fill: string; stroke?: string; patte
   wall:      { fill: '#475569', stroke: '#64748b' },
   water:     { fill: '#1e3a5f', stroke: '#2563eb', pattern: 'wave' },
   difficult: { fill: '#2d1f0e', stroke: '#92400e', pattern: 'cross' },
-  door:      { fill: '#92400e', stroke: '#d97706' },
-  pit:       { fill: '#0c0a09', stroke: '#44403c' },
+  door:       { fill: '#92400e', stroke: '#d97706' },
+  pit:        { fill: '#0c0a09', stroke: '#44403c' },
+  stairs_up:  { fill: '#1e293b', stroke: '#22c55e', pattern: 'arrow_up' },
+  stairs_down:{ fill: '#1e293b', stroke: '#ef4444', pattern: 'arrow_down' },
 };
 
 // Condition colors for token indicator pips (matches CONDITION_EFFECTS color scheme)
@@ -323,6 +325,27 @@ function drawTerrainCell(ctx: CanvasRenderingContext2D, c: number, r: number, te
     }
   }
 
+  // Stairs arrows
+  if (t.pattern === 'arrow_up' || t.pattern === 'arrow_down') {
+    const isUp = t.pattern === 'arrow_up';
+    ctx.fillStyle = isUp ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)';
+    const cx = x + cellSize / 2;
+    const cy = y + cellSize / 2;
+    const s = cellSize * 0.3;
+    ctx.beginPath();
+    if (isUp) {
+      ctx.moveTo(cx, cy - s);
+      ctx.lineTo(cx + s, cy + s * 0.6);
+      ctx.lineTo(cx - s, cy + s * 0.6);
+    } else {
+      ctx.moveTo(cx, cy + s);
+      ctx.lineTo(cx + s, cy - s * 0.6);
+      ctx.lineTo(cx - s, cy - s * 0.6);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
   // Door: draw a rectangle icon
   if (terrain === 'door') {
     ctx.fillStyle = '#d97706';
@@ -439,7 +462,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin' | 'light-bright' | 'light-dim' | 'light-dark';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -1222,6 +1245,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     const terrainMap: Record<string, TerrainType | null> = {
       select: null, wall: 'wall', floor: 'floor', water: 'water',
       difficult: 'difficult', door: 'door', pit: 'pit', erase: 'floor',
+      'stairs-up': 'stairs_up', 'stairs-down': 'stairs_down',
     };
     const target = terrainMap[dmTool];
     if (!target) return;
@@ -1618,6 +1642,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     { tool: 'difficult', label: 'Rubble', color: 'text-amber-400' },
     { tool: 'door', label: 'Door', color: 'text-yellow-400' },
     { tool: 'pit', label: 'Pit', color: 'text-stone-400' },
+    { tool: 'stairs-up', label: '↑Stairs', color: 'text-emerald-400' },
+    { tool: 'stairs-down', label: '↓Stairs', color: 'text-red-400' },
     { tool: 'erase', label: 'Erase', color: 'text-red-400' },
   ];
 
