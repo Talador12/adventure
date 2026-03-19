@@ -529,6 +529,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [showCommunityMaps, setShowCommunityMaps] = useState(false);
   const [communityMaps, setCommunityMaps] = useState<Array<{ id: string; name: string; tags: string[]; rating: number; downloads: number }>>([]);
   const [communityLoading, setCommunityLoading] = useState(false);
+  const [mapSearch, setMapSearch] = useState('');
 
   // Movement range: reachable cells during drag (only in combat)
   const [reachableCells, setReachableCells] = useState<Map<string, number> | null>(null);
@@ -2253,13 +2254,26 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
               <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Community Maps</span>
               <button onClick={() => setShowCommunityMaps(false)} className="text-slate-500 hover:text-slate-300 text-xs">×</button>
             </div>
-            <div className="overflow-y-auto max-h-48 p-1.5 space-y-1">
+            <div className="px-2 py-1.5 border-b border-slate-800/50">
+              <input
+                value={mapSearch}
+                onChange={(e) => setMapSearch(e.target.value)}
+                placeholder="Search maps by name or tag..."
+                className="w-full text-[9px] px-2 py-1 rounded bg-slate-800/60 border border-slate-700/50 text-slate-200 placeholder-slate-600"
+                autoFocus
+              />
+            </div>
+            <div className="overflow-y-auto max-h-40 p-1.5 space-y-1">
               {communityLoading ? (
                 <div className="text-[10px] text-slate-500 text-center py-4">Loading...</div>
               ) : communityMaps.length === 0 ? (
                 <div className="text-[10px] text-slate-600 text-center py-4 italic">No community maps yet — be the first to share!</div>
               ) : (
-                communityMaps.map((m) => (
+                communityMaps.filter((m) => {
+                  if (!mapSearch.trim()) return true;
+                  const q = mapSearch.toLowerCase();
+                  return m.name.toLowerCase().includes(q) || m.tags.some((t) => t.includes(q));
+                }).map((m) => (
                   <button
                     key={m.id}
                     onClick={() => {
