@@ -2,6 +2,7 @@
 // vision-based fog of war, DM tools, and zoom/pan support.
 import React, { useRef, useEffect, useState, useCallback, useMemo, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, LIGHT_SOURCE_RADII, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
+import { MAP_PRESETS } from '../../data/mapPresets';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
@@ -1763,6 +1764,27 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                     Clear
                   </button>
                 )}
+                {/* Map presets */}
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const preset = MAP_PRESETS.find((p) => p.id === e.target.value);
+                    if (preset && onTerrainChange) {
+                      setTerrain(preset.terrain);
+                      onTerrainChange(preset.terrain);
+                      // Reset explored fog for new map
+                      setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
+                    }
+                  }}
+                  className="text-[9px] px-1.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-semibold"
+                  title="Load a map preset template"
+                >
+                  <option value="">Preset...</option>
+                  {MAP_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
+                  ))}
+                </select>
+
                 <div className="w-px h-4 bg-slate-700 mx-1" />
                 <span className="text-[9px] text-sky-500/70 uppercase tracking-wider font-semibold">Fog</span>
                 <button
