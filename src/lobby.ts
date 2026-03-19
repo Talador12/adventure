@@ -486,6 +486,24 @@ export class Lobby {
         break;
       }
 
+      case 'share_note': {
+        // Player shares a note with the party — broadcast as a special chat message
+        const noteSession = this.sessions.get(server);
+        if (!noteSession) return;
+        const noteText = (data.text as string) || '';
+        const noteTitle = (data.title as string) || 'Shared Note';
+        if (!noteText.trim()) return;
+        this.broadcast({
+          type: 'shared_note',
+          playerId: noteSession.id,
+          username: noteSession.username,
+          title: noteTitle.trim(),
+          text: noteText.trim(),
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
       case 'chat_reaction': {
         // Broadcast emoji reaction to all clients (including sender for confirmation)
         const reactSession = this.sessions.get(server);

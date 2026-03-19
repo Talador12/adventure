@@ -610,6 +610,17 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           break;
         }
 
+        case 'shared_note': {
+          setChatMessages((prev) => [...prev, {
+            id: crypto.randomUUID(),
+            type: 'system' as const,
+            username: String(msg.username || 'Player'),
+            text: `📋 ${msg.title || 'Shared Note'}: ${String(msg.text || '').slice(0, 500)}`,
+            timestamp: (msg.timestamp as number) || Date.now(),
+          }]);
+          break;
+        }
+
         case 'latency_update': {
           if (msg.latency && typeof msg.latency === 'object') {
             onLatencyUpdate?.(msg.latency as Record<string, number>);

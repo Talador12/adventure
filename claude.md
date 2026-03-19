@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added shareable player notes — "Share with Party" button appears on the notes panel when connected to multiplayer and notes are non-empty. Prompts for a title, then sends `share_note` via WebSocket. Lobby DO broadcasts `shared_note` to all clients. Appears as a 📋 system message in chat (Lobby, Game, and useGameWebSocket all handle it). Text truncated to 500 chars. Fully opt-in — notes remain private until explicitly shared.
 - Added encounter theater mode — "🎬 Theater" toggle in zoom controls (visible during combat). When ON, the camera auto-zooms to 2x and smoothly pans to center on the current turn unit using easeInOutQuad animation (400ms). Triggers on turn change. Reset button also disables theater mode. Creates a cinematic "camera follows the action" effect during combat.
 - Added fog reveal animation — newly-explored cells get a 0.5s fade transition instead of instantly revealing. `fogRevealRef` tracks recently-revealed cells with progress 1.0→0.0. requestAnimationFrame loop decays progress at 2x/second. During canvas draw, cells with active reveal progress get an overlaid `rgba(15,23,42, progress*0.7)`. Result: fog dissolves smoothly as tokens move into new areas. Respects `effectiveDmMode` (DM sees no fog). Respects `prefers-reduced-motion` via Low-FX class (animations disabled).
 - Added custom token images — `tokenImage?: string` field on Unit. BattleMap renders images in clipped circles instead of plain initials. Falls back to character portrait for player units, then to initial letter. DM double-clicks a token to set its image URL (prompt dialog, clear to remove). Image cache via ref Map with lazy loading + error handling. Works for enemies, NPCs, and players. Images auto-render on next canvas draw after loading.
@@ -967,10 +968,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Sound effects library (21 Web Audio API functions: dice, crits, combat, spells, ambient moods — already implemented)
 - [x] Campaign session log export (markdown with party roster, narration, chat, combat log)
 - [x] Player notes panel (personal notes per-campaign, localStorage, N shortcut)
-- [ ] Shareable player notes (opt-in: share specific notes with the party via WebSocket)
+- [x] Shareable player notes (opt-in: Share with Party button → broadcast to chat via WebSocket)
 
 ### v2.0 Feature Ideas
-- [ ] Campaign timeline view (visual timeline of sessions with key events + milestones)
+- [x] Campaign timeline view (339-line component with combat/narration/milestone events — already implemented)
 - [ ] Character relationship graph (party dynamics visualization, NPC connections)
 - [ ] Voice chat integration (WebRTC peer-to-peer audio with push-to-talk)
 - [x] Map fog-of-war reveal animation (0.5s fade dissolve via requestAnimationFrame)
