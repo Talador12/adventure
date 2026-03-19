@@ -23,6 +23,7 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
 const Game = React.lazy(() => import('./pages/Game'));
 const Lobby = React.lazy(() => import('./pages/Lobby'));
 const CharacterCreate = React.lazy(() => import('./pages/CharacterCreate'));
+const DMScreen = React.lazy(() => import('./pages/DMScreen'));
 
 // Minimal loading fallback — matches the app's dark theme
 function PageLoader() {
@@ -151,6 +152,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                 <Route path="/lobby/:roomId" element={<RequireAuth><Lobby /></RequireAuth>} />
                 <Route path="/game" element={<RequireAuth><Game /></RequireAuth>} />
                 <Route path="/game/:roomId" element={<RequireAuth><Game /></RequireAuth>} />
+                <Route path="/dm-screen" element={<DMScreen />} />
                 <Route path="/characters/new" element={<RequireAuth><CharacterCreate /></RequireAuth>} />
                 <Route path="/characters/:id/edit" element={<RequireAuth><CharacterCreate /></RequireAuth>} />
                 <Route path="*" element={<NotFound />} />

@@ -574,6 +574,21 @@ export default function Game() {
   const voiceRef = useRef<ReturnType<typeof useVoiceChat> | null>(null);
   const voicePlayersRef = useRef<Array<{ id: string; username: string }>>([]);
 
+  // Broadcast state to DM Screen (separate browser tab) via BroadcastChannel
+  useEffect(() => {
+    const channel = new BroadcastChannel('adventure-dm-screen');
+    const syncState = () => {
+      channel.postMessage({
+        type: 'dm-screen-sync',
+        state: { units, inCombat, combatRound, turnIndex, sceneName, dmNotes: '', partyInventoryCount: partyInventory.length },
+      });
+    };
+    syncState(); // initial sync
+    // Listen for requests from DM Screen
+    channel.onmessage = (e) => { if (e.data?.type === 'dm-screen-request') syncState(); };
+    return () => channel.close();
+  }, [units, inCombat, combatRound, turnIndex, sceneName, partyInventory.length]);
+
   const canUseDMTools = !isSpectating && (isDM || !wsConnected);
 
   // Global keyboard shortcuts (must be after canUseDMTools is defined)
@@ -1666,6 +1681,15 @@ export default function Game() {
                 </button>
               )}
             </div>
+          )}
+          {canUseDMTools && (
+            <button
+              onClick={() => window.open('/dm-screen', '_blank', 'width=900,height=600')}
+              className="text-[9px] px-2 py-0.5 rounded bg-purple-900/30 border border-purple-700/40 text-purple-300 hover:bg-purple-900/50 font-semibold transition-colors"
+              title="Open DM Screen in a new window (synced with this game)"
+            >
+              DM Screen
+            </button>
           )}
           <button
             onClick={() => {
