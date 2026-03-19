@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added fuel indicator on character sheet inventory — color-coded badge shows `remaining/max` turns for fuel-tracked items (green >25%, amber <25%, red empty). Added "Light" / "Refuel" action buttons for light source items and Oil Flasks in the inventory UI (previously only potions/scrolls had Use buttons). Lantern button shows amber styling, Oil Flask button labeled "Refuel".
 - Added Dispel Magic (3rd level abjuration) — targets a unit and strips all magical conditions: blessed, hexed, darkvision, daylight, frightened, stunned, inspired, burning. Also clears concentration. Reports how many effects were removed and lists them. Available to 7 classes. If no magical effects exist on the target, reports that clearly.
 - Added lantern fuel tracking — `fuelMax` and `fuelRemaining` fields on Item. Lanterns start with 60 turns of fuel. `tickConditions` decrements fuel each turn for units with a `lantern` condition; auto-extinguishes (removes condition) when fuel hits 0 with a "sputters out" combat log message. Oil Flask use in inventory refuels the lantern (+60 turns, capped at fuelMax). `useItem` checks fuel before lighting and shows fuel count. Shop lantern and Rogue starting equipment preset both include fuel tracking.
 - Added Daylight + Darkvision self-cast spells with auto-condition application. `castSpell` in GameContext now handles self-targeting condition spells (no target required) — applies the condition to the caster's unit when cast without a target. Daylight (3rd level, 60ft/100ft, 10 rounds) and Darkvision (2nd level, 60ft dim, 10 rounds) added to SPELL_LIST with `appliesCondition`. Both integrate with the dynamic lighting propagation system. Casting Daylight makes your token emit a massive 12-cell bright + 20-cell dim light radius.
@@ -837,7 +838,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Per-unit vision range — darkvision, torches, and spells modify vision radius beyond default 30ft
 - [x] Torch/Light spell mechanic — consumable item or spell that temporarily boosts vision range for the carrier
 - [x] Lantern item type with fuel tracking (burns 60 turns, refillable from Oil Flask)
-- [ ] Fuel indicator on character sheet inventory (show remaining turns for fuel-tracked items)
+- [x] Fuel indicator on character sheet inventory (color-coded badge + Light/Refuel buttons)
 - [ ] Torch burnout timer (torches should also expire after ~10 turns, consuming from stack)
 - [x] Environmental lighting zones (DM can paint bright/dim/dark areas on the battle map)
 - [x] Lighting zone persistence in campaign save/load (survives reload and session resume)

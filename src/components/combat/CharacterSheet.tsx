@@ -716,6 +716,13 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                       <div className={`text-xs font-semibold ${RARITY_COLORS[item.rarity]}`}>
                         {item.name}
                         {item.quantity && item.quantity > 1 && <span className="text-slate-500 ml-1">×{item.quantity}</span>}
+                        {item.fuelMax !== undefined && (
+                          <span className={`text-[8px] ml-1.5 font-mono px-1 py-0.5 rounded ${
+                            (item.fuelRemaining || 0) <= 0 ? 'bg-red-900/30 text-red-400' : (item.fuelRemaining || 0) < (item.fuelMax * 0.25) ? 'bg-amber-900/30 text-amber-400' : 'bg-emerald-900/30 text-emerald-400'
+                          }`} title={`Fuel: ${item.fuelRemaining || 0}/${item.fuelMax} turns`}>
+                            {item.fuelRemaining || 0}/{item.fuelMax}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[9px] text-slate-500">{item.description}</div>
                       {itemStatLine(item) && <div className="text-[9px] text-slate-400 font-mono mt-0.5">{itemStatLine(item)}</div>}
@@ -730,13 +737,15 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                           Equip
                         </button>
                       )}
-                      {(item.type === 'potion' || item.type === 'scroll') && (
+                      {(item.type === 'potion' || item.type === 'scroll' || item.type === 'light' || item.name === 'Oil Flask') && (
                         <button
                           onClick={() => useItem(character.id, item.id)}
-                          className="text-[9px] text-green-400 hover:text-green-300 transition-colors px-1.5 py-0.5 rounded hover:bg-green-900/30"
-                          title="Use"
+                          className={`text-[9px] transition-colors px-1.5 py-0.5 rounded ${
+                            item.type === 'light' ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-900/30' : 'text-green-400 hover:text-green-300 hover:bg-green-900/30'
+                          }`}
+                          title={item.type === 'light' ? 'Light / Extinguish' : item.name === 'Oil Flask' ? 'Refuel lantern' : 'Use'}
                         >
-                          Use
+                          {item.type === 'light' ? 'Light' : item.name === 'Oil Flask' ? 'Refuel' : 'Use'}
                         </button>
                       )}
                       {tradeTargets.length > 0 && (
