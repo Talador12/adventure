@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added ETag on campaign list endpoint — `GET /api/campaigns` now includes SHA-256 ETag + 304 Not Modified support. Client sends If-None-Match, stores ETag in localStorage. Completes the ETag coverage across all three main GET endpoints (characters, campaign state, campaign list).
 - Added player notes panel — "Notes" tab in the right sidebar alongside Chat and Sheet. Full-height textarea for personal session notes (track NPCs, clues, plans). Stored in localStorage per-room (`adventure:notes:{room}`), auto-saved with 1s debounce. Character count + Clear button at bottom. `N` keyboard shortcut toggles notes panel. Only visible to the player — not the DM or other players. Help overlay updated.
 - Added campaign session log export — `exportSessionLog()` in export.ts generates a formatted markdown file with party roster, DM narration (blockquotes), timestamped chat log (with system/roll/message types), and combat log (bullet list). "Export Log" button in Game header (lazy-loaded). Downloads as `{campaign-name}-session-log.md`. Includes all data from the current session.
 - Enhanced initiative roll automation — the existing "Roll Initiative" button now shows individual initiative values in the combat log and DM narration (e.g., "Order: Thorin: 18, Goblin: 12, Elara: 8"). Added "Re-roll Init" button (DM only, visible during combat) for re-rolling when new enemies join mid-fight. Re-roll resets turn order and broadcasts updated state.
@@ -941,7 +942,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] IndexedDB for local cache of characters, campaigns, campaign state
 - [x] Optimistic UI: show IndexedDB-cached state immediately, server fetch overwrites in background
 - [x] Cache invalidation via ETags (SHA-256 hash, 304 Not Modified support)
-- [ ] ETag support on campaign list endpoint (`GET /api/campaigns`)
+- [x] ETag support on campaign list endpoint (SHA-256, 304 support, completes full ETag coverage)
 - [x] Character export to PDF (printable sheet with stats, equipment, inventory, spells)
 - [x] Shared party inventory (DM-managed loot pool with give-to-player transfers)
 - [x] Loot roll table integration — weighted random loot from 4-tier table, auto-populates party inventory
@@ -953,7 +954,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Turn timer (configurable countdown per player turn, auto-end on expiry — already implemented)
 - [x] Initiative roll automation (shows order in combat log + DM re-roll during combat)
 - [x] Condition duration countdown in initiative bar (already shows round count + tooltip)
-- [ ] Sound effects library (ambient music + combat/spell/dice SFX via Web Audio API)
+- [x] Sound effects library (21 Web Audio API functions: dice, crits, combat, spells, ambient moods — already implemented)
 - [x] Campaign session log export (markdown with party roster, narration, chat, combat log)
 - [x] Player notes panel (personal notes per-campaign, localStorage, N shortcut)
 - [ ] Shareable player notes (opt-in: share specific notes with the party via WebSocket)
