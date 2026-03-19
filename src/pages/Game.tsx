@@ -905,6 +905,7 @@ export default function Game() {
               playerName: selectedCharacter.name,
               playerClass: selectedCharacter.class,
               scene: sceneName,
+              roomId: room,
               dialogueHistory: npcDialogueHistory.slice(-8),
             }),
           },
