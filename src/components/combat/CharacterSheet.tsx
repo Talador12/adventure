@@ -122,9 +122,13 @@ interface SpellbookSectionProps {
   prof: number;
   castMod: number;
   onToggleSlot: (level: number, slotIndex: number, isAvailable: boolean) => void;
+  preparedIds?: Set<string>;
+  onTogglePrepared?: (spellId: string) => void;
+  onRemoveCustomSpell?: (spellId: string) => void;
+  customSpellIds?: Set<string>;
 }
 
-function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, spellAttack, prof, castMod, onToggleSlot }: SpellbookSectionProps) {
+function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, spellAttack, prof, castMod, onToggleSlot, preparedIds, onTogglePrepared, onRemoveCustomSpell, customSpellIds }: SpellbookSectionProps) {
   const [spellSearch, setSpellSearch] = useState('');
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
@@ -256,10 +260,19 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
           <div className="space-y-0.5">
             {filteredCantrips.map((s) => (
               <div key={s.id} className="flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30">
-                <span className="text-slate-300 font-medium">{s.name}</span>
+                <div className="flex items-center gap-1.5">
+                  {onTogglePrepared && (
+                    <button onClick={() => onTogglePrepared(s.id)} className={`w-2.5 h-2.5 rounded-full border ${preparedIds?.has(s.id) ? 'bg-emerald-500 border-emerald-400' : 'border-slate-600 hover:border-slate-400'}`} title={preparedIds?.has(s.id) ? 'Unprepare' : 'Prepare'} />
+                  )}
+                  <span className="text-slate-300 font-medium">{s.name}</span>
+                  {customSpellIds?.has(s.id) && <span className="text-[7px] text-violet-400">custom</span>}
+                </div>
                 <div className="flex items-center gap-1">
                   <span className={`text-[7px] capitalize ${SCHOOL_COLORS[s.school]?.split(' ')[0] || 'text-slate-500'}`}>{s.school.slice(0, 4)}</span>
                   <span className="text-slate-500">{s.damage || s.description.slice(0, 20)}</span>
+                  {customSpellIds?.has(s.id) && onRemoveCustomSpell && (
+                    <button onClick={() => onRemoveCustomSpell(s.id)} className="text-red-500 hover:text-red-400 text-[8px] ml-0.5" title="Remove spell">×</button>
+                  )}
                 </div>
               </div>
             ))}
@@ -276,11 +289,20 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
               const slotsAvail = (slots[s.level] || 0) - (used[s.level] || 0);
               return (
                 <div key={s.id} className={`flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30 ${slotsAvail <= 0 ? 'opacity-40' : ''}`}>
-                  <span className="text-purple-300 font-medium">{s.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    {onTogglePrepared && (
+                      <button onClick={() => onTogglePrepared(s.id)} className={`w-2.5 h-2.5 rounded-full border ${preparedIds?.has(s.id) ? 'bg-emerald-500 border-emerald-400' : 'border-slate-600 hover:border-slate-400'}`} title={preparedIds?.has(s.id) ? 'Unprepare' : 'Prepare'} />
+                    )}
+                    <span className="text-purple-300 font-medium">{s.name}</span>
+                    {customSpellIds?.has(s.id) && <span className="text-[7px] text-violet-400">custom</span>}
+                  </div>
                   <div className="flex items-center gap-1.5">
                     {s.isConcentration && <span className="text-[7px] text-blue-400 font-bold">C</span>}
                     <span className={`text-[7px] capitalize ${SCHOOL_COLORS[s.school]?.split(' ')[0] || 'text-slate-500'}`}>{s.school.slice(0, 4)}</span>
                     <span className="text-slate-500">Lv{s.level} {'\u2022'} {s.damage || (s.healAmount ? `+${s.healAmount}HP` : s.range)}</span>
+                    {customSpellIds?.has(s.id) && onRemoveCustomSpell && (
+                      <button onClick={() => onRemoveCustomSpell(s.id)} className="text-red-500 hover:text-red-400 text-[8px] ml-0.5" title="Remove spell">×</button>
+                    )}
                   </div>
                 </div>
               );
@@ -877,6 +899,9 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         // Collect unique schools for filter
         const schools = [...new Set(spells.map((s) => s.school))].sort();
 
+        const preparedIds = new Set(character.preparedSpellIds || []);
+        const customSpellIds = new Set((character.customSpells || []).map((s) => s.id));
+
         return (
           <SpellbookSection
             spells={spells}
@@ -889,6 +914,21 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             prof={prof}
             castMod={castMod}
             onToggleSlot={toggleSpellSlot}
+            preparedIds={preparedIds}
+            customSpellIds={customSpellIds}
+            onTogglePrepared={(spellId) => {
+              updateCharacter(character.id, {
+                preparedSpellIds: preparedIds.has(spellId)
+                  ? [...preparedIds].filter((id) => id !== spellId)
+                  : [...preparedIds, spellId],
+              } as Partial<typeof character>);
+            }}
+            onRemoveCustomSpell={(spellId) => {
+              updateCharacter(character.id, {
+                customSpells: (character.customSpells || []).filter((s) => s.id !== spellId),
+                preparedSpellIds: (character.preparedSpellIds || []).filter((id) => id !== spellId),
+              } as Partial<typeof character>);
+            }}
           />
         );
       })()}
