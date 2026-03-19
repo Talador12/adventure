@@ -20,6 +20,7 @@ interface Props {
   onUpdatePage?: (pageId: string, updates: Partial<WikiPage>) => void;
   onDeletePage?: (pageId: string) => void;
   playerName: string;
+  sceneName?: string;
 }
 
 const CATEGORY_ICONS: Record<WikiPage['category'], string> = {
@@ -29,7 +30,8 @@ const CATEGORY_COLORS: Record<WikiPage['category'], string> = {
   location: 'text-emerald-400', npc: 'text-amber-400', faction: 'text-red-400', lore: 'text-violet-400', item: 'text-sky-400',
 };
 
-export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage, playerName }: Props) {
+export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage, playerName, sceneName }: Props) {
+  const [generating, setGenerating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
@@ -139,6 +141,34 @@ export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage
                 />
                 <div className="flex gap-2">
                   <button onClick={saveEdit} className="text-[9px] px-3 py-1 rounded bg-teal-900/40 border border-teal-700/50 text-teal-300 font-semibold">Save</button>
+                  <button
+                    disabled={generating}
+                    onClick={async () => {
+                      if (!selected) return;
+                      setGenerating(true);
+                      try {
+                        const res = await fetch('/api/dm/generate-lore', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            title: editTitle || selected.title,
+                            category: selected.category,
+                            tags: selected.tags,
+                            sceneName,
+                            existingPages: pages.map((p) => p.title).filter((t) => t !== selected.title),
+                          }),
+                        });
+                        if (res.ok) {
+                          const data = await res.json() as { content?: string };
+                          if (data.content) setEditContent((prev) => prev ? `${prev}\n\n${data.content}` : data.content!);
+                        }
+                      } catch { /* ok */ }
+                      setGenerating(false);
+                    }}
+                    className="text-[9px] px-3 py-1 rounded bg-violet-900/30 border border-violet-700/40 text-violet-300 font-semibold disabled:opacity-50"
+                  >
+                    {generating ? '...' : '✨ Generate'}
+                  </button>
                   <button onClick={() => setEditing(false)} className="text-[9px] px-3 py-1 rounded bg-slate-800 text-slate-400">Cancel</button>
                 </div>
               </div>
@@ -164,7 +194,23 @@ export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage
                   </div>
                 )}
                 <div className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  {selected.content || <span className="italic text-slate-600">No content yet. Click Edit to add lore.</span>}
+                  {selected.content ? (
+                    // Render [[Page Title]] as clickable links
+                    selected.content.split(/(\[\[[^\]]+\]\])/).map((part, i) => {
+                      const match = part.match(/^\[\[(.+)\]\]$/);
+                      if (match) {
+                        const linkedPage = pages.find((p) => p.title.toLowerCase() === match[1].toLowerCase());
+                        return linkedPage ? (
+                          <button key={i} onClick={() => { setSelectedId(linkedPage.id); setEditing(false); }} className="text-teal-400 hover:text-teal-300 underline underline-offset-2 font-medium">{match[1]}</button>
+                        ) : (
+                          <span key={i} className="text-slate-500 italic">{match[1]}</span>
+                        );
+                      }
+                      return <span key={i}>{part}</span>;
+                    })
+                  ) : (
+                    <span className="italic text-slate-600">No content yet. Click Edit to add lore. Use [[Page Title]] to link between pages.</span>
+                  )}
                 </div>
               </div>
             )

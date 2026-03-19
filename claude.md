@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI lore generation for wiki — `POST /api/dm/generate-lore` uses Workers AI (Llama 3.1 8B) to generate 2-4 paragraph lore entries based on page title, category, tags, scene name, and existing page titles for world consistency. "✨ Generate" button in wiki editor appends AI content to existing text. Context-aware: references other wiki entries for cross-pollination.
+- Added wiki inter-page linking — `[[Page Title]]` syntax in wiki content renders as clickable teal links. Clicking jumps to the linked page. Unmatched names show as italic gray text. Empty pages show hint about linking syntax.
 - Added collaborative world-building wiki — "Wiki" tab in the game view. 5 page categories (location, NPC, faction, lore, item) with colored icons. Split-pane layout: filterable/searchable page list on the left, content viewer/editor on the right. Any player can create, edit, and tag pages. Category filter + text search. Edit mode with title + content fields. Pages persisted in campaign save/load. Creator attribution + last-updated timestamps.
 - Added combat replay mode — `combatRecorder.ts` records combat events (start/move/attack/damage/death/turn/spell/heal/end) with timestamps, unit positions, and HP snapshots. Auto-records when combat starts, auto-stops when combat ends. `CombatReplay` viewer: fullscreen modal with step-through scrubber, play/pause, speed control (0.5x-4x), keyboard nav (←→ step, Space play, Esc close). Shows event icons + descriptions, unit HP bars at each step. "▶ Replay" button in Game header plays the most recent recording.
 - Added DM screen mode — separate `/dm-screen` route that opens in a new window. Shows initiative order (sorted, current turn highlighted), party status (HP bars with color coding + condition badges), enemy stat blocks (HP/AC/attack/damage/CR + conditions), and a large current-turn callout. Synced from Game tab via BroadcastChannel in real-time. "DM Screen" button in Game header (DM-only) opens it in a 900×600 popup. Auto-syncs on every combat state change. 3-column responsive grid layout.
@@ -1015,8 +1017,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Player quick-reference cards (228-line RulesReference component with Conditions/Actions/Spells/Mechanics tabs — already implemented, R shortcut)
 - [x] Encounter history analytics (Achievements component tracks kills, damage, healing, crits, fumbles, spells — already implemented)
 - [x] Collaborative world-building wiki (5 categories, search, edit, persist in campaign state)
-- [ ] Wiki: AI lore generation (suggest content for empty pages based on campaign context)
-- [ ] Wiki: link between pages (click NPC name in a location page to jump to that NPC's page)
+- [x] Wiki: AI lore generation (Workers AI generates content based on title/category/tags/scene/existing pages)
+- [x] Wiki: inter-page linking ([[Page Title]] syntax renders as clickable links)
 - [ ] Mobile companion app mode (join as player from phone, streamlined UI)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
 - [x] AI-generated enemy portraits (FLUX-1-schnell, fire-and-forget parallel gen on encounter spawn)
