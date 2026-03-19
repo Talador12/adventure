@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added "Re-roll Gear" button on character sheet Equipment section — resets inventory + equipment + gold to the `STARTING_EQUIPMENT` preset for the character's class. Generates new UUIDs for all items, auto-equips best weapon/armor/shield. Appears as amber "Re-roll Gear" link next to the Equipment header. Useful for resetting a character's loadout after testing or before a new campaign.
 - Added "Add Custom Spell" form on character sheet — collapsible form with name, level (0-9), school (8 options), damage dice, range, concentration checkbox, and description. Creates a new Spell with randomUUID, adds to `customSpells` via `updateCharacter`. Form resets and collapses on submit.
 - Added prepared-only filter toggle — "Prepared" pill button in the spellbook filter bar (emerald when active). When toggled, only shows spells in `preparedSpellIds`. Works alongside existing search, school, and level filters.
 - Added spell management UI on character sheet — each spell row now has a circular prepare toggle (green dot when prepared, empty when not) and custom spells show a "custom" label + red × remove button. `preparedSpellIds?: string[]` field on Character tracks which spells are prepared. Prepare/unprepare toggles update the character via `updateCharacter`. Remove button strips the spell from `customSpells` and `preparedSpellIds`. Both cantrip and leveled spell sections include these controls.
@@ -858,7 +859,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Light source items in inventory (candle, torch, lantern, tinderbox) — use from inventory to apply condition
 - [x] Add light source items to the shop (Supplies category with adventuring gear)
 - [x] Starting equipment presets by class (Fighter gets chain mail + longsword, Rogue gets leather + daggers, etc.)
-- [ ] "Re-roll equipment" button on character sheet to re-randomize starting gear variant
+- [x] "Re-roll equipment" button on character sheet to reset to class starting gear
 - [x] Daylight spell auto-cast from spellbook UI (applies condition to caster for spell duration)
 - [x] Dispel Magic: remove magical conditions from target units (counter to buffs/debuffs/light spells)
 
