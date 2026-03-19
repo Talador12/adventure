@@ -1022,6 +1022,18 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Wiki: AI lore generation (Workers AI generates content based on title/category/tags/scene/existing pages)
 - [x] Wiki: inter-page linking ([[Page Title]] syntax renders as clickable links)
 - [ ] Mobile companion app mode (join as player from phone, streamlined UI)
+
+### v4.0 Feature Ideas
+- [ ] Streaming AI narration (SSE token-by-token display instead of waiting for full response)
+- [ ] Player character journal (private diary entries visible only to that player)
+- [ ] Initiative card drag-and-drop (DM can reorder initiative manually)
+- [ ] Hex grid support (alternative to square grid for BattleMap)
+- [ ] Campaign calendar (track in-world dates, schedule events, long rests)
+- [ ] Encounter templates (save + reuse enemy groups across campaigns)
+- [ ] Map annotations (floating text labels on the battle map)
+- [ ] Damage type tracking (fire/cold/radiant etc with resistances/vulnerabilities)
+- [ ] Wild Magic table (auto-roll on nat 1 for Wild Magic Sorcerers)
+- [ ] Concentration spell visual indicator on tokens (subtle ring effect)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
 - [x] AI-generated enemy portraits (FLUX-1-schnell, fire-and-forget parallel gen on encounter spawn)
 - [x] Initiative tiebreaker rules (DEX mod, then stable ID comparison)
