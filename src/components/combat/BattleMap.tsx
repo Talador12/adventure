@@ -524,6 +524,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [lastDungeonSeed, setLastDungeonSeed] = useState<number | null>(null);
   const [seedInput, setSeedInput] = useState('');
+  const [showCommunityMaps, setShowCommunityMaps] = useState(false);
+  const [communityMaps, setCommunityMaps] = useState<Array<{ id: string; name: string; tags: string[]; rating: number; downloads: number }>>([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
 
   // Movement range: reachable cells during drag (only in combat)
   const [reachableCells, setReachableCells] = useState<Map<string, number> | null>(null);
@@ -1863,6 +1866,41 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                   }}
                 />
 
+                {/* Community maps */}
+                <button
+                  onClick={() => {
+                    const name = prompt('Map name (for sharing):');
+                    if (!name?.trim()) return;
+                    const tags = (prompt('Tags (comma-separated):', 'dungeon') || '').split(',').map((t) => t.trim()).filter(Boolean);
+                    fetch('/api/maps', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ name: name.trim(), tags, terrain }),
+                    }).then((r) => r.json() as Promise<Record<string, unknown>>).then((d) => {
+                      if (d.ok) alert(`Map shared! ID: ${d.mapId}`);
+                    }).catch(() => {});
+                  }}
+                  className="text-[9px] px-1.5 py-1 rounded bg-teal-900/30 hover:bg-teal-900/50 border border-teal-700/40 text-teal-300 font-semibold transition-all"
+                  title="Share this map with the community"
+                >
+                  Share
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCommunityMaps(!showCommunityMaps);
+                    if (!showCommunityMaps && communityMaps.length === 0) {
+                      setCommunityLoading(true);
+                      fetch('/api/maps').then((r) => r.json() as Promise<Record<string, unknown>>).then((d) => {
+                        setCommunityMaps((d.maps as typeof communityMaps) || []);
+                      }).catch(() => {}).finally(() => setCommunityLoading(false));
+                    }
+                  }}
+                  className={`text-[9px] px-1.5 py-1 rounded border font-semibold transition-all ${showCommunityMaps ? 'bg-teal-900/50 border-teal-600/50 text-teal-200' : 'bg-teal-900/20 border-teal-700/30 text-teal-400 hover:bg-teal-900/40'}`}
+                  title="Browse community-shared maps"
+                >
+                  Browse
+                </button>
+
                 <div className="w-px h-4 bg-slate-700 mx-1" />
                 <span className="text-[9px] text-sky-500/70 uppercase tracking-wider font-semibold">Fog</span>
                 <button
@@ -2084,6 +2122,47 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         </div>
 
         {/* Minimap overlay — bottom-right corner */}
+        {/* Community maps browser panel */}
+        {showCommunityMaps && (
+          <div className="absolute top-10 left-2 z-30 w-64 max-h-60 bg-slate-900/95 backdrop-blur-sm border border-teal-700/40 rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
+              <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Community Maps</span>
+              <button onClick={() => setShowCommunityMaps(false)} className="text-slate-500 hover:text-slate-300 text-xs">×</button>
+            </div>
+            <div className="overflow-y-auto max-h-48 p-1.5 space-y-1">
+              {communityLoading ? (
+                <div className="text-[10px] text-slate-500 text-center py-4">Loading...</div>
+              ) : communityMaps.length === 0 ? (
+                <div className="text-[10px] text-slate-600 text-center py-4 italic">No community maps yet — be the first to share!</div>
+              ) : (
+                communityMaps.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      fetch(`/api/maps/${m.id}`).then((r) => r.json() as Promise<Record<string, unknown>>).then((d) => {
+                        const map = d.map as Record<string, unknown>;
+                        if (map?.terrain && Array.isArray(map.terrain) && onTerrainChange) {
+                          setTerrain(map.terrain as TerrainType[][]);
+                          onTerrainChange(map.terrain as TerrainType[][]);
+                          setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
+                          setShowCommunityMaps(false);
+                        }
+                      }).catch(() => {});
+                    }}
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-teal-900/20 border border-transparent hover:border-teal-700/30 transition-all text-left"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold text-slate-200 truncate">{m.name}</div>
+                      <div className="text-[8px] text-slate-500">{m.tags.join(', ')}{m.tags.length > 0 ? ' · ' : ''}{m.downloads} dl</div>
+                    </div>
+                    {m.rating > 0 && <span className="text-[9px] text-amber-400 font-bold shrink-0">★ {m.rating}</span>}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {showMinimap && (
           <div className="absolute bottom-2 right-2 rounded border border-slate-700/60 bg-slate-950/80 shadow-lg overflow-hidden" style={{ width: gridCols * MINIMAP_CELL + 2, height: gridRows * MINIMAP_CELL + 2 }}>
             <canvas

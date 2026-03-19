@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added community map sharing — full backend + frontend. 4 API endpoints: `POST /api/maps` (upload with name/tags/terrain), `GET /api/maps` (browse with optional tag filter), `GET /api/maps/:id` (download + increment counter), `POST /api/maps/:id/rate` (1-5 rating with running average). Maps stored in KV with metadata index (200 max). BattleMap DM toolbar gets "Share" button (uploads current terrain with name + tags) and "Browse" button (teal-themed dropdown panel with map cards showing name, tags, downloads, star rating). Clicking a map loads its terrain + resets fog.
 - Added ETag on campaign list endpoint — `GET /api/campaigns` now includes SHA-256 ETag + 304 Not Modified support. Client sends If-None-Match, stores ETag in localStorage. Completes the ETag coverage across all three main GET endpoints (characters, campaign state, campaign list).
 - Added player notes panel — "Notes" tab in the right sidebar alongside Chat and Sheet. Full-height textarea for personal session notes (track NPCs, clues, plans). Stored in localStorage per-room (`adventure:notes:{room}`), auto-saved with 1s debounce. Character count + Clear button at bottom. `N` keyboard shortcut toggles notes panel. Only visible to the player — not the DM or other players. Help overlay updated.
 - Added campaign session log export — `exportSessionLog()` in export.ts generates a formatted markdown file with party roster, DM narration (blockquotes), timestamped chat log (with system/roll/message types), and combat log (bullet list). "Export Log" button in Game header (lazy-loaded). Downloads as `{campaign-name}-session-log.md`. Includes all data from the current session.
@@ -950,7 +951,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Loot rarity glow effect on party inventory items (colored borders + box-shadow per tier)
 - [x] AI encounter balancing (DMG XP budget calculation + party composition awareness)
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)
-- [ ] Community map sharing (upload/download presets via API, rate + tag)
+- [x] Community map sharing (upload/download/rate via API + Browse panel in DM toolbar)
+- [ ] Map preview thumbnails in community browser (canvas snapshot on upload)
+- [ ] Map search by name/tag with autocomplete
 - [x] Turn timer (configurable countdown per player turn, auto-end on expiry — already implemented)
 - [x] Initiative roll automation (shows order in combat log + DM re-roll during combat)
 - [x] Condition duration countdown in initiative bar (already shows round count + tooltip)
@@ -958,6 +961,21 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Campaign session log export (markdown with party roster, narration, chat, combat log)
 - [x] Player notes panel (personal notes per-campaign, localStorage, N shortcut)
 - [ ] Shareable player notes (opt-in: share specific notes with the party via WebSocket)
+
+### v2.0 Feature Ideas
+- [ ] Campaign timeline view (visual timeline of sessions with key events + milestones)
+- [ ] Character relationship graph (party dynamics visualization, NPC connections)
+- [ ] Voice chat integration (WebRTC peer-to-peer audio with push-to-talk)
+- [ ] Map fog-of-war reveal animation (smooth fog dissolve as tokens move)
+- [ ] Encounter theater mode (cinematic view during combat with zoom + pan)
+- [ ] AI DM personality presets (comedic, grimdark, Tolkien-esque, etc.)
+- [ ] Character multiclassing support (track levels per class)
+- [ ] Spell concentration auto-tracking (auto-check on damage, break on fail)
+- [ ] Death save automation (roll on turn start when unconscious)
+- [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
+- [ ] Custom token images (upload portraits for enemies/NPCs)
+- [ ] Initiative tiebreaker rules (DEX, then coin flip)
+- [ ] Rest mechanics (short rest hit dice, long rest full restore with UI)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout
 - [x] Multi-floor dungeons (stairs terrain types + floor navigation bar)
