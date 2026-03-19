@@ -116,7 +116,7 @@ interface GameContextValue {
   healUnit: (unitId: string, amount: number) => Unit[];
   removeUnit: (unitId: string) => Unit[];
   rollInitiative: () => Unit[];
-  nextTurn: () => { units: Unit[]; turnIndex: number; newRound: boolean };
+  nextTurn: () => { units: Unit[]; turnIndex: number; newRound: boolean; deathSaveMessage?: string };
 }
 
 const DEFAULT_PLAYER: Player = { id: 'local', username: 'You', controllerType: 'human' };
@@ -172,7 +172,7 @@ const GameContext = createContext<GameContextValue>({
   healUnit: () => [],
   removeUnit: () => [],
   rollInitiative: () => [],
-  nextTurn: () => ({ units: [], turnIndex: 0, newRound: false }),
+  nextTurn: () => ({ units: [], turnIndex: 0, newRound: false, deathSaveMessage: undefined }),
 });
 
 export function useGame() {
@@ -1168,8 +1168,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [characters]);
 
   // Advance to next turn in initiative order. Returns units + turn info for sync.
-  const nextTurn = useCallback((): { units: Unit[]; turnIndex: number; newRound: boolean } => {
-    let turnResult = { units: [] as Unit[], turnIndex: 0, newRound: false };
+  const nextTurn = useCallback((): { units: Unit[]; turnIndex: number; newRound: boolean; deathSaveMessage?: string } => {
+    let turnResult: { units: Unit[]; turnIndex: number; newRound: boolean; deathSaveMessage?: string } = { units: [], turnIndex: 0, newRound: false };
     setUnits((prev) => {
       const alive = prev.filter((u) => u.hp > 0);
       if (alive.length === 0) {
@@ -1181,7 +1181,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const currentIdx = prev.findIndex((u) => u.isCurrentTurn);
       const cleared = prev.map((u) => ({ ...u, isCurrentTurn: false }));
 
-      // Find next alive unit after current
+      // Find next unit after current (include unconscious players for death saves, skip dead enemies)
       let nextIdx = currentIdx + 1;
       let wrapped = false;
       while (true) {
@@ -1189,7 +1189,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
           nextIdx = 0;
           wrapped = true;
         }
-        if (cleared[nextIdx].hp > 0) break;
+        const candidate = cleared[nextIdx];
+        // Include: alive units OR unconscious player units (for death saves)
+        if (candidate.hp > 0 || (candidate.hp === 0 && candidate.type === 'player')) break;
         nextIdx++;
         if (nextIdx === currentIdx) break; // safety: all dead somehow
       }
@@ -1199,12 +1201,56 @@ export function GameProvider({ children }: { children: ReactNode }) {
       cleared[nextIdx].reactionUsed = false; // reset reaction for new turn
       cleared[nextIdx].disengaged = false; // reset disengage for new turn
 
+      // Death save automation: if the unit starting their turn is unconscious (0 HP), roll a death save
+      if (cleared[nextIdx].hp === 0 && cleared[nextIdx].type === 'player' && cleared[nextIdx].characterId) {
+        const roll = Math.floor(Math.random() * 20) + 1;
+        const char = characters.find((c) => c.id === cleared[nextIdx].characterId);
+        if (char) {
+          const saves = { ...(char.deathSaves || { successes: 0, failures: 0 }) };
+          let message = '';
+          if (roll === 20) {
+            // Nat 20: regain 1 HP
+            cleared[nextIdx].hp = 1;
+            saves.successes = 0;
+            saves.failures = 0;
+            message = `${cleared[nextIdx].name} rolls a natural 20 on their death save! They regain 1 HP and are conscious!`;
+            updateCharacter(char.id, { deathSaves: saves, hp: 1, condition: 'normal' });
+          } else if (roll === 1) {
+            // Nat 1: 2 failures
+            saves.failures = Math.min(3, saves.failures + 2);
+            message = `${cleared[nextIdx].name} rolls a 1 on their death save — two failures! (${saves.successes} successes, ${saves.failures} failures)`;
+            updateCharacter(char.id, { deathSaves: saves, condition: saves.failures >= 3 ? 'dead' : 'unconscious' });
+          } else if (roll >= 10) {
+            saves.successes = Math.min(3, saves.successes + 1);
+            message = `${cleared[nextIdx].name} rolls ${roll} — death save success! (${saves.successes}/3 successes, ${saves.failures}/3 failures)`;
+            if (saves.successes >= 3) {
+              message = `${cleared[nextIdx].name} rolls ${roll} — stabilized! (3 successes)`;
+              updateCharacter(char.id, { deathSaves: { successes: 0, failures: 0 }, condition: 'stabilized' });
+            } else {
+              updateCharacter(char.id, { deathSaves: saves });
+            }
+          } else {
+            saves.failures = Math.min(3, saves.failures + 1);
+            message = `${cleared[nextIdx].name} rolls ${roll} — death save failure! (${saves.successes}/3 successes, ${saves.failures}/3 failures)`;
+            if (saves.failures >= 3) {
+              message = `${cleared[nextIdx].name} rolls ${roll} — DEAD. (3 failures)`;
+              updateCharacter(char.id, { deathSaves: { successes: 0, failures: 0 }, condition: 'dead' });
+              cleared[nextIdx].hp = -1; // mark as truly dead
+            } else {
+              updateCharacter(char.id, { deathSaves: saves });
+            }
+          }
+          // Return the death save message for the caller to log
+          if (message) turnResult.deathSaveMessage = message;
+        }
+      }
+
       const isNewRound = wrapped || nextIdx <= currentIdx;
       if (isNewRound) {
         setCombatRound((r) => r + 1);
       }
       setTurnIndex(nextIdx);
-      turnResult = { units: cleared, turnIndex: nextIdx, newRound: isNewRound };
+      turnResult = { ...turnResult, units: cleared, turnIndex: nextIdx, newRound: isNewRound };
       return cleared;
     });
     return turnResult;

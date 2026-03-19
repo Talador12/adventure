@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added death save automation — when an unconscious player unit (0 HP) starts their turn, a d20 death save auto-rolls following D&D 5e rules: 10+ = success, <10 = failure, nat 20 = regain 1 HP + conscious, nat 1 = 2 failures. 3 successes = stabilize, 3 failures = death (hp set to -1). `nextTurn` in GameContext modified to include unconscious player units in turn order (enemies still skipped). Death save result returned as `deathSaveMessage` from `nextTurn()`, logged to combat log + DM narration. Character `deathSaves` and `condition` updated in real-time.
 - Added community map sharing — full backend + frontend. 4 API endpoints: `POST /api/maps` (upload with name/tags/terrain), `GET /api/maps` (browse with optional tag filter), `GET /api/maps/:id` (download + increment counter), `POST /api/maps/:id/rate` (1-5 rating with running average). Maps stored in KV with metadata index (200 max). BattleMap DM toolbar gets "Share" button (uploads current terrain with name + tags) and "Browse" button (teal-themed dropdown panel with map cards showing name, tags, downloads, star rating). Clicking a map loads its terrain + resets fog.
 - Added ETag on campaign list endpoint — `GET /api/campaigns` now includes SHA-256 ETag + 304 Not Modified support. Client sends If-None-Match, stores ETag in localStorage. Completes the ETag coverage across all three main GET endpoints (characters, campaign state, campaign list).
 - Added player notes panel — "Notes" tab in the right sidebar alongside Chat and Sheet. Full-height textarea for personal session notes (track NPCs, clues, plans). Stored in localStorage per-room (`adventure:notes:{room}`), auto-saved with 1s debounce. Character count + Clear button at bottom. `N` keyboard shortcut toggles notes panel. Only visible to the player — not the DM or other players. Help overlay updated.
@@ -971,7 +972,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] AI DM personality presets (comedic, grimdark, Tolkien-esque, etc.)
 - [ ] Character multiclassing support (track levels per class)
 - [ ] Spell concentration auto-tracking (auto-check on damage, break on fail)
-- [ ] Death save automation (roll on turn start when unconscious)
+- [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
 - [ ] Custom token images (upload portraits for enemies/NPCs)
 - [ ] Initiative tiebreaker rules (DEX, then coin flip)

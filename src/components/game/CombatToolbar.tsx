@@ -232,6 +232,10 @@ export default function CombatToolbar({
                                 if (msg) setCombatLog((prev) => [...prev, msg]);
                                 const tr = nextTurn();
                                 playTurnChange();
+                                if (tr.deathSaveMessage) {
+                                  setCombatLog((prev) => [...prev, tr.deathSaveMessage!]);
+                                  addDmMessage(tr.deathSaveMessage);
+                                }
                                 broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
                               }}
                               data-combat-action="end-turn"
