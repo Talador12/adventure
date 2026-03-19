@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added optimistic UI for campaign state loading — `useCampaignPersistence` now shows IndexedDB-cached game state immediately on mount while the server fetch runs in background. Server response overwrites cached data when it arrives. Campaign state also cached to IndexedDB on every save (alongside the debounced server PUT). Server load response cached for next optimistic load. Combined with the existing character + campaign list caching, the entire app loads instantly from cache on repeat visits.
 - Added "Re-roll Gear" button on character sheet Equipment section — resets inventory + equipment + gold to the `STARTING_EQUIPMENT` preset for the character's class. Generates new UUIDs for all items, auto-equips best weapon/armor/shield. Appears as amber "Re-roll Gear" link next to the Equipment header. Useful for resetting a character's loadout after testing or before a new campaign.
 - Added "Add Custom Spell" form on character sheet — collapsible form with name, level (0-9), school (8 options), damage dice, range, concentration checkbox, and description. Creates a new Spell with randomUUID, adds to `customSpells` via `updateCharacter`. Form resets and collapses on submit.
 - Added prepared-only filter toggle — "Prepared" pill button in the spellbook filter bar (emerald when active). When toggled, only shows spells in `preparedSpellIds`. Works alongside existing search, school, and level filters.
@@ -922,7 +923,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Browser cache strategy:**
 - [x] Service Worker for offline-first static assets
 - [x] IndexedDB for local cache of characters, campaigns, campaign state
-- [ ] Optimistic UI: show cached data immediately, sync in background
+- [x] Optimistic UI: show IndexedDB-cached state immediately, server fetch overwrites in background
 - [ ] Cache invalidation via ETags or Last-Modified headers
 
 **Server persistence coverage:**

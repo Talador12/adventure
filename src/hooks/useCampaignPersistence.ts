@@ -158,6 +158,9 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
         return;
       }
 
+      // Also cache to IndexedDB for optimistic loading
+      import('../lib/localCache').then(({ cacheCampaignState }) => cacheCampaignState(room, state)).catch(() => {});
+
       // Real user: save to server
       fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`, {
         method: 'PUT',
@@ -246,7 +249,18 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       return;
     }
 
-    // Real user: load from server
+    // Optimistic: show IndexedDB cached state immediately while server loads
+    import('../lib/localCache').then(({ getCachedCampaignState }) => {
+      getCachedCampaignState(room).then((cached) => {
+        if (cached && typeof cached === 'object') {
+          const { result, raw } = parseCampaignData(cached as Record<string, unknown>);
+          onLoad(result);
+          handleAutoSelect(raw as Record<string, unknown>);
+        }
+      });
+    }).catch(() => {});
+
+    // Real user: load from server (overwrites cached data when it arrives)
     fetch(`${apiBase()}/api/campaign/${encodeURIComponent(room)}`)
       .then((r) => (r.ok ? (r.json() as Promise<{ campaign?: Record<string, unknown> }>) : null))
       .then((data) => {
@@ -254,6 +268,8 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
           const { result, raw } = parseCampaignData(data.campaign);
           onLoad(result);
           handleAutoSelect(raw);
+          // Cache server response for next optimistic load
+          import('../lib/localCache').then(({ cacheCampaignState }) => cacheCampaignState(room, data.campaign!)).catch(() => {});
         }
       })
       .catch(() => {});
