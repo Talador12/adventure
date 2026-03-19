@@ -925,6 +925,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] IndexedDB for local cache of characters, campaigns, campaign state
 - [x] Optimistic UI: show IndexedDB-cached state immediately, server fetch overwrites in background
 - [ ] Cache invalidation via ETags or Last-Modified headers
+- [ ] Character export to PDF (printable character sheet with portrait, stats, inventory, spells)
+- [ ] Shared party inventory (group loot pool managed by DM, players request items)
+- [ ] AI encounter balancing (adjust enemy CR based on party level + composition)
+- [ ] Map preset library (tavern, dungeon, forest, cave, castle templates)
 
 **Server persistence coverage:**
 | Feature | Currently | Target | Status |
