@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added encounter-specific loot overrides — "Staged Loot" section in DMSidebar Notes tab lets the DM pre-assign items (with name + rarity) for the next encounter. When combat ends, if staged loot exists, it's used instead of random table rolls. Items go to party inventory, staged list auto-clears. Chat message shows "(DM-assigned)" label. If no staged loot, falls back to normal `rollLoot()` table behavior. DM can also clear all staged loot manually.
 - Added per-floor terrain/lighting persistence — `floorDataRef` stores terrain + lighting grids per floor index. Switching floors saves the current floor's state and restores the target floor's (or creates a fresh blank floor). `floorData` array, `floorNames`, and `currentFloor` all included in campaign save/load via `useCampaignPersistence`. New floors start as all-floor terrain with normal lighting. Multi-floor dungeons now fully survive page reload.
 - Added loot rarity glow on party inventory items — color-coded borders and box-shadow glow per rarity tier in the DMSidebar Party Loot section. Common: slate border, Uncommon: emerald border + subtle green glow, Rare: blue border + blue glow, Epic: purple border + purple glow. Item name text also color-coded per rarity. Replaces the flat amber text with distinct visual hierarchy.
 - Added stair click navigation — clicking a stairs_up cell switches to the floor above, stairs_down switches below. Only active when multiple floors exist. `onStairClick` prop on BattleMap triggers `setCurrentFloor` in Game.tsx. Bounds-checked (can't go above floor 0 or below the last floor). Integrated into the mouseDown handler before token interaction so stairs always respond.
@@ -939,7 +940,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Character export to PDF (printable sheet with stats, equipment, inventory, spells)
 - [x] Shared party inventory (DM-managed loot pool with give-to-player transfers)
 - [x] Loot roll table integration — weighted random loot from 4-tier table, auto-populates party inventory
-- [ ] Encounter-specific loot overrides (DM can pre-assign loot for specific encounters)
+- [x] Encounter-specific loot overrides (Staged Loot section, used instead of random rolls)
 - [x] Loot rarity glow effect on party inventory items (colored borders + box-shadow per tier)
 - [x] AI encounter balancing (DMG XP budget calculation + party composition awareness)
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)

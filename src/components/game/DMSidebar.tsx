@@ -72,6 +72,11 @@ interface DMSidebarProps {
   onAddToPartyInventory?: (item: import('../../types/game').Item) => void;
   onRemoveFromPartyInventory?: (itemId: string) => void;
   onGiveItemToPlayer?: (itemId: string, charId: string) => void;
+  // Staged loot — DM pre-assigns loot for the next encounter
+  stagedLoot?: import('../../types/game').Item[];
+  onAddStagedLoot?: (item: import('../../types/game').Item) => void;
+  onRemoveStagedLoot?: (itemId: string) => void;
+  onClearStagedLoot?: () => void;
 }
 
 export default function DMSidebar({
@@ -122,6 +127,10 @@ export default function DMSidebar({
   onAddToPartyInventory,
   onRemoveFromPartyInventory,
   onGiveItemToPlayer,
+  stagedLoot,
+  onAddStagedLoot,
+  onRemoveStagedLoot,
+  onClearStagedLoot,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter, grantXP } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -482,6 +491,54 @@ export default function DMSidebar({
                     ));
                   })()}
                 </div>
+              </div>
+            )}
+
+            {/* Staged Loot — DM pre-assigns loot for next encounter */}
+            {onAddStagedLoot && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-slate-500 font-semibold uppercase">
+                    Staged Loot ({(stagedLoot || []).length})
+                    <span className="text-[8px] text-slate-600 normal-case ml-1">next encounter</span>
+                  </label>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        const name = prompt('Item name:');
+                        if (!name?.trim()) return;
+                        const rarityStr = prompt('Rarity (common/uncommon/rare/epic):', 'uncommon') || 'common';
+                        const rarity = (['common', 'uncommon', 'rare', 'epic'].includes(rarityStr) ? rarityStr : 'common') as import('../../types/game').ItemRarity;
+                        onAddStagedLoot({
+                          id: crypto.randomUUID(),
+                          name: name.trim(),
+                          type: 'misc',
+                          rarity,
+                          description: 'Pre-assigned encounter loot',
+                          value: 0,
+                        });
+                      }}
+                      className="text-[8px] text-orange-400 hover:text-orange-300 font-semibold"
+                    >
+                      + Stage
+                    </button>
+                    {(stagedLoot || []).length > 0 && (
+                      <button onClick={onClearStagedLoot} className="text-[8px] text-slate-500 hover:text-red-400 font-semibold">Clear</button>
+                    )}
+                  </div>
+                </div>
+                {(stagedLoot || []).length > 0 ? (
+                  <div className="space-y-0.5">
+                    {(stagedLoot || []).map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-[9px] px-2 py-0.5 rounded border border-orange-800/30 bg-orange-950/20">
+                        <span className="text-orange-200 font-medium truncate">{item.name} <span className="text-[7px] text-orange-500">{item.rarity}</span></span>
+                        <button onClick={() => onRemoveStagedLoot?.(item.id)} className="text-red-500 hover:text-red-400" title="Remove">×</button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[8px] text-slate-600 italic">No staged loot — random rolls will be used</p>
+                )}
               </div>
             )}
 
