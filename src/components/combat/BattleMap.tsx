@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, LIGHT_SOURCE_RADII, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { MAP_PRESETS } from '../../data/mapPresets';
+import { generateDungeon } from '../../lib/dungeonGen';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
@@ -81,12 +82,9 @@ function rollTrapDamage(formula: string): number {
   return total;
 }
 
-// --- Procedural dungeon generation ---
-interface Room {
-  x: number; y: number; w: number; h: number;
-}
-
-function generateDungeon(cols: number, rows: number): TerrainType[][] {
+// Procedural dungeon gen imported from src/lib/dungeonGen.ts (BSP algorithm)
+interface Room { x: number; y: number; w: number; h: number; }
+function _legacyDungeon(cols: number, rows: number): TerrainType[][] {
   const grid: TerrainType[][] = Array.from({ length: rows }, () => Array(cols).fill('void'));
 
   // Place 5-9 rooms
@@ -1764,7 +1762,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                     Clear
                   </button>
                 )}
-                {/* Map presets */}
+                {/* Map presets + procedural gen */}
                 <select
                   value=""
                   onChange={(e) => {
@@ -1772,7 +1770,6 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                     if (preset && onTerrainChange) {
                       setTerrain(preset.terrain);
                       onTerrainChange(preset.terrain);
-                      // Reset explored fog for new map
                       setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
                     }
                   }}
@@ -1784,6 +1781,19 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                     <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
                   ))}
                 </select>
+                <button
+                  onClick={() => {
+                    if (!onTerrainChange) return;
+                    const dungeon = generateDungeon(gridRows, gridCols);
+                    setTerrain(dungeon);
+                    onTerrainChange(dungeon);
+                    setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
+                  }}
+                  className="text-[9px] px-1.5 py-1 rounded bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 font-semibold transition-all"
+                  title="Generate a random dungeon layout (BSP algorithm)"
+                >
+                  🎲 Random
+                </button>
 
                 <div className="w-px h-4 bg-slate-700 mx-1" />
                 <span className="text-[9px] text-sky-500/70 uppercase tracking-wider font-semibold">Fog</span>
