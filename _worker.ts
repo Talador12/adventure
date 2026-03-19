@@ -769,22 +769,62 @@ app.post('/api/dm/backstory-hooks', async (c) => {
   }
 });
 
-// AI DM encounter generator — creates enemies with stats
+// D&D 5e XP thresholds per character level (DMG p82)
+const XP_THRESHOLDS_BY_LEVEL: Record<number, { easy: number; medium: number; hard: number; deadly: number }> = {
+  1: { easy: 25, medium: 50, hard: 75, deadly: 100 },
+  2: { easy: 50, medium: 100, hard: 150, deadly: 200 },
+  3: { easy: 75, medium: 150, hard: 225, deadly: 400 },
+  4: { easy: 125, medium: 250, hard: 375, deadly: 500 },
+  5: { easy: 250, medium: 500, hard: 750, deadly: 1100 },
+  6: { easy: 300, medium: 600, hard: 900, deadly: 1400 },
+  7: { easy: 350, medium: 750, hard: 1100, deadly: 1700 },
+  8: { easy: 450, medium: 900, hard: 1400, deadly: 2100 },
+  9: { easy: 550, medium: 1100, hard: 1600, deadly: 2400 },
+  10: { easy: 600, medium: 1200, hard: 1900, deadly: 2800 },
+  11: { easy: 800, medium: 1600, hard: 2400, deadly: 3600 },
+  12: { easy: 1000, medium: 2000, hard: 3000, deadly: 4500 },
+  13: { easy: 1100, medium: 2200, hard: 3400, deadly: 5100 },
+  14: { easy: 1250, medium: 2500, hard: 3800, deadly: 5700 },
+  15: { easy: 1400, medium: 2800, hard: 4300, deadly: 6400 },
+  16: { easy: 1600, medium: 3200, hard: 4800, deadly: 7200 },
+  17: { easy: 2000, medium: 3900, hard: 5900, deadly: 8800 },
+  18: { easy: 2100, medium: 4200, hard: 6300, deadly: 9500 },
+  19: { easy: 2400, medium: 4900, hard: 7300, deadly: 10900 },
+  20: { easy: 2800, medium: 5700, hard: 8500, deadly: 12700 },
+};
+
+// AI DM encounter generator — creates enemies with stats, balanced to XP budget
 app.post('/api/dm/encounter', async (c) => {
   if (!c.env.AI) {
     return c.json({ error: 'AI binding not available' }, 503);
   }
 
   const body = await c.req.json<Record<string, unknown>>();
-  const partyLevel = Number(body.partyLevel) || 1;
-  const partySize = Number(body.partySize) || 1;
-  const difficulty = String(body.difficulty || 'medium');
+  const partyLevel = Math.max(1, Math.min(20, Number(body.partyLevel) || 1));
+  const partySize = Math.max(1, Math.min(8, Number(body.partySize) || 1));
+  const difficulty = String(body.difficulty || 'medium') as 'easy' | 'medium' | 'hard' | 'deadly';
   const context = String(body.context || 'a dark dungeon corridor');
+  // Party composition hints for smarter encounters
+  const partyClasses = Array.isArray(body.partyClasses) ? (body.partyClasses as string[]).join(', ') : '';
 
-  const prompt = `Generate a D&D 5e combat encounter for a party of ${partySize} level ${partyLevel} adventurers. Difficulty: ${difficulty}. Setting: ${context}.
+  // Calculate XP budget using DMG thresholds
+  const thresholds = XP_THRESHOLDS_BY_LEVEL[partyLevel] || XP_THRESHOLDS_BY_LEVEL[1];
+  const xpBudget = thresholds[difficulty] * partySize;
+  const xpBudgetLow = Math.round(xpBudget * 0.8);
+  const xpBudgetHigh = Math.round(xpBudget * 1.2);
+
+  const compositionHint = partyClasses ? `\nThe party consists of: ${partyClasses}. Design enemies that create interesting tactical challenges for this composition.` : '';
+
+  const prompt = `Generate a D&D 5e combat encounter for a party of ${partySize} level ${partyLevel} adventurers. Difficulty: ${difficulty} (XP budget: ${xpBudgetLow}-${xpBudgetHigh} XP total). Setting: ${context}.${compositionHint}
+
+Rules:
+- Total enemy XP should be ${xpBudgetLow}-${xpBudgetHigh} (adjusted for encounter multiplier: 1 enemy=1x, 2=1.5x, 3-6=2x, 7+=2.5x)
+- HP and AC should be appropriate for the CR of each enemy
+- Include a mix of enemy types when possible (melee + ranged, leader + minions)
+- Each enemy needs: name, hp, maxHp, ac, type="enemy"
 
 Return ONLY valid JSON (no markdown, no explanation) in this exact format:
-{"enemies":[{"name":"Goblin","hp":7,"maxHp":7,"ac":15,"type":"enemy"},{"name":"Goblin Archer","hp":7,"maxHp":7,"ac":13,"type":"enemy"}],"description":"Two goblins leap from behind the rocks, weapons drawn!"}`;
+{"enemies":[{"name":"Goblin","hp":7,"maxHp":7,"ac":15,"type":"enemy"},{"name":"Goblin Archer","hp":7,"maxHp":7,"ac":13,"type":"enemy"}],"description":"Two goblins leap from behind the rocks!","xpTotal":100,"difficulty":"${difficulty}"}`;
 
   try {
     const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
