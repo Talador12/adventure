@@ -490,6 +490,12 @@ export interface Quest {
   title: string;
   description: string;
   completed: boolean;
+  // World map location (optional — for quest tracker map view)
+  location?: string;  // place name, e.g. "Dragon's Keep"
+  mapX?: number;      // 0-100 percentage position on world map
+  mapY?: number;
+  priority?: 'main' | 'side' | 'personal';
+  giver?: string;     // NPC who gave the quest
 }
 
 // Map pin/marker — DM-placed annotations on the battle map

@@ -39,6 +39,7 @@ import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
+import QuestMap from '../components/game/QuestMap';
 import { useVoiceChat } from '../hooks/useVoiceChat';
 import Achievements from '../components/game/Achievements';
 import { type Monster } from '../data/monsters';
@@ -2186,12 +2187,14 @@ export default function Game() {
                     />
                   </div>
                 ) : activeView === 'journal' ? (
-                  <SessionJournal
-                    roomId={room}
-                    playerName={currentPlayer.username || 'Unknown'}
-                    onBroadcast={(evt) => broadcastGameEvent(evt.type, { entries: evt.entries })}
-                    syncRef={journalSyncRef}
-                  />
+                  <div className="flex flex-col h-full overflow-hidden">
+                    <QuestMap
+                      quests={quests}
+                      onAddQuest={canUseDMTools ? (q) => setQuests((prev) => [...prev, q]) : undefined}
+                      onToggleComplete={(id) => setQuests((prev) => prev.map((q) => q.id === id ? { ...q, completed: !q.completed } : q))}
+                      onRemoveQuest={canUseDMTools ? (id) => setQuests((prev) => prev.filter((q) => q.id !== id)) : undefined}
+                    />
+                  </div>
                 ) : activeView === 'loot' ? (
                   <LootTracker
                     roomId={room}
