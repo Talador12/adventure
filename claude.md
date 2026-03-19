@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added replay mini battle map — 200×200 canvas in the CombatReplay viewer renders unit positions from each event's snapshot. 20×20 grid with player tokens (orange) and enemy tokens (red), current turn unit highlighted in amber. Initial letters shown on each token. Updates on every step/scrub. Shows spatial context alongside the event description and HP bars.
 - Added replay persistence — combat recordings (last 5) saved/loaded with campaign state via useCampaignPersistence. Recordings survive page reload and session resume. Replay button shows count and a hover dropdown to pick from past recordings (newest first, showing event count + duration).
 - Added AI lore generation for wiki — `POST /api/dm/generate-lore` uses Workers AI (Llama 3.1 8B) to generate 2-4 paragraph lore entries based on page title, category, tags, scene name, and existing page titles for world consistency. "✨ Generate" button in wiki editor appends AI content to existing text. Context-aware: references other wiki entries for cross-pollination.
 - Added wiki inter-page linking — `[[Page Title]]` syntax in wiki content renders as clickable teal links. Clicking jumps to the linked page. Unmatched names show as italic gray text. Empty pages show hint about linking syntax.
@@ -1008,7 +1009,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v3.0 Feature Ideas
 - [x] Replay mode — auto-record combat events + step-through viewer with scrubber + speed control
 - [x] Replay mode: save recordings in campaign state (last 5, with picker dropdown)
-- [ ] Replay mode: render unit movements on the battle map canvas during replay
+- [x] Replay mode: render unit movements on mini battle map canvas during replay
 - [x] AI NPC memory — NPCs remember past conversations across sessions (KV-persisted, 20-entry rolling window)
 - [x] NPC memory viewer — DM can inspect/clear NPC memories from sidebar (expandable list + clear button)
 - [x] Quest tracker with world map pins (SVG markers, priority colors, clickable detail popups)
