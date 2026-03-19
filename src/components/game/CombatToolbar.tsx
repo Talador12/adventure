@@ -6,7 +6,8 @@
  * scene naming, and status indicators.
  */
 
-import { useGame, type Unit, type Item, type Character, CONDITION_EFFECTS, EXTRA_ATTACK_CLASSES, FEATS, FULL_CASTERS, HALF_CASTERS, getClassSpells, getSpellSlots, getClassAbility, rollSpellDamage, rollLoot, hasPendingASI, effectiveAC, rollD20WithProne, type Spell } from '../../contexts/GameContext';
+import { useGame, type Unit, type Item, type Character, CONDITION_EFFECTS, EXTRA_ATTACK_CLASSES, FEATS, FULL_CASTERS, HALF_CASTERS, getClassSpells, getSpellSlots, getClassAbility, rollSpellDamage, hasPendingASI, effectiveAC, rollD20WithProne, type Spell } from '../../contexts/GameContext';
+import { rollLoot } from '../../data/lootTables';
 import { chebyshevDistance, hasLineOfSight, isAdjacent, isFlanking, checkCover, COVER_AC_BONUS, parseRangeFt } from '../../lib/mapUtils';
 import type { ActiveAoE } from '../combat/BattleMap';
 import { playTurnChange, playCombatHit, playCombatMiss, playMagicSpell, playEnemyDeath, playHealing, playLevelUp, playLootDrop, playCritical } from '../../hooks/useSoundFX';
@@ -38,6 +39,7 @@ interface CombatToolbarProps {
   setCombatLog: React.Dispatch<React.SetStateAction<string[]>>;
   addDmMessage: (text: string) => void;
   broadcastGameEvent: (event: string, data: Record<string, unknown>) => void;
+  onAddToPartyInventory?: (item: Item) => void;
   broadcastCombatSync: (units: Unit[], inCombat: boolean, round: number, turn: number) => void;
   broadcastCombatSyncLatest: () => void;
   drainConcentrationMessages: () => void;
@@ -91,6 +93,7 @@ export default function CombatToolbar({
   setShopMessage,
   addFloatingText,
   addAttackIndicator,
+  onAddToPartyInventory,
 }: CombatToolbarProps) {
   const {
     units,
@@ -776,13 +779,18 @@ export default function CombatToolbar({
                                 }
                               }
 
-                              // Roll for loot drops
-                              const loot = rollLoot(deadEnemies.length, selectedCharacter.level);
-                              if (loot.length > 0) {
+                              // Roll for loot drops using table-based system
+                              const lootResult = rollLoot(encounterDifficulty as 'easy' | 'medium' | 'hard' | 'deadly');
+                              if (lootResult.items.length > 0 || lootResult.gold > 0) {
                                 playLootDrop();
-                                for (const item of loot) addItem(selectedCharacter.id, item);
-                                const lootNames = loot.map((i) => i.name).join(', ');
-                                addDmMessage(`Loot found: ${lootNames}`);
+                                // Add gold to character, items to party inventory
+                                updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + lootResult.gold + goldReward });
+                                if (lootResult.items.length > 0 && onAddToPartyInventory) {
+                                  for (const item of lootResult.items) onAddToPartyInventory(item);
+                                } else {
+                                  for (const item of lootResult.items) addItem(selectedCharacter.id, item);
+                                }
+                                addDmMessage(lootResult.description);
                               }
                             } else {
                               addDmMessage('The battle ends. You catch your breath.');

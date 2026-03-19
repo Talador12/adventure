@@ -1935,6 +1935,7 @@ export default function Game() {
                   setShopMessage={setShopMessage}
                   addFloatingText={addFloatingText}
                   addAttackIndicator={addAttackIndicator}
+                  onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
                 />
 
                 {/* Combat round recap — shown above content in narration view */}
