@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added custom token images — `tokenImage?: string` field on Unit. BattleMap renders images in clipped circles instead of plain initials. Falls back to character portrait for player units, then to initial letter. DM double-clicks a token to set its image URL (prompt dialog, clear to remove). Image cache via ref Map with lazy loading + error handling. Works for enemies, NPCs, and players. Images auto-render on next canvas draw after loading.
 - Added initiative tiebreaker rules — sort by initiative descending, then DEX modifier (higher goes first), then stable ID comparison. Matches D&D 5e RAW tiebreaker rules. Works for both player characters (looks up DEX from Character stats) and enemies (uses unit.dexMod).
 - Added character multiclassing support — `classLevels?: Partial<Record<CharacterClass, number>>` field on Character. "+ Multiclass" button on character sheet adds a level in any class (validates class name). Total level auto-computed from sum of class levels. Character sheet shows "Fighter 5 / Wizard 3" format. Spellbook merges spells from all multiclassed classes at their respective levels. DDB import already handles multiclass via the primary class heuristic.
 - Added AI DM personality presets — 6 distinct narration styles: Theatrical (default), Comedic (Terry Pratchett), Grimdark (harsh/costly), Tolkien (epic/literary), Noir (hardboiled/cynical), Horror (psychological dread). Each has a unique system prompt that shapes the AI DM's tone, NPC behavior, and world description. DM selects style from "AI DM Style" button group in DMSidebar Notes tab. Personality persisted per-campaign in localStorage. Passed as `personality` field to `POST /api/dm/narrate`.
@@ -979,7 +980,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Spell concentration auto-tracking (CON save on damage + War Caster feat — already implemented)
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
-- [ ] Custom token images (upload portraits for enemies/NPCs)
+- [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
+- [ ] AI-generated enemy portraits (Workers AI FLUX generates token images from enemy descriptions)
 - [x] Initiative tiebreaker rules (DEX mod, then stable ID comparison)
 - [x] Rest mechanics (short rest hit dice, long rest full restore — already implemented with full UI)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
