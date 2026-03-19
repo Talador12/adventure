@@ -697,8 +697,26 @@ export function GameProvider({ children }: { children: ReactNode }) {
             messages.push(`${mutated.name} takes ${burnDmg} fire damage from burning!`);
             mutated = { ...mutated, hp: Math.max(0, mutated.hp - burnDmg) };
           }
-          // Fuel consumption: decrement lantern fuel each turn
-          if (cond.type === 'lantern' && cond.duration === -1) {
+          // Torch/candle burnout: consumable light sources burn for N turns, then consume one from stack
+          if ((cond.type === 'torchlit' || cond.type === 'candlelit') && cond.duration === -1) {
+            const burnTurns = cond.type === 'torchlit' ? 10 : 6; // torches 10 turns, candles 6
+            const burnMatch = cond.source?.match(/\((\d+)\/(\d+)\)/);
+            const currentBurn = burnMatch ? Number(burnMatch[1]) + 1 : 1;
+            if (currentBurn >= burnTurns) {
+              const ownerChar = characters.find((c) => units.some((un) => un.id === unitId && un.characterId === c.id));
+              const lightItem = ownerChar?.inventory?.find((i) => i.appliesCondition === cond.type);
+              if (lightItem && (lightItem.quantity ?? 1) > 1) {
+                setTimeout(() => setCharacters((prev) => prev.map((ch) => ch.id !== ownerChar!.id ? ch : { ...ch, inventory: ch.inventory.map((i) => i.id === lightItem.id ? { ...i, quantity: (i.quantity || 1) - 1 } : i) })), 0);
+                messages.push(`${mutated.name}'s ${cond.type === 'torchlit' ? 'torch' : 'candle'} burns out! (${(lightItem.quantity || 1) - 1} left)`);
+                remaining.push({ ...cond, source: `${lightItem.name} (0/${burnTurns})` });
+              } else {
+                if (lightItem) setTimeout(() => setCharacters((prev) => prev.map((ch) => ch.id !== ownerChar!.id ? ch : { ...ch, inventory: ch.inventory.filter((i) => i.id !== lightItem.id) })), 0);
+                messages.push(`${mutated.name}'s last ${cond.type === 'torchlit' ? 'torch' : 'candle'} burns out!`);
+              }
+            } else {
+              remaining.push({ ...cond, source: cond.source?.replace(/\(\d+\/\d+\)/, `(${currentBurn}/${burnTurns})`) || `${cond.type} (${currentBurn}/${burnTurns})` });
+            }
+          } else if (cond.type === 'lantern' && cond.duration === -1) {
             // Find the character who owns this unit and tick their lantern fuel
             const ownerChar = characters.find((c) => units.some((un) => un.id === unitId && un.characterId === c.id));
             if (ownerChar) {
