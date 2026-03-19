@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added "Add Custom Spell" form on character sheet — collapsible form with name, level (0-9), school (8 options), damage dice, range, concentration checkbox, and description. Creates a new Spell with randomUUID, adds to `customSpells` via `updateCharacter`. Form resets and collapses on submit.
+- Added prepared-only filter toggle — "Prepared" pill button in the spellbook filter bar (emerald when active). When toggled, only shows spells in `preparedSpellIds`. Works alongside existing search, school, and level filters.
 - Added spell management UI on character sheet — each spell row now has a circular prepare toggle (green dot when prepared, empty when not) and custom spells show a "custom" label + red × remove button. `preparedSpellIds?: string[]` field on Character tracks which spells are prepared. Prepare/unprepare toggles update the character via `updateCharacter`. Remove button strips the spell from `customSpells` and `preparedSpellIds`. Both cantrip and leveled spell sections include these controls.
 - Added Foundry VTT spell import — parses `type: 'spell'` items from Foundry actor JSON. Extracts name, level, school (maps 3-letter Foundry codes to our SpellSchool), description (HTML-stripped), range, duration, concentration, damage from parts array. Deduplicates by name. Stores in `customSpells` on the Character. Reports cantrip + spell counts in import warnings. Both DDB and Foundry imports now produce fully-populated characters with inventory + spells.
 - Added IndexedDB local cache (`src/lib/localCache.ts`) — three object stores: characters, campaigns, campaignState. Async get/put with configurable maxAge (5min for chars/campaigns, 10min for state). Characters auto-cached on save in GameContext. Campaigns cached on load in Home.tsx with instant display from cache while server fetch runs in background. `clearCache()` for logout. All cache ops are best-effort with silent failure — degrades gracefully if IndexedDB is unavailable.
@@ -830,8 +832,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] D&D Beyond spell import (parse + report cantrips/spells from DDB classSpells array)
 - [x] Custom spellbook field on Character — store imported/custom spells beyond the class list
 - [x] Spell management UI on character sheet — prepare toggle + remove custom spells
-- [ ] "Add Custom Spell" form on character sheet (name, level, school, damage, description)
-- [ ] Filter spellbook to show only prepared spells (toggle view)
+- [x] "Add Custom Spell" form on character sheet (name, level, school, damage, description)
+- [x] Filter spellbook to show only prepared spells (toggle view)
 - [x] Auto-equip best weapon/armor from DDB import into equipment slots
 
 **Game board:**

@@ -1,5 +1,5 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell } from '../../contexts/GameContext';
+import { type Character, type CharacterClass, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell, type SpellSchool } from '../../contexts/GameContext';
 import { CONDITION_TOOLTIPS, EXHAUSTION_LEVELS } from '../../data/rules';
 import CharacterCard from '../game/CharacterCard';
 import { useState, useCallback, useMemo } from 'react';
@@ -125,11 +125,16 @@ interface SpellbookSectionProps {
   preparedIds?: Set<string>;
   onTogglePrepared?: (spellId: string) => void;
   onRemoveCustomSpell?: (spellId: string) => void;
+  onAddCustomSpell?: (spell: Spell) => void;
   customSpellIds?: Set<string>;
+  characterClass?: CharacterClass;
 }
 
-function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, spellAttack, prof, castMod, onToggleSlot, preparedIds, onTogglePrepared, onRemoveCustomSpell, customSpellIds }: SpellbookSectionProps) {
+function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, spellAttack, prof, castMod, onToggleSlot, preparedIds, onTogglePrepared, onRemoveCustomSpell, onAddCustomSpell, customSpellIds, characterClass }: SpellbookSectionProps) {
   const [spellSearch, setSpellSearch] = useState('');
+  const [showPreparedOnly, setShowPreparedOnly] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newSpell, setNewSpell] = useState({ name: '', level: 0, school: 'evocation' as SpellSchool, damage: '', description: '', range: 'Self', duration: 'Instantaneous', isConcentration: false });
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
 
@@ -139,6 +144,9 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
   // Filter spells
   const filteredSpells = useMemo(() => {
     let result = spells;
+    if (showPreparedOnly && preparedIds) {
+      result = result.filter((s) => preparedIds.has(s.id));
+    }
     if (spellSearch) {
       const q = spellSearch.toLowerCase();
       result = result.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.school.toLowerCase().includes(q));
@@ -150,11 +158,11 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
       result = result.filter((s) => s.level === levelFilter);
     }
     return result;
-  }, [spells, spellSearch, schoolFilter, levelFilter]);
+  }, [spells, spellSearch, schoolFilter, levelFilter, showPreparedOnly, preparedIds]);
 
   const filteredCantrips = filteredSpells.filter((s) => s.level === 0);
   const filteredLeveled = filteredSpells.filter((s) => s.level > 0);
-  const hasFilters = spellSearch || schoolFilter || levelFilter !== null;
+  const hasFilters = spellSearch || schoolFilter || levelFilter !== null || showPreparedOnly;
 
   return (
     <div>
@@ -177,7 +185,19 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
           placeholder="Search spells..."
           className="w-full px-2 py-1 bg-slate-800/60 border border-slate-700/50 rounded text-[10px] text-slate-200 placeholder-slate-600 focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 outline-none"
         />
-        {/* Level filter pills */}
+        {/* Prepared filter + Level filter pills */}
+        <div className="flex flex-wrap gap-1">
+          {preparedIds && (
+            <button
+              onClick={() => setShowPreparedOnly(!showPreparedOnly)}
+              className={`text-[8px] px-1.5 py-0.5 rounded-full border font-semibold transition-all ${
+                showPreparedOnly ? 'bg-emerald-900/40 border-emerald-600/50 text-emerald-300' : 'bg-slate-800/40 border-slate-700/50 text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              Prepared
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap gap-1">
           {spellLevels.map((lv) => (
             <button
@@ -314,6 +334,94 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
       {/* No results */}
       {hasFilters && filteredSpells.length === 0 && (
         <div className="text-[10px] text-slate-600 text-center py-2 italic">No spells match filters</div>
+      )}
+
+      {/* Add Custom Spell */}
+      {onAddCustomSpell && (
+        <div className="mt-2 border-t border-slate-800/50 pt-2">
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="text-[9px] text-violet-400 hover:text-violet-300 transition-colors font-semibold"
+          >
+            {showAddForm ? '− Cancel' : '+ Add Custom Spell'}
+          </button>
+          {showAddForm && (
+            <div className="mt-1.5 space-y-1.5 bg-slate-800/30 rounded-lg p-2 border border-violet-900/30">
+              <div className="flex gap-1.5">
+                <input
+                  value={newSpell.name}
+                  onChange={(e) => setNewSpell({ ...newSpell, name: e.target.value })}
+                  placeholder="Spell name"
+                  className="flex-1 text-[10px] px-1.5 py-1 rounded bg-slate-900/60 border border-slate-700 text-slate-200 placeholder-slate-600"
+                />
+                <select
+                  value={newSpell.level}
+                  onChange={(e) => setNewSpell({ ...newSpell, level: Number(e.target.value) })}
+                  className="text-[10px] px-1 py-1 rounded bg-slate-900/60 border border-slate-700 text-slate-200 w-14"
+                >
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => (
+                    <option key={l} value={l}>{l === 0 ? 'Cantrip' : `Lv ${l}`}</option>
+                  ))}
+                </select>
+                <select
+                  value={newSpell.school}
+                  onChange={(e) => setNewSpell({ ...newSpell, school: e.target.value as SpellSchool })}
+                  className="text-[10px] px-1 py-1 rounded bg-slate-900/60 border border-slate-700 text-slate-200 w-16"
+                >
+                  {['evocation', 'abjuration', 'conjuration', 'divination', 'enchantment', 'illusion', 'necromancy', 'transmutation'].map((s) => (
+                    <option key={s} value={s}>{s.slice(0, 4)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-1.5">
+                <input
+                  value={newSpell.damage}
+                  onChange={(e) => setNewSpell({ ...newSpell, damage: e.target.value })}
+                  placeholder="Damage (e.g. 2d6)"
+                  className="w-20 text-[10px] px-1.5 py-1 rounded bg-slate-900/60 border border-slate-700 text-slate-200 placeholder-slate-600"
+                />
+                <input
+                  value={newSpell.range}
+                  onChange={(e) => setNewSpell({ ...newSpell, range: e.target.value })}
+                  placeholder="Range"
+                  className="w-16 text-[10px] px-1.5 py-1 rounded bg-slate-900/60 border border-slate-700 text-slate-200 placeholder-slate-600"
+                />
+                <label className="flex items-center gap-1 text-[9px] text-slate-400">
+                  <input type="checkbox" checked={newSpell.isConcentration} onChange={(e) => setNewSpell({ ...newSpell, isConcentration: e.target.checked })} className="w-2.5 h-2.5 accent-blue-500" />
+                  Conc
+                </label>
+              </div>
+              <input
+                value={newSpell.description}
+                onChange={(e) => setNewSpell({ ...newSpell, description: e.target.value })}
+                placeholder="Description"
+                className="w-full text-[10px] px-1.5 py-1 rounded bg-slate-900/60 border border-slate-700 text-slate-200 placeholder-slate-600"
+              />
+              <button
+                disabled={!newSpell.name.trim()}
+                onClick={() => {
+                  onAddCustomSpell({
+                    id: crypto.randomUUID(),
+                    name: newSpell.name.trim(),
+                    level: newSpell.level,
+                    school: newSpell.school,
+                    description: newSpell.description || newSpell.name,
+                    damage: newSpell.damage || undefined,
+                    range: newSpell.range || 'Self',
+                    duration: newSpell.duration || 'Instantaneous',
+                    isConcentration: newSpell.isConcentration,
+                    classes: characterClass ? [characterClass] : [],
+                  });
+                  setNewSpell({ name: '', level: 0, school: 'evocation', damage: '', description: '', range: 'Self', duration: 'Instantaneous', isConcentration: false });
+                  setShowAddForm(false);
+                }}
+                className="w-full text-[10px] px-2 py-1 rounded bg-violet-900/40 border border-violet-700/50 text-violet-300 font-semibold hover:bg-violet-800/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Add Spell
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -929,6 +1037,12 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                 preparedSpellIds: (character.preparedSpellIds || []).filter((id) => id !== spellId),
               } as Partial<typeof character>);
             }}
+            onAddCustomSpell={(spell) => {
+              updateCharacter(character.id, {
+                customSpells: [...(character.customSpells || []), spell],
+              } as Partial<typeof character>);
+            }}
+            characterClass={character.class}
           />
         );
       })()}
