@@ -1362,15 +1362,18 @@ app.get('/api/campaigns/public', async (c) => {
   }
 });
 
-// GET /api/campaigns — list all campaigns for the authenticated user
+// GET /api/campaigns — list all campaigns for the authenticated user (with ETag)
 app.get('/api/campaigns', async (c) => {
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
     const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
-    const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
-    return c.json({ campaigns });
+    const data = raw || '[]';
+    const etag = await computeETag(data);
+    if (checkNotModified(c, etag)) return new Response(null, { status: 304, headers: { ETag: etag } });
+    const campaigns: Record<string, unknown>[] = JSON.parse(data);
+    return c.json({ campaigns }, { headers: { ETag: etag, 'Cache-Control': 'private, no-cache' } });
   } catch (err) {
     logError('GET /api/campaigns', err);
     return c.json({ campaigns: [] });

@@ -71,9 +71,17 @@ export default function Home() {
           if (cached?.length && !campaigns.length) setCampaigns(cached as typeof campaigns);
         });
       }).catch(() => {});
-      // Then fetch fresh from server (overwrites cache)
-      fetch('/api/campaigns')
-        .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; createdAt: number }> }>) : null))
+      // Then fetch fresh from server (overwrites cache, with ETag)
+      const campaignEtagKey = 'adventure:campaigns-etag';
+      const campaignHeaders: HeadersInit = {};
+      try { const etag = localStorage.getItem(campaignEtagKey); if (etag) campaignHeaders['If-None-Match'] = etag; } catch { /* ok */ }
+      fetch('/api/campaigns', { headers: campaignHeaders })
+        .then((r) => {
+          if (r.status === 304) return null;
+          const etag = r.headers.get('etag');
+          if (etag) try { localStorage.setItem(campaignEtagKey, etag); } catch { /* ok */ }
+          return r.ok ? (r.json() as Promise<{ campaigns?: Array<{ roomId: string; name: string; createdAt: number }> }>) : null;
+        })
         .then((data) => {
           if (data?.campaigns?.length) {
             setCampaigns(data.campaigns);
