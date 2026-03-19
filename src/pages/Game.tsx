@@ -2143,6 +2143,10 @@ export default function Game() {
                       myUnitId={wsConnected && !isDM && selectedCharacterId ? selectedCharacterId : undefined}
                       lighting={lightingGrid}
                       onLightingChange={canUseDMTools ? setLightingGrid : undefined}
+                      onStairClick={floorNames.length > 1 ? (dir) => {
+                        if (dir === 'up' && currentFloor > 0) setCurrentFloor(currentFloor - 1);
+                        else if (dir === 'down' && currentFloor < floorNames.length - 1) setCurrentFloor(currentFloor + 1);
+                      } : undefined}
                       onTokenMove={(unitId, col, row) => broadcastGameEvent('token_move', { unitId, col, row })}
                       onTerrainChange={(t) => broadcastGameEvent('terrain_update', { terrain: t })}
                       onMapImageChange={(url) => broadcastGameEvent('map_image', { mapImageUrl: url })}
