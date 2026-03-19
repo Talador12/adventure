@@ -1070,9 +1070,10 @@ export default function Game() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               partyLevel: selectedCharacter.level,
-              partySize: 1,
+              partySize: Math.max(1, characters.length),
               difficulty: encounterDifficulty,
               context: dmHistory.length > 0 ? dmHistory[dmHistory.length - 1] : 'a dark dungeon corridor',
+              partyClasses: characters.map((c) => c.class),
               setting: theme.setting,
               twist: theme.twist,
             }),
