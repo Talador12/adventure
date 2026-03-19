@@ -32,6 +32,7 @@ export interface CampaignState {
   floorNames?: string[];
   currentFloor?: number;
   floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
+  relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
 }
 
 export interface CampaignLoadResult {
@@ -53,6 +54,7 @@ export interface CampaignLoadResult {
   floorNames?: string[];
   currentFloor?: number;
   floorData?: Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
+  relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -232,6 +234,7 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (c.floorNames && Array.isArray(c.floorNames)) result.floorNames = c.floorNames as string[];
       if (typeof c.currentFloor === 'number') result.currentFloor = c.currentFloor as number;
       if (c.floorData && Array.isArray(c.floorData)) result.floorData = c.floorData as Array<{ terrain: TerrainType[][]; lighting: LightingLevel[][] }>;
+      if (c.relationships && Array.isArray(c.relationships)) result.relationships = c.relationships as Array<{ from: string; to: string; type: string; label?: string }>;
       return { result, raw: c };
     };
 
