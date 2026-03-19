@@ -511,9 +511,11 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                 const validClass = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Bard', 'Barbarian', 'Sorcerer', 'Warlock', 'Druid', 'Monk'].find((c) => c.toLowerCase() === cls.trim().toLowerCase()) as CharacterClass | undefined;
                 if (!validClass) { alert('Invalid class name'); return; }
                 // D&D 5e prereq check
-                const { canMulticlassInto } = await import('../../types/game');
+                const { canMulticlassInto, MULTICLASS_PROFICIENCIES } = await import('../../types/game');
                 const check = canMulticlassInto(character.stats, validClass);
                 if (!check.allowed) { alert(`Cannot multiclass into ${validClass}.\nMissing prerequisites: ${check.missing.join(', ')}`); return; }
+                const profs = MULTICLASS_PROFICIENCIES[validClass] || [];
+                if (profs.length > 0 && !confirm(`Multiclass into ${validClass}?\n\nGained proficiencies:\n${profs.map((p) => `• ${p}`).join('\n')}\n\nProceed?`)) return;
                 const current = character.classLevels || { [character.class]: character.level };
                 const updated = { ...current, [validClass]: (current[validClass] || 0) + 1 };
                 const totalLevel = Object.values(updated).reduce((s, v) => s + (v || 0), 0);
