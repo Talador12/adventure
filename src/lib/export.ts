@@ -553,3 +553,86 @@ export async function runExport(formatId: string, char: Character): Promise<{ su
       return { success: false, message: 'Format not yet available' };
   }
 }
+
+// ============================================================================
+//  Campaign session log export — full chat + DM history as markdown
+// ============================================================================
+
+interface ChatMessageForExport {
+  type: string;
+  username: string;
+  text: string;
+  timestamp: number;
+}
+
+export function exportSessionLog(
+  campaignName: string,
+  dmHistory: string[],
+  chatMessages: ChatMessageForExport[],
+  combatLog: string[],
+  characters: Character[],
+) {
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const lines: string[] = [
+    `# ${campaignName || 'Adventure'} — Session Log`,
+    `*Exported ${date}*`,
+    '',
+    '---',
+    '',
+  ];
+
+  // Party roster
+  if (characters.length > 0) {
+    lines.push('## Party');
+    for (const c of characters) {
+      lines.push(`- **${c.name}** — Level ${c.level} ${c.race} ${c.class}`);
+    }
+    lines.push('');
+  }
+
+  // DM Narration timeline
+  if (dmHistory.length > 0) {
+    lines.push('## Narration');
+    for (const entry of dmHistory) {
+      lines.push(`> ${entry}`);
+      lines.push('');
+    }
+  }
+
+  // Chat log
+  if (chatMessages.length > 0) {
+    lines.push('## Chat Log');
+    for (const msg of chatMessages) {
+      const time = new Date(msg.timestamp).toLocaleTimeString();
+      if (msg.type === 'system') {
+        lines.push(`*[${time}] ${msg.text}*`);
+      } else if (msg.type === 'roll') {
+        lines.push(`**[${time}] ${msg.username}**: 🎲 ${msg.text}`);
+      } else {
+        lines.push(`**[${time}] ${msg.username}**: ${msg.text}`);
+      }
+    }
+    lines.push('');
+  }
+
+  // Combat log
+  if (combatLog.length > 0) {
+    lines.push('## Combat Log');
+    for (const entry of combatLog) {
+      lines.push(`- ${entry}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('*Exported from Adventure VTT*');
+
+  const md = lines.join('\n');
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(campaignName || 'adventure').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-session-log.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
