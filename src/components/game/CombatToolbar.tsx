@@ -40,6 +40,8 @@ interface CombatToolbarProps {
   addDmMessage: (text: string) => void;
   broadcastGameEvent: (event: string, data: Record<string, unknown>) => void;
   onAddToPartyInventory?: (item: Item) => void;
+  stagedLoot?: Item[];
+  onConsumeStagedLoot?: () => void;
   broadcastCombatSync: (units: Unit[], inCombat: boolean, round: number, turn: number) => void;
   broadcastCombatSyncLatest: () => void;
   drainConcentrationMessages: () => void;
@@ -94,6 +96,8 @@ export default function CombatToolbar({
   addFloatingText,
   addAttackIndicator,
   onAddToPartyInventory,
+  stagedLoot,
+  onConsumeStagedLoot,
 }: CombatToolbarProps) {
   const {
     units,
@@ -779,18 +783,29 @@ export default function CombatToolbar({
                                 }
                               }
 
-                              // Roll for loot drops using table-based system
-                              const lootResult = rollLoot(encounterDifficulty as 'easy' | 'medium' | 'hard' | 'deadly');
-                              if (lootResult.items.length > 0 || lootResult.gold > 0) {
+                              // Loot: use staged loot if DM pre-assigned, otherwise roll from tables
+                              if (stagedLoot && stagedLoot.length > 0) {
                                 playLootDrop();
-                                // Add gold to character, items to party inventory
-                                updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + lootResult.gold + goldReward });
-                                if (lootResult.items.length > 0 && onAddToPartyInventory) {
-                                  for (const item of lootResult.items) onAddToPartyInventory(item);
-                                } else {
-                                  for (const item of lootResult.items) addItem(selectedCharacter.id, item);
+                                updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + goldReward });
+                                for (const item of stagedLoot) {
+                                  if (onAddToPartyInventory) onAddToPartyInventory(item);
+                                  else addItem(selectedCharacter.id, item);
                                 }
-                                addDmMessage(lootResult.description);
+                                const stagedNames = stagedLoot.map((i) => i.name).join(', ');
+                                addDmMessage(`Loot: ${goldReward} gold + ${stagedNames} (DM-assigned)`);
+                                onConsumeStagedLoot?.();
+                              } else {
+                                const lootResult = rollLoot(encounterDifficulty as 'easy' | 'medium' | 'hard' | 'deadly');
+                                if (lootResult.items.length > 0 || lootResult.gold > 0) {
+                                  playLootDrop();
+                                  updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + lootResult.gold + goldReward });
+                                  if (lootResult.items.length > 0 && onAddToPartyInventory) {
+                                    for (const item of lootResult.items) onAddToPartyInventory(item);
+                                  } else {
+                                    for (const item of lootResult.items) addItem(selectedCharacter.id, item);
+                                  }
+                                  addDmMessage(lootResult.description);
+                                }
                               }
                             } else {
                               addDmMessage('The battle ends. You catch your breath.');

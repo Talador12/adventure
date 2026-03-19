@@ -230,6 +230,7 @@ export default function Game() {
   const [backstoryHooks, setBackstoryHooks] = useState<string[]>([]);
   const [hooksLoading, setHooksLoading] = useState(false);
   const [partyInventory, setPartyInventory] = useState<import('../types/game').Item[]>([]);
+  const [stagedLoot, setStagedLoot] = useState<import('../types/game').Item[]>([]);
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   // Keyboard shortcut help overlay
@@ -1760,6 +1761,10 @@ export default function Game() {
               setPartyInventory((prev) => prev.filter((i) => i.id !== itemId));
               updateCharacter(charId, { inventory: [...(characters.find((c) => c.id === charId)?.inventory || []), { ...item, id: crypto.randomUUID() }] } as Partial<typeof characters[0]>);
             }}
+            stagedLoot={stagedLoot}
+            onAddStagedLoot={(item) => setStagedLoot((prev) => [...prev, item])}
+            onRemoveStagedLoot={(id) => setStagedLoot((prev) => prev.filter((i) => i.id !== id))}
+            onClearStagedLoot={() => setStagedLoot([])}
           />
         )}
 
@@ -1971,6 +1976,8 @@ export default function Game() {
                   addFloatingText={addFloatingText}
                   addAttackIndicator={addAttackIndicator}
                   onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
+                  stagedLoot={stagedLoot}
+                  onConsumeStagedLoot={() => setStagedLoot([])}
                 />
 
                 {/* Combat round recap — shown above content in narration view */}

@@ -1266,7 +1266,7 @@ app.get('/api/user/me', async (c) => {
 
 // Campaign persistence — save/load full game state per room
 
-// GET /api/campaign/:roomId — load campaign state
+// GET /api/campaign/:roomId — load campaign state (with ETag)
 app.get('/api/campaign/:roomId', async (c) => {
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
@@ -1274,7 +1274,9 @@ app.get('/api/campaign/:roomId', async (c) => {
   try {
     const raw = (await c.env.CAMPAIGNS.get(`campaign:${c.req.param('roomId')}`)) as string | null;
     if (!raw) return c.json({ campaign: null });
-    return c.json({ campaign: JSON.parse(raw) });
+    const etag = await computeETag(raw);
+    if (checkNotModified(c, etag)) return new Response(null, { status: 304, headers: { ETag: etag } });
+    return c.json({ campaign: JSON.parse(raw) }, { headers: { ETag: etag, 'Cache-Control': 'private, no-cache' } });
   } catch (err) {
     logError('GET /api/campaign/:roomId', err);
     return c.json({ campaign: null });
@@ -1535,15 +1537,29 @@ app.post('/api/lobby/:roomId/verify', async (c) => {
   }
 });
 
-// GET /api/characters — load all characters for the authenticated user
+// ETag helper — compute a fast hash for cache validation
+async function computeETag(data: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+  return `"${Array.from(new Uint8Array(buf).slice(0, 8)).map((b) => b.toString(16).padStart(2, '0')).join('')}"`;
+}
+
+function checkNotModified(c: { req: { header: (n: string) => string | undefined } }, etag: string): boolean {
+  const ifNoneMatch = c.req.header('if-none-match');
+  return ifNoneMatch === etag;
+}
+
+// GET /api/characters — load all characters for the authenticated user (with ETag)
 app.get('/api/characters', async (c) => {
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CHARACTERS) return c.json({ error: 'Character storage not available' }, 503);
   try {
     const raw = (await c.env.CHARACTERS.get(`user:${userId}:chars`)) as string | null;
-    const characters = raw ? JSON.parse(raw) : [];
-    return c.json({ characters });
+    const data = raw || '[]';
+    const etag = await computeETag(data);
+    if (checkNotModified(c, etag)) return new Response(null, { status: 304, headers: { ETag: etag } });
+    const characters = JSON.parse(data);
+    return c.json({ characters }, { headers: { ETag: etag, 'Cache-Control': 'private, no-cache' } });
   } catch (err) {
     logError('GET /api/characters', err);
     return c.json({ characters: [] });
