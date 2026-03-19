@@ -41,6 +41,9 @@ import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
 import { useVoiceChat } from '../hooks/useVoiceChat';
+import CombatReplay from '../components/game/CombatReplay';
+import { startRecording, recordEvent, stopRecording, isRecording } from '../lib/combatRecorder';
+import type { CombatRecording } from '../lib/combatRecorder';
 import Achievements from '../components/game/Achievements';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
@@ -246,6 +249,8 @@ export default function Game() {
   const [partyInventory, setPartyInventory] = useState<import('../types/game').Item[]>([]);
   const [stagedLoot, setStagedLoot] = useState<import('../types/game').Item[]>([]);
   const [relationships, setRelationships] = useState<import('../components/game/RelationshipGraph').RelationshipEdge[]>([]);
+  const [recordings, setRecordings] = useState<CombatRecording[]>([]);
+  const [showReplay, setShowReplay] = useState<CombatRecording | null>(null);
   const [dmPersonality, setDmPersonality] = useState<string>(() => {
     try { return localStorage.getItem(`adventure:dm-personality:${room}`) || 'theatrical'; } catch { return 'theatrical'; }
   });
@@ -573,6 +578,30 @@ export default function Game() {
   const voiceSendRef = useRef<(msg: Record<string, unknown>) => void>(() => {});
   const voiceRef = useRef<ReturnType<typeof useVoiceChat> | null>(null);
   const voicePlayersRef = useRef<Array<{ id: string; username: string }>>([]);
+
+  // Auto-record combat encounters
+  useEffect(() => {
+    if (inCombat && !isRecording()) {
+      startRecording(room);
+      recordEvent('start', 'Combat begins!', undefined, undefined, undefined,
+        units.map((u) => ({ id: u.id, name: u.name, hp: u.hp, maxHp: u.maxHp, type: u.type, isCurrentTurn: u.isCurrentTurn })));
+    } else if (!inCombat && isRecording()) {
+      recordEvent('end', 'Combat ends.');
+      const rec = stopRecording();
+      if (rec && rec.events.length > 2) setRecordings((prev) => [...prev, rec]);
+    }
+  }, [inCombat]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Record turn changes during combat
+  useEffect(() => {
+    if (!inCombat || !isRecording()) return;
+    const current = units.find((u) => u.isCurrentTurn);
+    if (current) {
+      recordEvent('turn', `${current.name}'s turn`, current.id, current.name,
+        mapPositions.map((p) => ({ unitId: p.unitId, col: p.col, row: p.row })),
+        units.map((u) => ({ id: u.id, name: u.name, hp: u.hp, maxHp: u.maxHp, type: u.type, isCurrentTurn: u.isCurrentTurn })));
+    }
+  }, [turnIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Broadcast state to DM Screen (separate browser tab) via BroadcastChannel
   useEffect(() => {
@@ -1682,6 +1711,15 @@ export default function Game() {
               )}
             </div>
           )}
+          {recordings.length > 0 && (
+            <button
+              onClick={() => setShowReplay(recordings[recordings.length - 1])}
+              className="text-[9px] px-2 py-0.5 rounded bg-indigo-900/30 border border-indigo-700/40 text-indigo-300 hover:bg-indigo-900/50 font-semibold transition-colors"
+              title={`Replay last combat (${recordings.length} recorded)`}
+            >
+              ▶ Replay
+            </button>
+          )}
           {canUseDMTools && (
             <button
               onClick={() => window.open('/dm-screen', '_blank', 'width=900,height=600')}
@@ -2476,6 +2514,11 @@ export default function Game() {
       />
 
       {/* Keyboard Shortcut Help Overlay */}
+      {/* Combat Replay viewer */}
+      {showReplay && (
+        <CombatReplay recording={showReplay} onClose={() => setShowReplay(null)} />
+      )}
+
       {showHelpOverlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onClick={() => setShowHelpOverlay(false)}>
           <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
