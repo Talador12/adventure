@@ -421,6 +421,32 @@ export function exportPrintableHTML(char: Character) {
 
 ${char.appearanceDescription ? `<section><h2>Appearance</h2><div class="field-value">${char.appearanceDescription}</div></section>` : ''}
 
+${char.equipment?.weapon || char.equipment?.armor || char.equipment?.shield ? `
+<section>
+  <h2>Equipment</h2>
+  <div class="grid grid-3">
+    ${char.equipment.weapon ? `<div class="field"><div class="field-label">Weapon</div><div class="field-value">${char.equipment.weapon.name}${char.equipment.weapon.damageDie ? ` (${char.equipment.weapon.damageDie})` : ''}</div></div>` : ''}
+    ${char.equipment.armor ? `<div class="field"><div class="field-label">Armor</div><div class="field-value">${char.equipment.armor.name}${char.equipment.armor.acBonus ? ` (AC ${char.equipment.armor.acBonus})` : ''}</div></div>` : ''}
+    ${char.equipment.shield ? `<div class="field"><div class="field-label">Shield</div><div class="field-value">${char.equipment.shield.name}${char.equipment.shield.acBonus ? ` (+${char.equipment.shield.acBonus} AC)` : ''}</div></div>` : ''}
+  </div>
+</section>` : ''}
+
+${char.inventory?.length ? `
+<section>
+  <h2>Inventory (${char.inventory.length})</h2>
+  <div style="font-size:12px;columns:2;column-gap:16px;">
+    ${char.inventory.map(i => `<div style="break-inside:avoid;margin-bottom:4px;"><strong>${i.name}</strong>${i.quantity && i.quantity > 1 ? ` ×${i.quantity}` : ''} <span style="color:#888">${i.type}${i.value ? `, ${i.value}gp` : ''}</span></div>`).join('')}
+  </div>
+</section>` : ''}
+
+${char.customSpells?.length ? `
+<section>
+  <h2>Spellbook (${char.customSpells.length})</h2>
+  <div style="font-size:12px;columns:2;column-gap:16px;">
+    ${char.customSpells.map(s => `<div style="break-inside:avoid;margin-bottom:4px;"><strong>${s.name}</strong> <span style="color:#888">${s.level === 0 ? 'Cantrip' : `Lv${s.level}`}, ${s.school}${s.damage ? `, ${s.damage}` : ''}${s.isConcentration ? ', C' : ''}</span></div>`).join('')}
+  </div>
+</section>` : ''}
+
 ${char.backstory ? `<section><h2>Backstory</h2><div class="backstory">${char.backstory}</div></section>` : ''}
 
 <div class="footer">Exported from Adventure &mdash; ${new Date().toLocaleDateString()}</div>

@@ -497,6 +497,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   const [dragging, setDragging] = useState<{ unitId: string; offsetX: number; offsetY: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [lastDungeonSeed, setLastDungeonSeed] = useState<number | null>(null);
+  const [seedInput, setSeedInput] = useState('');
 
   // Movement range: reachable cells during drag (only in combat)
   const [reachableCells, setReachableCells] = useState<Map<string, number> | null>(null);
@@ -1784,16 +1786,47 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 <button
                   onClick={() => {
                     if (!onTerrainChange) return;
-                    const dungeon = generateDungeon(gridRows, gridCols);
+                    const seed = Math.floor(Math.random() * 2147483647);
+                    const dungeon = generateDungeon(gridRows, gridCols, seed);
                     setTerrain(dungeon);
                     onTerrainChange(dungeon);
                     setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
+                    setLastDungeonSeed(seed);
                   }}
                   className="text-[9px] px-1.5 py-1 rounded bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 font-semibold transition-all"
                   title="Generate a random dungeon layout (BSP algorithm)"
                 >
                   🎲 Random
                 </button>
+                {lastDungeonSeed !== null && (
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(String(lastDungeonSeed)).catch(() => {}); }}
+                    className="text-[7px] px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 font-mono transition-colors"
+                    title={`Seed: ${lastDungeonSeed} — click to copy`}
+                  >
+                    #{lastDungeonSeed}
+                  </button>
+                )}
+                <input
+                  value={seedInput}
+                  onChange={(e) => setSeedInput(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="Seed"
+                  className="w-16 text-[8px] px-1 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 placeholder-slate-600 font-mono"
+                  title="Enter a dungeon seed to regenerate a specific layout"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && seedInput && onTerrainChange) {
+                      const seed = Number(seedInput);
+                      if (seed > 0) {
+                        const dungeon = generateDungeon(gridRows, gridCols, seed);
+                        setTerrain(dungeon);
+                        onTerrainChange(dungeon);
+                        setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
+                        setLastDungeonSeed(seed);
+                        setSeedInput('');
+                      }
+                    }
+                  }}
+                />
 
                 <div className="w-px h-4 bg-slate-700 mx-1" />
                 <span className="text-[9px] text-sky-500/70 uppercase tracking-wider font-semibold">Fog</span>
