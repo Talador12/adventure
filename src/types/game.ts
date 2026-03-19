@@ -406,6 +406,7 @@ export interface Character {
   equipment: EquipmentSlots;
   spellSlotsUsed: Record<number, number>;
   customSpells?: Spell[];  // imported or homebrew spells beyond the class list
+  preparedSpellIds?: string[];  // IDs of spells the player has prepared
   classAbilityUsed: boolean;
   feats: string[];
   asiChoicesMade: number;
