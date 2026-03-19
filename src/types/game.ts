@@ -181,6 +181,22 @@ export const MULTICLASS_PREREQS: Record<CharacterClass, Partial<Record<'STR' | '
   Warlock: { CHA: 13 }, Wizard: { INT: 13 },
 };
 
+// Proficiencies gained when multiclassing INTO a class (PHB p164)
+export const MULTICLASS_PROFICIENCIES: Record<CharacterClass, string[]> = {
+  Barbarian: ['Shields', 'Simple weapons', 'Martial weapons'],
+  Bard: ['Light armor', 'One skill', 'One musical instrument'],
+  Cleric: ['Light armor', 'Medium armor', 'Shields'],
+  Druid: ['Light armor', 'Medium armor', 'Shields (nonmetal)'],
+  Fighter: ['Light armor', 'Medium armor', 'Shields', 'Simple weapons', 'Martial weapons'],
+  Monk: ['Simple weapons', 'Shortswords'],
+  Paladin: ['Light armor', 'Medium armor', 'Shields', 'Simple weapons', 'Martial weapons'],
+  Ranger: ['Light armor', 'Medium armor', 'Shields', 'Simple weapons', 'Martial weapons', 'One skill'],
+  Rogue: ['Light armor', 'One skill', "Thieves' tools"],
+  Sorcerer: [],
+  Warlock: ['Light armor', 'Simple weapons'],
+  Wizard: [],
+};
+
 /** Check multiclass prerequisites. Fighter allows STR 13 OR DEX 13. */
 export function canMulticlassInto(stats: Stats, targetClass: CharacterClass): { allowed: boolean; missing: string[] } {
   const prereqs = MULTICLASS_PREREQS[targetClass];
