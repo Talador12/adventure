@@ -1,6 +1,6 @@
 // Shared map types and spatial utilities used by GameContext, BattleMap, and Game.tsx
 
-export type TerrainType = 'floor' | 'wall' | 'water' | 'difficult' | 'door' | 'pit' | 'void';
+export type TerrainType = 'floor' | 'wall' | 'water' | 'difficult' | 'door' | 'pit' | 'void' | 'stairs_up' | 'stairs_down';
 
 export interface TokenPosition {
   unitId: string;
@@ -13,7 +13,7 @@ export const DEFAULT_ROWS = 18;
 
 // Terrain movement costs (in cells): Infinity = impassable
 export const TERRAIN_COST: Record<TerrainType, number> = {
-  floor: 1, door: 1, pit: 1,
+  floor: 1, door: 1, pit: 1, stairs_up: 1, stairs_down: 1,
   water: 2, difficult: 2,
   wall: Infinity, void: Infinity,
 };

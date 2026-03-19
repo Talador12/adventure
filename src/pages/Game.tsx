@@ -155,6 +155,9 @@ export default function Game() {
   });
   const [dmLoading, setDmLoading] = useState(false);
   const [encounterLoading, setEncounterLoading] = useState(false);
+  // Multi-floor dungeon state
+  const [currentFloor, setCurrentFloor] = useState(0);
+  const [floorNames, setFloorNames] = useState<string[]>(['Ground Floor']);
   // Environmental lighting grid (DM paints bright/dim/dark zones)
   const [lightingGrid, setLightingGrid] = useState<import('../components/combat/BattleMap').LightingLevel[][]>(
     () => Array.from({ length: 20 }, () => Array(20).fill('normal'))
@@ -1935,6 +1938,7 @@ export default function Game() {
                   setShopMessage={setShopMessage}
                   addFloatingText={addFloatingText}
                   addAttackIndicator={addAttackIndicator}
+                  onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
                 />
 
                 {/* Combat round recap — shown above content in narration view */}
@@ -2095,6 +2099,45 @@ export default function Game() {
                 ) : (
                   /* Battle Map view */
                   <div className="relative flex-1 overflow-hidden">
+                    {/* Floor navigation bar — visible when multiple floors exist */}
+                    {floorNames.length > 1 && (
+                      <div className="absolute top-1 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-slate-900/80 backdrop-blur-sm rounded-lg border border-slate-700/50 px-2 py-1">
+                        {floorNames.map((name, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentFloor(i)}
+                            className={`text-[9px] px-2 py-0.5 rounded font-semibold transition-all ${currentFloor === i ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                        {canUseDMTools && (
+                          <button
+                            onClick={() => {
+                              const name = prompt('Floor name:', `Floor ${floorNames.length + 1}`);
+                              if (name?.trim()) setFloorNames((prev) => [...prev, name.trim()]);
+                            }}
+                            className="text-[8px] text-indigo-400 hover:text-indigo-300 font-bold px-1"
+                            title="Add a new floor"
+                          >
+                            +
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {/* DM can add the first extra floor via a subtle link */}
+                    {floorNames.length === 1 && canUseDMTools && (
+                      <button
+                        onClick={() => {
+                          const name = prompt('Name for the new floor:', 'Floor 2');
+                          if (name?.trim()) setFloorNames((prev) => [...prev, name.trim()]);
+                        }}
+                        className="absolute top-1 right-1 z-20 text-[8px] text-slate-600 hover:text-indigo-400 transition-colors"
+                        title="Add a second floor (enables multi-floor dungeon)"
+                      >
+                        + Floor
+                      </button>
+                    )}
                     <BattleMap
                       canUseDMTools={canUseDMTools}
                       myUnitId={wsConnected && !isDM && selectedCharacterId ? selectedCharacterId : undefined}
