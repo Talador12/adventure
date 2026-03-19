@@ -242,6 +242,9 @@ export default function Game() {
   const [hooksLoading, setHooksLoading] = useState(false);
   const [partyInventory, setPartyInventory] = useState<import('../types/game').Item[]>([]);
   const [stagedLoot, setStagedLoot] = useState<import('../types/game').Item[]>([]);
+  const [dmPersonality, setDmPersonality] = useState<string>(() => {
+    try { return localStorage.getItem(`adventure:dm-personality:${room}`) || 'theatrical'; } catch { return 'theatrical'; }
+  });
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   // Keyboard shortcut help overlay
@@ -848,6 +851,7 @@ export default function Game() {
               action: action || '',
               history: dmHistory.slice(-10),
               scene: sceneName,
+              personality: dmPersonality,
             }),
           },
           35_000
@@ -868,7 +872,7 @@ export default function Game() {
         setDmLoading(false);
       }
     },
-    [selectedCharacter, adventureStarted, dmHistory, addDmMessage, buildPartyPayload, sceneName, backstoryHooks]
+    [selectedCharacter, adventureStarted, dmHistory, addDmMessage, buildPartyPayload, sceneName, backstoryHooks, dmPersonality]
   );
 
   // Call the NPC dialogue endpoint
@@ -1788,6 +1792,8 @@ export default function Game() {
             onAddStagedLoot={(item) => setStagedLoot((prev) => [...prev, item])}
             onRemoveStagedLoot={(id) => setStagedLoot((prev) => prev.filter((i) => i.id !== id))}
             onClearStagedLoot={() => setStagedLoot([])}
+            dmPersonality={dmPersonality}
+            onSetDmPersonality={(p) => { setDmPersonality(p); try { localStorage.setItem(`adventure:dm-personality:${room}`, p); } catch { /* ok */ } }}
           />
         )}
 
