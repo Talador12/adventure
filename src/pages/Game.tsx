@@ -1188,6 +1188,20 @@ export default function Game() {
 
       // Add enemy units to existing units (keep player units)
       setUnits((prev: Unit[]) => [...prev.filter((u) => u.type === 'player'), ...enemyUnits]);
+
+      // Fire-and-forget: generate AI portraits for each enemy (parallel, non-blocking)
+      for (const enemy of enemyUnits) {
+        fetch(`${apiBase()}/api/portrait/enemy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: enemy.name, description: `${enemy.name}, AC ${enemy.ac}, HP ${enemy.hp}` }),
+        }).then((r) => r.ok ? r.json() as Promise<{ portrait?: string }> : null)
+          .then((data) => {
+            if (data?.portrait) {
+              setUnits((prev) => prev.map((u) => u.id === enemy.id ? { ...u, tokenImage: data.portrait } : u));
+            }
+          }).catch(() => {}); // portrait generation is best-effort
+      }
       // Broadcast encounter to all players — include units, terrain, and positions
       setTimeout(() => {
         broadcastGameEvent('encounter_spawn', {

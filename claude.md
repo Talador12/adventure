@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v1.8.1
+## Current Version: v1.9.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added map search in community browser — search input at the top of the Browse panel filters maps by name or tag in real-time. Auto-focuses on open. Client-side filtering for instant results.
+- Added AI-generated enemy portraits — new `POST /api/portrait/enemy` endpoint generates combat-themed token portraits via Workers AI FLUX-1-schnell. Prompt includes enemy name + description with "circular token style, dark dramatic lighting, menacing expression" art direction. Encounter generator now fires parallel portrait requests for each spawned enemy (fire-and-forget, non-blocking). Portraits set as `tokenImage` on units as they resolve — enemies appear with generic initials first, then their AI portrait fades in when ready.
 - Added multiclass ability score prerequisites — `MULTICLASS_PREREQS` map and `canMulticlassInto()` function in types/game.ts. Validates D&D 5e PHB p163 requirements before allowing multiclass. Fighter special case: STR 13 OR DEX 13. Alert shows missing prereqs with current values. Lazy-loaded via dynamic import for bundle efficiency.
 - Added shareable player notes — "Share with Party" button appears on the notes panel when connected to multiplayer and notes are non-empty. Prompts for a title, then sends `share_note` via WebSocket. Lobby DO broadcasts `shared_note` to all clients. Appears as a 📋 system message in chat (Lobby, Game, and useGameWebSocket all handle it). Text truncated to 500 chars. Fully opt-in — notes remain private until explicitly shared.
 - Added encounter theater mode — "🎬 Theater" toggle in zoom controls (visible during combat). When ON, the camera auto-zooms to 2x and smoothly pans to center on the current turn unit using easeInOutQuad animation (400ms). Triggers on turn change. Reset button also disables theater mode. Creates a cinematic "camera follows the action" effect during combat.
@@ -962,7 +964,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)
 - [x] Community map sharing (upload/download/rate via API + Browse panel in DM toolbar)
 - [ ] Map preview thumbnails in community browser (canvas snapshot on upload)
-- [ ] Map search by name/tag with autocomplete
+- [x] Map search by name/tag (client-side filter in community browser panel)
 - [x] Turn timer (configurable countdown per player turn, auto-end on expiry — already implemented)
 - [x] Initiative roll automation (shows order in combat log + DM re-roll during combat)
 - [x] Condition duration countdown in initiative bar (already shows round count + tooltip)
@@ -985,7 +987,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
-- [ ] AI-generated enemy portraits (Workers AI FLUX generates token images from enemy descriptions)
+- [x] AI-generated enemy portraits (FLUX-1-schnell, fire-and-forget parallel gen on encounter spawn)
 - [x] Initiative tiebreaker rules (DEX mod, then stable ID comparison)
 - [x] Rest mechanics (short rest hit dice, long rest full restore — already implemented with full UI)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)

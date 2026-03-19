@@ -366,8 +366,46 @@ app.post('/api/portrait/generate', async (c) => {
 
     return c.json({ error: 'Unexpected AI response format' }, 500);
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'AI generation failed';
+    const msg = err instanceof Error ? err.message : 'AI portrait generation failed';
     return c.json({ error: msg }, 500);
+  }
+});
+
+// AI enemy token portrait — generates a combat-themed portrait for an enemy
+app.post('/api/portrait/enemy', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<{ name?: string; description?: string }>();
+    const name = String(body.name || 'Monster');
+    const desc = String(body.description || '').slice(0, 200);
+    const prompt = `Fantasy RPG enemy portrait, circular token style, dark dramatic lighting, detailed face. ${name}: ${desc}. Digital painting, high detail, menacing expression, battle-ready pose. No text, no frame, centered composition.`;
+
+    const result = await aiRunWithTimeout(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', { prompt, num_steps: 4 });
+
+    if (result instanceof ReadableStream) {
+      const reader = result.getReader();
+      const chunks: Uint8Array[] = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) chunks.push(value);
+      }
+      const merged = new Uint8Array(chunks.reduce((a, c) => a + c.length, 0));
+      let off = 0;
+      for (const ch of chunks) { merged.set(ch, off); off += ch.length; }
+      let binary = '';
+      for (let i = 0; i < merged.length; i++) binary += String.fromCharCode(merged[i]);
+      return c.json({ portrait: `data:image/png;base64,${btoa(binary)}` });
+    }
+    if (result instanceof ArrayBuffer) {
+      const bytes = new Uint8Array(result);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return c.json({ portrait: `data:image/png;base64,${btoa(binary)}` });
+    }
+    return c.json({ error: 'Unexpected response' }, 500);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'AI generation failed' }, 500);
   }
 });
 
