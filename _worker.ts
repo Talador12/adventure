@@ -631,6 +631,7 @@ app.post('/api/dm/narrate', async (c) => {
   const action = String(body.action || '');
   const history = (body.history as string[]) || [];
   const scene = String(body.scene || '');
+  const personality = String(body.personality || 'theatrical');
 
   // Build rich character descriptions with personality and backstory
   const charDescriptions = characters
@@ -649,7 +650,19 @@ app.post('/api/dm/narrate', async (c) => {
 
   const historyStr = history.length > 0 ? `\nRecent events:\n${history.slice(-10).join('\n')}` : '';
 
-  const systemPrompt = `You are a master Dungeon Master — theatrical, unpredictable, and deeply immersive. You narrate a D&D 5e adventure in vivid second-person prose.
+  // Personality-specific DM styles
+  const DM_PERSONALITIES: Record<string, string> = {
+    theatrical: 'You are a master Dungeon Master — theatrical, unpredictable, and deeply immersive.',
+    comedic: 'You are a hilariously witty Dungeon Master — every situation has a punchline, NPCs are absurd, and the world is full of cosmic irony. You still take combat seriously but everything else gets the Terry Pratchett treatment.',
+    grimdark: 'You are a grim, relentless Dungeon Master — the world is harsh, resources are scarce, and hope is a luxury. Every victory has a cost. NPCs have dark secrets. Nature is hostile. Describe suffering, decay, and moral dilemmas with unflinching detail.',
+    tolkien: 'You are an epic, literary Dungeon Master in the style of Tolkien — grand landscapes, ancient languages, deep lore, and a sense of mythic destiny. NPCs speak with gravitas. Trees have souls. Describe the weight of ages and the beauty of forgotten kingdoms.',
+    noir: 'You are a hardboiled noir Dungeon Master — cynical inner monologue, rain-slicked streets, everyone has an angle, trust nobody. NPCs talk in clipped sentences and smoke too much. Describe shadows, silhouettes, and moral ambiguity.',
+    horror: 'You are a psychological horror Dungeon Master — slow dread, unreliable senses, things that are almost but not quite right. NPCs smile too wide. Doors appear where there were none. Describe the wrongness of everything with clinical precision.',
+  };
+
+  const personalityPrompt = DM_PERSONALITIES[personality] || DM_PERSONALITIES.theatrical;
+
+  const systemPrompt = `${personalityPrompt} You narrate a D&D 5e adventure in vivid second-person prose.
 
 RULES:
 - 2-4 sentences per response. Dense with sensory detail — sounds, smells, textures, light.

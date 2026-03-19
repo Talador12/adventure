@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v1.4.0
+## Current Version: v1.5.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI DM personality presets — 6 distinct narration styles: Theatrical (default), Comedic (Terry Pratchett), Grimdark (harsh/costly), Tolkien (epic/literary), Noir (hardboiled/cynical), Horror (psychological dread). Each has a unique system prompt that shapes the AI DM's tone, NPC behavior, and world description. DM selects style from "AI DM Style" button group in DMSidebar Notes tab. Personality persisted per-campaign in localStorage. Passed as `personality` field to `POST /api/dm/narrate`.
+- Added death save automation — when an unconscious player unit (0 HP) starts their turn, a d20 death save auto-rolls following D&D 5e rules: 10+ = success, <10 = failure, nat 20 = regain 1 HP + conscious, nat 1 = 2 failures. 3 successes = stabilize, 3 failures = death (hp set to -1). `nextTurn` in GameContext modified to include unconscious player units in turn order (enemies still skipped). Death save result returned as `deathSaveMessage` from `nextTurn()`, logged to combat log + DM narration. Character `deathSaves` and `condition` updated in real-time.
 - Added community map sharing — full backend + frontend. 4 API endpoints: `POST /api/maps` (upload with name/tags/terrain), `GET /api/maps` (browse with optional tag filter), `GET /api/maps/:id` (download + increment counter), `POST /api/maps/:id/rate` (1-5 rating with running average). Maps stored in KV with metadata index (200 max). BattleMap DM toolbar gets "Share" button (uploads current terrain with name + tags) and "Browse" button (teal-themed dropdown panel with map cards showing name, tags, downloads, star rating). Clicking a map loads its terrain + resets fog.
 - Added ETag on campaign list endpoint — `GET /api/campaigns` now includes SHA-256 ETag + 304 Not Modified support. Client sends If-None-Match, stores ETag in localStorage. Completes the ETag coverage across all three main GET endpoints (characters, campaign state, campaign list).
 - Added player notes panel — "Notes" tab in the right sidebar alongside Chat and Sheet. Full-height textarea for personal session notes (track NPCs, clues, plans). Stored in localStorage per-room (`adventure:notes:{room}`), auto-saved with 1s debounce. Character count + Clear button at bottom. `N` keyboard shortcut toggles notes panel. Only visible to the player — not the DM or other players. Help overlay updated.
@@ -968,14 +970,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Voice chat integration (WebRTC peer-to-peer audio with push-to-talk)
 - [ ] Map fog-of-war reveal animation (smooth fog dissolve as tokens move)
 - [ ] Encounter theater mode (cinematic view during combat with zoom + pan)
-- [ ] AI DM personality presets (comedic, grimdark, Tolkien-esque, etc.)
+- [x] AI DM personality presets (6 styles: theatrical, comedic, grimdark, tolkien, noir, horror)
 - [ ] Character multiclassing support (track levels per class)
-- [ ] Spell concentration auto-tracking (auto-check on damage, break on fail)
-- [ ] Death save automation (roll on turn start when unconscious)
+- [x] Spell concentration auto-tracking (CON save on damage + War Caster feat — already implemented)
+- [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
 - [ ] Custom token images (upload portraits for enemies/NPCs)
 - [ ] Initiative tiebreaker rules (DEX, then coin flip)
-- [ ] Rest mechanics (short rest hit dice, long rest full restore with UI)
+- [x] Rest mechanics (short rest hit dice, long rest full restore — already implemented with full UI)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout
 - [x] Multi-floor dungeons (stairs terrain types + floor navigation bar)

@@ -77,6 +77,9 @@ interface DMSidebarProps {
   onAddStagedLoot?: (item: import('../../types/game').Item) => void;
   onRemoveStagedLoot?: (itemId: string) => void;
   onClearStagedLoot?: () => void;
+  // DM personality
+  dmPersonality?: string;
+  onSetDmPersonality?: (p: string) => void;
 }
 
 export default function DMSidebar({
@@ -131,6 +134,8 @@ export default function DMSidebar({
   onAddStagedLoot,
   onRemoveStagedLoot,
   onClearStagedLoot,
+  dmPersonality,
+  onSetDmPersonality,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter, grantXP } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -422,6 +427,33 @@ export default function DMSidebar({
                         ×
                       </button>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI DM Personality */}
+            {onSetDmPersonality && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">AI DM Style</label>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { id: 'theatrical', label: 'Theatrical', color: 'text-amber-300' },
+                    { id: 'comedic', label: 'Comedic', color: 'text-yellow-300' },
+                    { id: 'grimdark', label: 'Grimdark', color: 'text-red-300' },
+                    { id: 'tolkien', label: 'Tolkien', color: 'text-emerald-300' },
+                    { id: 'noir', label: 'Noir', color: 'text-slate-300' },
+                    { id: 'horror', label: 'Horror', color: 'text-purple-300' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => onSetDmPersonality(p.id)}
+                      className={`text-[9px] px-2 py-0.5 rounded border font-semibold transition-all ${
+                        dmPersonality === p.id ? `bg-slate-700/60 border-slate-500 ${p.color}` : 'bg-slate-800/40 border-slate-700/40 text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
                   ))}
                 </div>
               </div>
