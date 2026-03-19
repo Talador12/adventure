@@ -486,6 +486,42 @@ export class Lobby {
         break;
       }
 
+      // WebRTC voice signaling — relay offer/answer/ICE between specific peers
+      case 'voice_signal': {
+        const sigSession = this.sessions.get(server);
+        if (!sigSession) return;
+        const targetId = data.targetId as string;
+        if (!targetId) return;
+        for (const [ws, s] of this.sessions) {
+          if (s.id === targetId) {
+            ws.send(JSON.stringify({
+              type: 'voice_signal',
+              fromId: sigSession.id,
+              fromUsername: sigSession.username,
+              signal: data.signal,
+              signalType: data.signalType,
+              timestamp: Date.now(),
+            }));
+            break;
+          }
+        }
+        break;
+      }
+
+      case 'voice_state': {
+        const vsSession = this.sessions.get(server);
+        if (!vsSession) return;
+        this.broadcast({
+          type: 'voice_state',
+          playerId: vsSession.id,
+          username: vsSession.username,
+          talking: data.talking as boolean,
+          muted: data.muted as boolean,
+          timestamp: Date.now(),
+        });
+        break;
+      }
+
       case 'share_note': {
         // Player shares a note with the party — broadcast as a special chat message
         const noteSession = this.sessions.get(server);

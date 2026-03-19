@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v2.0.1
+## Current Version: v2.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added WebRTC voice chat — `useVoiceChat` hook with full peer-to-peer audio mesh. Push-to-talk via `V` key (skips when typing in input/textarea). Signaling via existing Lobby DO WebSocket (`voice_signal` for offer/answer/ICE relay, `voice_state` for talking/muted broadcasts). STUN servers via Google. Header UI: 🎤 Voice join button, mute toggle, LIVE indicator when talking, 🔊 indicators for peers talking, ✕ leave button. Mic tracks disabled by default, enabled only during PTT. Clean shutdown on unmount. Discord voice integration planned as a toggle alongside this.
 - Added character relationship graph — "Bonds" tab in the game view with a canvas-rendered node graph. Characters and NPCs arranged in a circle layout with draggable nodes. Five edge types (ally/bond/neutral/rival/enemy) with color-coded lines (solid for positive, dashed for negative). "+ Connection" button lets DM define relationships between any pair. Edge labels shown at midpoints. Legend at bottom. Relationships persisted in campaign save/load.
 - Added multiclass proficiency rules — `MULTICLASS_PROFICIENCIES` map in types/game.ts defines the limited proficiencies gained when multiclassing into each class (PHB p164). When multiclassing, a confirmation dialog shows the gained proficiencies (armor, weapons, skills, tools) before proceeding. Sorcerer and Wizard gain no new proficiencies. Lazy-loaded alongside `canMulticlassInto`.
 - Added map preview thumbnails — `generateMapThumbnail()` renders terrain to an 80×80 canvas and returns a base64 PNG data URL. Thumbnails generated client-side on Share and sent to the API. Stored in both the map data and the index (max 20KB). Community browser displays 32×32 thumbnail previews next to each map card. Maps uploaded before this version show without thumbnails (graceful fallback).
@@ -980,7 +981,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Campaign timeline view (339-line component with combat/narration/milestone events — already implemented)
 - [x] Character relationship graph (canvas node graph with 5 edge types, draggable, persisted)
 - [ ] AI-suggested relationships based on backstory analysis (Workers AI parses bonds/flaws for connections)
-- [ ] Voice chat: in-client WebRTC audio with push-to-talk OR Discord voice channel integration (toggle between either)
+- [x] Voice chat: in-client WebRTC audio with push-to-talk (V key) + peer state indicators
+- [ ] Discord voice channel toggle alongside WebRTC (switch between in-client and Discord voice)
 - [ ] Discord voice widget embed — show who's talking in the game UI via Discord's embedded voice widget
 - [ ] Auto-generate Discord voice channel invite link when campaign starts (via Discord bot API)
 - [x] Map fog-of-war reveal animation (0.5s fade dissolve via requestAnimationFrame)

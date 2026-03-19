@@ -39,6 +39,7 @@ import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
+import { useVoiceChat } from '../hooks/useVoiceChat';
 import Achievements from '../components/game/Achievements';
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
@@ -560,11 +561,18 @@ export default function Game() {
     onLatencyUpdate: setPlayerLatency,
     onPlayerStale: (id) => setStalePlayers((prev) => new Set([...prev, id])),
     onPlayerRecovered: (id) => setStalePlayers((prev) => { const n = new Set(prev); n.delete(id); return n; }),
+    onVoiceSignal: (fromId, fromUsername, signalType, signal) => voiceRef.current?.handleVoiceSignal(fromId, fromUsername, signalType, signal),
+    onVoiceState: (playerId, isTalking, isMuted) => voiceRef.current?.handleVoiceState(playerId, isTalking, isMuted),
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
   // Offline/single-player (not connected) defaults to full access.
   // Spectators get no game controls at all.
+  // Voice chat — ref-based to avoid circular dependency with WS hook
+  const voiceSendRef = useRef<(msg: Record<string, unknown>) => void>(() => {});
+  const voiceRef = useRef<ReturnType<typeof useVoiceChat> | null>(null);
+  const voicePlayersRef = useRef<Array<{ id: string; username: string }>>([]);
+
   const canUseDMTools = !isSpectating && (isDM || !wsConnected);
 
   // Global keyboard shortcuts (must be after canUseDMTools is defined)
@@ -1278,6 +1286,16 @@ export default function Game() {
     },
   });
   sendRef.current = send;
+
+  // Voice chat — initialized after WS send is available
+  voiceSendRef.current = send as unknown as (msg: Record<string, unknown>) => void;
+  const voice = useVoiceChat({
+    enabled: status === 'connected',
+    myPlayerId: wsPlayerId || '',
+    send: (msg) => voiceSendRef.current(msg),
+    players: [], // peers discovered via signaling, not needed upfront
+  });
+  voiceRef.current = voice;
   // Track connection status for canUseDMTools (must be after hook call)
   useEffect(() => {
     setWsConnected(status === 'connected');
@@ -1618,6 +1636,35 @@ export default function Game() {
             {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
           </span>
           <SessionTimer roomId={room} compact />
+          {/* Voice chat controls */}
+          {wsConnected && (
+            <div className="flex items-center gap-1">
+              {voice.voiceActive ? (
+                <>
+                  <button
+                    onClick={voice.toggleMute}
+                    className={`text-[9px] px-1.5 py-0.5 rounded font-semibold transition-all ${voice.muted ? 'bg-red-900/40 text-red-400' : 'bg-emerald-900/30 text-emerald-400'}`}
+                    title={voice.muted ? 'Unmute' : 'Mute'}
+                  >
+                    {voice.muted ? '🔇' : '🎤'}
+                  </button>
+                  {voice.talking && <span className="text-[8px] text-emerald-400 animate-pulse font-bold">LIVE</span>}
+                  {Object.entries(voice.peerStates).map(([id, state]) => (
+                    state.talking && <span key={id} className="text-[8px] text-amber-400 animate-pulse">🔊</span>
+                  ))}
+                  <button onClick={voice.stopVoice} className="text-[8px] text-red-500 hover:text-red-400" title="Leave voice">✕</button>
+                </>
+              ) : (
+                <button
+                  onClick={voice.startVoice}
+                  className="text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-emerald-400 font-semibold transition-colors"
+                  title="Join voice chat (V = push-to-talk)"
+                >
+                  🎤 Voice
+                </button>
+              )}
+            </div>
+          )}
           <button
             onClick={() => {
               import('../lib/export').then(({ exportSessionLog }) => {

@@ -82,6 +82,8 @@ export interface GameWebSocketDeps {
   onLatencyUpdate?: (latency: Record<string, number>) => void;
   onPlayerStale?: (playerId: string) => void;
   onPlayerRecovered?: (playerId: string) => void;
+  onVoiceSignal?: (fromId: string, fromUsername: string, signalType: string, signal: string) => void;
+  onVoiceState?: (playerId: string, talking: boolean, muted: boolean) => void;
 }
 
 export interface GameWebSocketState {
@@ -124,6 +126,8 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     onLatencyUpdate,
     onPlayerStale,
     onPlayerRecovered,
+    onVoiceSignal,
+    onVoiceState,
   } = deps;
 
   const [wsPlayerId, setWsPlayerId] = useState<string | null>(null);
@@ -610,6 +614,16 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           break;
         }
 
+        case 'voice_signal': {
+          onVoiceSignal?.(msg.fromId as string, msg.fromUsername as string, msg.signalType as string, msg.signal as string);
+          break;
+        }
+
+        case 'voice_state': {
+          onVoiceState?.(msg.playerId as string, msg.talking as boolean, msg.muted as boolean);
+          break;
+        }
+
         case 'shared_note': {
           setChatMessages((prev) => [...prev, {
             id: crypto.randomUUID(),
@@ -662,7 +676,7 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
     },
     // Use refs for frequently-changing state to avoid re-creating the callback on every state change.
     // wsPlayerId is tracked via wsPlayerIdRef, and state_request uses getStateForResponse callback.
-    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync, onRollInterpolationMode, onLatencyUpdate, onPlayerStale, onPlayerRecovered]
+    [room, sendRef, isRemoteEventRef, animateMoveRef, mapPositionsRef, setChatMessages, setDmHistory, setSceneName, setQuests, setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl, updateCharacter, getStateForResponse, selectedCharacterId, onRollResult, onRollVetoed, onRollCleared, onServerTimeSync, onRollInterpolationMode, onLatencyUpdate, onPlayerStale, onPlayerRecovered, onVoiceSignal, onVoiceState]
   );
 
   return {
