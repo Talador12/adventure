@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI-generated enemy portraits — new `POST /api/portrait/enemy` endpoint generates combat-themed token portraits via Workers AI FLUX-1-schnell. Prompt includes enemy name + description with "circular token style, dark dramatic lighting, menacing expression" art direction. Encounter generator now fires parallel portrait requests for each spawned enemy (fire-and-forget, non-blocking). Portraits set as `tokenImage` on units as they resolve — enemies appear with generic initials first, then their AI portrait fades in when ready.
 - Added multiclass ability score prerequisites — `MULTICLASS_PREREQS` map and `canMulticlassInto()` function in types/game.ts. Validates D&D 5e PHB p163 requirements before allowing multiclass. Fighter special case: STR 13 OR DEX 13. Alert shows missing prereqs with current values. Lazy-loaded via dynamic import for bundle efficiency.
 - Added shareable player notes — "Share with Party" button appears on the notes panel when connected to multiplayer and notes are non-empty. Prompts for a title, then sends `share_note` via WebSocket. Lobby DO broadcasts `shared_note` to all clients. Appears as a 📋 system message in chat (Lobby, Game, and useGameWebSocket all handle it). Text truncated to 500 chars. Fully opt-in — notes remain private until explicitly shared.
 - Added encounter theater mode — "🎬 Theater" toggle in zoom controls (visible during combat). When ON, the camera auto-zooms to 2x and smoothly pans to center on the current turn unit using easeInOutQuad animation (400ms). Triggers on turn change. Reset button also disables theater mode. Creates a cinematic "camera follows the action" effect during combat.
@@ -985,7 +986,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
 - [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
-- [ ] AI-generated enemy portraits (Workers AI FLUX generates token images from enemy descriptions)
+- [x] AI-generated enemy portraits (FLUX-1-schnell, fire-and-forget parallel gen on encounter spawn)
 - [x] Initiative tiebreaker rules (DEX mod, then stable ID comparison)
 - [x] Rest mechanics (short rest hit dice, long rest full restore — already implemented with full UI)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
