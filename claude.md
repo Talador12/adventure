@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added fog reveal animation — newly-explored cells get a 0.5s fade transition instead of instantly revealing. `fogRevealRef` tracks recently-revealed cells with progress 1.0→0.0. requestAnimationFrame loop decays progress at 2x/second. During canvas draw, cells with active reveal progress get an overlaid `rgba(15,23,42, progress*0.7)`. Result: fog dissolves smoothly as tokens move into new areas. Respects `effectiveDmMode` (DM sees no fog). Respects `prefers-reduced-motion` via Low-FX class (animations disabled).
 - Added custom token images — `tokenImage?: string` field on Unit. BattleMap renders images in clipped circles instead of plain initials. Falls back to character portrait for player units, then to initial letter. DM double-clicks a token to set its image URL (prompt dialog, clear to remove). Image cache via ref Map with lazy loading + error handling. Works for enemies, NPCs, and players. Images auto-render on next canvas draw after loading.
 - Added initiative tiebreaker rules — sort by initiative descending, then DEX modifier (higher goes first), then stable ID comparison. Matches D&D 5e RAW tiebreaker rules. Works for both player characters (looks up DEX from Character stats) and enemies (uses unit.dexMod).
 - Added character multiclassing support — `classLevels?: Partial<Record<CharacterClass, number>>` field on Character. "+ Multiclass" button on character sheet adds a level in any class (validates class name). Total level auto-computed from sum of class levels. Character sheet shows "Fighter 5 / Wizard 3" format. Spellbook merges spells from all multiclassed classes at their respective levels. DDB import already handles multiclass via the primary class heuristic.
@@ -971,7 +972,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Campaign timeline view (visual timeline of sessions with key events + milestones)
 - [ ] Character relationship graph (party dynamics visualization, NPC connections)
 - [ ] Voice chat integration (WebRTC peer-to-peer audio with push-to-talk)
-- [ ] Map fog-of-war reveal animation (smooth fog dissolve as tokens move)
+- [x] Map fog-of-war reveal animation (0.5s fade dissolve via requestAnimationFrame)
 - [ ] Encounter theater mode (cinematic view during combat with zoom + pan)
 - [x] AI DM personality presets (6 styles: theatrical, comedic, grimdark, tolkien, noir, horror)
 - [x] Character multiclassing support (classLevels field + merged spellbook + UI)

@@ -712,17 +712,44 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const effectiveDmMode = dmMode && !viewAsUnitId;
   const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, effectiveDmMode, effectiveLighting);
 
-  // Update explored map as players reveal cells
+  // Fog reveal animation: track recently-revealed cells with fade progress
+  const fogRevealRef = useRef<Map<string, number>>(new Map()); // key="r,c" value=progress 0..1
+
+  // Update explored map as players reveal cells + trigger reveal animation
   useEffect(() => {
     setExplored((prev) => {
       let changed = false;
-      const next = prev.map((row, r) => row.map((explored, c) => {
-        if (!explored && visibility[r]?.[c]) { changed = true; return true; }
-        return explored;
+      const next = prev.map((row, r) => row.map((wasExplored, c) => {
+        if (!wasExplored && visibility[r]?.[c]) {
+          changed = true;
+          fogRevealRef.current.set(`${r},${c}`, 1.0); // start reveal animation
+          return true;
+        }
+        return wasExplored;
       }));
       return changed ? next : prev;
     });
   }, [visibility]);
+
+  // Decay fog reveal progress via animation frame
+  useEffect(() => {
+    if (fogRevealRef.current.size === 0) return;
+    let rafId: number;
+    let lastTs = performance.now();
+    const tick = (ts: number) => {
+      const dt = (ts - lastTs) / 1000; // seconds
+      lastTs = ts;
+      let anyActive = false;
+      for (const [key, progress] of fogRevealRef.current) {
+        const next = Math.max(0, progress - dt * 2); // 0.5s reveal duration
+        if (next <= 0) fogRevealRef.current.delete(key);
+        else { fogRevealRef.current.set(key, next); anyActive = true; }
+      }
+      if (anyActive) rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  });
 
   // --- Map image upload handler ---
   const { setMapImageUrl } = useGame();
@@ -802,6 +829,15 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         if (!effectiveDmMode && !isVisible && wasExplored) {
           ctx.fillStyle = 'rgba(15,23,42,0.6)';
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+        // Reveal animation: recently-revealed cells get a fading fog overlay
+        if (!effectiveDmMode && isVisible) {
+          const revealKey = `${r},${c}`;
+          const revealProgress = fogRevealRef.current.get(revealKey);
+          if (revealProgress && revealProgress > 0) {
+            ctx.fillStyle = `rgba(15,23,42,${revealProgress * 0.7})`;
+            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          }
         }
       }
     }
