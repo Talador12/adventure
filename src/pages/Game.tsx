@@ -201,6 +201,7 @@ export default function Game() {
   // AI backstory hooks
   const [backstoryHooks, setBackstoryHooks] = useState<string[]>([]);
   const [hooksLoading, setHooksLoading] = useState(false);
+  const [partyInventory, setPartyInventory] = useState<import('../types/game').Item[]>([]);
   // Level-up choice modal state
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   // Keyboard shortcut help overlay
@@ -359,8 +360,8 @@ export default function Game() {
   // Campaign persistence — auto-save, server load, registration (extracted hook)
   const getCampaignState = useCallback(() => ({
     dmHistory, sceneName, selectedCharacterId, combatLog,
-    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks,
-  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks]);
+    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory,
+  }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory]);
 
   const handleCampaignLoad = useCallback((data: CampaignLoadResult) => {
     if (data.dmHistory) setDmHistory(data.dmHistory);
@@ -376,6 +377,7 @@ export default function Game() {
     if (data.combatLog) setCombatLog(data.combatLog);
     if (data.lightingGrid) setLightingGrid(data.lightingGrid);
     if (data.backstoryHooks && data.backstoryHooks.length > 0) setBackstoryHooks(data.backstoryHooks);
+    if (data.partyInventory) setPartyInventory(data.partyInventory);
   }, [setUnits, setInCombat, setCombatRound, setTurnIndex, setTerrain, setMapPositions, setMapImageUrl]);
 
   // Ref for auto-select — avoids stale closure since handleSelectCharacter is defined later
@@ -1714,6 +1716,15 @@ export default function Game() {
             }}
             playerLatency={playerLatency}
             stalePlayers={stalePlayers}
+            partyInventory={partyInventory}
+            onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
+            onRemoveFromPartyInventory={(id) => setPartyInventory((prev) => prev.filter((i) => i.id !== id))}
+            onGiveItemToPlayer={(itemId, charId) => {
+              const item = partyInventory.find((i) => i.id === itemId);
+              if (!item) return;
+              setPartyInventory((prev) => prev.filter((i) => i.id !== itemId));
+              updateCharacter(charId, { inventory: [...(characters.find((c) => c.id === charId)?.inventory || []), { ...item, id: crypto.randomUUID() }] } as Partial<typeof characters[0]>);
+            }}
           />
         )}
 
