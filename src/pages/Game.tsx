@@ -210,6 +210,17 @@ export default function Game() {
 
   const [shopMessage, setShopMessage] = useState<string | null>(null);
   const [showSheet, setShowSheet] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [playerNotes, setPlayerNotes] = useState(() => {
+    try { return localStorage.getItem(`adventure:notes:${room}`) || ''; } catch { return ''; }
+  });
+  // Auto-save notes with 1s debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try { localStorage.setItem(`adventure:notes:${room}`, playerNotes); } catch { /* ok */ }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [playerNotes, room]);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
 
   // Floating combat text (damage numbers, miss, heal)
@@ -574,7 +585,8 @@ export default function Game() {
       // D — toggle DM sidebar (if DM)
       if ((e.key === 'd' || e.key === 'D') && canUseDMTools) { setShowDMSidebar((s) => !s); return; }
       // C — toggle character sheet
-      if (e.key === 'c' || e.key === 'C') { setShowSheet((s) => !s); return; }
+      if (e.key === 'c' || e.key === 'C') { setShowSheet((s) => !s); setShowNotes(false); return; }
+      if (e.key === 'n' || e.key === 'N') { setShowNotes((s) => !s); setShowSheet(false); return; }
       // Q — toggle quests
       if (e.key === 'q' || e.key === 'Q') { setShowQuests((s) => !s); return; }
       // L — toggle combat log
@@ -2231,16 +2243,42 @@ export default function Game() {
           {/* Sidebar tabs */}
           {selectedCharacter && (
             <div className="flex border-b border-slate-800 shrink-0">
-              <button onClick={() => setShowSheet(false)} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${!showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
-                Dice & Chat
+              <button onClick={() => { setShowSheet(false); setShowNotes(false); }} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${!showSheet && !showNotes ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                Chat
               </button>
-              <button onClick={() => setShowSheet(true)} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
-                Character
+              <button onClick={() => { setShowSheet(true); setShowNotes(false); }} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                Sheet
+              </button>
+              <button onClick={() => { setShowSheet(false); setShowNotes(true); }} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showNotes ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                Notes
               </button>
             </div>
           )}
 
-          {showSheet && selectedCharacter ? (
+          {showNotes ? (
+            <div className="flex-1 flex flex-col p-3 overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Personal Notes</span>
+                <span className="text-[8px] text-slate-600">Auto-saved • Only you can see these</span>
+              </div>
+              <textarea
+                value={playerNotes}
+                onChange={(e) => setPlayerNotes(e.target.value)}
+                placeholder="Write session notes, track NPCs, record clues, plan your next move...&#10;&#10;Only visible to you — not the DM or other players."
+                className="flex-1 w-full bg-slate-800/40 border border-slate-700/50 rounded-lg p-3 text-sm text-slate-200 placeholder-slate-600 resize-none focus:ring-1 focus:ring-[#F38020]/50 focus:border-[#F38020]/50 outline-none leading-relaxed"
+                spellCheck={false}
+              />
+              <div className="flex items-center justify-between mt-1.5">
+                <span className="text-[8px] text-slate-600">{playerNotes.length} chars</span>
+                <button
+                  onClick={() => { if (confirm('Clear all notes?')) setPlayerNotes(''); }}
+                  className="text-[8px] text-slate-600 hover:text-red-400 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          ) : showSheet && selectedCharacter ? (
             <div className="flex-1 overflow-y-auto p-4">
               <CharacterSheet character={selectedCharacter} />
             </div>
@@ -2339,6 +2377,7 @@ export default function Game() {
                 ['R', 'Quick rules reference'],
                 ['6', 'Encounter history log'],
                 ['7', 'NPC relationship tracker'],
+                ['N', 'Player notes panel'],
                 ['8', 'Dice roll statistics'],
                 ['B', 'Monster manual (DM only)'],
                 ['—', '— Combat (your turn) —'],

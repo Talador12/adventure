@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added player notes panel — "Notes" tab in the right sidebar alongside Chat and Sheet. Full-height textarea for personal session notes (track NPCs, clues, plans). Stored in localStorage per-room (`adventure:notes:{room}`), auto-saved with 1s debounce. Character count + Clear button at bottom. `N` keyboard shortcut toggles notes panel. Only visible to the player — not the DM or other players. Help overlay updated.
 - Added campaign session log export — `exportSessionLog()` in export.ts generates a formatted markdown file with party roster, DM narration (blockquotes), timestamped chat log (with system/roll/message types), and combat log (bullet list). "Export Log" button in Game header (lazy-loaded). Downloads as `{campaign-name}-session-log.md`. Includes all data from the current session.
 - Enhanced initiative roll automation — the existing "Roll Initiative" button now shows individual initiative values in the combat log and DM narration (e.g., "Order: Thorin: 18, Goblin: 12, Elara: 8"). Added "Re-roll Init" button (DM only, visible during combat) for re-rolling when new enemies join mid-fight. Re-roll resets turn order and broadcasts updated state.
 - Added ETag cache invalidation — `GET /api/characters` and `GET /api/campaign/:roomId` now compute SHA-256 ETags from response data and return `ETag` + `Cache-Control: private, no-cache` headers. Client sends `If-None-Match` on subsequent requests; server returns 304 Not Modified if data unchanged. Client stores ETags in localStorage. Saves bandwidth on unchanged data while still checking freshness on every request.
@@ -954,7 +955,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Condition duration countdown in initiative bar (already shows round count + tooltip)
 - [ ] Sound effects library (ambient music + combat/spell/dice SFX via Web Audio API)
 - [x] Campaign session log export (markdown with party roster, narration, chat, combat log)
-- [ ] Player notes panel (personal notes visible only to the player, not the DM)
+- [x] Player notes panel (personal notes per-campaign, localStorage, N shortcut)
+- [ ] Shareable player notes (opt-in: share specific notes with the party via WebSocket)
 - [x] Procedural dungeon generator (BSP tree with seeded RNG, doors, hazards)
 - [x] Dungeon seed sharing — copy seed to clipboard, enter seed to regenerate layout
 - [x] Multi-floor dungeons (stairs terrain types + floor navigation bar)
