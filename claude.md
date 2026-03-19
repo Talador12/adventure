@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Enhanced character PDF export — the printable HTML sheet now includes Equipment (weapon with damage die, armor with AC, shield), Inventory (2-column list with name/quantity/type/value), and Spellbook (2-column list with name/level/school/damage/concentration). Sections only render when the character has data. Print/Save-as-PDF button at bottom for browser print dialog.
 - Added procedural dungeon generator — `src/lib/dungeonGen.ts` implements BSP (Binary Space Partitioning) tree algorithm with seeded RNG (mulberry32). Recursively splits the grid into leaves, places rooms inside each leaf, connects all rooms with L-shaped corridors, adds doors at room entrances, and scatters pits/water for variety. Configurable grid size, optional seed for reproducible dungeons. "🎲 Random" button in DM toolbar generates a new dungeon each click with fog reset. Replaces the old inline dungeon generator.
 - Added shared party inventory (group loot pool) — `partyInventory: Item[]` in campaign state, persisted via save/load. DMSidebar "Party Loot" section with item count, "+ Add" button (prompt for name), per-item "Give..." dropdown to transfer to any player character, and × remove button. `onGiveItemToPlayer` moves item from pool to character's personal inventory with a fresh UUID. Scrollable 32px-high item list. Integrated with campaign persistence.
 - Added AI encounter balancing — encounter generator now uses D&D 5e DMG XP thresholds (levels 1-20) to calculate a proper XP budget per difficulty tier (easy/medium/hard/deadly). Budget = threshold × partySize with ±20% tolerance. AI prompt includes the XP budget, encounter multiplier rules (1 enemy=1x, 2=1.5x, 3-6=2x, 7+=2.5x), and party class composition for tactical variety. Frontend passes actual party size and all character classes. `XP_THRESHOLDS_BY_LEVEL` table covers all 20 levels.
@@ -929,7 +930,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] IndexedDB for local cache of characters, campaigns, campaign state
 - [x] Optimistic UI: show IndexedDB-cached state immediately, server fetch overwrites in background
 - [ ] Cache invalidation via ETags or Last-Modified headers
-- [ ] Character export to PDF (printable character sheet with portrait, stats, inventory, spells)
+- [x] Character export to PDF (printable sheet with stats, equipment, inventory, spells)
 - [x] Shared party inventory (DM-managed loot pool with give-to-player transfers)
 - [ ] Loot roll table integration — auto-populate party loot from encounter rewards
 - [x] AI encounter balancing (DMG XP budget calculation + party composition awareness)
