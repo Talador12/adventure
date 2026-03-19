@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added streaming AI narration — new `POST /api/dm/narrate-stream` endpoint returns SSE stream from Workers AI (`stream: true`). Frontend reads the stream token-by-token, updating the DM narration text in-place with a blinking cursor (`▍`). Creates a dramatic typewriter effect as the AI DM speaks. Falls back to the regular non-streaming endpoint if SSE fails. SSE data lines parsed for `{"response":"token"}` format.
 - Added replay mini battle map — 200×200 canvas in the CombatReplay viewer renders unit positions from each event's snapshot. 20×20 grid with player tokens (orange) and enemy tokens (red), current turn unit highlighted in amber. Initial letters shown on each token. Updates on every step/scrub. Shows spatial context alongside the event description and HP bars.
 - Added replay persistence — combat recordings (last 5) saved/loaded with campaign state via useCampaignPersistence. Recordings survive page reload and session resume. Replay button shows count and a hover dropdown to pick from past recordings (newest first, showing event count + duration).
 - Added AI lore generation for wiki — `POST /api/dm/generate-lore` uses Workers AI (Llama 3.1 8B) to generate 2-4 paragraph lore entries based on page title, category, tags, scene name, and existing page titles for world consistency. "✨ Generate" button in wiki editor appends AI content to existing text. Context-aware: references other wiki entries for cross-pollination.
@@ -1024,7 +1025,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Mobile companion app mode (join as player from phone, streamlined UI)
 
 ### v4.0 Feature Ideas
-- [ ] Streaming AI narration (SSE token-by-token display instead of waiting for full response)
+- [x] Streaming AI narration (SSE token-by-token with typewriter cursor, fallback to non-streaming)
 - [ ] Player character journal (private diary entries visible only to that player)
 - [ ] Initiative card drag-and-drop (DM can reorder initiative manually)
 - [ ] Hex grid support (alternative to square grid for BattleMap)

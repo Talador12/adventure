@@ -734,6 +734,46 @@ ${context ? `\nScene context: ${context}` : ''}`;
   }
 });
 
+// AI DM narration — streaming SSE variant for typewriter effect
+app.post('/api/dm/narrate-stream', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const characters = (body.characters as Array<Record<string, unknown>>) || [];
+    const context = String(body.context || '');
+    const action = String(body.action || '');
+    const history = (body.history as string[]) || [];
+    const scene = String(body.scene || '');
+    const personality = String(body.personality || 'theatrical');
+
+    const charDescriptions = characters.map((ch) => `${ch.name} — Level ${ch.level} ${ch.race} ${ch.class}`).join(', ');
+    const historyStr = history.length > 0 ? `\nRecent: ${history.slice(-5).join(' | ')}` : '';
+
+    const DM_PERSONALITIES: Record<string, string> = {
+      theatrical: 'theatrical, unpredictable, deeply immersive',
+      comedic: 'witty, absurd NPCs, cosmic irony',
+      grimdark: 'grim, scarce resources, every victory has cost',
+      tolkien: 'epic landscapes, ancient languages, mythic destiny',
+      noir: 'hardboiled, rain-slicked, trust nobody',
+      horror: 'slow dread, unreliable senses, clinical wrongness',
+    };
+    const style = DM_PERSONALITIES[personality] || DM_PERSONALITIES.theatrical;
+
+    const systemPrompt = `You are a ${style} D&D DM. 2-4 vivid sentences. Party: ${charDescriptions}.${scene ? ` Scene: ${scene}.` : ''}${historyStr}${context ? `\n${context}` : ''}`;
+
+    const stream = await (c.env.AI as { run: (m: string, o: Record<string, unknown>) => Promise<ReadableStream> }).run(
+      '@cf/meta/llama-3.1-8b-instruct',
+      { messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: action || 'Set the scene.' }], max_tokens: 400, stream: true },
+    );
+
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+    });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Stream failed' }, 500);
+  }
+});
+
 // AI NPC dialogue — speak as a specific NPC in character
 app.post('/api/dm/npc', async (c) => {
   if (!c.env.AI) {
