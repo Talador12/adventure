@@ -173,6 +173,28 @@ export const DARKVISION_RACES: ReadonlySet<Race> = new Set(['Elf', 'Dwarf', 'Gno
 export const DARKVISION_RANGE = 12; // 60ft = 12 cells
 export const NORMAL_VISION_RANGE = 6; // 30ft = 6 cells
 
+// D&D 5e multiclass ability score prerequisites (PHB p163)
+export const MULTICLASS_PREREQS: Record<CharacterClass, Partial<Record<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', number>>> = {
+  Barbarian: { STR: 13 }, Bard: { CHA: 13 }, Cleric: { WIS: 13 }, Druid: { WIS: 13 },
+  Fighter: { STR: 13 }, Monk: { DEX: 13, WIS: 13 }, Paladin: { STR: 13, CHA: 13 },
+  Ranger: { DEX: 13, WIS: 13 }, Rogue: { DEX: 13 }, Sorcerer: { CHA: 13 },
+  Warlock: { CHA: 13 }, Wizard: { INT: 13 },
+};
+
+/** Check multiclass prerequisites. Fighter allows STR 13 OR DEX 13. */
+export function canMulticlassInto(stats: Stats, targetClass: CharacterClass): { allowed: boolean; missing: string[] } {
+  const prereqs = MULTICLASS_PREREQS[targetClass];
+  if (!prereqs) return { allowed: true, missing: [] };
+  const missing: string[] = [];
+  for (const [stat, min] of Object.entries(prereqs)) {
+    if ((stats[stat as keyof Stats] || 10) < min!) {
+      if (targetClass === 'Fighter' && stat === 'STR' && (stats.DEX || 10) >= 13) continue;
+      missing.push(`${stat} ${min}+ (have ${stats[stat as keyof Stats] || 10})`);
+    }
+  }
+  return { allowed: missing.length === 0, missing };
+}
+
 export const CLASSES = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Barbarian', 'Bard', 'Sorcerer', 'Warlock', 'Druid', 'Monk'] as const;
 export type CharacterClass = (typeof CLASSES)[number];
 

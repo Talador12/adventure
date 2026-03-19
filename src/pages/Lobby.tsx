@@ -433,6 +433,16 @@ export default function Lobby() {
           break;
         }
 
+        case 'shared_note':
+          setChatMessages((prev) => [...prev, {
+            id: crypto.randomUUID(),
+            type: 'system',
+            username: String(msg.username || 'Player'),
+            text: `📋 ${msg.title || 'Shared Note'}: ${String(msg.text || '').slice(0, 500)}`,
+            timestamp: (msg.timestamp as number) || Date.now(),
+          }]);
+          break;
+
         case 'chat_reaction': {
           const reactMsgId = msg.messageId as string;
           const reactEmoji = msg.emoji as string;

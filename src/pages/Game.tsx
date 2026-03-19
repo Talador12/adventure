@@ -2276,12 +2276,26 @@ export default function Game() {
               />
               <div className="flex items-center justify-between mt-1.5">
                 <span className="text-[8px] text-slate-600">{playerNotes.length} chars</span>
+                <div className="flex gap-2">
+                  {wsConnected && playerNotes.trim() && (
+                    <button
+                      onClick={() => {
+                        const title = prompt('Note title (visible to everyone):', 'Session Note');
+                        if (title !== null) send({ type: 'share_note', title: title || 'Shared Note', text: playerNotes.trim().slice(0, 500) });
+                      }}
+                      className="text-[8px] text-teal-500 hover:text-teal-400 transition-colors font-semibold"
+                      title="Share this note with the party (visible in chat)"
+                    >
+                      Share with Party
+                    </button>
+                  )}
                 <button
                   onClick={() => { if (confirm('Clear all notes?')) setPlayerNotes(''); }}
                   className="text-[8px] text-slate-600 hover:text-red-400 transition-colors"
                 >
                   Clear
                 </button>
+                </div>
               </div>
             </div>
           ) : showSheet && selectedCharacter ? (

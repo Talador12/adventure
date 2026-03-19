@@ -505,13 +505,17 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">Proficiency Bonus: +{prof}</span>
             <button
-              onClick={() => {
+              onClick={async () => {
                 const cls = prompt(`Add multiclass level. Enter class name:\n(${['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Bard', 'Barbarian', 'Sorcerer', 'Warlock', 'Druid', 'Monk'].join(', ')})`);
                 if (!cls?.trim()) return;
-                const validClass = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Bard', 'Barbarian', 'Sorcerer', 'Warlock', 'Druid', 'Monk'].find((c) => c.toLowerCase() === cls.trim().toLowerCase());
+                const validClass = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Ranger', 'Paladin', 'Bard', 'Barbarian', 'Sorcerer', 'Warlock', 'Druid', 'Monk'].find((c) => c.toLowerCase() === cls.trim().toLowerCase()) as CharacterClass | undefined;
                 if (!validClass) { alert('Invalid class name'); return; }
+                // D&D 5e prereq check
+                const { canMulticlassInto } = await import('../../types/game');
+                const check = canMulticlassInto(character.stats, validClass);
+                if (!check.allowed) { alert(`Cannot multiclass into ${validClass}.\nMissing prerequisites: ${check.missing.join(', ')}`); return; }
                 const current = character.classLevels || { [character.class]: character.level };
-                const updated = { ...current, [validClass]: (current[validClass as CharacterClass] || 0) + 1 };
+                const updated = { ...current, [validClass]: (current[validClass] || 0) + 1 };
                 const totalLevel = Object.values(updated).reduce((s, v) => s + (v || 0), 0);
                 updateCharacter(character.id, { classLevels: updated, level: totalLevel } as Partial<typeof character>);
               }}
