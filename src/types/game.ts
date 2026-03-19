@@ -120,6 +120,8 @@ export interface Unit {
   disengaged: boolean;
   cr?: number;
   xpValue?: number;
+  // Custom token image URL (portrait for enemies/NPCs on the battle map)
+  tokenImage?: string;
   // Vision range in grid cells (default 6 = 30ft; darkvision races get 12 = 60ft)
   visionRange?: number;
   // Legendary actions — boss monsters get extra actions between player turns

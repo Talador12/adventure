@@ -504,7 +504,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
-    terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions, mapImageUrl } = useGame();
+    terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions, mapImageUrl, characters } = useGame();
 
   const [gridCols] = useState(DEFAULT_COLS);
   const [gridRows] = useState(DEFAULT_ROWS);
@@ -524,6 +524,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [lastDungeonSeed, setLastDungeonSeed] = useState<number | null>(null);
   const [seedInput, setSeedInput] = useState('');
+  // Token image cache for custom portraits
+  const tokenImageCacheRef = useRef<Map<string, HTMLImageElement | null>>(new Map());
   const [showCommunityMaps, setShowCommunityMaps] = useState(false);
   const [communityMaps, setCommunityMaps] = useState<Array<{ id: string; name: string; tags: string[]; rating: number; downloads: number }>>([]);
   const [communityLoading, setCommunityLoading] = useState(false);
@@ -710,17 +712,44 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const effectiveDmMode = dmMode && !viewAsUnitId;
   const visibility = computeVisibility(terrain, playerPositions, gridRows, gridCols, VISION_RADIUS, effectiveDmMode, effectiveLighting);
 
-  // Update explored map as players reveal cells
+  // Fog reveal animation: track recently-revealed cells with fade progress
+  const fogRevealRef = useRef<Map<string, number>>(new Map()); // key="r,c" value=progress 0..1
+
+  // Update explored map as players reveal cells + trigger reveal animation
   useEffect(() => {
     setExplored((prev) => {
       let changed = false;
-      const next = prev.map((row, r) => row.map((explored, c) => {
-        if (!explored && visibility[r]?.[c]) { changed = true; return true; }
-        return explored;
+      const next = prev.map((row, r) => row.map((wasExplored, c) => {
+        if (!wasExplored && visibility[r]?.[c]) {
+          changed = true;
+          fogRevealRef.current.set(`${r},${c}`, 1.0); // start reveal animation
+          return true;
+        }
+        return wasExplored;
       }));
       return changed ? next : prev;
     });
   }, [visibility]);
+
+  // Decay fog reveal progress via animation frame
+  useEffect(() => {
+    if (fogRevealRef.current.size === 0) return;
+    let rafId: number;
+    let lastTs = performance.now();
+    const tick = (ts: number) => {
+      const dt = (ts - lastTs) / 1000; // seconds
+      lastTs = ts;
+      let anyActive = false;
+      for (const [key, progress] of fogRevealRef.current) {
+        const next = Math.max(0, progress - dt * 2); // 0.5s reveal duration
+        if (next <= 0) fogRevealRef.current.delete(key);
+        else { fogRevealRef.current.set(key, next); anyActive = true; }
+      }
+      if (anyActive) rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  });
 
   // --- Map image upload handler ---
   const { setMapImageUrl } = useGame();
@@ -800,6 +829,15 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         if (!effectiveDmMode && !isVisible && wasExplored) {
           ctx.fillStyle = 'rgba(15,23,42,0.6)';
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+        // Reveal animation: recently-revealed cells get a fading fog overlay
+        if (!effectiveDmMode && isVisible) {
+          const revealKey = `${r},${c}`;
+          const revealProgress = fogRevealRef.current.get(revealKey);
+          if (revealProgress && revealProgress > 0) {
+            ctx.fillStyle = `rgba(15,23,42,${revealProgress * 0.7})`;
+            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          }
         }
       }
     }
@@ -945,21 +983,52 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.fill();
       }
 
-      // Token circle
+      // Token circle — try custom image first, then character portrait, then initial
+      const tokenImgUrl = unit.tokenImage || (unit.characterId ? characters.find((c) => c.id === unit.characterId)?.portrait : undefined);
+      let drewImage = false;
+      if (tokenImgUrl) {
+        const cache = tokenImageCacheRef.current;
+        let img = cache.get(tokenImgUrl);
+        if (img === undefined) {
+          // Start loading
+          const newImg = new Image();
+          newImg.crossOrigin = 'anonymous';
+          newImg.src = tokenImgUrl;
+          cache.set(tokenImgUrl, null); // mark as loading
+          newImg.onload = () => { cache.set(tokenImgUrl, newImg); };
+          newImg.onerror = () => { cache.set(tokenImgUrl, null); };
+        }
+        if (img) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, TOKEN_RADIUS, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(img, cx - TOKEN_RADIUS, cy - TOKEN_RADIUS, TOKEN_RADIUS * 2, TOKEN_RADIUS * 2);
+          ctx.restore();
+          drewImage = true;
+        }
+      }
+      if (!drewImage) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = tokenColor(unit);
+        ctx.fill();
+      }
+      // Border
       ctx.beginPath();
       ctx.arc(cx, cy, TOKEN_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = tokenColor(unit);
-      ctx.fill();
       ctx.strokeStyle = tokenBorderColor(unit, isSelected, isCurrentTurn);
       ctx.lineWidth = isSelected ? 3 : 2;
       ctx.stroke();
 
-      // Name initial
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(unit.name.charAt(0).toUpperCase(), cx, cy - 1);
+      // Name initial (only when no image)
+      if (!drewImage) {
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(unit.name.charAt(0).toUpperCase(), cx, cy - 1);
+      }
 
       // HP bar
       if (unit.hp > 0) {
@@ -2007,6 +2076,20 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onDoubleClick={(e) => {
+              if (!canUseDMTools) return;
+              const { x, y } = canvasCoords(e as unknown as ReactMouseEvent<HTMLCanvasElement>);
+              const token = tokenAt(x, y);
+              if (!token) return;
+              const unit = units.find((u) => u.id === token.unitId);
+              if (!unit) return;
+              const url = prompt(`Token image URL for ${unit.name}:`, unit.tokenImage || '');
+              if (url !== null) {
+                setUnits((prev) => prev.map((u) => u.id === unit.id ? { ...u, tokenImage: url.trim() || undefined } : u));
+                // Clear image cache for this URL
+                if (unit.tokenImage) tokenImageCacheRef.current.delete(unit.tokenImage);
+              }
+            }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
