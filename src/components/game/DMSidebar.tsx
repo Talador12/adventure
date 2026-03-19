@@ -67,6 +67,11 @@ interface DMSidebarProps {
   // Latency
   playerLatency?: Record<string, number>;
   stalePlayers?: Set<string>;
+  // Party inventory
+  partyInventory?: import('../../types/game').Item[];
+  onAddToPartyInventory?: (item: import('../../types/game').Item) => void;
+  onRemoveFromPartyInventory?: (itemId: string) => void;
+  onGiveItemToPlayer?: (itemId: string, charId: string) => void;
 }
 
 export default function DMSidebar({
@@ -113,6 +118,10 @@ export default function DMSidebar({
   onSetRollSyncMode,
   playerLatency,
   stalePlayers,
+  partyInventory,
+  onAddToPartyInventory,
+  onRemoveFromPartyInventory,
+  onGiveItemToPlayer,
 }: DMSidebarProps) {
   const { units, characters, inCombat, updateCharacter, grantXP } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -473,6 +482,57 @@ export default function DMSidebar({
                     ));
                   })()}
                 </div>
+              </div>
+            )}
+
+            {/* Party Loot Pool */}
+            {onAddToPartyInventory && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-slate-500 font-semibold uppercase">Party Loot ({(partyInventory || []).length})</label>
+                  <button
+                    onClick={() => {
+                      const name = prompt('Item name:');
+                      if (!name?.trim()) return;
+                      onAddToPartyInventory({
+                        id: crypto.randomUUID(),
+                        name: name.trim(),
+                        type: 'misc',
+                        rarity: 'common',
+                        description: 'Found loot',
+                        value: 0,
+                      });
+                    }}
+                    className="text-[8px] text-amber-400 hover:text-amber-300 font-semibold"
+                  >
+                    + Add
+                  </button>
+                </div>
+                {(partyInventory || []).length > 0 ? (
+                  <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                    {(partyInventory || []).map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-[9px] px-2 py-0.5 rounded bg-slate-800/30">
+                        <span className="text-amber-200 font-medium truncate">{item.name}{item.quantity && item.quantity > 1 ? ` ×${item.quantity}` : ''}</span>
+                        <div className="flex gap-1 shrink-0">
+                          {characters.length > 0 && (
+                            <select
+                              defaultValue=""
+                              onChange={(e) => { if (e.target.value && onGiveItemToPlayer) { onGiveItemToPlayer(item.id, e.target.value); e.target.value = ''; } }}
+                              className="text-[7px] px-0.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 w-14"
+                              title="Give to player"
+                            >
+                              <option value="">Give...</option>
+                              {characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                          )}
+                          <button onClick={() => onRemoveFromPartyInventory?.(item.id)} className="text-red-500 hover:text-red-400" title="Remove">×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[8px] text-slate-600 italic">No loot in party pool</p>
+                )}
               </div>
             )}
 

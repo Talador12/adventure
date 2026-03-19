@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added shared party inventory (group loot pool) — `partyInventory: Item[]` in campaign state, persisted via save/load. DMSidebar "Party Loot" section with item count, "+ Add" button (prompt for name), per-item "Give..." dropdown to transfer to any player character, and × remove button. `onGiveItemToPlayer` moves item from pool to character's personal inventory with a fresh UUID. Scrollable 32px-high item list. Integrated with campaign persistence.
 - Added AI encounter balancing — encounter generator now uses D&D 5e DMG XP thresholds (levels 1-20) to calculate a proper XP budget per difficulty tier (easy/medium/hard/deadly). Budget = threshold × partySize with ±20% tolerance. AI prompt includes the XP budget, encounter multiplier rules (1 enemy=1x, 2=1.5x, 3-6=2x, 7+=2.5x), and party class composition for tactical variety. Frontend passes actual party size and all character classes. `XP_THRESHOLDS_BY_LEVEL` table covers all 20 levels.
 - Added map preset library — 6 pre-built 20x20 terrain templates (Tavern, Dungeon, Forest Clearing, Cave System, Castle Hall, Arena) in `data/mapPresets.ts`. ASCII-art grid definitions parsed to TerrainType arrays via char map. Dropdown selector in DM toolbar (Map section) loads a preset with one click, replacing terrain + resetting fog. Each preset has name, description, and emoji icon.
 - Added optimistic UI for campaign state loading — `useCampaignPersistence` now shows IndexedDB-cached game state immediately on mount while the server fetch runs in background. Server response overwrites cached data when it arrives. Campaign state also cached to IndexedDB on every save (alongside the debounced server PUT). Server load response cached for next optimistic load. Combined with the existing character + campaign list caching, the entire app loads instantly from cache on repeat visits.
@@ -928,7 +929,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Optimistic UI: show IndexedDB-cached state immediately, server fetch overwrites in background
 - [ ] Cache invalidation via ETags or Last-Modified headers
 - [ ] Character export to PDF (printable character sheet with portrait, stats, inventory, spells)
-- [ ] Shared party inventory (group loot pool managed by DM, players request items)
+- [x] Shared party inventory (DM-managed loot pool with give-to-player transfers)
+- [ ] Loot roll table integration — auto-populate party loot from encounter rewards
 - [x] AI encounter balancing (DMG XP budget calculation + party composition awareness)
 - [x] Map preset library (6 templates: tavern, dungeon, forest, cave, castle, arena)
 - [ ] Community map sharing (upload/download presets via API, rate + tag)

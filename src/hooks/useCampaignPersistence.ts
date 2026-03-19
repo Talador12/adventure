@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Unit } from '../contexts/GameContext';
 import type { TerrainType, TokenPosition } from '../lib/mapUtils';
-import type { Quest } from '../types/game';
+import type { Quest, Item } from '../types/game';
 import type { Character } from '../contexts/GameContext';
 import type { LightingLevel } from '../components/combat/BattleMap';
 
@@ -28,6 +28,7 @@ export interface CampaignState {
   quests: Quest[];
   lightingGrid?: LightingLevel[][];
   backstoryHooks?: string[];
+  partyInventory?: Item[];
 }
 
 export interface CampaignLoadResult {
@@ -45,6 +46,7 @@ export interface CampaignLoadResult {
   quests?: Quest[];
   lightingGrid?: LightingLevel[][];
   backstoryHooks?: string[];
+  partyInventory?: Item[];
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -220,6 +222,7 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (c.combatLog && Array.isArray(c.combatLog)) result.combatLog = c.combatLog as string[];
       if (c.lightingGrid && Array.isArray(c.lightingGrid)) result.lightingGrid = c.lightingGrid as LightingLevel[][];
       if (c.backstoryHooks && Array.isArray(c.backstoryHooks)) result.backstoryHooks = c.backstoryHooks as string[];
+      if (c.partyInventory && Array.isArray(c.partyInventory)) result.partyInventory = c.partyInventory as Item[];
       return { result, raw: c };
     };
 
