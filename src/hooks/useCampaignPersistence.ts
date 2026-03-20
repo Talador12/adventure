@@ -35,6 +35,7 @@ export interface CampaignState {
   relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
   wikiPages?: Array<{ id: string; title: string; content: string; category: string; createdBy: string; updatedAt: number; tags?: string[] }>;
   recordings?: unknown[];
+  calendar?: unknown;
 }
 
 export interface CampaignLoadResult {
@@ -59,6 +60,7 @@ export interface CampaignLoadResult {
   relationships?: Array<{ from: string; to: string; type: string; label?: string }>;
   wikiPages?: Array<{ id: string; title: string; content: string; category: string; createdBy: string; updatedAt: number; tags?: string[] }>;
   recordings?: unknown[];
+  calendar?: unknown;
 }
 
 export interface UseCampaignPersistenceDeps {
@@ -241,6 +243,7 @@ export function useCampaignPersistence(deps: UseCampaignPersistenceDeps): UseCam
       if (c.relationships && Array.isArray(c.relationships)) result.relationships = c.relationships as Array<{ from: string; to: string; type: string; label?: string }>;
       if (c.wikiPages && Array.isArray(c.wikiPages)) result.wikiPages = c.wikiPages as typeof result.wikiPages;
       if (c.recordings && Array.isArray(c.recordings)) result.recordings = c.recordings as unknown[];
+      if (c.calendar && typeof c.calendar === 'object') result.calendar = c.calendar;
       return { result, raw: c };
     };
 
