@@ -462,7 +462,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -1315,6 +1315,14 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
 
     // Handle pin placement — open inline creation form at clicked cell
+    if (dmTool === 'annotation') {
+      const label = prompt('Annotation text:');
+      if (!label?.trim()) return;
+      const color = prompt('Text color (hex or name):', '#94a3b8') || '#94a3b8';
+      onPinAdd?.({ id: crypto.randomUUID().slice(0, 8), col, row, label: label.trim(), color, type: 'annotation', fontSize: 11 });
+      return;
+    }
+
     if (dmTool === 'pin') {
       setPendingPinCell({ col, row });
       setPinLabel('');
@@ -1850,6 +1858,13 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             >
               📌 Pin
             </button>
+            <button
+              onClick={() => { setDmTool('annotation' as DmTool); setPendingPinCell(null); }}
+              className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${dmTool === ('annotation' as DmTool) ? 'bg-emerald-700/60 text-white ring-1 ring-emerald-500/50' : 'bg-emerald-950/40 text-emerald-400/70 hover:bg-emerald-900/40'}`}
+              title="Place a floating text label on the map"
+            >
+              📝 Label
+            </button>
             {mapPins.length > 0 && (
               <span className="text-[9px] text-amber-400/60 font-mono">{mapPins.length}</span>
             )}
@@ -2150,8 +2165,36 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             onContextMenu={(e) => e.preventDefault()}
           />
 
-          {/* Map pin markers — HTML overlay on top of canvas, inside zoom/pan container */}
-          {mapPins.map((pin) => (
+          {/* Map pin markers + annotations — HTML overlay on canvas */}
+          {mapPins.map((pin) => pin.type === 'annotation' ? (
+            // Floating text annotation
+            <div
+              key={pin.id}
+              className="absolute pointer-events-auto group"
+              style={{
+                left: pin.col * CELL_SIZE + CELL_SIZE / 2,
+                top: pin.row * CELL_SIZE + CELL_SIZE / 2,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 15,
+              }}
+            >
+              <span
+                className="font-bold drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] whitespace-nowrap cursor-default"
+                style={{ color: pin.color, fontSize: `${pin.fontSize || 11}px` }}
+                title={pin.label}
+              >
+                {pin.label}
+              </span>
+              {canUseDMTools && onPinRemove && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPinRemove(pin.id); }}
+                  className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-600 text-white text-[6px] font-bold leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                  title="Remove annotation"
+                >×</button>
+              )}
+            </div>
+          ) : (
+            // Standard icon pin
             <div
               key={pin.id}
               className="absolute pointer-events-auto group"
@@ -2162,7 +2205,6 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 zIndex: 20,
               }}
             >
-              {/* Pin head */}
               <div
                 className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full shadow-lg border border-white/20 cursor-default whitespace-nowrap"
                 style={{ backgroundColor: pin.color, minWidth: 18 }}
@@ -2171,7 +2213,6 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 {pin.icon && <span className="text-[9px]">{pin.icon}</span>}
                 <span className="text-[8px] font-bold text-white drop-shadow-sm leading-none max-w-[80px] truncate">{pin.label}</span>
               </div>
-              {/* Pin tail (small triangle pointing down) */}
               <div
                 className="mx-auto w-0 h-0"
                 style={{

@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v3.0.0
+## Current Version: v3.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added map annotations — "📝 Label" DM tool places floating text labels on the battle map. MapPin type extended with `type: 'annotation'` and `fontSize` fields. Annotations render as bold drop-shadow text centered on the cell (vs. pins which render as icon bubbles above cells). Customizable text color. DM-removable on hover. Stored in the same mapPins array as icon pins.
 - Added concentration visual indicator on tokens — pulsing blue outer ring (`rgba(96,165,250, pulse)`) drawn around any token with `concentratingOn` set. Alpha oscillates via `sin(Date.now()/300)` for a breathing effect. 3px offset from token border. Visible alongside selection highlights and condition pips.
 - Added streaming AI narration — new `POST /api/dm/narrate-stream` endpoint returns SSE stream from Workers AI (`stream: true`). Frontend reads the stream token-by-token, updating the DM narration text in-place with a blinking cursor (`▍`). Creates a dramatic typewriter effect as the AI DM speaks. Falls back to the regular non-streaming endpoint if SSE fails. SSE data lines parsed for `{"response":"token"}` format.
 - Added replay mini battle map — 200×200 canvas in the CombatReplay viewer renders unit positions from each event's snapshot. 20×20 grid with player tokens (orange) and enemy tokens (red), current turn unit highlighted in amber. Initial letters shown on each token. Updates on every step/scrub. Shows spatial context alongside the event description and HP bars.
@@ -1032,7 +1033,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Hex grid support (alternative to square grid for BattleMap)
 - [ ] Campaign calendar (track in-world dates, schedule events, long rests)
 - [ ] Encounter templates (save + reuse enemy groups across campaigns)
-- [ ] Map annotations (floating text labels on the battle map)
+- [x] Map annotations (floating text labels via 📝 Label DM tool)
 - [ ] Damage type tracking (fire/cold/radiant etc with resistances/vulnerabilities)
 - [ ] Wild Magic table (auto-roll on nat 1 for Wild Magic Sorcerers)
 - [x] Concentration spell visual indicator on tokens (pulsing blue ring via sin wave)
