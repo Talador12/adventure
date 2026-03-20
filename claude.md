@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v5.0.0
+## Current Version: v5.0.1
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added model quality presets — `AI_QUALITY` env var (fast/balanced/quality) auto-selects model size per backend. Workers AI: 8B balanced → 70B quality. Local: phi3 fast → llama3.1 balanced → llama3.1:70b quality. Explicit `LOCAL_AI_MODEL`/`WORKERS_AI_MODEL` override presets. `aiStatus()` reports active quality tier.
+- Added campaign book export — `exportCampaignBook()` generates a full parchment-styled HTML document: party roster (stat grids, equipment, backstory), narration (blockquotes), quests (with completion state), world lore (wiki pages), battle chronicle (combat log), and chat log. Print/Save as PDF button. Georgia serif font, warm parchment palette, page-break-safe. "Book" button in Game header.
 - Added AI backend indicator in game header — color-coded badge shows "AI: local" (emerald), "AI: cloud" (sky), or "AI: off" (gray). Fetches from `GET /api/ai/status` on mount. Player count badge also added (shows party size when connected).
 - Unified AI architecture — all AI text generation goes through two functions: `aiText()` (prompt→string) and `aiChatStream()` (prompt→SSE stream) in `src/lib/aiClient.ts`. Three backends checked in order: LOCAL_AI_URL (any OpenAI-compatible server), Workers AI (Cloudflare), offline (graceful fallback string). Zero duplicate routing code. All 15+ AI endpoints in `_worker.ts` migrated to use `aiText()`. Image/vision models (FLUX, Llama Vision) use `aiRunDirect()` — Workers AI only, no local equivalent. `aiStatus()` exported for health check. `aiEnv()` casts Hono env. Model not hardcoded — configurable via LOCAL_AI_MODEL and WORKERS_AI_MODEL env vars.
 - Added configurable local AI backend — `src/lib/aiClient.ts` provides `aiChat()` and `aiChatStream()` that route to either Workers AI or any OpenAI-compatible local server. Config via env vars: `LOCAL_AI_URL` (e.g. `http://localhost:11434/v1`), `LOCAL_AI_MODEL` (e.g. `llama3.1`, `mistral`, `phi3`), `WORKERS_AI_MODEL` (override default Workers AI model). Works with Ollama, LM Studio, vLLM, LocalAI, llama.cpp, Jan — any server on any OS/hardware. Streaming transforms OpenAI SSE format to Workers AI format for frontend compatibility. `GET /api/ai/status` shows active backend. `make dev-local-ai` prints setup instructions.
@@ -1061,7 +1063,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Offline mode returns a graceful fallback string instead of crashing
 - [ ] Local AI image generation (Stable Diffusion via AUTOMATIC1111 API for portraits when FLUX unavailable)
 - [x] AI backend indicator in game UI (color-coded badge: local/cloud/off)
-- [ ] Model quality presets (fast/balanced/quality → auto-select model size per backend)
+- [x] Model quality presets (AI_QUALITY env var: fast/balanced/quality → auto-select model)
 
 ### v5.0 Feature Ideas
 - [ ] Discord OAuth login (replace guest play with real Discord identity, avatar, username)
@@ -1071,7 +1073,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Ambient soundscape per scene (keyword-to-mood mapper, auto-fires on scene change)
 - [x] Quick-roll macros (save/execute custom dice expressions with localStorage persistence — already implemented)
 - [x] Party formation presets (save/load unit positions in localStorage, name-matched)
-- [ ] Export campaign as PDF book (full campaign with narration, maps, character sheets)
+- [x] Export campaign as PDF book (parchment-styled HTML with party, narration, quests, lore, battles, chat)
 - [x] Spectator mode enhancements (player count badge in header — spectator-specific chat deferred)
 - [x] AI encounter recap (auto-fires after combat, bard-style dramatic summary)
 - [x] Campaign calendar (in-world dates, 5 event types, long rest tracking, month navigation)

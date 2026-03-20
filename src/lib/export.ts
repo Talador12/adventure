@@ -636,3 +636,107 @@ export function exportSessionLog(
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ============================================================================
+//  Campaign book export — full campaign as printable HTML (Save as PDF)
+// ============================================================================
+
+export function exportCampaignBook(
+  campaignName: string,
+  characters: Character[],
+  dmHistory: string[],
+  chatMessages: ChatMessageForExport[],
+  combatLog: string[],
+  quests: Array<{ title: string; description: string; completed: boolean; location?: string }>,
+  wikiPages: Array<{ title: string; content: string; category: string }>,
+) {
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const charSections = characters.map((c) => `
+    <div class="character-card">
+      <h3>${c.name}</h3>
+      <p class="subtitle">Level ${c.level} ${c.race} ${c.class}</p>
+      <div class="stat-grid">
+        ${(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const).map((s) => `<div class="stat"><span class="stat-label">${s}</span><span class="stat-value">${c.stats[s]}</span></div>`).join('')}
+      </div>
+      <p><strong>HP:</strong> ${c.hp}/${c.maxHp} · <strong>AC:</strong> ${c.ac} · <strong>Gold:</strong> ${c.gold?.toFixed(1)}gp</p>
+      ${c.backstory ? `<p class="backstory">${c.backstory}</p>` : ''}
+      ${c.inventory?.length ? `<p><strong>Inventory:</strong> ${c.inventory.map((i) => i.name).join(', ')}</p>` : ''}
+    </div>
+  `).join('');
+
+  const narrativeSection = dmHistory.length ? dmHistory.map((entry) => `<blockquote>${entry}</blockquote>`).join('\n') : '<p><em>No narration recorded.</em></p>';
+
+  const questSection = quests.length ? quests.map((q) => `
+    <div class="quest ${q.completed ? 'completed' : ''}">
+      <strong>${q.completed ? '✅' : '⬜'} ${q.title}</strong>${q.location ? ` — <em>${q.location}</em>` : ''}
+      <p>${q.description}</p>
+    </div>
+  `).join('') : '';
+
+  const wikiSection = wikiPages.length ? wikiPages.map((p) => `
+    <div class="wiki-entry">
+      <h4>${p.title} <span class="category">${p.category}</span></h4>
+      <p>${p.content}</p>
+    </div>
+  `).join('') : '';
+
+  const chatSection = chatMessages.slice(-50).map((m) => {
+    const time = new Date(m.timestamp).toLocaleTimeString();
+    return `<div class="chat-line"><span class="time">[${time}]</span> <strong>${m.username}:</strong> ${m.text}</div>`;
+  }).join('\n');
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${campaignName || 'Adventure'} — Campaign Book</title>
+<style>
+  @media print { body { margin: 0; } .no-print { display: none; } }
+  body { font-family: 'Georgia', serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #1a1a2e; line-height: 1.6; background: #faf8f0; }
+  h1 { font-size: 2.5em; text-align: center; color: #8b4513; border-bottom: 3px double #8b4513; padding-bottom: 10px; }
+  h2 { color: #8b4513; border-bottom: 1px solid #d4a574; padding-bottom: 5px; margin-top: 40px; page-break-before: auto; }
+  h3 { color: #2c1810; margin: 0 0 5px 0; }
+  .subtitle { color: #666; margin: 0 0 10px 0; font-style: italic; }
+  .date { text-align: center; color: #888; font-style: italic; }
+  .character-card { background: #f5f0e8; border: 1px solid #d4a574; border-radius: 8px; padding: 15px; margin: 15px 0; page-break-inside: avoid; }
+  .stat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 10px 0; }
+  .stat { text-align: center; background: #ede5d8; border-radius: 6px; padding: 6px 2px; }
+  .stat-label { display: block; font-size: 10px; color: #888; text-transform: uppercase; }
+  .stat-value { display: block; font-size: 18px; font-weight: bold; }
+  .backstory { font-style: italic; color: #555; margin-top: 8px; }
+  blockquote { border-left: 3px solid #8b4513; margin: 15px 0; padding: 10px 15px; background: #f9f5ee; font-style: italic; page-break-inside: avoid; }
+  .quest { padding: 8px 12px; margin: 8px 0; border-left: 3px solid #d4a574; background: #f9f5ee; }
+  .quest.completed { opacity: 0.6; text-decoration: line-through; }
+  .wiki-entry { margin: 15px 0; padding: 10px; background: #f5f0e8; border-radius: 6px; page-break-inside: avoid; }
+  .wiki-entry h4 { margin: 0 0 5px 0; }
+  .category { font-size: 11px; color: #888; font-weight: normal; }
+  .chat-line { font-size: 12px; margin: 2px 0; font-family: monospace; }
+  .time { color: #888; }
+  .combat-line { font-size: 12px; margin: 1px 0; }
+  .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #d4a574; color: #888; font-size: 12px; }
+  .btn { display: block; margin: 20px auto; padding: 12px 24px; background: #8b4513; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .btn:hover { background: #a0522d; }
+</style></head><body>
+<h1>${campaignName || 'Adventure'}</h1>
+<p class="date">Campaign Book — ${date}</p>
+
+<button class="btn no-print" onclick="window.print()">Print / Save as PDF</button>
+
+<h2>The Party</h2>
+${charSections || '<p><em>No characters.</em></p>'}
+
+<h2>The Story</h2>
+${narrativeSection}
+
+${questSection ? `<h2>Quests</h2>${questSection}` : ''}
+
+${wikiSection ? `<h2>World Lore</h2>${wikiSection}` : ''}
+
+${combatLog.length ? `<h2>Battle Chronicle</h2><div>${combatLog.slice(-30).map((l) => `<div class="combat-line">• ${l}</div>`).join('')}</div>` : ''}
+
+${chatMessages.length ? `<h2>Chat Log</h2><div>${chatSection}</div>` : ''}
+
+<div class="footer">Exported from Adventure VTT — ${date}</div>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+}
