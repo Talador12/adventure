@@ -43,6 +43,7 @@ import QuestMap from '../components/game/QuestMap';
 import { useVoiceChat } from '../hooks/useVoiceChat';
 import CombatReplay from '../components/game/CombatReplay';
 import WorldWiki, { type WikiPage } from '../components/game/WorldWiki';
+import CampaignCalendar, { type CalendarState } from '../components/game/CampaignCalendar';
 import { startRecording, recordEvent, stopRecording, isRecording } from '../lib/combatRecorder';
 import type { CombatRecording } from '../lib/combatRecorder';
 import Achievements from '../components/game/Achievements';
@@ -211,7 +212,7 @@ export default function Game() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships' | 'wiki'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships' | 'wiki' | 'calendar'>('narration');
   // Mobile layout: bottom tab bar controls which panel is visible
   const [mobilePanel, setMobilePanel] = useState<'game' | 'chat' | 'sheet'>('game');
 
@@ -252,6 +253,7 @@ export default function Game() {
   const [relationships, setRelationships] = useState<import('../components/game/RelationshipGraph').RelationshipEdge[]>([]);
   const [recordings, setRecordings] = useState<CombatRecording[]>([]);
   const [wikiPages, setWikiPages] = useState<WikiPage[]>([]);
+  const [calendar, setCalendar] = useState<CalendarState>({ currentDay: 1, events: [] });
   const [showReplay, setShowReplay] = useState<CombatRecording | null>(null);
   const [dmPersonality, setDmPersonality] = useState<string>(() => {
     try { return localStorage.getItem(`adventure:dm-personality:${room}`) || 'theatrical'; } catch { return 'theatrical'; }
@@ -414,7 +416,7 @@ export default function Game() {
   // Campaign persistence — auto-save, server load, registration (extracted hook)
   const getCampaignState = useCallback(() => ({
     dmHistory, sceneName, selectedCharacterId, combatLog,
-    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships, wikiPages, recordings: recordings.slice(-5),
+    units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships, wikiPages, recordings: recordings.slice(-5), calendar,
     floorNames, currentFloor,
     floorData: (() => { const fd = [...floorDataRef.current]; fd[currentFloor] = { terrain: terrain.map((r) => [...r]), lighting: lightingGrid.map((r) => [...r]) }; return fd; })(),
   }), [dmHistory, sceneName, selectedCharacterId, combatLog, units, inCombat, combatRound, terrain, mapPositions, mapImageUrl, quests, lightingGrid, backstoryHooks, partyInventory, relationships, floorNames, currentFloor]);
@@ -437,6 +439,7 @@ export default function Game() {
     if (data.relationships && Array.isArray(data.relationships)) setRelationships(data.relationships as typeof relationships);
     if (data.wikiPages && Array.isArray(data.wikiPages)) setWikiPages(data.wikiPages as WikiPage[]);
     if (data.recordings && Array.isArray(data.recordings)) setRecordings(data.recordings as CombatRecording[]);
+    if (data.calendar && typeof data.calendar === 'object') setCalendar(data.calendar as CalendarState);
     if (data.floorNames && Array.isArray(data.floorNames)) setFloorNames(data.floorNames as string[]);
     if (typeof data.currentFloor === 'number') setCurrentFloor(data.currentFloor as number);
     if (data.floorData && Array.isArray(data.floorData)) {
@@ -2130,6 +2133,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('timeline')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'timeline' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Timeline
                   </button>
+                  <button onClick={() => setActiveView('calendar')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'calendar' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    📅
+                  </button>
                   <button onClick={() => setActiveView('wiki')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'wiki' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Wiki
                   </button>
@@ -2355,6 +2361,8 @@ export default function Game() {
                     inCombat={inCombat}
                     characters={characters.map((c) => ({ name: c.name, level: c.level, class: c.class, gold: c.gold }))}
                   />
+                ) : activeView === 'calendar' ? (
+                  <CampaignCalendar state={calendar} onUpdate={setCalendar} canEdit={canUseDMTools} />
                 ) : activeView === 'wiki' ? (
                   <WorldWiki
                     pages={wikiPages}
