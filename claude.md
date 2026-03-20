@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v3.4.0
+## Current Version: v4.0.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added hex grid toggle — `gridType` state ('square' | 'hex') with ⬡/▢ toggle button in zoom controls. `hexCenter()` and `drawHexPath()` helper functions for flat-top hexagonal coordinates. Hex rendering foundation in place (toggle UI + coordinate math). Full hex terrain rendering requires additional canvas draw loop integration.
+- Marked initiative drag-and-drop as already implemented (HTML5 DnD with canReorder/onReorder props).
 - Added campaign calendar — 📅 tab with in-world date tracking. Fantasy calendar (12 Forgotten Realms month names, 30 days per month). Current day display with "+1 Day" and "🏕️ Rest" (long rest = advance + log event) buttons. 6×5 calendar grid with today highlighted. 5 event types (event/rest/combat/travel/milestone) with emoji icons and colored borders. Month navigation (◀▶). Recent events list. DM controls for adding events + advancing time. Persisted in campaign state.
 - Added player character journal — `journal` array field on Character stores diary entries (id, date, text, createdAt). "Journal" section on CharacterSheet with "+ Entry" button (prompt for text), reverse-chronological display, per-entry delete. Persisted with character data via save/load. Private to the player (stored on their character, not shared).
 - Added damage type tracking — 13 D&D 5e damage types (bludgeoning, piercing, slashing, fire, cold, lightning, thunder, acid, poison, necrotic, radiant, force, psychic) as `DamageType` + `DAMAGE_TYPES` constant. Unit type extended with `resistances`, `vulnerabilities`, `immunities` arrays. `damageUnit` now accepts optional `damageType` parameter and auto-applies: immune=0 damage, resistant=half, vulnerable=double. Concentration saves use effective damage.
@@ -1034,8 +1036,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v4.0 Feature Ideas
 - [x] Streaming AI narration (SSE token-by-token with typewriter cursor, fallback to non-streaming)
 - [x] Player character journal (diary entries on Character, persisted, reverse-chron display)
-- [ ] Initiative card drag-and-drop (DM can reorder initiative manually)
-- [ ] Hex grid support (alternative to square grid for BattleMap)
+- [x] Initiative card drag-and-drop (HTML5 drag-and-drop with visual feedback — already implemented)
+- [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
+- [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
 - [x] Campaign calendar (in-world dates, 5 event types, long rest tracking, month navigation)
 - [x] Encounter templates (save to localStorage + load dropdown in DMSidebar)
 - [x] Map annotations (floating text labels via 📝 Label DM tool)
