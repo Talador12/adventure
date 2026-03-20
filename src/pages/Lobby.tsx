@@ -89,6 +89,13 @@ export default function Lobby() {
   const [stalePlayers, setStalePlayers] = useState<Set<string>>(new Set());
   // Mobile layout: toggle between party area and chat
   const [lobbyMobilePanel, setLobbyMobilePanel] = useState<'party' | 'chat'>('party');
+  const [showQR, setShowQR] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  useEffect(() => {
+    if (showQR && !qrDataUrl) {
+      import('../lib/qrcode').then(({ generateQRCodeSVG }) => setQrDataUrl(generateQRCodeSVG(window.location.href)));
+    }
+  }, [showQR]); // eslint-disable-line react-hooks/exhaustive-deps
   const pendingRollMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
   // Track optimistic message IDs so we can deduplicate server echoes
   const pendingChatIds = useRef<Set<string>>(new Set());
@@ -1186,7 +1193,22 @@ export default function Lobby() {
               >
                 📱 Companion
               </button>
+              <button
+                onClick={() => setShowQR(!showQR)}
+                className="text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
+                title="Show QR code for phone scanning"
+              >
+                {showQR ? 'Hide QR' : 'QR'}
+              </button>
             </div>
+            {showQR && (
+              <div className="flex justify-center py-2">
+                <div className="bg-white p-2 rounded-lg shadow-lg">
+                  <img src={qrDataUrl} alt="Scan to join" width={120} height={120} className="block" />
+                  <p className="text-[8px] text-slate-600 text-center mt-1">Scan to join</p>
+                </div>
+              </div>
+            )}
 
             {/* Seat grid — wraps on mobile, scrolls on desktop */}
             <div className="flex flex-wrap sm:flex-nowrap gap-2.5 overflow-x-auto pb-1 stagger-children">

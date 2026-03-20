@@ -7,9 +7,11 @@ import { GameProvider } from './contexts/GameContext';
 import Home from './pages/Home'; // Home is the landing page — keep eagerly loaded
 import './styles.css';
 
-// Apply Low-FX mode from localStorage on initial load (before React renders)
-if (typeof window !== 'undefined' && localStorage.getItem('adventure:lowfx') === '1') {
-  document.documentElement.classList.add('low-fx');
+// Apply preferences from localStorage before React renders (no flash)
+if (typeof window !== 'undefined') {
+  if (localStorage.getItem('adventure:lowfx') === '1') document.documentElement.classList.add('low-fx');
+  const accent = localStorage.getItem('adventure:accent');
+  if (accent) document.documentElement.style.setProperty('--accent', accent);
 }
 
 // Register Service Worker for offline-first static asset caching
