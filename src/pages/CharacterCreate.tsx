@@ -103,6 +103,23 @@ export default function CharacterCreate() {
 
   // Wizard step state (0-5)
   const [step, setStep] = useState(0);
+  const maxStep = 6; // total steps in creation flow
+
+  // Keyboard navigation: Enter = next step, Escape = prev step
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't capture when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        if (e.key === 'Enter') { e.preventDefault(); setStep((s) => Math.min(s + 1, maxStep)); }
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'ArrowRight') setStep((s) => Math.min(s + 1, maxStep));
+      if (e.key === 'Escape' || e.key === 'ArrowLeft') setStep((s) => Math.max(s - 1, 0));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const [name, setName] = useState('');
   const [race, setRace] = useState<Race>('Human');
