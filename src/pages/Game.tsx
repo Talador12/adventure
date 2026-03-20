@@ -586,6 +586,16 @@ export default function Game() {
   const voiceRef = useRef<ReturnType<typeof useVoiceChat> | null>(null);
   const voicePlayersRef = useRef<Array<{ id: string; username: string }>>([]);
 
+  // Auto-set ambient soundscape based on scene name keywords
+  useEffect(() => {
+    import('../lib/sceneMood').then(({ detectSceneMood }) => {
+      const mood = detectSceneMood(sceneName);
+      if (mood !== 'none') {
+        import('../hooks/useSoundFX').then(({ setAmbientMood: setMood }) => setMood(mood));
+      }
+    });
+  }, [sceneName]);
+
   // Auto-record combat encounters
   useEffect(() => {
     if (inCombat && !isRecording()) {

@@ -192,7 +192,7 @@ export default function DMSidebar({
   dmPersonality,
   onSetDmPersonality,
 }: DMSidebarProps) {
-  const { units, characters, inCombat, updateCharacter, grantXP } = useGame();
+  const { units, characters, inCombat, updateCharacter, grantXP, mapPositions, setMapPositions } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
   const [biome, setBiome] = useState<Biome>('forest');
   const [lastBiomeRoll, setLastBiomeRoll] = useState<{ encounter: BiomeEncounter; roll: number } | null>(null);
@@ -294,6 +294,57 @@ export default function DMSidebar({
                     ));
                   } catch { return null; }
                 })()}
+              </select>
+            </div>
+
+            {/* Party Formation Presets */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const name = prompt('Formation name:', 'Default');
+                  if (!name?.trim()) return;
+                  const pos = units.filter((u) => u.type === 'player').map((u) => {
+                    const p = mapPositions.find((mp) => mp.unitId === u.id);
+                    return p ? { name: u.name, col: p.col, row: p.row } : null;
+                  }).filter(Boolean);
+                  try {
+                    const key = `adventure:formations:${roomId}`;
+                    const raw = localStorage.getItem(key) || '[]';
+                    const formations = JSON.parse(raw) as Array<{ name: string; positions: typeof pos }>;
+                    formations.unshift({ name: name.trim(), positions: pos });
+                    if (formations.length > 10) formations.length = 10;
+                    localStorage.setItem(key, JSON.stringify(formations));
+                  } catch { /* ok */ }
+                }}
+                className="text-[8px] text-sky-400 hover:text-sky-300 font-semibold"
+              >
+                Save Formation
+              </button>
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  try {
+                    const key = `adventure:formations:${roomId}`;
+                    const formations = JSON.parse(localStorage.getItem(key) || '[]') as Array<{ name: string; positions: Array<{ name: string; col: number; row: number }> }>;
+                    const f = formations.find((f) => f.name === e.target.value);
+                    if (f) {
+                      setMapPositions((prev) => {
+                        const next = [...prev];
+                        for (const fp of f.positions) {
+                          const unit = units.find((u) => u.name === fp.name && u.type === 'player');
+                          if (unit) { const idx = next.findIndex((p) => p.unitId === unit.id); if (idx >= 0) next[idx] = { ...next[idx], col: fp.col, row: fp.row }; }
+                        }
+                        return next;
+                      });
+                    }
+                  } catch { /* ok */ }
+                  e.target.value = '';
+                }}
+                className="text-[8px] px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300"
+              >
+                <option value="">Load Formation...</option>
+                {(() => { try { return (JSON.parse(localStorage.getItem(`adventure:formations:${roomId}`) || '[]') as Array<{ name: string }>).map((f) => <option key={f.name} value={f.name}>{f.name}</option>); } catch { return null; } })()}
               </select>
             </div>
 

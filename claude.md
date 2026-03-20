@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added ambient soundscape per scene — `detectSceneMood()` in `lib/sceneMood.ts` maps scene name keywords to ambient moods (tavern/dungeon/forest/combat/mystery). Auto-fires on scene name change via useEffect. Keywords: tavern→tavern, cave/dungeon→dungeon, forest/river→forest, battle/arena→combat, temple/ruin→mystery. Lazy-loaded.
+- Added party formation presets — "Save Formation" button saves current player unit positions to localStorage per campaign. "Load Formation" dropdown restores saved positions (matches by unit name for cross-session compatibility). Up to 10 formations stored. UI in DMSidebar Encounters tab.
 - Added AI trap generator — `POST /api/dm/generate-trap` generates traps via Workers AI based on terrain type, party level, and scene name. Returns JSON with name, description, DC, damage, and type. "✨AI" trap tool in DM toolbar: click any cell to generate and place an AI-designed trap. Alert shows trap details. DC and damage scaled to party level.
 - Added AI encounter recap — `POST /api/dm/encounter-recap` generates dramatic battle summaries (bard-style) from combat log when combat ends. Auto-fires (non-blocking) after combat recording stops if 3+ combat log entries exist. Appears as ⚔️ system message in DM narration. Highlights crits, near-deaths, killing blows.
 - Marked quick-roll macros as already implemented (save/load/execute with localStorage persistence).
@@ -1050,9 +1052,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Character leveling wizard (guided level-up flow with class feature choices)
 - [x] AI trap generator (✨AI DM tool + POST /api/dm/generate-trap, level-scaled)
 - [x] Session recap generator (auto-fires on return + manual "📖 Previously on..." button + dedicated API endpoint)
-- [ ] Ambient soundscape per scene (tie ambient mood to scene name automatically)
+- [x] Ambient soundscape per scene (keyword-to-mood mapper, auto-fires on scene change)
 - [x] Quick-roll macros (save/execute custom dice expressions with localStorage persistence — already implemented)
-- [ ] Party formation presets (save and load unit positions on the battle map)
+- [x] Party formation presets (save/load unit positions in localStorage, name-matched)
 - [ ] Export campaign as PDF book (full campaign with narration, maps, character sheets)
 - [ ] Spectator mode enhancements (live viewer count, spectator chat, stream overlay)
 - [x] AI encounter recap (auto-fires after combat, bard-style dramatic summary)
