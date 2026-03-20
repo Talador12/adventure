@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Lobby } from './src/lobby';
 import { SignJWT, jwtVerify } from 'jose';
+import { aiChat, aiChatStream, aiStatus } from './src/lib/aiClient';
 
 // Worker types - declared locally to avoid DOM type conflicts in mixed frontend/backend repo
 declare const WebSocketPair: { new (): { 0: WebSocket; 1: WebSocket } };
@@ -69,15 +70,28 @@ const app = new Hono<{ Bindings: Env }>();
 const AI_TIMEOUT_MS = 25_000; // 25s — under the Worker 30s limit on free plan
 const AI_IMAGE_TIMEOUT_MS = 45_000; // 45s — image gen is slower
 
+// ---- AI helpers ----
+// All text AI goes through aiChat() / aiChatStream() from src/lib/aiClient.ts.
+// Image/vision models (FLUX, Llama Vision) bypass the unified client — Workers AI only.
+
 class AiTimeoutError extends Error {
-  constructor(model: string, ms: number) {
-    super(`AI call to ${model} timed out after ${ms / 1000}s`);
-    this.name = 'AiTimeoutError';
-  }
+  constructor(model: string, ms: number) { super(`AI ${model} timed out after ${ms / 1000}s`); this.name = 'AiTimeoutError'; }
 }
 
-async function aiRunWithTimeout(ai: Ai, model: string, input: Record<string, unknown>, timeoutMs?: number): Promise<ArrayBuffer | ReadableStream | Record<string, unknown>> {
-  const ms = timeoutMs ?? (model.includes('FLUX') ? AI_IMAGE_TIMEOUT_MS : AI_TIMEOUT_MS);
+// Cast Hono env to the shape aiClient expects
+function aiEnv(env: unknown): import('./src/lib/aiClient').AiEnv {
+  return env as unknown as import('./src/lib/aiClient').AiEnv;
+}
+
+// Text chat: prompt in, string out. Works offline, local, or cloud.
+async function aiText(env: unknown, messages: Array<{ role: string; content: string }>, maxTokens?: number): Promise<string> {
+  const result = await aiChat(aiEnv(env), messages as Array<{ role: 'system' | 'user' | 'assistant'; content: string }>, maxTokens);
+  return result.text;
+}
+
+// Image/vision models — Workers AI only (no local equivalent), with timeout
+async function aiRunDirect(ai: Ai, model: string, input: Record<string, unknown>): Promise<ArrayBuffer | ReadableStream | Record<string, unknown>> {
+  const ms = model.includes('FLUX') ? AI_IMAGE_TIMEOUT_MS : AI_TIMEOUT_MS;
   return Promise.race([ai.run(model, input), new Promise<never>((_, reject) => setTimeout(() => reject(new AiTimeoutError(model, ms)), ms))]);
 }
 
@@ -107,18 +121,9 @@ function getJwtKey(env: Env) {
 }
 
 // GET /api/auth/discord - redirect to Discord OAuth
-// AI backend status — shows which AI backend is active and its config
+// AI backend status
 app.get('/api/ai/status', (c) => {
-  const env = c.env as unknown as Record<string, unknown>;
-  const localUrl = env.LOCAL_AI_URL as string | undefined;
-  const localModel = env.LOCAL_AI_MODEL as string | undefined;
-  const workersModel = env.WORKERS_AI_MODEL as string | undefined;
-  const hasWorkersAI = !!env.AI;
-  return c.json({
-    backend: localUrl ? 'local' : hasWorkersAI ? 'workers-ai' : 'none',
-    local: localUrl ? { url: localUrl, model: localModel || '(default)' } : null,
-    workersAI: hasWorkersAI ? { model: workersModel || '@cf/meta/llama-3.1-8b-instruct' } : null,
-  });
+  return c.json(aiStatus(aiEnv(c.env)));
 });
 
 app.get('/api/auth/discord', (c) => {
@@ -341,7 +346,7 @@ app.post('/api/portrait/generate', async (c) => {
   const prompt = buildPortraitPrompt(body);
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', {
+    const result = await aiRunDirect(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', {
       prompt,
       num_steps: 4,
     });
@@ -394,7 +399,7 @@ app.post('/api/portrait/enemy', async (c) => {
     const desc = String(body.description || '').slice(0, 200);
     const prompt = `Fantasy RPG enemy portrait, circular token style, dark dramatic lighting, detailed face. ${name}: ${desc}. Digital painting, high detail, menacing expression, battle-ready pose. No text, no frame, centered composition.`;
 
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', { prompt, num_steps: 4 });
+    const result = await aiRunDirect(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', { prompt, num_steps: 4 });
 
     if (result instanceof ReadableStream) {
       const reader = result.getReader();
@@ -472,15 +477,10 @@ app.post('/api/name/translate', async (c) => {
   const prompt = `Translate the meaning of the English word or name "${name}" into ${lang.name}. If the name is a compound word or has a clear meaning (like "Lumberjack" = one who cuts wood), translate that meaning. If it's a proper name with no obvious meaning, transliterate it into ${lang.name} phonetics. Return ONLY the single translated/transliterated word or short phrase in ${lang.name} script or romanized form — nothing else, no quotes, no explanation.`;
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: 'You are a precise translator. Return ONLY the translated word. No quotes, no punctuation, no explanation. Just the word.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 50,
-    });
-
-    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
+    const raw = (await aiText(c.env, [
+      { role: 'system', content: 'You are a precise translator. Return ONLY the translated word. No quotes, no punctuation, no explanation. Just the word.' },
+      { role: 'user', content: prompt },
+    ], 50)).trim();
     // Clean up: remove quotes, periods, extra whitespace, "Translation:" prefixes
     const translated = raw
       .replace(/^["'`]+|["'`.,!]+$/g, '')
@@ -531,15 +531,10 @@ JSON format:
 {"name":"...","race":"...","class":"...","background":"...","alignment":"...","statPriority":["CHA","DEX","CON","WIS","INT","STR"],"personalityTraits":"...","ideals":"...","bonds":"...","flaws":"...","backstory":"...","appearance":{"hairStyle":"...","scar":"...","faceMarking":"...","facialHair":"..."},"concept":"one sentence pitch for this character"}`;
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: 'You are a wildly creative D&D character designer. You hate boring builds. Every character should make a DM grin. Return ONLY valid JSON. No markdown. No explanation. No code fences.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 1200,
-    });
-
-    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
+    const raw = (await aiText(c.env, [
+      { role: 'system', content: 'You are a wildly creative D&D character designer. You hate boring builds. Every character should make a DM grin. Return ONLY valid JSON. No markdown. No explanation. No code fences.' },
+      { role: 'user', content: prompt },
+    ], 1200)).trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -582,15 +577,10 @@ JSON only, no markdown fences:
 {"personalityTraits":"...","ideals":"...","bonds":"...","flaws":"..."}`;
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: 'You write vivid, specific D&D character personality details. Return ONLY valid JSON. No markdown. No explanation.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 400,
-    });
-
-    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
+    const raw = (await aiText(c.env, [
+      { role: 'system', content: 'You write vivid, specific D&D character personality details. Return ONLY valid JSON. No markdown. No explanation.' },
+      { role: 'user', content: prompt },
+    ], 400)).trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -652,15 +642,10 @@ CRITICAL RULES — follow these or the backstory is garbage:
 - Do NOT start with "Born in" or "From a young age" or any cliche opening.`;
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: 'You are a fantasy author who writes compelling, original character backstories. You hate cliches. You love specificity, emotional hooks, and stories that make a DM excited to build on them. Never be generic. Every character deserves to be interesting.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 800,
-    });
-
-    const backstory = (((result as Record<string, unknown>).response as string) || '').trim();
+    const backstory = (await aiText(c.env, [
+      { role: 'system', content: 'You are a fantasy author who writes compelling, original character backstories. You hate cliches. You love specificity, emotional hooks, and stories that make a DM excited to build on them. Never be generic. Every character deserves to be interesting.' },
+      { role: 'user', content: prompt },
+    ], 800)).trim();
     if (!backstory) {
       return c.json({ error: 'AI returned empty backstory' }, 500);
     }
@@ -732,15 +717,10 @@ ${scene ? `\nCurrent location: ${scene}` : ''}
 ${context ? `\nScene context: ${context}` : ''}`;
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: action || 'Set the scene for the beginning of a new adventure. The party gathers at a tavern.' },
-      ],
-      max_tokens: 400,
-    });
-
-    const response = ((result as Record<string, unknown>).response as string) || '';
+    const response = await aiText(c.env, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: action || 'Set the scene for the beginning of a new adventure. The party gathers at a tavern.' },
+    ], 400);
     return c.json({ narration: response.trim() });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'DM narration failed';
@@ -775,12 +755,13 @@ app.post('/api/dm/narrate-stream', async (c) => {
 
     const systemPrompt = `You are a ${style} D&D DM. 2-4 vivid sentences. Party: ${charDescriptions}.${scene ? ` Scene: ${scene}.` : ''}${historyStr}${context ? `\n${context}` : ''}`;
 
-    const stream = await (c.env.AI as { run: (m: string, o: Record<string, unknown>) => Promise<ReadableStream> }).run(
-      '@cf/meta/llama-3.1-8b-instruct',
-      { messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: action || 'Set the scene.' }], max_tokens: 400, stream: true },
+    const stream = await aiChatStream(
+      aiEnv(c.env),
+      [{ role: 'system', content: systemPrompt }, { role: 'user', content: action || 'Set the scene.' }],
+      400,
     );
 
-    return new Response(stream, {
+    return new Response(stream as ReadableStream, {
       headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
     });
   } catch (err) {
@@ -838,15 +819,10 @@ ${scene ? `\nSetting: ${scene}` : ''}
 ${historyStr}`;
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: playerMessage || `${playerName} approaches you.` },
-      ],
-      max_tokens: 200,
-    });
-
-    const response = ((result as Record<string, unknown>).response as string) || '';
+    const response = await aiText(c.env, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: playerMessage || `${playerName} approaches you.` },
+    ], 200);
 
     // Save updated NPC memory to KV (persist conversation across sessions)
     if (memoryKey && c.env.CAMPAIGNS && response.trim()) {
@@ -888,13 +864,10 @@ app.post('/api/dm/backstory-hooks', async (c) => {
 
     const prompt = `Given these D&D 5e party members:\n\n${charSummaries}\n\nGenerate 3-5 narrative hooks that connect these characters. Each hook should:\n- Link 2+ characters through shared history, conflicting goals, or complementary abilities\n- Be 1-2 sentences, evocative and specific\n- Reference their races, classes, backgrounds, or personality traits\n- Create dramatic tension or cooperative opportunity\n\nFormat: Return ONLY a JSON array of strings, each string being one hook. No other text.`;
 
-    const response = await (c.env.AI as { run: (model: string, options: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
-      '@cf/meta/llama-3.1-8b-instruct',
-      { messages: [
-        { role: 'system', content: 'You are a creative D&D narrative designer. Return valid JSON only.' },
-        { role: 'user', content: prompt },
-      ] },
-    );
+    const response = { response: await aiText(c.env, [
+      { role: 'system', content: 'You are a creative D&D narrative designer. Return valid JSON only.' },
+      { role: 'user', content: prompt },
+    ]) };
 
     const text = response?.response || '[]';
     // Extract JSON array from response (LLM may wrap in markdown code fences)
@@ -976,11 +949,8 @@ app.post('/api/dm/generate-trap', async (c) => {
     const partyLevel = Number(body.partyLevel) || 1;
     const scene = String(body.sceneName || '');
     const prompt = `Generate a D&D 5e trap for a ${terrain} cell${scene ? ` in ${scene}` : ''} (party level ${partyLevel}).\nReturn JSON: {"name":"Trap Name","description":"2-3 sentence description","dc":14,"damage":"2d6 fire","type":"spike|fire|poison|alarm","detected":false}\nMatch DC and damage to party level. Be creative.`;
-    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
-      '@cf/meta/llama-3.1-8b-instruct',
-      { messages: [{ role: 'system', content: 'D&D trap designer. Return valid JSON only.' }, { role: 'user', content: prompt }] },
-    );
-    const text = resp?.response || '{}';
+    const trapResp = await aiText(c.env, [{ role: 'system', content: 'D&D trap designer. Return valid JSON only.' }, { role: 'user', content: prompt }]);
+    const text = trapResp || '{}';
     const match = text.match(/\{[\s\S]*\}/);
     return c.json({ trap: match ? JSON.parse(match[0]) : null });
   } catch { return c.json({ trap: null }); }
@@ -997,11 +967,8 @@ app.post('/api/dm/encounter-recap', async (c) => {
     const charNames = chars.map((ch) => `${ch.name}`).join(', ');
     const log = combatLog.slice(-20).join('\n');
     const prompt = `Write a dramatic 2-3 sentence recap of this D&D combat. Party: ${charNames}.\nLog:\n${log}\nVivid past tense. Highlight crits, near-deaths, killing blows. Like a bard at a tavern.`;
-    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
-      '@cf/meta/llama-3.1-8b-instruct',
-      { messages: [{ role: 'system', content: 'D&D bard. Vivid battle recaps.' }, { role: 'user', content: prompt }] },
-    );
-    return c.json({ recap: (resp?.response || '').trim() });
+    const recapText = await aiText(c.env, [{ role: 'system', content: 'D&D bard. Vivid battle recaps.' }, { role: 'user', content: prompt }]);
+    return c.json({ recap: recapText.trim() });
   } catch { return c.json({ recap: '' }); }
 });
 
@@ -1018,10 +985,7 @@ app.post('/api/dm/session-recap', async (c) => {
     const narrative = dmHistory.slice(-15).join('\n');
     const combat = combatLog.slice(-10).join('\n');
     const prompt = `Write a "Previously on..." session recap for a D&D campaign.\nParty: ${charNames}\nNarration:\n${narrative}\n${combat ? `Combat:\n${combat}` : ''}\n\n2-3 dramatic past-tense sentences. Focus on key events and cliffhangers. No meta-commentary.`;
-    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
-      '@cf/meta/llama-3.1-8b-instruct',
-      { messages: [{ role: 'system', content: 'D&D narrator. Write dramatic recaps.' }, { role: 'user', content: prompt }] },
-    );
+    const resp = { response: await aiText(c.env, [{ role: 'system', content: 'D&D narrator. Write dramatic recaps.' }, { role: 'user', content: prompt }]) };
     return c.json({ recap: (resp?.response || '').trim() });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : 'Recap failed' }, 500);
@@ -1043,11 +1007,8 @@ app.post('/api/dm/generate-lore', async (c) => {
 
 Write 2-4 paragraphs of rich lore. Include physical description, history, current state, and a secret/hook. Encyclopedic but vivid. No meta-commentary.`;
 
-    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
-      '@cf/meta/llama-3.1-8b-instruct',
-      { messages: [{ role: 'system', content: 'D&D world-builder. Write rich lore.' }, { role: 'user', content: prompt }] },
-    );
-    return c.json({ content: (resp?.response || '').trim() });
+    const response = await aiText(c.env, [{ role: 'system', content: 'D&D world-builder. Write rich lore.' }, { role: 'user', content: prompt }]);
+    return c.json({ content: response.trim() });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : 'Failed' }, 500);
   }
@@ -1069,11 +1030,8 @@ app.post('/api/dm/suggest-relationships', async (c) => {
       return p.join('. ');
     }).join('\n\n');
     const prompt = `Analyze these D&D characters and suggest relationships:\n\n${summaries}\n\nSuggest 2-4 connections based on bonds, flaws, backstories, races, classes.\nReturn ONLY JSON: [{"from":"Name1","to":"Name2","type":"ally|rival|bond|neutral|enemy","label":"brief reason"}]`;
-    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
-      '@cf/meta/llama-3.1-8b-instruct',
-      { messages: [{ role: 'system', content: 'D&D narrative designer. Return valid JSON only.' }, { role: 'user', content: prompt }] },
-    );
-    const text = resp?.response || '[]';
+    const relResp = await aiText(c.env, [{ role: 'system', content: 'D&D narrative designer. Return valid JSON only.' }, { role: 'user', content: prompt }]);
+    const text = relResp || '[]';
     const match = text.match(/\[[\s\S]*\]/);
     return c.json({ suggestions: match ? JSON.parse(match[0]) : [] });
   } catch (err) {
@@ -1115,15 +1073,10 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
 {"enemies":[{"name":"Goblin","hp":7,"maxHp":7,"ac":15,"type":"enemy"},{"name":"Goblin Archer","hp":7,"maxHp":7,"ac":13,"type":"enemy"}],"description":"Two goblins leap from behind the rocks!","xpTotal":100,"difficulty":"${difficulty}"}`;
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: 'You are a D&D encounter designer. Return ONLY valid JSON. No markdown code fences. No extra text.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 500,
-    });
-
-    const raw = (((result as Record<string, unknown>).response as string) || '').trim();
+    const raw = (await aiText(c.env, [
+      { role: 'system', content: 'You are a D&D encounter designer. Return ONLY valid JSON. No markdown code fences. No extra text.' },
+      { role: 'user', content: prompt },
+    ], 500)).trim();
     // Try to extract JSON from the response
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -1170,15 +1123,10 @@ ${scene ? `CURRENT LOCATION: ${scene}` : ''}`;
   const recentHistory = history.slice(-20).join('\n');
 
   try {
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Here is what has happened so far:\n\n${recentHistory}\n\nWrite the "Previously on..." recap.` },
-      ],
-      max_tokens: 300,
-    });
-
-    const response = ((result as Record<string, unknown>).response as string) || '';
+    const response = await aiText(c.env, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Here is what has happened so far:\n\n${recentHistory}\n\nWrite the "Previously on..." recap.` },
+    ], 300);
     return c.json({ recap: response.trim() });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Recap generation failed';
@@ -1258,7 +1206,7 @@ app.post('/api/portrait/describe', async (c) => {
 
   try {
     // Use Llama Vision model for image understanding
-    const result = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.2-11b-vision-instruct', {
+    const result = await aiRunDirect(c.env.AI, '@cf/meta/llama-3.2-11b-vision-instruct', {
       messages: [{ role: 'user', content: prompt }],
       image: base64Match[1],
       max_tokens: 200,
@@ -1272,14 +1220,10 @@ app.post('/api/portrait/describe', async (c) => {
   } catch (err: unknown) {
     // Fallback: try text-only model if vision model isn't available
     try {
-      const fallbackResult = await aiRunWithTimeout(c.env.AI, '@cf/meta/llama-3.1-8b-instruct', {
-        messages: [
-          { role: 'system', content: 'You describe fantasy RPG characters. Be vivid and specific in 2-3 sentences.' },
-          { role: 'user', content: `Describe the physical appearance of a typical ${race} ${cls} character in a fantasy setting. Include build, hair, eyes, skin, and notable features. 2-3 sentences only.` },
-        ],
-        max_tokens: 200,
-      });
-      const description = (((fallbackResult as Record<string, unknown>).response as string) || '').trim();
+      const description = (await aiText(c.env, [
+        { role: 'system', content: 'You describe fantasy RPG characters. Be vivid and specific in 2-3 sentences.' },
+        { role: 'user', content: `Describe the physical appearance of a typical ${race} ${cls} character in a fantasy setting. Include build, hair, eyes, skin, and notable features. 2-3 sentences only.` },
+      ], 200)).trim();
       if (description) {
         return c.json({ description, fallback: true });
       }
