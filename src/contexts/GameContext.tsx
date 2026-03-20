@@ -112,7 +112,7 @@ interface GameContextValue {
 
   // Combat helpers (return updated units array for multiplayer sync)
   concentrationMessages: React.MutableRefObject<string[]>;
-  damageUnit: (unitId: string, damage: number) => Unit[];
+  damageUnit: (unitId: string, damage: number, damageType?: string) => Unit[];
   healUnit: (unitId: string, amount: number) => Unit[];
   removeUnit: (unitId: string) => Unit[];
   rollInitiative: () => Unit[];
@@ -614,10 +614,26 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Combat: apply damage to a unit (clamp to 0) + concentration check. Returns updated units for sync.
   const damageUnit = useCallback(
-    (unitId: string, damage: number): Unit[] => {
+    (unitId: string, damage: number, damageType?: string): Unit[] => {
       let result: Unit[] = [];
       setUnits((prev) => {
-        const updated = prev.map((u) => (u.id === unitId ? { ...u, hp: Math.max(0, u.hp - damage) } : u));
+        // Apply damage type modifiers (resistance = half, vulnerability = double, immunity = zero)
+        let effectiveDamage = damage;
+        const target = prev.find((u) => u.id === unitId);
+        let dmgNote = '';
+        if (target && damageType) {
+          if (target.immunities?.includes(damageType as import('../types/game').DamageType)) {
+            effectiveDamage = 0;
+            dmgNote = ` (IMMUNE to ${damageType})`;
+          } else if (target.resistances?.includes(damageType as import('../types/game').DamageType)) {
+            effectiveDamage = Math.floor(damage / 2);
+            dmgNote = ` (resistant to ${damageType}: ${damage}→${effectiveDamage})`;
+          } else if (target.vulnerabilities?.includes(damageType as import('../types/game').DamageType)) {
+            effectiveDamage = damage * 2;
+            dmgNote = ` (vulnerable to ${damageType}: ${damage}→${effectiveDamage})`;
+          }
+        }
+        const updated = prev.map((u) => (u.id === unitId ? { ...u, hp: Math.max(0, u.hp - effectiveDamage) } : u));
         // Concentration save: DC = max(10, floor(damage/2))
         const damagedUnit = updated.find((u) => u.id === unitId);
         if (damagedUnit?.concentratingOn && damagedUnit.hp > 0) {

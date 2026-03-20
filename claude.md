@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added damage type tracking — 13 D&D 5e damage types (bludgeoning, piercing, slashing, fire, cold, lightning, thunder, acid, poison, necrotic, radiant, force, psychic) as `DamageType` + `DAMAGE_TYPES` constant. Unit type extended with `resistances`, `vulnerabilities`, `immunities` arrays. `damageUnit` now accepts optional `damageType` parameter and auto-applies: immune=0 damage, resistant=half, vulnerable=double. Concentration saves use effective damage.
 - Added encounter templates — "Save Template" button (visible when enemies exist) saves current enemy group to localStorage with name. "Load Template" dropdown spawns saved enemy groups. Up to 20 templates stored. `EncounterTemplate` type in types/game.ts. UI in DMSidebar Encounters tab.
 - Added Wild Magic table — complete D&D 5e PHB p104 Wild Magic Surge table (50 entries, d100 range 1-100) in `data/wildMagic.ts`. When a Sorcerer casts a leveled spell, `castSpell` auto-rolls a d20 — on a nat 1, a Wild Magic Surge triggers with a d100 roll. Result includes the d100 value in the spell message (`⚡ WILD MAGIC SURGE! (d100: 42)`). `wildMagicRoll` returned in the result for callers to resolve the full effect text via the table. Includes mechanical hints for auto-applicable effects (heal, damage, resist).
 - Added map annotations — "📝 Label" DM tool places floating text labels on the battle map. MapPin type extended with `type: 'annotation'` and `fontSize` fields. Annotations render as bold drop-shadow text centered on the cell (vs. pins which render as icon bubbles above cells). Customizable text color. DM-removable on hover. Stored in the same mapPins array as icon pins.
@@ -1036,7 +1037,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Campaign calendar (track in-world dates, schedule events, long rests)
 - [x] Encounter templates (save to localStorage + load dropdown in DMSidebar)
 - [x] Map annotations (floating text labels via 📝 Label DM tool)
-- [ ] Damage type tracking (fire/cold/radiant etc with resistances/vulnerabilities)
+- [x] Damage type tracking (13 types, resistances/vulnerabilities/immunities auto-applied in damageUnit)
 - [x] Wild Magic table (50-entry d100 table, auto-check on Sorcerer leveled spells)
 - [x] Concentration spell visual indicator on tokens (pulsing blue ring via sin wave)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)

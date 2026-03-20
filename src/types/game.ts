@@ -122,6 +122,10 @@ export interface Unit {
   xpValue?: number;
   // Custom token image URL (portrait for enemies/NPCs on the battle map)
   tokenImage?: string;
+  // Damage type resistances/vulnerabilities/immunities
+  resistances?: DamageType[];    // half damage
+  vulnerabilities?: DamageType[]; // double damage
+  immunities?: DamageType[];      // zero damage
   // Vision range in grid cells (default 6 = 30ft; darkvision races get 12 = 60ft)
   visionRange?: number;
   // Legendary actions — boss monsters get extra actions between player turns
@@ -172,6 +176,10 @@ export type Race = (typeof RACES)[number];
 export const DARKVISION_RACES: ReadonlySet<Race> = new Set(['Elf', 'Dwarf', 'Gnome', 'Half-Orc', 'Tiefling', 'Dragonborn']);
 export const DARKVISION_RANGE = 12; // 60ft = 12 cells
 export const NORMAL_VISION_RANGE = 6; // 30ft = 6 cells
+
+// D&D 5e damage types
+export const DAMAGE_TYPES = ['bludgeoning', 'piercing', 'slashing', 'fire', 'cold', 'lightning', 'thunder', 'acid', 'poison', 'necrotic', 'radiant', 'force', 'psychic'] as const;
+export type DamageType = (typeof DAMAGE_TYPES)[number];
 
 // D&D 5e multiclass ability score prerequisites (PHB p163)
 export const MULTICLASS_PREREQS: Record<CharacterClass, Partial<Record<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', number>>> = {
