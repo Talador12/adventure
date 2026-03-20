@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v5.0.1
+## Current Version: v5.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added unified AI image generation — `aiImage()` in aiClient.ts routes portrait generation through: local OpenAI-compatible image API (`/v1/images/generations` — works with AUTOMATIC1111, ComfyUI, Fooocus) → Workers AI FLUX → null (offline). Both portrait endpoints (`/api/portrait/generate` + `/api/portrait/enemy`) migrated. Deleted ~60 lines of duplicate ReadableStream/ArrayBuffer→base64 conversion code. Only `aiRunDirect` remains for vision model (Llama 3.2 Vision — no local equivalent).
 - Added model quality presets — `AI_QUALITY` env var (fast/balanced/quality) auto-selects model size per backend. Workers AI: 8B balanced → 70B quality. Local: phi3 fast → llama3.1 balanced → llama3.1:70b quality. Explicit `LOCAL_AI_MODEL`/`WORKERS_AI_MODEL` override presets. `aiStatus()` reports active quality tier.
 - Added campaign book export — `exportCampaignBook()` generates a full parchment-styled HTML document: party roster (stat grids, equipment, backstory), narration (blockquotes), quests (with completion state), world lore (wiki pages), battle chronicle (combat log), and chat log. Print/Save as PDF button. Georgia serif font, warm parchment palette, page-break-safe. "Book" button in Game header.
 - Added AI backend indicator in game header — color-coded badge shows "AI: local" (emerald), "AI: cloud" (sky), or "AI: off" (gray). Fetches from `GET /api/ai/status` on mount. Player count badge also added (shows party size when connected).
@@ -1055,13 +1056,25 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
 - [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
 
+### v6.0 Feature Ideas
+- [ ] AI DM voice narration (TTS via local Piper/Coqui or cloud ElevenLabs)
+- [ ] Undo/redo system for battle map terrain editing
+- [ ] Import maps from image files (drag + drop PNG/JPG as battle map background)
+- [ ] Keyboard-driven character creation (tab through all fields, no mouse needed)
+- [ ] Campaign statistics dashboard (total sessions, time played, XP gained, enemies killed)
+- [ ] QR code for campaign join link (show on lobby for phone scanning)
+- [ ] Exportable encounter templates (share enemy groups as JSON files)
+- [ ] Theme customization (player can pick accent color beyond orange)
+- [ ] Drag-and-drop inventory management (move items between characters visually)
+- [ ] AI-generated map descriptions (click a cell, AI describes what the party sees)
+
 ### AI Architecture (shipped)
 - [x] Unified AI client (`aiText` + `aiChatStream`) — single code path for all text AI
 - [x] Three-tier backend: local OpenAI-compatible server → Workers AI → offline graceful fallback
 - [x] Model-agnostic: configurable via `LOCAL_AI_MODEL` (any model) and `WORKERS_AI_MODEL` (any CF model)
 - [x] All 15+ AI endpoints migrated to unified client, zero duplicate routing
 - [x] Offline mode returns a graceful fallback string instead of crashing
-- [ ] Local AI image generation (Stable Diffusion via AUTOMATIC1111 API for portraits when FLUX unavailable)
+- [x] Local AI image generation (aiImage() routes to /v1/images/generations or FLUX, offline returns null)
 - [x] AI backend indicator in game UI (color-coded badge: local/cloud/off)
 - [x] Model quality presets (AI_QUALITY env var: fast/balanced/quality → auto-select model)
 

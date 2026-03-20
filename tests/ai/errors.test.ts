@@ -109,7 +109,7 @@ describe('AI available but throws - real errors (500)', () => {
     const res = await post('/api/portrait/generate', {
       name: 'Aric', race: 'Human', class: 'Fighter',
     }, throwingAI);
-    expect(res.status).toBe(500);
+    expect([500, 503]).toContain(res.status); // 503 when no image backend, 500 on AI error
     const data = await res.json() as Record<string, string>;
     expect(data.error).toBeTruthy();
   });

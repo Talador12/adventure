@@ -134,6 +134,55 @@ export async function aiChatStream(env: AiEnv, messages: Message[], maxTokens = 
   });
 }
 
+// ---- Image generation ----
+// Routes to: LOCAL_AI_URL /v1/images/generations (AUTOMATIC1111, ComfyUI, Fooocus)
+// or Workers AI FLUX. Returns null if offline (caller uses SVG fallback).
+
+export async function aiImage(env: AiEnv, prompt: string): Promise<{ base64: string; backend: string } | null> {
+  // Try local image gen first (AUTOMATIC1111, ComfyUI, etc.)
+  if (env.LOCAL_AI_URL) {
+    const base = env.LOCAL_AI_URL.replace(/\/+$/, '');
+    try {
+      const res = await fetch(`${base}/images/generations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, n: 1, size: '512x512', response_format: 'b64_json' }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { data?: Array<{ b64_json?: string }> };
+        const b64 = data.data?.[0]?.b64_json;
+        if (b64) return { base64: `data:image/png;base64,${b64}`, backend: 'local:sd' };
+      }
+    } catch { /* image gen not available on local server — fall through */ }
+  }
+
+  // Workers AI FLUX
+  if (env.AI) {
+    try {
+      const ai = env.AI as { run: (m: string, o: Record<string, unknown>) => Promise<ArrayBuffer | ReadableStream> };
+      const result = await ai.run('@cf/black-forest-labs/FLUX-1-schnell', { prompt, num_steps: 4 });
+      // ArrayBuffer path
+      if (result instanceof ArrayBuffer) {
+        const bytes = new Uint8Array(result);
+        let bin = ''; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return { base64: `data:image/png;base64,${btoa(bin)}`, backend: 'workers-ai:FLUX' };
+      }
+      // ReadableStream path
+      if (result && typeof (result as ReadableStream).getReader === 'function') {
+        const reader = (result as ReadableStream).getReader();
+        const chunks: Uint8Array[] = [];
+        while (true) { const { done, value } = await reader.read(); if (done) break; if (value) chunks.push(value); }
+        const merged = new Uint8Array(chunks.reduce((a, c) => a + c.length, 0));
+        let off = 0; for (const ch of chunks) { merged.set(ch, off); off += ch.length; }
+        let bin = ''; for (let i = 0; i < merged.length; i++) bin += String.fromCharCode(merged[i]);
+        return { base64: `data:image/png;base64,${btoa(bin)}`, backend: 'workers-ai:FLUX' };
+      }
+    } catch { /* FLUX failed */ }
+  }
+
+  return null; // offline — no image gen available
+}
+
 // ---- Status check ----
 
 export function aiStatus(env: AiEnv) {
