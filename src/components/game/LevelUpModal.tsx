@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useGame, type StatName, type Character, hasPendingASI, FEATS } from '../../contexts/GameContext';
+import { useGame, type StatName, type Character, hasPendingASI, FEATS, HIT_DIE_SIDES, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility } from '../../contexts/GameContext';
 
 interface LevelUpModalProps {
   character: Character;
@@ -9,11 +9,21 @@ interface LevelUpModalProps {
 }
 
 export default function LevelUpModal({ character, onClose, onMessage, onCombatLog }: LevelUpModalProps) {
-  const { applyASI, selectFeat, characters } = useGame();
-  const [levelUpTab, setLevelUpTab] = useState<'asi' | 'feat'>('asi');
+  const { applyASI, selectFeat, updateCharacter, characters } = useGame();
+  const [levelUpTab, setLevelUpTab] = useState<'summary' | 'asi' | 'feat'>('summary');
   const [asiMode, setAsiMode] = useState<'single' | 'split'>('single');
   const [asiStat1, setAsiStat1] = useState<StatName>('STR');
   const [asiStat2, setAsiStat2] = useState<StatName | null>(null);
+  const [hpRolled, setHpRolled] = useState(false);
+  const [hpGained, setHpGained] = useState(0);
+
+  // Level-up summary data
+  const hitDie = HIT_DIE_SIDES[character.class] || 8;
+  const conMod = Math.floor((character.stats.CON - 10) / 2);
+  const avgHp = Math.floor(hitDie / 2) + 1 + conMod;
+  const isCaster = FULL_CASTERS.includes(character.class) || HALF_CASTERS.includes(character.class);
+  const classAbility = getClassAbility(character.class);
+  const hasASI = hasPendingASI(character);
 
   // Close on Escape
   useEffect(() => {
@@ -47,14 +57,17 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
       <div className="bg-slate-900 border border-amber-700/60 rounded-2xl shadow-2xl shadow-amber-900/30 w-[480px] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-pop-in">
         {/* Header */}
         <div className="px-6 py-4 border-b border-amber-800/40 bg-gradient-to-r from-amber-900/30 to-yellow-900/20">
-          <h2 className="text-lg font-bold text-amber-300">Level Up — Ability Score Improvement</h2>
+          <h2 className="text-lg font-bold text-amber-300">Level Up! — Level {character.level}</h2>
           <p className="text-xs text-amber-400/70 mt-1">
-            {character.name} reached level {character.level}! Choose an improvement.
+            {character.name} the {character.race} {character.class} grows stronger!
           </p>
         </div>
 
         {/* Tab switcher */}
         <div className="flex border-b border-slate-800">
+          <button onClick={() => setLevelUpTab('summary')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'summary' ? 'border-emerald-500 text-emerald-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+            Summary
+          </button>
           <button onClick={() => setLevelUpTab('asi')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'asi' ? 'border-amber-500 text-amber-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
             Ability Scores
           </button>
@@ -64,7 +77,61 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
         </div>
 
         <div className="p-6">
-          {levelUpTab === 'asi' ? (
+          {levelUpTab === 'summary' ? (
+            <div className="space-y-3">
+              {/* HP increase */}
+              <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/50">
+                <div className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Hit Points</div>
+                {hpRolled ? (
+                  <div className="text-sm text-emerald-400 font-bold">+{hpGained} HP gained! (now {character.hp + hpGained}/{character.maxHp + hpGained})</div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const rolled = Math.floor(Math.random() * hitDie) + 1 + conMod;
+                        const gained = Math.max(1, rolled);
+                        setHpGained(gained);
+                        setHpRolled(true);
+                        updateCharacter(character.id, { hp: character.hp + gained, maxHp: character.maxHp + gained, hitDiceRemaining: (character.hitDiceRemaining || 0) + 1 } as Partial<typeof character>);
+                        onMessage(`${character.name} rolls d${hitDie}+${conMod} for HP: +${gained}!`);
+                      }}
+                      className="flex-1 px-3 py-2 rounded-lg bg-emerald-900/30 border border-emerald-700/40 text-emerald-300 text-xs font-semibold hover:bg-emerald-900/50"
+                    >
+                      🎲 Roll d{hitDie}+{conMod}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHpGained(avgHp);
+                        setHpRolled(true);
+                        updateCharacter(character.id, { hp: character.hp + avgHp, maxHp: character.maxHp + avgHp, hitDiceRemaining: (character.hitDiceRemaining || 0) + 1 } as Partial<typeof character>);
+                        onMessage(`${character.name} takes average HP: +${avgHp}.`);
+                      }}
+                      className="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                    >
+                      Take Average (+{avgHp})
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* What you gained */}
+              <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/50">
+                <div className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Level {character.level} Gains</div>
+                <ul className="text-xs text-slate-300 space-y-1">
+                  <li>• +1 Hit Die (d{hitDie})</li>
+                  <li>• Proficiency Bonus: +{Math.ceil(character.level / 4) + 1}</li>
+                  {hasASI && <li className="text-amber-400">• Ability Score Improvement or Feat available!</li>}
+                  {isCaster && <li className="text-violet-400">• New spell slots unlocked</li>}
+                  {classAbility && <li className="text-sky-400">• {classAbility.name}: {classAbility.description.slice(0, 80)}...</li>}
+                </ul>
+              </div>
+
+              {/* Navigation hint */}
+              {hasASI && (
+                <p className="text-[9px] text-amber-400 text-center">Switch to the Ability Scores or Feats tab to make your ASI/Feat choice →</p>
+              )}
+            </div>
+          ) : levelUpTab === 'asi' ? (
             <div>
               {/* ASI mode toggle */}
               <div className="flex gap-2 mb-4">
