@@ -511,6 +511,16 @@ export interface MapPin {
   fontSize?: number; // text size for annotations (default 11)
 }
 
+// Encounter template — saved enemy group for reuse across campaigns
+export interface EncounterTemplate {
+  id: string;
+  name: string;
+  enemies: Array<{ name: string; hp: number; maxHp: number; ac: number; attackBonus?: number; damageDie?: string; cr?: string }>;
+  description?: string;
+  difficulty?: string;
+  createdAt: number;
+}
+
 export const MAP_PIN_COLORS = [
   { label: 'Red', value: '#ef4444' },
   { label: 'Blue', value: '#3b82f6' },

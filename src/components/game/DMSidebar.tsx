@@ -2,6 +2,7 @@
 // Extracted from Game.tsx to reduce file size.
 import { useState } from 'react';
 import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/GameContext';
+import type { EncounterTemplate } from '../../types/game';
 import { randomFantasyName } from '../../lib/names';
 import { setAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../../hooks/useSoundFX';
 import { BIOME_LABELS, rollBiomeEncounter, checkRandomEncounter, type Biome, type BiomeEncounter } from '../../data/enemies';
@@ -240,6 +241,62 @@ export default function DMSidebar({
                 ))}
               </div>
             </div>
+            {/* Encounter Templates — save/load enemy groups */}
+            <div className="flex items-center gap-2">
+              {units.filter((u) => u.type === 'enemy' && u.hp > 0).length > 0 && (
+                <button
+                  onClick={() => {
+                    const name = prompt('Template name:', 'My Encounter');
+                    if (!name?.trim()) return;
+                    const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0).map((u) => ({
+                      name: u.name, hp: u.hp, maxHp: u.maxHp, ac: u.ac,
+                      attackBonus: u.attackBonus, damageDie: u.damageDie, cr: u.cr !== undefined ? String(u.cr) : undefined,
+                    }));
+                    const template: EncounterTemplate = { id: crypto.randomUUID().slice(0, 8), name: name.trim(), enemies, createdAt: Date.now() };
+                    try {
+                      const raw = localStorage.getItem('adventure:encounter-templates') || '[]';
+                      const templates = JSON.parse(raw) as EncounterTemplate[];
+                      templates.unshift(template);
+                      if (templates.length > 20) templates.length = 20;
+                      localStorage.setItem('adventure:encounter-templates', JSON.stringify(templates));
+                      alert(`Saved "${name.trim()}" (${enemies.length} enemies)`);
+                    } catch { /* ok */ }
+                  }}
+                  className="text-[8px] text-emerald-400 hover:text-emerald-300 font-semibold"
+                >
+                  Save Template
+                </button>
+              )}
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  try {
+                    const raw = localStorage.getItem('adventure:encounter-templates') || '[]';
+                    const templates = JSON.parse(raw) as EncounterTemplate[];
+                    const tmpl = templates.find((t) => t.id === e.target.value);
+                    if (tmpl && onSpawnMonster) {
+                      for (const enemy of tmpl.enemies) {
+                        onSpawnMonster({ name: enemy.name, hp: enemy.hp, maxHp: enemy.maxHp, ac: enemy.ac, type: 'enemy', cr: 0, size: 'medium', environments: [], description: '' } as unknown as import('../../data/monsters').Monster, 0);
+                      }
+                    }
+                  } catch { /* ok */ }
+                  e.target.value = '';
+                }}
+                className="text-[8px] px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300"
+              >
+                <option value="">Load Template...</option>
+                {(() => {
+                  try {
+                    const raw = localStorage.getItem('adventure:encounter-templates') || '[]';
+                    return (JSON.parse(raw) as EncounterTemplate[]).map((t) => (
+                      <option key={t.id} value={t.id}>{t.name} ({t.enemies.length})</option>
+                    ));
+                  } catch { return null; }
+                })()}
+              </select>
+            </div>
+
             {/* Dynamic difficulty toggle */}
             <div className="flex items-center justify-between py-1">
               <span className="text-[10px] text-slate-500">Auto-balance encounters</span>
