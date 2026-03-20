@@ -1176,6 +1176,16 @@ export default function Lobby() {
                 <code className="text-[10px] bg-slate-800 px-2 py-1 rounded text-[#F38020] group-hover:text-[#f9a05f] transition-colors select-all truncate max-w-[120px] sm:max-w-none">{roomLink}</code>
                 <span className="text-sm group-hover:scale-110 transition-transform shrink-0">&#x1F4CB;</span>
               </button>
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/companion/${room}`;
+                  navigator.clipboard.writeText(url).then(() => toast('📱 Companion link copied!', 'success'));
+                }}
+                className="text-[9px] px-2 py-0.5 rounded bg-violet-900/30 border border-violet-700/40 text-violet-300 hover:bg-violet-900/50 font-semibold transition-colors"
+                title="Copy mobile companion link"
+              >
+                📱 Companion
+              </button>
             </div>
 
             {/* Seat grid — wraps on mobile, scrolls on desktop */}

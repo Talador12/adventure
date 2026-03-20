@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added mobile companion app — `/companion/:roomId` route with streamlined phone UI. Three-tab layout: 👤 Sheet (stats grid, conditions, equipped items, initiative order, gold/inventory/spell counts), 🎲 Dice (6 quick-roll buttons d4-d20, large result display with critical/fumble callouts, d100 + coin flip), 💬 Chat (link to full game). Character selector when none chosen. Combat header shows round + current turn. "📱 Companion" button in Lobby copies the companion URL. Lazy-loaded route.
 - Added hex grid toggle — `gridType` state ('square' | 'hex') with ⬡/▢ toggle button in zoom controls. `hexCenter()` and `drawHexPath()` helper functions for flat-top hexagonal coordinates. Hex rendering foundation in place (toggle UI + coordinate math). Full hex terrain rendering requires additional canvas draw loop integration.
 - Marked initiative drag-and-drop as already implemented (HTML5 DnD with canReorder/onReorder props).
 - Added campaign calendar — 📅 tab with in-world date tracking. Fantasy calendar (12 Forgotten Realms month names, 30 days per month). Current day display with "+1 Day" and "🏕️ Rest" (long rest = advance + log event) buttons. 6×5 calendar grid with today highlighted. 5 event types (event/rest/combat/travel/milestone) with emoji icons and colored borders. Month navigation (◀▶). Recent events list. DM controls for adding events + advancing time. Persisted in campaign state.
@@ -1031,7 +1032,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Collaborative world-building wiki (5 categories, search, edit, persist in campaign state)
 - [x] Wiki: AI lore generation (Workers AI generates content based on title/category/tags/scene/existing pages)
 - [x] Wiki: inter-page linking ([[Page Title]] syntax renders as clickable links)
-- [ ] Mobile companion app mode (join as player from phone, streamlined UI)
+- [x] Mobile companion app mode (/companion/:roomId with Sheet/Dice/Chat tabs)
 
 ### v4.0 Feature Ideas
 - [x] Streaming AI narration (SSE token-by-token with typewriter cursor, fallback to non-streaming)
