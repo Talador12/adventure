@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { Lobby } from './src/lobby';
 import { SignJWT, jwtVerify } from 'jose';
-import { aiChat, aiChatStream, aiStatus } from './src/lib/aiClient';
+import { aiChat, aiChatStream, aiStatus, aiImage } from './src/lib/aiClient';
 
 // Worker types - declared locally to avoid DOM type conflicts in mixed frontend/backend repo
 declare const WebSocketPair: { new (): { 0: WebSocket; 1: WebSocket } };
@@ -346,47 +346,11 @@ app.post('/api/portrait/generate', async (c) => {
   const prompt = buildPortraitPrompt(body);
 
   try {
-    const result = await aiRunDirect(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', {
-      prompt,
-      num_steps: 4,
-    });
-
-    // FLUX-1-schnell returns a ReadableStream of PNG data
-    if (result instanceof ReadableStream) {
-      const reader = result.getReader();
-      const chunks: Uint8Array[] = [];
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) chunks.push(value);
-      }
-      const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
-      const merged = new Uint8Array(totalLen);
-      let offset = 0;
-      for (const chunk of chunks) {
-        merged.set(chunk, offset);
-        offset += chunk.length;
-      }
-      // Convert to base64 data URL
-      let binary = '';
-      for (let i = 0; i < merged.length; i++) binary += String.fromCharCode(merged[i]);
-      const base64 = btoa(binary);
-      return c.json({ portrait: `data:image/png;base64,${base64}`, prompt });
-    }
-
-    // Fallback: might be ArrayBuffer directly
-    if (result instanceof ArrayBuffer) {
-      const bytes = new Uint8Array(result);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
-      return c.json({ portrait: `data:image/png;base64,${base64}`, prompt });
-    }
-
-    return c.json({ error: 'Unexpected AI response format' }, 500);
+    const result = await aiImage(aiEnv(c.env), prompt);
+    if (result) return c.json({ portrait: result.base64, prompt, backend: result.backend });
+    return c.json({ error: 'No image generation backend available' }, 503);
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'AI portrait generation failed';
-    return c.json({ error: msg }, 500);
+    return c.json({ error: err instanceof Error ? err.message : 'Portrait generation failed' }, 500);
   }
 });
 
@@ -399,30 +363,9 @@ app.post('/api/portrait/enemy', async (c) => {
     const desc = String(body.description || '').slice(0, 200);
     const prompt = `Fantasy RPG enemy portrait, circular token style, dark dramatic lighting, detailed face. ${name}: ${desc}. Digital painting, high detail, menacing expression, battle-ready pose. No text, no frame, centered composition.`;
 
-    const result = await aiRunDirect(c.env.AI, '@cf/black-forest-labs/FLUX-1-schnell', { prompt, num_steps: 4 });
-
-    if (result instanceof ReadableStream) {
-      const reader = result.getReader();
-      const chunks: Uint8Array[] = [];
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) chunks.push(value);
-      }
-      const merged = new Uint8Array(chunks.reduce((a, c) => a + c.length, 0));
-      let off = 0;
-      for (const ch of chunks) { merged.set(ch, off); off += ch.length; }
-      let binary = '';
-      for (let i = 0; i < merged.length; i++) binary += String.fromCharCode(merged[i]);
-      return c.json({ portrait: `data:image/png;base64,${btoa(binary)}` });
-    }
-    if (result instanceof ArrayBuffer) {
-      const bytes = new Uint8Array(result);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      return c.json({ portrait: `data:image/png;base64,${btoa(binary)}` });
-    }
-    return c.json({ error: 'Unexpected response' }, 500);
+    const result = await aiImage(aiEnv(c.env), prompt);
+    if (result) return c.json({ portrait: result.base64 });
+    return c.json({ error: 'No image generation backend available' }, 503);
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : 'AI generation failed' }, 500);
   }
