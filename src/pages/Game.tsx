@@ -2247,6 +2247,43 @@ export default function Game() {
                   </div>
                 )}
 
+                {/* Session Recap — "Previously on..." for returning players */}
+                {activeView === 'narration' && adventureStarted && dmHistory.length > 3 && (
+                  <div className="mx-4 mb-2">
+                    {sessionRecap ? (
+                      <div className="rounded-xl border border-amber-600/30 bg-gradient-to-br from-amber-950/30 to-orange-900/20 px-5 py-4 shadow-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">Previously on...</span>
+                          <button onClick={() => setSessionRecap(null)} className="text-[9px] text-slate-500 hover:text-slate-300">Dismiss</button>
+                        </div>
+                        <p className="text-sm text-amber-100/80 italic leading-relaxed">{sessionRecap}</p>
+                      </div>
+                    ) : (
+                      <button
+                        disabled={recapLoading}
+                        onClick={async () => {
+                          setRecapLoading(true);
+                          try {
+                            const res = await fetch(`${apiBase()}/api/dm/session-recap`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ dmHistory: dmHistory.slice(-15), combatLog: combatLog.slice(-10), characters: buildPartyPayload(), sceneName }),
+                            });
+                            if (res.ok) {
+                              const data = await res.json() as { recap?: string };
+                              if (data.recap) setSessionRecap(data.recap);
+                            }
+                          } catch { /* ok */ }
+                          setRecapLoading(false);
+                        }}
+                        className="w-full text-[10px] px-3 py-1.5 rounded-lg border border-dashed border-amber-700/40 text-amber-400/70 hover:text-amber-300 hover:border-amber-600/50 hover:bg-amber-950/10 transition-all font-semibold disabled:opacity-50"
+                      >
+                        {recapLoading ? 'Generating recap...' : '📖 Previously on...'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* AI Backstory Hooks — party narrative connections */}
                 {activeView === 'narration' && !adventureStarted && characters.length >= 2 && (
                   <div className="mx-4 mb-2">

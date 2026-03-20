@@ -953,6 +953,29 @@ app.delete('/api/npc-memory/:roomId/:npcName', async (c) => {
   } catch { return c.json({ error: 'Failed' }, 500); }
 });
 
+// AI session recap — "Previously on..." summary for returning players
+app.post('/api/dm/session-recap', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const dmHistory = (body.dmHistory as string[]) || [];
+    const combatLog = (body.combatLog as string[]) || [];
+    const chars = (body.characters as Array<Record<string, unknown>>) || [];
+    if (dmHistory.length === 0 && combatLog.length === 0) return c.json({ recap: '' });
+    const charNames = chars.map((ch) => `${ch.name} (${ch.race} ${ch.class})`).join(', ');
+    const narrative = dmHistory.slice(-15).join('\n');
+    const combat = combatLog.slice(-10).join('\n');
+    const prompt = `Write a "Previously on..." session recap for a D&D campaign.\nParty: ${charNames}\nNarration:\n${narrative}\n${combat ? `Combat:\n${combat}` : ''}\n\n2-3 dramatic past-tense sentences. Focus on key events and cliffhangers. No meta-commentary.`;
+    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
+      '@cf/meta/llama-3.1-8b-instruct',
+      { messages: [{ role: 'system', content: 'D&D narrator. Write dramatic recaps.' }, { role: 'user', content: prompt }] },
+    );
+    return c.json({ recap: (resp?.response || '').trim() });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Recap failed' }, 500);
+  }
+});
+
 // AI wiki lore generation — generate content for wiki pages
 app.post('/api/dm/generate-lore', async (c) => {
   if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
