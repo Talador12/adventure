@@ -526,6 +526,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Undo/redo stacks for terrain editing
+  const undoStackRef = useRef<TerrainType[][][]>([]);
+  const redoStackRef = useRef<TerrainType[][][]>([]);
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
     terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions, mapImageUrl, characters } = useGame();
 
@@ -623,6 +626,25 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  // Undo/redo keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!canUseDMTools) return;
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        const prev = undoStackRef.current.pop();
+        if (prev) { redoStackRef.current.push(terrain.map((r) => [...r])); setTerrain(prev); onTerrainChange?.(prev); }
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        const next = redoStackRef.current.pop();
+        if (next) { undoStackRef.current.push(terrain.map((r) => [...r])); setTerrain(next); onTerrainChange?.(next); }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [canUseDMTools, terrain]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Theater mode: auto-zoom + pan to focus on current turn unit
   const [theaterMode, setTheaterMode] = useState(false);
@@ -1418,6 +1440,10 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (!target) return;
     setTerrain((prev) => {
       if (prev[row][col] === target) return prev;
+      // Push to undo stack (snapshot before change)
+      undoStackRef.current.push(prev.map((r) => [...r]));
+      if (undoStackRef.current.length > 50) undoStackRef.current.shift();
+      redoStackRef.current = []; // clear redo on new edit
       const next = prev.map((r) => [...r]);
       next[row][col] = target;
       // Notify parent for multiplayer sync
@@ -2175,6 +2201,16 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         className="flex-1 overflow-hidden bg-slate-950/50 relative touch-none"
         onWheel={handleWheel}
         style={{ cursor: dmTool !== 'select' ? 'crosshair' : panning ? 'grabbing' : 'default' }}
+        onDragOver={(e) => { if (canUseDMTools) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }}
+        onDrop={(e) => {
+          if (!canUseDMTools || !onMapImageChange) return;
+          e.preventDefault();
+          const file = e.dataTransfer.files?.[0];
+          if (!file || !file.type.startsWith('image/')) return;
+          const reader = new FileReader();
+          reader.onload = () => { if (typeof reader.result === 'string') { onMapImageChange(reader.result); setMapImageUrl(reader.result); } };
+          reader.readAsDataURL(file);
+        }}
       >
         <div
           className="relative"

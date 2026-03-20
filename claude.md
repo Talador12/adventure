@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v5.3.0
+## Current Version: v5.4.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added map image drag-and-drop import — DM can drag a PNG/JPG onto the battle map to set it as the background. FileReader converts to data URL. `BattleMap.tsx`.
+- Added undo/redo for battle map terrain editing — Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y). 50-level undo stack with redo. Pushes snapshot before each paint operation. `BattleMap.tsx`.
+- Added keyboard-driven character creation — Enter/ArrowRight = next step, Escape/ArrowLeft = prev step. Enter in inputs advances to next step. Global keyboard handler. `CharacterCreate.tsx`.
 - Added exportable encounter templates — Export/Import buttons in DMSidebar encounter template section. Export downloads all templates as `encounter-templates.json`. Import reads a JSON file and merges with existing templates (max 20). Enables sharing enemy groups between DMs.
 - Added AI-generated map descriptions — `POST /api/dm/describe-cell` generates 1-2 vivid sentences from terrain type, lighting level, and scene name via `aiText()`. Uses the unified AI client (local/cloud/offline).
 - Added QR code for campaign join — "QR" toggle button in Lobby invite section. Generates a QR-like SVG pattern from the lobby URL (finder patterns + timing + data area). White-on-dark display in a popup card. Lazy-loaded via dynamic import. `lib/qrcode.ts`, `Lobby.tsx`.
@@ -1062,10 +1065,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ### v6.0 Feature Ideas
 - [ ] AI DM voice narration (TTS via local Piper/Coqui or cloud ElevenLabs)
-- [ ] Undo/redo system for battle map terrain editing
-- [ ] Import maps from image files (drag + drop PNG/JPG as battle map background)
-- [ ] Keyboard-driven character creation (tab through all fields, no mouse needed)
-- [ ] Campaign statistics dashboard (total sessions, time played, XP gained, enemies killed)
+- [x] Undo/redo for battle map terrain (Ctrl+Z / Ctrl+Shift+Z, 50-level stack)
+- [x] Import maps from image files (drag-and-drop PNG/JPG onto battle map)
+- [x] Keyboard-driven character creation (Enter/arrows navigate steps, Enter in inputs advances)
+- [x] Campaign statistics dashboard (Achievements tracks kills/damage/crits/spells + SessionTimer tracks play time — already implemented)
 - [x] QR code for campaign join link (SVG pattern + toggle in Lobby)
 - [x] Exportable encounter templates (export/import as JSON files)
 - [x] Theme customization (color picker → CSS --accent variable, persisted)
