@@ -121,6 +121,19 @@ function getJwtKey(env: Env) {
 }
 
 // GET /api/auth/discord - redirect to Discord OAuth
+// AI map cell description — describe what the party sees at a location
+app.post('/api/dm/describe-cell', async (c) => {
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const terrain = String(body.terrain || 'floor');
+    const lighting = String(body.lighting || 'normal');
+    const scene = String(body.sceneName || '');
+    const prompt = `In 1-2 vivid sentences, describe a ${terrain} area${lighting !== 'normal' ? ` (${lighting} lighting)` : ''}${scene ? ` in ${scene}` : ''}. What does the party see, hear, smell? No game mechanics.`;
+    const text = await aiText(c.env, [{ role: 'system', content: 'D&D narrator. Brief, vivid.' }, { role: 'user', content: prompt }], 100);
+    return c.json({ description: text.trim() });
+  } catch { return c.json({ description: '' }); }
+});
+
 // AI backend status
 app.get('/api/ai/status', (c) => {
   return c.json(aiStatus(aiEnv(c.env)));

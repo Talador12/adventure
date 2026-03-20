@@ -295,6 +295,45 @@ export default function DMSidebar({
                   } catch { return null; }
                 })()}
               </select>
+              <button
+                onClick={() => {
+                  try {
+                    const raw = localStorage.getItem('adventure:encounter-templates') || '[]';
+                    const templates = JSON.parse(raw);
+                    if (templates.length === 0) { alert('No templates to export'); return; }
+                    const blob = new Blob([JSON.stringify(templates, null, 2)], { type: 'application/json' });
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                    a.download = 'encounter-templates.json'; a.click(); URL.revokeObjectURL(a.href);
+                  } catch { /* ok */ }
+                }}
+                className="text-[7px] text-slate-500 hover:text-slate-300"
+                title="Export all encounter templates as JSON"
+              >
+                Export
+              </button>
+              <button
+                onClick={() => {
+                  const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+                  input.onchange = async () => {
+                    const file = input.files?.[0]; if (!file) return;
+                    try {
+                      const text = await file.text();
+                      const imported = JSON.parse(text) as EncounterTemplate[];
+                      if (!Array.isArray(imported)) { alert('Invalid format'); return; }
+                      const raw = localStorage.getItem('adventure:encounter-templates') || '[]';
+                      const existing = JSON.parse(raw) as EncounterTemplate[];
+                      const merged = [...imported, ...existing].slice(0, 20);
+                      localStorage.setItem('adventure:encounter-templates', JSON.stringify(merged));
+                      alert(`Imported ${imported.length} template(s)`);
+                    } catch { alert('Failed to parse JSON'); }
+                  };
+                  input.click();
+                }}
+                className="text-[7px] text-slate-500 hover:text-slate-300"
+                title="Import encounter templates from JSON file"
+              >
+                Import
+              </button>
             </div>
 
             {/* Party Formation Presets */}
