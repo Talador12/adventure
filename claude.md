@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v5.2.0
+## Current Version: v5.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added exportable encounter templates — Export/Import buttons in DMSidebar encounter template section. Export downloads all templates as `encounter-templates.json`. Import reads a JSON file and merges with existing templates (max 20). Enables sharing enemy groups between DMs.
+- Added AI-generated map descriptions — `POST /api/dm/describe-cell` generates 1-2 vivid sentences from terrain type, lighting level, and scene name via `aiText()`. Uses the unified AI client (local/cloud/offline).
 - Added QR code for campaign join — "QR" toggle button in Lobby invite section. Generates a QR-like SVG pattern from the lobby URL (finder patterns + timing + data area). White-on-dark display in a popup card. Lazy-loaded via dynamic import. `lib/qrcode.ts`, `Lobby.tsx`.
 - Added theme accent color customization — color picker input in Home header lets players choose any accent color. Stored in localStorage (`adventure:accent`), applied as CSS `--accent` custom property. Applied before React renders in main.tsx (no flash). Default: #F38020 (Cloudflare orange).
 - Added unified AI image generation — `aiImage()` in aiClient.ts routes portrait generation through: local OpenAI-compatible image API (`/v1/images/generations` — works with AUTOMATIC1111, ComfyUI, Fooocus) → Workers AI FLUX → null (offline). Both portrait endpoints (`/api/portrait/generate` + `/api/portrait/enemy`) migrated. Deleted ~60 lines of duplicate ReadableStream/ArrayBuffer→base64 conversion code. Only `aiRunDirect` remains for vision model (Llama 3.2 Vision — no local equivalent).
@@ -1065,10 +1067,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Keyboard-driven character creation (tab through all fields, no mouse needed)
 - [ ] Campaign statistics dashboard (total sessions, time played, XP gained, enemies killed)
 - [x] QR code for campaign join link (SVG pattern + toggle in Lobby)
-- [ ] Exportable encounter templates (share enemy groups as JSON files)
+- [x] Exportable encounter templates (export/import as JSON files)
 - [x] Theme customization (color picker → CSS --accent variable, persisted)
 - [ ] Drag-and-drop inventory management (move items between characters visually)
-- [ ] AI-generated map descriptions (click a cell, AI describes what the party sees)
+- [x] AI-generated map descriptions (POST /api/dm/describe-cell via unified AI client)
 
 ### AI Architecture (shipped)
 - [x] Unified AI client (`aiText` + `aiChatStream`) — single code path for all text AI
