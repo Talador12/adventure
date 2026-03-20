@@ -66,6 +66,11 @@ test-ai: makeinfo ## [Test] Run AI tests only (fallback + error)
 test-ai-live: makeinfo ## [Test] Run AI tests with live Workers AI (costs money)
 	AI_TESTS=live npx vitest run --config vitest.workers.config.ts tests/ai/
 
+test-e2e: makeinfo ## [Test] Run Playwright E2E browser tests
+	npx playwright test
+test-all: makeinfo ## [Test] Run ALL tests (unit + worker + e2e)
+	@$(MAKE) test
+	@$(MAKE) test-e2e
 test-watch: makeinfo ## [Test] Run all tests in watch mode
 	npx vitest --config vitest.config.ts & npx vitest --config vitest.workers.config.ts
 
