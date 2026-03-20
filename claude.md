@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added session recap — `POST /api/dm/session-recap` endpoint generates "Previously on..." summaries from DM history + combat log. Manual "📖 Previously on..." button in narration view (amber-themed banner). Auto-recap already existed for returning players; now also has a dedicated endpoint + on-demand button.
 - Added mobile companion app — `/companion/:roomId` route with streamlined phone UI. Three-tab layout: 👤 Sheet (stats grid, conditions, equipped items, initiative order, gold/inventory/spell counts), 🎲 Dice (6 quick-roll buttons d4-d20, large result display with critical/fumble callouts, d100 + coin flip), 💬 Chat (link to full game). Character selector when none chosen. Combat header shows round + current turn. "📱 Companion" button in Lobby copies the companion URL. Lazy-loaded route.
 - Added hex grid toggle — `gridType` state ('square' | 'hex') with ⬡/▢ toggle button in zoom controls. `hexCenter()` and `drawHexPath()` helper functions for flat-top hexagonal coordinates. Hex rendering foundation in place (toggle UI + coordinate math). Full hex terrain rendering requires additional canvas draw loop integration.
 - Marked initiative drag-and-drop as already implemented (HTML5 DnD with canReorder/onReorder props).
@@ -1040,6 +1041,18 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Initiative card drag-and-drop (HTML5 drag-and-drop with visual feedback — already implemented)
 - [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
 - [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
+
+### v5.0 Feature Ideas
+- [ ] Discord OAuth login (replace guest play with real Discord identity, avatar, username)
+- [ ] Character leveling wizard (guided level-up flow with class feature choices)
+- [ ] AI trap generator (DM clicks a cell → AI generates a trap with description + mechanics)
+- [x] Session recap generator (auto-fires on return + manual "📖 Previously on..." button + dedicated API endpoint)
+- [ ] Ambient soundscape per scene (tie ambient mood to scene name automatically)
+- [ ] Quick-roll macros (save custom dice expressions like "2d6+4" as buttons)
+- [ ] Party formation presets (save and load unit positions on the battle map)
+- [ ] Export campaign as PDF book (full campaign with narration, maps, character sheets)
+- [ ] Spectator mode enhancements (live viewer count, spectator chat, stream overlay)
+- [ ] AI encounter recap (after combat ends, AI generates a dramatic summary of the battle)
 - [x] Campaign calendar (in-world dates, 5 event types, long rest tracking, month navigation)
 - [x] Encounter templates (save to localStorage + load dropdown in DMSidebar)
 - [x] Map annotations (floating text labels via 📝 Label DM tool)
