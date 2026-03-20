@@ -922,6 +922,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
           result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
         }
         if (spell.level > 0) result.message += ` (Level ${spell.level} slot used)`;
+
+        // Wild Magic Surge check: Sorcerers casting leveled spells roll d20, nat 1 = surge
+        if (spell.level > 0 && casterChar?.class === 'Sorcerer') {
+          const wildCheck = Math.floor(Math.random() * 20) + 1;
+          if (wildCheck === 1) {
+            // Synchronous roll from the table (lazy import would be async — use inline d100)
+            const d100 = Math.floor(Math.random() * 100) + 1;
+            result.message += ` ⚡ WILD MAGIC SURGE! (d100: ${d100})`;
+            // The full effect text will be resolved by the caller via the wildMagic module
+            (result as Record<string, unknown>).wildMagicRoll = d100;
+          }
+        }
       }
       return result;
     },

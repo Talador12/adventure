@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added Wild Magic table — complete D&D 5e PHB p104 Wild Magic Surge table (50 entries, d100 range 1-100) in `data/wildMagic.ts`. When a Sorcerer casts a leveled spell, `castSpell` auto-rolls a d20 — on a nat 1, a Wild Magic Surge triggers with a d100 roll. Result includes the d100 value in the spell message (`⚡ WILD MAGIC SURGE! (d100: 42)`). `wildMagicRoll` returned in the result for callers to resolve the full effect text via the table. Includes mechanical hints for auto-applicable effects (heal, damage, resist).
 - Added map annotations — "📝 Label" DM tool places floating text labels on the battle map. MapPin type extended with `type: 'annotation'` and `fontSize` fields. Annotations render as bold drop-shadow text centered on the cell (vs. pins which render as icon bubbles above cells). Customizable text color. DM-removable on hover. Stored in the same mapPins array as icon pins.
 - Added concentration visual indicator on tokens — pulsing blue outer ring (`rgba(96,165,250, pulse)`) drawn around any token with `concentratingOn` set. Alpha oscillates via `sin(Date.now()/300)` for a breathing effect. 3px offset from token border. Visible alongside selection highlights and condition pips.
 - Added streaming AI narration — new `POST /api/dm/narrate-stream` endpoint returns SSE stream from Workers AI (`stream: true`). Frontend reads the stream token-by-token, updating the DM narration text in-place with a blinking cursor (`▍`). Creates a dramatic typewriter effect as the AI DM speaks. Falls back to the regular non-streaming endpoint if SSE fails. SSE data lines parsed for `{"response":"token"}` format.
@@ -1035,7 +1036,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Encounter templates (save + reuse enemy groups across campaigns)
 - [x] Map annotations (floating text labels via 📝 Label DM tool)
 - [ ] Damage type tracking (fire/cold/radiant etc with resistances/vulnerabilities)
-- [ ] Wild Magic table (auto-roll on nat 1 for Wild Magic Sorcerers)
+- [x] Wild Magic table (50-entry d100 table, auto-check on Sorcerer leveled spells)
 - [x] Concentration spell visual indicator on tokens (pulsing blue ring via sin wave)
 - [x] Custom token images (DM double-click to set URL, rendered in clipped circles)
 - [x] AI-generated enemy portraits (FLUX-1-schnell, fire-and-forget parallel gen on encounter spawn)
