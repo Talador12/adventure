@@ -251,6 +251,7 @@ export default function Game() {
   const [partyInventory, setPartyInventory] = useState<import('../types/game').Item[]>([]);
   const [stagedLoot, setStagedLoot] = useState<import('../types/game').Item[]>([]);
   const [relationships, setRelationships] = useState<import('../components/game/RelationshipGraph').RelationshipEdge[]>([]);
+  const [aiBackend, setAiBackend] = useState<string>('...');
   const [recordings, setRecordings] = useState<CombatRecording[]>([]);
   const [wikiPages, setWikiPages] = useState<WikiPage[]>([]);
   const [calendar, setCalendar] = useState<CalendarState>({ currentDay: 1, events: [] });
@@ -585,6 +586,11 @@ export default function Game() {
   const voiceSendRef = useRef<(msg: Record<string, unknown>) => void>(() => {});
   const voiceRef = useRef<ReturnType<typeof useVoiceChat> | null>(null);
   const voicePlayersRef = useRef<Array<{ id: string; username: string }>>([]);
+
+  // Fetch AI backend status on mount
+  useEffect(() => {
+    fetch(`${apiBase()}/api/ai/status`).then((r) => r.json() as Promise<{ backend: string }>).then((d) => setAiBackend(d.backend)).catch(() => setAiBackend('offline'));
+  }, []);
 
   // Auto-set ambient soundscape based on scene name keywords
   useEffect(() => {
@@ -1753,6 +1759,18 @@ export default function Game() {
           <span className={`text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
             {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
           </span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${
+            aiBackend === 'local' ? 'border-emerald-700/40 bg-emerald-900/20 text-emerald-400'
+            : aiBackend === 'workers-ai' ? 'border-sky-700/40 bg-sky-900/20 text-sky-400'
+            : 'border-slate-700/40 bg-slate-800/40 text-slate-500'
+          }`} title={`AI: ${aiBackend}`}>
+            {aiBackend === 'local' ? 'AI: local' : aiBackend === 'workers-ai' ? 'AI: cloud' : 'AI: off'}
+          </span>
+          {wsConnected && characters.length > 0 && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-slate-700/40 bg-slate-800/40 text-slate-400" title={`${characters.length} in party`}>
+              {characters.length} {characters.length === 1 ? 'player' : 'players'}
+            </span>
+          )}
           <SessionTimer roomId={room} compact />
           {/* Voice chat controls */}
           {wsConnected && (
