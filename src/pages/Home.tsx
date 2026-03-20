@@ -36,6 +36,9 @@ function getInitialLowFx(): boolean {
 export default function Home() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [lowFx, setLowFx] = useState(getInitialLowFx);
+  const [accentColor, setAccentColor] = useState(() => {
+    try { return localStorage.getItem('adventure:accent') || '#F38020'; } catch { return '#F38020'; }
+  });
   const [campaignCode, setCampaignCode] = useState('');
   const [user, setUser] = useState<Record<string, string> | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -171,6 +174,11 @@ export default function Home() {
     document.documentElement.classList.add(theme);
     localStorage.theme = theme;
   }, [theme]);
+
+  // Apply accent color
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent', accentColor);
+  }, [accentColor]);
 
   // Apply Low-FX mode
   useEffect(() => {
@@ -331,6 +339,14 @@ export default function Home() {
         </div>
 
         <div className="flex gap-2 sm:gap-3 items-center relative z-10">
+          {/* Accent color picker */}
+          <input
+            type="color"
+            value={accentColor}
+            onChange={(e) => { setAccentColor(e.target.value); document.documentElement.style.setProperty('--accent', e.target.value); localStorage.setItem('adventure:accent', e.target.value); }}
+            className="w-5 h-5 rounded-full border border-white/20 cursor-pointer bg-transparent"
+            title="Accent color"
+          />
           {/* Low-FX toggle */}
           <button
             onClick={() => setLowFx(!lowFx)}
