@@ -1836,6 +1836,17 @@ export default function Game() {
           )}
           <button
             onClick={() => {
+              import('../lib/export').then(({ exportCampaignBook }) => {
+                exportCampaignBook(sceneName || room, characters, dmHistory, chatMessages, combatLog, quests, wikiPages);
+              });
+            }}
+            className="text-[9px] px-2 py-0.5 rounded bg-amber-900/30 border border-amber-700/40 text-amber-300 hover:bg-amber-900/50 font-semibold transition-colors"
+            title="Export full campaign as a printable PDF book"
+          >
+            Book
+          </button>
+          <button
+            onClick={() => {
               import('../lib/export').then(({ exportSessionLog }) => {
                 exportSessionLog(sceneName || room, dmHistory, chatMessages, combatLog, characters);
               });

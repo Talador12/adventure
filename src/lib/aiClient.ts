@@ -14,18 +14,37 @@
 
 type Message = { role: 'system' | 'user' | 'assistant'; content: string };
 
+export type AiQuality = 'fast' | 'balanced' | 'quality';
+
 export interface AiEnv {
   AI?: unknown;
   LOCAL_AI_URL?: string;
   LOCAL_AI_MODEL?: string;
   WORKERS_AI_MODEL?: string;
+  AI_QUALITY?: AiQuality;
 }
 
 // ---- Config ----
 
-const DEFAULT_WORKERS_MODEL = '@cf/meta/llama-3.1-8b-instruct';
-const DEFAULT_LOCAL_MODEL = 'llama3.1';
 const DEFAULT_MAX_TOKENS = 400;
+
+// Model presets per quality tier — override with LOCAL_AI_MODEL / WORKERS_AI_MODEL
+const WORKERS_MODELS: Record<AiQuality, string> = {
+  fast: '@cf/meta/llama-3.1-8b-instruct',
+  balanced: '@cf/meta/llama-3.1-8b-instruct',
+  quality: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+};
+const LOCAL_MODELS: Record<AiQuality, string> = {
+  fast: 'phi3',          // ~3B, fast on CPU
+  balanced: 'llama3.1',  // ~8B, good balance
+  quality: 'llama3.1:70b', // ~70B, best quality (needs GPU)
+};
+
+function resolveModel(env: AiEnv, backend: 'local' | 'workers-ai'): string {
+  const quality = env.AI_QUALITY || 'balanced';
+  if (backend === 'local') return env.LOCAL_AI_MODEL || LOCAL_MODELS[quality];
+  return env.WORKERS_AI_MODEL || WORKERS_MODELS[quality];
+}
 const OFFLINE_FALLBACK = 'The ancient tome is blank — no AI oracle is available. (Configure LOCAL_AI_URL or enable Workers AI.)';
 
 // ---- Helpers ----
@@ -43,7 +62,7 @@ export async function aiChat(env: AiEnv, messages: Message[], maxTokens = DEFAUL
 
   if (backend === 'local') {
     const base = env.LOCAL_AI_URL!.replace(/\/+$/, '');
-    const model = env.LOCAL_AI_MODEL || DEFAULT_LOCAL_MODEL;
+    const model = resolveModel(env, 'local');
     const res = await fetch(`${base}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -55,13 +74,12 @@ export async function aiChat(env: AiEnv, messages: Message[], maxTokens = DEFAUL
   }
 
   if (backend === 'workers-ai') {
-    const model = env.WORKERS_AI_MODEL || DEFAULT_WORKERS_MODEL;
+    const model = resolveModel(env, 'workers-ai');
     const ai = env.AI as { run: (m: string, o: Record<string, unknown>) => Promise<{ response?: string }> };
     const result = await ai.run(model, { messages, max_tokens: maxTokens });
     return { text: result?.response || '', backend: `workers-ai:${model}` };
   }
 
-  // Offline — graceful degradation
   return { text: OFFLINE_FALLBACK, backend: 'offline' };
 }
 
@@ -72,7 +90,7 @@ export async function aiChatStream(env: AiEnv, messages: Message[], maxTokens = 
 
   if (backend === 'local') {
     const base = env.LOCAL_AI_URL!.replace(/\/+$/, '');
-    const model = env.LOCAL_AI_MODEL || DEFAULT_LOCAL_MODEL;
+    const model = resolveModel(env, 'local');
     const res = await fetch(`${base}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -102,7 +120,7 @@ export async function aiChatStream(env: AiEnv, messages: Message[], maxTokens = 
   }
 
   if (backend === 'workers-ai') {
-    const model = env.WORKERS_AI_MODEL || DEFAULT_WORKERS_MODEL;
+    const model = resolveModel(env, 'workers-ai');
     const ai = env.AI as { run: (m: string, o: Record<string, unknown>) => Promise<ReadableStream> };
     return ai.run(model, { messages, max_tokens: maxTokens, stream: true });
   }
@@ -118,10 +136,14 @@ export async function aiChatStream(env: AiEnv, messages: Message[], maxTokens = 
 
 // ---- Status check ----
 
-export function aiStatus(env: AiEnv): { backend: string; local: { url: string; model: string } | null; workersAI: { model: string } | null } {
+export function aiStatus(env: AiEnv) {
+  const backend = resolveBackend(env);
+  const quality = env.AI_QUALITY || 'balanced';
   return {
-    backend: resolveBackend(env),
-    local: env.LOCAL_AI_URL ? { url: env.LOCAL_AI_URL, model: env.LOCAL_AI_MODEL || DEFAULT_LOCAL_MODEL } : null,
-    workersAI: env.AI ? { model: env.WORKERS_AI_MODEL || DEFAULT_WORKERS_MODEL } : null,
+    backend,
+    quality,
+    model: backend !== 'offline' ? resolveModel(env, backend as 'local' | 'workers-ai') : null,
+    local: env.LOCAL_AI_URL ? { url: env.LOCAL_AI_URL, model: resolveModel(env, 'local') } : null,
+    workersAI: env.AI ? { model: resolveModel(env, 'workers-ai') } : null,
   };
 }
