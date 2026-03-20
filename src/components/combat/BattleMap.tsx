@@ -11,6 +11,27 @@ import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
 const CELL_SIZE = 48;
 const TOKEN_RADIUS = 18;
 const VISION_RADIUS = 6; // cells (30ft in D&D)
+const HEX_SIZE = 24; // flat-top hex radius
+
+// Hex grid helpers — flat-top hexagons with offset rows
+function hexCenter(col: number, row: number): { x: number; y: number } {
+  const w = HEX_SIZE * Math.sqrt(3);
+  const x = w * col + (row % 2 === 1 ? w / 2 : 0) + w / 2;
+  const y = HEX_SIZE * 1.5 * row + HEX_SIZE;
+  return { x, y };
+}
+
+function drawHexPath(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i - Math.PI / 6;
+    const px = cx + HEX_SIZE * Math.cos(angle);
+    const py = cy + HEX_SIZE * Math.sin(angle);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.0;
 const MINIMAP_CELL = 4; // pixels per cell on minimap
@@ -497,9 +518,11 @@ interface BattleMapProps {
   onLightingChange?: (lighting: LightingLevel[][]) => void;
   /** Called when a player clicks on stairs (for floor navigation) */
   onStairClick?: (direction: 'up' | 'down') => void;
+  /** Grid type: square (default) or hex */
+  gridType?: 'square' | 'hex';
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId, lighting, onLightingChange, onStairClick }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId, lighting, onLightingChange, onStairClick, gridType: gridTypeProp }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -508,6 +531,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   const [gridCols] = useState(DEFAULT_COLS);
   const [gridRows] = useState(DEFAULT_ROWS);
+  const [gridType, setGridType] = useState<'square' | 'hex'>(gridTypeProp || 'square');
   const hasGeneratedRef = useRef(false);
 
   // Generate initial dungeon on first mount (terrain starts as void in context)
@@ -2100,6 +2124,13 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             {theaterMode ? '🎬 Theater ON' : '🎬'}
           </button>
         )}
+        <button
+          onClick={() => setGridType(gridType === 'square' ? 'hex' : 'square')}
+          className={`text-[10px] px-1.5 py-1 rounded font-medium transition-all ${gridType === 'hex' ? 'bg-violet-900/50 text-violet-300 ring-1 ring-violet-500/50' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+          title={`Grid: ${gridType} (click to toggle)`}
+        >
+          {gridType === 'hex' ? '⬡ Hex' : '▢ Sq'}
+        </button>
         <button
           onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); setTheaterMode(false); }}
           className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
