@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v4.7.0
+## Current Version: v4.8.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Unified AI architecture — all AI text generation goes through two functions: `aiText()` (prompt→string) and `aiChatStream()` (prompt→SSE stream) in `src/lib/aiClient.ts`. Three backends checked in order: LOCAL_AI_URL (any OpenAI-compatible server), Workers AI (Cloudflare), offline (graceful fallback string). Zero duplicate routing code. All 15+ AI endpoints in `_worker.ts` migrated to use `aiText()`. Image/vision models (FLUX, Llama Vision) use `aiRunDirect()` — Workers AI only, no local equivalent. `aiStatus()` exported for health check. `aiEnv()` casts Hono env. Model not hardcoded — configurable via LOCAL_AI_MODEL and WORKERS_AI_MODEL env vars.
 - Added configurable local AI backend — `src/lib/aiClient.ts` provides `aiChat()` and `aiChatStream()` that route to either Workers AI or any OpenAI-compatible local server. Config via env vars: `LOCAL_AI_URL` (e.g. `http://localhost:11434/v1`), `LOCAL_AI_MODEL` (e.g. `llama3.1`, `mistral`, `phi3`), `WORKERS_AI_MODEL` (override default Workers AI model). Works with Ollama, LM Studio, vLLM, LocalAI, llama.cpp, Jan — any server on any OS/hardware. Streaming transforms OpenAI SSE format to Workers AI format for frontend compatibility. `GET /api/ai/status` shows active backend. `make dev-local-ai` prints setup instructions.
 - Added full CI pipeline — GitHub Actions workflow (`.github/workflows/ci.yml`) with 5 parallel jobs: TypeScript check, Prettier lint, unit tests (104 game logic), worker tests (51 multiplayer + AI via Miniflare), and Playwright E2E tests (14 browser smoke tests). Runs on push to main/staging and PRs to main. Playwright uploads failure screenshots as artifacts. Total test count: **169 tests across 3 layers**.
 - Added Playwright E2E browser tests — 14 smoke tests covering Home page (title, How It Works, campaign input, theme toggle, Low-FX), Character Create, Lobby, Companion, DM Screen, and navigation. Runs headless Chromium via Vite dev server. `playwright.config.ts`, `tests/e2e/smoke.test.ts`.
@@ -1050,6 +1051,16 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Initiative card drag-and-drop (HTML5 drag-and-drop with visual feedback — already implemented)
 - [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
 - [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
+
+### AI Architecture (shipped)
+- [x] Unified AI client (`aiText` + `aiChatStream`) — single code path for all text AI
+- [x] Three-tier backend: local OpenAI-compatible server → Workers AI → offline graceful fallback
+- [x] Model-agnostic: configurable via `LOCAL_AI_MODEL` (any model) and `WORKERS_AI_MODEL` (any CF model)
+- [x] All 15+ AI endpoints migrated to unified client, zero duplicate routing
+- [x] Offline mode returns a graceful fallback string instead of crashing
+- [ ] Local AI image generation (Stable Diffusion via AUTOMATIC1111 API for portraits when FLUX unavailable)
+- [ ] AI backend indicator in game UI (show which backend is powering narration)
+- [ ] Model quality presets (fast/balanced/quality → auto-select model size per backend)
 
 ### v5.0 Feature Ideas
 - [ ] Discord OAuth login (replace guest play with real Discord identity, avatar, username)
