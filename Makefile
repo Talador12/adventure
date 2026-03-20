@@ -66,6 +66,18 @@ test-ai: makeinfo ## [Test] Run AI tests only (fallback + error)
 test-ai-live: makeinfo ## [Test] Run AI tests with live Workers AI (costs money)
 	AI_TESTS=live npx vitest run --config vitest.workers.config.ts tests/ai/
 
+dev-local-ai: makeinfo ## [Dev] Start with local AI server (Ollama/LM Studio/any OpenAI-compatible)
+	@echo "━━━ Local AI Mode ━━━"
+	@echo "Ensure your AI server is running. Examples:"
+	@echo "  Ollama:    ollama serve  (then: ollama pull llama3.1)"
+	@echo "  LM Studio: start server on port 1234"
+	@echo "  vLLM:      python -m vllm.entrypoints.openai.api_server"
+	@echo ""
+	@echo "Add to .dev.vars:"
+	@echo "  LOCAL_AI_URL=http://localhost:11434/v1"
+	@echo "  LOCAL_AI_MODEL=llama3.1"
+	@echo ""
+	@$(MAKE) dev
 test-e2e: makeinfo ## [Test] Run Playwright E2E browser tests
 	npx playwright test
 test-all: makeinfo ## [Test] Run ALL tests (unit + worker + e2e)

@@ -107,6 +107,20 @@ function getJwtKey(env: Env) {
 }
 
 // GET /api/auth/discord - redirect to Discord OAuth
+// AI backend status — shows which AI backend is active and its config
+app.get('/api/ai/status', (c) => {
+  const env = c.env as unknown as Record<string, unknown>;
+  const localUrl = env.LOCAL_AI_URL as string | undefined;
+  const localModel = env.LOCAL_AI_MODEL as string | undefined;
+  const workersModel = env.WORKERS_AI_MODEL as string | undefined;
+  const hasWorkersAI = !!env.AI;
+  return c.json({
+    backend: localUrl ? 'local' : hasWorkersAI ? 'workers-ai' : 'none',
+    local: localUrl ? { url: localUrl, model: localModel || '(default)' } : null,
+    workersAI: hasWorkersAI ? { model: workersModel || '@cf/meta/llama-3.1-8b-instruct' } : null,
+  });
+});
+
 app.get('/api/auth/discord', (c) => {
   const redirect_uri = DISCORD_REDIRECT_URIS.find((uri) => c.req.url.startsWith(uri.split('/api')[0])) || DISCORD_REDIRECT_URIS[0];
   const params = new URLSearchParams({

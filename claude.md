@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v4.6.0
+## Current Version: v4.7.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added configurable local AI backend — `src/lib/aiClient.ts` provides `aiChat()` and `aiChatStream()` that route to either Workers AI or any OpenAI-compatible local server. Config via env vars: `LOCAL_AI_URL` (e.g. `http://localhost:11434/v1`), `LOCAL_AI_MODEL` (e.g. `llama3.1`, `mistral`, `phi3`), `WORKERS_AI_MODEL` (override default Workers AI model). Works with Ollama, LM Studio, vLLM, LocalAI, llama.cpp, Jan — any server on any OS/hardware. Streaming transforms OpenAI SSE format to Workers AI format for frontend compatibility. `GET /api/ai/status` shows active backend. `make dev-local-ai` prints setup instructions.
 - Added full CI pipeline — GitHub Actions workflow (`.github/workflows/ci.yml`) with 5 parallel jobs: TypeScript check, Prettier lint, unit tests (104 game logic), worker tests (51 multiplayer + AI via Miniflare), and Playwright E2E tests (14 browser smoke tests). Runs on push to main/staging and PRs to main. Playwright uploads failure screenshots as artifacts. Total test count: **169 tests across 3 layers**.
 - Added Playwright E2E browser tests — 14 smoke tests covering Home page (title, How It Works, campaign input, theme toggle, Low-FX), Character Create, Lobby, Companion, DM Screen, and navigation. Runs headless Chromium via Vite dev server. `playwright.config.ts`, `tests/e2e/smoke.test.ts`.
 - Enhanced character leveling wizard — LevelUpModal now has a "Summary" tab showing: HP increase options (roll d{hitDie}+CON or take average), proficiency bonus change, ASI/Feat availability, new spell slot notifications for casters, and class ability description. HP roll/take-average buttons auto-update character maxHp/hp/hitDiceRemaining and post to DM narration.
