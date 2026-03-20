@@ -1106,6 +1106,39 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         );
       })()}
 
+      {/* Character Journal — private diary entries */}
+      <div className="border-t border-slate-700/50 pt-3 mt-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Journal</span>
+          <button
+            onClick={() => {
+              const text = prompt('New journal entry:');
+              if (!text?.trim()) return;
+              const entry = { id: crypto.randomUUID().slice(0, 8), date: new Date().toLocaleDateString(), text: text.trim(), createdAt: Date.now() };
+              updateCharacter(character.id, { journal: [...(character.journal || []), entry] } as Partial<typeof character>);
+            }}
+            className="text-[8px] text-violet-400 hover:text-violet-300 font-semibold"
+          >
+            + Entry
+          </button>
+        </div>
+        {(character.journal || []).length === 0 ? (
+          <p className="text-[8px] text-slate-600 italic">No journal entries yet. Click + Entry to start your diary.</p>
+        ) : (
+          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+            {(character.journal || []).slice().reverse().map((entry) => (
+              <div key={entry.id} className="text-[9px] px-2 py-1 rounded bg-slate-800/30 border border-slate-800/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] text-slate-500">{entry.date}</span>
+                  <button onClick={() => updateCharacter(character.id, { journal: (character.journal || []).filter((e) => e.id !== entry.id) } as Partial<typeof character>)} className="text-[7px] text-red-500 hover:text-red-400">×</button>
+                </div>
+                <p className="text-slate-300 leading-relaxed">{entry.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Shareable Character Card */}
       <div className="border-t border-slate-700/50 pt-3 mt-3">
         <CharacterCard character={character} />
