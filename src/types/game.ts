@@ -507,6 +507,8 @@ export interface MapPin {
   color: string; // hex color
   icon?: string; // emoji or short symbol
   createdBy?: string; // player username
+  type?: 'pin' | 'annotation'; // annotation = floating text label, pin = icon marker
+  fontSize?: number; // text size for annotations (default 11)
 }
 
 export const MAP_PIN_COLORS = [
