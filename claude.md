@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI trap generator — `POST /api/dm/generate-trap` generates traps via Workers AI based on terrain type, party level, and scene name. Returns JSON with name, description, DC, damage, and type. "✨AI" trap tool in DM toolbar: click any cell to generate and place an AI-designed trap. Alert shows trap details. DC and damage scaled to party level.
 - Added AI encounter recap — `POST /api/dm/encounter-recap` generates dramatic battle summaries (bard-style) from combat log when combat ends. Auto-fires (non-blocking) after combat recording stops if 3+ combat log entries exist. Appears as ⚔️ system message in DM narration. Highlights crits, near-deaths, killing blows.
 - Marked quick-roll macros as already implemented (save/load/execute with localStorage persistence).
 - Added session recap — `POST /api/dm/session-recap` endpoint generates "Previously on..." summaries from DM history + combat log. Manual "📖 Previously on..." button in narration view (amber-themed banner). Auto-recap already existed for returning players; now also has a dedicated endpoint + on-demand button.
@@ -1047,7 +1048,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v5.0 Feature Ideas
 - [ ] Discord OAuth login (replace guest play with real Discord identity, avatar, username)
 - [ ] Character leveling wizard (guided level-up flow with class feature choices)
-- [ ] AI trap generator (DM clicks a cell → AI generates a trap with description + mechanics)
+- [x] AI trap generator (✨AI DM tool + POST /api/dm/generate-trap, level-scaled)
 - [x] Session recap generator (auto-fires on return + manual "📖 Previously on..." button + dedicated API endpoint)
 - [ ] Ambient soundscape per scene (tie ambient mood to scene name automatically)
 - [x] Quick-roll macros (save/execute custom dice expressions with localStorage persistence — already implemented)
