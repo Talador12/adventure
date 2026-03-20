@@ -596,6 +596,16 @@ export default function Game() {
       recordEvent('end', 'Combat ends.');
       const rec = stopRecording();
       if (rec && rec.events.length > 2) setRecordings((prev) => [...prev, rec]);
+      // Fire AI encounter recap (non-blocking)
+      if (combatLog.length > 3) {
+        fetch(`${apiBase()}/api/dm/encounter-recap`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ combatLog: combatLog.slice(-20), characters: buildPartyPayload() }),
+        }).then((r) => r.ok ? r.json() as Promise<{ recap?: string }> : null)
+          .then((data) => { if (data?.recap) addDmMessage(`⚔️ ${data.recap}`); })
+          .catch(() => {});
+      }
     }
   }, [inCombat]); // eslint-disable-line react-hooks/exhaustive-deps
 

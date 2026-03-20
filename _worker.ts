@@ -953,6 +953,44 @@ app.delete('/api/npc-memory/:roomId/:npcName', async (c) => {
   } catch { return c.json({ error: 'Failed' }, 500); }
 });
 
+// AI trap generator — DM generates a trap for a specific map cell
+app.post('/api/dm/generate-trap', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const terrain = String(body.terrain || 'floor');
+    const partyLevel = Number(body.partyLevel) || 1;
+    const scene = String(body.sceneName || '');
+    const prompt = `Generate a D&D 5e trap for a ${terrain} cell${scene ? ` in ${scene}` : ''} (party level ${partyLevel}).\nReturn JSON: {"name":"Trap Name","description":"2-3 sentence description","dc":14,"damage":"2d6 fire","type":"spike|fire|poison|alarm","detected":false}\nMatch DC and damage to party level. Be creative.`;
+    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
+      '@cf/meta/llama-3.1-8b-instruct',
+      { messages: [{ role: 'system', content: 'D&D trap designer. Return valid JSON only.' }, { role: 'user', content: prompt }] },
+    );
+    const text = resp?.response || '{}';
+    const match = text.match(/\{[\s\S]*\}/);
+    return c.json({ trap: match ? JSON.parse(match[0]) : null });
+  } catch { return c.json({ trap: null }); }
+});
+
+// AI encounter recap — dramatic battle summary after combat ends
+app.post('/api/dm/encounter-recap', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const combatLog = (body.combatLog as string[]) || [];
+    const chars = (body.characters as Array<Record<string, unknown>>) || [];
+    if (combatLog.length === 0) return c.json({ recap: '' });
+    const charNames = chars.map((ch) => `${ch.name}`).join(', ');
+    const log = combatLog.slice(-20).join('\n');
+    const prompt = `Write a dramatic 2-3 sentence recap of this D&D combat. Party: ${charNames}.\nLog:\n${log}\nVivid past tense. Highlight crits, near-deaths, killing blows. Like a bard at a tavern.`;
+    const resp = await (c.env.AI as { run: (m: string, o: { messages: Array<{ role: string; content: string }> }) => Promise<{ response?: string }> }).run(
+      '@cf/meta/llama-3.1-8b-instruct',
+      { messages: [{ role: 'system', content: 'D&D bard. Vivid battle recaps.' }, { role: 'user', content: prompt }] },
+    );
+    return c.json({ recap: (resp?.response || '').trim() });
+  } catch { return c.json({ recap: '' }); }
+});
+
 // AI session recap — "Previously on..." summary for returning players
 app.post('/api/dm/session-recap', async (c) => {
   if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);

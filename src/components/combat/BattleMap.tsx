@@ -483,7 +483,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -1339,6 +1339,24 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
 
     // Handle pin placement — open inline creation form at clicked cell
+    if (dmTool === 'trap-ai') {
+      // AI-generate a trap for this cell
+      fetch('/api/dm/generate-trap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ terrain: terrain[row]?.[col] || 'floor', partyLevel: 5 }),
+      }).then((r) => r.ok ? r.json() as Promise<{ trap?: { name: string; type: string; dc: number; damage: string; description: string } }> : null)
+        .then((data) => {
+          if (data?.trap) {
+            const trapType = (['spike', 'fire', 'poison', 'alarm'].includes(data.trap.type) ? data.trap.type : 'spike') as 'spike' | 'fire' | 'poison' | 'alarm';
+            const trap = data.trap!;
+            setTraps((prev) => [...prev, { id: crypto.randomUUID().slice(0, 8), col, row, type: trapType, dc: trap.dc, damage: trap.damage, detected: false, triggered: false, name: trap.name }]);
+            alert(`AI Trap: ${trap.name}\n${trap.description}\nDC ${trap.dc} · ${trap.damage}`);
+          }
+        }).catch(() => {});
+      return;
+    }
+
     if (dmTool === 'annotation') {
       const label = prompt('Annotation text:');
       if (!label?.trim()) return;
@@ -1814,6 +1832,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     { tool: 'trap-fire', label: 'Fire', color: 'text-orange-400' },
     { tool: 'trap-poison', label: 'Poison', color: 'text-green-400' },
     { tool: 'trap-alarm', label: 'Alarm', color: 'text-yellow-400' },
+    { tool: 'trap-ai', label: '✨AI', color: 'text-violet-400' },
   ];
 
   return (

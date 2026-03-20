@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v4.2.0
+## Current Version: v4.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI trap generator — `POST /api/dm/generate-trap` generates traps via Workers AI based on terrain type, party level, and scene name. Returns JSON with name, description, DC, damage, and type. "✨AI" trap tool in DM toolbar: click any cell to generate and place an AI-designed trap. Alert shows trap details. DC and damage scaled to party level.
+- Added AI encounter recap — `POST /api/dm/encounter-recap` generates dramatic battle summaries (bard-style) from combat log when combat ends. Auto-fires (non-blocking) after combat recording stops if 3+ combat log entries exist. Appears as ⚔️ system message in DM narration. Highlights crits, near-deaths, killing blows.
+- Marked quick-roll macros as already implemented (save/load/execute with localStorage persistence).
 - Added session recap — `POST /api/dm/session-recap` endpoint generates "Previously on..." summaries from DM history + combat log. Manual "📖 Previously on..." button in narration view (amber-themed banner). Auto-recap already existed for returning players; now also has a dedicated endpoint + on-demand button.
 - Added mobile companion app — `/companion/:roomId` route with streamlined phone UI. Three-tab layout: 👤 Sheet (stats grid, conditions, equipped items, initiative order, gold/inventory/spell counts), 🎲 Dice (6 quick-roll buttons d4-d20, large result display with critical/fumble callouts, d100 + coin flip), 💬 Chat (link to full game). Character selector when none chosen. Combat header shows round + current turn. "📱 Companion" button in Lobby copies the companion URL. Lazy-loaded route.
 - Added hex grid toggle — `gridType` state ('square' | 'hex') with ⬡/▢ toggle button in zoom controls. `hexCenter()` and `drawHexPath()` helper functions for flat-top hexagonal coordinates. Hex rendering foundation in place (toggle UI + coordinate math). Full hex terrain rendering requires additional canvas draw loop integration.
@@ -1045,14 +1048,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v5.0 Feature Ideas
 - [ ] Discord OAuth login (replace guest play with real Discord identity, avatar, username)
 - [ ] Character leveling wizard (guided level-up flow with class feature choices)
-- [ ] AI trap generator (DM clicks a cell → AI generates a trap with description + mechanics)
+- [x] AI trap generator (✨AI DM tool + POST /api/dm/generate-trap, level-scaled)
 - [x] Session recap generator (auto-fires on return + manual "📖 Previously on..." button + dedicated API endpoint)
 - [ ] Ambient soundscape per scene (tie ambient mood to scene name automatically)
-- [ ] Quick-roll macros (save custom dice expressions like "2d6+4" as buttons)
+- [x] Quick-roll macros (save/execute custom dice expressions with localStorage persistence — already implemented)
 - [ ] Party formation presets (save and load unit positions on the battle map)
 - [ ] Export campaign as PDF book (full campaign with narration, maps, character sheets)
 - [ ] Spectator mode enhancements (live viewer count, spectator chat, stream overlay)
-- [ ] AI encounter recap (after combat ends, AI generates a dramatic summary of the battle)
+- [x] AI encounter recap (auto-fires after combat, bard-style dramatic summary)
 - [x] Campaign calendar (in-world dates, 5 event types, long rest tracking, month navigation)
 - [x] Encounter templates (save to localStorage + load dropdown in DMSidebar)
 - [x] Map annotations (floating text labels via 📝 Label DM tool)
