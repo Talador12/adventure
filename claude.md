@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.1.0
+## Current Version: v7.2.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added map fog opacity slider — DM can adjust explored-but-not-visible fog dimness (10-90%). Slider in fog toolbar section. Wired into canvas draw callback.
+- Added AI backstory continuation — `POST /api/backstory/continue` endpoint generates next story chapter using existing backstory + recent journal entries. "Continue Story" button on CharacterSheet journal. Entries prefixed with [AI].
+- Added player readiness check — DM "Ready?" button broadcasts check to all players. Banner shows per-player status (emerald pills). Players click "Ready!" to confirm. Uses existing game_event relay.
+- Added combat damage graph — `CombatDamageGraph` canvas bar chart in EncounterLog expanded view. Red=dealt, amber=taken, hover tooltip. Round markers injected into combat log on new round.
+- Added terrain/fog brush size — 1x1, 3x3, 5x5 selector in DM toolbar. `brushCells()` helper applies tool to all cells within radius. Works with refog, terrain painting, and drag.
 - Added initiative lock toggle — DM-only button in initiative bar during combat. Prevents drag reorder and signals re-roll should be disabled. Amber lock icon with locked/unlocked states.
 - Added encounter history search/filter — search input in EncounterLog filters by kills, spells, and combat log text. Difficulty filter pills (easy/medium/hard/deadly) with color-coded active states.
 - Added fog shape tools — 4 new DM tools for bulk fog operations: circle reveal, circle hide, rectangle reveal, rectangle hide. Two-click model (first click sets center/corner, second applies shape). Circle uses Euclidean distance, rectangle uses bounding box.
@@ -1138,12 +1143,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Initiative lock toggle (DM freezes initiative order during combat, amber lock button)
 - [x] Encounter history search/filter (search by kills/spells/log text, difficulty filter pills)
 - [ ] Ambient sound mixer (layer multiple ambient loops with per-channel volume)
-- [ ] Map fog-of-war brush size (1/2/3 cell radius for painting/erasing fog)
-- [ ] Combat damage graph (per-round DPS visualization after encounter ends)
-- [ ] Player readiness check (DM sends ready-check, players confirm before starting encounter)
+- [x] Map fog-of-war brush size (1/3/5 cell selector, brushCells helper, works with all paint tools)
+- [x] Combat damage graph (CombatDamageGraph canvas bar chart, round markers in log, hover tooltip)
+- [x] Player readiness check (DM Ready? button, per-player banner, game_event relay)
 - [ ] Spell effect templates library (save/load custom AoE shapes for reuse)
-- [ ] Character backstory AI continuation (generate "what happened next" story beats)
-- [ ] Map layer opacity controls (DM adjusts transparency of fog/lighting/terrain overlays)
+- [x] Character backstory AI continuation (POST /api/backstory/continue, Continue Story on CharacterSheet)
+- [x] Map layer opacity controls (fog dim opacity slider 10-90% in DM toolbar)
 - [x] Campaign export as Foundry VTT module (actors + inventory + quests as journal entries)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 
