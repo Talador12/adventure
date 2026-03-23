@@ -134,6 +134,9 @@ export interface Unit {
   legendaryAbilities?: EnemyAbility[]; // abilities usable as legendary actions
   // Lair actions — environmental effects at initiative count 20 (start of round)
   lairActions?: LairAction[];
+  // Aura visualization — radius circle drawn on battle map around this token
+  auraRadius?: number; // in grid cells (e.g., 2 = 10ft)
+  auraColor?: string;  // CSS color with alpha (e.g., 'rgba(56,189,248,0.15)')
 }
 
 export interface LairAction {

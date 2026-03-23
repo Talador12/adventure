@@ -760,6 +760,36 @@ export default function CombatToolbar({
                           );
                         })()}
 
+                      {/* Aura toggle — set a visual radius around the selected unit */}
+                      {inCombat && canUseDMTools && selectedUnitId && (() => {
+                        const auraUnit = units.find((u) => u.id === selectedUnitId);
+                        if (!auraUnit) return null;
+                        const hasAura = (auraUnit.auraRadius || 0) > 0;
+                        return (
+                          <button
+                            onClick={() => {
+                              if (hasAura) {
+                                setUnits((prev: Unit[]) => prev.map((u) => u.id === auraUnit.id ? { ...u, auraRadius: undefined, auraColor: undefined } : u));
+                                setCombatLog((prev) => [...prev, `${auraUnit.name}'s aura fades.`]);
+                              } else {
+                                const radius = parseInt(prompt('Aura radius in cells (e.g., 2 = 10ft):') || '0') || 0;
+                                if (radius <= 0) return;
+                                const colors = ['rgba(56,189,248,0.12)', 'rgba(234,179,8,0.12)', 'rgba(239,68,68,0.12)', 'rgba(168,85,247,0.12)', 'rgba(34,197,94,0.12)'];
+                                const color = colors[Math.floor(Math.random() * colors.length)];
+                                setUnits((prev: Unit[]) => prev.map((u) => u.id === auraUnit.id ? { ...u, auraRadius: radius, auraColor: color } : u));
+                                setCombatLog((prev) => [...prev, `${auraUnit.name} radiates a ${radius * 5}ft aura!`]);
+                              }
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-semibold rounded-lg transition-all ${
+                              hasAura ? 'bg-sky-900/50 border-sky-600/50 text-sky-300' : 'bg-slate-800/60 border-slate-600/50 text-slate-300 hover:bg-slate-700/60'
+                            }`}
+                          >
+                            {hasAura ? 'Clear Aura' : 'Set Aura'}
+                          </button>
+                        );
+                      })()}
+
                       {/* Re-roll Initiative (during combat, for when new enemies join) */}
                       {inCombat && canUseDMTools && (
                         <button
