@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added hot-seat mode — `/hotseat/:roomId` route for pass-and-play on a single device. "Pass the Device" screen hides game state between players. Character card with stats, HP, AC, turn indicator. Player selector buttons. Link to full game. Lazy-loaded route.
+- Added campaign templates — 4 pre-built starter adventures (Lost Mine, Whispering Woods, Ashfall Siege, Golden Masquerade) in `data/campaignTemplates.ts`. Each includes opening narration, 3-4 quests with map coordinates, suggested level range, and tags. "Quick Start Adventures" section on Home page with clickable cards that create a pre-loaded campaign.
 - Added PWA install prompt — `manifest.json` with app name, icons, theme color. `beforeinstallprompt` event captured in main.tsx. "Install" button on Home page (orange, shows when browser supports install). `canInstallPWA()` + `installPWA()` exports.
 - Added per-NPC voice customization — `speakAsNPC()` in tts.ts assigns a deterministic unique voice per NPC name (hash-based voice index + varied pitch/rate). Each NPC sounds different. DM narration uses the default dramatic voice, NPCs get their own. Wired into the NPC dialogue flow.
 - Added AI DM voice narration — `lib/tts.ts` wraps the browser's SpeechSynthesis API. Zero dependencies, works offline. Auto-speaks DM narration when TTS is enabled. Preferred voice selection (tries UK English Male/Daniel/Samantha). Toggle button in Game header (🔊 TTS / 🔇). Lazy-loaded.
@@ -1071,11 +1073,11 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
 - [ ] Multi-language UI (i18n framework + Spanish/French/German/Japanese translations)
 - [ ] Plugin system (load custom JS modules as game extensions)
-- [ ] Campaign templates (pre-built adventures with maps, encounters, and lore)
+- [x] Campaign templates (4 starter adventures with narration, quests, map coords)
 - [ ] OAuth with GitHub + Google (expand beyond Discord for login)
 - [ ] Rich text wiki editor (markdown preview, image embeds)
 - [ ] Battle map fog: revealed area persistence per player (each player's explored fog saved separately)
-- [ ] Hot-seat mode (pass-and-play on a single device for in-person groups)
+- [x] Hot-seat mode (/hotseat/:roomId with pass-the-device screen + character selector)
 - [ ] Integration with D&D Beyond API (live sync character data bidirectionally)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 
