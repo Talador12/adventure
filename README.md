@@ -1,189 +1,171 @@
-# Adventure
+# Adventure VTT
 
-_An immersive AI-enhanced virtual tabletop built on Cloudflare for fantasy campaigns._
-_Think Baldur's Gate 3 but never-ending — AI DM, human or AI players, full RP._
+_A D&D 5e virtual tabletop that feels like Baldur's Gate 3 married Roll20 and they raised a child on Cloudflare._
+
+**270+ features. 91 releases. Zero heavy dependencies. Pure vibes.**
 
 ---
 
-## Quick Start
+## Who are you?
+
+| You are... | You want to... | Start here |
+|-----------|----------------|------------|
+| **A Player** | Roll dice and hit things | `make play` — you're done |
+| **A DM** | Run a campaign with AI tools | `make play`, then `make dm-guide` |
+| **A Developer** | Understand or extend the code | `make dev`, then `make test` |
+| **A Designer** | Tweak the look and feel | `make dev`, edit `src/styles.css` |
+| **A Modder** | Add homebrew content | `make dev`, see `src/data/` |
+
+---
+
+## Play right now
 
 ```bash
-make fresh   # install deps, build, start dev servers
-# or
-make start   # quick: kill + build + dev
+git clone https://github.com/Talador12/adventure.git
+cd adventure
+make play
 ```
 
-Frontend: http://localhost:5173 | Backend: http://localhost:8787
-
-## What's Built
-
-### Authentication
-
-- Discord OAuth with JWT session cookies
-- Profile dropdown with avatar, theme toggle, sign out
-
-### Multiplayer (WebSocket)
-
-- Lobby Durable Object: real-time player sessions, chat, dice broadcasts
-- `useWebSocket` hook: auto-reconnect with exponential backoff
-- Live player list with join/leave notifications
-- All dice rolls broadcast to every connected client with full animation
-
-### Dice System
-
-- SVG dice shapes for each die type (d4 tetrahedron, d6 cube, d8 octahedron, d10 pentagonal, d12 dodecahedron, d20 icosahedron)
-- Animated roll: shape tumbles while numbers cycle, then settles on result
-- Critical Hit (max roll): golden glow burst + star burst + "CRITICAL HIT!" text
-- Critical Fail (rolled 1): red crack effect + screen shake + "CRITICAL FAIL!"
-- Remote roll sync: when any player rolls, all clients see the full animation
-- Roll history with crit/fail badges, player name, and associated unit
-
-### Combat
-
-- Initiative bar: turn tracker with HP bars, color-coded health (green/yellow/red)
-- Player/AI controller labels on each unit
-- Click a unit to associate dice rolls with it (DICE badge)
-
-### Lobby
-
-- Live chat with styled message bubbles, roll announcements, system messages
-- Dice rolling that syncs across all connected players
-- Doodle pad: canvas drawing tool with color picker, brush sizes, eraser, clear
-- Invite link with copy-to-clipboard
-
-### Game Board
-
-- Full-height layout: initiative bar → game board → dice + chat sidebar
-- WebSocket connection status indicator
-- Session roll counter
-
-### UI
-
-- Toast notification system (success/error/warning/info)
-- Dark/light mode toggle (Tailwind v4 `@custom-variant`)
-- Cloudflare orange (#F38020) accent throughout
+Open http://localhost:5173. Click "Play as Guest" or sign in with Discord/Google/GitHub. Create a campaign. Invite your party. Roll initiative.
 
 ---
 
-## Roadmap
+## What makes this different
 
-### Character Creation (In Progress)
+**No subscriptions. No electron. No 200MB downloads.** It's a web app that runs on Cloudflare Workers. Your browser is the client. A Durable Object is your game server. WebSockets sync everything in real-time.
 
-| Feature | Status |
-| ------- | ------ |
-| Core character creation page (race, class, stats, appearance, background, alignment) | Done |
-| SVG portrait system — composable race+class+appearance vector art | Done |
-| 4d6-drop-lowest stat rolling with animation + stat swap | Done |
-| AI portrait generation (Workers AI / FLUX) | Done |
-| Portrait upload with AES-256-GCM encryption at rest | Done |
-| Name generator (syllable tables per race) + AI translation | Done |
-| Tavern-style backdrop for character creation page | In Progress |
-| Race selection cards with inline SVG portraits | In Progress |
-| Class selection cards with inline SVG portraits | In Progress |
-| Warm card styling + gold/orange selection highlights | In Progress |
-| Wire Discord profile data into WebSocket sessions | Planned |
-| Character management (edit, delete, level up from Home page) | Planned |
+**AI is optional, not required.** Three-tier architecture: local AI (Ollama, LM Studio) → cloud AI (Workers AI) → graceful offline fallback. Every feature works without AI — it just gets smarter with it.
 
-### AI Dungeon Master (Planned)
+**The juice is real.** Rainbow confetti on nat 20s. Kill streak announcements (RAMPAGE! LEGENDARY!). Floating damage numbers. Weather particles. Heartbeat pulse on death saves. This VTT has *personality*.
 
-| Feature | Status |
-| ------- | ------ |
-| Workers AI narration + NPC dialogue | Planned |
-| Encounter generation | Planned |
-| DM tools: god mode, roll override, visibility toggles | Planned |
+---
 
-### Map System (Planned)
+## Feature Highlights
 
-| Feature | Status |
-| ------- | ------ |
-| Procedural map generation | Planned |
-| Fog of war | Planned |
-| Draggable tokens + grid | Planned |
+### Combat
+- D&D 5e with 13 damage types, conditions, death saves, concentration tracking
+- Initiative with tiebreakers, drag-and-drop reorder, lock toggle
+- Theater mode, combat replay with mini-map, turn timer
+- Token auras (radius circles), attack indicators (animated lines)
+- HP flytext (floating damage/heal numbers), kill streak tracker
+- Mass heal/damage tool, quick combat auto-resolver
+- Encounter XP budget (live progress bar during combat)
 
-### Audio (Planned)
+### Battle Map
+- BSP procedural dungeon generator + 6 presets + community sharing
+- Fog of war with Re-fog tool, shape tools (circle/rect), opacity slider
+- Terrain/fog brush size (1x1, 3x3, 5x5), undo/redo
+- Multi-floor with stairs, environmental lighting zones, hex toggle
+- Weather particle effects (rain, snow, sandstorm, fog)
+- Drag-drop image import, annotations, map pins
 
-| Feature | Status |
-| ------- | ------ |
-| Sound FX (howler.js): mood music, spell effects, combat sounds | Planned |
+### Characters
+- Full creation with 8 races, 12 classes, multiclass support
+- D&D Beyond + Foundry VTT import (with inventory + spells)
+- AI portrait generation (FLUX), custom spellbook, portrait gallery
+- Spell slot recovery (Wizard Arcane Recovery, Warlock Pact Magic)
+- Character backup (AES-256-GCM encrypted), player trading
+- AI backstory continuation ("Continue Story" in journal)
 
-### Multiplayer Enhancements (Planned)
+### AI (optional)
+- 3-tier: local → cloud → offline. Model-agnostic, vendor-free
+- 6 DM personality presets, streaming narration (SSE)
+- NPC memory (KV-persisted), AI encounter balancing
+- AI trap generator, lore generation, encounter recap
+- Campaign recap (summarize last N sessions for returning players)
 
-| Feature | Status |
-| ------- | ------ |
-| Shared doodle pad over WebSocket | Planned |
-| Discord integration for voice/chat | Planned |
+### Multiplayer
+- WebSocket via Durable Objects, voice chat (WebRTC)
+- Roll sync policies (smooth/strict/auto), latency heatmap
+- Per-player fog, spectator mode, hot-seat mode
+- Lobby with drag-and-drop seat reorder, readiness check
+- DM screen (BroadcastChannel sync), mobile companion app
 
-### Backlog
+### World Building
+- Collaborative wiki (5 categories, markdown, inter-page links)
+- Quest tracker with world map pins, campaign calendar
+- Relationship graph (canvas nodes, AI suggestions)
+- 4 campaign templates, session scheduling with countdown
 
-- Persistent campaigns via KV/R2 (save/load game state)
-- Character sheets with live updates and autosave
-- Drop-in/drop-out guest characters
-- Roleplay dashboard with notes and voice-style prompts
-- Particle effects for spells and combat
-- Dynamic difficulty: real-time control over encounter challenge
-- Modular engine for homebrew rules and third-party mods
-- Accessibility-friendly "Low-FX" mode
-- Better Discord profile display (banners, metadata)
+### Polish
+- 4 dice sound packs (Classic, Crystal, Wooden, Metal)
+- Ambient sound mixer (layer multiple moods with volume sliders)
+- Spell effect templates library (save/load custom AoE shapes)
+- Keyboard shortcut overlay (press `?`), performance dashboard (`Ctrl+Shift+P`)
+- Party loot split calculator, encounter template save/load/export/import
+- PWA install prompt, Service Worker offline cache
 
 ---
 
 ## Tech Stack
 
-| Layer    | Technology                                 |
-| -------- | ------------------------------------------ |
-| Frontend | React 19, Vite, Tailwind CSS v4            |
-| Backend  | Cloudflare Workers (Hono), Durable Objects |
-| Auth     | Discord OAuth, jose JWT                    |
-| Realtime | WebSocket via Durable Objects              |
-| Build    | Makefile, wrangler, vite                   |
-| Hosting  | Cloudflare Pages                           |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, Vite, Tailwind CSS v4 |
+| Backend | Cloudflare Workers (Hono router) |
+| Realtime | Durable Objects (WebSocket) |
+| Auth | Discord + Google + GitHub OAuth, jose JWT |
+| AI | Workers AI (Llama, FLUX), any OpenAI-compatible local server |
+| Storage | KV, R2, D1 |
+| Build | Makefile, wrangler, vite |
+| Tests | Vitest (155 tests), Playwright (14 E2E), GitHub Actions CI |
 
-**Lean deps policy:** React is the only framework. clsx, tailwind-merge, lucide-react, fontawesome, react-router-dom. No animation libraries — all CSS keyframes + canvas.
-
----
-
-## Project Structure
-
-```
-_worker.ts              Worker entry (Hono router, Discord OAuth, DO proxy)
-src/
-  lobby.ts              Lobby Durable Object (WebSocket multiplayer)
-  main.tsx              React entry (BrowserRouter, providers)
-  contexts/
-    GameContext.tsx      Shared state: players, units, dice rolls
-  hooks/
-    useWebSocket.ts     Reconnecting WebSocket hook
-  pages/
-    Home.tsx            Landing page, auth, campaign create/join
-    Lobby.tsx           Pre-game room: players, chat, dice, doodle
-    Game.tsx            Combat: initiative, board, dice sidebar, chat
-  components/
-    chat/ChatPanel.tsx  Real-time chat with roll announcements
-    combat/InitiativeBar.tsx  Turn tracker with HP bars
-    dice/DiceRoller.tsx Animated dice with remote roll support
-    dice/DiceShapes.tsx SVG shapes for each die type
-    lobby/DoodlePad.tsx Canvas drawing tool
-    ui/                 button, card, toast
-  lib/utils.ts          cn() helper (clsx + tailwind-merge)
-```
+**Zero animation libraries.** All motion is CSS keyframes + canvas. Lean deps: React, clsx, tailwind-merge, lucide-react, react-router-dom.
 
 ---
 
 ## Dev Commands
 
 ```bash
-make fresh       # full reset: upgrade, install, format, build, dev
-make start       # quick: kill + build + dev
-make dev         # vite :5173 + wrangler :8787
-make build       # build frontend + worker
-make format      # prettier
-make commit M='msg'  # format, build, commit, push
-make deploy-prod     # deploy to production
-make help        # show all commands
+make quickstart     # first time? interactive walkthrough
+make play           # install + start (players and DMs)
+make dev            # vite :5173 + wrangler :8787 (developers)
+make test           # 155 tests (unit + worker)
+make test-e2e       # 14 Playwright browser tests
+make typecheck      # 0 TypeScript errors
+make dm-guide       # DM quick reference
+make help           # full command reference (persona-grouped)
+```
+
+---
+
+## Project Structure
+
+```
+_worker.ts                  Hono router, 20+ API endpoints, unified AI dispatch
+src/lobby.ts                Lobby Durable Object (WebSocket multiplayer)
+src/pages/
+  Game.tsx                  Main game (~2950 lines): combat, narration, all views
+  Lobby.tsx                 Pre-game room: seats, chat, dice, doodle pad
+  Home.tsx                  Landing: auth, campaigns, character management
+src/components/combat/
+  BattleMap.tsx             Battle map (~2700 lines): terrain, fog, lighting, theater
+  CharacterSheet.tsx        Full character sheet with spellbook + journal
+src/components/game/
+  DMSidebar.tsx             DM tools: encounters, NPCs, loot, ambient, templates
+  CritCelebration.tsx       Rainbow confetti on nat 20
+  KillStreak.tsx            DOUBLE KILL → RAMPAGE → LEGENDARY!
+src/hooks/
+  useSoundFX.ts             21 Web Audio API functions + ambient mixer + dice packs
+  useGameWebSocket.ts       Game-specific WebSocket message handler
+src/lib/
+  aiClient.ts               Unified AI: aiChat(), aiChatStream(), aiImage()
+  backup.ts                 Character backup/restore (AES-256-GCM)
+  combatRecorder.ts         Combat event recording for replay
+  dungeonGen.ts             BSP procedural dungeon generator
+src/data/
+  spells.ts                 Spell list, slot tables, caster classification
+  items.ts                  Shop items, 12 class starting equipment presets
+  lootTables.ts             4-tier weighted random loot
+  wildMagic.ts              50-entry d100 table
 ```
 
 ---
 
 ## License
 
-(c) 2025 Keith Adler. All Rights Reserved.
+MIT
+
+---
+
+*Roll for initiative.*

@@ -54,6 +54,8 @@ interface CombatToolbarProps {
   setShopMessage: (v: string | null) => void;
   addFloatingText: (text: string, type: 'damage' | 'heal' | 'miss' | 'crit' | 'condition' | 'info', opts?: { x?: number; y?: number }) => void;
   addAttackIndicator: (fromCol: number, fromRow: number, toCol: number, toRow: number, type?: 'melee' | 'ranged' | 'spell' | 'heal') => void;
+  addFlytext?: (col: number, row: number, text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'death', gridCols: number, gridRows: number) => void;
+  recordKill?: (killerName: string) => void;
 }
 
 export default function CombatToolbar({
@@ -95,6 +97,8 @@ export default function CombatToolbar({
   setShopMessage,
   addFloatingText,
   addAttackIndicator,
+  addFlytext,
+  recordKill,
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -363,8 +367,10 @@ export default function CombatToolbar({
                                     if (isCrit) {
                                       playCritical();
                                       addFloatingText(`${finalDmg}`, 'crit');
+                                      if (targetPos) addFlytext?.(targetPos.col, targetPos.row, String(finalDmg), 'crit', 20, 20);
                                     } else {
                                       addFloatingText(`${finalDmg}`, 'damage');
+                                      if (targetPos) addFlytext?.(targetPos.col, targetPos.row, String(finalDmg), 'damage', 20, 20);
                                     }
                                     const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, logMsg]);
@@ -383,6 +389,8 @@ export default function CombatToolbar({
                                   const deathMsg = `${target.name} falls!`;
                                   setCombatLog((prev) => [...prev, deathMsg]);
                                   addDmMessage(deathMsg);
+                                  if (targetPos) addFlytext?.(targetPos.col, targetPos.row, 'SLAIN', 'death', 20, 20);
+                                  recordKill?.(selectedCharacter?.name || 'You');
                                 }
                                 // Drain any concentration break messages
                                 setTimeout(drainConcentrationMessages, 0);
