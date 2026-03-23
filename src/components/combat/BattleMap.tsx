@@ -532,8 +532,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const { units, setUnits, selectedUnitId, setSelectedUnitId, damageUnit, applyCondition, inCombat,
     terrain, setTerrain, mapPositions: positions, setMapPositions: setPositions, mapImageUrl, characters } = useGame();
 
-  const [gridCols] = useState(DEFAULT_COLS);
-  const [gridRows] = useState(DEFAULT_ROWS);
+  const [gridCols, setGridCols] = useState(DEFAULT_COLS);
+  const [gridRows, setGridRows] = useState(DEFAULT_ROWS);
   const [gridType, setGridType] = useState<'square' | 'hex'>(gridTypeProp || 'square');
   const hasGeneratedRef = useRef(false);
 
@@ -2184,6 +2184,26 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         >
           {gridType === 'hex' ? '⬡ Hex' : '▢ Sq'}
         </button>
+        {canUseDMTools && (
+          <select
+            value={`${gridCols}x${gridRows}`}
+            onChange={(e) => {
+              const [c, r] = e.target.value.split('x').map(Number);
+              setGridCols(c); setGridRows(r);
+              setTerrain(Array.from({ length: r }, () => Array(c).fill('floor')));
+              setExplored(Array.from({ length: r }, () => Array(c).fill(false)));
+              onTerrainChange?.(Array.from({ length: r }, () => Array(c).fill('floor')));
+            }}
+            className="text-[9px] px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300"
+            title="Map grid size"
+          >
+            <option value="15x15">15×15</option>
+            <option value="20x20">20×20</option>
+            <option value="25x25">25×25</option>
+            <option value="30x30">30×30</option>
+            <option value="40x40">40×40</option>
+          </select>
+        )}
         <button
           onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); setTheaterMode(false); }}
           className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-400 hover:text-slate-200 font-medium"
