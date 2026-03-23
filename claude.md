@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v6.7.0
+## Current Version: v6.8.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added character portrait gallery — `portraitGallery?: string[]` on Character type. Gallery thumbnails appear below the portrait on hover (count badge). Click any saved portrait to set it as active. Gallery visible via toggle on portrait hover. Max 10 saved.
+- Added v9.0 roadmap: 10 new ideas (encounter post-mortem, campaign branching, NPC attitude tracker, quick combat, session scheduling, etc.)
 - Added session timer in DM sidebar — renders `SessionTimer` component in the Notes tab alongside existing DM tools. Full pause/resume controls accessible without scrolling to header.
 - Added Foundry VTT module export — `exportFoundryModule()` in export.ts bundles all characters as Foundry dnd5e actors (abilities, HP, AC, death saves, race, background, XP, gold, inventory as items, class item) + quests as journal entries. Downloads as `{campaign}-foundry-module.json`. "Foundry" button in Game header.
 - Added DM sound effect trigger buttons — 12 SFX buttons (dice, crit, fumble, hit, miss, death, spell, turn, fight, level, heal, loot) in DMSidebar Notes tab. Lazy-loaded via dynamic import. Uses existing `useSoundFX` functions.
@@ -1101,7 +1103,19 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Encounter difficulty estimator (XP budget breakdown + enemy XP + difficulty label — already implemented)
 - [x] Sound effect trigger buttons for DM (12 SFX buttons in DMSidebar, lazy-loaded)
 - [x] Map grid size selector (15×15 to 40×40 dropdown in zoom controls)
-- [ ] Character portrait gallery (browse all generated portraits for a character)
+- [x] Character portrait gallery (thumbnails on character sheet, click to set active portrait)
+
+### v9.0 Feature Ideas
+- [ ] Drag-and-drop character reordering in lobby seat cards
+- [ ] AI encounter post-mortem (what went wrong, tactical suggestions for next time)
+- [ ] Character backup/restore (download character as encrypted backup file)
+- [ ] Battle map fog reveal undo (DM can re-fog accidentally revealed areas)
+- [ ] Dice roll sound customization (pick from different dice sound packs)
+- [ ] Campaign branching (fork a campaign to explore "what if" scenarios)
+- [ ] NPC relationship tracker (track NPC attitudes toward each party member)
+- [ ] Quick combat resolver (auto-resolve simple encounters without full tactical play)
+- [ ] Session scheduling (integrated calendar for planning next game night)
+- [ ] Performance dashboard (bundle size, render times, memory usage for dev mode)
 - [x] Campaign export as Foundry VTT module (actors + inventory + quests as journal entries)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 

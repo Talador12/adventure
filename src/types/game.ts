@@ -457,6 +457,7 @@ export interface Character {
   customSpells?: Spell[];  // imported or homebrew spells beyond the class list
   preparedSpellIds?: string[];  // IDs of spells the player has prepared
   journal?: Array<{ id: string; date: string; text: string; createdAt: number }>; // private character diary
+  portraitGallery?: string[]; // saved portrait URLs (most recent first, max 10)
   classAbilityUsed: boolean;
   feats: string[];
   asiChoicesMade: number;

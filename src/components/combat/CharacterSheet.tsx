@@ -431,6 +431,7 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
 export default function CharacterSheet({ character }: CharacterSheetProps) {
   const { restCharacter, equipItem, unequipItem, useItem, removeItem, tradeItem, units, updateCharacter, addRoll, currentPlayer, characters } = useGame();
   const [showInventory, setShowInventory] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [tradeTarget, setTradeTarget] = useState<string | null>(null); // itemId being traded
   // Other characters available for trading (other player characters)
@@ -488,12 +489,22 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
     <div className="space-y-4 text-sm">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <img
-          src={character.portrait || `/portraits/classes/${character.class.toLowerCase()}.webp`}
-          alt={character.name}
-          className="w-14 h-14 rounded-xl object-cover border border-slate-600"
-          onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${character.race.toLowerCase()}.webp`; }}
-        />
+        <div className="relative group">
+          <img
+            src={character.portrait || `/portraits/classes/${character.class.toLowerCase()}.webp`}
+            alt={character.name}
+            className="w-14 h-14 rounded-xl object-cover border border-slate-600"
+            onError={(e) => { (e.target as HTMLImageElement).src = `/portraits/races/${character.race.toLowerCase()}.webp`; }}
+          />
+          {/* Portrait gallery toggle */}
+          {(character.portraitGallery?.length || 0) > 0 && (
+            <button
+              onClick={() => setShowGallery(!showGallery)}
+              className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-[7px] text-white font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              title={`${character.portraitGallery!.length} saved portraits`}
+            >{character.portraitGallery!.length}</button>
+          )}
+        </div>
         <div>
           <div className="font-bold text-white text-lg">{character.name}</div>
           <div className="text-slate-400 text-xs">
@@ -529,6 +540,22 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           </div>
         </div>
       </div>
+
+      {/* Portrait Gallery */}
+      {showGallery && (character.portraitGallery?.length || 0) > 0 && (
+        <div className="flex gap-1.5 flex-wrap py-1.5">
+          {character.portraitGallery!.map((url, i) => (
+            <button
+              key={i}
+              onClick={() => updateCharacter(character.id, { portrait: url } as Partial<typeof character>)}
+              className={`w-10 h-10 rounded-lg overflow-hidden border-2 transition-all ${character.portrait === url ? 'border-[#F38020] ring-1 ring-[#F38020]/40' : 'border-slate-700 hover:border-slate-500'}`}
+              title={`Portrait ${i + 1} — click to use`}
+            >
+              <img src={url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* HP bar */}
       <div className="space-y-1">
