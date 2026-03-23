@@ -10,6 +10,8 @@ export interface NpcRecord {
   location: string; // where they were last seen
   faction: string; // faction affiliation (freeform)
   disposition: number; // -2 hostile, -1 unfriendly, 0 neutral, 1 friendly, 2 allied
+  /** Per-party-member attitudes. Key = character name, value = -2..+2. Falls back to global disposition. */
+  partyAttitudes?: Record<string, number>;
   notes: string; // freeform DM/player notes
   alive: boolean;
   createdAt: number;
@@ -28,9 +30,11 @@ const DISPOSITION_VALUES = [-2, -1, 0, 1, 2] as const;
 interface NpcTrackerProps {
   roomId: string;
   isDM: boolean;
+  /** Names of party characters for per-member attitude tracking */
+  partyNames?: string[];
 }
 
-export default function NpcTracker({ roomId, isDM }: NpcTrackerProps) {
+export default function NpcTracker({ roomId, isDM, partyNames = [] }: NpcTrackerProps) {
   const storageKey = `adventure:npcs:${roomId}`;
   const [npcs, setNpcs] = useState<NpcRecord[]>(() => {
     try {
@@ -54,6 +58,7 @@ export default function NpcTracker({ roomId, isDM }: NpcTrackerProps) {
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
+  const [expandedAttitudes, setExpandedAttitudes] = useState<Set<string>>(new Set());
 
   // Persist
   useEffect(() => {
@@ -277,6 +282,64 @@ export default function NpcTracker({ roomId, isDM }: NpcTrackerProps) {
                   />
                 ))}
               </div>
+
+              {/* Per-party-member attitudes (expandable) */}
+              {partyNames.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setExpandedAttitudes((prev) => {
+                      const next = new Set(prev);
+                      next.has(npc.id) ? next.delete(npc.id) : next.add(npc.id);
+                      return next;
+                    })}
+                    className="text-[9px] text-slate-600 hover:text-slate-400 transition-colors flex items-center gap-1"
+                  >
+                    <span className={`transform transition-transform ${expandedAttitudes.has(npc.id) ? 'rotate-90' : ''}`}>&#9656;</span>
+                    Party attitudes {npc.partyAttitudes ? `(${Object.keys(npc.partyAttitudes).length} set)` : ''}
+                  </button>
+                  {expandedAttitudes.has(npc.id) && (
+                    <div className="mt-1 space-y-1 pl-2 border-l border-slate-800">
+                      {partyNames.map((pName) => {
+                        const att = npc.partyAttitudes?.[pName] ?? npc.disposition;
+                        const attInfo = DISPOSITION_LABELS[att] || DISPOSITION_LABELS[0];
+                        return (
+                          <div key={pName} className="flex items-center gap-2">
+                            <span className="text-[9px] text-slate-400 w-20 truncate" title={pName}>{pName}</span>
+                            {isDM && (
+                              <div className="flex gap-0.5">
+                                <button
+                                  onClick={() => {
+                                    const attitudes = { ...(npc.partyAttitudes || {}) };
+                                    attitudes[pName] = Math.max(-2, att - 1);
+                                    updateNpc(npc.id, { partyAttitudes: attitudes });
+                                  }}
+                                  disabled={att <= -2}
+                                  className="w-3.5 h-3.5 rounded text-[8px] border border-slate-700 text-slate-500 hover:text-red-400 disabled:opacity-30 transition-all leading-none"
+                                >-</button>
+                                <button
+                                  onClick={() => {
+                                    const attitudes = { ...(npc.partyAttitudes || {}) };
+                                    attitudes[pName] = Math.min(2, att + 1);
+                                    updateNpc(npc.id, { partyAttitudes: attitudes });
+                                  }}
+                                  disabled={att >= 2}
+                                  className="w-3.5 h-3.5 rounded text-[8px] border border-slate-700 text-slate-500 hover:text-green-400 disabled:opacity-30 transition-all leading-none"
+                                >+</button>
+                              </div>
+                            )}
+                            <span className={`text-[8px] font-semibold ${attInfo.color}`}>{attInfo.label}</span>
+                            <div className="flex gap-0.5 flex-1">
+                              {DISPOSITION_VALUES.map((d) => (
+                                <div key={d} className={`flex-1 h-0.5 rounded-full ${d <= att ? (d <= -1 ? 'bg-red-500' : d === 0 ? 'bg-slate-500' : 'bg-green-500') : 'bg-slate-800'}`} />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Notes */}
               {isEditing ? (

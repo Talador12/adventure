@@ -2493,6 +2493,7 @@ export default function Game() {
                   <NpcTracker
                     roomId={room}
                     isDM={canUseDMTools}
+                    partyNames={characters.map((c) => c.name)}
                   />
                 ) : activeView === 'dicestats' ? (
                   <DiceStats />
