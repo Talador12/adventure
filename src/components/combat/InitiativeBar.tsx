@@ -177,7 +177,14 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
               {/* AC + Initiative */}
               <div className="flex items-center gap-2 text-[9px] font-mono">
                 <span className="text-sky-400">AC {entry.ac}</span>
-                {entry.initiative > 0 && <span className="text-amber-400">Init {entry.initiative}</span>}
+                {entry.initiative > 0 && (
+                  <span className="text-amber-400">
+                    Init {entry.initiative}
+                    {entries.some((e) => e.id !== entry.id && e.initiative === entry.initiative) && entry.dexMod !== undefined && (
+                      <span className="text-amber-600 ml-0.5">(+{entry.dexMod})</span>
+                    )}
+                  </span>
+                )}
               </div>
 
               {/* HP bar */}

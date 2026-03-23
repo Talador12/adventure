@@ -15,6 +15,7 @@ import QuickCombatResolver from './QuickCombatResolver';
 import SessionScheduler from './SessionScheduler';
 import SpellTemplates from './SpellTemplates';
 import LootSplitter from './LootSplitter';
+import MassHPTool from './MassHPTool';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
@@ -197,7 +198,7 @@ export default function DMSidebar({
   dmPersonality,
   onSetDmPersonality,
 }: DMSidebarProps) {
-  const { units, characters, inCombat, updateCharacter, grantXP, mapPositions, setMapPositions } = useGame();
+  const { units, setUnits, characters, inCombat, updateCharacter, grantXP, damageUnit, mapPositions, setMapPositions } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
   const [biome, setBiome] = useState<Biome>('forest');
   const [lastBiomeRoll, setLastBiomeRoll] = useState<{ encounter: BiomeEncounter; roll: number } | null>(null);
@@ -451,6 +452,27 @@ export default function DMSidebar({
               }
               return null;
             })()}
+            {/* Mass HP tool — damage or heal multiple units */}
+            {inCombat && units.length > 0 && (
+              <div className="border-t border-slate-700/50 pt-3">
+                <MassHPTool
+                  units={units}
+                  onApply={(unitIds, amount, isDamage) => {
+                    for (const id of unitIds) {
+                      const u = units.find((u) => u.id === id);
+                      if (!u) continue;
+                      if (isDamage) {
+                        damageUnit(id, amount);
+                      } else {
+                        setUnits((prev) => prev.map((unit) => unit.id === id ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + amount) } : unit));
+                      }
+                    }
+                    const names = unitIds.map((id) => units.find((u) => u.id === id)?.name).filter(Boolean).join(', ');
+                    onAddDmMessage(`Mass ${isDamage ? 'damage' : 'heal'}: ${amount} HP to ${names}`);
+                  }}
+                />
+              </div>
+            )}
             {/* Spell Effect Templates — save/reuse AoE shapes */}
             <div className="border-t border-slate-700/50 pt-3">
               <SpellTemplates

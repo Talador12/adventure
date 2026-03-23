@@ -4,6 +4,7 @@ import { CONDITION_TOOLTIPS, EXHAUSTION_LEVELS } from '../../data/rules';
 import { STARTING_EQUIPMENT } from '../../data/items';
 import CharacterCard from '../game/CharacterCard';
 import TradePanel from '../game/TradePanel';
+import SpellSlotRecovery from '../game/SpellSlotRecovery';
 import { useState, useCallback, useMemo } from 'react';
 
 interface CharacterSheetProps {
@@ -1125,7 +1126,7 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         const preparedIds = new Set(character.preparedSpellIds || []);
         const customSpellIds = new Set((character.customSpells || []).map((s) => s.id));
 
-        return (
+        return (<>
           <SpellbookSection
             spells={spells}
             slots={slots}
@@ -1159,7 +1160,21 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             }}
             characterClass={character.class}
           />
-        );
+          {/* Spell slot recovery (Wizard Arcane Recovery / Warlock Pact Magic) */}
+          {(character.class === 'Wizard' || character.class === 'Warlock') && (
+            <SpellSlotRecovery
+              character={character}
+              getSpellSlots={getSpellSlots}
+              onRecover={(charId, slotsToRecover) => {
+                const newUsed = { ...(character.spellSlotsUsed || {}) };
+                for (const [lvl, count] of Object.entries(slotsToRecover)) {
+                  newUsed[Number(lvl)] = Math.max(0, (newUsed[Number(lvl)] || 0) - count);
+                }
+                updateCharacter(charId, { spellSlotsUsed: newUsed });
+              }}
+            />
+          )}
+        </>);
       })()}
 
       {/* Trade with party members */}
