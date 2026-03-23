@@ -232,6 +232,9 @@ export default function CombatToolbar({
                                 if (msg) setCombatLog((prev) => [...prev, msg]);
                                 const tr = nextTurn();
                                 playTurnChange();
+                                if (tr.newRound) {
+                                  setCombatLog((prev) => [...prev, `--- Round ${combatRound + 1} ---`]);
+                                }
                                 if (tr.deathSaveMessage) {
                                   setCombatLog((prev) => [...prev, tr.deathSaveMessage!]);
                                   addDmMessage(tr.deathSaveMessage);

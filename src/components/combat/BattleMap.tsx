@@ -579,6 +579,10 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   // Fog shape selection state (for circle/rect reveal/hide tools)
   const [fogShapeStart, setFogShapeStart] = useState<{ col: number; row: number } | null>(null);
+  // Fog/terrain brush radius (0=single cell, 1=3x3, 2=5x5)
+  const [brushRadius, setBrushRadius] = useState(0);
+  // Map layer opacity controls (DM adjustable)
+  const [fogOpacity, setFogOpacity] = useState(0.6); // explored-but-not-visible dim overlay
 
   // Pin creation state
   const [pendingPinCell, setPendingPinCell] = useState<{ col: number; row: number } | null>(null);
@@ -917,7 +921,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
         // Dim explored but not currently visible cells
         if (!effectiveDmMode && !isVisible && wasExplored) {
-          ctx.fillStyle = 'rgba(15,23,42,0.6)';
+          ctx.fillStyle = `rgba(15,23,42,${fogOpacity})`;
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
         // Reveal animation: recently-revealed cells get a fading fog overlay
@@ -1227,7 +1231,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -1367,6 +1371,18 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     return null;
   }, [positions]);
 
+  // Helper: get all cells within brush radius centered on (col, row)
+  const brushCells = useCallback((col: number, row: number): { col: number; row: number }[] => {
+    const cells: { col: number; row: number }[] = [];
+    for (let dr = -brushRadius; dr <= brushRadius; dr++) {
+      for (let dc = -brushRadius; dc <= brushRadius; dc++) {
+        const r = row + dr, c = col + dc;
+        if (r >= 0 && r < gridRows && c >= 0 && c < gridCols) cells.push({ col: c, row: r });
+      }
+    }
+    return cells;
+  }, [brushRadius, gridRows, gridCols]);
+
   // --- Terrain painting ---
   const paintTerrain = useCallback((col: number, row: number) => {
     if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) return;
@@ -1462,13 +1478,16 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
-    // Re-fog tool: DM clicks explored cells to un-explore them
+    // Re-fog tool: DM clicks explored cells to un-explore them (brush-aware)
     if (dmTool === 'refog') {
+      const cells = brushCells(col, row);
       setExplored((prev) => {
-        if (!prev[row]?.[col]) return prev; // already unexplored
+        let changed = false;
         const next = prev.map((r) => [...r]);
-        next[row][col] = false;
-        return next;
+        for (const c of cells) {
+          if (next[c.row]?.[c.col]) { next[c.row][c.col] = false; changed = true; }
+        }
+        return changed ? next : prev;
       });
       return;
     }
@@ -1504,19 +1523,27 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     };
     const target = terrainMap[dmTool];
     if (!target) return;
+    const cells = brushCells(col, row);
     setTerrain((prev) => {
-      if (prev[row][col] === target) return prev;
-      // Push to undo stack (snapshot before change)
-      undoStackRef.current.push(prev.map((r) => [...r]));
-      if (undoStackRef.current.length > 50) undoStackRef.current.shift();
-      redoStackRef.current = []; // clear redo on new edit
+      let changed = false;
       const next = prev.map((r) => [...r]);
-      next[row][col] = target;
-      // Notify parent for multiplayer sync
+      for (const c of cells) {
+        if (next[c.row]?.[c.col] !== undefined && next[c.row][c.col] !== target) {
+          if (!changed) {
+            // Push to undo stack once per stroke start
+            undoStackRef.current.push(prev.map((r) => [...r]));
+            if (undoStackRef.current.length > 50) undoStackRef.current.shift();
+            redoStackRef.current = [];
+            changed = true;
+          }
+          next[c.row][c.col] = target;
+        }
+      }
+      if (!changed) return prev;
       onTerrainChange?.(next);
       return next;
     });
-  }, [dmTool, gridCols, gridRows, terrain, traps, onTerrainChange, mapPins, onPinRemove, lighting, onLightingChange]);
+  }, [dmTool, gridCols, gridRows, terrain, traps, onTerrainChange, mapPins, onPinRemove, lighting, onLightingChange, brushCells]);
 
   // Confirm pin creation from the inline form
   const confirmPin = useCallback(() => {
@@ -1984,6 +2011,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
               </button>
             ))}
 
+            {/* Brush size selector */}
+            <div className="flex items-center gap-0.5 ml-1">
+              <span className="text-[8px] text-slate-600">Brush:</span>
+              {[0, 1, 2].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setBrushRadius(r)}
+                  className={`w-5 h-5 rounded text-[8px] font-bold transition-all ${brushRadius === r ? 'bg-slate-600 text-white ring-1 ring-slate-400' : 'bg-slate-800/60 text-slate-500 hover:text-slate-300'}`}
+                  title={r === 0 ? '1 cell' : `${1 + r * 2}x${1 + r * 2} cells`}
+                >
+                  {r === 0 ? '1' : r === 1 ? '3' : '5'}
+                </button>
+              ))}
+            </div>
+
             {/* Pin tool — place named markers on the map */}
             <div className="w-px h-4 bg-slate-700 mx-1" />
             <button
@@ -2198,6 +2240,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 >
                   Re-fog
                 </button>
+                {/* Fog opacity slider */}
+                <div className="flex items-center gap-1 ml-1">
+                  <span className="text-[8px] text-slate-600">Dim:</span>
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={0.9}
+                    step={0.1}
+                    value={fogOpacity}
+                    onChange={(e) => setFogOpacity(parseFloat(e.target.value))}
+                    className="w-12 h-1 accent-sky-500 cursor-pointer"
+                    title={`Fog dim opacity: ${Math.round(fogOpacity * 100)}%`}
+                  />
+                  <span className="text-[8px] text-slate-500 w-5">{Math.round(fogOpacity * 100)}%</span>
+                </div>
                 {/* Shape fog tools */}
                 {(['fog-circle-reveal', 'fog-circle-hide', 'fog-rect-reveal', 'fog-rect-hide'] as const).map((tool) => {
                   const isCircle = tool.includes('circle');

@@ -2,6 +2,7 @@
 // Parses combat log strings to extract structured stats: damage dealt, kills, spells cast, rounds.
 // Persisted per campaign in localStorage. Shows previous encounters as expandable cards.
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import CombatDamageGraph from './CombatDamageGraph';
 
 export interface EncounterStats {
   id: string;
@@ -251,6 +252,8 @@ export default function EncounterLog({ roomId, currentCombatLog, inCombat, comba
                       <span className="text-[10px] text-purple-400 ml-1">{enc.spellsCast.join(', ')}</span>
                     </div>
                   )}
+                  {/* Per-round damage graph */}
+                  <CombatDamageGraph combatLog={enc.combatLog} rounds={enc.rounds} />
                 </div>
               )}
             </div>
