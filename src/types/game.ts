@@ -531,6 +531,8 @@ export interface EncounterTemplate {
   enemies: Array<{ name: string; hp: number; maxHp: number; ac: number; attackBonus?: number; damageDie?: string; cr?: string }>;
   description?: string;
   difficulty?: string;
+  /** Freeform DM notes for this encounter (tactics, RP hooks, etc.) */
+  notes?: string;
   createdAt: number;
 }
 
