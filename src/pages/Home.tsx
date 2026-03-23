@@ -6,6 +6,7 @@ import { useToast } from '../components/ui/toast';
 import { useGame } from '../contexts/GameContext';
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { CAMPAIGN_TEMPLATES } from '../data/campaignTemplates';
 import { faCloudflare, faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { importJSONFile } from '../lib/export';
 import { randomFantasyName } from '../lib/names';
@@ -552,6 +553,33 @@ export default function Home() {
       </section>
 
       {/* Main content */}
+      {/* Campaign Templates — quick-start adventures */}
+      <section className="px-4 sm:px-6 py-4 max-w-4xl mx-auto w-full">
+        <h3 className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Quick Start Adventures</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {CAMPAIGN_TEMPLATES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                const roomId = `${t.id}-${Date.now().toString(36)}`;
+                // Store template data for the lobby to load
+                try { localStorage.setItem(`adventure:template:${roomId}`, JSON.stringify(t)); } catch { /* ok */ }
+                navigate(`/lobby/${roomId}`);
+              }}
+              className="text-left p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 hover:border-[#F38020]/30 hover:bg-slate-800/30 transition-all group"
+            >
+              <div className="text-2xl mb-1">{t.icon}</div>
+              <div className="text-xs font-bold text-slate-200 group-hover:text-[#F38020] transition-colors">{t.name}</div>
+              <div className="text-[9px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{t.description}</div>
+              <div className="flex gap-1 mt-1.5">
+                <span className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-400">Lv {t.suggestedLevel}</span>
+                {t.tags.slice(0, 2).map((tag) => <span key={tag} className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-500">{tag}</span>)}
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <main className="flex-1 px-4 sm:px-6 py-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
 
         {/* Public campaign browser — only show if there are public games */}
