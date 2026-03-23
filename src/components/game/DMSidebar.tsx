@@ -14,6 +14,7 @@ import CustomMonsterCreator from './CustomMonsterCreator';
 import QuickCombatResolver from './QuickCombatResolver';
 import SessionScheduler from './SessionScheduler';
 import SpellTemplates from './SpellTemplates';
+import LootSplitter from './LootSplitter';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
@@ -459,6 +460,21 @@ export default function DMSidebar({
             {!inCombat && (
               <div className="border-t border-slate-700/50 pt-3">
                 <CustomMonsterCreator roomId={roomId} onSpawn={onSpawnMonster} />
+              </div>
+            )}
+            {/* Loot Splitter — divide gold evenly among party */}
+            {!inCombat && characters.length > 1 && (
+              <div className="border-t border-slate-700/50 pt-3">
+                <LootSplitter
+                  partyNames={characters.map((c) => c.name)}
+                  onGoldSplit={(splits) => {
+                    for (const [name, gold] of Object.entries(splits)) {
+                      const ch = characters.find((c) => c.name === name);
+                      if (ch) updateCharacter(ch.id, { gold: (ch.gold || 0) + gold });
+                    }
+                  }}
+                  onMessage={(msg) => onAddDmMessage(msg)}
+                />
               </div>
             )}
             {/* Quick Combat Resolver — skip tactical play for simple encounters */}

@@ -39,6 +39,7 @@ import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
 const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostmortem'));
 const PerfDashboard = lazy(() => import('../components/game/PerfDashboard'));
+const KeyboardShortcuts = lazy(() => import('../components/game/KeyboardShortcuts'));
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -2911,6 +2912,8 @@ export default function Game() {
       )}
       {/* Performance dashboard — toggle with Ctrl+Shift+P */}
       <Suspense fallback={null}><PerfDashboard /></Suspense>
+      {/* Keyboard shortcuts overlay — toggle with ? */}
+      <Suspense fallback={null}><KeyboardShortcuts /></Suspense>
     </div>
   );
 }
