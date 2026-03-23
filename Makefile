@@ -44,6 +44,63 @@ endef
 Makefile: makeinfo ;
 
 ################################################################################
+#  PLAY — "I just want to run a game." (Players, DMs, anyone with 5 minutes) #
+################################################################################
+
+play: makeinfo install dev ## [Play] Install deps + start the VTT. That's it. Go roll dice.
+
+quickstart: makeinfo ## [Play] First time? This walks you through everything.
+	@echo ""
+	@echo "┌─────────────────────────────────────────────────────────┐"
+	@echo "│             🎲 Welcome to Adventure VTT 🎲             │"
+	@echo "├─────────────────────────────────────────────────────────┤"
+	@echo "│                                                         │"
+	@echo "│  Step 1: make play         ← starts the app            │"
+	@echo "│  Step 2: open localhost:5173 in your browser            │"
+	@echo "│  Step 3: click 'Play as Guest' or sign in               │"
+	@echo "│  Step 4: create a campaign and invite your party        │"
+	@echo "│                                                         │"
+	@echo "│  WHO ARE YOU?                                           │"
+	@echo "│  ─────────────                                          │"
+	@echo "│  Player     → make play (you're done!)                  │"
+	@echo "│  DM         → make play, then read make dm-guide        │"
+	@echo "│  Developer  → make dev, then make test                  │"
+	@echo "│  Designer   → make dev, edit src/styles.css             │"
+	@echo "│  Modder     → make dev, see src/data/ for game data     │"
+	@echo "│                                                         │"
+	@echo "│  Press ? in-game to see all keyboard shortcuts.         │"
+	@echo "│  Press Ctrl+Shift+P for the performance dashboard.      │"
+	@echo "│                                                         │"
+	@echo "└─────────────────────────────────────────────────────────┘"
+	@echo ""
+
+dm-guide: makeinfo ## [Play] DM quick reference — encounter generation, AI features, map tools.
+	@echo ""
+	@echo "┌─────────────────────────────────────────────────────────┐"
+	@echo "│              🐉 Dungeon Master's Toolkit 🐉             │"
+	@echo "├─────────────────────────────────────────────────────────┤"
+	@echo "│                                                         │"
+	@echo "│  IN-GAME TOOLS (left sidebar during game):              │"
+	@echo "│  • AI Encounter Gen   — auto-balanced enemy groups      │"
+	@echo "│  • Ambient Mixer      — layer tavern + forest + combat  │"
+	@echo "│  • Quick NPC Gen      — random name, race, personality  │"
+	@echo "│  • Battle Map         — BSP dungeons, 6 presets, fog    │"
+	@echo "│  • Loot Split         — auto-divide gold among party    │"
+	@echo "│  • Mass HP Tool       — damage/heal multiple units      │"
+	@echo "│  • Session Scheduler  — plan next game night            │"
+	@echo "│  • Campaign Recap     — AI summarizes past sessions     │"
+	@echo "│                                                         │"
+	@echo "│  AI SETUP (optional, makes everything smarter):         │"
+	@echo "│  • Cloud:  works out of the box (Workers AI)            │"
+	@echo "│  • Local:  make dev-local-ai (Ollama, LM Studio, etc)   │"
+	@echo "│  • Offline: graceful fallback, everything still works   │"
+	@echo "│                                                         │"
+	@echo "│  KEYBOARD SHORTCUTS: press ? in-game                    │"
+	@echo "│                                                         │"
+	@echo "└─────────────────────────────────────────────────────────┘"
+	@echo ""
+
+################################################################################
 #                             Test Commands                                     #
 ################################################################################
 
@@ -392,8 +449,40 @@ upgrade: makeinfo ## [Utility] Upgrade Node (from .nvmrc) and all dependencies
 #                             Help & Info                                      #
 ################################################################################
 
-help: # Help command
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "} {printf "%s %03d:## %s\n", $$1, length($$1), $$2}' | sort -k1,1 -k2,2n | awk -F':## ' '{split($$1, parts, " "); printf "\033[36m%-30s\033[0m %s\n", parts[1], $$2}'
+help: # Help command — persona-grouped reference
+	@echo ""
+	@echo "┌─────────────────────────────────────────────────────────┐"
+	@echo "│                   Adventure VTT                        │"
+	@echo "│          D&D 5e Virtual Tabletop (v$(VERSION))           │"
+	@echo "├─────────────────────────────────────────────────────────┤"
+	@echo "│                                                         │"
+	@echo "│  🎲 PLAY (Players & DMs)                                │"
+	@echo "│  ──────────────────────                                 │"
+	@grep -E '^[a-zA-Z_-]+:.*?## \[Play\]' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## \\[Play\\] "} {printf "│  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "│                                                         │"
+	@echo "│  🧪 TEST                                                │"
+	@echo "│  ──────                                                 │"
+	@grep -E '^[a-zA-Z_-]+:.*?## \[Test\]' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## \\[Test\\] "} {printf "│  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "│                                                         │"
+	@echo "│  🔧 DEV                                                 │"
+	@echo "│  ─────                                                  │"
+	@grep -E '^[a-zA-Z_-]+:.*?## \[Dev\]' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## \\[Dev\\] "} {printf "│  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "│                                                         │"
+	@echo "│  📦 BUILD & DEPLOY                                      │"
+	@echo "│  ─────────────────                                      │"
+	@grep -E '^[a-zA-Z_-]+:.*?## \[(Build|Deploy|Release)\]' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## \\[(Build|Deploy|Release)\\] "} {printf "│  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "│                                                         │"
+	@echo "│  🔑 AUTH & STORAGE                                      │"
+	@echo "│  ─────────────────                                      │"
+	@grep -E '^[a-zA-Z_-]+:.*?## \[(Auth|Storage)\]' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## \\[(Auth|Storage)\\] "} {printf "│  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "│                                                         │"
+	@echo "│  🛠  UTILITY                                             │"
+	@echo "│  ──────────                                             │"
+	@grep -E '^[a-zA-Z_-]+:.*?## \[(Utility|Monitor|Cleanup|Git)\]' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## \\[(Utility|Monitor|Cleanup|Git)\\] "} {printf "│  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "│                                                         │"
+	@echo "│  New here? Run: make quickstart                         │"
+	@echo "└─────────────────────────────────────────────────────────┘"
+	@echo ""
 
 list-targets: ## [Utility] List all available targets
 	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep -E -v -e '^[^[:alnum:]]' -e '^$$@$$'
