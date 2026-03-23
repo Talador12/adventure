@@ -1893,6 +1893,26 @@ export default function Game() {
           >
             Export Log
           </button>
+          {canUseDMTools && (
+            <button
+              onClick={() => {
+                const forkId = `${room}-fork-${Date.now().toString(36).slice(-4)}`;
+                // Save current state to the fork room in localStorage
+                const state = {
+                  dmHistory, sceneName, combatLog,
+                  selectedCharacterId, characters: characters.map((c) => c.id),
+                  quests, wikiPages,
+                };
+                try { localStorage.setItem(`adventure:state:${forkId}`, JSON.stringify(state)); } catch { /* ignore */ }
+                // Navigate to the fork
+                navigate(`/game/${forkId}`);
+              }}
+              className="text-[9px] px-2 py-0.5 rounded bg-violet-900/40 border border-violet-700/40 text-violet-400 hover:text-violet-300 font-semibold transition-colors"
+              title="Fork this campaign — create a 'what if' branch"
+            >
+              Fork
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {/* Sound controls — mute toggle + volume slider */}
