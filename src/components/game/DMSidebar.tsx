@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/GameContext';
 import type { EncounterTemplate } from '../../types/game';
+import SessionTimer from './SessionTimer';
 import { randomFantasyName } from '../../lib/names';
 import { setAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../../hooks/useSoundFX';
 import { BIOME_LABELS, rollBiomeEncounter, checkRandomEncounter, type Biome, type BiomeEncounter } from '../../data/enemies';
@@ -659,6 +660,12 @@ export default function DMSidebar({
                 </div>
               </div>
             )}
+
+            {/* Session Timer — also in Game header, but convenient for DM */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Session Timer</label>
+              <SessionTimer roomId={roomId} compact={false} />
+            </div>
 
             {/* DM Sound Effect Triggers */}
             <div className="space-y-1.5">

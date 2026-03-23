@@ -740,3 +740,87 @@ ${chatMessages.length ? `<h2>Chat Log</h2><div>${chatSection}</div>` : ''}
   const w = window.open('', '_blank');
   if (w) { w.document.write(html); w.document.close(); }
 }
+
+// ============================================================================
+//  Foundry VTT module export — full campaign as importable JSON bundle
+// ============================================================================
+
+export function exportFoundryModule(
+  campaignName: string,
+  characters: Character[],
+  quests: Array<{ title: string; description: string; completed: boolean }>,
+) {
+  const moduleId = (campaignName || 'adventure').toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+  // Build Foundry actor entries from all characters
+  const actors = characters.map((c) => {
+    const statMod = (v: number) => Math.floor((v - 10) / 2);
+    return {
+      name: c.name,
+      type: 'character',
+      system: {
+        abilities: {
+          str: { value: c.stats.STR, mod: statMod(c.stats.STR) },
+          dex: { value: c.stats.DEX, mod: statMod(c.stats.DEX) },
+          con: { value: c.stats.CON, mod: statMod(c.stats.CON) },
+          int: { value: c.stats.INT, mod: statMod(c.stats.INT) },
+          wis: { value: c.stats.WIS, mod: statMod(c.stats.WIS) },
+          cha: { value: c.stats.CHA, mod: statMod(c.stats.CHA) },
+        },
+        attributes: {
+          hp: { value: c.hp, max: c.maxHp },
+          ac: { flat: c.ac },
+          death: { success: c.deathSaves?.successes || 0, failure: c.deathSaves?.failures || 0 },
+        },
+        details: {
+          race: c.race,
+          background: c.background,
+          level: c.level,
+          xp: { value: c.xp || 0 },
+          alignment: c.alignment || '',
+          biography: { value: c.backstory || '' },
+        },
+        currency: { gp: Math.floor(c.gold || 0), sp: 0, cp: 0, ep: 0, pp: 0 },
+      },
+      items: [
+        // Class item
+        { name: c.class, type: 'class', system: { levels: c.level } },
+        // Equipment
+        ...(c.inventory || []).map((item) => ({
+          name: item.name,
+          type: item.type === 'weapon' ? 'weapon' : item.type === 'armor' || item.type === 'shield' ? 'equipment' : item.type === 'potion' ? 'consumable' : 'loot',
+          system: {
+            description: { value: item.description || '' },
+            quantity: item.quantity || 1,
+            price: { value: item.value || 0 },
+            ...(item.damageDie ? { damage: { parts: [[item.damageDie, '']] } } : {}),
+            ...(item.acBonus ? { armor: { value: item.acBonus } } : {}),
+          },
+        })),
+      ],
+    };
+  });
+
+  // Build journal entries from quests
+  const journal = quests.map((q) => ({
+    name: q.title,
+    content: `<p>${q.description}</p><p><strong>Status:</strong> ${q.completed ? 'Complete' : 'Active'}</p>`,
+  }));
+
+  const moduleData = {
+    id: moduleId,
+    title: campaignName || 'Adventure Campaign',
+    description: `Exported from Adventure VTT on ${new Date().toLocaleDateString()}`,
+    version: '1.0.0',
+    compatibility: { minimum: '11', verified: '12' },
+    actors,
+    journal,
+  };
+
+  const blob = new Blob([JSON.stringify(moduleData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${moduleId}-foundry-module.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}

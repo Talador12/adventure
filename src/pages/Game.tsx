@@ -1871,6 +1871,17 @@ export default function Game() {
           </button>
           <button
             onClick={() => {
+              import('../lib/export').then(({ exportFoundryModule }) => {
+                exportFoundryModule(sceneName || room, characters, quests);
+              });
+            }}
+            className="text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
+            title="Export campaign as Foundry VTT module JSON"
+          >
+            Foundry
+          </button>
+          <button
+            onClick={() => {
               import('../lib/export').then(({ exportSessionLog }) => {
                 exportSessionLog(sceneName || room, dmHistory, chatMessages, combatLog, characters);
               });

@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v6.6.0
+## Current Version: v6.7.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added session timer in DM sidebar — renders `SessionTimer` component in the Notes tab alongside existing DM tools. Full pause/resume controls accessible without scrolling to header.
+- Added Foundry VTT module export — `exportFoundryModule()` in export.ts bundles all characters as Foundry dnd5e actors (abilities, HP, AC, death saves, race, background, XP, gold, inventory as items, class item) + quests as journal entries. Downloads as `{campaign}-foundry-module.json`. "Foundry" button in Game header.
 - Added DM sound effect trigger buttons — 12 SFX buttons (dice, crit, fumble, hit, miss, death, spell, turn, fight, level, heal, loot) in DMSidebar Notes tab. Lazy-loaded via dynamic import. Uses existing `useSoundFX` functions.
 - Added character comparison view — ⚖️ button in right sidebar tab bar opens a modal with two character dropdowns. Side-by-side stat comparison: level, HP, AC, all 6 ability scores, gold, items, spells. Higher values highlighted in emerald.
 - Added map grid size selector — dropdown in zoom controls lets DM change from 15×15 to 40×40. Resets terrain + fog on change. `BattleMap.tsx`.
@@ -1092,7 +1094,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ### v8.0 Feature Ideas
 - [x] Dice roll history analytics (d20 distribution bar chart with nat 20/nat 1 highlights)
-- [ ] Session timer pause/resume from DM sidebar (currently only in Game header)
+- [x] Session timer pause/resume from DM sidebar (SessionTimer component in Notes tab)
 - [x] Auto-save indicator (⏳/✓/✗ in Game header from existing saveStatus)
 - [x] Character comparison view (⚖️ modal with side-by-side stats, higher values highlighted)
 - [x] Quick NPC generator (GET /api/dm/random-npc via unified AI client)
@@ -1100,7 +1102,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Sound effect trigger buttons for DM (12 SFX buttons in DMSidebar, lazy-loaded)
 - [x] Map grid size selector (15×15 to 40×40 dropdown in zoom controls)
 - [ ] Character portrait gallery (browse all generated portraits for a character)
-- [ ] Campaign export as Foundry VTT module (export actors + scenes for Foundry import)
+- [x] Campaign export as Foundry VTT module (actors + inventory + quests as journal entries)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 
 ### v6.0 Feature Ideas
