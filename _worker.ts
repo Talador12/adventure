@@ -121,6 +121,22 @@ function getJwtKey(env: Env) {
 }
 
 // GET /api/auth/discord - redirect to Discord OAuth
+// AI encounter post-mortem
+app.post('/api/dm/encounter-postmortem', async (c) => {
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const combatLog = (body.combatLog as string[]) || [];
+    const chars = (body.characters as Array<Record<string, unknown>>) || [];
+    if (combatLog.length < 3) return c.json({ analysis: '' });
+    const names = chars.map((ch) => `${ch.name} (${ch.class})`).join(', ');
+    const text = await aiText(c.env, [
+      { role: 'system', content: 'D&D tactical analyst. Brief, specific.' },
+      { role: 'user', content: `Analyze combat. Party: ${names}.\nLog:\n${combatLog.slice(-25).join('\n')}\n\n3-4 bullets: what went well, what went wrong, tactical tips.` },
+    ], 300);
+    return c.json({ analysis: text.trim() });
+  } catch { return c.json({ analysis: '' }); }
+});
+
 // Quick NPC generator
 app.get('/api/dm/random-npc', async (c) => {
   try {

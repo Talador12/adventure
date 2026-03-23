@@ -483,7 +483,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -1415,6 +1415,17 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
+    // Re-fog tool: DM clicks explored cells to un-explore them
+    if (dmTool === 'refog') {
+      setExplored((prev) => {
+        if (!prev[row]?.[col]) return prev; // already unexplored
+        const next = prev.map((r) => [...r]);
+        next[row][col] = false;
+        return next;
+      });
+      return;
+    }
+
     // Lighting zone painting
     if (dmTool.startsWith('light-')) {
       const level = dmTool.replace('light-', '') as LightingLevel;
@@ -2132,6 +2143,13 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                   title="Reveal All — mark all cells as explored"
                 >
                   Reveal
+                </button>
+                <button
+                  onClick={() => setDmTool(dmTool === 'refog' ? 'select' : 'refog')}
+                  className={`text-[10px] px-2 py-1 rounded border font-semibold transition-all ${dmTool === 'refog' ? 'bg-rose-900/60 border-rose-600/60 text-rose-300 ring-1 ring-rose-500/40' : 'bg-slate-800/60 hover:bg-slate-700/60 border-slate-600/50 text-slate-400 hover:text-slate-200'}`}
+                  title="Re-fog — click cells to hide them again (undo fog reveal)"
+                >
+                  Re-fog
                 </button>
               </>
             )}

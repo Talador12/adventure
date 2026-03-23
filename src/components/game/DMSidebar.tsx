@@ -11,6 +11,8 @@ import { rollTreasureHoard, HOARD_TIER_LABELS, type TreasureHoardResult } from '
 import FormationPresets from './FormationPresets';
 import DowntimeActivities from './DowntimeActivities';
 import CustomMonsterCreator from './CustomMonsterCreator';
+import QuickCombatResolver from './QuickCombatResolver';
+import SessionScheduler from './SessionScheduler';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
@@ -448,6 +450,37 @@ export default function DMSidebar({
                 <CustomMonsterCreator roomId={roomId} onSpawn={onSpawnMonster} />
               </div>
             )}
+            {/* Quick Combat Resolver — skip tactical play for simple encounters */}
+            {!inCombat && characters.length > 0 && (
+              <div className="border-t border-slate-700/50 pt-3">
+                <QuickCombatResolver
+                  party={characters.map((c) => ({
+                    name: c.name,
+                    class: c.class,
+                    level: c.level,
+                    hp: c.hp,
+                    maxHp: c.maxHp,
+                    ac: c.ac || 10,
+                    attackBonus: Math.floor((c.stats?.STR ?? 10 - 10) / 2) + Math.floor((c.level - 1) / 4) + 2,
+                    damageDie: 8,
+                  }))}
+                  encounterDifficulty={encounterDifficulty}
+                  onResult={(msg) => onAddDmMessage(msg)}
+                  onXP={(xp) => {
+                    const ch = characters.find((c) => c.id === selectedCharacterId);
+                    if (ch) grantXP(ch.id, xp);
+                  }}
+                  onGold={(gold) => {
+                    const ch = characters.find((c) => c.id === selectedCharacterId);
+                    if (ch) updateCharacter(ch.id, { gold: (ch.gold || 0) + gold });
+                  }}
+                  onDamage={(name, dmg) => {
+                    const ch = characters.find((c) => c.name === name);
+                    if (ch) updateCharacter(ch.id, { hp: Math.max(0, ch.hp - dmg) });
+                  }}
+                />
+              </div>
+            )}
             {/* Downtime Activities — between adventures */}
             {!inCombat && selectedCharacterId && (
               <div className="border-t border-slate-700/50 pt-3">
@@ -541,6 +574,11 @@ export default function DMSidebar({
         {/* Notes tab */}
         {dmSidebarTab === 'notes' && (
           <>
+            {/* Session Scheduler — plan next game night */}
+            <SessionScheduler roomId={roomId} />
+
+            <div className="w-full h-px bg-slate-700/50" />
+
             {/* Inspiration — DM grants advantage tokens to players */}
             {characters.length > 0 && (
               <div className="space-y-1.5">

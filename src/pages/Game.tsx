@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
 import InitiativeBar from '../components/combat/InitiativeBar';
 import BattleMap, { type ActiveAoE } from '../components/combat/BattleMap';
 import CharacterSheet from '../components/combat/CharacterSheet';
@@ -12,7 +12,7 @@ import LevelUpModal from '../components/game/LevelUpModal';
 import CharacterPicker from '../components/game/CharacterPicker';
 import { type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
-import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, getVolume, setVolume, setAmbientMood, getAmbientMood, type AmbientMood } from '../hooks/useSoundFX';
+import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, getVolume, setVolume, setAmbientMood, getAmbientMood, type AmbientMood, getDiceSoundPack, setDiceSoundPack, DICE_SOUND_PACKS, type DiceSoundPack } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
@@ -37,6 +37,7 @@ import NpcTracker from '../components/game/NpcTracker';
 import DiceStats from '../components/game/DiceStats';
 import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
+const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostmortem'));
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -211,6 +212,7 @@ export default function Game() {
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [soundVolume, setSoundVolume] = useState(getVolume());
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [activeDicePack, setActiveDicePack] = useState<DiceSoundPack>(getDiceSoundPack());
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships' | 'wiki' | 'calendar'>('narration');
@@ -1891,6 +1893,26 @@ export default function Game() {
           >
             Export Log
           </button>
+          {canUseDMTools && (
+            <button
+              onClick={() => {
+                const forkId = `${room}-fork-${Date.now().toString(36).slice(-4)}`;
+                // Save current state to the fork room in localStorage
+                const state = {
+                  dmHistory, sceneName, combatLog,
+                  selectedCharacterId, characters: characters.map((c) => c.id),
+                  quests, wikiPages,
+                };
+                try { localStorage.setItem(`adventure:state:${forkId}`, JSON.stringify(state)); } catch { /* ignore */ }
+                // Navigate to the fork
+                navigate(`/game/${forkId}`);
+              }}
+              className="text-[9px] px-2 py-0.5 rounded bg-violet-900/40 border border-violet-700/40 text-violet-400 hover:text-violet-300 font-semibold transition-colors"
+              title="Fork this campaign — create a 'what if' branch"
+            >
+              Fork
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {/* Sound controls — mute toggle + volume slider */}
@@ -1943,6 +1965,19 @@ export default function Game() {
                   aria-label="Volume"
                 />
                 <span className="text-[10px] text-slate-400 w-7 text-right">{Math.round(soundVolume * 100)}%</span>
+                <div className="w-px h-4 bg-slate-700 mx-0.5" />
+                <div className="flex gap-1">
+                  {DICE_SOUND_PACKS.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setDiceSoundPack(p.id); setActiveDicePack(p.id); playDiceRoll(); }}
+                      className={`text-[8px] px-1.5 py-0.5 rounded transition-all font-semibold ${activeDicePack === p.id ? 'bg-amber-700/60 text-amber-200 border border-amber-500/50' : 'bg-slate-700/50 text-slate-500 hover:text-slate-300 border border-transparent'}`}
+                      title={p.desc}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -2311,6 +2346,13 @@ export default function Game() {
                   />
                 )}
 
+                {/* AI tactical post-mortem — shown after combat ends */}
+                {activeView === 'narration' && (
+                  <Suspense fallback={null}>
+                    <EncounterPostmortem combatLog={combatLog} inCombat={inCombat} characters={characters} />
+                  </Suspense>
+                )}
+
                 {/* AI Session Recap banner */}
                 {activeView === 'narration' && sessionRecap && (
                   <div className="mx-4 mb-2 rounded-xl border border-amber-600/30 bg-gradient-to-br from-amber-950/40 to-stone-900/60 px-5 py-4 shadow-lg animate-fade-in-up">
@@ -2471,6 +2513,7 @@ export default function Game() {
                   <NpcTracker
                     roomId={room}
                     isDM={canUseDMTools}
+                    partyNames={characters.map((c) => c.name)}
                   />
                 ) : activeView === 'dicestats' ? (
                   <DiceStats />

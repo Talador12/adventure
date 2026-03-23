@@ -761,6 +761,23 @@ export default function Home() {
               >
                 Import
               </button>
+              <button
+                onClick={async () => {
+                  if (!user) { toast('Sign in to restore a backup', 'warning'); return; }
+                  const pw = prompt('Backup password:');
+                  if (!pw) return;
+                  const { importBackup } = await import('../lib/backup');
+                  const character = await importBackup(pw);
+                  if (!character) { toast('Restore failed — wrong password or corrupt file', 'error'); return; }
+                  const restored = { ...character, playerId: user.id || '', createdAt: Date.now() };
+                  addCharacter(restored);
+                  toast(`Restored ${restored.name}!`, 'success');
+                }}
+                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-sky-500/50 hover:text-sky-400 transition-all"
+                title="Restore character from encrypted backup file"
+              >
+                Restore
+              </button>
               <Button variant="default" className="btn-glow bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
                 + New
               </Button>
