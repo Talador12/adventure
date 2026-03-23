@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v6.9.0
+## Current Version: v7.0.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added campaign branching — "Fork" button (DM only, violet) in Game header. Snapshots current state to new room ID with `-fork-` suffix, navigates to the fork. Enables "what if" exploration without affecting the main campaign.
+- Added session scheduling — `SessionScheduler` component in DMSidebar Notes tab. Date/time picker, countdown to next session (pulses amber within 1 hour), multiple upcoming sessions list. localStorage-backed per campaign. Sky-blue accent.
+- Added quick combat resolver — `QuickCombatResolver` component in DMSidebar Encounter tab (out of combat). Simulates round-by-round combat using party stats vs difficulty-scaled enemies. Shows victory/defeat, damage per member, XP/gold earned. Applies damage to characters, awards on victory.
+- Added per-party-member NPC attitudes — `NpcRecord.partyAttitudes` map (char name → -2..+2). Expandable per-member attitude section with +/- controls in NpcTracker. Falls back to global disposition. Mini disposition bars per party member.
+- Added drag-and-drop seat reordering in lobby — HTML5 DnD on seat cards (DM only). `reorder_seats` WebSocket message in Lobby DO. Optimistic local reorder + server broadcast. Grab cursor for DM, amber ring on drop target.
+- Added dice sound pack customization — 4 packs (Classic/Crystal/Wooden/Metal) in `useSoundFX.ts` with distinct synthesis patterns. Pack selector in volume dropdown (click to preview). Persisted to localStorage (`adventure:dicePack`).
 - Added encounter post-mortem UI — `EncounterPostmortem` component (lazy-loaded) auto-fetches AI tactical analysis from `POST /api/dm/encounter-postmortem` when combat ends. Teal-themed collapsible banner below CombatMVP showing bullet-point analysis (what went well, what went wrong, tactical tips). Auto-hides when new combat starts. Graceful fallback when AI offline.
 - Added fog reveal undo ("Re-fog") — new `refog` DM tool in BattleMap Fog section. Click explored cells to hide them again (sets explored to false). Supports continuous drag-painting. Rose-themed active state with ring indicator. Lets DM surgically control fog per-cell instead of only full Dark/Reveal presets.
 - Added character backup restore — "Restore" button on Home page next to Import. Prompts for encryption password, opens file picker, decrypts AES-256-GCM backup via `importBackup()` from `lib/backup.ts`. Assigns new UUID to avoid conflicts. Lazy-loaded. Sky-blue accent.
@@ -1112,15 +1118,15 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Character portrait gallery (thumbnails on character sheet, click to set active portrait)
 
 ### v9.0 Feature Ideas
-- [ ] Drag-and-drop character reordering in lobby seat cards
+- [x] Drag-and-drop seat reordering in lobby (HTML5 DnD, reorder_seats WS message, DM-only)
 - [x] AI encounter post-mortem (EncounterPostmortem component + POST /api/dm/encounter-postmortem endpoint)
 - [x] Character backup/restore (AES-256-GCM encrypted export/import via lib/backup.ts)
 - [x] Battle map fog reveal undo (Re-fog DM tool — click or drag-paint cells to un-explore)
-- [ ] Dice roll sound customization (pick from different dice sound packs)
-- [ ] Campaign branching (fork a campaign to explore "what if" scenarios)
-- [ ] NPC relationship tracker (track NPC attitudes toward each party member)
-- [ ] Quick combat resolver (auto-resolve simple encounters without full tactical play)
-- [ ] Session scheduling (integrated calendar for planning next game night)
+- [x] Dice roll sound customization (4 packs: Classic/Crystal/Wooden/Metal, selector in volume dropdown)
+- [x] Campaign branching (Fork button in Game header, snapshots state to new room ID)
+- [x] NPC per-party-member attitudes (partyAttitudes map on NpcRecord, expandable per-member UI)
+- [x] Quick combat resolver (auto-resolve encounters, simulates round-by-round, in DMSidebar)
+- [x] Session scheduling (SessionScheduler in DMSidebar Notes, date/time picker, countdown)
 - [ ] Performance dashboard (bundle size, render times, memory usage for dev mode)
 - [x] Campaign export as Foundry VTT module (actors + inventory + quests as journal entries)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
