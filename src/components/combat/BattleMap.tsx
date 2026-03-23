@@ -706,9 +706,17 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   }, [mapImageUrl]);
 
   // Explored cells (persist what players have seen — stays revealed even after moving away)
-  const [explored, setExplored] = useState<boolean[][]>(() =>
-    Array.from({ length: DEFAULT_ROWS }, () => Array(DEFAULT_COLS).fill(false))
-  );
+  // Per-player fog persistence via localStorage
+  const fogKey = myUnitId ? `adventure:fog:${myUnitId}` : null;
+  const [explored, setExplored] = useState<boolean[][]>(() => {
+    if (fogKey) { try { const s = localStorage.getItem(fogKey); if (s) return JSON.parse(s) as boolean[][]; } catch { /* ok */ } }
+    return Array.from({ length: DEFAULT_ROWS }, () => Array(DEFAULT_COLS).fill(false));
+  });
+  useEffect(() => {
+    if (!fogKey) return;
+    const t = setTimeout(() => { try { localStorage.setItem(fogKey, JSON.stringify(explored)); } catch { /* ok */ } }, 2000);
+    return () => clearTimeout(t);
+  }, [explored, fogKey]);
 
   // Initialize token positions when units change
   useEffect(() => {
