@@ -849,7 +849,20 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             const equipped = (character.equipment || EMPTY_EQUIPMENT)[slot];
             const { label, icon } = SLOT_LABELS[slot];
             return (
-              <div key={slot} className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 border ${equipped ? RARITY_BG[equipped.rarity] : 'border-slate-800'} bg-slate-800/50`}>
+              <div
+                key={slot}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const itemId = e.dataTransfer.getData('text/plain');
+                  const item = character.inventory?.find((i) => i.id === itemId);
+                  if (!item) return;
+                  // Only equip matching slot types
+                  const slotMap: Record<string, string[]> = { weapon: ['weapon'], armor: ['armor'], shield: ['shield'], ring: ['ring'] };
+                  if (!slotMap[slot]?.includes(item.type)) return;
+                  updateCharacter(character.id, { equipment: { ...(character.equipment || EMPTY_EQUIPMENT), [slot]: item } } as Partial<typeof character>);
+                }}
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 border ${equipped ? RARITY_BG[equipped.rarity] : 'border-slate-800 border-dashed'} bg-slate-800/50 transition-all`}>
                 <span className="text-sm w-5 text-center">{icon}</span>
                 <div className="flex-1 min-w-0">
                   {equipped ? (
@@ -893,7 +906,11 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
               <div className="text-[10px] text-slate-600 italic text-center py-2">Empty</div>
             ) : (
               (character.inventory || []).map((item) => (
-                <div key={item.id} className={`rounded-lg border ${RARITY_BG[item.rarity]} bg-slate-800/30 px-2.5 py-1.5`}>
+                <div
+                  key={item.id}
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData('text/plain', item.id)}
+                  className={`rounded-lg border ${RARITY_BG[item.rarity]} bg-slate-800/30 px-2.5 py-1.5 cursor-grab active:cursor-grabbing`}>
                   <div className="flex items-start justify-between gap-1">
                     <div className="min-w-0 flex-1">
                       <div className={`text-xs font-semibold ${RARITY_COLORS[item.rarity]}`}>
