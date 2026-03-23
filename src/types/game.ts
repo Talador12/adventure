@@ -134,6 +134,9 @@ export interface Unit {
   legendaryAbilities?: EnemyAbility[]; // abilities usable as legendary actions
   // Lair actions — environmental effects at initiative count 20 (start of round)
   lairActions?: LairAction[];
+  // Aura visualization — radius circle drawn on battle map around this token
+  auraRadius?: number; // in grid cells (e.g., 2 = 10ft)
+  auraColor?: string;  // CSS color with alpha (e.g., 'rgba(56,189,248,0.15)')
 }
 
 export interface LairAction {
@@ -528,6 +531,8 @@ export interface EncounterTemplate {
   enemies: Array<{ name: string; hp: number; maxHp: number; ac: number; attackBonus?: number; damageDie?: string; cr?: string }>;
   description?: string;
   difficulty?: string;
+  /** Freeform DM notes for this encounter (tactics, RP hooks, etc.) */
+  notes?: string;
   createdAt: number;
 }
 

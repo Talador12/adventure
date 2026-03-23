@@ -254,11 +254,12 @@ export default function DMSidebar({
                   onClick={() => {
                     const name = prompt('Template name:', 'My Encounter');
                     if (!name?.trim()) return;
+                    const notes = prompt('DM notes (tactics, RP hooks, etc.):') || '';
                     const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0).map((u) => ({
                       name: u.name, hp: u.hp, maxHp: u.maxHp, ac: u.ac,
                       attackBonus: u.attackBonus, damageDie: u.damageDie, cr: u.cr !== undefined ? String(u.cr) : undefined,
                     }));
-                    const template: EncounterTemplate = { id: crypto.randomUUID().slice(0, 8), name: name.trim(), enemies, createdAt: Date.now() };
+                    const template: EncounterTemplate = { id: crypto.randomUUID().slice(0, 8), name: name.trim(), enemies, notes: notes.trim() || undefined, createdAt: Date.now() };
                     try {
                       const raw = localStorage.getItem('adventure:encounter-templates') || '[]';
                       const templates = JSON.parse(raw) as EncounterTemplate[];
@@ -284,6 +285,9 @@ export default function DMSidebar({
                     if (tmpl && onSpawnMonster) {
                       for (const enemy of tmpl.enemies) {
                         onSpawnMonster({ name: enemy.name, hp: enemy.hp, maxHp: enemy.maxHp, ac: enemy.ac, type: 'enemy', cr: 0, size: 'medium', environments: [], description: '' } as unknown as import('../../data/monsters').Monster, 0);
+                      }
+                      if (tmpl.notes) {
+                        onAddDmMessage(`[Encounter Notes] ${tmpl.notes}`);
                       }
                     }
                   } catch { /* ok */ }

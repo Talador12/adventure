@@ -1043,6 +1043,27 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.stroke();
     }
 
+    // Draw token auras (first pass — behind all tokens)
+    positions.forEach((pos) => {
+      const aUnit = units.find((u) => u.id === pos.unitId);
+      if (!aUnit?.auraRadius || aUnit.auraRadius <= 0) return;
+      if (!effectiveDmMode && !visibility[pos.row]?.[pos.col]) return;
+      const acx = pos.col * CELL_SIZE + CELL_SIZE / 2;
+      const acy = pos.row * CELL_SIZE + CELL_SIZE / 2;
+      const auraPixels = aUnit.auraRadius * CELL_SIZE;
+      const color = aUnit.auraColor || 'rgba(56,189,248,0.12)';
+      const strokeColor = color.replace(/[\d.]+\)$/, '0.35)');
+      ctx.beginPath();
+      ctx.arc(acx, acy, auraPixels, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
     // Draw tokens (only visible ones, unless DM mode)
     positions.forEach((pos) => {
       const unit = units.find((u) => u.id === pos.unitId);

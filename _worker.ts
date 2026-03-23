@@ -1055,6 +1055,25 @@ app.post('/api/dm/session-recap', async (c) => {
   }
 });
 
+// Campaign recap — summarize last N sessions into a catch-up narrative
+app.post('/api/dm/campaign-recap', async (c) => {
+  if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const sessionSummaries = (body.sessions as string[]) || [];
+    const chars = (body.characters as Array<Record<string, unknown>>) || [];
+    if (sessionSummaries.length === 0) return c.json({ recap: '' });
+    const charNames = chars.map((ch) => `${ch.name} (${ch.race} ${ch.class})`).join(', ');
+    const sessionsText = sessionSummaries.slice(-8).map((s, i) => `Session ${i + 1}: ${s}`).join('\n');
+    const prompt = `Write a campaign catch-up summary for a player who missed the last ${sessionSummaries.length} sessions.\nParty: ${charNames}\n\n${sessionsText}\n\nWrite 3-5 sentences in past tense. Cover the major story beats, battles, discoveries, and where the party is now. Dramatic but concise. End with what they're about to face next.`;
+    const recap = await aiText(c.env, [
+      { role: 'system', content: 'You write dramatic D&D campaign recaps. Concise, past tense, focus on story arcs.' },
+      { role: 'user', content: prompt },
+    ], 400);
+    return c.json({ recap: recap.trim() });
+  } catch { return c.json({ recap: '' }); }
+});
+
 // AI wiki lore generation — generate content for wiki pages
 app.post('/api/dm/generate-lore', async (c) => {
   if (!c.env.AI) return c.json({ error: 'AI binding not available' }, 503);

@@ -40,6 +40,7 @@ import CombatMVP from '../components/game/CombatMVP';
 const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostmortem'));
 const PerfDashboard = lazy(() => import('../components/game/PerfDashboard'));
 const KeyboardShortcuts = lazy(() => import('../components/game/KeyboardShortcuts'));
+const WeatherParticles = lazy(() => import('../components/combat/WeatherParticles'));
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -1934,6 +1935,26 @@ export default function Game() {
               Ready?
             </button>
           )}
+          {canUseDMTools && dmHistory.length > 5 && (
+            <button
+              onClick={async () => {
+                const res = await fetch('/api/dm/campaign-recap', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    sessions: dmHistory.slice(-20),
+                    characters: characters.map((c) => ({ name: c.name, race: c.race, class: c.class })),
+                  }),
+                });
+                const data = await res.json() as { recap?: string };
+                if (data.recap) addDmMessage(`📜 Campaign Recap: ${data.recap}`);
+              }}
+              className="text-[9px] px-2 py-0.5 rounded bg-amber-900/40 border border-amber-700/40 text-amber-400 hover:text-amber-300 font-semibold transition-colors"
+              title="AI generates a catch-up summary of the campaign so far"
+            >
+              Recap
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {/* Sound controls — mute toggle + volume slider */}
@@ -2690,7 +2711,9 @@ export default function Game() {
                         setPendingAoESpell(null);
                       }}
                     />
-                    {weather !== 'none' && <div className={`weather-${weather}`} />}
+                    {weather !== 'none' && (
+                      <Suspense fallback={null}><WeatherParticles weather={weather} width={960} height={960} /></Suspense>
+                    )}
                   </div>
                 )}
               </div>

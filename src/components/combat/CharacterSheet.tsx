@@ -3,6 +3,7 @@ import { type Character, type CharacterClass, STAT_NAMES, type StatName, XP_THRE
 import { CONDITION_TOOLTIPS, EXHAUSTION_LEVELS } from '../../data/rules';
 import { STARTING_EQUIPMENT } from '../../data/items';
 import CharacterCard from '../game/CharacterCard';
+import TradePanel from '../game/TradePanel';
 import { useState, useCallback, useMemo } from 'react';
 
 interface CharacterSheetProps {
@@ -1160,6 +1161,29 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           />
         );
       })()}
+
+      {/* Trade with party members */}
+      {characters.length > 1 && (
+        <TradePanel
+          character={character}
+          partyMembers={characters}
+          onTransfer={(fromId, toId, gold, items) => {
+            const from = characters.find((c) => c.id === fromId);
+            const to = characters.find((c) => c.id === toId);
+            if (!from || !to) return;
+            if (gold > 0) {
+              updateCharacter(fromId, { gold: Math.max(0, (from.gold || 0) - gold) });
+              updateCharacter(toId, { gold: (to.gold || 0) + gold });
+            }
+            if (items.length > 0) {
+              const itemKeys = new Set(items.map((i) => i.id || i.name));
+              updateCharacter(fromId, { inventory: (from.inventory || []).filter((i) => !itemKeys.has(i.id || i.name)) } as Partial<typeof from>);
+              updateCharacter(toId, { inventory: [...(to.inventory || []), ...items] } as Partial<typeof to>);
+            }
+          }}
+          onMessage={() => {}}
+        />
+      )}
 
       {/* Character Journal — private diary entries */}
       <div className="border-t border-slate-700/50 pt-3 mt-3">
