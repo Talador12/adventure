@@ -7,6 +7,18 @@ import { GameProvider } from './contexts/GameContext';
 import Home from './pages/Home'; // Home is the landing page — keep eagerly loaded
 import './styles.css';
 
+// PWA install prompt
+let deferredInstallPrompt: Event | null = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; });
+}
+export function canInstallPWA(): boolean { return !!deferredInstallPrompt; }
+export async function installPWA(): Promise<void> {
+  if (!deferredInstallPrompt) return;
+  (deferredInstallPrompt as unknown as { prompt: () => void }).prompt();
+  deferredInstallPrompt = null;
+}
+
 // Apply preferences from localStorage before React renders (no flash)
 if (typeof window !== 'undefined') {
   if (localStorage.getItem('adventure:lowfx') === '1') document.documentElement.classList.add('low-fx');

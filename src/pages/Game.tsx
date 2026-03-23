@@ -1054,6 +1054,8 @@ export default function Game() {
           setNpcDialogueHistory((prev) => [...prev, `${selectedCharacter.name}: ${playerMessage}`, `${npcName}: ${npcText}`]);
           // Broadcast NPC dialogue to all players
           sendRef.current({ type: 'dm_npc', npcName, dialogue: npcText });
+          // TTS: speak NPC dialogue with NPC-specific voice
+          import('../lib/tts').then(({ speakAsNPC, isTTSEnabled }) => { if (isTTSEnabled()) speakAsNPC(npcName, npcText); });
           // Persist NPC dialogue to D1
           persistChatMessage(room, { username: npcName, type: 'dm', text: npcText, metadata: { npcName, npcRole } });
         } else {
