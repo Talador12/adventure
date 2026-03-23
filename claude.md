@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.2.0
+## Current Version: v7.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added keyboard shortcut overlay — ? key toggles modal with 10 shortcuts (Escape to close, skips when typing in inputs). Lazy-loaded.
+- Added party loot split calculator — `LootSplitter` in DMSidebar Encounter tab. Auto-divides gold evenly with remainder to first member. Preview before applying. Yellow-themed.
+- Added GitHub OAuth login — third auth provider alongside Discord and Google. Full OAuth flow with code exchange, JWT, Octocat SVG button on Home.tsx. `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` bindings.
+- Added spell effect templates library — `SpellTemplates` component: save/load custom AoE shapes (circle/cone/line/cube) with name, radius slider, color picker. localStorage-backed per campaign. Purple-themed.
+- Added ambient sound mixer — layer multiple mood loops simultaneously with per-channel volume sliders. `mixerAddChannel/RemoveChannel/SetVolume/GetChannels/StopAll` in useSoundFX. Teal-themed mixer UI in DMSidebar.
 - Added map fog opacity slider — DM can adjust explored-but-not-visible fog dimness (10-90%). Slider in fog toolbar section. Wired into canvas draw callback.
 - Added AI backstory continuation — `POST /api/backstory/continue` endpoint generates next story chapter using existing backstory + recent journal entries. "Continue Story" button on CharacterSheet journal. Entries prefixed with [AI].
 - Added player readiness check — DM "Ready?" button broadcasts check to all players. Banner shows per-player status (emerald pills). Players click "Ready!" to confirm. Uses existing game_event relay.
@@ -1108,7 +1113,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Multi-language UI (i18n framework + Spanish/French/German/Japanese translations)
 - [ ] Plugin system (load custom JS modules as game extensions)
 - [x] Campaign templates (4 starter adventures with narration, quests, map coords)
-- [ ] OAuth with GitHub (expand login options beyond Discord + Google)
+- [x] OAuth with GitHub (full OAuth flow, JWT, Octocat SVG button, GITHUB_CLIENT_ID/SECRET bindings)
 - [x] Google OAuth login (Phase 2 of D1 — full OAuth flow + ensureUser + JWT)
 - [x] Rich text wiki editor (markdown rendering with headers/bold/italic/code/links/lists)
 - [x] Battle map fog: per-player persistence (explored grid saved to localStorage per myUnitId)
@@ -1142,15 +1147,26 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Fog shape tools for batch reveal/hide (circle/rect, two-click model, 4 new DM tools)
 - [x] Initiative lock toggle (DM freezes initiative order during combat, amber lock button)
 - [x] Encounter history search/filter (search by kills/spells/log text, difficulty filter pills)
-- [ ] Ambient sound mixer (layer multiple ambient loops with per-channel volume)
+- [x] Ambient sound mixer (layer multiple moods with per-channel volume sliders, mixer UI in DMSidebar)
 - [x] Map fog-of-war brush size (1/3/5 cell selector, brushCells helper, works with all paint tools)
 - [x] Combat damage graph (CombatDamageGraph canvas bar chart, round markers in log, hover tooltip)
 - [x] Player readiness check (DM Ready? button, per-player banner, game_event relay)
-- [ ] Spell effect templates library (save/load custom AoE shapes for reuse)
+- [x] Spell effect templates library (save/load AoE shapes: circle/cone/line/cube, radius, color picker)
 - [x] Character backstory AI continuation (POST /api/backstory/continue, Continue Story on CharacterSheet)
 - [x] Map layer opacity controls (fog dim opacity slider 10-90% in DM toolbar)
+- [x] Party loot split calculator (auto-divide gold evenly among party, DMSidebar)
+- [x] Keyboard shortcut overlay (? key toggles modal with 10 shortcuts, lazy-loaded)
 - [x] Campaign export as Foundry VTT module (actors + inventory + quests as journal entries)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
+
+### v11.0 Feature Ideas
+- [ ] Combat timeline scrubber (replay turns visually from EncounterLog data)
+- [ ] DM encounter notes (freeform text per encounter template, persisted)
+- [ ] Token aura visualization (radius circles around tokens for spells/abilities)
+- [ ] Map weather particle effects on canvas (rain drops, snow, sand, fog wisps)
+- [ ] Spell slot recovery tracker (short rest half-slot recovery for Wizard Arcane Recovery)
+- [ ] Player character trading (exchange items between party members with approval)
+- [ ] Campaign recap AI summary (AI summarizes last N sessions into catch-up text)
 
 ### v6.0 Feature Ideas
 - [x] AI DM voice narration (browser SpeechSynthesis API, zero deps, works offline)
