@@ -660,6 +660,35 @@ export default function DMSidebar({
               </div>
             )}
 
+            {/* DM Sound Effect Triggers */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Sound Effects</label>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { label: '🎲 Dice', fn: 'playDiceRoll' },
+                  { label: '💥 Crit', fn: 'playCritical' },
+                  { label: '😬 Fumble', fn: 'playFumble' },
+                  { label: '⚔️ Hit', fn: 'playCombatHit' },
+                  { label: '💨 Miss', fn: 'playCombatMiss' },
+                  { label: '💀 Death', fn: 'playEnemyDeath' },
+                  { label: '✨ Spell', fn: 'playMagicSpell' },
+                  { label: '🔄 Turn', fn: 'playTurnChange' },
+                  { label: '⚔️ Fight', fn: 'playEncounterStart' },
+                  { label: '⬆️ Level', fn: 'playLevelUp' },
+                  { label: '💚 Heal', fn: 'playHealing' },
+                  { label: '💰 Loot', fn: 'playLootDrop' },
+                ].map((sfx) => (
+                  <button
+                    key={sfx.fn}
+                    onClick={() => import('../../hooks/useSoundFX').then((m) => (m as unknown as Record<string, () => void>)[sfx.fn]?.())}
+                    className="text-[8px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700/50 text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-all"
+                  >
+                    {sfx.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* NPC Memory Viewer */}
             {roomId && (
               <NpcMemoryViewer roomId={roomId} />

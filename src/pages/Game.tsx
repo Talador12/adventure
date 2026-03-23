@@ -44,6 +44,7 @@ import { useVoiceChat } from '../hooks/useVoiceChat';
 import CombatReplay from '../components/game/CombatReplay';
 import WorldWiki, { type WikiPage } from '../components/game/WorldWiki';
 import CampaignCalendar, { type CalendarState } from '../components/game/CampaignCalendar';
+import CharacterCompare from '../components/game/CharacterCompare';
 import { startRecording, recordEvent, stopRecording, isRecording } from '../lib/combatRecorder';
 import type { CombatRecording } from '../lib/combatRecorder';
 import Achievements from '../components/game/Achievements';
@@ -253,6 +254,7 @@ export default function Game() {
   const [relationships, setRelationships] = useState<import('../components/game/RelationshipGraph').RelationshipEdge[]>([]);
   const [aiBackend, setAiBackend] = useState<string>('...');
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
   const [recordings, setRecordings] = useState<CombatRecording[]>([]);
   const [wikiPages, setWikiPages] = useState<WikiPage[]>([]);
   const [calendar, setCalendar] = useState<CalendarState>({ currentDay: 1, events: [] });
@@ -2588,6 +2590,11 @@ export default function Game() {
               <button onClick={() => { setShowSheet(true); setShowNotes(false); }} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showSheet ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                 Sheet
               </button>
+              {characters.length >= 2 && (
+                <button onClick={() => setShowCompare(true)} className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 border-transparent text-slate-500 hover:text-slate-300" title="Compare two characters">
+                  ⚖️
+                </button>
+              )}
               <button onClick={() => { setShowSheet(false); setShowNotes(true); }} className={`flex-1 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${showNotes ? 'border-[#F38020] text-[#F38020]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                 Notes
               </button>
@@ -2706,6 +2713,11 @@ export default function Game() {
       />
 
       {/* Keyboard Shortcut Help Overlay */}
+      {/* Character comparison modal */}
+      {showCompare && (
+        <CharacterCompare characters={characters} onClose={() => setShowCompare(false)} />
+      )}
+
       {/* Combat Replay viewer */}
       {showReplay && (
         <CombatReplay recording={showReplay} onClose={() => setShowReplay(null)} />
