@@ -870,6 +870,17 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
               Re-roll Gear
             </button>
           )}
+          <button
+            onClick={() => {
+              const pw = prompt('Encryption password (remember this!):');
+              if (!pw) return;
+              import('../../lib/backup').then(({ exportBackup }) => exportBackup(character, pw));
+            }}
+            className="text-[8px] text-sky-400 hover:text-sky-300 transition-colors font-semibold"
+            title="Download encrypted character backup"
+          >
+            Backup
+          </button>
         </div>
         <div className="space-y-1.5">
           {(['weapon', 'armor', 'shield', 'ring'] as EquipSlot[]).map((slot) => {
