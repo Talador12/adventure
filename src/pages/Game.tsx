@@ -38,6 +38,7 @@ import DiceStats from '../components/game/DiceStats';
 import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
 const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostmortem'));
+const PerfDashboard = lazy(() => import('../components/game/PerfDashboard'));
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -2845,6 +2846,8 @@ export default function Game() {
           onCombatLog={(msg) => setCombatLog((prev) => [...prev, msg])}
         />
       )}
+      {/* Performance dashboard — toggle with Ctrl+Shift+P */}
+      <Suspense fallback={null}><PerfDashboard /></Suspense>
     </div>
   );
 }
