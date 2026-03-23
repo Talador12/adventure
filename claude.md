@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.3.0
+## Current Version: v7.4.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added player character trading — `TradePanel` on CharacterSheet: send gold + items to other party members. Immediate transfer, amber-themed.
+- Added campaign recap AI summary — `POST /api/dm/campaign-recap` summarizes last N sessions into catch-up text. "Recap" button in Game header (DM only, amber).
+- Added DM encounter notes — `EncounterTemplate.notes` field prompted on save, displayed in DM history when loading. Freeform tactics/RP hooks.
+- Added map weather particle effects — `WeatherParticles` canvas overlay: rain (blue streaks), snow (white flakes), sandstorm (tan), fog (large blobs). rAF-driven, pointer-events-none.
+- Added token aura visualization — `Unit.auraRadius` + `auraColor` fields. Two-pass draw: auras behind tokens (dashed circle, fill+stroke). "Set Aura" button in CombatToolbar (DM only).
 - Added keyboard shortcut overlay — ? key toggles modal with 10 shortcuts (Escape to close, skips when typing in inputs). Lazy-loaded.
 - Added party loot split calculator — `LootSplitter` in DMSidebar Encounter tab. Auto-divides gold evenly with remainder to first member. Preview before applying. Yellow-themed.
 - Added GitHub OAuth login — third auth provider alongside Discord and Google. Full OAuth flow with code exchange, JWT, Octocat SVG button on Home.tsx. `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` bindings.
@@ -1161,12 +1166,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ### v11.0 Feature Ideas
 - [ ] Combat timeline scrubber (replay turns visually from EncounterLog data)
-- [ ] DM encounter notes (freeform text per encounter template, persisted)
-- [ ] Token aura visualization (radius circles around tokens for spells/abilities)
-- [ ] Map weather particle effects on canvas (rain drops, snow, sand, fog wisps)
+- [x] DM encounter notes (freeform text per encounter template, shown on load)
+- [x] Token aura visualization (two-pass draw, Set Aura button, dashed circle + fill)
+- [x] Map weather particle effects (WeatherParticles canvas: rain, snow, sand, fog)
 - [ ] Spell slot recovery tracker (short rest half-slot recovery for Wizard Arcane Recovery)
-- [ ] Player character trading (exchange items between party members with approval)
-- [ ] Campaign recap AI summary (AI summarizes last N sessions into catch-up text)
+- [x] Player character trading (TradePanel: gold + items between party members)
+- [x] Campaign recap AI summary (POST /api/dm/campaign-recap, Recap button in header)
 
 ### v6.0 Feature Ideas
 - [x] AI DM voice narration (browser SpeechSynthesis API, zero deps, works offline)
