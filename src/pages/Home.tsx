@@ -36,6 +36,15 @@ function getInitialLowFx(): boolean {
 export default function Home() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [lowFx, setLowFx] = useState(getInitialLowFx);
+  const [showInstall, setShowInstall] = useState(() => {
+    try { return typeof window !== 'undefined' && 'BeforeInstallPromptEvent' in window; } catch { return false; }
+  });
+  // Re-check install availability after mount (prompt may arrive late)
+  useEffect(() => {
+    const check = () => import('../main').then(({ canInstallPWA }) => { if (canInstallPWA()) setShowInstall(true); });
+    const timer = setTimeout(check, 2000);
+    return () => clearTimeout(timer);
+  }, []);
   const [accentColor, setAccentColor] = useState(() => {
     try { return localStorage.getItem('adventure:accent') || '#F38020'; } catch { return '#F38020'; }
   });
@@ -339,6 +348,16 @@ export default function Home() {
         </div>
 
         <div className="flex gap-2 sm:gap-3 items-center relative z-10">
+          {/* PWA install button */}
+          {showInstall && (
+            <button
+              onClick={() => { import('../main').then(({ installPWA }) => installPWA()); setShowInstall(false); }}
+              className="text-[9px] px-2 py-1 rounded font-bold bg-[#F38020] text-white hover:bg-[#f9a05f] transition-all"
+              title="Install Adventure as an app"
+            >
+              Install
+            </button>
+          )}
           {/* Accent color picker */}
           <input
             type="color"

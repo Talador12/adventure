@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v6.0.0
+## Current Version: v6.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added PWA install prompt — `manifest.json` with app name, icons, theme color. `beforeinstallprompt` event captured in main.tsx. "Install" button on Home page (orange, shows when browser supports install). `canInstallPWA()` + `installPWA()` exports.
+- Added per-NPC voice customization — `speakAsNPC()` in tts.ts assigns a deterministic unique voice per NPC name (hash-based voice index + varied pitch/rate). Each NPC sounds different. DM narration uses the default dramatic voice, NPCs get their own. Wired into the NPC dialogue flow.
 - Added AI DM voice narration — `lib/tts.ts` wraps the browser's SpeechSynthesis API. Zero dependencies, works offline. Auto-speaks DM narration when TTS is enabled. Preferred voice selection (tries UK English Male/Daniel/Samantha). Toggle button in Game header (🔊 TTS / 🔇). Lazy-loaded.
 - Added drag-and-drop inventory management — inventory items are `draggable` with grab cursor. Equipment slots are drop targets that accept matching item types (weapon→weapon slot, armor→armor slot, etc.). Drop equips the item. Empty slots show dashed borders as visual hint.
 - Added map image drag-and-drop import — DM can drag a PNG/JPG onto the battle map to set it as the background. FileReader converts to data URL. `BattleMap.tsx`.
@@ -1066,7 +1068,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
 
 ### v7.0 Feature Ideas
-- [ ] AI DM voice: configurable voice per NPC (different voice for each named NPC)
+- [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
 - [ ] Multi-language UI (i18n framework + Spanish/French/German/Japanese translations)
 - [ ] Plugin system (load custom JS modules as game extensions)
 - [ ] Campaign templates (pre-built adventures with maps, encounters, and lore)
@@ -1075,7 +1077,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Battle map fog: revealed area persistence per player (each player's explored fog saved separately)
 - [ ] Hot-seat mode (pass-and-play on a single device for in-person groups)
 - [ ] Integration with D&D Beyond API (live sync character data bidirectionally)
-- [ ] PWA install prompt (add to home screen for app-like experience)
+- [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 
 ### v6.0 Feature Ideas
 - [x] AI DM voice narration (browser SpeechSynthesis API, zero deps, works offline)
