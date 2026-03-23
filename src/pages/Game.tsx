@@ -40,6 +40,7 @@ import CombatMVP from '../components/game/CombatMVP';
 const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostmortem'));
 const PerfDashboard = lazy(() => import('../components/game/PerfDashboard'));
 const KeyboardShortcuts = lazy(() => import('../components/game/KeyboardShortcuts'));
+const WeatherParticles = lazy(() => import('../components/combat/WeatherParticles'));
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -2690,7 +2691,9 @@ export default function Game() {
                         setPendingAoESpell(null);
                       }}
                     />
-                    {weather !== 'none' && <div className={`weather-${weather}`} />}
+                    {weather !== 'none' && (
+                      <Suspense fallback={null}><WeatherParticles weather={weather} width={960} height={960} /></Suspense>
+                    )}
                   </div>
                 )}
               </div>
