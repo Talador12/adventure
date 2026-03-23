@@ -145,7 +145,7 @@ function getRollPresentationTiming(roll: {
 // DM-only message types that require authorization
 const DM_MESSAGE_TYPES = new Set(['dm_narrate', 'dm_npc', 'dm_action', 'veto_roll', 'set_roll_interpolation_mode']);
 // DM-only seat management messages (set_dm_type handled separately since it can un-DM the sender)
-const DM_SEAT_MESSAGES = new Set(['set_seat_type', 'add_seat', 'remove_seat', 'kick_player']);
+const DM_SEAT_MESSAGES = new Set(['set_seat_type', 'add_seat', 'remove_seat', 'kick_player', 'reorder_seats']);
 
 export class Lobby {
   state: DurableObjectState;
@@ -923,6 +923,25 @@ export class Lobby {
           return;
         }
         this.seats = this.seats.filter((s) => s.id !== removeSeat.id);
+        this.persistState();
+        this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
+        break;
+      }
+
+      case 'reorder_seats': {
+        // DM reorders seat positions via drag-and-drop
+        const seatIds = data.seatIds as string[];
+        if (!seatIds || !Array.isArray(seatIds) || seatIds.length !== this.seats.length) {
+          server.send(JSON.stringify({ type: 'error', message: 'Invalid seat order', timestamp: Date.now() }));
+          return;
+        }
+        const seatMap = new Map(this.seats.map((s) => [s.id, s]));
+        const reordered = seatIds.map((id) => seatMap.get(id)).filter(Boolean) as typeof this.seats;
+        if (reordered.length !== this.seats.length) {
+          server.send(JSON.stringify({ type: 'error', message: 'Seat IDs do not match', timestamp: Date.now() }));
+          return;
+        }
+        this.seats = reordered;
         this.persistState();
         this.broadcast({ type: 'seats_updated', seats: this.seats, timestamp: Date.now() });
         break;

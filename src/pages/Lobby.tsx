@@ -71,6 +71,8 @@ export default function Lobby() {
   const diceRef = useRef<DiceRollerHandle>(null);
   const doodleRef = useRef<DoodlePadHandle>(null);
   const [drawingPlayer, setDrawingPlayer] = useState<string | null>(null);
+  const [dragSeatId, setDragSeatId] = useState<string | null>(null);
+  const [dragOverSeatId, setDragOverSeatId] = useState<string | null>(null);
   const drawingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map()); // playerId -> username
   const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -1215,8 +1217,36 @@ export default function Lobby() {
               {seats.map((seat) => (
                 <div
                   key={seat.id}
+                  draggable={isDM}
+                  onDragStart={(e) => {
+                    if (!isDM) return;
+                    setDragSeatId(seat.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', seat.id);
+                  }}
+                  onDragOver={(e) => { if (isDM && dragSeatId && dragSeatId !== seat.id) { e.preventDefault(); setDragOverSeatId(seat.id); } }}
+                  onDragLeave={() => { if (dragOverSeatId === seat.id) setDragOverSeatId(null); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!isDM || !dragSeatId || dragSeatId === seat.id) { setDragSeatId(null); setDragOverSeatId(null); return; }
+                    const fromIdx = seats.findIndex((s) => s.id === dragSeatId);
+                    const toIdx = seats.findIndex((s) => s.id === seat.id);
+                    if (fromIdx < 0 || toIdx < 0) { setDragSeatId(null); setDragOverSeatId(null); return; }
+                    const next = [...seats];
+                    const [moved] = next.splice(fromIdx, 1);
+                    next.splice(toIdx, 0, moved);
+                    setSeats(next);
+                    send({ type: 'reorder_seats', seatIds: next.map((s) => s.id) });
+                    setDragSeatId(null);
+                    setDragOverSeatId(null);
+                  }}
+                  onDragEnd={() => { setDragSeatId(null); setDragOverSeatId(null); }}
                   className={`seat-card flex flex-col items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border min-w-[110px] sm:min-w-[130px] transition-all backdrop-blur-sm animate-card-reveal ${
                     seat.ready ? 'seat-ready' : ''
+                  } ${isDM ? 'cursor-grab active:cursor-grabbing' : ''} ${
+                    dragSeatId === seat.id ? 'opacity-40' : ''
+                  } ${
+                    dragOverSeatId === seat.id ? 'ring-2 ring-amber-400/60 scale-[1.03]' : ''
                   } ${
                     seat.type === 'human' && seat.playerId === wsPlayerId
                       ? 'border-[#F38020]/40 bg-[#F38020]/[0.08] shadow-lg shadow-orange-900/10'
