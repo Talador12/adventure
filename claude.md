@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.4.0
+## Current Version: v7.5.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added encounter XP tracker — `EncounterXPTracker` below initiative bar: live progress bar (defeated/total XP), per-player share, defeated count. Amber gradient.
+- Added initiative tiebreaker display — shows DEX mod `(+N)` in amber when two units share the same initiative value. Only appears during ties.
+- Added mass heal/damage tool — `MassHPTool` in DMSidebar Encounter tab: checkbox unit selection, damage/heal toggle, quick-select "All enemies"/"All players". Apply to all selected at once.
+- Added spell slot recovery panel — `SpellSlotRecovery` component: visual slot dots (violet=available, emerald=recovering). Wizard Arcane Recovery (select slots up to ceil(level/2) levels). Warlock Pact Magic (recover all slots button).
+- Audited: combat timeline scrubber already exists as `CombatReplay.tsx` (full implementation with scrubber, play/pause, speed control, mini-map). Marked done.
+- Audited: concentration check automation already fully implemented in `damageUnit()` (auto CON save, War Caster feat support, messages in combat log). Marked done.
 - Added player character trading — `TradePanel` on CharacterSheet: send gold + items to other party members. Immediate transfer, amber-themed.
 - Added campaign recap AI summary — `POST /api/dm/campaign-recap` summarizes last N sessions into catch-up text. "Recap" button in Game header (DM only, amber).
 - Added DM encounter notes — `EncounterTemplate.notes` field prompted on save, displayed in DM history when loading. Freeform tactics/RP hooks.
@@ -1165,11 +1171,20 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 
 ### v11.0 Feature Ideas
-- [ ] Combat timeline scrubber (replay turns visually from EncounterLog data)
+- [x] Combat timeline scrubber (already existed as CombatReplay.tsx with full scrubber, play/pause, mini-map)
 - [x] DM encounter notes (freeform text per encounter template, shown on load)
 - [x] Token aura visualization (two-pass draw, Set Aura button, dashed circle + fill)
 - [x] Map weather particle effects (WeatherParticles canvas: rain, snow, sand, fog)
-- [ ] Spell slot recovery tracker (short rest half-slot recovery for Wizard Arcane Recovery)
+- [x] Spell slot recovery tracker (SpellSlotRecovery: Wizard Arcane Recovery + Warlock Pact Magic)
+
+### v12.0 Feature Ideas
+- [x] Mass heal/damage tool (MassHPTool: checkbox unit selection, damage/heal toggle, apply to all)
+- [x] Encounter XP budget display (EncounterXPTracker: live progress bar, per-player share)
+- [x] Initiative tiebreaker display (DEX mod shown on ties in InitiativeBar)
+- [ ] Token HP flytext (animated +/- numbers floating above tokens when HP changes)
+- [ ] Map waypoint path drawing (DM draws movement paths that animate tokens along them)
+- [ ] Combat encounter templates from AI (generate balanced encounters based on party level)
+- [ ] Session notes auto-save to cloud (server-side DM notes per campaign, not just localStorage)
 - [x] Player character trading (TradePanel: gold + items between party members)
 - [x] Campaign recap AI summary (POST /api/dm/campaign-recap, Recap button in header)
 
