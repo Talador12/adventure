@@ -13,6 +13,7 @@ import DowntimeActivities from './DowntimeActivities';
 import CustomMonsterCreator from './CustomMonsterCreator';
 import QuickCombatResolver from './QuickCombatResolver';
 import SessionScheduler from './SessionScheduler';
+import SpellTemplates from './SpellTemplates';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
@@ -445,6 +446,15 @@ export default function DMSidebar({
               }
               return null;
             })()}
+            {/* Spell Effect Templates — save/reuse AoE shapes */}
+            <div className="border-t border-slate-700/50 pt-3">
+              <SpellTemplates
+                roomId={roomId}
+                onApply={(template) => {
+                  onAddDmMessage(`Applied spell template: ${template.name} (${template.shape}, ${template.radiusCells * 5}ft)`);
+                }}
+              />
+            </div>
             {/* Custom Monster Creator */}
             {!inCombat && (
               <div className="border-t border-slate-700/50 pt-3">
