@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added map grid size selector — dropdown in zoom controls lets DM change from 15×15 to 40×40. Resets terrain + fog on change. `BattleMap.tsx`.
+- Added dice roll distribution chart — bar chart in DiceStats showing d20 value distribution (1-20). Nat 20s highlighted in gold, nat 1s in red. Shows count per value with tooltips. Summary line with nat 20/nat 1 counts.
+- Marked encounter difficulty estimator as already implemented (XP budget breakdown in DMSidebar).
 - Added auto-save indicator in Game header — shows ⏳ (saving, amber pulse), ✓ saved (emerald), or ✗ error (red). Tooltip shows last saved time. Uses existing `saveStatus` from `useCampaignPersistence`. Disappears when idle.
 - Added quick NPC generator — `GET /api/dm/random-npc` generates a random NPC with name, race, class/trade, personality, quirk, and motivation via `aiText()`. Returns JSON. Routes through unified AI client.
 - Added v8.0 roadmap: 10 new ideas (dice analytics, auto-save indicator, NPC generator, encounter estimator, SFX triggers, grid sizing, portrait gallery, Foundry export).
@@ -1086,14 +1089,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Integration with D&D Beyond API (live sync character data bidirectionally)
 
 ### v8.0 Feature Ideas
-- [ ] Dice roll history analytics (per-player d20 distribution chart — are your dice cursed?)
+- [x] Dice roll history analytics (d20 distribution bar chart with nat 20/nat 1 highlights)
 - [ ] Session timer pause/resume from DM sidebar (currently only in Game header)
 - [x] Auto-save indicator (⏳/✓/✗ in Game header from existing saveStatus)
 - [ ] Character comparison view (side-by-side stat comparison between two characters)
 - [x] Quick NPC generator (GET /api/dm/random-npc via unified AI client)
-- [ ] Encounter difficulty estimator (show XP budget vs party before rolling initiative)
+- [x] Encounter difficulty estimator (XP budget breakdown + enemy XP + difficulty label — already implemented)
 - [ ] Sound effect trigger buttons for DM (play thunder, door creak, sword clash on demand)
-- [ ] Map grid size selector (change from 20x20 to 30x30, 40x40, etc.)
+- [x] Map grid size selector (15×15 to 40×40 dropdown in zoom controls)
 - [ ] Character portrait gallery (browse all generated portraits for a character)
 - [ ] Campaign export as Foundry VTT module (export actors + scenes for Foundry import)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)

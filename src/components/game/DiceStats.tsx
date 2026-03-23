@@ -124,7 +124,10 @@ function computeStats(rolls: DiceRoll[]) {
     else { luckLabel = 'Cursed dice'; luckColor = 'text-red-400'; }
   }
 
-  return { byDie, totalRolls, totalCrits, totalFumbles, d20Rolls: d20Rolls.length, byPlayer, streaks, luckRating, luckLabel, luckColor };
+  // D20 distribution: count of each value 1-20
+  const d20Distribution = Array.from({ length: 20 }, (_, i) => d20Rolls.filter((r) => r.value === i + 1).length);
+
+  return { byDie, totalRolls, totalCrits, totalFumbles, d20Rolls: d20Rolls.length, byPlayer, streaks, luckRating, luckLabel, luckColor, d20Distribution };
 }
 
 export default function DiceStats() {
@@ -173,6 +176,32 @@ export default function DiceStats() {
                   </div>
                   <span className="text-[8px] text-green-500">+100</span>
                 </div>
+              </div>
+            )}
+
+            {/* D20 Distribution Chart */}
+            {stats.d20Rolls > 0 && (
+              <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-3">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">d20 Distribution</div>
+                <div className="flex items-end gap-px h-16">
+                  {stats.d20Distribution.map((count, i) => {
+                    const max = Math.max(1, ...stats.d20Distribution);
+                    const height = (count / max) * 100;
+                    const isNat20 = i === 19;
+                    const isNat1 = i === 0;
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5" title={`${i + 1}: ${count} roll${count !== 1 ? 's' : ''}`}>
+                        <div className="w-full rounded-t" style={{ height: `${Math.max(2, height)}%`, backgroundColor: isNat20 ? '#fbbf24' : isNat1 ? '#ef4444' : count > 0 ? '#F38020' : '#1e293b' }} />
+                        <span className="text-[6px] text-slate-600">{i + 1}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[8px] text-slate-600 text-center mt-1">
+                  {stats.d20Distribution[19] > 0 ? `${stats.d20Distribution[19]} nat 20${stats.d20Distribution[19] !== 1 ? 's' : ''}` : ''}
+                  {stats.d20Distribution[19] > 0 && stats.d20Distribution[0] > 0 ? ' · ' : ''}
+                  {stats.d20Distribution[0] > 0 ? `${stats.d20Distribution[0]} nat 1${stats.d20Distribution[0] !== 1 ? 's' : ''}` : ''}
+                </p>
               </div>
             )}
 
