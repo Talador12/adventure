@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v6.5.0
+## Current Version: v6.6.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added DM sound effect trigger buttons — 12 SFX buttons (dice, crit, fumble, hit, miss, death, spell, turn, fight, level, heal, loot) in DMSidebar Notes tab. Lazy-loaded via dynamic import. Uses existing `useSoundFX` functions.
+- Added character comparison view — ⚖️ button in right sidebar tab bar opens a modal with two character dropdowns. Side-by-side stat comparison: level, HP, AC, all 6 ability scores, gold, items, spells. Higher values highlighted in emerald.
 - Added map grid size selector — dropdown in zoom controls lets DM change from 15×15 to 40×40. Resets terrain + fog on change. `BattleMap.tsx`.
 - Added dice roll distribution chart — bar chart in DiceStats showing d20 value distribution (1-20). Nat 20s highlighted in gold, nat 1s in red. Shows count per value with tooltips. Summary line with nat 20/nat 1 counts.
 - Marked encounter difficulty estimator as already implemented (XP budget breakdown in DMSidebar).
@@ -1092,10 +1094,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Dice roll history analytics (d20 distribution bar chart with nat 20/nat 1 highlights)
 - [ ] Session timer pause/resume from DM sidebar (currently only in Game header)
 - [x] Auto-save indicator (⏳/✓/✗ in Game header from existing saveStatus)
-- [ ] Character comparison view (side-by-side stat comparison between two characters)
+- [x] Character comparison view (⚖️ modal with side-by-side stats, higher values highlighted)
 - [x] Quick NPC generator (GET /api/dm/random-npc via unified AI client)
 - [x] Encounter difficulty estimator (XP budget breakdown + enemy XP + difficulty label — already implemented)
-- [ ] Sound effect trigger buttons for DM (play thunder, door creak, sword clash on demand)
+- [x] Sound effect trigger buttons for DM (12 SFX buttons in DMSidebar, lazy-loaded)
 - [x] Map grid size selector (15×15 to 40×40 dropdown in zoom controls)
 - [ ] Character portrait gallery (browse all generated portraits for a character)
 - [ ] Campaign export as Foundry VTT module (export actors + scenes for Foundry import)
