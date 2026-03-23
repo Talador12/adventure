@@ -211,6 +211,8 @@ export default function Game() {
   const [adventureStarted] = [dmHistory.length > 0]; // auto-detect from history
   const [actionInput, setActionInput] = useState('');
   const [initiativeLocked, setInitiativeLocked] = useState(false);
+  // Ready check system
+  const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [soundVolume, setSoundVolume] = useState(getVolume());
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -584,6 +586,8 @@ export default function Game() {
     onPlayerRecovered: (id) => setStalePlayers((prev) => { const n = new Set(prev); n.delete(id); return n; }),
     onVoiceSignal: (fromId, fromUsername, signalType, signal) => voiceRef.current?.handleVoiceSignal(fromId, fromUsername, signalType, signal),
     onVoiceState: (playerId, isTalking, isMuted) => voiceRef.current?.handleVoiceState(playerId, isTalking, isMuted),
+    onReadyCheck: () => setReadyCheck({ active: true, responses: {}, startedAt: Date.now() }),
+    onReadyResponse: (playerId, playerName) => setReadyCheck((prev) => prev ? { ...prev, responses: { ...prev.responses, [playerName]: true } } : null),
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
@@ -1915,6 +1919,20 @@ export default function Game() {
               Fork
             </button>
           )}
+          {canUseDMTools && !inCombat && (
+            <button
+              onClick={() => {
+                const responses: Record<string, boolean> = {};
+                characters.forEach((c) => { responses[c.name] = false; });
+                setReadyCheck({ active: true, responses, startedAt: Date.now() });
+                broadcastGameEvent('ready_check', {});
+              }}
+              className="text-[9px] px-2 py-0.5 rounded bg-emerald-900/40 border border-emerald-700/40 text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+              title="Send a ready check to all players"
+            >
+              Ready?
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {/* Sound controls — mute toggle + volume slider */}
@@ -2111,6 +2129,36 @@ export default function Game() {
             dmPersonality={dmPersonality}
             onSetDmPersonality={(p) => { setDmPersonality(p); try { localStorage.setItem(`adventure:dm-personality:${room}`, p); } catch { /* ok */ } }}
           />
+        )}
+
+        {/* Ready check banner */}
+        {readyCheck?.active && (
+          <div className="mx-4 mb-2 rounded-xl border border-emerald-600/30 bg-gradient-to-r from-emerald-950/40 to-slate-900/60 px-4 py-2.5 flex items-center gap-3 animate-fade-in-up">
+            <span className="text-emerald-400 text-sm animate-pulse">&#9679;</span>
+            <div className="flex-1">
+              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Ready Check</span>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {Object.entries(readyCheck.responses).map(([name, ready]) => (
+                  <span key={name} className={`text-[10px] px-2 py-0.5 rounded-full border ${ready ? 'border-emerald-600/50 bg-emerald-900/30 text-emerald-400' : 'border-slate-700 bg-slate-800/50 text-slate-500'}`}>
+                    {ready ? '✓' : '○'} {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {!canUseDMTools && !readyCheck.responses[selectedCharacter?.name || ''] && (
+              <button
+                onClick={() => {
+                  if (!selectedCharacter) return;
+                  setReadyCheck((prev) => prev ? { ...prev, responses: { ...prev.responses, [selectedCharacter.name]: true } } : null);
+                  broadcastGameEvent('ready_response', { playerId: wsPlayerId, playerName: selectedCharacter.name });
+                }}
+                className="px-3 py-1.5 bg-emerald-700/50 hover:bg-emerald-600/60 border border-emerald-500/50 text-emerald-200 text-xs font-bold rounded-lg transition-all"
+              >
+                Ready!
+              </button>
+            )}
+            <button onClick={() => setReadyCheck(null)} className="text-xs text-slate-600 hover:text-slate-400">Dismiss</button>
+          </div>
         )}
 
         {/* Left: initiative bar + game board / DM area */}

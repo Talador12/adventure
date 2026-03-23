@@ -84,6 +84,9 @@ export interface GameWebSocketDeps {
   onPlayerRecovered?: (playerId: string) => void;
   onVoiceSignal?: (fromId: string, fromUsername: string, signalType: string, signal: string) => void;
   onVoiceState?: (playerId: string, talking: boolean, muted: boolean) => void;
+  // Ready check callbacks
+  onReadyCheck?: () => void;
+  onReadyResponse?: (playerId: string, playerName: string) => void;
 }
 
 export interface GameWebSocketState {
@@ -570,6 +573,14 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
                 if (Array.isArray(eventData.pins)) {
                   deps.setMapPins?.(eventData.pins as MapPin[]);
                 }
+                break;
+              }
+              case 'ready_check': {
+                deps.onReadyCheck?.();
+                break;
+              }
+              case 'ready_response': {
+                deps.onReadyResponse?.(eventData.playerId as string, eventData.playerName as string);
                 break;
               }
             }
