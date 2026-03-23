@@ -1771,6 +1771,11 @@ export default function Game() {
           }`} title={`AI: ${aiBackend}`}>
             {aiBackend === 'local' ? 'AI: local' : aiBackend === 'workers-ai' ? 'AI: cloud' : 'AI: off'}
           </span>
+          {saveStatus !== 'idle' && (
+            <span className={`text-[8px] px-1 ${saveStatus === 'saving' ? 'text-amber-400 animate-pulse' : saveStatus === 'saved' ? 'text-emerald-400' : 'text-red-400'}`} title={lastSavedAt ? `Saved ${new Date(lastSavedAt).toLocaleTimeString()}` : ''}>
+              {saveStatus === 'saving' ? '⏳' : saveStatus === 'saved' ? '✓ saved' : '✗ error'}
+            </span>
+          )}
           {wsConnected && characters.length > 0 && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-slate-700/40 bg-slate-800/40 text-slate-400" title={`${characters.length} in party`}>
               {characters.length} {characters.length === 1 ? 'player' : 'players'}

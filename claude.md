@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v6.3.0
+## Current Version: v6.4.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added auto-save indicator in Game header — shows ⏳ (saving, amber pulse), ✓ saved (emerald), or ✗ error (red). Tooltip shows last saved time. Uses existing `saveStatus` from `useCampaignPersistence`. Disappears when idle.
+- Added quick NPC generator — `GET /api/dm/random-npc` generates a random NPC with name, race, class/trade, personality, quirk, and motivation via `aiText()`. Returns JSON. Routes through unified AI client.
+- Added v8.0 roadmap: 10 new ideas (dice analytics, auto-save indicator, NPC generator, encounter estimator, SFX triggers, grid sizing, portrait gallery, Foundry export).
 - Added rich text wiki editor — `lib/markdown.ts` renders basic markdown (headers, bold, italic, code, links, blockquotes, lists, hr) to styled HTML. Wiki content viewer uses `dangerouslySetInnerHTML` with the renderer alongside `[[Page Title]]` inter-page links. Zero dependencies.
 - Added per-player fog persistence — each player's explored fog grid saved to localStorage keyed by `myUnitId`. Auto-saved with 2s debounce. Loaded on mount when `myUnitId` is set. Each player sees only what they've personally explored across sessions.
 - Added hot-seat mode — `/hotseat/:roomId` route for pass-and-play on a single device. "Pass the Device" screen hides game state between players. Character card with stats, HP, AC, turn indicator. Player selector buttons. Link to full game. Lazy-loaded route.
@@ -1081,6 +1084,18 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Battle map fog: per-player persistence (explored grid saved to localStorage per myUnitId)
 - [x] Hot-seat mode (/hotseat/:roomId with pass-the-device screen + character selector)
 - [ ] Integration with D&D Beyond API (live sync character data bidirectionally)
+
+### v8.0 Feature Ideas
+- [ ] Dice roll history analytics (per-player d20 distribution chart — are your dice cursed?)
+- [ ] Session timer pause/resume from DM sidebar (currently only in Game header)
+- [x] Auto-save indicator (⏳/✓/✗ in Game header from existing saveStatus)
+- [ ] Character comparison view (side-by-side stat comparison between two characters)
+- [x] Quick NPC generator (GET /api/dm/random-npc via unified AI client)
+- [ ] Encounter difficulty estimator (show XP budget vs party before rolling initiative)
+- [ ] Sound effect trigger buttons for DM (play thunder, door creak, sword clash on demand)
+- [ ] Map grid size selector (change from 20x20 to 30x30, 40x40, etc.)
+- [ ] Character portrait gallery (browse all generated portraits for a character)
+- [ ] Campaign export as Foundry VTT module (export actors + scenes for Foundry import)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 
 ### v6.0 Feature Ideas
