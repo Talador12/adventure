@@ -41,6 +41,7 @@ const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostm
 const PerfDashboard = lazy(() => import('../components/game/PerfDashboard'));
 const KeyboardShortcuts = lazy(() => import('../components/game/KeyboardShortcuts'));
 const WeatherParticles = lazy(() => import('../components/combat/WeatherParticles'));
+import EncounterXPTracker from '../components/game/EncounterXPTracker';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -2234,6 +2235,9 @@ export default function Game() {
               )}
             </div>
           )}
+
+          {/* Encounter XP tracker — during combat */}
+          <EncounterXPTracker units={units} playerCount={characters.length} inCombat={inCombat} />
 
           {/* Party health overview — always visible when characters exist */}
           {characters.length > 0 && adventureStarted && (
