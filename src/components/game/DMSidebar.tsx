@@ -12,6 +12,7 @@ import FormationPresets from './FormationPresets';
 import DowntimeActivities from './DowntimeActivities';
 import CustomMonsterCreator from './CustomMonsterCreator';
 import QuickCombatResolver from './QuickCombatResolver';
+import SessionScheduler from './SessionScheduler';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
@@ -573,6 +574,11 @@ export default function DMSidebar({
         {/* Notes tab */}
         {dmSidebarTab === 'notes' && (
           <>
+            {/* Session Scheduler — plan next game night */}
+            <SessionScheduler roomId={roomId} />
+
+            <div className="w-full h-px bg-slate-700/50" />
+
             {/* Inspiration — DM grants advantage tokens to players */}
             {characters.length > 0 && (
               <div className="space-y-1.5">
