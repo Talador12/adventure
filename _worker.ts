@@ -121,6 +121,18 @@ function getJwtKey(env: Env) {
 }
 
 // GET /api/auth/discord - redirect to Discord OAuth
+// Quick NPC generator
+app.get('/api/dm/random-npc', async (c) => {
+  try {
+    const text = await aiText(c.env, [
+      { role: 'system', content: 'D&D NPC generator. Return valid JSON only.' },
+      { role: 'user', content: 'Generate a random D&D NPC. JSON: {"name":"Name","race":"Race","class":"Class or trade","personality":"2-3 words","quirk":"One quirk","motivation":"What they want"}' },
+    ], 150);
+    const match = text.match(/\{[\s\S]*\}/);
+    return c.json({ npc: match ? JSON.parse(match[0]) : null });
+  } catch { return c.json({ npc: null }); }
+});
+
 // AI map cell description — describe what the party sees at a location
 app.post('/api/dm/describe-cell', async (c) => {
   try {
