@@ -483,7 +483,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog' | 'fog-circle-reveal' | 'fog-circle-hide' | 'fog-rect-reveal' | 'fog-rect-hide';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -576,6 +576,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   // AoE hover tracking
   const [aoeHoverCell, setAoeHoverCell] = useState<{ col: number; row: number } | null>(null);
+
+  // Fog shape selection state (for circle/rect reveal/hide tools)
+  const [fogShapeStart, setFogShapeStart] = useState<{ col: number; row: number } | null>(null);
 
   // Pin creation state
   const [pendingPinCell, setPendingPinCell] = useState<{ col: number; row: number } | null>(null);
@@ -1415,6 +1418,50 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
+    // Fog shape tools: first click sets start, second click applies shape
+    if (dmTool.startsWith('fog-')) {
+      if (!fogShapeStart) {
+        setFogShapeStart({ col, row });
+        return;
+      }
+      const reveal = dmTool.includes('reveal');
+      const isCircle = dmTool.includes('circle');
+      const start = fogShapeStart;
+      setFogShapeStart(null);
+
+      setExplored((prev) => {
+        const next = prev.map((r) => [...r]);
+        if (isCircle) {
+          // Circle: center = start, radius = distance to end
+          const dx = col - start.col;
+          const dy = row - start.row;
+          const radius = Math.round(Math.sqrt(dx * dx + dy * dy));
+          for (let r = 0; r < next.length; r++) {
+            for (let c = 0; c < next[0].length; c++) {
+              const dr = r - start.row;
+              const dc = c - start.col;
+              if (dr * dr + dc * dc <= radius * radius) {
+                next[r][c] = reveal;
+              }
+            }
+          }
+        } else {
+          // Rectangle: start and end are opposite corners
+          const minR = Math.min(start.row, row);
+          const maxR = Math.max(start.row, row);
+          const minC = Math.min(start.col, col);
+          const maxC = Math.max(start.col, col);
+          for (let r = minR; r <= maxR; r++) {
+            for (let c = minC; c <= maxC; c++) {
+              if (next[r]?.[c] !== undefined) next[r][c] = reveal;
+            }
+          }
+        }
+        return next;
+      });
+      return;
+    }
+
     // Re-fog tool: DM clicks explored cells to un-explore them
     if (dmTool === 'refog') {
       setExplored((prev) => {
@@ -1515,10 +1562,10 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
     const { col, row, x, y } = canvasCoords(e);
 
-    // DM terrain painting
+    // DM terrain painting (fog shape tools use two-click, not drag)
     if (dmTool !== 'select') {
       paintTerrain(col, row);
-      setPainting(true);
+      if (!dmTool.startsWith('fog-')) setPainting(true);
       return;
     }
 
@@ -2151,6 +2198,27 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 >
                   Re-fog
                 </button>
+                {/* Shape fog tools */}
+                {(['fog-circle-reveal', 'fog-circle-hide', 'fog-rect-reveal', 'fog-rect-hide'] as const).map((tool) => {
+                  const isCircle = tool.includes('circle');
+                  const isReveal = tool.includes('reveal');
+                  const active = dmTool === tool;
+                  const label = `${isCircle ? '○' : '▭'} ${isReveal ? 'Show' : 'Hide'}`;
+                  return (
+                    <button
+                      key={tool}
+                      onClick={() => { setDmTool(active ? 'select' : tool); setFogShapeStart(null); }}
+                      className={`text-[9px] px-1.5 py-1 rounded border font-semibold transition-all ${
+                        active
+                          ? (isReveal ? 'bg-sky-900/60 border-sky-600/60 text-sky-300 ring-1 ring-sky-500/40' : 'bg-rose-900/60 border-rose-600/60 text-rose-300 ring-1 ring-rose-500/40')
+                          : 'bg-slate-800/60 hover:bg-slate-700/60 border-slate-600/50 text-slate-400 hover:text-slate-200'
+                      }`}
+                      title={`${isCircle ? 'Circle' : 'Rectangle'} ${isReveal ? 'reveal' : 'hide'} — click two points to define the ${isCircle ? 'center + radius' : 'corners'}${fogShapeStart && active ? ' (click second point)' : ''}`}
+                    >
+                      {label}{active && fogShapeStart ? '...' : ''}
+                    </button>
+                  );
+                })}
               </>
             )}
           </>
