@@ -2,7 +2,8 @@
 // Pages about locations, NPCs, factions, and custom lore.
 // Stored in campaign state, editable by any player.
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { renderMarkdown } from '../../lib/markdown';
 
 export interface WikiPage {
   id: string;
@@ -193,9 +194,9 @@ export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage
                     {selected.tags.map((t) => <span key={t} className="text-[7px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">{t}</span>)}
                   </div>
                 )}
-                <div className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap">
+                <div className="text-[11px] text-slate-300 leading-relaxed">
                   {selected.content ? (
-                    // Render [[Page Title]] as clickable links
+                    // Render markdown + [[Page Title]] links
                     selected.content.split(/(\[\[[^\]]+\]\])/).map((part, i) => {
                       const match = part.match(/^\[\[(.+)\]\]$/);
                       if (match) {
@@ -206,10 +207,11 @@ export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage
                           <span key={i} className="text-slate-500 italic">{match[1]}</span>
                         );
                       }
-                      return <span key={i}>{part}</span>;
+                      // Render non-link parts as markdown
+                      return <span key={i} dangerouslySetInnerHTML={{ __html: renderMarkdown(part) }} />;
                     })
                   ) : (
-                    <span className="italic text-slate-600">No content yet. Click Edit to add lore. Use [[Page Title]] to link between pages.</span>
+                    <span className="italic text-slate-600">No content yet. Click Edit to add lore. Supports **markdown** and [[Page Title]] links.</span>
                   )}
                 </div>
               </div>
