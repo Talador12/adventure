@@ -96,6 +96,8 @@ function analyzeCombatLog(log: string[], rounds: number): Omit<EncounterStats, '
 export default function EncounterLog({ roomId, currentCombatLog, inCombat, combatRound }: EncounterLogProps) {
   const [encounters, setEncounters] = useState<EncounterStats[]>(() => loadEncounters(roomId));
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [diffFilter, setDiffFilter] = useState<string | null>(null);
   const prevInCombat = usePrevious(inCombat);
 
   // When combat ends, save the encounter
@@ -129,6 +131,20 @@ export default function EncounterLog({ roomId, currentCombatLog, inCombat, comba
     saveEncounters(roomId, []);
   }, [roomId]);
 
+  // Filter encounters by search text and difficulty
+  const filteredEncounters = useMemo(() => {
+    return encounters.filter((enc) => {
+      if (diffFilter && enc.difficulty !== diffFilter) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        return enc.kills.some((k) => k.toLowerCase().includes(s))
+          || enc.spellsCast.some((sp) => sp.toLowerCase().includes(s))
+          || enc.combatLog.some((l) => l.toLowerCase().includes(s));
+      }
+      return true;
+    });
+  }, [encounters, search, diffFilter]);
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 shrink-0">
@@ -140,6 +156,33 @@ export default function EncounterLog({ roomId, currentCombatLog, inCombat, comba
           <button onClick={clearHistory} className="text-[9px] text-slate-600 hover:text-red-400 transition-colors">Clear</button>
         )}
       </div>
+
+      {/* Search + difficulty filter */}
+      {encounters.length > 0 && (
+        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-slate-800/50 shrink-0">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search encounters..."
+            className="flex-1 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 placeholder:text-slate-600 focus:border-amber-600 focus:outline-none"
+          />
+          <div className="flex gap-0.5">
+            {['easy', 'medium', 'hard', 'deadly'].map((d) => (
+              <button
+                key={d}
+                onClick={() => setDiffFilter(diffFilter === d ? null : d)}
+                className={`text-[8px] px-1.5 py-0.5 rounded border capitalize transition-all ${
+                  diffFilter === d
+                    ? (d === 'deadly' ? 'border-red-600/50 bg-red-900/30 text-red-400' : d === 'hard' ? 'border-orange-600/50 bg-orange-900/30 text-orange-400' : d === 'medium' ? 'border-yellow-600/50 bg-yellow-900/30 text-yellow-400' : 'border-green-600/50 bg-green-900/30 text-green-400')
+                    : 'border-slate-700/50 text-slate-600 hover:text-slate-400'
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto min-h-0 px-4 py-2 space-y-2">
         {/* Live combat stats */}
@@ -163,7 +206,7 @@ export default function EncounterLog({ roomId, currentCombatLog, inCombat, comba
         )}
 
         {/* Past encounters */}
-        {encounters.map((enc) => {
+        {filteredEncounters.map((enc) => {
           const isExpanded = expandedId === enc.id;
           const timeAgo = formatTimeAgo(enc.timestamp);
           return (

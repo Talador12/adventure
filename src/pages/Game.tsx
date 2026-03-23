@@ -210,6 +210,7 @@ export default function Game() {
   });
   const [adventureStarted] = [dmHistory.length > 0]; // auto-detect from history
   const [actionInput, setActionInput] = useState('');
+  const [initiativeLocked, setInitiativeLocked] = useState(false);
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [soundVolume, setSoundVolume] = useState(getVolume());
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -2116,7 +2117,7 @@ export default function Game() {
         <div className={`flex-1 flex flex-col overflow-hidden transition-opacity duration-200 ${rollPopupVisible ? 'opacity-45' : 'opacity-100'} ${mobilePanel !== 'game' ? 'hidden md:flex' : ''}`}>
           {/* Initiative bar — only show when units exist */}
           {units.length > 0 && (
-            <div className="bg-slate-900/50 border-b border-slate-800 shrink-0">
+            <div className="bg-slate-900/50 border-b border-slate-800 shrink-0 relative">
               <InitiativeBar
                 entries={units}
                 turnTimerEnabled={turnTimerEnabled}
@@ -2129,7 +2130,7 @@ export default function Game() {
                     setCombatLog((prev) => [...prev, `Turn timer expired — advancing turn.`]);
                   }
                 }}
-                canReorder={canUseDMTools && inCombat}
+                canReorder={canUseDMTools && inCombat && !initiativeLocked}
                 onReorder={(reorderedIds) => {
                   setUnits((prev: Unit[]) => {
                     const ordered: Unit[] = [];
@@ -2147,6 +2148,20 @@ export default function Game() {
                   setCombatLog((prev) => [...prev, 'DM reordered initiative.']);
                 }}
               />
+              {/* Initiative lock toggle (DM only, during combat) */}
+              {canUseDMTools && inCombat && (
+                <button
+                  onClick={() => setInitiativeLocked((v) => !v)}
+                  className={`absolute top-1 right-1 text-[8px] px-1.5 py-0.5 rounded border font-semibold transition-all z-10 ${
+                    initiativeLocked
+                      ? 'border-amber-600/50 bg-amber-900/30 text-amber-400'
+                      : 'border-slate-700 text-slate-600 hover:text-slate-400'
+                  }`}
+                  title={initiativeLocked ? 'Unlock initiative order (allow re-rolling and drag reorder)' : 'Lock initiative order (prevent changes)'}
+                >
+                  {initiativeLocked ? '🔒 Locked' : '🔓'}
+                </button>
+              )}
             </div>
           )}
 
