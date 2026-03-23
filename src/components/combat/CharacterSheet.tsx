@@ -1165,17 +1165,42 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
       <div className="border-t border-slate-700/50 pt-3 mt-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Journal</span>
-          <button
-            onClick={() => {
-              const text = prompt('New journal entry:');
-              if (!text?.trim()) return;
-              const entry = { id: crypto.randomUUID().slice(0, 8), date: new Date().toLocaleDateString(), text: text.trim(), createdAt: Date.now() };
-              updateCharacter(character.id, { journal: [...(character.journal || []), entry] } as Partial<typeof character>);
-            }}
-            className="text-[8px] text-violet-400 hover:text-violet-300 font-semibold"
-          >
-            + Entry
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const text = prompt('New journal entry:');
+                if (!text?.trim()) return;
+                const entry = { id: crypto.randomUUID().slice(0, 8), date: new Date().toLocaleDateString(), text: text.trim(), createdAt: Date.now() };
+                updateCharacter(character.id, { journal: [...(character.journal || []), entry] } as Partial<typeof character>);
+              }}
+              className="text-[8px] text-violet-400 hover:text-violet-300 font-semibold"
+            >
+              + Entry
+            </button>
+            <button
+              onClick={async () => {
+                const res = await fetch('/api/backstory/continue', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    name: character.name,
+                    class: character.class,
+                    backstory: character.backstory || '',
+                    recentEvents: (character.journal || []).slice(-5).map((j) => j.text),
+                  }),
+                });
+                const data = await res.json() as { continuation?: string };
+                if (data.continuation) {
+                  const entry = { id: crypto.randomUUID().slice(0, 8), date: new Date().toLocaleDateString(), text: `[AI] ${data.continuation}`, createdAt: Date.now() };
+                  updateCharacter(character.id, { journal: [...(character.journal || []), entry] } as Partial<typeof character>);
+                }
+              }}
+              className="text-[8px] text-teal-400 hover:text-teal-300 font-semibold"
+              title="AI generates the next chapter of your story"
+            >
+              Continue Story
+            </button>
+          </div>
         </div>
         {(character.journal || []).length === 0 ? (
           <p className="text-[8px] text-slate-600 italic">No journal entries yet. Click + Entry to start your diary.</p>

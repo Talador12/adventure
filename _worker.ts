@@ -640,6 +640,24 @@ CRITICAL RULES — follow these or the backstory is garbage:
   }
 });
 
+// Backstory continuation — "what happened next" story beats
+app.post('/api/backstory/continue', async (c) => {
+  try {
+    const body = await c.req.json<Record<string, unknown>>();
+    const name = String(body.name || 'Adventurer');
+    const cls = String(body.class || 'Fighter');
+    const backstory = String(body.backstory || '');
+    const recentEvents = (body.recentEvents as string[]) || [];
+    if (!backstory) return c.json({ continuation: '' });
+    const eventsCtx = recentEvents.length > 0 ? `\nRecent events:\n${recentEvents.slice(-10).join('\n')}` : '';
+    const text = await aiText(c.env, [
+      { role: 'system', content: 'You are a fantasy author writing the next chapter of a D&D character\'s story. 2-3 paragraphs. Build on existing backstory and recent adventures. Include a new hook or unresolved thread.' },
+      { role: 'user', content: `Character: ${name}, ${cls}.\n\nExisting backstory:\n${backstory.slice(0, 1000)}${eventsCtx}\n\nWrite what happened next — a new story beat that advances their personal arc.` },
+    ], 500);
+    return c.json({ continuation: text.trim() });
+  } catch { return c.json({ continuation: '' }); }
+});
+
 // AI Dungeon Master — narration, encounters, NPC dialogue via Workers AI text generation
 app.post('/api/dm/narrate', async (c) => {
   if (!c.env.AI) {

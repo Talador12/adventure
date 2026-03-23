@@ -581,6 +581,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [fogShapeStart, setFogShapeStart] = useState<{ col: number; row: number } | null>(null);
   // Fog/terrain brush radius (0=single cell, 1=3x3, 2=5x5)
   const [brushRadius, setBrushRadius] = useState(0);
+  // Map layer opacity controls (DM adjustable)
+  const [fogOpacity, setFogOpacity] = useState(0.6); // explored-but-not-visible dim overlay
 
   // Pin creation state
   const [pendingPinCell, setPendingPinCell] = useState<{ col: number; row: number } | null>(null);
@@ -919,7 +921,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
         // Dim explored but not currently visible cells
         if (!effectiveDmMode && !isVisible && wasExplored) {
-          ctx.fillStyle = 'rgba(15,23,42,0.6)';
+          ctx.fillStyle = `rgba(15,23,42,${fogOpacity})`;
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
         // Reveal animation: recently-revealed cells get a fading fog overlay
@@ -1229,7 +1231,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -2238,6 +2240,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 >
                   Re-fog
                 </button>
+                {/* Fog opacity slider */}
+                <div className="flex items-center gap-1 ml-1">
+                  <span className="text-[8px] text-slate-600">Dim:</span>
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={0.9}
+                    step={0.1}
+                    value={fogOpacity}
+                    onChange={(e) => setFogOpacity(parseFloat(e.target.value))}
+                    className="w-12 h-1 accent-sky-500 cursor-pointer"
+                    title={`Fog dim opacity: ${Math.round(fogOpacity * 100)}%`}
+                  />
+                  <span className="text-[8px] text-slate-500 w-5">{Math.round(fogOpacity * 100)}%</span>
+                </div>
                 {/* Shape fog tools */}
                 {(['fog-circle-reveal', 'fog-circle-hide', 'fog-rect-reveal', 'fog-rect-hide'] as const).map((tool) => {
                   const isCircle = tool.includes('circle');
