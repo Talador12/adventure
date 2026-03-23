@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v5.4.0
+## Current Version: v6.0.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added AI DM voice narration — `lib/tts.ts` wraps the browser's SpeechSynthesis API. Zero dependencies, works offline. Auto-speaks DM narration when TTS is enabled. Preferred voice selection (tries UK English Male/Daniel/Samantha). Toggle button in Game header (🔊 TTS / 🔇). Lazy-loaded.
+- Added drag-and-drop inventory management — inventory items are `draggable` with grab cursor. Equipment slots are drop targets that accept matching item types (weapon→weapon slot, armor→armor slot, etc.). Drop equips the item. Empty slots show dashed borders as visual hint.
 - Added map image drag-and-drop import — DM can drag a PNG/JPG onto the battle map to set it as the background. FileReader converts to data URL. `BattleMap.tsx`.
 - Added undo/redo for battle map terrain editing — Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y). 50-level undo stack with redo. Pushes snapshot before each paint operation. `BattleMap.tsx`.
 - Added keyboard-driven character creation — Enter/ArrowRight = next step, Escape/ArrowLeft = prev step. Enter in inputs advances to next step. Global keyboard handler. `CharacterCreate.tsx`.
@@ -1063,8 +1065,20 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
 - [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
 
+### v7.0 Feature Ideas
+- [ ] AI DM voice: configurable voice per NPC (different voice for each named NPC)
+- [ ] Multi-language UI (i18n framework + Spanish/French/German/Japanese translations)
+- [ ] Plugin system (load custom JS modules as game extensions)
+- [ ] Campaign templates (pre-built adventures with maps, encounters, and lore)
+- [ ] OAuth with GitHub + Google (expand beyond Discord for login)
+- [ ] Rich text wiki editor (markdown preview, image embeds)
+- [ ] Battle map fog: revealed area persistence per player (each player's explored fog saved separately)
+- [ ] Hot-seat mode (pass-and-play on a single device for in-person groups)
+- [ ] Integration with D&D Beyond API (live sync character data bidirectionally)
+- [ ] PWA install prompt (add to home screen for app-like experience)
+
 ### v6.0 Feature Ideas
-- [ ] AI DM voice narration (TTS via local Piper/Coqui or cloud ElevenLabs)
+- [x] AI DM voice narration (browser SpeechSynthesis API, zero deps, works offline)
 - [x] Undo/redo for battle map terrain (Ctrl+Z / Ctrl+Shift+Z, 50-level stack)
 - [x] Import maps from image files (drag-and-drop PNG/JPG onto battle map)
 - [x] Keyboard-driven character creation (Enter/arrows navigate steps, Enter in inputs advances)
@@ -1072,7 +1086,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] QR code for campaign join link (SVG pattern + toggle in Lobby)
 - [x] Exportable encounter templates (export/import as JSON files)
 - [x] Theme customization (color picker → CSS --accent variable, persisted)
-- [ ] Drag-and-drop inventory management (move items between characters visually)
+- [x] Drag-and-drop inventory management (drag items from inventory to equipment slots)
 - [x] AI-generated map descriptions (POST /api/dm/describe-cell via unified AI client)
 
 ### AI Architecture (shipped)

@@ -252,6 +252,7 @@ export default function Game() {
   const [stagedLoot, setStagedLoot] = useState<import('../types/game').Item[]>([]);
   const [relationships, setRelationships] = useState<import('../components/game/RelationshipGraph').RelationshipEdge[]>([]);
   const [aiBackend, setAiBackend] = useState<string>('...');
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const [recordings, setRecordings] = useState<CombatRecording[]>([]);
   const [wikiPages, setWikiPages] = useState<WikiPage[]>([]);
   const [calendar, setCalendar] = useState<CalendarState>({ currentDay: 1, events: [] });
@@ -888,6 +889,8 @@ export default function Game() {
       },
     ]);
     setDmHistory((prev) => [...prev, text]);
+    // TTS: speak DM narration aloud if enabled
+    import('../lib/tts').then(({ speak, isTTSEnabled }) => { if (isTTSEnabled()) speak(text); });
   }, []);
 
   // Build rich character payload for DM context
@@ -1772,6 +1775,18 @@ export default function Game() {
             </span>
           )}
           <SessionTimer roomId={room} compact />
+          {/* TTS narration toggle */}
+          <button
+            onClick={() => {
+              const next = !ttsEnabled;
+              setTtsEnabled(next);
+              import('../lib/tts').then(({ setTTSEnabled }) => setTTSEnabled(next));
+            }}
+            className={`text-[9px] px-1.5 py-0.5 rounded font-semibold transition-all ${ttsEnabled ? 'bg-violet-900/40 text-violet-300 ring-1 ring-violet-500/40' : 'bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-slate-300'}`}
+            title={ttsEnabled ? 'Disable DM voice narration' : 'Enable DM voice narration (browser TTS)'}
+          >
+            {ttsEnabled ? '🔊 TTS' : '🔇'}
+          </button>
           {/* Voice chat controls */}
           {wsConnected && (
             <div className="flex items-center gap-1">
