@@ -60,6 +60,8 @@ interface Env {
   DISCORD_CLIENT_SECRET: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
   JWT_SECRET?: string;
 }
 
@@ -112,6 +114,12 @@ const GOOGLE_AUTH_URI = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URI = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URI = 'https://www.googleapis.com/oauth2/v2/userinfo';
 const GOOGLE_REDIRECT_URIS = ['http://localhost:5173/api/auth/google/callback', 'https://adventure.notebooks.cloudflare.com/api/auth/google/callback'];
+
+// GitHub OAuth
+const GITHUB_AUTH_URI = 'https://github.com/login/oauth/authorize';
+const GITHUB_TOKEN_URI = 'https://github.com/login/oauth/access_token';
+const GITHUB_USERINFO_URI = 'https://api.github.com/user';
+const GITHUB_REDIRECT_URIS = ['http://localhost:5173/api/auth/github/callback', 'https://adventure.notebooks.cloudflare.com/api/auth/github/callback'];
 
 const COOKIE_NAME = 'adventure_session';
 const DEV_JWT_FALLBACK = 'adventure-dev-secret-do-not-use-in-prod';
@@ -287,6 +295,59 @@ app.get('/api/auth/google/callback', async (c) => {
   };
 
   const jwt = await new SignJWT({ user, provider: 'google' }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('7d').sign(getJwtKey(c.env));
+  c.header('Set-Cookie', `${COOKIE_NAME}=${jwt}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800`);
+  return c.redirect('/');
+});
+
+// GET /api/auth/github - redirect to GitHub OAuth
+app.get('/api/auth/github', (c) => {
+  if (!c.env.GITHUB_CLIENT_ID) return c.text('GitHub OAuth not configured', 503);
+  const redirect_uri = GITHUB_REDIRECT_URIS.find((uri) => c.req.url.startsWith(uri.split('/api')[0])) || GITHUB_REDIRECT_URIS[0];
+  const params = new URLSearchParams({
+    client_id: c.env.GITHUB_CLIENT_ID,
+    redirect_uri,
+    scope: 'read:user user:email',
+  });
+  return c.redirect(`${GITHUB_AUTH_URI}?${params.toString()}`);
+});
+
+// GET /api/auth/github/callback - exchange code for token, set JWT cookie
+app.get('/api/auth/github/callback', async (c) => {
+  if (!c.env.GITHUB_CLIENT_ID || !c.env.GITHUB_CLIENT_SECRET) return c.text('GitHub OAuth not configured', 503);
+
+  const url = new URL(c.req.url);
+  const code = url.searchParams.get('code');
+  if (!code) return c.text('Missing code', 400);
+
+  const redirect_uri = GITHUB_REDIRECT_URIS.find((uri) => c.req.url.startsWith(uri.split('/api')[0])) || GITHUB_REDIRECT_URIS[0];
+  const tokenRes = await fetch(GITHUB_TOKEN_URI, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      code,
+      client_id: c.env.GITHUB_CLIENT_ID,
+      client_secret: c.env.GITHUB_CLIENT_SECRET,
+      redirect_uri,
+    }),
+  });
+  const tokenData: Record<string, string> = await tokenRes.json();
+  if (!tokenData.access_token) return c.text('Failed to get token', 400);
+
+  const userRes = await fetch(GITHUB_USERINFO_URI, {
+    headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': 'Adventure-VTT' },
+  });
+  const ghUser = (await userRes.json()) as Record<string, unknown>;
+
+  const user = {
+    id: String(ghUser.id),
+    username: String(ghUser.login || 'User'),
+    global_name: String(ghUser.name || ghUser.login || 'User'),
+    email: String(ghUser.email || ''),
+    avatar: null,
+    picture: String(ghUser.avatar_url || ''),
+  };
+
+  const jwt = await new SignJWT({ user, provider: 'github' }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('7d').sign(getJwtKey(c.env));
   c.header('Set-Cookie', `${COOKIE_NAME}=${jwt}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800`);
   return c.redirect('/');
 });
