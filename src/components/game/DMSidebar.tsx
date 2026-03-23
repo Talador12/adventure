@@ -5,7 +5,7 @@ import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/Gam
 import type { EncounterTemplate } from '../../types/game';
 import SessionTimer from './SessionTimer';
 import { randomFantasyName } from '../../lib/names';
-import { setAmbientMood, AMBIENT_MOODS, type AmbientMood } from '../../hooks/useSoundFX';
+import { setAmbientMood, AMBIENT_MOODS, type AmbientMood, mixerAddChannel, mixerRemoveChannel, mixerSetVolume, mixerGetChannels, mixerStopAll } from '../../hooks/useSoundFX';
 import { BIOME_LABELS, rollBiomeEncounter, checkRandomEncounter, type Biome, type BiomeEncounter } from '../../data/enemies';
 import { rollTreasureHoard, HOARD_TIER_LABELS, type TreasureHoardResult } from '../../data/rules';
 import FormationPresets from './FormationPresets';
@@ -13,6 +13,8 @@ import DowntimeActivities from './DowntimeActivities';
 import CustomMonsterCreator from './CustomMonsterCreator';
 import QuickCombatResolver from './QuickCombatResolver';
 import SessionScheduler from './SessionScheduler';
+import SpellTemplates from './SpellTemplates';
+import LootSplitter from './LootSplitter';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
@@ -201,6 +203,7 @@ export default function DMSidebar({
   const [lastBiomeRoll, setLastBiomeRoll] = useState<{ encounter: BiomeEncounter; roll: number } | null>(null);
   const [hoardTier, setHoardTier] = useState(0);
   const [lastHoard, setLastHoard] = useState<TreasureHoardResult | null>(null);
+  const [, setMixerRefresh] = useState(0); // force re-render when mixer state changes
 
   return (
     <aside aria-label="DM Tools sidebar" className="hidden md:flex w-72 bg-slate-900 border-r border-slate-800 flex-col shrink-0 overflow-hidden">
@@ -444,10 +447,34 @@ export default function DMSidebar({
               }
               return null;
             })()}
+            {/* Spell Effect Templates — save/reuse AoE shapes */}
+            <div className="border-t border-slate-700/50 pt-3">
+              <SpellTemplates
+                roomId={roomId}
+                onApply={(template) => {
+                  onAddDmMessage(`Applied spell template: ${template.name} (${template.shape}, ${template.radiusCells * 5}ft)`);
+                }}
+              />
+            </div>
             {/* Custom Monster Creator */}
             {!inCombat && (
               <div className="border-t border-slate-700/50 pt-3">
                 <CustomMonsterCreator roomId={roomId} onSpawn={onSpawnMonster} />
+              </div>
+            )}
+            {/* Loot Splitter — divide gold evenly among party */}
+            {!inCombat && characters.length > 1 && (
+              <div className="border-t border-slate-700/50 pt-3">
+                <LootSplitter
+                  partyNames={characters.map((c) => c.name)}
+                  onGoldSplit={(splits) => {
+                    for (const [name, gold] of Object.entries(splits)) {
+                      const ch = characters.find((c) => c.name === name);
+                      if (ch) updateCharacter(ch.id, { gold: (ch.gold || 0) + gold });
+                    }
+                  }}
+                  onMessage={(msg) => onAddDmMessage(msg)}
+                />
               </div>
             )}
             {/* Quick Combat Resolver — skip tactical play for simple encounters */}
@@ -951,6 +978,51 @@ export default function DMSidebar({
                 {m.label}
               </button>
             ))}
+          </div>
+          {/* Sound Mixer — layer multiple ambiences */}
+          <div className="mt-2 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-slate-600 font-semibold uppercase">Mixer</span>
+              <button onClick={() => { mixerStopAll(); setMixerRefresh((v) => v + 1); }} className="text-[8px] text-slate-700 hover:text-red-400 transition-colors">Clear all</button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {AMBIENT_MOODS.filter((m) => m.id !== 'none').map((m) => {
+                const active = mixerGetChannels().some((ch) => ch.mood === m.id);
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      if (active) mixerRemoveChannel(m.id);
+                      else mixerAddChannel(m.id, 0.4);
+                      setMixerRefresh((v) => v + 1);
+                    }}
+                    className={`text-[8px] px-1.5 py-0.5 rounded border transition-all ${active ? 'border-teal-600/50 bg-teal-900/20 text-teal-400' : 'border-slate-700/50 text-slate-600 hover:text-slate-400'}`}
+                    title={`${active ? 'Remove' : 'Add'} ${m.label} layer`}
+                  >
+                    {active ? '●' : '○'} {m.label}
+                  </button>
+                );
+              })}
+            </div>
+            {mixerGetChannels().length > 0 && (
+              <div className="space-y-1">
+                {mixerGetChannels().map((ch) => (
+                  <div key={ch.mood} className="flex items-center gap-1.5">
+                    <span className="text-[8px] text-teal-400 w-12 truncate capitalize">{ch.mood}</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={ch.volume}
+                      onChange={(e) => { mixerSetVolume(ch.mood, parseFloat(e.target.value)); setMixerRefresh((v) => v + 1); }}
+                      className="flex-1 h-1 accent-teal-500 cursor-pointer"
+                    />
+                    <span className="text-[7px] text-slate-600 w-5 text-right">{Math.round(ch.volume * 100)}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -652,3 +652,58 @@ export const AMBIENT_MOODS: { id: AmbientMood; label: string; description: strin
   { id: 'combat', label: 'Combat', description: 'Intense pulse, tension' },
   { id: 'mystery', label: 'Mystery', description: 'Eerie pads, whispers' },
 ];
+
+// --- Ambient Sound Mixer: layer multiple moods with per-channel volume ---
+interface MixerChannel {
+  mood: AmbientMood;
+  volume: number; // 0-1
+  layer: AmbientLayer;
+  masterGain: GainNode;
+}
+const mixerChannels = new Map<AmbientMood, MixerChannel>();
+
+export function mixerAddChannel(mood: AmbientMood, vol = 0.5): void {
+  if (mood === 'none' || muted || mixerChannels.has(mood)) return;
+  const ctx = getCtx();
+  const mg = ctx.createGain();
+  mg.gain.setValueAtTime(0, ctx.currentTime);
+  mg.gain.linearRampToValueAtTime(vol, ctx.currentTime + 1.5);
+  mg.connect(dest());
+  const layer = buildMoodLayers(ctx, mood, mg);
+  mixerChannels.set(mood, { mood, volume: vol, layer, masterGain: mg });
+}
+
+export function mixerRemoveChannel(mood: AmbientMood): void {
+  const ch = mixerChannels.get(mood);
+  if (!ch) return;
+  const ctx = audioCtx;
+  if (ctx) {
+    const now = ctx.currentTime;
+    ch.masterGain.gain.cancelScheduledValues(now);
+    ch.masterGain.gain.setValueAtTime(ch.masterGain.gain.value, now);
+    ch.masterGain.gain.linearRampToValueAtTime(0, now + 0.8);
+    setTimeout(() => {
+      ch.layer.nodes.forEach((n) => { try { if ('stop' in n) (n as OscillatorNode).stop(); } catch {} });
+      ch.masterGain.disconnect();
+    }, 900);
+  }
+  mixerChannels.delete(mood);
+}
+
+export function mixerSetVolume(mood: AmbientMood, vol: number): void {
+  const ch = mixerChannels.get(mood);
+  if (!ch) return;
+  ch.volume = Math.max(0, Math.min(1, vol));
+  if (audioCtx) {
+    ch.masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    ch.masterGain.gain.setValueAtTime(ch.volume, audioCtx.currentTime);
+  }
+}
+
+export function mixerGetChannels(): { mood: AmbientMood; volume: number }[] {
+  return Array.from(mixerChannels.values()).map((ch) => ({ mood: ch.mood, volume: ch.volume }));
+}
+
+export function mixerStopAll(): void {
+  for (const mood of Array.from(mixerChannels.keys())) mixerRemoveChannel(mood);
+}
