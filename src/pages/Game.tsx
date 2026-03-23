@@ -42,6 +42,9 @@ const PerfDashboard = lazy(() => import('../components/game/PerfDashboard'));
 const KeyboardShortcuts = lazy(() => import('../components/game/KeyboardShortcuts'));
 const WeatherParticles = lazy(() => import('../components/combat/WeatherParticles'));
 import EncounterXPTracker from '../components/game/EncounterXPTracker';
+import HPFlytext, { useHPFlytext } from '../components/combat/HPFlytext';
+import CritCelebration, { useCritCelebration } from '../components/game/CritCelebration';
+import KillStreak, { useKillStreak } from '../components/game/KillStreak';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -213,6 +216,10 @@ export default function Game() {
   });
   const [adventureStarted] = [dmHistory.length > 0]; // auto-detect from history
   const [actionInput, setActionInput] = useState('');
+  // Juice hooks — the charm that makes this VTT feel alive
+  const { flytexts, addFlytext } = useHPFlytext();
+  const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
+  const { display: killStreakDisplay, recordKill } = useKillStreak();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
   const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
@@ -1493,7 +1500,7 @@ export default function Game() {
       const playerName = currentPlayer.username || '';
       const displayUsername = playerName || funDefault();
       playDiceRoll();
-      if (roll.isCritical) setTimeout(playCritical, 400);
+      if (roll.isCritical) { setTimeout(playCritical, 400); triggerCrit(); }
       if (roll.isFumble) setTimeout(playFumble, 400);
       setChatMessages((prev) => [
         ...prev,
@@ -1562,7 +1569,7 @@ export default function Game() {
         ? keptForOutcome.length === 1 && keptForOutcome[0] === 1
         : keptForOutcome.length > 0 && keptForOutcome.every((v) => v === 1);
       playDiceRoll();
-      if (isCrit) setTimeout(playCritical, 400);
+      if (isCrit) { setTimeout(playCritical, 400); triggerCrit(); }
       if (isFumble) setTimeout(playFumble, 400);
       const rollText = result.kept
         ? `[${result.rolls.join(', ')}] keep ${result.kept.join(', ')}`
@@ -1617,7 +1624,7 @@ export default function Game() {
       const charName = selectedCharacter?.name || '';
       const playerName = currentPlayer.username || funDefault();
       playDiceRoll();
-      if (isCrit) setTimeout(playCritical, 400);
+      if (isCrit) { setTimeout(playCritical, 400); triggerCrit(); }
       if (isFumble) setTimeout(playFumble, 400);
       const rollText = `[${rolls.join(', ')}]`;
       setChatMessages((prev) => [
@@ -2417,6 +2424,8 @@ export default function Game() {
                   setShopMessage={setShopMessage}
                   addFloatingText={addFloatingText}
                   addAttackIndicator={addAttackIndicator}
+                  addFlytext={addFlytext}
+                  recordKill={recordKill}
                   onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
                   stagedLoot={stagedLoot}
                   onConsumeStagedLoot={() => setStagedLoot([])}
@@ -2718,6 +2727,7 @@ export default function Game() {
                     {weather !== 'none' && (
                       <Suspense fallback={null}><WeatherParticles weather={weather} width={960} height={960} /></Suspense>
                     )}
+                    <HPFlytext flytexts={flytexts} />
                   </div>
                 )}
               </div>
@@ -2937,6 +2947,9 @@ export default function Game() {
           onCombatLog={(msg) => setCombatLog((prev) => [...prev, msg])}
         />
       )}
+      {/* === THE JUICE === */}
+      <CritCelebration active={critActive} confetti={critConfetti} />
+      <KillStreak display={killStreakDisplay} />
       {/* Performance dashboard — toggle with Ctrl+Shift+P */}
       <Suspense fallback={null}><PerfDashboard /></Suspense>
       {/* Keyboard shortcuts overlay — toggle with ? */}
