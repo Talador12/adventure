@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.5.0
+## Current Version: v7.6.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- README rewrite — persona routing table (Player, DM, Developer, Designer, Modder), accurate 270+ feature list, tech stack, project structure. Replaced outdated v0.3 content. "Roll for initiative." closing.
+- Makefile persona sections — `make play` (zero-friction start), `make quickstart` (interactive walkthrough), `make dm-guide` (DM toolkit reference). Persona-grouped help output.
+- THE JUICE — `HPFlytext` (floating damage/heal/crit/SLAIN numbers above tokens), `CritCelebration` (rainbow border flash + 40 confetti particles on nat 20), `KillStreak` (Double Kill → Triple → RAMPAGE → LEGENDARY! with slide-in banner). New CSS: rainbowCrit, deathPulse, killstreakSlide, confettiFall animations.
 - Added encounter XP tracker — `EncounterXPTracker` below initiative bar: live progress bar (defeated/total XP), per-player share, defeated count. Amber gradient.
 - Added initiative tiebreaker display — shows DEX mod `(+N)` in amber when two units share the same initiative value. Only appears during ties.
 - Added mass heal/damage tool — `MassHPTool` in DMSidebar Encounter tab: checkbox unit selection, damage/heal toggle, quick-select "All enemies"/"All players". Apply to all selected at once.
@@ -1181,7 +1184,11 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Mass heal/damage tool (MassHPTool: checkbox unit selection, damage/heal toggle, apply to all)
 - [x] Encounter XP budget display (EncounterXPTracker: live progress bar, per-player share)
 - [x] Initiative tiebreaker display (DEX mod shown on ties in InitiativeBar)
-- [ ] Token HP flytext (animated +/- numbers floating above tokens when HP changes)
+- [x] Token HP flytext (HPFlytext: animated floating numbers above tokens — damage red, heal green, crit gold, SLAIN)
+- [x] Rainbow crit celebration (CritCelebration: confetti + rainbow border flash on nat 20)
+- [x] Kill streak tracker (KillStreak: Double Kill → RAMPAGE → LEGENDARY! slide-in banner)
+- [x] Persona-driven README (routing table, accurate feature list, "Roll for initiative.")
+- [x] Persona-driven Makefile (make play / quickstart / dm-guide, grouped help output)
 - [ ] Map waypoint path drawing (DM draws movement paths that animate tokens along them)
 - [ ] Combat encounter templates from AI (generate balanced encounters based on party level)
 - [ ] Session notes auto-save to cloud (server-side DM notes per campaign, not just localStorage)
