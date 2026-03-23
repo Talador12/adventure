@@ -1093,7 +1093,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Multi-language UI (i18n framework + Spanish/French/German/Japanese translations)
 - [ ] Plugin system (load custom JS modules as game extensions)
 - [x] Campaign templates (4 starter adventures with narration, quests, map coords)
-- [ ] OAuth with GitHub + Google (expand beyond Discord for login)
+- [ ] OAuth with GitHub (expand login options beyond Discord + Google)
+- [x] Google OAuth login (Phase 2 of D1 — full OAuth flow + ensureUser + JWT)
 - [x] Rich text wiki editor (markdown rendering with headers/bold/italic/code/links/lists)
 - [x] Battle map fog: per-player persistence (explored grid saved to localStorage per myUnitId)
 - [x] Hot-seat mode (/hotseat/:roomId with pass-the-device screen + character selector)
@@ -1112,9 +1113,9 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ### v9.0 Feature Ideas
 - [ ] Drag-and-drop character reordering in lobby seat cards
-- [ ] AI encounter post-mortem (what went wrong, tactical suggestions for next time)
-- [ ] Character backup/restore (download character as encrypted backup file)
-- [ ] Battle map fog reveal undo (DM can re-fog accidentally revealed areas)
+- [x] AI encounter post-mortem (EncounterPostmortem component + POST /api/dm/encounter-postmortem endpoint)
+- [x] Character backup/restore (AES-256-GCM encrypted export/import via lib/backup.ts)
+- [x] Battle map fog reveal undo (Re-fog DM tool — click or drag-paint cells to un-explore)
 - [ ] Dice roll sound customization (pick from different dice sound packs)
 - [ ] Campaign branching (fork a campaign to explore "what if" scenarios)
 - [ ] NPC relationship tracker (track NPC attitudes toward each party member)

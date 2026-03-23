@@ -6,6 +6,22 @@ let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let volume = parseFloat(localStorage.getItem('adventure:volume') ?? '0.7');
 
+// --- Dice sound pack system ---
+export type DiceSoundPack = 'classic' | 'crystal' | 'wooden' | 'metal';
+export const DICE_SOUND_PACKS: { id: DiceSoundPack; label: string; desc: string }[] = [
+  { id: 'classic', label: 'Classic', desc: 'Standard dice rattle' },
+  { id: 'crystal', label: 'Crystal', desc: 'Bright, glassy chimes' },
+  { id: 'wooden', label: 'Wooden', desc: 'Deep, warm thuds' },
+  { id: 'metal', label: 'Metal', desc: 'Sharp, metallic clinks' },
+];
+let diceSoundPack: DiceSoundPack = (localStorage.getItem('adventure:dicePack') as DiceSoundPack) || 'classic';
+
+export function getDiceSoundPack(): DiceSoundPack { return diceSoundPack; }
+export function setDiceSoundPack(pack: DiceSoundPack) {
+  diceSoundPack = pack;
+  localStorage.setItem('adventure:dicePack', pack);
+}
+
 function getCtx(): AudioContext {
   if (!audioCtx) audioCtx = new AudioContext();
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -51,12 +67,19 @@ function noise(ctx: AudioContext, duration: number, gain: number): { node: Audio
   return { node: src, gainNode: g };
 }
 
-// Dice roll sound — rattling clicks then a final thud
+// Dice roll sound — uses the active dice sound pack
 export function playDiceRoll() {
+  const pack = diceSoundPack;
+  if (pack === 'crystal') return playDiceRollCrystal();
+  if (pack === 'wooden') return playDiceRollWooden();
+  if (pack === 'metal') return playDiceRollMetal();
+  return playDiceRollClassic();
+}
+
+// Classic: rattling noise clicks + landing thud
+function playDiceRollClassic() {
   const ctx = getCtx();
   const now = ctx.currentTime;
-
-  // Series of short clicks (dice bouncing)
   for (let i = 0; i < 6; i++) {
     const t = now + i * 0.06 + Math.random() * 0.02;
     const { node, gainNode } = noise(ctx, 0.03, 0.15 - i * 0.02);
@@ -64,8 +87,6 @@ export function playDiceRoll() {
     node.start(t);
     node.stop(t + 0.03);
   }
-
-  // Final landing thud — low frequency
   const osc = ctx.createOscillator();
   osc.type = 'sine';
   osc.frequency.setValueAtTime(120, now + 0.4);
@@ -75,6 +96,93 @@ export function playDiceRoll() {
   g.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
   osc.connect(g).connect(dest());
   osc.start(now + 0.4);
+  osc.stop(now + 0.55);
+}
+
+// Crystal: bright sine chimes with reverb-like tail
+function playDiceRollCrystal() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  const freqs = [1200, 1500, 1800, 1400, 1600, 1100];
+  for (let i = 0; i < 6; i++) {
+    const t = now + i * 0.07 + Math.random() * 0.015;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freqs[i] + Math.random() * 100, t);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.12 - i * 0.015, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.connect(g).connect(dest());
+    osc.start(t);
+    osc.stop(t + 0.15);
+  }
+  // Final bright ring
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(2000, now + 0.45);
+  osc.frequency.exponentialRampToValueAtTime(1200, now + 0.7);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.2, now + 0.45);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+  osc.connect(g).connect(dest());
+  osc.start(now + 0.45);
+  osc.stop(now + 0.7);
+}
+
+// Wooden: deep soft thuds with filtered noise
+function playDiceRollWooden() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  for (let i = 0; i < 5; i++) {
+    const t = now + i * 0.08 + Math.random() * 0.03;
+    // Low filtered noise
+    const { node, gainNode } = noise(ctx, 0.06, 0.18 - i * 0.03);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(600 - i * 60, t);
+    gainNode.connect(lp).connect(dest());
+    node.start(t);
+    node.stop(t + 0.06);
+  }
+  // Deep resonant thud
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(80, now + 0.42);
+  osc.frequency.exponentialRampToValueAtTime(40, now + 0.56);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.35, now + 0.42);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+  osc.connect(g).connect(dest());
+  osc.start(now + 0.42);
+  osc.stop(now + 0.6);
+}
+
+// Metal: sharp high-frequency clinks with resonant ping
+function playDiceRollMetal() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  for (let i = 0; i < 7; i++) {
+    const t = now + i * 0.05 + Math.random() * 0.015;
+    // High-pass filtered noise for metallic click
+    const { node, gainNode } = noise(ctx, 0.025, 0.13 - i * 0.015);
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(3000 + Math.random() * 1000, t);
+    hp.Q.setValueAtTime(5, t);
+    gainNode.connect(hp).connect(dest());
+    node.start(t);
+    node.stop(t + 0.025);
+  }
+  // Resonant metallic ping
+  const osc = ctx.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(800, now + 0.38);
+  osc.frequency.exponentialRampToValueAtTime(200, now + 0.55);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.15, now + 0.38);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+  osc.connect(g).connect(dest());
+  osc.start(now + 0.38);
   osc.stop(now + 0.55);
 }
 

@@ -12,7 +12,7 @@ import LevelUpModal from '../components/game/LevelUpModal';
 import CharacterPicker from '../components/game/CharacterPicker';
 import { type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
-import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, getVolume, setVolume, setAmbientMood, getAmbientMood, type AmbientMood } from '../hooks/useSoundFX';
+import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, getVolume, setVolume, setAmbientMood, getAmbientMood, type AmbientMood, getDiceSoundPack, setDiceSoundPack, DICE_SOUND_PACKS, type DiceSoundPack } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
@@ -212,6 +212,7 @@ export default function Game() {
   const [soundMuted, setSoundMuted] = useState(isMuted());
   const [soundVolume, setSoundVolume] = useState(getVolume());
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [activeDicePack, setActiveDicePack] = useState<DiceSoundPack>(getDiceSoundPack());
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships' | 'wiki' | 'calendar'>('narration');
@@ -1944,6 +1945,19 @@ export default function Game() {
                   aria-label="Volume"
                 />
                 <span className="text-[10px] text-slate-400 w-7 text-right">{Math.round(soundVolume * 100)}%</span>
+                <div className="w-px h-4 bg-slate-700 mx-0.5" />
+                <div className="flex gap-1">
+                  {DICE_SOUND_PACKS.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setDiceSoundPack(p.id); setActiveDicePack(p.id); playDiceRoll(); }}
+                      className={`text-[8px] px-1.5 py-0.5 rounded transition-all font-semibold ${activeDicePack === p.id ? 'bg-amber-700/60 text-amber-200 border border-amber-500/50' : 'bg-slate-700/50 text-slate-500 hover:text-slate-300 border border-transparent'}`}
+                      title={p.desc}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
