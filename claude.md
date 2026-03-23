@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added encounter post-mortem UI — `EncounterPostmortem` component (lazy-loaded) auto-fetches AI tactical analysis from `POST /api/dm/encounter-postmortem` when combat ends. Teal-themed collapsible banner below CombatMVP showing bullet-point analysis (what went well, what went wrong, tactical tips). Auto-hides when new combat starts. Graceful fallback when AI offline.
+- Added fog reveal undo ("Re-fog") — new `refog` DM tool in BattleMap Fog section. Click explored cells to hide them again (sets explored to false). Supports continuous drag-painting. Rose-themed active state with ring indicator. Lets DM surgically control fog per-cell instead of only full Dark/Reveal presets.
+- Added character backup restore — "Restore" button on Home page next to Import. Prompts for encryption password, opens file picker, decrypts AES-256-GCM backup via `importBackup()` from `lib/backup.ts`. Assigns new UUID to avoid conflicts. Lazy-loaded. Sky-blue accent.
+- Added character backup export — `lib/backup.ts` with PBKDF2 key derivation + AES-256-GCM encryption. "Backup" button on CharacterSheet Equipment section. Downloads encrypted JSON file.
+- Added encounter post-mortem endpoint — `POST /api/dm/encounter-postmortem` in `_worker.ts`. AI tactical analysis of combat logs (3-4 bullets via Workers AI).
 - Added character portrait gallery — `portraitGallery?: string[]` on Character type. Gallery thumbnails appear below the portrait on hover (count badge). Click any saved portrait to set it as active. Gallery visible via toggle on portrait hover. Max 10 saved.
 - Added v9.0 roadmap: 10 new ideas (encounter post-mortem, campaign branching, NPC attitude tracker, quick combat, session scheduling, etc.)
 - Added session timer in DM sidebar — renders `SessionTimer` component in the Notes tab alongside existing DM tools. Full pause/resume controls accessible without scrolling to header.

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
 import InitiativeBar from '../components/combat/InitiativeBar';
 import BattleMap, { type ActiveAoE } from '../components/combat/BattleMap';
 import CharacterSheet from '../components/combat/CharacterSheet';
@@ -37,6 +37,7 @@ import NpcTracker from '../components/game/NpcTracker';
 import DiceStats from '../components/game/DiceStats';
 import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
+const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostmortem'));
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -2309,6 +2310,13 @@ export default function Game() {
                     inCombat={inCombat}
                     playerNames={characters.map((c) => c.name)}
                   />
+                )}
+
+                {/* AI tactical post-mortem — shown after combat ends */}
+                {activeView === 'narration' && (
+                  <Suspense fallback={null}>
+                    <EncounterPostmortem combatLog={combatLog} inCombat={inCombat} characters={characters} />
+                  </Suspense>
                 )}
 
                 {/* AI Session Recap banner */}
