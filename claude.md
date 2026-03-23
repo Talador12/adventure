@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.0.0
+## Current Version: v7.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added initiative lock toggle — DM-only button in initiative bar during combat. Prevents drag reorder and signals re-roll should be disabled. Amber lock icon with locked/unlocked states.
+- Added encounter history search/filter — search input in EncounterLog filters by kills, spells, and combat log text. Difficulty filter pills (easy/medium/hard/deadly) with color-coded active states.
+- Added fog shape tools — 4 new DM tools for bulk fog operations: circle reveal, circle hide, rectangle reveal, rectangle hide. Two-click model (first click sets center/corner, second applies shape). Circle uses Euclidean distance, rectangle uses bounding box.
+- Added performance dashboard — `PerfDashboard` component (lazy-loaded, Ctrl+Shift+P toggle). Shows FPS, memory usage, DOM node count, canvas count. Color-coded thresholds. Also accessible via `window.__PERF_DASHBOARD__`.
 - Added campaign branching — "Fork" button (DM only, violet) in Game header. Snapshots current state to new room ID with `-fork-` suffix, navigates to the fork. Enables "what if" exploration without affecting the main campaign.
 - Added session scheduling — `SessionScheduler` component in DMSidebar Notes tab. Date/time picker, countdown to next session (pulses amber within 1 hour), multiple upcoming sessions list. localStorage-backed per campaign. Sky-blue accent.
 - Added quick combat resolver — `QuickCombatResolver` component in DMSidebar Encounter tab (out of combat). Simulates round-by-round combat using party stats vs difficulty-scaled enemies. Shows victory/defeat, damage per member, XP/gold earned. Applies damage to characters, awards on victory.
@@ -1127,7 +1131,19 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] NPC per-party-member attitudes (partyAttitudes map on NpcRecord, expandable per-member UI)
 - [x] Quick combat resolver (auto-resolve encounters, simulates round-by-round, in DMSidebar)
 - [x] Session scheduling (SessionScheduler in DMSidebar Notes, date/time picker, countdown)
-- [ ] Performance dashboard (bundle size, render times, memory usage for dev mode)
+- [x] Performance dashboard (PerfDashboard: FPS, memory, DOM nodes, Ctrl+Shift+P toggle)
+
+### v10.0 Feature Ideas
+- [x] Fog shape tools for batch reveal/hide (circle/rect, two-click model, 4 new DM tools)
+- [x] Initiative lock toggle (DM freezes initiative order during combat, amber lock button)
+- [x] Encounter history search/filter (search by kills/spells/log text, difficulty filter pills)
+- [ ] Ambient sound mixer (layer multiple ambient loops with per-channel volume)
+- [ ] Map fog-of-war brush size (1/2/3 cell radius for painting/erasing fog)
+- [ ] Combat damage graph (per-round DPS visualization after encounter ends)
+- [ ] Player readiness check (DM sends ready-check, players confirm before starting encounter)
+- [ ] Spell effect templates library (save/load custom AoE shapes for reuse)
+- [ ] Character backstory AI continuation (generate "what happened next" story beats)
+- [ ] Map layer opacity controls (DM adjusts transparency of fog/lighting/terrain overlays)
 - [x] Campaign export as Foundry VTT module (actors + inventory + quests as journal entries)
 - [x] PWA install prompt (manifest.json + beforeinstallprompt + Install button)
 
