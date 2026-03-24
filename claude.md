@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.8.0
+## Current Version: v7.9.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added bardic inspiration — party-shared bonus die pool (d6/d8/d10/d12 by bard level). Grant/Spend buttons in DMSidebar Notes tab. Any player can spend for +dX on a roll.
+- Added natural language dice labels — `/roll 2d6+3 fire damage` now captures and displays trailing labels in roll results.
+- Added token movement trails — ghosted orange dots along animation path while tokens move across the battle map.
+- Added dice superstitions — dry commentary on roll streaks. Cold: "The dice sense your fear." Hot: "Someone at this table made a deal with Tymora." Average: "Rolling exactly what the math predicted. How unsatisfying."
 - Added minimap pings — double-click minimap to ping location (pulsing amber circles, fade 3s, broadcast via game_event to all players).
 - Added combat round summary — auto-generated "Round N: X damage dealt, Y enemies defeated" recap after each full round.
 - Added NPC voice pitch — per-NPC pitch slider (0.5 deep → 2.0 high) on NPC tracker cards, overrides TTS name hash.
@@ -1209,10 +1213,20 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Fumble table (10 entries, 4 severity tiers, banner on nat 1, posted to DM history)
 - [x] Death save cinematic (screen dim + heartbeat pulse, contextual text by outcome)
 - [x] Dice luck tracker (SVG sparkline of last 20 d20 rolls, hot/cold streak detection)
-- [ ] Bardic inspiration pool (party-shared resource, spend for +1d6 on any roll)
+- [x] Bardic inspiration pool (BardicInspiration component, Grant/Spend, d6-d12 by bard level)
 - [x] Minimap pings (double-click minimap, pulsing amber circles, broadcast to party)
-- [ ] Token movement trails (ghosted path showing where a token moved this turn)
+- [x] Token movement trails (ghosted orange dots along animation path during movement)
 - [x] Combat round summary (auto-generated damage/kill recap after each round)
+- [x] Natural language dice labels ('/roll 2d6+3 fire damage' captures + displays labels)
+- [x] Dice superstitions tracker (dry commentary on hot/cold/average roll streaks)
+
+### v14.0 Feature Ideas
+- [ ] Concentration spell visual tether (line between concentrator and target on map)
+- [ ] Initiative portrait cards (character portrait in initiative bar, not just initial)
+- [ ] Combat threat indicator (color gradient on enemies by danger level)
+- [ ] Environmental hazard zones (mark areas that deal damage at start of turn)
+- [ ] Auto-loot distribution (enemies drop loot on death, distribute via staged loot)
+- [ ] Dice tower mode (animated perspective dice bounce before landing)
 - [x] NPC voice pitch (per-NPC slider 0.5-2.0 on NPC tracker, overrides TTS hash)
 - [x] DM secret rolls (toggle + local roll + reveal button, purple accent)
 - [x] Encounter mood music auto-switch (mystery for easy, combat for harder, restore on end)
