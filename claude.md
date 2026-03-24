@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.0.0
+## Current Version: v9.2.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added dice tower mode — animated 2D die bounces before revealing result. CSS keyframes (fall → bounce → settle → fade). Crit = golden glow, fumble = red, normal = slate. Clip-path shapes per die type.
+- Added combat flavor text — 31 randomized flavor strings across hit/miss/crit/kill/fumble. "Finds an opening in the defense." "Swings wide." "One less problem." Appended to combat log messages.
+- Added level-up fanfare — golden radial glow overlay with large level number and character name. Auto-dismisses after 3 seconds. Wired into CombatToolbar via triggerLevelUp prop.
 - Added map waypoint paths — DM draws movement path by clicking cells in sequence. Orange dashed line with numbered dots (green start, red end). 'Go' animates token along path with chained animations. Waypoint tool in DM toolbar.
 - Added session summary card — 'Wrap Up' button shows end-of-session stats overlay: duration, damage dealt, enemies slain, crits, encounters, rounds. Amber-gradient divider. 'Until next time' dismiss.
 - RELEASE 100. v9.0.0. "Roll for the Century."
@@ -1252,7 +1255,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Environmental hazard zones (lava/acid/poison_gas terrain, patterns, HAZARD_DAMAGE)
 - [x] HP bar emotional states (shake when low, glow when full)
 - [x] Auto-loot distribution (already existed — staged + random loot on combat end)
-- [ ] Dice tower mode (animated perspective dice bounce before landing)
+- [x] Dice tower mode (2D animated bounce, CSS keyframes, crit/fumble glow, clip-path shapes)
 - [x] Spell range visualization (sky-blue dashed circle on map during AoE targeting)
 - [x] Turn order prediction ("in N" count on initiative cards, circular distance)
 - [x] Party formation presets (already existed — 6 formations, marching order, drag reorder)
