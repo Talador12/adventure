@@ -1189,7 +1189,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Game.tsx code-split (extract combat view, map view, and narration view into lazy-loaded routes)
 - [x] Offline mode indicator (OfflineBanner component: red/amber banner, reconnect countdown, "single-player mode active" messaging)
 - [x] Theme system (4 themes: Dark/Light/Parchment/High Contrast — CSS custom properties, data-theme attr, selector dropdown, early-apply in main.tsx)
-- [ ] Campaign export to PDF (full campaign book with maps, NPCs, quests, session history)
+- [x] Campaign export to PDF (enhanced campaign book: table of contents, NPC section, calendar status, session journal, 50 combat log entries, parchment styling)
 
 ### v7.0 Feature Ideas
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
