@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v8.2.0
+## Current Version: v8.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Enhanced token HP bars — numeric HP readout below each bar, wider bars (1.8x radius), dark background for contrast.
+- Added damage type emoji on flytext — fire, cold, lightning, radiant, necrotic, psychic, poison, acid, thunder, force all get emoji prefixes on floating damage numbers.
+- Added initiative countdown sound — rising-pitch square wave ticks in the last 5 seconds of turn timer. Gets more urgent as time runs out.
+- Added spell component tracker — V/S/M field on Spell interface, rendered as monospace tag on spell buttons. Framework for material component warnings.
+- Added grapple/shove automation — contested check buttons in CombatToolbar. Rolls attacker vs defender, auto-applies grappled or prone condition on success.
+- Makefile refactored to use repos/Makefile help style — one-liner grep/awk auto-discovery, alphabetical sort.
 - Added spell range visualization — sky-blue dashed circle on battle map when in AoE targeting mode. Shows exactly how far the spell can reach from the caster. `spellRangeCells` passed through ActiveAoE interface.
 - Added scene transition cards — dramatic title overlay when sceneName changes. Fade-in-up with amber gradient divider. The kind of thing that makes a session feel cinematic. Auto-dismisses after 3 seconds.
 - Added combat emotes — 6 quick-reaction buttons during combat (Nice!/No.../Ha!/GG/Hmm/RIP). Broadcast via game_event, pop-in animation. The table's body language, digitized.
@@ -1246,17 +1252,17 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Party formation presets (already existed — 6 formations, marching order, drag reorder)
 - [x] Death recap (DeathRecap component, last 3 damage sources, auto-dismiss)
 - [ ] Mounted combat support (rider + mount share a token, dismount action)
-- [ ] Grapple/shove automation (contested STR checks with advantage tracking)
+- [x] Grapple/shove automation (contested checks, auto-apply grappled/prone conditions)
 
 ### v16.0 Feature Ideas
 - [x] Scene transition cards (dramatic title overlay on scene change, amber divider)
 - [x] Combat emotes (6 quick-reaction buttons, broadcast via game_event)
 - [x] Passive perception alerts (DM warned when party PP beats trap DC)
-- [ ] Damage type icons (fire/cold/lightning icons on flytext and combat log)
-- [ ] Initiative countdown sound (tick-tick-tick in the last 5 seconds of turn timer)
+- [x] Damage type emoji on flytext (fire/cold/lightning/radiant/necrotic/psychic/poison/acid/thunder/force)
+- [x] Initiative countdown sound (rising-pitch ticks in last 5 seconds of turn timer)
 - [ ] Campaign world clock (in-game time advances with each scene, affects rest eligibility)
-- [ ] Spell component tracker (V/S/M indicator on spell buttons, warn when missing material)
-- [ ] Token health bar on canvas (tiny HP bar drawn under each token on the battle map)
+- [x] Spell component tracker (V/S/M on Spell interface, monospace tag on spell buttons)
+- [x] Token HP bars enhanced (numeric readout, wider bars, dark background)
 - [x] NPC voice pitch (per-NPC slider 0.5-2.0 on NPC tracker, overrides TTS hash)
 - [x] DM secret rolls (toggle + local roll + reveal button, purple accent)
 - [x] Encounter mood music auto-switch (mystery for easy, combat for harder, restore on end)
