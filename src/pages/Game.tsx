@@ -2310,6 +2310,7 @@ export default function Game() {
                   }
                 }}
                 canReorder={canUseDMTools && inCombat && !initiativeLocked}
+                myUnitId={!canUseDMTools && inCombat && !initiativeLocked ? selectedCharacterId || undefined : undefined}
                 onReorder={(reorderedIds) => {
                   setUnits((prev: Unit[]) => {
                     const ordered: Unit[] = [];
