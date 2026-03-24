@@ -49,6 +49,7 @@ import { rollFumble, type FumbleEffect } from '../data/fumbleTable';
 import DeathSaveCinematic, { useDeathSaveCinematic } from '../components/game/DeathSaveCinematic';
 import DiceLuckTracker from '../components/game/DiceLuckTracker';
 import DiceSuperstition from '../components/game/DiceSuperstition';
+import DeathRecap, { useDeathRecap } from '../components/game/DeathRecap';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -230,6 +231,7 @@ export default function Game() {
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
   const { display: deathSaveDisplay, trigger: triggerDeathSave } = useDeathSaveCinematic();
+  const { display: deathRecapDisplay, recordDamage, triggerRecap: triggerDeathRecap } = useDeathRecap();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
   const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
@@ -2459,6 +2461,8 @@ export default function Game() {
                   addFlytext={addFlytext}
                   recordKill={recordKill}
                   triggerDeathSave={triggerDeathSave}
+                  recordDamage={recordDamage}
+                  triggerDeathRecap={triggerDeathRecap}
                   onCombatEnd={() => {
                     const prev = preCombatAmbientRef.current;
                     if (prev && prev !== 'none' && prev !== 'combat') {
@@ -3027,6 +3031,7 @@ export default function Game() {
       <CritCelebration active={critActive} confetti={critConfetti} />
       <KillStreak display={killStreakDisplay} />
       <DeathSaveCinematic display={deathSaveDisplay} />
+      <DeathRecap display={deathRecapDisplay} />
       {/* Fumble consequence banner */}
       {fumbleDisplay && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9995] animate-slide-in pointer-events-none">

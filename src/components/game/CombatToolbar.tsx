@@ -57,6 +57,8 @@ interface CombatToolbarProps {
   addFlytext?: (col: number, row: number, text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'death', gridCols: number, gridRows: number) => void;
   recordKill?: (killerName: string) => void;
   triggerDeathSave?: (characterName: string, message: string) => void;
+  recordDamage?: (unitId: string, source: string, amount: number, type?: string) => void;
+  triggerDeathRecap?: (unitId: string, unitName: string) => void;
   onCombatEnd?: () => void;
 }
 
@@ -102,6 +104,8 @@ export default function CombatToolbar({
   addFlytext,
   recordKill,
   triggerDeathSave,
+  recordDamage,
+  triggerDeathRecap,
   onCombatEnd,
   onAddToPartyInventory,
   stagedLoot,
@@ -379,6 +383,7 @@ export default function CombatToolbar({
                                     const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus : baseDmg + statMod + weaponDmgBonus + featDmgBonus);
                                     totalDamageDealt += finalDmg;
                                     damageUnit(target.id, finalDmg);
+                                    recordDamage?.(target.id, selectedCharacter?.name || 'Unknown', finalDmg);
                                     playCombatHit();
                                     if (isCrit) {
                                       playCritical();
@@ -407,6 +412,7 @@ export default function CombatToolbar({
                                   addDmMessage(deathMsg);
                                   if (targetPos) addFlytext?.(targetPos.col, targetPos.row, 'SLAIN', 'death', 20, 20);
                                   recordKill?.(selectedCharacter?.name || 'You');
+                                  triggerDeathRecap?.(target.id, target.name);
                                 }
                                 // Drain any concentration break messages
                                 setTimeout(drainConcentrationMessages, 0);

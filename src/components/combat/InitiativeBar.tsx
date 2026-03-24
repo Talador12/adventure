@@ -108,6 +108,14 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
             : null;
           const threatColor = threatLevel === 'deadly' ? 'text-red-500' : threatLevel === 'hard' ? 'text-orange-400' : threatLevel === 'medium' ? 'text-yellow-400' : threatLevel === 'easy' ? 'text-slate-500' : '';
 
+          // Turn order prediction — how many turns until this unit goes
+          const currentIdx = entries.findIndex((e) => e.isCurrentTurn);
+          const myIdx = entries.indexOf(entry);
+          const aliveEntries = entries.filter((e) => e.hp > 0);
+          const turnsAway = currentIdx >= 0 && myIdx >= 0 && !entry.isCurrentTurn && entry.hp > 0
+            ? (myIdx - currentIdx + entries.length) % entries.length
+            : 0;
+
           const isEntering = animatingTurnId === entry.id;
 
           const isDragging = dragId === entry.id;
@@ -190,6 +198,7 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
               {/* AC + Initiative */}
               <div className="flex items-center gap-2 text-[9px] font-mono">
                 <span className="text-sky-400">AC {entry.ac}</span>
+                {turnsAway > 0 && <span className="text-slate-600">in {turnsAway}</span>}
                 {entry.initiative > 0 && (
                   <span className="text-amber-400">
                     Init {entry.initiative}
