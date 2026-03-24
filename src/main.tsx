@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { ToastProvider } from './components/ui/toast';
 import { GameProvider } from './contexts/GameContext';
+import { I18nProvider } from './lib/i18n';
 import Home from './pages/Home'; // Home is the landing page — keep eagerly loaded
 import './styles.css';
 
@@ -158,6 +159,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
+      <I18nProvider>
       <ToastProvider>
         <GameProvider>
           <ErrorBoundary>
@@ -179,6 +181,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           </ErrorBoundary>
         </GameProvider>
       </ToastProvider>
+      </I18nProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

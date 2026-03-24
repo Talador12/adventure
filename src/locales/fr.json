@@ -1,0 +1,13 @@
+{
+  "app.tagline": "ta table, tes règles",
+  "app.hero.heading1": "Ta table.",
+  "app.hero.heading2": "Tes règles.",
+  "auth.signIn": "Se connecter",
+  "auth.signOut": "Déconnexion",
+  "auth.guest": "Invité",
+  "auth.cancel": "Annuler",
+  "combat.rollInitiative": "Lancer l'initiative",
+  "combat.endCombat": "Fin du combat",
+  "combat.shortRest": "Repos court",
+  "combat.longRest": "Repos long"
+}

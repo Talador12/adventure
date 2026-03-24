@@ -205,6 +205,7 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
               {/* AC + Initiative */}
               <div className="flex items-center gap-2 text-[9px] font-mono">
                 <span className="text-sky-400">AC {entry.ac}</span>
+                {entry.reactionUsed && <span className="text-orange-500" title="Reaction used this round">R</span>}
                 {turnsAway > 0 && <span className="text-slate-600">in {turnsAway}</span>}
                 {entry.initiative > 0 && (
                   <span className="text-amber-400">

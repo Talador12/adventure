@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { useToast } from '../components/ui/toast';
 import { useGame } from '../contexts/GameContext';
+import { useI18n, LOCALE_NAMES } from '../lib/i18n';
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { CAMPAIGN_TEMPLATES } from '../data/campaignTemplates';
@@ -56,6 +57,7 @@ export default function Home() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { locale: i18nLocale, setLocale: setI18nLocale, t } = useI18n();
   const { characters, removeCharacter, addCharacter } = useGame();
   const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number; archived?: boolean; archivedAt?: number }>>([]);
   const [showArchived, setShowArchived] = useState(false);
@@ -344,8 +346,8 @@ export default function Home() {
       <header className="w-full bg-gradient-to-r from-[#F38020] via-[#e87818] to-[#d06010] shadow-lg shadow-orange-900/20 py-2 px-3 sm:px-6 flex justify-between items-center relative">
         <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.06)_50%,transparent_70%)] pointer-events-none" />
         <div className="flex items-baseline gap-2 relative z-10 min-w-0">
-          <h1 className="text-lg sm:text-xl font-extrabold tracking-tight drop-shadow-md text-white shrink-0">Adventure</h1>
-          <span className="text-[11px] text-white/50 font-medium hidden sm:inline">your table, your rules</span>
+          <h1 className="text-lg sm:text-xl font-extrabold tracking-tight drop-shadow-md text-white shrink-0">{t('app.title')}</h1>
+          <span className="text-[11px] text-white/50 font-medium hidden sm:inline">{t('app.tagline')}</span>
         </div>
 
         <div className="flex gap-2 sm:gap-3 items-center relative z-10">
@@ -376,6 +378,17 @@ export default function Home() {
           >
             FX
           </button>
+          {/* Language selector */}
+          <select
+            value={i18nLocale}
+            onChange={(e) => setI18nLocale(e.target.value as import('../lib/i18n').Locale)}
+            className="text-[9px] px-1 py-1 rounded bg-white/10 text-white/80 border-none font-bold cursor-pointer focus:outline-none"
+            title="Language"
+          >
+            {Object.entries(LOCALE_NAMES).map(([code, name]) => (
+              <option key={code} value={code} className="bg-slate-900 text-white">{name}</option>
+            ))}
+          </select>
           {/* Theme toggle */}
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white" aria-label="Toggle theme">
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -496,11 +509,10 @@ export default function Home() {
         </div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col items-center text-center gap-4 sm:gap-5 relative z-10">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight animate-fade-in-up">
-            <span className="text-white">Your table. </span><span className="text-shimmer text-[#F38020]">Your rules.</span>
+            <span className="text-white">{t('app.hero.heading1')} </span><span className="text-shimmer text-[#F38020]">{t('app.hero.heading2')}</span>
           </h2>
           <p className="text-base sm:text-lg text-slate-400 max-w-2xl animate-fade-in-up" style={{ animationDelay: '80ms' }}>
-            An accessible D&D 5e tabletop in your browser. Play with friends, go solo, or just spectate.
-            Every seat at the table is yours to fill however you want.
+            {t('app.hero.subtitle')}
           </p>
 
           {/* Quick actions */}

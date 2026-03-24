@@ -137,6 +137,9 @@ export interface Unit {
   // Aura visualization — radius circle drawn on battle map around this token
   auraRadius?: number; // in grid cells (e.g., 2 = 10ft)
   auraColor?: string;  // CSS color with alpha (e.g., 'rgba(56,189,248,0.15)')
+  // Mounted combat — rider and mount share a position on the battle map
+  mountId?: string;  // if this unit is a rider, the mount's unit ID
+  riderId?: string;  // if this unit is a mount, the rider's unit ID
 }
 
 export interface LairAction {
