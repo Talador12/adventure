@@ -57,6 +57,8 @@ import SessionSummary from '../components/game/SessionSummary';
 import DiceTower, { useDiceTower } from '../components/dice/DiceTower';
 import LevelUpFanfare, { useLevelUpFanfare } from '../components/game/LevelUpFanfare';
 import EncounterThermometer from '../components/game/EncounterThermometer';
+import AbilityCheckRoller from '../components/game/AbilityCheckRoller';
+import SessionStreak from '../components/game/SessionStreak';
 import RoundMVP, { useRoundMVP } from '../components/game/RoundMVP';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
@@ -2044,6 +2046,7 @@ export default function Game() {
           )}
         </div>
         <div className="flex items-center gap-3">
+          <SessionStreak roomId={room} playerName={currentPlayer.username || 'Guest'} />
           {/* Sound controls — mute toggle + volume slider */}
           <div className="relative flex items-center">
             <button
@@ -2929,6 +2932,15 @@ export default function Game() {
                     )}
                   </div>
                 )}
+                {/* Ability check quick-roller */}
+                <AbilityCheckRoller
+                  character={selectedCharacter || null}
+                  onRoll={(_ability, _total, _roll, _mod, message) => {
+                    playDiceRoll();
+                    addDmMessage(message);
+                    setCombatLog((prev) => [...prev, message]);
+                  }}
+                />
                 {rollPopupVisible && (
                   <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/75 backdrop-blur-[1px] pointer-events-auto">
                     <div className="text-center">
