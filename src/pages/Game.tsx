@@ -221,6 +221,8 @@ export default function Game() {
   const [actionInput, setActionInput] = useState('');
   // Juice hooks — the charm that makes this VTT feel alive
   const [fumbleDisplay, setFumbleDisplay] = useState<FumbleEffect | null>(null);
+  const [secretRollMode, setSecretRollMode] = useState(false);
+  const [secretRolls, setSecretRolls] = useState<Array<{ id: string; die: string; value: number; revealed: boolean }>>([]);
   const { flytexts, addFlytext } = useHPFlytext();
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
@@ -1488,6 +1490,15 @@ export default function Game() {
 
   const handleLocalRoll = useCallback(
     (die: DieType, sides: number, count: number, advMode: 'normal' | 'advantage' | 'disadvantage') => {
+      if (secretRollMode && canUseDMTools) {
+        // Secret roll — DM only, no broadcast. Roll locally.
+        const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+        const value = advMode === 'advantage' ? Math.max(...rolls) : advMode === 'disadvantage' ? Math.min(...rolls) : rolls.reduce((a, b) => a + b, 0);
+        playDiceRoll();
+        setSecretRolls((prev) => [...prev.slice(-9), { id: crypto.randomUUID().slice(0, 6), die: `${count}d${sides}`, value, revealed: false }]);
+        addDmMessage(`[Secret Roll] ${count}d${sides}: ${value}${advMode !== 'normal' ? ` (${advMode})` : ''}`);
+        return;
+      }
       send({
         type: 'roll',
         die,
@@ -1498,7 +1509,7 @@ export default function Game() {
         unitName: selectedUnit?.name || undefined,
       });
     },
-    [send, selectedUnitId, selectedUnit]
+    [send, selectedUnitId, selectedUnit, secretRollMode, canUseDMTools, addDmMessage]
   );
 
   // Fun default names when character/player info is missing
@@ -2815,6 +2826,38 @@ export default function Game() {
             <>
               <div className="relative p-4 border-b border-slate-800 overflow-y-auto">
                 <DiceRoller ref={diceRef} onLocalRoll={handleLocalRoll} onRollComplete={handleRollComplete} onMacroRoll={handleMacroRoll} useServerRolls={status === 'connected'} suppressServerSpin={status === 'connected'} />
+                {/* DM secret roll toggle + reveal panel */}
+                {canUseDMTools && (
+                  <div className="mt-2 space-y-1">
+                    <button
+                      onClick={() => setSecretRollMode((v) => !v)}
+                      className={`w-full text-[9px] py-1 rounded border font-semibold transition-all ${
+                        secretRollMode ? 'border-purple-600/50 bg-purple-900/20 text-purple-400' : 'border-slate-700 text-slate-600 hover:text-slate-400'
+                      }`}
+                    >
+                      {secretRollMode ? 'Secret Mode On — rolls are DM-only' : 'Enable Secret Rolls'}
+                    </button>
+                    {secretRolls.filter((r) => !r.revealed).length > 0 && (
+                      <div className="space-y-0.5">
+                        {secretRolls.filter((r) => !r.revealed).map((r) => (
+                          <div key={r.id} className="flex items-center justify-between px-2 py-0.5 rounded bg-purple-950/20 border border-purple-800/30">
+                            <span className="text-[9px] text-purple-300 font-mono">{r.die}: {r.value}</span>
+                            <button
+                              onClick={() => {
+                                setSecretRolls((prev) => prev.map((sr) => sr.id === r.id ? { ...sr, revealed: true } : sr));
+                                broadcastGameEvent('dm_narrate', { narration: `[Revealed Roll] ${r.die}: ${r.value}` });
+                                addDmMessage(`Revealed: ${r.die} = ${r.value}`);
+                              }}
+                              className="text-[8px] px-1.5 py-0.5 rounded bg-purple-800/30 text-purple-400 hover:text-purple-300 font-semibold"
+                            >
+                              Reveal
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {rollPopupVisible && (
                   <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/75 backdrop-blur-[1px] pointer-events-auto">
                     <div className="text-center">
