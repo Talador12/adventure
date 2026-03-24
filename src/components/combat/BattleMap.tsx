@@ -520,7 +520,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'lava' | 'acid' | 'poison_gas' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog' | 'fog-circle-reveal' | 'fog-circle-hide' | 'fog-rect-reveal' | 'fog-rect-hide' | 'waypoint';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'lava' | 'acid' | 'poison_gas' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog' | 'fog-circle-reveal' | 'fog-circle-hide' | 'fog-rect-reveal' | 'fog-rect-hide' | 'waypoint' | 'measure';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -642,6 +642,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [mapPings, setMapPings] = useState<Array<{ col: number; row: number; time: number }>>([]);
   // Waypoint path — DM draws a path, then a token animates along it
   const [waypointPath, setWaypointPath] = useState<Array<{ col: number; row: number }>>([]);
+  // Distance measurement — two-click tool
+  const [measureStart, setMeasureStart] = useState<{ col: number; row: number } | null>(null);
+  const [measureEnd, setMeasureEnd] = useState<{ col: number; row: number } | null>(null);
 
   // Start a smooth token animation from one grid cell to another (exposed via animateMoveRef)
   const animateToken = useCallback((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number, durationMs = 300) => {
@@ -1052,6 +1055,39 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.lineWidth = 1;
         ctx.strokeRect(cc * CELL_SIZE + 0.5, rr * CELL_SIZE + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
       });
+    }
+
+    // Distance measurement line + label
+    if (measureStart && measureEnd) {
+      const mx1 = measureStart.col * CELL_SIZE + CELL_SIZE / 2;
+      const my1 = measureStart.row * CELL_SIZE + CELL_SIZE / 2;
+      const mx2 = measureEnd.col * CELL_SIZE + CELL_SIZE / 2;
+      const my2 = measureEnd.row * CELL_SIZE + CELL_SIZE / 2;
+      const dist = Math.max(Math.abs(measureEnd.col - measureStart.col), Math.abs(measureEnd.row - measureStart.row));
+      const feet = dist * 5;
+      // Line
+      ctx.beginPath();
+      ctx.moveTo(mx1, my1);
+      ctx.lineTo(mx2, my2);
+      ctx.strokeStyle = 'rgba(56,189,248,0.6)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Dots at endpoints
+      [{ x: mx1, y: my1 }, { x: mx2, y: my2 }].forEach(({ x, y }) => {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(56,189,248,0.8)';
+        ctx.fill();
+      });
+      // Label at midpoint
+      const midX = (mx1 + mx2) / 2;
+      const midY = (my1 + my2) / 2 - 8;
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(56,189,248,0.9)';
+      ctx.fillText(`${feet}ft`, midX, midY);
     }
 
     // Waypoint path — connected dots showing the planned movement route
@@ -1676,6 +1712,17 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
+    // Measure tool: two-click distance measurement
+    if (dmTool === 'measure') {
+      if (!measureStart) {
+        setMeasureStart({ col, row });
+        setMeasureEnd(null);
+      } else {
+        setMeasureEnd({ col, row });
+      }
+      return;
+    }
+
     // Waypoint tool: DM clicks cells to build a path
     if (dmTool === 'waypoint') {
       setWaypointPath((prev) => {
@@ -2237,6 +2284,15 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 </button>
               ))}
             </div>
+
+            {/* Measure distance tool */}
+            <button
+              onClick={() => { setDmTool(dmTool === 'measure' ? 'select' : 'measure'); setMeasureStart(null); setMeasureEnd(null); }}
+              className={`text-[9px] px-1.5 py-1 rounded border font-semibold transition-all ${dmTool === 'measure' ? 'bg-sky-900/50 border-sky-600/50 text-sky-300 ring-1 ring-sky-500/40' : 'bg-slate-800/60 border-slate-600/50 text-slate-400'}`}
+              title="Measure distance between two cells (click start + end)"
+            >
+              Ruler{measureStart && !measureEnd ? '...' : ''}
+            </button>
 
             {/* Waypoint path tool */}
             <div className="flex items-center gap-0.5 ml-1">

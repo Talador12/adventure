@@ -58,6 +58,8 @@ import DiceTower, { useDiceTower } from '../components/dice/DiceTower';
 import LevelUpFanfare, { useLevelUpFanfare } from '../components/game/LevelUpFanfare';
 import EncounterThermometer from '../components/game/EncounterThermometer';
 import AbilityCheckRoller from '../components/game/AbilityCheckRoller';
+import SavingThrowRoller from '../components/game/SavingThrowRoller';
+import DamageLeaderboard from '../components/game/DamageLeaderboard';
 import SessionStreak from '../components/game/SessionStreak';
 import RoundMVP, { useRoundMVP } from '../components/game/RoundMVP';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
@@ -2328,6 +2330,7 @@ export default function Game() {
           {/* Encounter XP tracker — during combat */}
           <EncounterXPTracker units={units} playerCount={characters.length} inCombat={inCombat} />
           <EncounterThermometer units={units} inCombat={inCombat} />
+          <DamageLeaderboard combatLog={combatLog} playerNames={characters.map((c) => c.name)} inCombat={inCombat} />
 
           {/* Party health overview — always visible when characters exist */}
           {characters.length > 0 && adventureStarted && (
@@ -2936,6 +2939,14 @@ export default function Game() {
                 <AbilityCheckRoller
                   character={selectedCharacter || null}
                   onRoll={(_ability, _total, _roll, _mod, message) => {
+                    playDiceRoll();
+                    addDmMessage(message);
+                    setCombatLog((prev) => [...prev, message]);
+                  }}
+                />
+                <SavingThrowRoller
+                  character={selectedCharacter || null}
+                  onRoll={(message) => {
                     playDiceRoll();
                     addDmMessage(message);
                     setCombatLog((prev) => [...prev, message]);
