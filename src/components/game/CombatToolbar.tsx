@@ -62,6 +62,7 @@ interface CombatToolbarProps {
   triggerDeathRecap?: (unitId: string, unitName: string) => void;
   onCombatEnd?: () => void;
   triggerLevelUp?: (charName: string, level: number) => void;
+  onNewRound?: (round: number) => void;
 }
 
 export default function CombatToolbar({
@@ -109,6 +110,7 @@ export default function CombatToolbar({
   recordDamage,
   triggerDeathRecap,
   onCombatEnd,
+  onNewRound,
   triggerLevelUp,
   onAddToPartyInventory,
   stagedLoot,
@@ -258,6 +260,7 @@ export default function CombatToolbar({
                                   if (parts.length > 0) {
                                     setCombatLog((prev) => [...prev, `Round ${combatRound}: ${parts.join(', ')}.`]);
                                   }
+                                  onNewRound?.(combatRound);
                                   setCombatLog((prev) => [...prev, `--- Round ${combatRound + 1} ---`]);
                                 }
                                 if (tr.deathSaveMessage) {

@@ -56,6 +56,8 @@ import PartyVitals from '../components/game/PartyVitals';
 import SessionSummary from '../components/game/SessionSummary';
 import DiceTower, { useDiceTower } from '../components/dice/DiceTower';
 import LevelUpFanfare, { useLevelUpFanfare } from '../components/game/LevelUpFanfare';
+import EncounterThermometer from '../components/game/EncounterThermometer';
+import RoundMVP, { useRoundMVP } from '../components/game/RoundMVP';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
@@ -243,6 +245,7 @@ export default function Game() {
   const { display: deathRecapDisplay, recordDamage, triggerRecap: triggerDeathRecap } = useDeathRecap();
   const { toast: milestoneToast, recordDamage: milestoneDamage, recordRoll: milestoneRoll, recordKill: milestoneKill, recordCrit: milestoneCrit } = useSessionMilestones();
   const { display: diceTowerDisplay, trigger: triggerDiceTower } = useDiceTower();
+  const { display: roundMVPDisplay, check: checkRoundMVP } = useRoundMVP();
   const { display: levelUpDisplay, trigger: triggerLevelUp } = useLevelUpFanfare();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
@@ -2321,6 +2324,7 @@ export default function Game() {
 
           {/* Encounter XP tracker — during combat */}
           <EncounterXPTracker units={units} playerCount={characters.length} inCombat={inCombat} />
+          <EncounterThermometer units={units} inCombat={inCombat} />
 
           {/* Party health overview — always visible when characters exist */}
           {characters.length > 0 && adventureStarted && (
@@ -2507,6 +2511,7 @@ export default function Game() {
                   recordDamage={recordDamage}
                   triggerDeathRecap={triggerDeathRecap}
                   triggerLevelUp={(name, level) => triggerLevelUp(name, level)}
+                  onNewRound={(round) => checkRoundMVP(combatLog, characters.map((c) => c.name), round)}
                   onCombatEnd={() => {
                     const prev = preCombatAmbientRef.current;
                     if (prev && prev !== 'none' && prev !== 'combat') {
@@ -3085,6 +3090,7 @@ export default function Game() {
       <SceneTransition sceneName={sceneName} />
       <DiceTower display={diceTowerDisplay} />
       <LevelUpFanfare display={levelUpDisplay} />
+      <RoundMVP display={roundMVPDisplay} />
       <SessionMilestones toast={milestoneToast} />
       <SessionSummary
         combatLog={combatLog}
