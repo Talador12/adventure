@@ -46,6 +46,9 @@ const TERRAIN_COLORS: Record<TerrainType, { fill: string; stroke?: string; patte
   pit:        { fill: '#0c0a09', stroke: '#44403c' },
   stairs_up:  { fill: '#1e293b', stroke: '#22c55e', pattern: 'arrow_up' },
   stairs_down:{ fill: '#1e293b', stroke: '#ef4444', pattern: 'arrow_down' },
+  lava:       { fill: '#7f1d1d', stroke: '#ef4444', pattern: 'lava' },
+  acid:       { fill: '#14532d', stroke: '#22c55e', pattern: 'acid' },
+  poison_gas: { fill: '#1e1b4b', stroke: '#8b5cf6', pattern: 'gas' },
 };
 
 // Condition colors for token indicator pips (matches CONDITION_EFFECTS color scheme)
@@ -394,6 +397,40 @@ function drawTerrainCell(ctx: CanvasRenderingContext2D, c: number, r: number, te
       ctx.stroke();
     }
   }
+
+  // Lava: bubbling circles
+  if (terrain === 'lava') {
+    ctx.fillStyle = 'rgba(239,68,68,0.3)';
+    ctx.beginPath();
+    ctx.arc(x + cellSize * 0.3, y + cellSize * 0.6, 3, 0, Math.PI * 2);
+    ctx.arc(x + cellSize * 0.7, y + cellSize * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Acid: drip pattern
+  if (terrain === 'acid') {
+    ctx.fillStyle = 'rgba(34,197,94,0.35)';
+    for (let i = 0; i < 3; i++) {
+      const dx = x + cellSize * (0.25 + i * 0.25);
+      ctx.beginPath();
+      ctx.arc(dx, y + cellSize * 0.5, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Poison gas: wavy horizontal lines
+  if (terrain === 'poison_gas') {
+    ctx.strokeStyle = 'rgba(139,92,246,0.25)';
+    ctx.lineWidth = 1.5;
+    for (let row = 0; row < 2; row++) {
+      const yy = y + cellSize * (0.35 + row * 0.3);
+      ctx.beginPath();
+      ctx.moveTo(x + 2, yy);
+      ctx.quadraticCurveTo(x + cellSize * 0.33, yy - 3, x + cellSize * 0.5, yy);
+      ctx.quadraticCurveTo(x + cellSize * 0.67, yy + 3, x + cellSize - 2, yy);
+      ctx.stroke();
+    }
+  }
 }
 
 function tokenColor(unit: Unit): string {
@@ -483,7 +520,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog' | 'fog-circle-reveal' | 'fog-circle-hide' | 'fog-rect-reveal' | 'fog-rect-hide';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'lava' | 'acid' | 'poison_gas' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog' | 'fog-circle-reveal' | 'fog-circle-hide' | 'fog-rect-reveal' | 'fog-rect-hide';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -1070,6 +1107,37 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.setLineDash([]);
     });
 
+    // Draw concentration tethers — glowing line from caster to affected target(s)
+    units.filter((u) => u.concentratingOn && u.hp > 0).forEach((caster) => {
+      const casterPos = positions.find((p) => p.unitId === caster.id);
+      if (!casterPos) return;
+      const cx = casterPos.col * CELL_SIZE + CELL_SIZE / 2;
+      const cy = casterPos.row * CELL_SIZE + CELL_SIZE / 2;
+      // Find targets: units with a condition sourced by this caster
+      units.filter((u) => u.id !== caster.id && u.hp > 0 && (u.conditions || []).some((c) => c.source === caster.name)).forEach((target) => {
+        const targetPos = positions.find((p) => p.unitId === target.id);
+        if (!targetPos) return;
+        const tx = targetPos.col * CELL_SIZE + CELL_SIZE / 2;
+        const ty = targetPos.row * CELL_SIZE + CELL_SIZE / 2;
+        // Glow line
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(tx, ty);
+        ctx.strokeStyle = 'rgba(168,85,247,0.2)';
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        // Core line
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(tx, ty);
+        ctx.strokeStyle = 'rgba(168,85,247,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    });
+
     // Draw tokens (only visible ones, unless DM mode)
     positions.forEach((pos) => {
       const unit = units.find((u) => u.id === pos.unitId);
@@ -1584,6 +1652,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     const terrainMap: Record<string, TerrainType | null> = {
       select: null, wall: 'wall', floor: 'floor', water: 'water',
       difficult: 'difficult', door: 'door', pit: 'pit', erase: 'floor',
+      lava: 'lava', acid: 'acid', poison_gas: 'poison_gas',
       'stairs-up': 'stairs_up', 'stairs-down': 'stairs_down',
     };
     const target = terrainMap[dmTool];
@@ -2000,6 +2069,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     { tool: 'difficult', label: 'Rubble', color: 'text-amber-400' },
     { tool: 'door', label: 'Door', color: 'text-yellow-400' },
     { tool: 'pit', label: 'Pit', color: 'text-stone-400' },
+    { tool: 'lava', label: 'Lava', color: 'text-red-500' },
+    { tool: 'acid', label: 'Acid', color: 'text-green-500' },
+    { tool: 'poison_gas', label: 'Gas', color: 'text-violet-400' },
     { tool: 'stairs-up', label: '↑Stairs', color: 'text-emerald-400' },
     { tool: 'stairs-down', label: '↓Stairs', color: 'text-red-400' },
     { tool: 'erase', label: 'Erase', color: 'text-red-400' },
