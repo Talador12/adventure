@@ -449,11 +449,11 @@ upgrade: makeinfo ## [Utility] Upgrade Node (from .nvmrc) and all dependencies
 #                             Help & Info                                      #
 ################################################################################
 
-help: # Help command — persona-grouped reference
+help: ## [Utility] Show this help menu (also: bare 'make' runs this)
 	@echo ""
 	@echo "┌─────────────────────────────────────────────────────────┐"
 	@echo "│                   Adventure VTT                        │"
-	@echo "│          D&D 5e Virtual Tabletop (v$(VERSION))           │"
+	@echo "│              D&D 5e Virtual Tabletop                    │"
 	@echo "├─────────────────────────────────────────────────────────┤"
 	@echo "│                                                         │"
 	@echo "│  🎲 PLAY (Players & DMs)                                │"
@@ -487,12 +487,13 @@ help: # Help command — persona-grouped reference
 list-targets: ## [Utility] List all available targets
 	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep -E -v -e '^[^[:alnum:]]' -e '^$$@$$'
 
-makeinfo: # Shows the current make command running
-	@echoerr() { echo "$$@" 1>&2; }; \
-	goal="$(MAKECMDGOALS)"; \
-	if [ "$$goal" = "" ] || [ "$$goal" = "makeinfo" ]; then goal="help"; fi; \
-	echoerr ""; \
-	echoerr "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-	echoerr "🛠  Running: $$goal"; \
-	echoerr "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-	echoerr ""
+MAKECMDGOALS ?=
+
+makeinfo: # Shows the current make command running (silent for help)
+	@goal="$(MAKECMDGOALS)"; \
+	if [ "$$goal" = "" ] || [ "$$goal" = "makeinfo" ] || [ "$$goal" = "help" ]; then exit 0; fi; \
+	echo "" 1>&2; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" 1>&2; \
+	echo "  Running: $$goal" 1>&2; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" 1>&2; \
+	echo "" 1>&2
