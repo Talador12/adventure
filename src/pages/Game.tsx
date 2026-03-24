@@ -50,7 +50,9 @@ import DeathSaveCinematic, { useDeathSaveCinematic } from '../components/game/De
 import DiceLuckTracker from '../components/game/DiceLuckTracker';
 import DiceSuperstition from '../components/game/DiceSuperstition';
 import DeathRecap, { useDeathRecap } from '../components/game/DeathRecap';
+import SessionMilestones, { useSessionMilestones } from '../components/game/SessionMilestones';
 import SceneTransition from '../components/game/SceneTransition';
+import PartyVitals from '../components/game/PartyVitals';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
@@ -234,6 +236,7 @@ export default function Game() {
   const { display: killStreakDisplay, recordKill } = useKillStreak();
   const { display: deathSaveDisplay, trigger: triggerDeathSave } = useDeathSaveCinematic();
   const { display: deathRecapDisplay, recordDamage, triggerRecap: triggerDeathRecap } = useDeathRecap();
+  const { toast: milestoneToast, recordDamage: milestoneDamage, recordRoll: milestoneRoll, recordKill: milestoneKill, recordCrit: milestoneCrit } = useSessionMilestones();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
   const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
@@ -1555,7 +1558,8 @@ export default function Game() {
       const playerName = currentPlayer.username || '';
       const displayUsername = playerName || funDefault();
       playDiceRoll();
-      if (roll.isCritical) { setTimeout(playCritical, 400); triggerCrit(); }
+      milestoneRoll();
+      if (roll.isCritical) { setTimeout(playCritical, 400); triggerCrit(); milestoneCrit(); }
       if (roll.isFumble) { setTimeout(playFumble, 400); triggerFumble(); }
       setChatMessages((prev) => [
         ...prev,
@@ -2312,6 +2316,7 @@ export default function Game() {
               }}
             />
           )}
+          <PartyVitals characters={characters} inCombat={inCombat} />
 
           {/* Main content area */}
           <div className="flex-1 p-4 overflow-auto relative">
@@ -3060,6 +3065,7 @@ export default function Game() {
       <DeathSaveCinematic display={deathSaveDisplay} />
       <DeathRecap display={deathRecapDisplay} />
       <SceneTransition sceneName={sceneName} />
+      <SessionMilestones toast={milestoneToast} />
       {/* Fumble consequence banner */}
       {fumbleDisplay && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9995] animate-slide-in pointer-events-none">
