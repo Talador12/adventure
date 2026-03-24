@@ -694,6 +694,60 @@ export default function CombatToolbar({
                           );
                         })()}
 
+                      {/* Mount / Dismount — mounted combat support */}
+                      {inCombat && selectedCharacter && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const isMounted = !!playerUnit.mountId;
+                        if (isMounted) {
+                          return (
+                            <button
+                              onClick={() => {
+                                const mountUnit = units.find((u) => u.id === playerUnit.mountId);
+                                setUnits((prev: Unit[]) => prev.map((u) => {
+                                  if (u.id === playerUnit.id) return { ...u, mountId: undefined };
+                                  if (u.id === playerUnit.mountId) return { ...u, riderId: undefined };
+                                  return u;
+                                }));
+                                const msg = `${playerUnit.name} dismounts${mountUnit ? ` from ${mountUnit.name}` : ''}.`;
+                                setCombatLog((prev) => [...prev, msg]);
+                                addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-900/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 text-xs font-semibold rounded-lg transition-all"
+                            >
+                              Dismount
+                            </button>
+                          );
+                        }
+                        // Show mount button if there's an adjacent friendly NPC/beast that isn't already mounted
+                        const playerPos = mapPositions.find((p) => p.unitId === playerUnit.id);
+                        const mountable = playerPos ? units.filter((u) => u.type !== 'player' && u.hp > 0 && !u.riderId && u.id !== playerUnit.id).filter((u) => {
+                          const uPos = mapPositions.find((p) => p.unitId === u.id);
+                          return uPos && Math.max(Math.abs(uPos.col - playerPos.col), Math.abs(uPos.row - playerPos.row)) <= 1;
+                        }) : [];
+                        if (mountable.length === 0) return null;
+                        return (
+                          <button
+                            onClick={() => {
+                              const mount = mountable[0];
+                              setUnits((prev: Unit[]) => prev.map((u) => {
+                                if (u.id === playerUnit.id) return { ...u, mountId: mount.id };
+                                if (u.id === mount.id) return { ...u, riderId: playerUnit.id };
+                                return u;
+                              }));
+                              const msg = `${playerUnit.name} mounts ${mount.name}!`;
+                              setCombatLog((prev) => [...prev, msg]);
+                              addDmMessage(msg);
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-900/40 hover:bg-amber-900/60 border border-amber-800/50 text-amber-300 text-xs font-semibold rounded-lg transition-all"
+                          >
+                            Mount {mountable[0].name}
+                          </button>
+                        );
+                      })()}
+
                       {/* Help action — give an ally advantage on their next attack against a target */}
                       {inCombat &&
                         selectedCharacter &&

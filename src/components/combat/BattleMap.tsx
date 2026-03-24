@@ -1989,12 +1989,19 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       }
     }
 
-    // Move the token
+    // Move the token (+ paired mount/rider follows)
+    const draggedUnit = units.find((u) => u.id === dragging.unitId);
+    const pairedId = draggedUnit?.mountId || draggedUnit?.riderId;
     setPositions((prev) =>
-      prev.map((p) => (p.unitId === dragging.unitId ? { ...p, col, row } : p))
+      prev.map((p) => {
+        if (p.unitId === dragging.unitId) return { ...p, col, row };
+        if (pairedId && p.unitId === pairedId) return { ...p, col, row };
+        return p;
+      })
     );
     // Notify parent for multiplayer sync
     onTokenMove?.(dragging.unitId, col, row);
+    if (pairedId) onTokenMove?.(pairedId, col, row);
 
     // Pit damage: 1d6 when landing on a pit
     if (targetTerrain === 'pit') {

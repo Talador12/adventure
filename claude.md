@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added mounted combat — `mountId`/`riderId` fields on Unit type. Mount/Dismount action buttons in CombatToolbar (amber/rose themed). Paired movement: rider drags, mount follows automatically (and vice versa). Mounts detected by adjacency, auto-linked on mount action, unlinked on dismount. Combat log messages for both actions. Multiplayer synced via broadcastCombatSync.
 - Added saving throw quick-roller — 6 buttons with D&D 5e class-based proficiency auto-applied. DC input, PASS/FAIL color-coded. Proficient saves highlighted amber.
 - Added damage leaderboard — running total of damage dealt per character during combat. Sorted, gold highlight on #1, progress bars. The scoreboard nobody asked for but everyone checks.
 - Added map distance ruler — 'Ruler' DM tool. Click two cells, sky-blue dashed line drawn with distance in feet at midpoint.
@@ -1275,7 +1276,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Turn order prediction ("in N" count on initiative cards, circular distance)
 - [x] Party formation presets (already existed — 6 formations, marching order, drag reorder)
 - [x] Death recap (DeathRecap component, last 3 damage sources, auto-dismiss)
-- [ ] Mounted combat support (rider + mount share a token, dismount action)
+- [x] Mounted combat support (mountId/riderId on Unit, Mount/Dismount buttons, paired movement)
 - [x] Grapple/shove automation (contested checks, auto-apply grappled/prone conditions)
 
 ### v16.0 Feature Ideas
