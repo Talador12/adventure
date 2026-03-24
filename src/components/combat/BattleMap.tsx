@@ -651,6 +651,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [mapPings, setMapPings] = useState<Array<{ col: number; row: number; time: number }>>([]);
   // Waypoint path — DM draws a path, then a token animates along it
   const [waypointPath, setWaypointPath] = useState<Array<{ col: number; row: number }>>([]);
+  // Brush hover preview — ghost of brush area before painting
+  const [hoverCell, setHoverCell] = useState<{ col: number; row: number } | null>(null);
   // Distance measurement — two-click tool
   const [measureStart, setMeasureStart] = useState<{ col: number; row: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ col: number; row: number } | null>(null);
@@ -1209,6 +1211,38 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       });
     }
 
+    // Brush preview ghost — shows area that will be painted on click
+    if (hoverCell && dmTool !== 'select' && effectiveDmMode) {
+      const cells = [];
+      for (let dr = -brushRadius; dr <= brushRadius; dr++) {
+        for (let dc = -brushRadius; dc <= brushRadius; dc++) {
+          const r = hoverCell.row + dr;
+          const c = hoverCell.col + dc;
+          if (r >= 0 && r < gridRows && c >= 0 && c < gridCols) cells.push({ col: c, row: r });
+        }
+      }
+      const isRefog = dmTool === 'refog';
+      const previewColor = isRefog ? 'rgba(239,68,68,0.12)' : 'rgba(56,189,248,0.12)';
+      const previewStroke = isRefog ? 'rgba(239,68,68,0.3)' : 'rgba(56,189,248,0.3)';
+      for (const cell of cells) {
+        if (isHex) {
+          const { x: hx, y: hy } = hexCenter(cell.col, cell.row);
+          drawHexPath(ctx, hx, hy);
+          ctx.fillStyle = previewColor;
+          ctx.fill();
+          ctx.strokeStyle = previewStroke;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = previewColor;
+          ctx.fillRect(cell.col * CELL_SIZE, cell.row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          ctx.strokeStyle = previewStroke;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cell.col * CELL_SIZE + 0.5, cell.row * CELL_SIZE + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
+        }
+      }
+    }
+
     // Grid lines — hex or square
     if (!layerVisibility.grid) { /* skip grid */ } else if (isHex) {
       ctx.strokeStyle = 'rgba(148,163,184,0.12)';
@@ -1541,7 +1575,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity, layerVisibility, gridType]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity, layerVisibility, gridType, hoverCell, brushRadius]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -2001,10 +2035,16 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   }, [canvasCoords, tokenAt, dmTool, paintTerrain, units, selectedUnitId, setSelectedUnitId, panOffset, inCombat, terrain, gridRows, gridCols, positions, activeAoE, aoeHoverCell, onAoEConfirm]);
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
+    // Track hover cell for brush preview
+    const coords = canvasCoords(e);
+    if (dmTool !== 'select' && !activeAoE) {
+      setHoverCell((prev) => (prev?.col === coords.col && prev?.row === coords.row) ? prev : { col: coords.col, row: coords.row });
+    } else {
+      setHoverCell(null);
+    }
     // Track AoE hover cell when placing a spell
     if (activeAoE) {
-      const { col, row } = canvasCoords(e);
-      setAoeHoverCell((prev) => (prev?.col === col && prev?.row === row) ? prev : { col, row });
+      setAoeHoverCell((prev) => (prev?.col === coords.col && prev?.row === coords.row) ? prev : { col: coords.col, row: coords.row });
     }
     if (panning) {
       setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
@@ -2838,7 +2878,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onMouseLeave={() => { handleMouseUp(); setHoverCell(null); }}
             onDoubleClick={(e) => {
               if (!canUseDMTools) return;
               const { x, y } = canvasCoords(e as unknown as ReactMouseEvent<HTMLCanvasElement>);

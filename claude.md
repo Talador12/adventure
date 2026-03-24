@@ -1196,7 +1196,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Opportunity attack automation (trigger when enemy leaves threatened squares)
 - [ ] Cover calculation display (half/three-quarter cover indicator on attack)
 - [ ] Spell slot tracking per encounter (show slots used this encounter vs total)
-- [ ] Map fog brush preview (show ghost of brush area before painting)
+- [x] Map fog brush preview (hoverCell state + ghost overlay in draw loop, brush-radius-aware, hex-compatible, red for refog / blue for paint)
 - [ ] Initiative cards drag reorder for players (not just DM)
 - [ ] Character import from JSON URL (paste a URL, auto-fetch and import)
 - [x] Combat XP auto-award to all party members (XP + gold split evenly, remainder to first char, level-up checked per char)
