@@ -223,6 +223,7 @@ export default function Game() {
   const [fumbleDisplay, setFumbleDisplay] = useState<FumbleEffect | null>(null);
   const [secretRollMode, setSecretRollMode] = useState(false);
   const [secretRolls, setSecretRolls] = useState<Array<{ id: string; die: string; value: number; revealed: boolean }>>([]);
+  const preCombatAmbientRef = useRef<AmbientMood>('none');
   const { flytexts, addFlytext } = useHPFlytext();
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
@@ -1358,7 +1359,12 @@ export default function Game() {
       addDmMessage(description || fallback);
       playEncounterStart();
       // Auto-switch to combat ambiance
-      if (currentAmbient !== 'combat') { setAmbientMood('combat'); setCurrentAmbient('combat'); }
+      if (currentAmbient !== 'combat') {
+        preCombatAmbientRef.current = currentAmbient;
+        const mood = encounterDifficulty === 'easy' ? 'mystery' as const : 'combat' as const;
+        setAmbientMood(mood);
+        setCurrentAmbient(mood);
+      }
 
       // Add enemy units to existing units (keep player units)
       setUnits((prev: Unit[]) => [...prev.filter((u) => u.type === 'player'), ...enemyUnits]);
@@ -2450,6 +2456,13 @@ export default function Game() {
                   addFlytext={addFlytext}
                   recordKill={recordKill}
                   triggerDeathSave={triggerDeathSave}
+                  onCombatEnd={() => {
+                    const prev = preCombatAmbientRef.current;
+                    if (prev && prev !== 'none' && prev !== 'combat') {
+                      setAmbientMood(prev);
+                      setCurrentAmbient(prev);
+                    }
+                  }}
                   onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
                   stagedLoot={stagedLoot}
                   onConsumeStagedLoot={() => setStagedLoot([])}

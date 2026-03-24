@@ -57,6 +57,7 @@ interface CombatToolbarProps {
   addFlytext?: (col: number, row: number, text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'death', gridCols: number, gridRows: number) => void;
   recordKill?: (killerName: string) => void;
   triggerDeathSave?: (characterName: string, message: string) => void;
+  onCombatEnd?: () => void;
 }
 
 export default function CombatToolbar({
@@ -101,6 +102,7 @@ export default function CombatToolbar({
   addFlytext,
   recordKill,
   triggerDeathSave,
+  onCombatEnd,
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -829,6 +831,7 @@ export default function CombatToolbar({
                             const goldReward = deadEnemies.reduce((sum, e) => sum + Math.floor((e.cr || 0.25) * 30) + Math.floor(Math.random() * 20), 0);
 
                             setInCombat(false);
+                            onCombatEnd?.();
                             // Remove dead enemies, reset initiative and conditions
                             setUnits((prev: Unit[]) => prev.filter((u) => u.type === 'player' || u.hp > 0).map((u) => ({ ...u, isCurrentTurn: false, initiative: -1, conditions: [] })));
 
