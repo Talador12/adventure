@@ -13,6 +13,8 @@ export interface CalendarEvent {
 
 export interface CalendarState {
   currentDay: number;
+  /** In-world hour (0-23). Affects rest eligibility and scene mood. */
+  currentHour?: number;
   events: CalendarEvent[];
   monthNames?: string[];
 }
@@ -42,9 +44,28 @@ export default function CampaignCalendar({ state, onUpdate, canEdit = true }: Pr
   const currentMonth = Math.floor((currentDay - 1) / 30);
   const currentDayOfMonth = ((currentDay - 1) % 30) + 1;
 
+  const currentHour = state.currentHour ?? 8; // default: 8 AM
+
   const advanceDay = useCallback((days = 1) => {
-    onUpdate({ ...state, currentDay: state.currentDay + days });
+    onUpdate({ ...state, currentDay: state.currentDay + days, currentHour: 8 });
   }, [state, onUpdate]);
+
+  const advanceTime = useCallback((hours: number) => {
+    let h = currentHour + hours;
+    let d = state.currentDay;
+    while (h >= 24) { h -= 24; d += 1; }
+    while (h < 0) { h += 24; d -= 1; }
+    onUpdate({ ...state, currentDay: d, currentHour: h });
+  }, [state, currentHour, onUpdate]);
+
+  const timeOfDay = currentHour >= 5 && currentHour < 7 ? 'Dawn'
+    : currentHour >= 7 && currentHour < 12 ? 'Morning'
+    : currentHour >= 12 && currentHour < 14 ? 'Midday'
+    : currentHour >= 14 && currentHour < 18 ? 'Afternoon'
+    : currentHour >= 18 && currentHour < 21 ? 'Evening'
+    : 'Night';
+
+  const canLongRest = currentHour >= 20 || currentHour < 6;
 
   const addEvent = useCallback((type: CalendarEvent['type']) => {
     const label = prompt(`${type} on Day ${currentDay}:`);
@@ -85,11 +106,16 @@ export default function CampaignCalendar({ state, onUpdate, canEdit = true }: Pr
             <span className="text-[10px] text-slate-400">Day</span>
             <span className="text-lg font-black text-[#F38020] ml-1">{currentDay}</span>
             <span className="text-[9px] text-slate-500 ml-2">{months[currentMonth % 12]} {currentDayOfMonth}</span>
+            <span className={`text-[9px] ml-2 font-semibold ${currentHour >= 20 || currentHour < 6 ? 'text-indigo-400' : currentHour >= 18 ? 'text-amber-400' : 'text-sky-400'}`}>
+              {String(currentHour).padStart(2, '0')}:00 · {timeOfDay}
+            </span>
           </div>
           {canEdit && (
             <div className="flex gap-1">
+              <button onClick={() => advanceTime(1)} className="text-[8px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 font-semibold" title="Advance 1 hour">+1h</button>
+              <button onClick={() => advanceTime(4)} className="text-[8px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 font-semibold" title="Advance 4 hours">+4h</button>
               <button onClick={() => advanceDay(1)} className="text-[8px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 font-semibold" title="Advance 1 day">+1 Day</button>
-              <button onClick={longRest} className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-900/40 border border-emerald-700/40 text-emerald-400 hover:bg-emerald-900/60 font-semibold" title="Long rest (advance 1 day + log event)">🏕️ Rest</button>
+              <button onClick={longRest} className={`text-[8px] px-1.5 py-0.5 rounded border font-semibold ${canLongRest ? 'bg-emerald-900/40 border-emerald-700/40 text-emerald-400 hover:bg-emerald-900/60' : 'bg-slate-800 border-slate-700 text-slate-600 cursor-not-allowed'}`} title={canLongRest ? 'Long rest (advance 1 day + log event)' : 'Must be evening or night to long rest'} disabled={!canLongRest}>🏕️ Rest</button>
             </div>
           )}
         </div>

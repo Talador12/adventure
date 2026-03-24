@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v8.3.0
+## Current Version: v9.0.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- RELEASE 100. v9.0.0. "Roll for the Century."
+- Added campaign world clock — hour of day (0-23) with time-of-day label (Dawn/Morning/Midday/Afternoon/Evening/Night). +1h/+4h advance buttons. Long rest gated to evening/night hours. Color shifts indigo at night, sky during day, amber at dusk.
+- Added session milestones — tracks damage/rolls/kills/crits per session. Toast celebrations at thresholds (100/250/500/1000 damage, 25/50/100 rolls, 5/10/25 kills, 3/5/10 crits). Icon + count + label.
+- Added party vitals dashboard — compact inline bar during combat showing HP micro-bars, AC, conditions, spell slots used per character. Dense, readable, always visible.
 - Enhanced token HP bars — numeric HP readout below each bar, wider bars (1.8x radius), dark background for contrast.
 - Added damage type emoji on flytext — fire, cold, lightning, radiant, necrotic, psychic, poison, acid, thunder, force all get emoji prefixes on floating damage numbers.
 - Added initiative countdown sound — rising-pitch square wave ticks in the last 5 seconds of turn timer. Gets more urgent as time runs out.
@@ -1260,7 +1264,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Passive perception alerts (DM warned when party PP beats trap DC)
 - [x] Damage type emoji on flytext (fire/cold/lightning/radiant/necrotic/psychic/poison/acid/thunder/force)
 - [x] Initiative countdown sound (rising-pitch ticks in last 5 seconds of turn timer)
-- [ ] Campaign world clock (in-game time advances with each scene, affects rest eligibility)
+- [x] Campaign world clock (hour of day, time-of-day labels, rest gating, advance buttons)
 - [x] Spell component tracker (V/S/M on Spell interface, monospace tag on spell buttons)
 - [x] Token HP bars enhanced (numeric readout, wider bars, dark background)
 - [x] NPC voice pitch (per-NPC slider 0.5-2.0 on NPC tracker, overrides TTS hash)
