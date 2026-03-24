@@ -1319,7 +1319,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Model quality presets (AI_QUALITY env var: fast/balanced/quality → auto-select model)
 
 ### v5.0 Feature Ideas
-- [ ] Discord OAuth login (replace guest play with real Discord identity, avatar, username)
+- [x] Discord OAuth login (was already built — enabled the disabled button, removed 'coming soon' divider, all 3 OAuth providers now active)
 - [x] Character leveling wizard (Summary tab with HP roll/average, gains list, ASI/Feat tabs)
 - [x] AI trap generator (✨AI DM tool + POST /api/dm/generate-trap, level-scaled)
 - [x] Session recap generator (auto-fires on return + manual "📖 Previously on..." button + dedicated API endpoint)
