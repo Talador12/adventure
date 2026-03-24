@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame, type Unit, CONDITION_EFFECTS } from '../../contexts/GameContext';
 import { playCountdownTick } from '../../hooks/useSoundFX';
+import { characterMood } from '../../lib/characterMood';
 
 const DEFAULT_TURN_TIME = 60; // seconds per turn
 
@@ -191,9 +192,10 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 )}
               </div>
 
-              {/* Name + threat indicator */}
+              {/* Name + mood + threat */}
               <div className="flex items-center gap-1 min-w-0">
-                <span className={`text-xs font-semibold truncate max-w-[72px] ${isSelected ? 'text-[#F38020]' : entry.isCurrentTurn ? 'text-yellow-300' : 'text-slate-300'}`}>{entry.name}</span>
+                <span className="text-[9px]" title={`${entry.name}'s mood`}>{characterMood(hpPct, (entry.conditions || []).map((c) => c.type))}</span>
+                <span className={`text-xs font-semibold truncate max-w-[66px] ${isSelected ? 'text-[#F38020]' : entry.isCurrentTurn ? 'text-yellow-300' : 'text-slate-300'}`}>{entry.name}</span>
                 {threatLevel && <span className={`text-[7px] font-bold ${threatColor}`} title={`Threat: ${threatLevel}`}>{threatLevel === 'deadly' ? '!!' : threatLevel === 'hard' ? '!' : ''}</span>}
               </div>
 
