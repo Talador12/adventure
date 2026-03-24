@@ -9,7 +9,15 @@ export interface FlyText {
   y: number; // percent of container height
   text: string;
   type: 'damage' | 'heal' | 'crit' | 'miss' | 'death';
+  /** D&D damage type for emoji prefix */
+  damageType?: string;
 }
+
+const DAMAGE_EMOJI: Record<string, string> = {
+  fire: '\uD83D\uDD25', cold: '\u2744\uFE0F', lightning: '\u26A1', radiant: '\u2728',
+  necrotic: '\uD83D\uDC80', psychic: '\uD83E\uDDE0', poison: '\u2620\uFE0F', acid: '\uD83E\uDDEA',
+  thunder: '\uD83D\uDCA5', force: '\uD83D\uDCAB',
+};
 
 interface HPFlytextProps {
   /** Width/height of the container (for positioning) */
@@ -25,11 +33,11 @@ export function useHPFlytext() {
   const [flytexts, setFlytexts] = useState<FlyText[]>([]);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
-  const addFlytext = useCallback((col: number, row: number, text: string, type: FlyText['type'], gridCols: number, gridRows: number) => {
+  const addFlytext = useCallback((col: number, row: number, text: string, type: FlyText['type'], gridCols: number, gridRows: number, damageType?: string) => {
     const id = crypto.randomUUID().slice(0, 8);
     const x = ((col + 0.5) / gridCols) * 100;
     const y = ((row + 0.3) / gridRows) * 100;
-    setFlytexts((prev) => [...prev, { id, x, y, text, type }]);
+    setFlytexts((prev) => [...prev, { id, x, y, text, type, damageType }]);
     const timer = setTimeout(() => {
       setFlytexts((prev) => prev.filter((f) => f.id !== id));
       timers.current.delete(id);
@@ -63,7 +71,13 @@ export default function HPFlytext({ flytexts }: { flytexts: FlyText[] }) {
           className={`absolute animate-float-up ${TYPE_STYLES[ft.type]}`}
           style={{ left: `${ft.x}%`, top: `${ft.y}%`, transform: 'translateX(-50%)' }}
         >
-          {ft.type === 'damage' ? `-${ft.text}` : ft.type === 'heal' ? `+${ft.text}` : ft.type === 'crit' ? `${ft.text}!` : ft.text}
+          {(() => {
+            const emoji = ft.damageType ? (DAMAGE_EMOJI[ft.damageType] || '') + ' ' : '';
+            if (ft.type === 'damage') return `${emoji}-${ft.text}`;
+            if (ft.type === 'heal') return `+${ft.text}`;
+            if (ft.type === 'crit') return `${emoji}${ft.text}!`;
+            return ft.text;
+          })()}
         </span>
       ))}
     </div>

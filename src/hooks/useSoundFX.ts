@@ -338,6 +338,23 @@ export function playTurnChange() {
   });
 }
 
+// Turn countdown tick — short click, gets higher pitch as time runs out
+export function playCountdownTick(secondsLeft: number) {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  // Higher pitch as time runs out: 400Hz at 5s → 800Hz at 1s
+  const freq = 400 + (5 - Math.max(1, secondsLeft)) * 100;
+  const osc = ctx.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, now);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.08, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+  osc.connect(g).connect(dest());
+  osc.start(now);
+  osc.stop(now + 0.08);
+}
+
 // Player join — warm welcome tone
 export function playPlayerJoin() {
   const ctx = getCtx();

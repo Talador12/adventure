@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame, type Unit, CONDITION_EFFECTS } from '../../contexts/GameContext';
+import { playCountdownTick } from '../../hooks/useSoundFX';
 
 const DEFAULT_TURN_TIME = 60; // seconds per turn
 
@@ -47,7 +48,11 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
       onTimerExpire?.();
       return;
     }
-    const timer = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
+    const timer = setInterval(() => setTimeLeft((t) => {
+      const next = Math.max(0, t - 1);
+      if (next > 0 && next <= 5) playCountdownTick(next);
+      return next;
+    }), 1000);
     return () => clearInterval(timer);
   }, [turnTimerEnabled, currentTurnId, timeLeft, onTimerExpire]);
 

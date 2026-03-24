@@ -1263,17 +1263,25 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.fillText(unit.name.charAt(0).toUpperCase(), cx, cy - 1);
       }
 
-      // HP bar
+      // HP bar — color shifts green → yellow → red, numeric readout on hover
       if (unit.hp > 0) {
-        const barW = TOKEN_RADIUS * 1.6;
-        const barH = 3;
+        const barW = TOKEN_RADIUS * 1.8;
+        const barH = 4;
         const barX = cx - barW / 2;
         const barY = cy + TOKEN_RADIUS + 3;
         const hpPct = Math.max(0, unit.hp / unit.maxHp);
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(barX, barY, barW, barH);
-        ctx.fillStyle = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+        // Background
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(barX - 0.5, barY - 0.5, barW + 1, barH + 1);
+        // Fill with smooth gradient feel
+        const hpColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+        ctx.fillStyle = hpColor;
         ctx.fillRect(barX, barY, barW * hpPct, barH);
+        // HP number below bar (small, always visible)
+        ctx.font = '7px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(148,163,184,0.8)';
+        ctx.fillText(`${unit.hp}`, cx, barY + barH + 7);
       } else {
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 3;
