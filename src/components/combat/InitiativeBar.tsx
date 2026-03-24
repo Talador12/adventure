@@ -70,6 +70,9 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
 
   // Look up portrait from linked character
   const getPortrait = (unit: Unit): string | null => {
+    // Check unit's own token image first (AI-generated enemy portraits)
+    if (unit.tokenImage) return unit.tokenImage;
+    // Then fall back to linked character portrait
     if (!unit.characterId) return null;
     const char = characters.find((c) => c.id === unit.characterId);
     return char?.portrait || null;
@@ -97,6 +100,13 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
           const isSelected = selectedUnitId === entry.id;
           const playerLabel = getPlayerLabel(entry);
           const portrait = getPortrait(entry);
+
+          // Threat indicator for enemies — color-coded by CR vs avg party level
+          const avgPartyLevel = characters.reduce((s, c) => s + c.level, 0) / Math.max(1, characters.length);
+          const threatLevel = entry.type === 'enemy' && entry.cr !== undefined
+            ? entry.cr >= avgPartyLevel * 1.5 ? 'deadly' : entry.cr >= avgPartyLevel ? 'hard' : entry.cr >= avgPartyLevel * 0.5 ? 'medium' : 'easy'
+            : null;
+          const threatColor = threatLevel === 'deadly' ? 'text-red-500' : threatLevel === 'hard' ? 'text-orange-400' : threatLevel === 'medium' ? 'text-yellow-400' : threatLevel === 'easy' ? 'text-slate-500' : '';
 
           const isEntering = animatingTurnId === entry.id;
 
@@ -168,8 +178,11 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 )}
               </div>
 
-              {/* Name */}
-              <span className={`text-xs font-semibold truncate max-w-[80px] ${isSelected ? 'text-[#F38020]' : entry.isCurrentTurn ? 'text-yellow-300' : 'text-slate-300'}`}>{entry.name}</span>
+              {/* Name + threat indicator */}
+              <div className="flex items-center gap-1 min-w-0">
+                <span className={`text-xs font-semibold truncate max-w-[72px] ${isSelected ? 'text-[#F38020]' : entry.isCurrentTurn ? 'text-yellow-300' : 'text-slate-300'}`}>{entry.name}</span>
+                {threatLevel && <span className={`text-[7px] font-bold ${threatColor}`} title={`Threat: ${threatLevel}`}>{threatLevel === 'deadly' ? '!!' : threatLevel === 'hard' ? '!' : ''}</span>}
+              </div>
 
               {/* Player/AI controller label */}
               {playerLabel && <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${playerLabel.color}`}>{playerLabel.label}</span>}
@@ -187,9 +200,9 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 )}
               </div>
 
-              {/* HP bar */}
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden hp-bar-shimmer">
-                <div className={`h-full rounded-full transition-all duration-500 ease-out ${isLow ? 'bg-red-500' : isMid ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${hpPct}%` }} />
+              {/* HP bar — shakes when low, glows when full */}
+              <div className={`w-full h-1.5 bg-slate-700 rounded-full overflow-hidden hp-bar-shimmer ${isLow && entry.hp > 0 ? 'animate-damage-shake' : ''}`}>
+                <div className={`h-full rounded-full transition-all duration-500 ease-out ${isLow ? 'bg-red-500' : isMid ? 'bg-yellow-500' : hpPct >= 100 ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]' : 'bg-green-500'}`} style={{ width: `${hpPct}%` }} />
               </div>
 
               {/* Turn timer bar (only on current turn unit) */}
