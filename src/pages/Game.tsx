@@ -61,6 +61,7 @@ import AbilityCheckRoller from '../components/game/AbilityCheckRoller';
 import SavingThrowRoller from '../components/game/SavingThrowRoller';
 import DamageLeaderboard from '../components/game/DamageLeaderboard';
 import SessionStreak from '../components/game/SessionStreak';
+import { emitPluginEvent, setPluginMessageCallback } from '../lib/plugins';
 import RoundMVP, { useRoundMVP } from '../components/game/RoundMVP';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
@@ -964,6 +965,9 @@ export default function Game() {
     import('../lib/tts').then(({ speak, isTTSEnabled }) => { if (isTTSEnabled()) speak(text); });
   }, []);
 
+  // Wire plugin system to DM history
+  useEffect(() => { setPluginMessageCallback(addDmMessage); }, [addDmMessage]);
+
   const triggerFumble = useCallback(() => {
     const result = rollFumble();
     setFumbleDisplay(result);
@@ -1574,6 +1578,7 @@ export default function Game() {
       playDiceRoll();
       milestoneRoll();
       triggerDiceTower(roll.sides, roll.total, roll.isCritical, roll.isFumble);
+      emitPluginEvent('roll', { sides: roll.sides, value: roll.total, isCritical: roll.isCritical, isFumble: roll.isFumble, rollerName: currentPlayer.username || '' });
       if (roll.isCritical) { setTimeout(playCritical, 400); triggerCrit(); milestoneCrit(); }
       if (roll.isFumble) { setTimeout(playFumble, 400); triggerFumble(); }
       setChatMessages((prev) => [

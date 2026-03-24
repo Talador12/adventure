@@ -13,6 +13,7 @@ import DowntimeActivities from './DowntimeActivities';
 import CustomMonsterCreator from './CustomMonsterCreator';
 import QuickCombatResolver from './QuickCombatResolver';
 import SessionScheduler from './SessionScheduler';
+import PluginManager from './PluginManager';
 import SpellTemplates from './SpellTemplates';
 import LootSplitter from './LootSplitter';
 import MassHPTool from './MassHPTool';
@@ -703,6 +704,11 @@ export default function DMSidebar({
                 className="w-full h-28 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 placeholder:text-slate-600 focus:border-amber-600 focus:outline-none resize-none"
               />
             </div>
+
+            <div className="w-full h-px bg-slate-700/50" />
+
+            {/* Plugin Manager */}
+            <PluginManager />
 
             <div className="w-full h-px bg-slate-700/50" />
 

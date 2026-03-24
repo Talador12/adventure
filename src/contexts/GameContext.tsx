@@ -1150,8 +1150,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Roll initiative for all units, sort by result (descending), mark first as current turn.
+  // Accepts optional manual overrides: { unitId: number } for player-entered values.
   // Returns sorted units for multiplayer sync.
-  const rollInitiative = useCallback((): Unit[] => {
+  const rollInitiative = useCallback((manualOverrides?: Record<string, number>): Unit[] => {
     let result: Unit[] = [];
     setUnits((prev) => {
       const withInitiative = prev.map((u) => {
@@ -1169,7 +1170,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
             }, 0);
           }
         }
-        const roll = Math.floor(Math.random() * 20) + 1 + dexMod + featInitBonus;
+        // Use manual override if provided, otherwise auto-roll
+        const roll = (manualOverrides && manualOverrides[u.id] !== undefined)
+          ? manualOverrides[u.id]
+          : Math.floor(Math.random() * 20) + 1 + dexMod + featInitBonus;
         // Reset movement for combat start; calculate speed from character data
         let speed = u.speed || 6;
         if (u.characterId) {
