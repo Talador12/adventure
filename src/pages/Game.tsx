@@ -46,6 +46,7 @@ import HPFlytext, { useHPFlytext } from '../components/combat/HPFlytext';
 import CritCelebration, { useCritCelebration } from '../components/game/CritCelebration';
 import KillStreak, { useKillStreak } from '../components/game/KillStreak';
 import { rollFumble, type FumbleEffect } from '../data/fumbleTable';
+import DeathSaveCinematic, { useDeathSaveCinematic } from '../components/game/DeathSaveCinematic';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -222,6 +223,7 @@ export default function Game() {
   const { flytexts, addFlytext } = useHPFlytext();
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
+  const { display: deathSaveDisplay, trigger: triggerDeathSave } = useDeathSaveCinematic();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
   const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
@@ -2435,6 +2437,7 @@ export default function Game() {
                   addAttackIndicator={addAttackIndicator}
                   addFlytext={addFlytext}
                   recordKill={recordKill}
+                  triggerDeathSave={triggerDeathSave}
                   onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
                   stagedLoot={stagedLoot}
                   onConsumeStagedLoot={() => setStagedLoot([])}
@@ -2959,6 +2962,7 @@ export default function Game() {
       {/* === THE JUICE === */}
       <CritCelebration active={critActive} confetti={critConfetti} />
       <KillStreak display={killStreakDisplay} />
+      <DeathSaveCinematic display={deathSaveDisplay} />
       {/* Fumble consequence banner */}
       {fumbleDisplay && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9995] animate-slide-in pointer-events-none">
