@@ -1182,7 +1182,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Player character journal (diary entries on Character, persisted, reverse-chron display)
 - [x] Initiative card drag-and-drop (HTML5 drag-and-drop with visual feedback — already implemented)
 - [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
-- [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
+- [x] Hex grid: full terrain rendering in hex cells (pixelToHex, hex terrain fills, hex grid lines, hex token positioning, hex fog of war, hex drag-drop)
 
 ### v7.0 Feature Ideas
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
