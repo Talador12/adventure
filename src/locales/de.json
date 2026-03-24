@@ -1,0 +1,13 @@
+{
+  "app.tagline": "dein Tisch, deine Regeln",
+  "app.hero.heading1": "Dein Tisch.",
+  "app.hero.heading2": "Deine Regeln.",
+  "auth.signIn": "Anmelden",
+  "auth.signOut": "Abmelden",
+  "auth.guest": "Gast",
+  "auth.cancel": "Abbrechen",
+  "combat.rollInitiative": "Initiative würfeln",
+  "combat.endCombat": "Kampf beenden",
+  "combat.shortRest": "Kurze Rast",
+  "combat.longRest": "Lange Rast"
+}

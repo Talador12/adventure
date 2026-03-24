@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added i18n framework — `I18nProvider` with `t()` function, lazy-loaded locale JSON files (en/es/fr/de/ja). English as fallback. Language selector dropdown in Home header. Hero text + tagline wired to `t()`. Spanish is fully translated, French/German/Japanese have core strings. localStorage persistence.
 - Added mounted combat — `mountId`/`riderId` fields on Unit type. Mount/Dismount action buttons in CombatToolbar (amber/rose themed). Paired movement: rider drags, mount follows automatically (and vice versa). Mounts detected by adjacency, auto-linked on mount action, unlinked on dismount. Combat log messages for both actions. Multiplayer synced via broadcastCombatSync.
 - Added saving throw quick-roller — 6 buttons with D&D 5e class-based proficiency auto-applied. DC input, PASS/FAIL color-coded. Proficient saves highlighted amber.
 - Added damage leaderboard — running total of damage dealt per character during combat. Sorted, gold highlight on #1, progress bars. The scoreboard nobody asked for but everyone checks.
@@ -1182,7 +1183,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ### v7.0 Feature Ideas
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
-- [ ] Multi-language UI (i18n framework + Spanish/French/German/Japanese translations)
+- [x] Multi-language UI (I18nProvider + t() + locale JSON files: en/es/fr/de/ja, language selector in header)
 - [ ] Plugin system (load custom JS modules as game extensions)
 - [x] Campaign templates (4 starter adventures with narration, quests, map coords)
 - [x] OAuth with GitHub (full OAuth flow, JWT, Octocat SVG button, GITHUB_CLIENT_ID/SECRET bindings)

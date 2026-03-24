@@ -1,0 +1,13 @@
+{
+  "app.tagline": "あなたの卓、あなたのルール",
+  "app.hero.heading1": "あなたの卓。",
+  "app.hero.heading2": "あなたのルール。",
+  "auth.signIn": "ログイン",
+  "auth.signOut": "ログアウト",
+  "auth.guest": "ゲスト",
+  "auth.cancel": "キャンセル",
+  "combat.rollInitiative": "イニシアチブを振る",
+  "combat.endCombat": "戦闘終了",
+  "combat.shortRest": "小休憩",
+  "combat.longRest": "大休憩"
+}
