@@ -1194,7 +1194,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v18.0 — Fresh Roadmap
 - [x] Condition auto-expiration (already implemented — duration decrements on turn, auto-remove at 0, message posted)
 - [ ] Opportunity attack automation (trigger when enemy leaves threatened squares)
-- [ ] Cover calculation display (half/three-quarter cover indicator on attack)
+- [x] Cover calculation display (visual badges on enemy tokens when player selected: ½ yellow, ¾ orange, ■ red — uses checkCover from mapUtils)
 - [x] Spell slot tracking per encounter (EncounterSlotTracker: snapshot on combat start, show delta, per-caster mini bars)
 - [x] Map fog brush preview (hoverCell state + ghost overlay in draw loop, brush-radius-aware, hex-compatible, red for refog / blue for paint)
 - [x] Initiative cards drag reorder for players (myUnitId prop — players can drag their own card for readied actions / voluntary delay)

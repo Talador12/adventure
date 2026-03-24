@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo, type MouseEve
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, LIGHT_SOURCE_RADII, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { MAP_PRESETS } from '../../data/mapPresets';
 import { generateDungeon } from '../../lib/dungeonGen';
-import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers } from '../../lib/mapUtils';
+import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers, checkCover } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
 
@@ -1569,6 +1569,37 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     // Attack indicators — animated lines between attacker and target
     if (attackIndicators.length > 0) {
       drawAttackIndicators(ctx, attackIndicators, CELL_SIZE);
+    }
+
+    // Cover indicator — show cover level badge on enemies when a player unit is selected
+    if (selectedUnitId && terrain.length > 0) {
+      const selPos = positions.find((p) => p.unitId === selectedUnitId);
+      const selUnit = units.find((u) => u.id === selectedUnitId);
+      if (selPos && selUnit?.type === 'player') {
+        const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0);
+        for (const enemy of enemies) {
+          const ePos = positions.find((p) => p.unitId === enemy.id);
+          if (!ePos) continue;
+          const cover = checkCover(terrain, selPos.col, selPos.row, ePos.col, ePos.row);
+          if (cover === 'none') continue;
+          const ecx = isHex ? hexCenter(ePos.col, ePos.row).x : ePos.col * CELL_SIZE + CELL_SIZE / 2;
+          const ecy = isHex ? hexCenter(ePos.col, ePos.row).y : ePos.row * CELL_SIZE + CELL_SIZE / 2;
+          const label = cover === 'half' ? '½' : cover === 'three-quarters' ? '¾' : '■';
+          const bgColor = cover === 'half' ? 'rgba(234,179,8,0.85)' : cover === 'three-quarters' ? 'rgba(249,115,22,0.85)' : 'rgba(239,68,68,0.85)';
+          // Badge below-left of token
+          const bx = ecx - TOKEN_RADIUS - 2;
+          const by = ecy - TOKEN_RADIUS - 2;
+          ctx.font = 'bold 8px sans-serif';
+          const tw = ctx.measureText(label).width + 4;
+          ctx.fillStyle = bgColor;
+          ctx.beginPath();
+          ctx.roundRect(bx - tw / 2, by - 5, tw, 10, 3);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.textAlign = 'center';
+          ctx.fillText(label, bx, by + 3);
+        }
+      }
     }
 
     // DM tool brush cursor (when painting terrain)
