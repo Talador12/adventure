@@ -1198,7 +1198,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Spell slot tracking per encounter (show slots used this encounter vs total)
 - [x] Map fog brush preview (hoverCell state + ghost overlay in draw loop, brush-radius-aware, hex-compatible, red for refog / blue for paint)
 - [ ] Initiative cards drag reorder for players (not just DM)
-- [ ] Character import from JSON URL (paste a URL, auto-fetch and import)
+- [x] Character import from JSON URL (importJSONFromURL in export.ts, URL button on Home, validates content-type + JSON structure)
 - [x] Combat XP auto-award to all party members (XP + gold split evenly, remainder to first char, level-up checked per char)
 - [ ] AI-generated encounter music keywords (pass to ambient system on combat start)
 - [x] Token status effect icons on canvas (emoji icons below HP bar: poison skull, fire, frightened face, etc — max 4 shown)

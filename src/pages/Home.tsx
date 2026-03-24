@@ -798,6 +798,26 @@ export default function Home() {
               </button>
               <button
                 onClick={async () => {
+                  if (!user) { toast(t('auth.signInToImport'), 'warning'); return; }
+                  const url = prompt('Paste a URL to a character JSON file:');
+                  if (!url?.trim()) return;
+                  try { new URL(url); } catch { toast('Invalid URL', 'error'); return; }
+                  const { importJSONFromURL } = await import('../lib/export');
+                  const result = await importJSONFromURL(url.trim());
+                  if (result.errors.length > 0) { toast(result.errors[0], 'error'); return; }
+                  if (result.character) {
+                    const imported = { ...result.character, id: crypto.randomUUID(), playerId: user.id || '', createdAt: Date.now() };
+                    addCharacter(imported);
+                    toast(`Imported ${imported.name} from URL!`, 'success');
+                  }
+                }}
+                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-violet-500/50 hover:text-violet-400 transition-all"
+                title="Import character from a URL (paste a link to a JSON file)"
+              >
+                URL
+              </button>
+              <button
+                onClick={async () => {
                   if (!user) { toast('Sign in to restore a backup', 'warning'); return; }
                   const pw = prompt('Backup password:');
                   if (!pw) return;

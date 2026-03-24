@@ -172,6 +172,22 @@ export function importJSONFile(): Promise<{ character?: Character; errors: strin
   });
 }
 
+// Import character from a URL — fetches JSON and validates
+export async function importJSONFromURL(url: string): Promise<{ character?: Character; errors: string[]; warnings?: string[] }> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { errors: [`Fetch failed: ${res.status} ${res.statusText}`] };
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('json') && !contentType.includes('text')) {
+      return { errors: [`Unexpected content type: ${contentType}`] };
+    }
+    const data = await res.json();
+    return validateCharacterJSON(data);
+  } catch (err) {
+    return { errors: [`Failed to fetch: ${err instanceof Error ? err.message : String(err)}`] };
+  }
+}
+
 // ============================================================================
 //  Markdown — universal clipboard-friendly format
 // ============================================================================
