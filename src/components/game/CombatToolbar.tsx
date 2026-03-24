@@ -11,6 +11,7 @@ import { rollLoot } from '../../data/lootTables';
 import { chebyshevDistance, hasLineOfSight, isAdjacent, isFlanking, checkCover, COVER_AC_BONUS, parseRangeFt } from '../../lib/mapUtils';
 import type { ActiveAoE } from '../combat/BattleMap';
 import { playTurnChange, playCombatHit, playCombatMiss, playMagicSpell, playEnemyDeath, playHealing, playLevelUp, playLootDrop, playCritical } from '../../hooks/useSoundFX';
+import { hitFlavor, missFlavor, critFlavor, killFlavor } from '../../data/combatFlavor';
 
 interface CombatToolbarProps {
   selectedCharacter: Character | null;
@@ -60,6 +61,7 @@ interface CombatToolbarProps {
   recordDamage?: (unitId: string, source: string, amount: number, type?: string) => void;
   triggerDeathRecap?: (unitId: string, unitName: string) => void;
   onCombatEnd?: () => void;
+  triggerLevelUp?: (charName: string, level: number) => void;
 }
 
 export default function CombatToolbar({
@@ -107,6 +109,7 @@ export default function CombatToolbar({
   recordDamage,
   triggerDeathRecap,
   onCombatEnd,
+  triggerLevelUp,
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -393,13 +396,14 @@ export default function CombatToolbar({
                                       addFloatingText(`${finalDmg}`, 'damage');
                                       if (targetPos) addFlytext?.(targetPos.col, targetPos.row, String(finalDmg), 'damage', 20, 20);
                                     }
-                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! (${atkLabel} vs AC ${targetAC})${advTag}`;
+                                    const flavor = isCrit ? critFlavor() : hitFlavor();
+                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage. ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, logMsg]);
                                     addDmMessage(logMsg);
                                   } else {
                                     playCombatMiss();
                                     addFloatingText('Miss', 'miss');
-                                    const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} misses ${target.name}! (${atkLabel} vs AC ${targetAC})${advTag}`;
+                                    const missMsg = `${atkPrefix}${selectedCharacter?.name || 'You'} attacks ${target.name} — ${missFlavor()} (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, missMsg]);
                                     addDmMessage(missMsg);
                                   }
@@ -407,7 +411,7 @@ export default function CombatToolbar({
                                 // Check for enemy death after all attacks
                                 if (target.hp - totalDamageDealt <= 0) {
                                   playEnemyDeath();
-                                  const deathMsg = `${target.name} falls!`;
+                                  const deathMsg = `${target.name} falls! ${killFlavor()}`;
                                   setCombatLog((prev) => [...prev, deathMsg]);
                                   addDmMessage(deathMsg);
                                   if (targetPos) addFlytext?.(targetPos.col, targetPos.row, 'SLAIN', 'death', 20, 20);
@@ -903,6 +907,7 @@ export default function CombatToolbar({
 
                               if (leveledUp) {
                                 playLevelUp();
+                                triggerLevelUp?.(selectedCharacter.name, newLevel);
                                 addDmMessage(`LEVEL UP! ${selectedCharacter.name} is now level ${newLevel}!`);
                                 // Check if this level grants an ASI/feat choice
                                 const updatedChar = characters.find((c) => c.id === selectedCharacter.id);

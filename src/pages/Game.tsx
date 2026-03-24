@@ -55,6 +55,7 @@ import SceneTransition from '../components/game/SceneTransition';
 import PartyVitals from '../components/game/PartyVitals';
 import SessionSummary from '../components/game/SessionSummary';
 import DiceTower, { useDiceTower } from '../components/dice/DiceTower';
+import LevelUpFanfare, { useLevelUpFanfare } from '../components/game/LevelUpFanfare';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
@@ -242,6 +243,7 @@ export default function Game() {
   const { display: deathRecapDisplay, recordDamage, triggerRecap: triggerDeathRecap } = useDeathRecap();
   const { toast: milestoneToast, recordDamage: milestoneDamage, recordRoll: milestoneRoll, recordKill: milestoneKill, recordCrit: milestoneCrit } = useSessionMilestones();
   const { display: diceTowerDisplay, trigger: triggerDiceTower } = useDiceTower();
+  const { display: levelUpDisplay, trigger: triggerLevelUp } = useLevelUpFanfare();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
   const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
@@ -2504,6 +2506,7 @@ export default function Game() {
                   triggerDeathSave={triggerDeathSave}
                   recordDamage={recordDamage}
                   triggerDeathRecap={triggerDeathRecap}
+                  triggerLevelUp={(name, level) => triggerLevelUp(name, level)}
                   onCombatEnd={() => {
                     const prev = preCombatAmbientRef.current;
                     if (prev && prev !== 'none' && prev !== 'combat') {
@@ -3081,6 +3084,7 @@ export default function Game() {
       <DeathRecap display={deathRecapDisplay} />
       <SceneTransition sceneName={sceneName} />
       <DiceTower display={diceTowerDisplay} />
+      <LevelUpFanfare display={levelUpDisplay} />
       <SessionMilestones toast={milestoneToast} />
       <SessionSummary
         combatLog={combatLog}
