@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.2.0
+## Current Version: v9.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,9 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added encounter difficulty thermometer — visual gauge of remaining enemy HP. Color shifts Deadly (red) → Hard → Medium → Easy (green) → Clear as enemies drop. Percentage readout.
+- Added round MVP flash — at end of each combat round, shows who dealt the most damage. Gold star + name + total. 2.5s auto-dismiss.
+- Added character mood emoji — derives emoji from HP % and conditions. Sunglasses at full, worried at 25%, fearful when frightened, skull when dead. Shown in initiative bar.
 - Added dice tower mode — animated 2D die bounces before revealing result. CSS keyframes (fall → bounce → settle → fade). Crit = golden glow, fumble = red, normal = slate. Clip-path shapes per die type.
 - Added combat flavor text — 31 randomized flavor strings across hit/miss/crit/kill/fumble. "Finds an opening in the defense." "Swings wide." "One less problem." Appended to combat log messages.
 - Added level-up fanfare — golden radial glow overlay with large level number and character name. Auto-dismisses after 3 seconds. Wired into CombatToolbar via triggerLevelUp prop.
