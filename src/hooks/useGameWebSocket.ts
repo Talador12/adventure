@@ -88,6 +88,7 @@ export interface GameWebSocketDeps {
   onReadyCheck?: () => void;
   onReadyResponse?: (playerId: string, playerName: string) => void;
   onMapPing?: (col: number, row: number) => void;
+  onCombatEmote?: (icon: string, sender: string) => void;
 }
 
 export interface GameWebSocketState {
@@ -586,6 +587,10 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               }
               case 'map_ping': {
                 deps.onMapPing?.(eventData.col as number, eventData.row as number);
+                break;
+              }
+              case 'combat_emote': {
+                deps.onCombatEmote?.(eventData.icon as string, eventData.sender as string);
                 break;
               }
             }

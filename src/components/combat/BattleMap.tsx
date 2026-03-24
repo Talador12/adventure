@@ -530,6 +530,8 @@ export interface ActiveAoE {
   color: string;
   origin: { col: number; row: number }; // center/origin cell of the AoE
   casterPos?: { col: number; row: number }; // for cone direction
+  /** Spell range in grid cells — draws a range circle on the map when targeting */
+  spellRangeCells?: number;
 }
 
 interface BattleMapProps {
@@ -1048,6 +1050,22 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.lineWidth = 1;
         ctx.strokeRect(cc * CELL_SIZE + 0.5, rr * CELL_SIZE + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
       });
+    }
+
+    // Spell range circle — shows how far the spell can reach from the caster
+    if (activeAoE?.spellRangeCells && activeAoE.casterPos) {
+      const rcx = activeAoE.casterPos.col * CELL_SIZE + CELL_SIZE / 2;
+      const rcy = activeAoE.casterPos.row * CELL_SIZE + CELL_SIZE / 2;
+      const rangePixels = activeAoE.spellRangeCells * CELL_SIZE;
+      ctx.beginPath();
+      ctx.arc(rcx, rcy, rangePixels, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(56,189,248,0.04)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(56,189,248,0.2)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     // AoE spell template overlay
