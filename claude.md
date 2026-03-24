@@ -1188,7 +1188,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Hex pathfinding (6-neighbor BFS via getHexNeighbors, offset-row aware, computeReachableCells + isAdjacent accept gridType)
 - [ ] Game.tsx code-split (extract combat view, map view, and narration view into lazy-loaded routes)
 - [x] Offline mode indicator (OfflineBanner component: red/amber banner, reconnect countdown, "single-player mode active" messaging)
-- [ ] Theme system (light/dark/parchment/high-contrast, CSS custom properties)
+- [x] Theme system (4 themes: Dark/Light/Parchment/High Contrast — CSS custom properties, data-theme attr, selector dropdown, early-apply in main.tsx)
 - [ ] Campaign export to PDF (full campaign book with maps, NPCs, quests, session history)
 
 ### v7.0 Feature Ideas

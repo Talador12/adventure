@@ -25,6 +25,13 @@ if (typeof window !== 'undefined') {
   if (localStorage.getItem('adventure:lowfx') === '1') document.documentElement.classList.add('low-fx');
   const accent = localStorage.getItem('adventure:accent');
   if (accent) document.documentElement.style.setProperty('--accent', accent);
+  // Apply theme early to prevent flash
+  const storedTheme = localStorage.getItem('adventure:theme');
+  if (storedTheme) {
+    const isDark = storedTheme === 'dark' || storedTheme === 'high-contrast';
+    document.documentElement.classList.add(isDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', storedTheme);
+  }
 }
 
 // Register Service Worker for offline-first static asset caching
