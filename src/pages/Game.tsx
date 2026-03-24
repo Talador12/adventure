@@ -63,6 +63,8 @@ import EncounterThermometer from '../components/game/EncounterThermometer';
 import AbilityCheckRoller from '../components/game/AbilityCheckRoller';
 import SavingThrowRoller from '../components/game/SavingThrowRoller';
 import DamageLeaderboard from '../components/game/DamageLeaderboard';
+import EncounterSlotTracker from '../components/game/EncounterSlotTracker';
+import { getSpellSlots } from '../data/spells';
 import SessionStreak from '../components/game/SessionStreak';
 import OfflineBanner from '../components/game/OfflineBanner';
 import { emitPluginEvent, setPluginMessageCallback } from '../lib/plugins';
@@ -2349,6 +2351,7 @@ export default function Game() {
           <EncounterXPTracker units={units} playerCount={characters.length} inCombat={inCombat} />
           <EncounterThermometer units={units} inCombat={inCombat} />
           <DamageLeaderboard combatLog={combatLog} playerNames={characters.map((c) => c.name)} inCombat={inCombat} />
+          <EncounterSlotTracker characters={characters} inCombat={inCombat} getSpellSlots={getSpellSlots} />
 
           {/* Party health overview — always visible when characters exist */}
           {characters.length > 0 && adventureStarted && (

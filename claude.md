@@ -1195,7 +1195,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Condition auto-expiration (already implemented — duration decrements on turn, auto-remove at 0, message posted)
 - [ ] Opportunity attack automation (trigger when enemy leaves threatened squares)
 - [ ] Cover calculation display (half/three-quarter cover indicator on attack)
-- [ ] Spell slot tracking per encounter (show slots used this encounter vs total)
+- [x] Spell slot tracking per encounter (EncounterSlotTracker: snapshot on combat start, show delta, per-caster mini bars)
 - [x] Map fog brush preview (hoverCell state + ghost overlay in draw loop, brush-radius-aware, hex-compatible, red for refog / blue for paint)
 - [x] Initiative cards drag reorder for players (myUnitId prop — players can drag their own card for readied actions / voluntary delay)
 - [x] Character import from JSON URL (importJSONFromURL in export.ts, URL button on Home, validates content-type + JSON structure)
