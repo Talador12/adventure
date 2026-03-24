@@ -1203,6 +1203,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] AI-generated encounter music keywords (detectSceneMoodAI in sceneMood.ts — AI classifies scene mood, fire-and-forget refinement on combat start)
 - [x] Token status effect icons on canvas (emoji icons below HP bar: poison skull, fire, frightened face, etc — max 4 shown)
 
+### v19.0 — Quality & Depth
+- [ ] Dash action doubles movement range (show expanded reachable cells when Dash is active)
+- [ ] Healing word quick-cast (one-click bonus action heal on any visible ally)
+- [ ] Short rest hit dice roller (roll HD to recover HP, choose how many to spend)
+- [ ] Passive investigation display (DM sees party passive scores in a compact bar)
+- [ ] Attack of opportunity warning (highlight cells that would trigger OA before moving)
+- [x] Terrain tooltip on hover (HTML tooltip above hovered cell: terrain name, movement cost, hazard damage — hex-compatible positioning)
+
 ### v7.0 Feature Ideas
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
 - [x] Multi-language UI (I18nProvider + t() + locale JSON files: en/es/fr/de/ja, language selector in header)

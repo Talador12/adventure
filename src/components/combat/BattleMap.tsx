@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo, type MouseEve
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, LIGHT_SOURCE_RADII, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { MAP_PRESETS } from '../../data/mapPresets';
 import { generateDungeon } from '../../lib/dungeonGen';
-import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, computeReachableCells, findOpportunityAttackers, checkCover } from '../../lib/mapUtils';
+import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, HAZARD_DAMAGE, computeReachableCells, findOpportunityAttackers, checkCover } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
 
@@ -2066,13 +2066,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   }, [canvasCoords, tokenAt, dmTool, paintTerrain, units, selectedUnitId, setSelectedUnitId, panOffset, inCombat, terrain, gridRows, gridCols, positions, activeAoE, aoeHoverCell, onAoEConfirm]);
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
-    // Track hover cell for brush preview
+    // Track hover cell for brush preview + terrain tooltip
     const coords = canvasCoords(e);
-    if (dmTool !== 'select' && !activeAoE) {
-      setHoverCell((prev) => (prev?.col === coords.col && prev?.row === coords.row) ? prev : { col: coords.col, row: coords.row });
-    } else {
-      setHoverCell(null);
-    }
+    setHoverCell((prev) => (prev?.col === coords.col && prev?.row === coords.row) ? prev : { col: coords.col, row: coords.row });
     // Track AoE hover cell when placing a spell
     if (activeAoE) {
       setAoeHoverCell((prev) => (prev?.col === coords.col && prev?.row === coords.row) ? prev : { col: coords.col, row: coords.row });
@@ -3062,6 +3058,33 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
               </div>
             </div>
           )}
+
+          {/* Terrain tooltip on hover */}
+          {hoverCell && hoverCell.row >= 0 && hoverCell.row < gridRows && hoverCell.col >= 0 && hoverCell.col < gridCols && (() => {
+            const cellType = terrain[hoverCell.row]?.[hoverCell.col];
+            if (!cellType || cellType === 'floor') return null;
+            const cost = TERRAIN_COST[cellType];
+            const hazard = HAZARD_DAMAGE[cellType];
+            const names: Record<string, string> = {
+              wall: 'Wall', water: 'Water', difficult: 'Difficult Terrain', door: 'Door', pit: 'Pit',
+              void: 'Void', stairs_up: 'Stairs Up', stairs_down: 'Stairs Down',
+              lava: 'Lava', acid: 'Acid Pool', poison_gas: 'Poison Gas',
+            };
+            const hex = gridType === 'hex';
+            const px = hex ? hexCenter(hoverCell.col, hoverCell.row).x : hoverCell.col * CELL_SIZE + CELL_SIZE;
+            const py = hex ? hexCenter(hoverCell.col, hoverCell.row).y - 20 : hoverCell.row * CELL_SIZE - 4;
+            return (
+              <div
+                className="absolute z-40 pointer-events-none px-2 py-1 rounded bg-slate-900/95 border border-slate-700 shadow-lg text-[9px] whitespace-nowrap"
+                style={{ left: px, top: py, transform: 'translate(-50%, -100%)' }}
+              >
+                <span className="text-slate-200 font-semibold">{names[cellType] || cellType}</span>
+                {isFinite(cost) && cost > 1 && <span className="text-amber-400 ml-1.5">Cost: {cost}x</span>}
+                {!isFinite(cost) && <span className="text-red-400 ml-1.5">Impassable</span>}
+                {hazard && <span className="text-red-400 ml-1.5">{hazard.damage} {hazard.type}/turn</span>}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Minimap overlay — bottom-right corner */}
