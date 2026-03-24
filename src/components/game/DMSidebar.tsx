@@ -16,6 +16,7 @@ import SessionScheduler from './SessionScheduler';
 import SpellTemplates from './SpellTemplates';
 import LootSplitter from './LootSplitter';
 import MassHPTool from './MassHPTool';
+import BardicInspiration, { getBardicDie } from './BardicInspiration';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
@@ -206,6 +207,7 @@ export default function DMSidebar({
   const [lastHoard, setLastHoard] = useState<TreasureHoardResult | null>(null);
   const [, setMixerRefresh] = useState(0); // force re-render when mixer state changes
   const [sessionNotes, setSessionNotes] = useState('');
+  const [bardicPool, setBardicPool] = useState(0);
   const [sessionNotesStatus, setSessionNotesStatus] = useState('');
   const sessionNotesSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -737,6 +739,16 @@ export default function DMSidebar({
                 </div>
               </div>
             )}
+
+            {/* Bardic Inspiration — party-shared bonus dice pool */}
+            <BardicInspiration
+              poolSize={bardicPool}
+              dieSize={getBardicDie(Math.max(...characters.map((c) => c.class === 'Bard' ? c.level : 0), 1))}
+              onGrant={() => { setBardicPool((p) => p + 1); onAddDmMessage('A bardic inspiration die is granted to the party.'); }}
+              onSpend={(roll) => { setBardicPool((p) => Math.max(0, p - 1)); onAddDmMessage(`Bardic inspiration spent: +${roll}`); }}
+              isDM={true}
+              hasBard={characters.some((c) => c.class === 'Bard')}
+            />
 
             {/* Exhaustion — DM adjusts exhaustion level per character */}
             {characters.length > 0 && (
