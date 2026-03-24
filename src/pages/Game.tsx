@@ -61,6 +61,7 @@ import AbilityCheckRoller from '../components/game/AbilityCheckRoller';
 import SavingThrowRoller from '../components/game/SavingThrowRoller';
 import DamageLeaderboard from '../components/game/DamageLeaderboard';
 import SessionStreak from '../components/game/SessionStreak';
+import OfflineBanner from '../components/game/OfflineBanner';
 import { emitPluginEvent, setPluginMessageCallback } from '../lib/plugins';
 import RoundMVP, { useRoundMVP } from '../components/game/RoundMVP';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
@@ -1489,7 +1490,7 @@ export default function Game() {
     setShowMonsterBrowser(false);
   }, [selectedCharacter, addDmMessage, setUnits, broadcastGameEvent, terrain, mapPositions]);
 
-  const { status, send } = useWebSocket({
+  const { status, send, reconnectAttemptCount } = useWebSocket({
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
     onMessage: handleWsMessage,
@@ -2249,6 +2250,9 @@ export default function Game() {
             onSetDmPersonality={(p) => { setDmPersonality(p); try { localStorage.setItem(`adventure:dm-personality:${room}`, p); } catch { /* ok */ } }}
           />
         )}
+
+        {/* Offline mode banner */}
+        <OfflineBanner status={status} reconnectAttempt={reconnectAttemptCount} />
 
         {/* Ready check banner */}
         {readyCheck?.active && (

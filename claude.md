@@ -1187,7 +1187,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### v17.0 — Post-Roadmap (everything buildable is done, these are new ideas)
 - [x] Hex pathfinding (6-neighbor BFS via getHexNeighbors, offset-row aware, computeReachableCells + isAdjacent accept gridType)
 - [ ] Game.tsx code-split (extract combat view, map view, and narration view into lazy-loaded routes)
-- [ ] Offline mode indicator (banner when WebSocket disconnects, auto-reconnect countdown)
+- [x] Offline mode indicator (OfflineBanner component: red/amber banner, reconnect countdown, "single-player mode active" messaging)
 - [ ] Theme system (light/dark/parchment/high-contrast, CSS custom properties)
 - [ ] Campaign export to PDF (full campaign book with maps, NPCs, quests, session history)
 
