@@ -54,6 +54,7 @@ import SessionMilestones, { useSessionMilestones } from '../components/game/Sess
 import SceneTransition from '../components/game/SceneTransition';
 import PartyVitals from '../components/game/PartyVitals';
 import SessionSummary from '../components/game/SessionSummary';
+import DiceTower, { useDiceTower } from '../components/dice/DiceTower';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
@@ -240,6 +241,7 @@ export default function Game() {
   const { display: deathSaveDisplay, trigger: triggerDeathSave } = useDeathSaveCinematic();
   const { display: deathRecapDisplay, recordDamage, triggerRecap: triggerDeathRecap } = useDeathRecap();
   const { toast: milestoneToast, recordDamage: milestoneDamage, recordRoll: milestoneRoll, recordKill: milestoneKill, recordCrit: milestoneCrit } = useSessionMilestones();
+  const { display: diceTowerDisplay, trigger: triggerDiceTower } = useDiceTower();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
   const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
@@ -1562,6 +1564,7 @@ export default function Game() {
       const displayUsername = playerName || funDefault();
       playDiceRoll();
       milestoneRoll();
+      triggerDiceTower(roll.sides, roll.total, roll.isCritical, roll.isFumble);
       if (roll.isCritical) { setTimeout(playCritical, 400); triggerCrit(); milestoneCrit(); }
       if (roll.isFumble) { setTimeout(playFumble, 400); triggerFumble(); }
       setChatMessages((prev) => [
@@ -3077,6 +3080,7 @@ export default function Game() {
       <DeathSaveCinematic display={deathSaveDisplay} />
       <DeathRecap display={deathRecapDisplay} />
       <SceneTransition sceneName={sceneName} />
+      <DiceTower display={diceTowerDisplay} />
       <SessionMilestones toast={milestoneToast} />
       <SessionSummary
         combatLog={combatLog}

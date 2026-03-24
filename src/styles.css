@@ -629,3 +629,27 @@ a:hover {
   0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
+
+/* Dice tower — bounce, settle, reveal */
+@keyframes diceTowerBounce {
+  0% { transform: translateY(-200px) rotate(0deg) scale(0.6); opacity: 0; }
+  15% { transform: translateY(0) rotate(180deg) scale(1); opacity: 1; }
+  25% { transform: translateY(-40px) rotate(240deg) scale(1.05); }
+  40% { transform: translateY(0) rotate(320deg) scale(1); }
+  50% { transform: translateY(-15px) rotate(350deg) scale(1.02); }
+  60% { transform: translateY(0) rotate(360deg) scale(1); }
+  80% { transform: translateY(0) rotate(360deg) scale(1); opacity: 1; }
+  100% { transform: translateY(0) rotate(360deg) scale(0.8); opacity: 0; }
+}
+.animate-dice-tower-bounce {
+  animation: diceTowerBounce 1.8s ease-out forwards;
+}
+
+/* Fade in (for dice tower backdrop) */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
