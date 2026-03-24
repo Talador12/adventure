@@ -48,6 +48,7 @@ import KillStreak, { useKillStreak } from '../components/game/KillStreak';
 import { rollFumble, type FumbleEffect } from '../data/fumbleTable';
 import DeathSaveCinematic, { useDeathSaveCinematic } from '../components/game/DeathSaveCinematic';
 import DiceLuckTracker from '../components/game/DiceLuckTracker';
+import DiceSuperstition from '../components/game/DiceSuperstition';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -1614,7 +1615,7 @@ export default function Game() {
           username: playerName,
           characterName: charName || undefined,
           portrait: selectedCharacter?.portrait || undefined,
-          text: `${result.notation}: ${rollText}${result.modifier ? ` ${result.modifier > 0 ? '+' : ''}${result.modifier}` : ''} = ${result.total}`,
+          text: `${result.notation}: ${rollText}${result.modifier ? ` ${result.modifier > 0 ? '+' : ''}${result.modifier}` : ''} = ${result.total}${result.label ? ` (${result.label})` : ''}`,
           timestamp: Date.now(),
           die: result.notation,
           value: result.total,
@@ -2893,6 +2894,7 @@ export default function Game() {
                   >
                     <span>Roll History ({rolls.length})</span>
                     <DiceLuckTracker rolls={rolls.filter((r) => r.sides === 20).map((r) => r.value)} />
+                    <DiceSuperstition rolls={rolls.filter((r) => r.sides === 20).map((r) => r.value)} />
                     <span>{showDiceHistory ? '\u25B2' : '\u25BC'}</span>
                   </button>
                   {showDiceHistory && (

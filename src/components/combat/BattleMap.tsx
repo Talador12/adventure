@@ -1079,6 +1079,22 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       const isDrag = dragging?.unitId === pos.unitId && dragPos;
       // Animated position: lerp between from/to during animation
       const anim = animatingTokensRef.current.get(pos.unitId);
+
+      // Movement trail — ghosted dots along the animation path
+      if (anim) {
+        const trailCount = 5;
+        const t = Math.min(1, (performance.now() - anim.startTime) / anim.duration);
+        for (let i = 0; i < trailCount; i++) {
+          const tt = (i / trailCount) * t;
+          const tx = anim.fromX + (anim.toX - anim.fromX) * tt;
+          const ty = anim.fromY + (anim.toY - anim.fromY) * tt;
+          ctx.beginPath();
+          ctx.arc(tx, ty, 3, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(243,128,32,${0.15 + tt * 0.15})`;
+          ctx.fill();
+        }
+      }
+
       let cx: number, cy: number;
       if (isDrag) {
         cx = dragPos!.x;

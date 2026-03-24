@@ -41,6 +41,8 @@ export interface SlashRollResult {
   kept?: number[];      // for keep-highest/lowest
   advantage?: boolean;
   disadvantage?: boolean;
+  /** Optional label (e.g. "fire damage", "stealth check") */
+  label?: string;
 }
 
 export function parseSlashRoll(input: string): SlashRollResult | null {
@@ -57,8 +59,8 @@ export function parseSlashRoll(input: string): SlashRollResult | null {
     const r2 = Math.floor(Math.random() * 20) + 1;
     return { notation: '2d20kl1 (disadvantage)', rolls: [r1, r2], modifier: 0, total: Math.min(r1, r2), kept: [Math.min(r1, r2)], disadvantage: true };
   }
-  // Parse XdY+Z or XdYkhN or XdYklN
-  const match = text.match(/^(\d*)d(\d+)(?:kh(\d+)|kl(\d+))?(?:\s*([+-])\s*(\d+))?$/);
+  // Parse XdY+Z or XdYkhN or XdYklN, with optional trailing label (e.g. "fire damage")
+  const match = text.match(/^(\d*)d(\d+)(?:kh(\d+)|kl(\d+))?(?:\s*([+-])\s*(\d+))?\s*(.+)?$/);
   if (!match) return null;
   const count = parseInt(match[1] || '1', 10);
   const sides = parseInt(match[2], 10);
@@ -83,8 +85,9 @@ export function parseSlashRoll(input: string): SlashRollResult | null {
     sum = rolls.reduce((a, b) => a + b, 0);
   }
 
+  const label = match[7]?.trim() || undefined;
   const notation = `${count}d${sides}${keepHigh ? `kh${keepHigh}` : ''}${keepLow ? `kl${keepLow}` : ''}${modVal ? (modVal > 0 ? `+${modVal}` : `${modVal}`) : ''}`;
-  return { notation, rolls, modifier: modVal, total: sum + modVal, kept };
+  return { notation, rolls, modifier: modVal, total: sum + modVal, kept, label };
 }
 
 // Common reaction emojis (D&D-themed)
