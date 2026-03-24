@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.6.0
+## Current Version: v7.7.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added dice luck tracker — SVG sparkline of last 20 d20 rolls with hot/cold streak detection in the roll history header.
+- Added AI encounter templates — "AI Template" button generates balanced encounter from party level/composition via AI, auto-saves as encounter template.
+- Added cloud session notes — DM freeform textarea in Notes tab with 1.5s debounce auto-save to KV. GET/PUT `/api/campaign/:roomId/notes`.
+- Added death save cinematic — screen dims with gradient overlay, heartbeat pulse animation. Contextual text: "Fallen" / "Slipping away" / "Hanging on" / "Back on their feet". Color-coded by outcome.
+- Added fumble table — 10 entries across 4 severity tiers (cosmetic → serious). `rollFumble()` picks d20-ranged result. Banner slides in on nat 1, color-coded by severity. Posted to DM history.
 - README rewrite — persona routing table (Player, DM, Developer, Designer, Modder), accurate 270+ feature list, tech stack, project structure. Replaced outdated v0.3 content. "Roll for initiative." closing.
 - Makefile persona sections — `make play` (zero-friction start), `make quickstart` (interactive walkthrough), `make dm-guide` (DM toolkit reference). Persona-grouped help output.
 - THE JUICE — `HPFlytext` (floating damage/heal/crit/SLAIN numbers above tokens), `CritCelebration` (rainbow border flash + 40 confetti particles on nat 20), `KillStreak` (Double Kill → Triple → RAMPAGE → LEGENDARY! with slide-in banner). New CSS: rainbowCrit, deathPulse, killstreakSlide, confettiFall animations.
@@ -1190,10 +1195,22 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Persona-driven README (routing table, accurate feature list, "Roll for initiative.")
 - [x] Persona-driven Makefile (make play / quickstart / dm-guide, grouped help output)
 - [ ] Map waypoint path drawing (DM draws movement paths that animate tokens along them)
-- [ ] Combat encounter templates from AI (generate balanced encounters based on party level)
-- [ ] Session notes auto-save to cloud (server-side DM notes per campaign, not just localStorage)
+- [x] Combat encounter templates from AI (AI Template button, auto-generates + saves balanced encounters)
+- [x] Session notes auto-save to cloud (DM textarea + KV endpoints, 1.5s debounce)
 - [x] Player character trading (TradePanel: gold + items between party members)
 - [x] Campaign recap AI summary (POST /api/dm/campaign-recap, Recap button in header)
+
+### v13.0 Feature Ideas
+- [x] Fumble table (10 entries, 4 severity tiers, banner on nat 1, posted to DM history)
+- [x] Death save cinematic (screen dim + heartbeat pulse, contextual text by outcome)
+- [x] Dice luck tracker (SVG sparkline of last 20 d20 rolls, hot/cold streak detection)
+- [ ] Bardic inspiration pool (party-shared resource, spend for +1d6 on any roll)
+- [ ] Minimap pings (click minimap to ping a location for the whole party)
+- [ ] Token movement trails (ghosted path showing where a token moved this turn)
+- [ ] Combat round summary (auto-generated "this round:" recap after each full round)
+- [ ] NPC voice pitch (per-NPC pitch adjustment for TTS — low for orcs, high for gnomes)
+- [ ] DM secret rolls (roll dice that only the DM sees, with reveal button)
+- [ ] Encounter mood music auto-switch (tie ambient mood to encounter difficulty)
 
 ### v6.0 Feature Ideas
 - [x] AI DM voice narration (browser SpeechSynthesis API, zero deps, works offline)

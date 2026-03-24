@@ -45,6 +45,9 @@ import EncounterXPTracker from '../components/game/EncounterXPTracker';
 import HPFlytext, { useHPFlytext } from '../components/combat/HPFlytext';
 import CritCelebration, { useCritCelebration } from '../components/game/CritCelebration';
 import KillStreak, { useKillStreak } from '../components/game/KillStreak';
+import { rollFumble, type FumbleEffect } from '../data/fumbleTable';
+import DeathSaveCinematic, { useDeathSaveCinematic } from '../components/game/DeathSaveCinematic';
+import DiceLuckTracker from '../components/game/DiceLuckTracker';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -217,9 +220,11 @@ export default function Game() {
   const [adventureStarted] = [dmHistory.length > 0]; // auto-detect from history
   const [actionInput, setActionInput] = useState('');
   // Juice hooks — the charm that makes this VTT feel alive
+  const [fumbleDisplay, setFumbleDisplay] = useState<FumbleEffect | null>(null);
   const { flytexts, addFlytext } = useHPFlytext();
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
+  const { display: deathSaveDisplay, trigger: triggerDeathSave } = useDeathSaveCinematic();
   const [initiativeLocked, setInitiativeLocked] = useState(false);
   // Ready check system
   const [readyCheck, setReadyCheck] = useState<{ active: boolean; responses: Record<string, boolean>; startedAt: number } | null>(null);
@@ -913,6 +918,13 @@ export default function Game() {
     import('../lib/tts').then(({ speak, isTTSEnabled }) => { if (isTTSEnabled()) speak(text); });
   }, []);
 
+  const triggerFumble = useCallback(() => {
+    const result = rollFumble();
+    setFumbleDisplay(result);
+    addDmMessage(`Fumble! ${result.effect}`);
+    setTimeout(() => setFumbleDisplay(null), 4000);
+  }, [addDmMessage]);
+
   // Build rich character payload for DM context
   const buildPartyPayload = useCallback(() => {
     // Send all party characters, not just the selected one
@@ -1501,7 +1513,7 @@ export default function Game() {
       const displayUsername = playerName || funDefault();
       playDiceRoll();
       if (roll.isCritical) { setTimeout(playCritical, 400); triggerCrit(); }
-      if (roll.isFumble) setTimeout(playFumble, 400);
+      if (roll.isFumble) { setTimeout(playFumble, 400); triggerFumble(); }
       setChatMessages((prev) => [
         ...prev,
         {
@@ -1570,7 +1582,7 @@ export default function Game() {
         : keptForOutcome.length > 0 && keptForOutcome.every((v) => v === 1);
       playDiceRoll();
       if (isCrit) { setTimeout(playCritical, 400); triggerCrit(); }
-      if (isFumble) setTimeout(playFumble, 400);
+      if (isFumble) { setTimeout(playFumble, 400); triggerFumble(); }
       const rollText = result.kept
         ? `[${result.rolls.join(', ')}] keep ${result.kept.join(', ')}`
         : `[${result.rolls.join(', ')}]`;
@@ -1625,7 +1637,7 @@ export default function Game() {
       const playerName = currentPlayer.username || funDefault();
       playDiceRoll();
       if (isCrit) { setTimeout(playCritical, 400); triggerCrit(); }
-      if (isFumble) setTimeout(playFumble, 400);
+      if (isFumble) { setTimeout(playFumble, 400); triggerFumble(); }
       const rollText = `[${rolls.join(', ')}]`;
       setChatMessages((prev) => [
         ...prev,
@@ -2426,6 +2438,7 @@ export default function Game() {
                   addAttackIndicator={addAttackIndicator}
                   addFlytext={addFlytext}
                   recordKill={recordKill}
+                  triggerDeathSave={triggerDeathSave}
                   onAddToPartyInventory={(item) => setPartyInventory((prev) => [...prev, item])}
                   stagedLoot={stagedLoot}
                   onConsumeStagedLoot={() => setStagedLoot([])}
@@ -2819,6 +2832,7 @@ export default function Game() {
                     className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
                   >
                     <span>Roll History ({rolls.length})</span>
+                    <DiceLuckTracker rolls={rolls.filter((r) => r.sides === 20).map((r) => r.value)} />
                     <span>{showDiceHistory ? '\u25B2' : '\u25BC'}</span>
                   </button>
                   {showDiceHistory && (
@@ -2950,6 +2964,20 @@ export default function Game() {
       {/* === THE JUICE === */}
       <CritCelebration active={critActive} confetti={critConfetti} />
       <KillStreak display={killStreakDisplay} />
+      <DeathSaveCinematic display={deathSaveDisplay} />
+      {/* Fumble consequence banner */}
+      {fumbleDisplay && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9995] animate-slide-in pointer-events-none">
+          <div className={`px-5 py-2.5 rounded-xl border shadow-xl backdrop-blur-sm max-w-md text-center ${
+            fumbleDisplay.severity === 'serious' ? 'border-red-600/50 bg-red-950/80' :
+            fumbleDisplay.severity === 'moderate' ? 'border-orange-600/50 bg-orange-950/80' :
+            'border-slate-600/50 bg-slate-900/80'
+          }`}>
+            <div className="text-[10px] text-red-400 font-bold uppercase tracking-wider mb-0.5">Natural 1</div>
+            <div className="text-xs text-slate-300">{fumbleDisplay.effect}</div>
+          </div>
+        </div>
+      )}
       {/* Performance dashboard — toggle with Ctrl+Shift+P */}
       <Suspense fallback={null}><PerfDashboard /></Suspense>
       {/* Keyboard shortcuts overlay — toggle with ? */}

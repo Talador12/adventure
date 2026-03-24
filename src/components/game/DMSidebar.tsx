@@ -1,6 +1,6 @@
 // DMSidebar — collapsible left panel with Encounter, NPC, and Notes tabs.
 // Extracted from Game.tsx to reduce file size.
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/GameContext';
 import type { EncounterTemplate } from '../../types/game';
 import SessionTimer from './SessionTimer';
@@ -205,6 +205,16 @@ export default function DMSidebar({
   const [hoardTier, setHoardTier] = useState(0);
   const [lastHoard, setLastHoard] = useState<TreasureHoardResult | null>(null);
   const [, setMixerRefresh] = useState(0); // force re-render when mixer state changes
+  const [sessionNotes, setSessionNotes] = useState('');
+  const [sessionNotesStatus, setSessionNotesStatus] = useState('');
+  const sessionNotesSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Load DM session notes from cloud on mount
+  useEffect(() => {
+    fetch(`/api/campaign/${roomId}/notes`).then((r) => r.json() as Promise<{ notes?: string }>)
+      .then((d) => { if (d.notes) setSessionNotes(d.notes); })
+      .catch(() => {});
+  }, [roomId]);
 
   return (
     <aside aria-label="DM Tools sidebar" className="hidden md:flex w-72 bg-slate-900 border-r border-slate-800 flex-col shrink-0 overflow-hidden">
@@ -275,6 +285,46 @@ export default function DMSidebar({
                   Save Template
                 </button>
               )}
+              <button
+                onClick={async () => {
+                  const avgLevel = characters.length > 0 ? Math.round(characters.reduce((s, c) => s + c.level, 0) / characters.length) : 1;
+                  onAddDmMessage('Generating encounter template...');
+                  try {
+                    const res = await fetch('/api/dm/encounter', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        partyLevel: avgLevel,
+                        partySize: characters.length || 1,
+                        difficulty: encounterDifficulty,
+                        context: sceneName || 'a mysterious location',
+                        partyClasses: characters.map((c) => c.class),
+                      }),
+                    });
+                    const data = await res.json() as { description?: string; enemies?: Array<{ name: string; hp: number; maxHp: number; ac: number }> };
+                    if (data.enemies?.length) {
+                      const tmpl: EncounterTemplate = {
+                        id: crypto.randomUUID().slice(0, 8),
+                        name: `AI: ${encounterDifficulty} (Lv${avgLevel})`,
+                        enemies: data.enemies,
+                        difficulty: encounterDifficulty,
+                        notes: data.description || '',
+                        createdAt: Date.now(),
+                      };
+                      const raw = localStorage.getItem('adventure:encounter-templates') || '[]';
+                      const templates = JSON.parse(raw) as EncounterTemplate[];
+                      templates.unshift(tmpl);
+                      if (templates.length > 20) templates.length = 20;
+                      localStorage.setItem('adventure:encounter-templates', JSON.stringify(templates));
+                      onAddDmMessage(`Saved AI template: "${tmpl.name}" (${tmpl.enemies.length} enemies)`);
+                    }
+                  } catch { onAddDmMessage('AI encounter generation failed (offline?)'); }
+                }}
+                className="text-[8px] text-violet-400 hover:text-violet-300 font-semibold"
+                title="AI generates a balanced encounter and saves it as a template"
+              >
+                AI Template
+              </button>
               <select
                 defaultValue=""
                 onChange={(e) => {
@@ -627,6 +677,33 @@ export default function DMSidebar({
         {/* Notes tab */}
         {dmSidebarTab === 'notes' && (
           <>
+            {/* DM Session Notes — cloud-saved freeform notes */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-slate-500 font-semibold uppercase">Session Notes</label>
+                <span className="text-[8px] text-slate-700">{sessionNotesStatus}</span>
+              </div>
+              <textarea
+                value={sessionNotes}
+                onChange={(e) => {
+                  setSessionNotes(e.target.value);
+                  setSessionNotesStatus('editing...');
+                  clearTimeout(sessionNotesSaveTimer.current);
+                  sessionNotesSaveTimer.current = setTimeout(() => {
+                    fetch(`/api/campaign/${roomId}/notes`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ notes: e.target.value }),
+                    }).then(() => setSessionNotesStatus('saved')).catch(() => setSessionNotesStatus('save failed'));
+                  }, 1500);
+                }}
+                placeholder="Jot down session notes, plot hooks, NPC secrets..."
+                className="w-full h-28 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 placeholder:text-slate-600 focus:border-amber-600 focus:outline-none resize-none"
+              />
+            </div>
+
+            <div className="w-full h-px bg-slate-700/50" />
+
             {/* Session Scheduler — plan next game night */}
             <SessionScheduler roomId={roomId} />
 

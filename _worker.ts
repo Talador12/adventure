@@ -1628,6 +1628,22 @@ app.put('/api/campaign/:roomId', async (c) => {
   }
 });
 
+// GET /api/campaign/:roomId/notes — load DM session notes from KV
+app.get('/api/campaign/:roomId/notes', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ notes: '' });
+  const notes = await c.env.CAMPAIGNS.get(`notes:${c.req.param('roomId')}`);
+  return c.json({ notes: notes || '' });
+});
+
+// PUT /api/campaign/:roomId/notes — save DM session notes to KV
+app.put('/api/campaign/:roomId/notes', async (c) => {
+  if (!c.env.CAMPAIGNS) return c.json({ error: 'KV not available' }, 503);
+  const body = await c.req.json<Record<string, unknown>>();
+  const notes = String(body.notes || '');
+  await c.env.CAMPAIGNS.put(`notes:${c.req.param('roomId')}`, notes);
+  return c.json({ ok: true });
+});
+
 // --- Lobby password helpers ---
 async function hashPassword(password: string): Promise<string> {
   const data = new TextEncoder().encode(password);

@@ -56,6 +56,7 @@ interface CombatToolbarProps {
   addAttackIndicator: (fromCol: number, fromRow: number, toCol: number, toRow: number, type?: 'melee' | 'ranged' | 'spell' | 'heal') => void;
   addFlytext?: (col: number, row: number, text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'death', gridCols: number, gridRows: number) => void;
   recordKill?: (killerName: string) => void;
+  triggerDeathSave?: (characterName: string, message: string) => void;
 }
 
 export default function CombatToolbar({
@@ -99,6 +100,7 @@ export default function CombatToolbar({
   addAttackIndicator,
   addFlytext,
   recordKill,
+  triggerDeathSave,
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -242,6 +244,8 @@ export default function CombatToolbar({
                                 if (tr.deathSaveMessage) {
                                   setCombatLog((prev) => [...prev, tr.deathSaveMessage!]);
                                   addDmMessage(tr.deathSaveMessage);
+                                  const dyingUnit = tr.units.find((u) => u.hp === 0 && u.type === 'player');
+                                  triggerDeathSave?.(dyingUnit?.name || 'Unknown', tr.deathSaveMessage);
                                 }
                                 broadcastCombatSync(tr.units, true, combatRound + (tr.newRound ? 1 : 0), tr.turnIndex);
                               }}
