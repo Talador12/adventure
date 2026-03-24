@@ -12,6 +12,7 @@ import { chebyshevDistance, hasLineOfSight, isAdjacent, isFlanking, checkCover, 
 import type { ActiveAoE } from '../combat/BattleMap';
 import { playTurnChange, playCombatHit, playCombatMiss, playMagicSpell, playEnemyDeath, playHealing, playLevelUp, playLootDrop, playCritical } from '../../hooks/useSoundFX';
 import { hitFlavor, missFlavor, critFlavor, killFlavor } from '../../data/combatFlavor';
+import { combatOpener } from '../../data/combatOpeners';
 
 interface CombatToolbarProps {
   selectedCharacter: Character | null;
@@ -227,7 +228,8 @@ export default function CombatToolbar({
                             const sorted = rollInitiative();
                             playTurnChange();
                             const initOrder = sorted.map((u) => `${u.name}: ${u.initiative}`).join(', ');
-                            setCombatLog((prev) => [...prev, `Initiative rolled! ${initOrder}`]);
+                            setCombatLog((prev) => [...prev, combatOpener(), `Initiative rolled! ${initOrder}`]);
+                            addDmMessage(combatOpener());
                             addDmMessage(`Roll for initiative! Order: ${initOrder}`);
                             broadcastCombatSync(sorted, true, 1, 0);
                           }}
@@ -905,6 +907,7 @@ export default function CombatToolbar({
                               const { leveledUp, newLevel } = grantXP(selectedCharacter.id, totalXP);
                               updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + goldReward });
 
+                              addFloatingText(`+${totalXP} XP`, 'heal');
                               const rewardMsg = `Battle won! Earned ${totalXP} XP and ${goldReward} gold.`;
                               addDmMessage(rewardMsg);
 
@@ -981,6 +984,11 @@ export default function CombatToolbar({
                           playHealing();
                           addFloatingText('Short Rest', 'heal');
                           addDmMessage(`${selectedCharacter.name} takes a short rest, tending wounds and catching their breath.`);
+                          // Fire-and-forget AI rest narration
+                          fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: `${selectedCharacter.name} takes a short rest`, context: sceneName || 'camp', history: [] }) })
+                            .then((r) => r.json() as Promise<{ narration?: string }>)
+                            .then((d) => { if (d.narration) addDmMessage(d.narration); })
+                            .catch(() => {});
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-900/40 hover:bg-sky-900/60 border border-sky-800/50 text-sky-300 text-xs font-semibold rounded-lg transition-all"
                       >
@@ -995,6 +1003,10 @@ export default function CombatToolbar({
                           playHealing();
                           addFloatingText('Full Rest', 'heal');
                           addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored.`);
+                          fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: `The party makes camp and ${selectedCharacter.name} settles in for a long rest`, context: sceneName || 'a quiet clearing', history: [] }) })
+                            .then((r) => r.json() as Promise<{ narration?: string }>)
+                            .then((d) => { if (d.narration) addDmMessage(d.narration); })
+                            .catch(() => {});
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-800/50 text-indigo-300 text-xs font-semibold rounded-lg transition-all"
                       >
