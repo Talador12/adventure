@@ -47,6 +47,7 @@ import CritCelebration, { useCritCelebration } from '../components/game/CritCele
 import KillStreak, { useKillStreak } from '../components/game/KillStreak';
 import { rollFumble, type FumbleEffect } from '../data/fumbleTable';
 import DeathSaveCinematic, { useDeathSaveCinematic } from '../components/game/DeathSaveCinematic';
+import DiceLuckTracker from '../components/game/DiceLuckTracker';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -2831,6 +2832,7 @@ export default function Game() {
                     className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
                   >
                     <span>Roll History ({rolls.length})</span>
+                    <DiceLuckTracker rolls={rolls.filter((r) => r.sides === 20).map((r) => r.value)} />
                     <span>{showDiceHistory ? '\u25B2' : '\u25BC'}</span>
                   </button>
                   {showDiceHistory && (
