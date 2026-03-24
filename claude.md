@@ -1199,7 +1199,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [ ] Map fog brush preview (show ghost of brush area before painting)
 - [ ] Initiative cards drag reorder for players (not just DM)
 - [ ] Character import from JSON URL (paste a URL, auto-fetch and import)
-- [ ] Combat XP auto-award to all party members (split evenly on combat end)
+- [x] Combat XP auto-award to all party members (XP + gold split evenly, remainder to first char, level-up checked per char)
 - [ ] AI-generated encounter music keywords (pass to ambient system on combat start)
 - [x] Token status effect icons on canvas (emoji icons below HP bar: poison skull, fire, frightened face, etc — max 4 shown)
 

@@ -956,30 +956,41 @@ export default function CombatToolbar({
                             // Remove dead enemies, reset initiative and conditions
                             setUnits((prev: Unit[]) => prev.filter((u) => u.type === 'player' || u.hp > 0).map((u) => ({ ...u, isCurrentTurn: false, initiative: -1, conditions: [] })));
 
-                            // Award XP and gold to the selected character
-                            if (selectedCharacter && totalXP > 0) {
-                              const { leveledUp, newLevel } = grantXP(selectedCharacter.id, totalXP);
-                              updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + goldReward });
+                            // Award XP and gold evenly to ALL party members
+                            if (characters.length > 0 && totalXP > 0) {
+                              const xpPerChar = Math.floor(totalXP / characters.length);
+                              const goldPerChar = Math.floor(goldReward / characters.length);
+                              const goldRemainder = goldReward - goldPerChar * characters.length;
 
-                              addFloatingText(`+${totalXP} XP`, 'heal');
-                              const rewardMsg = `Battle won! Earned ${totalXP} XP and ${goldReward} gold.`;
+                              addFloatingText(`+${xpPerChar} XP each`, 'heal');
+                              const rewardMsg = `Battle won! ${totalXP} XP split among ${characters.length} → ${xpPerChar} XP each. ${goldReward} gold${goldPerChar > 0 ? ` (${goldPerChar}gp each)` : ''}.`;
                               addDmMessage(rewardMsg);
 
-                              if (leveledUp) {
-                                playLevelUp();
-                                triggerLevelUp?.(selectedCharacter.name, newLevel);
-                                addDmMessage(`LEVEL UP! ${selectedCharacter.name} is now level ${newLevel}!`);
-                                // Check if this level grants an ASI/feat choice
+                              for (let ci = 0; ci < characters.length; ci++) {
+                                const ch = characters[ci];
+                                const extraGold = ci === 0 ? goldRemainder : 0; // remainder to first char
+                                const { leveledUp, newLevel } = grantXP(ch.id, xpPerChar);
+                                updateCharacter(ch.id, { gold: (ch.gold || 0) + goldPerChar + extraGold });
+
+                                if (leveledUp) {
+                                  playLevelUp();
+                                  triggerLevelUp?.(ch.name, newLevel);
+                                  addDmMessage(`LEVEL UP! ${ch.name} is now level ${newLevel}!`);
+                                }
+                              }
+
+                              // ASI check for selected character specifically
+                              if (selectedCharacter) {
+                                const { leveledUp, newLevel } = { leveledUp: false, newLevel: selectedCharacter.level }; // already granted above
                                 const updatedChar = characters.find((c) => c.id === selectedCharacter.id);
-                                if (updatedChar && hasPendingASI({ ...updatedChar, level: newLevel })) {
+                                if (updatedChar && hasPendingASI({ ...updatedChar, level: updatedChar.level })) {
                                   setTimeout(() => setShowLevelUpModal(true), 1500); // show after a beat
                                 }
                               }
 
                               // Loot: use staged loot if DM pre-assigned, otherwise roll from tables
-                              if (stagedLoot && stagedLoot.length > 0) {
+                              if (selectedCharacter && stagedLoot && stagedLoot.length > 0) {
                                 playLootDrop();
-                                updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + goldReward });
                                 for (const item of stagedLoot) {
                                   if (onAddToPartyInventory) onAddToPartyInventory(item);
                                   else addItem(selectedCharacter.id, item);
@@ -987,11 +998,11 @@ export default function CombatToolbar({
                                 const stagedNames = stagedLoot.map((i) => i.name).join(', ');
                                 addDmMessage(`Loot: ${goldReward} gold + ${stagedNames} (DM-assigned)`);
                                 onConsumeStagedLoot?.();
-                              } else {
+                              } else if (selectedCharacter) {
                                 const lootResult = rollLoot(encounterDifficulty as 'easy' | 'medium' | 'hard' | 'deadly');
                                 if (lootResult.items.length > 0 || lootResult.gold > 0) {
                                   playLootDrop();
-                                  updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + lootResult.gold + goldReward });
+                                  updateCharacter(selectedCharacter.id, { gold: (selectedCharacter.gold || 0) + lootResult.gold });
                                   if (lootResult.items.length > 0 && onAddToPartyInventory) {
                                     for (const item of lootResult.items) onAddToPartyInventory(item);
                                   } else {
