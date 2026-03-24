@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.4.0
+## Current Version: v9.5.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added damage flytext color by type — fire=orange, cold=cyan, lightning=yellow, necrotic=purple, etc. 10 damage types, each with its own color. Overrides default red on the floating numbers.
+- Added ability check quick-roller — 6 ability buttons (STR→CHA) with auto-calculated modifiers from character stats. One click, d20+mod, posted to combat log.
+- Added map exploration tracker — counts explored vs total non-wall/void cells. Sky-blue progress bar with percentage.
+- Added session attendance streak — tracks consecutive sessions per campaign. Flame emoji counter in header (🔥 at 2+, 🔥🔥 at 5+, 🔥🔥🔥 at 10+).
 - Added rest narration — AI writes a short atmospheric scene when the party takes a short or long rest. Fire-and-forget via /api/dm/narrate. Adds flavor to downtime.
 - Added spell slot burndown sparkline — SVG graph tracking remaining slots over session. Color shifts violet→yellow→red as resources deplete.
 - Added combat opening lines — 10 dramatic openers when initiative is rolled. "The conversation is over. Roll for initiative." "Somewhere, a bard just reached for their instrument."

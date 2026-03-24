@@ -60,6 +60,14 @@ const TYPE_STYLES: Record<FlyText['type'], string> = {
   death: 'text-red-600 text-base font-black',
 };
 
+// Damage type → text color override (replaces the default red)
+const DAMAGE_TYPE_COLORS: Record<string, string> = {
+  fire: 'text-orange-400', cold: 'text-cyan-400', lightning: 'text-yellow-300',
+  radiant: 'text-amber-200', necrotic: 'text-purple-400', psychic: 'text-pink-400',
+  poison: 'text-green-400', acid: 'text-lime-400', thunder: 'text-blue-300',
+  force: 'text-violet-300',
+};
+
 export default function HPFlytext({ flytexts }: { flytexts: FlyText[] }) {
   if (flytexts.length === 0) return null;
 
@@ -68,7 +76,13 @@ export default function HPFlytext({ flytexts }: { flytexts: FlyText[] }) {
       {flytexts.map((ft) => (
         <span
           key={ft.id}
-          className={`absolute animate-float-up ${TYPE_STYLES[ft.type]}`}
+          className={`absolute animate-float-up ${(() => {
+            const base = TYPE_STYLES[ft.type];
+            const dtColor = ft.damageType && (ft.type === 'damage' || ft.type === 'crit') ? DAMAGE_TYPE_COLORS[ft.damageType] : null;
+            if (!dtColor) return base;
+            // Replace the default color class with the damage type color
+            return base.replace(/text-\S+/, dtColor);
+          })()}`}
           style={{ left: `${ft.x}%`, top: `${ft.y}%`, transform: 'translateX(-50%)' }}
         >
           {(() => {
