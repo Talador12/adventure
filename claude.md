@@ -1158,7 +1158,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Multiclass proficiency rules (PHB p164, confirmation dialog shows gained profs)
 - [x] Spell concentration auto-tracking (CON save on damage + War Caster feat — already implemented)
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
-- [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
+- [x] Battle map layers (7 toggleable z-layers: terrain, lighting, traps, grid, tokens, fog, effects — DM toolbar toggle buttons)
 
 ### v3.0 Feature Ideas
 - [x] Replay mode — auto-record combat events + step-through viewer with scrubber + speed control
@@ -1182,7 +1182,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Player character journal (diary entries on Character, persisted, reverse-chron display)
 - [x] Initiative card drag-and-drop (HTML5 drag-and-drop with visual feedback — already implemented)
 - [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
-- [ ] Hex grid: full terrain rendering in hex cells (requires canvas draw loop rewrite)
+- [x] Hex grid: full terrain rendering in hex cells (pixelToHex, hex terrain fills, hex grid lines, hex token positioning, hex fog of war, hex drag-drop)
 
 ### v7.0 Feature Ideas
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
@@ -1319,7 +1319,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Model quality presets (AI_QUALITY env var: fast/balanced/quality → auto-select model)
 
 ### v5.0 Feature Ideas
-- [ ] Discord OAuth login (replace guest play with real Discord identity, avatar, username)
+- [x] Discord OAuth login (was already built — enabled the disabled button, removed 'coming soon' divider, all 3 OAuth providers now active)
 - [x] Character leveling wizard (Summary tab with HP roll/average, gains list, ASI/Feat tabs)
 - [x] AI trap generator (✨AI DM tool + POST /api/dm/generate-trap, level-scaled)
 - [x] Session recap generator (auto-fires on return + manual "📖 Previously on..." button + dedicated API endpoint)

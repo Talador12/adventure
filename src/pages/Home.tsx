@@ -463,18 +463,18 @@ export default function Home() {
 
               <div className="flex items-center gap-3 my-1">
                 <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
-                <span className="text-[10px] text-slate-400 uppercase tracking-wide">coming soon</span>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wide">or</span>
                 <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
               </div>
 
               {/* Discord */}
-              <button onClick={handleDiscordLogin} className="flex items-center gap-3 w-full h-11 px-4 rounded-lg bg-[#5865F2] hover:bg-[#6a76fa] active:bg-[#4752c4] text-white font-semibold text-sm transition-all active:scale-[0.98] shadow opacity-60 cursor-not-allowed" disabled>
+              <button onClick={handleDiscordLogin} className="flex items-center gap-3 w-full h-11 px-4 rounded-lg bg-[#5865F2] hover:bg-[#6a76fa] active:bg-[#4752c4] text-white font-semibold text-sm transition-all active:scale-[0.98] shadow">
                 <FontAwesomeIcon icon={faDiscord} className="text-lg w-5" />
                 <span className="flex-1 text-left">Sign in with Discord</span>
               </button>
 
               {/* Google */}
-              <button onClick={handleGoogleLogin} className="flex items-center gap-3 w-full h-11 px-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-all active:scale-[0.98] shadow hover:bg-slate-50 dark:hover:bg-slate-700 opacity-60 cursor-not-allowed" disabled>
+              <button onClick={handleGoogleLogin} className="flex items-center gap-3 w-full h-11 px-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-all active:scale-[0.98] shadow hover:bg-slate-50 dark:hover:bg-slate-700">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />

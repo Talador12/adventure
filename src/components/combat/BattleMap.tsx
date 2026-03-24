@@ -32,6 +32,15 @@ function drawHexPath(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
   }
   ctx.closePath();
 }
+// Convert pixel coordinates to hex grid col/row (offset coordinates, odd-row shift)
+function pixelToHex(px: number, py: number): { col: number; row: number } {
+  const w = HEX_SIZE * Math.sqrt(3);
+  const row = Math.round((py - HEX_SIZE) / (HEX_SIZE * 1.5));
+  const offset = row % 2 === 1 ? w / 2 : 0;
+  const col = Math.round((px - w / 2 - offset) / w);
+  return { col: Math.max(0, col), row: Math.max(0, row) };
+}
+
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.0;
 const MINIMAP_CELL = 4; // pixels per cell on minimap
@@ -645,6 +654,17 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   // Distance measurement — two-click tool
   const [measureStart, setMeasureStart] = useState<{ col: number; row: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ col: number; row: number } | null>(null);
+  // Z-layer visibility toggles (DM can hide/show layers independently)
+  const [layerVisibility, setLayerVisibility] = useState({
+    terrain: true,
+    lighting: true,
+    traps: true,
+    grid: true,
+    tokens: true,
+    fog: true,
+    effects: true, // auras, tethers, AoE, attack indicators
+  });
+  type LayerName = keyof typeof layerVisibility;
 
   // Start a smooth token animation from one grid cell to another (exposed via animateMoveRef)
   const animateToken = useCallback((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number, durationMs = 300) => {
@@ -953,26 +973,44 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.drawImage(bgImageRef.current!, 0, 0, w, h);
     }
 
-    // Draw terrain — when bg image is present, floor cells are transparent (image shows through)
+    // Draw terrain — hex or square cells
+    const isHex = gridType === 'hex';
     for (let r = 0; r < gridRows; r++) {
       for (let c = 0; c < gridCols; c++) {
         const isVisible = visibility[r]?.[c] ?? false;
         const wasExplored = explored[r]?.[c] ?? false;
 
-        if (!effectiveDmMode && !isVisible && !wasExplored) continue; // completely unknown
+        if (!effectiveDmMode && !isVisible && !wasExplored) continue;
 
         const cellType = terrain[r][c];
-        // With bg image: skip floor/void draws (show image), still draw special terrain on top
-        if (hasBgImage && (cellType === 'floor' || cellType === 'void')) {
-          // just skip — the background image is already there
+        if (isHex) {
+          // Hex terrain rendering
+          const { x: hx, y: hy } = hexCenter(c, r);
+          const colors = TERRAIN_COLORS[cellType as keyof typeof TERRAIN_COLORS];
+          if (colors && !(hasBgImage && (cellType === 'floor' || cellType === 'void'))) {
+            drawHexPath(ctx, hx, hy);
+            ctx.fillStyle = colors.fill;
+            ctx.fill();
+            ctx.strokeStyle = colors.stroke || '#333';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+          if (!effectiveDmMode && !isVisible && wasExplored) {
+            drawHexPath(ctx, hx, hy);
+            ctx.fillStyle = `rgba(15,23,42,${fogOpacity})`;
+            ctx.fill();
+          }
         } else {
-          drawTerrainCell(ctx, c, r, cellType, CELL_SIZE);
-        }
-
-        // Dim explored but not currently visible cells
-        if (!effectiveDmMode && !isVisible && wasExplored) {
-          ctx.fillStyle = `rgba(15,23,42,${fogOpacity})`;
-          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          // Square terrain rendering
+          if (hasBgImage && (cellType === 'floor' || cellType === 'void')) {
+            // skip — bg image shows through
+          } else {
+            drawTerrainCell(ctx, c, r, cellType, CELL_SIZE);
+          }
+          if (!effectiveDmMode && !isVisible && wasExplored) {
+            ctx.fillStyle = `rgba(15,23,42,${fogOpacity})`;
+            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          }
         }
         // Reveal animation: recently-revealed cells get a fading fog overlay
         if (!effectiveDmMode && isVisible) {
@@ -987,7 +1025,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     }
 
     // Draw lighting overlays (DM sees tint from both static + dynamic torch light)
-    if (effectiveLighting && effectiveDmMode) {
+    if (layerVisibility.lighting && effectiveLighting && effectiveDmMode) {
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
           const level = effectiveLighting[r]?.[c];
@@ -1007,7 +1045,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     }
 
     // Draw traps (visible in DM mode, or when detected by players)
-    traps.forEach((trap) => {
+    if (layerVisibility.traps) traps.forEach((trap) => {
       if (trap.triggered) return; // already went off, don't render
       if (!effectiveDmMode && !trap.detected) return; // hidden from players
       const tc = TRAP_TEMPLATES[trap.type];
@@ -1154,20 +1192,32 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       });
     }
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(148,163,184,0.07)';
-    ctx.lineWidth = 1;
-    for (let c = 0; c <= gridCols; c++) {
-      ctx.beginPath();
-      ctx.moveTo(c * CELL_SIZE, 0);
-      ctx.lineTo(c * CELL_SIZE, h);
-      ctx.stroke();
-    }
-    for (let r = 0; r <= gridRows; r++) {
-      ctx.beginPath();
-      ctx.moveTo(0, r * CELL_SIZE);
-      ctx.lineTo(w, r * CELL_SIZE);
-      ctx.stroke();
+    // Grid lines — hex or square
+    if (!layerVisibility.grid) { /* skip grid */ } else if (isHex) {
+      ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+      ctx.lineWidth = 0.5;
+      for (let r = 0; r < gridRows; r++) {
+        for (let c = 0; c < gridCols; c++) {
+          const { x: hx, y: hy } = hexCenter(c, r);
+          drawHexPath(ctx, hx, hy);
+          ctx.stroke();
+        }
+      }
+    } else {
+      ctx.strokeStyle = 'rgba(148,163,184,0.07)';
+      ctx.lineWidth = 1;
+      for (let c = 0; c <= gridCols; c++) {
+        ctx.beginPath();
+        ctx.moveTo(c * CELL_SIZE, 0);
+        ctx.lineTo(c * CELL_SIZE, h);
+        ctx.stroke();
+      }
+      for (let r = 0; r <= gridRows; r++) {
+        ctx.beginPath();
+        ctx.moveTo(0, r * CELL_SIZE);
+        ctx.lineTo(w, r * CELL_SIZE);
+        ctx.stroke();
+      }
     }
 
     // Draw token auras (first pass — behind all tokens)
@@ -1256,6 +1306,10 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // easeInOutQuad
         cx = anim.fromX + (anim.toX - anim.fromX) * ease;
         cy = anim.fromY + (anim.toY - anim.fromY) * ease;
+      } else if (isHex) {
+        const hc = hexCenter(pos.col, pos.row);
+        cx = hc.x;
+        cy = hc.y;
       } else {
         cx = pos.col * CELL_SIZE + CELL_SIZE / 2;
         cy = pos.row * CELL_SIZE + CELL_SIZE / 2;
@@ -1422,13 +1476,20 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       }
     });
 
-    // Fog of war — cover unexplored cells
-    if (!effectiveDmMode) {
+    // Fog of war — cover unexplored cells (hex or square)
+    if (layerVisibility.fog && !effectiveDmMode) {
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
           if (!explored[r]?.[c] && !visibility[r]?.[c]) {
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            if (isHex) {
+              const { x: hx, y: hy } = hexCenter(c, r);
+              drawHexPath(ctx, hx, hy);
+              ctx.fillStyle = '#0f172a';
+              ctx.fill();
+            } else {
+              ctx.fillStyle = '#0f172a';
+              ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            }
           }
         }
       }
@@ -1443,7 +1504,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity, layerVisibility, gridType]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -1593,8 +1654,12 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     const scaleY = canvas.height / rect.height;
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
+    if (gridType === 'hex') {
+      const hex = pixelToHex(x, y);
+      return { x, y, col: hex.col, row: hex.row };
+    }
     return { x, y, col: Math.floor(x / CELL_SIZE), row: Math.floor(y / CELL_SIZE) };
-  }, []);
+  }, [gridType]);
 
   const tokenAt = useCallback((x: number, y: number): TokenPosition | null => {
     for (const pos of positions) {
@@ -1923,8 +1988,15 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (painting) { setPainting(false); return; }
     if (!dragging || !dragPos) { setDragging(null); setDragPos(null); setReachableCells(null); return; }
 
-    const col = Math.max(0, Math.min(gridCols - 1, Math.floor(dragPos.x / CELL_SIZE)));
-    const row = Math.max(0, Math.min(gridRows - 1, Math.floor(dragPos.y / CELL_SIZE)));
+    let col: number, row: number;
+    if (gridType === 'hex') {
+      const hex = pixelToHex(dragPos.x, dragPos.y);
+      col = Math.max(0, Math.min(gridCols - 1, hex.col));
+      row = Math.max(0, Math.min(gridRows - 1, hex.row));
+    } else {
+      col = Math.max(0, Math.min(gridCols - 1, Math.floor(dragPos.x / CELL_SIZE)));
+      row = Math.max(0, Math.min(gridRows - 1, Math.floor(dragPos.y / CELL_SIZE)));
+    }
 
     // Don't allow placing tokens on walls or void
     const targetTerrain = terrain[row]?.[col];
@@ -2288,6 +2360,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                   title={r === 0 ? '1 cell' : `${1 + r * 2}x${1 + r * 2} cells`}
                 >
                   {r === 0 ? '1' : r === 1 ? '3' : '5'}
+                </button>
+              ))}
+            </div>
+
+            {/* Layer visibility toggles */}
+            <div className="flex items-center gap-0.5 ml-1">
+              <span className="text-[8px] text-slate-600">Layers:</span>
+              {(Object.keys(layerVisibility) as LayerName[]).map((layer) => (
+                <button
+                  key={layer}
+                  onClick={() => setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }))}
+                  className={`text-[7px] px-1 py-0.5 rounded transition-all capitalize ${layerVisibility[layer] ? 'bg-slate-700 text-slate-300' : 'bg-slate-900 text-slate-600 line-through'}`}
+                  title={`${layerVisibility[layer] ? 'Hide' : 'Show'} ${layer} layer`}
+                >
+                  {layer}
                 </button>
               ))}
             </div>
