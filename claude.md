@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.3.0
+## Current Version: v9.4.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added rest narration — AI writes a short atmospheric scene when the party takes a short or long rest. Fire-and-forget via /api/dm/narrate. Adds flavor to downtime.
+- Added spell slot burndown sparkline — SVG graph tracking remaining slots over session. Color shifts violet→yellow→red as resources deplete.
+- Added combat opening lines — 10 dramatic openers when initiative is rolled. "The conversation is over. Roll for initiative." "Somewhere, a bard just reached for their instrument."
+- Added torch flicker effect — warm golden glow behind tokens in bright lighting zones. Sine-wave radius for subtle organic flicker.
+- Added XP celebration flytext — floating "+X XP" text when XP is awarded after combat.
 - Added encounter difficulty thermometer — visual gauge of remaining enemy HP. Color shifts Deadly (red) → Hard → Medium → Easy (green) → Clear as enemies drop. Percentage readout.
 - Added round MVP flash — at end of each combat round, shows who dealt the most damage. Gold star + name + total. 2.5s auto-dismiss.
 - Added character mood emoji — derives emoji from HP % and conditions. Sunglasses at full, worried at 25%, fearful when frightened, skull when dead. Shown in initiative bar.
