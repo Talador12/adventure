@@ -645,6 +645,17 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   // Distance measurement — two-click tool
   const [measureStart, setMeasureStart] = useState<{ col: number; row: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ col: number; row: number } | null>(null);
+  // Z-layer visibility toggles (DM can hide/show layers independently)
+  const [layerVisibility, setLayerVisibility] = useState({
+    terrain: true,
+    lighting: true,
+    traps: true,
+    grid: true,
+    tokens: true,
+    fog: true,
+    effects: true, // auras, tethers, AoE, attack indicators
+  });
+  type LayerName = keyof typeof layerVisibility;
 
   // Start a smooth token animation from one grid cell to another (exposed via animateMoveRef)
   const animateToken = useCallback((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number, durationMs = 300) => {
@@ -987,7 +998,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     }
 
     // Draw lighting overlays (DM sees tint from both static + dynamic torch light)
-    if (effectiveLighting && effectiveDmMode) {
+    if (layerVisibility.lighting && effectiveLighting && effectiveDmMode) {
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
           const level = effectiveLighting[r]?.[c];
@@ -1007,7 +1018,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     }
 
     // Draw traps (visible in DM mode, or when detected by players)
-    traps.forEach((trap) => {
+    if (layerVisibility.traps) traps.forEach((trap) => {
       if (trap.triggered) return; // already went off, don't render
       if (!effectiveDmMode && !trap.detected) return; // hidden from players
       const tc = TRAP_TEMPLATES[trap.type];
@@ -1155,6 +1166,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     }
 
     // Grid lines
+    if (!layerVisibility.grid) { /* skip grid */ } else {
     ctx.strokeStyle = 'rgba(148,163,184,0.07)';
     ctx.lineWidth = 1;
     for (let c = 0; c <= gridCols; c++) {
@@ -1169,6 +1181,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.lineTo(w, r * CELL_SIZE);
       ctx.stroke();
     }
+    } // end grid layer
 
     // Draw token auras (first pass — behind all tokens)
     positions.forEach((pos) => {
@@ -1423,7 +1436,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     });
 
     // Fog of war — cover unexplored cells
-    if (!effectiveDmMode) {
+    if (layerVisibility.fog && !effectiveDmMode) {
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
           if (!explored[r]?.[c] && !visibility[r]?.[c]) {
@@ -1443,7 +1456,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
     if (dmTool !== 'select' && containerRef.current) {
       // Cursor handled via CSS
     }
-  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity]);
+  }, [terrain, positions, units, selectedUnitId, dragging, dragPos, visibility, explored, effectiveDmMode, dmTool, gridCols, gridRows, reachableCells, traps, mapImageUrl, activeAoE, aoeHoverCell, attackIndicators, effectiveLighting, fogOpacity, layerVisibility]);
 
   // --- Minimap drawing ---
   const drawMinimap = useCallback(() => {
@@ -2288,6 +2301,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                   title={r === 0 ? '1 cell' : `${1 + r * 2}x${1 + r * 2} cells`}
                 >
                   {r === 0 ? '1' : r === 1 ? '3' : '5'}
+                </button>
+              ))}
+            </div>
+
+            {/* Layer visibility toggles */}
+            <div className="flex items-center gap-0.5 ml-1">
+              <span className="text-[8px] text-slate-600">Layers:</span>
+              {(Object.keys(layerVisibility) as LayerName[]).map((layer) => (
+                <button
+                  key={layer}
+                  onClick={() => setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }))}
+                  className={`text-[7px] px-1 py-0.5 rounded transition-all capitalize ${layerVisibility[layer] ? 'bg-slate-700 text-slate-300' : 'bg-slate-900 text-slate-600 line-through'}`}
+                  title={`${layerVisibility[layer] ? 'Hide' : 'Show'} ${layer} layer`}
+                >
+                  {layer}
                 </button>
               ))}
             </div>

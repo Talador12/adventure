@@ -1158,7 +1158,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Multiclass proficiency rules (PHB p164, confirmation dialog shows gained profs)
 - [x] Spell concentration auto-tracking (CON save on damage + War Caster feat — already implemented)
 - [x] Death save automation (auto d20 roll on turn start, nat 20/1 special cases, 3-strike system)
-- [ ] Battle map layers (background, terrain, tokens, effects as separate z-layers)
+- [x] Battle map layers (7 toggleable z-layers: terrain, lighting, traps, grid, tokens, fog, effects — DM toolbar toggle buttons)
 
 ### v3.0 Feature Ideas
 - [x] Replay mode — auto-record combat events + step-through viewer with scrubber + speed control
