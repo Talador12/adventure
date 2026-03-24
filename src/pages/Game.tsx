@@ -53,6 +53,7 @@ import DeathRecap, { useDeathRecap } from '../components/game/DeathRecap';
 import SessionMilestones, { useSessionMilestones } from '../components/game/SessionMilestones';
 import SceneTransition from '../components/game/SceneTransition';
 import PartyVitals from '../components/game/PartyVitals';
+import SessionSummary from '../components/game/SessionSummary';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
@@ -231,6 +232,8 @@ export default function Game() {
   const [secretRolls, setSecretRolls] = useState<Array<{ id: string; die: string; value: number; revealed: boolean }>>([]);
   const preCombatAmbientRef = useRef<AmbientMood>('none');
   const [incomingPings, setIncomingPings] = useState<Array<{ col: number; row: number; time: number }>>([]);
+  const [showSessionSummary, setShowSessionSummary] = useState(false);
+  const sessionStartTime = useRef(Date.now());
   const { flytexts, addFlytext } = useHPFlytext();
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
@@ -2022,6 +2025,15 @@ export default function Game() {
               Recap
             </button>
           )}
+          {canUseDMTools && dmHistory.length > 3 && (
+            <button
+              onClick={() => setShowSessionSummary(true)}
+              className="text-[9px] px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
+              title="Show session stats summary"
+            >
+              Wrap Up
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {/* Sound controls — mute toggle + volume slider */}
@@ -3066,6 +3078,14 @@ export default function Game() {
       <DeathRecap display={deathRecapDisplay} />
       <SceneTransition sceneName={sceneName} />
       <SessionMilestones toast={milestoneToast} />
+      <SessionSummary
+        combatLog={combatLog}
+        dmHistory={dmHistory}
+        characters={characters}
+        sessionStartTime={sessionStartTime.current}
+        visible={showSessionSummary}
+        onDismiss={() => setShowSessionSummary(false)}
+      />
       {/* Fumble consequence banner */}
       {fumbleDisplay && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9995] animate-slide-in pointer-events-none">

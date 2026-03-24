@@ -520,7 +520,7 @@ function computeAoECells(
 }
 
 // --- Component ---
-type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'lava' | 'acid' | 'poison_gas' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog' | 'fog-circle-reveal' | 'fog-circle-hide' | 'fog-rect-reveal' | 'fog-rect-hide';
+type DmTool = 'select' | 'wall' | 'floor' | 'water' | 'difficult' | 'door' | 'pit' | 'lava' | 'acid' | 'poison_gas' | 'erase' | 'trap-spike' | 'trap-fire' | 'trap-poison' | 'trap-alarm' | 'trap-ai' | 'pin' | 'annotation' | 'light-bright' | 'light-dim' | 'light-dark' | 'stairs-up' | 'stairs-down' | 'refog' | 'fog-circle-reveal' | 'fog-circle-hide' | 'fog-rect-reveal' | 'fog-rect-hide' | 'waypoint';
 export type LightingLevel = 'normal' | 'bright' | 'dim' | 'dark';
 
 // AoE overlay state for spell targeting
@@ -640,6 +640,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [, forceRender] = useState(0); // trigger re-draw during animation
   // Minimap pings — ephemeral markers visible to all players
   const [mapPings, setMapPings] = useState<Array<{ col: number; row: number; time: number }>>([]);
+  // Waypoint path — DM draws a path, then a token animates along it
+  const [waypointPath, setWaypointPath] = useState<Array<{ col: number; row: number }>>([]);
 
   // Start a smooth token animation from one grid cell to another (exposed via animateMoveRef)
   const animateToken = useCallback((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number, durationMs = 300) => {
@@ -1049,6 +1051,34 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.strokeStyle = 'rgba(34,197,94,0.35)';
         ctx.lineWidth = 1;
         ctx.strokeRect(cc * CELL_SIZE + 0.5, rr * CELL_SIZE + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
+      });
+    }
+
+    // Waypoint path — connected dots showing the planned movement route
+    if (waypointPath.length > 1) {
+      ctx.strokeStyle = 'rgba(243,128,32,0.5)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 3]);
+      ctx.beginPath();
+      ctx.moveTo(waypointPath[0].col * CELL_SIZE + CELL_SIZE / 2, waypointPath[0].row * CELL_SIZE + CELL_SIZE / 2);
+      for (let i = 1; i < waypointPath.length; i++) {
+        ctx.lineTo(waypointPath[i].col * CELL_SIZE + CELL_SIZE / 2, waypointPath[i].row * CELL_SIZE + CELL_SIZE / 2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Numbered dots at each waypoint
+      waypointPath.forEach((wp, i) => {
+        const wx = wp.col * CELL_SIZE + CELL_SIZE / 2;
+        const wy = wp.row * CELL_SIZE + CELL_SIZE / 2;
+        ctx.beginPath();
+        ctx.arc(wx, wy, 5, 0, Math.PI * 2);
+        ctx.fillStyle = i === 0 ? 'rgba(34,197,94,0.7)' : i === waypointPath.length - 1 ? 'rgba(239,68,68,0.7)' : 'rgba(243,128,32,0.5)';
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = '7px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), wx, wy);
       });
     }
 
@@ -1637,6 +1667,16 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       return;
     }
 
+    // Waypoint tool: DM clicks cells to build a path
+    if (dmTool === 'waypoint') {
+      setWaypointPath((prev) => {
+        // Don't duplicate the last cell
+        if (prev.length > 0 && prev[prev.length - 1].col === col && prev[prev.length - 1].row === row) return prev;
+        return [...prev, { col, row }];
+      });
+      return;
+    }
+
     // Re-fog tool: DM clicks explored cells to un-explore them (brush-aware)
     if (dmTool === 'refog') {
       const cells = brushCells(col, row);
@@ -2187,6 +2227,45 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                   {r === 0 ? '1' : r === 1 ? '3' : '5'}
                 </button>
               ))}
+            </div>
+
+            {/* Waypoint path tool */}
+            <div className="flex items-center gap-0.5 ml-1">
+              <button
+                onClick={() => { setDmTool(dmTool === 'waypoint' ? 'select' : 'waypoint'); if (dmTool === 'waypoint') setWaypointPath([]); }}
+                className={`text-[9px] px-1.5 py-1 rounded border font-semibold transition-all ${dmTool === 'waypoint' ? 'bg-orange-900/50 border-orange-600/50 text-orange-300 ring-1 ring-orange-500/40' : 'bg-slate-800/60 border-slate-600/50 text-slate-400'}`}
+                title="Draw a movement path (click cells in order)"
+              >
+                Path
+              </button>
+              {waypointPath.length > 1 && (
+                <>
+                  <button
+                    onClick={() => {
+                      // Animate the selected token along the path
+                      const token = selectedUnitId ? positions.find((p) => p.unitId === selectedUnitId) : null;
+                      if (!token || waypointPath.length < 2) return;
+                      let step = 0;
+                      const animate = () => {
+                        if (step >= waypointPath.length - 1) { setWaypointPath([]); setDmTool('select'); return; }
+                        const from = waypointPath[step];
+                        const to = waypointPath[step + 1];
+                        animateToken(token.unitId, from.col, from.row, to.col, to.row, 250);
+                        // Update actual position
+                        onTokenMove?.(token.unitId, to.col, to.row);
+                        step++;
+                        setTimeout(animate, 280);
+                      };
+                      animate();
+                    }}
+                    className="text-[9px] px-1.5 py-1 rounded border border-emerald-700/50 bg-emerald-900/30 text-emerald-400 font-semibold"
+                    title="Animate selected token along this path"
+                  >
+                    Go ({waypointPath.length})
+                  </button>
+                  <button onClick={() => setWaypointPath([])} className="text-[9px] text-red-700 hover:text-red-400">Clear</button>
+                </>
+              )}
             </div>
 
             {/* Pin tool — place named markers on the map */}
