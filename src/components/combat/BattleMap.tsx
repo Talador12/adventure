@@ -1293,6 +1293,15 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.fillText(unit.name.charAt(0).toUpperCase(), cx, cy - 1);
       }
 
+      // Torch flicker — warm glow behind tokens in bright lighting zones
+      if (effectiveLighting && effectiveLighting[pos.row]?.[pos.col] === 'bright') {
+        const flickerRadius = TOKEN_RADIUS + 6 + Math.sin(performance.now() / 300 + pos.col * 7) * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, flickerRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(251,191,36,0.06)';
+        ctx.fill();
+      }
+
       // HP bar — color shifts green → yellow → red, numeric readout on hover
       if (unit.hp > 0) {
         const barW = TOKEN_RADIUS * 1.8;
