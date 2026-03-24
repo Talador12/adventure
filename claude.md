@@ -1191,6 +1191,18 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Theme system (4 themes: Dark/Light/Parchment/High Contrast — CSS custom properties, data-theme attr, selector dropdown, early-apply in main.tsx)
 - [x] Campaign export to PDF (enhanced campaign book: table of contents, NPC section, calendar status, session journal, 50 combat log entries, parchment styling)
 
+### v18.0 — Fresh Roadmap
+- [x] Condition auto-expiration (already implemented — duration decrements on turn, auto-remove at 0, message posted)
+- [ ] Opportunity attack automation (trigger when enemy leaves threatened squares)
+- [ ] Cover calculation display (half/three-quarter cover indicator on attack)
+- [ ] Spell slot tracking per encounter (show slots used this encounter vs total)
+- [ ] Map fog brush preview (show ghost of brush area before painting)
+- [ ] Initiative cards drag reorder for players (not just DM)
+- [ ] Character import from JSON URL (paste a URL, auto-fetch and import)
+- [ ] Combat XP auto-award to all party members (split evenly on combat end)
+- [ ] AI-generated encounter music keywords (pass to ambient system on combat start)
+- [x] Token status effect icons on canvas (emoji icons below HP bar: poison skull, fire, frightened face, etc — max 4 shown)
+
 ### v7.0 Feature Ideas
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
 - [x] Multi-language UI (I18nProvider + t() + locale JSON files: en/es/fr/de/ja, language selector in header)

@@ -1428,6 +1428,26 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(148,163,184,0.8)';
         ctx.fillText(`${unit.hp}`, cx, barY + barH + 7);
+        // Condition emoji icons below HP number
+        const conds = unit.conditions || [];
+        if (conds.length > 0) {
+          const condEmoji: Record<string, string> = {
+            poisoned: '\u2620', burning: '\uD83D\uDD25', frightened: '\uD83D\uDE28', stunned: '\uD83D\uDE35',
+            blinded: '\uD83D\uDE36', charmed: '\uD83D\uDE0D', grappled: '\u26D3', restrained: '\u26D3',
+            prone: '\u2B07', paralyzed: '\u26A0', petrified: '\uD83E\uDEA8', invisible: '\uD83D\uDC7B',
+            deafened: '\uD83D\uDE36', exhausted: '\uD83D\uDE2B', incapacitated: '\u274C', unconscious: '\uD83D\uDCA4',
+            concentrating: '\uD83D\uDD2E', dodging: '\uD83C\uDFC3', hexed: '\u2728',
+          };
+          ctx.font = '8px sans-serif';
+          ctx.textAlign = 'center';
+          const iconY = barY + barH + 15;
+          const iconSpacing = 10;
+          const startX = cx - (conds.length - 1) * iconSpacing / 2;
+          conds.slice(0, 4).forEach((cond, i) => {
+            const emoji = condEmoji[cond.type] || '\u2753';
+            ctx.fillText(emoji, startX + i * iconSpacing, iconY);
+          });
+        }
       } else {
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 3;
