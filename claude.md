@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.9.0
+## Current Version: v8.0.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added initiative portrait cards — enemy `tokenImage` now shown in initiative bar alongside player portraits. Fallback chain: tokenImage → character portrait → initial letter.
+- Added combat threat indicators — `!!` for deadly enemies, `!` for hard, color-coded (red/orange/yellow) by CR vs average party level.
+- Added HP bar emotional states — bar shakes (damageShake) when HP is critical and unit is still alive. Full HP glows emerald with shadow. The health bar has feelings now.
+- Added concentration spell tethers — purple dashed line drawn on battle map from concentrating caster to affected target(s). Glow underline + core line, rendered between aura layer and token layer.
+- Added environmental hazard zones — 3 new terrain types: lava (fire 10/turn, red bubbles), acid (acid 6/turn, green drips), poison gas (poison 4/turn, violet waves). DM toolbar buttons + canvas patterns + HAZARD_DAMAGE constant.
 - Added bardic inspiration — party-shared bonus die pool (d6/d8/d10/d12 by bard level). Grant/Spend buttons in DMSidebar Notes tab. Any player can spend for +dX on a roll.
 - Added natural language dice labels — `/roll 2d6+3 fire damage` now captures and displays trailing labels in roll results.
 - Added token movement trails — ghosted orange dots along animation path while tokens move across the battle map.
@@ -1221,12 +1226,21 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Dice superstitions tracker (dry commentary on hot/cold/average roll streaks)
 
 ### v14.0 Feature Ideas
-- [ ] Concentration spell visual tether (line between concentrator and target on map)
-- [ ] Initiative portrait cards (character portrait in initiative bar, not just initial)
-- [ ] Combat threat indicator (color gradient on enemies by danger level)
-- [ ] Environmental hazard zones (mark areas that deal damage at start of turn)
+- [x] Concentration spell visual tether (purple dashed line from caster to targets on map)
+- [x] Initiative portrait cards (enemy tokenImage in initiative bar, fallback chain)
+- [x] Combat threat indicator (!! deadly, ! hard, color-coded by CR vs party level)
+- [x] Environmental hazard zones (lava/acid/poison_gas terrain, patterns, HAZARD_DAMAGE)
+- [x] HP bar emotional states (shake when low, glow when full)
 - [ ] Auto-loot distribution (enemies drop loot on death, distribute via staged loot)
 - [ ] Dice tower mode (animated perspective dice bounce before landing)
+
+### v15.0 Feature Ideas
+- [ ] Spell range visualization (highlight cells within spell range on hover)
+- [ ] Turn order prediction (show "you're up in N turns" count on initiative cards)
+- [ ] Party formation presets (save/load party positions on the battle map)
+- [ ] Death recap (show what killed a character — last N damage sources)
+- [ ] Mounted combat support (rider + mount share a token, dismount action)
+- [ ] Grapple/shove automation (contested STR checks with advantage tracking)
 - [x] NPC voice pitch (per-NPC slider 0.5-2.0 on NPC tracker, overrides TTS hash)
 - [x] DM secret rolls (toggle + local roll + reveal button, purple accent)
 - [x] Encounter mood music auto-switch (mystery for easy, combat for harder, restore on end)
