@@ -1193,14 +1193,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 ### v18.0 — Fresh Roadmap
 - [x] Condition auto-expiration (already implemented — duration decrements on turn, auto-remove at 0, message posted)
-- [ ] Opportunity attack automation (trigger when enemy leaves threatened squares)
+- [x] Opportunity attack automation (already implemented — findOpportunityAttackers + full attack roll + damage + reaction tracking in BattleMap handleMouseUp)
 - [x] Cover calculation display (visual badges on enemy tokens when player selected: ½ yellow, ¾ orange, ■ red — uses checkCover from mapUtils)
 - [x] Spell slot tracking per encounter (EncounterSlotTracker: snapshot on combat start, show delta, per-caster mini bars)
 - [x] Map fog brush preview (hoverCell state + ghost overlay in draw loop, brush-radius-aware, hex-compatible, red for refog / blue for paint)
 - [x] Initiative cards drag reorder for players (myUnitId prop — players can drag their own card for readied actions / voluntary delay)
 - [x] Character import from JSON URL (importJSONFromURL in export.ts, URL button on Home, validates content-type + JSON structure)
 - [x] Combat XP auto-award to all party members (XP + gold split evenly, remainder to first char, level-up checked per char)
-- [ ] AI-generated encounter music keywords (pass to ambient system on combat start)
+- [x] AI-generated encounter music keywords (detectSceneMoodAI in sceneMood.ts — AI classifies scene mood, fire-and-forget refinement on combat start)
 - [x] Token status effect icons on canvas (emoji icons below HP bar: poison skull, fire, frightened face, etc — max 4 shown)
 
 ### v7.0 Feature Ideas

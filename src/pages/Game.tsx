@@ -1413,12 +1413,21 @@ export default function Game() {
       const fallback = `In ${theme.setting}, ${enemyNames} ${enemyUnits.length > 1 ? 'appear' : 'appears'}! ${theme.twist}.`;
       addDmMessage(description || fallback);
       playEncounterStart();
-      // Auto-switch to combat ambiance
+      // Auto-switch to combat ambiance (instant fallback, then AI refinement)
       if (currentAmbient !== 'combat') {
         preCombatAmbientRef.current = currentAmbient;
         const mood = encounterDifficulty === 'easy' ? 'mystery' as const : 'combat' as const;
         setAmbientMood(mood);
         setCurrentAmbient(mood);
+        // Fire-and-forget: AI may refine the mood based on scene context
+        import('../lib/sceneMood').then(({ detectSceneMoodAI }) => {
+          detectSceneMoodAI(dmHistory.slice(-3).join(' '), sceneName).then((aiMood) => {
+            if (aiMood !== 'none' && aiMood !== mood) {
+              setAmbientMood(aiMood);
+              setCurrentAmbient(aiMood);
+            }
+          });
+        });
       }
 
       // Add enemy units to existing units (keep player units)

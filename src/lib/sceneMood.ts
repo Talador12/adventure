@@ -23,3 +23,38 @@ export function detectSceneMood(sceneName: string): AmbientMood {
   }
   return 'none';
 }
+
+/**
+ * AI-enhanced mood detection — sends encounter description to the AI and returns a mood.
+ * Falls back to keyword matching if AI is unavailable.
+ */
+export async function detectSceneMoodAI(description: string, sceneName: string): Promise<AmbientMood> {
+  // Try keyword detection first (instant, no network)
+  const keywordResult = detectSceneMood(sceneName);
+  if (keywordResult !== 'none') return keywordResult;
+
+  // Try AI analysis
+  try {
+    const res = await fetch('/api/dm/narrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: `Classify this scene's mood as exactly one word: tavern, dungeon, forest, combat, or mystery.\nScene: ${sceneName}. ${description}`,
+        context: 'mood classification',
+        history: [],
+      }),
+    });
+    const data = await res.json() as { narration?: string };
+    if (data.narration) {
+      const lower = data.narration.toLowerCase();
+      const moods: AmbientMood[] = ['tavern', 'dungeon', 'forest', 'combat', 'mystery'];
+      for (const mood of moods) {
+        if (lower.includes(mood)) return mood;
+      }
+    }
+  } catch {
+    // AI unavailable — fall back to keyword detection
+  }
+
+  return keywordResult;
+}
