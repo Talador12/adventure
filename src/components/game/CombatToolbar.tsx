@@ -496,6 +496,7 @@ export default function CombatToolbar({
                                             color: spell.aoe.color,
                                             origin: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : { col: 0, row: 0 },
                                             casterPos: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : undefined,
+                                            spellRangeCells: spellRangeCells > 0 ? spellRangeCells : undefined,
                                           });
                                           setPendingAoESpell({ spell, charId: selectedCharacter.id });
                                           setActiveView('map'); // switch to map so player can place the AoE

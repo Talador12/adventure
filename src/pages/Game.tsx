@@ -50,6 +50,8 @@ import DeathSaveCinematic, { useDeathSaveCinematic } from '../components/game/De
 import DiceLuckTracker from '../components/game/DiceLuckTracker';
 import DiceSuperstition from '../components/game/DiceSuperstition';
 import DeathRecap, { useDeathRecap } from '../components/game/DeathRecap';
+import SceneTransition from '../components/game/SceneTransition';
+import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 import CampaignTimeline from '../components/game/CampaignTimeline';
 import RelationshipGraph from '../components/game/RelationshipGraph';
 import QuestMap from '../components/game/QuestMap';
@@ -508,6 +510,20 @@ export default function Game() {
     sendRef.current({ type: 'game_event', event, data });
   }, []);
 
+  // Combat emotes — quick reactions broadcast to all players
+  const [emoteIncoming, setEmoteIncoming] = useState<{ id: string; icon: string; sender: string } | null>(null);
+  const emoteTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const sendEmote = useCallback((emoteId: string) => {
+    const emotes: Record<string, string> = { cheer: '🎉', gasp: '😱', laugh: '😂', salute: '⚔️', think: '🤔', skull: '💀' };
+    const icon = emotes[emoteId];
+    if (!icon) return;
+    const sender = currentPlayer.username || 'Someone';
+    broadcastGameEvent('combat_emote', { icon, sender });
+    setEmoteIncoming({ id: crypto.randomUUID().slice(0, 6), icon, sender });
+    clearTimeout(emoteTimerRef.current);
+    emoteTimerRef.current = setTimeout(() => setEmoteIncoming(null), 2000);
+  }, [broadcastGameEvent, currentPlayer.username]);
+
   // Broadcast full combat state snapshot — used after most mutations (with explicit state)
   const broadcastCombatSync = useCallback(
     (syncUnits: Unit[], syncInCombat?: boolean, syncRound?: number, syncTurnIdx?: number) => {
@@ -611,6 +627,11 @@ export default function Game() {
     onReadyCheck: () => setReadyCheck({ active: true, responses: {}, startedAt: Date.now() }),
     onReadyResponse: (playerId, playerName) => setReadyCheck((prev) => prev ? { ...prev, responses: { ...prev.responses, [playerName]: true } } : null),
     onMapPing: (col, row) => setIncomingPings((prev) => [...prev.slice(-4), { col, row, time: Date.now() }]),
+    onCombatEmote: (icon, sender) => {
+      setEmoteIncoming({ id: crypto.randomUUID().slice(0, 6), icon, sender });
+      clearTimeout(emoteTimerRef.current);
+      emoteTimerRef.current = setTimeout(() => setEmoteIncoming(null), 2000);
+    },
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
@@ -2925,6 +2946,12 @@ export default function Game() {
                   )}
                 </div>
               )}
+              {/* Combat emotes — quick reactions */}
+              {inCombat && (
+                <div className="px-4 pt-2">
+                  <CombatEmotes onSend={sendEmote} incoming={emoteIncoming} />
+                </div>
+              )}
               <div className="flex-1 flex flex-col p-4 overflow-hidden">
                 <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => {
                   send({ type: 'whisper', targetUsername: target, message: msg });
@@ -3032,6 +3059,7 @@ export default function Game() {
       <KillStreak display={killStreakDisplay} />
       <DeathSaveCinematic display={deathSaveDisplay} />
       <DeathRecap display={deathRecapDisplay} />
+      <SceneTransition sceneName={sceneName} />
       {/* Fumble consequence banner */}
       {fumbleDisplay && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9995] animate-slide-in pointer-events-none">

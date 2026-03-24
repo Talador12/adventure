@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v8.1.0
+## Current Version: v8.2.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added spell range visualization — sky-blue dashed circle on battle map when in AoE targeting mode. Shows exactly how far the spell can reach from the caster. `spellRangeCells` passed through ActiveAoE interface.
+- Added scene transition cards — dramatic title overlay when sceneName changes. Fade-in-up with amber gradient divider. The kind of thing that makes a session feel cinematic. Auto-dismisses after 3 seconds.
+- Added combat emotes — 6 quick-reaction buttons during combat (Nice!/No.../Ha!/GG/Hmm/RIP). Broadcast via game_event, pop-in animation. The table's body language, digitized.
+- Added passive perception alerts — DM component that checks party passive perception vs nearby trap DCs. Shows amber alert when someone's senses are tingling.
 - Added turn order prediction — "in N" count on initiative cards showing turns until each unit acts. Circular distance calculation handles wrap-around.
 - Added death recap — `DeathRecap` component tracks last 3 damage sources per unit. When a unit falls, a recap card appears showing who did the damage, how much, and what type. Total damage summary. Auto-dismisses after 5 seconds.
 - Audited: party formation presets already existed (FormationPresets.tsx — 6 formations, marching order with drag reorder, wall avoidance). Marked done.
@@ -1237,12 +1241,22 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] HP bar emotional states (shake when low, glow when full)
 - [x] Auto-loot distribution (already existed — staged + random loot on combat end)
 - [ ] Dice tower mode (animated perspective dice bounce before landing)
-- [ ] Spell range visualization (highlight cells within spell range on hover)
+- [x] Spell range visualization (sky-blue dashed circle on map during AoE targeting)
 - [x] Turn order prediction ("in N" count on initiative cards, circular distance)
 - [x] Party formation presets (already existed — 6 formations, marching order, drag reorder)
 - [x] Death recap (DeathRecap component, last 3 damage sources, auto-dismiss)
 - [ ] Mounted combat support (rider + mount share a token, dismount action)
 - [ ] Grapple/shove automation (contested STR checks with advantage tracking)
+
+### v16.0 Feature Ideas
+- [x] Scene transition cards (dramatic title overlay on scene change, amber divider)
+- [x] Combat emotes (6 quick-reaction buttons, broadcast via game_event)
+- [x] Passive perception alerts (DM warned when party PP beats trap DC)
+- [ ] Damage type icons (fire/cold/lightning icons on flytext and combat log)
+- [ ] Initiative countdown sound (tick-tick-tick in the last 5 seconds of turn timer)
+- [ ] Campaign world clock (in-game time advances with each scene, affects rest eligibility)
+- [ ] Spell component tracker (V/S/M indicator on spell buttons, warn when missing material)
+- [ ] Token health bar on canvas (tiny HP bar drawn under each token on the battle map)
 - [x] NPC voice pitch (per-NPC slider 0.5-2.0 on NPC tracker, overrides TTS hash)
 - [x] DM secret rolls (toggle + local roll + reveal button, purple accent)
 - [x] Encounter mood music auto-switch (mystery for easy, combat for harder, restore on end)
