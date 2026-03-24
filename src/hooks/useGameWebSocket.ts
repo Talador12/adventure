@@ -87,6 +87,7 @@ export interface GameWebSocketDeps {
   // Ready check callbacks
   onReadyCheck?: () => void;
   onReadyResponse?: (playerId: string, playerName: string) => void;
+  onMapPing?: (col: number, row: number) => void;
 }
 
 export interface GameWebSocketState {
@@ -581,6 +582,10 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               }
               case 'ready_response': {
                 deps.onReadyResponse?.(eventData.playerId as string, eventData.playerName as string);
+                break;
+              }
+              case 'map_ping': {
+                deps.onMapPing?.(eventData.col as number, eventData.row as number);
                 break;
               }
             }

@@ -14,6 +14,8 @@ export interface NpcRecord {
   partyAttitudes?: Record<string, number>;
   notes: string; // freeform DM/player notes
   alive: boolean;
+  /** TTS voice pitch (0.5 = deep/orcish, 2.0 = high/gnomish). Undefined uses auto from name hash. */
+  voicePitch?: number;
   createdAt: number;
 }
 
@@ -297,6 +299,23 @@ export default function NpcTracker({ roomId, isDM, partyNames = [] }: NpcTracker
                     <span className={`transform transition-transform ${expandedAttitudes.has(npc.id) ? 'rotate-90' : ''}`}>&#9656;</span>
                     Party attitudes {npc.partyAttitudes ? `(${Object.keys(npc.partyAttitudes).length} set)` : ''}
                   </button>
+                  {/* Voice pitch slider */}
+                  {isDM && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-[8px] text-slate-600">Voice:</span>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={2.0}
+                        step={0.1}
+                        value={npc.voicePitch ?? 1.0}
+                        onChange={(e) => updateNpc(npc.id, { voicePitch: parseFloat(e.target.value) })}
+                        className="w-14 h-1 accent-violet-500 cursor-pointer"
+                        title={`Voice pitch: ${(npc.voicePitch ?? 1.0).toFixed(1)} (0.5 = deep, 2.0 = high)`}
+                      />
+                      <span className="text-[7px] text-slate-600 w-4">{(npc.voicePitch ?? 1.0).toFixed(1)}</span>
+                    </div>
+                  )}
                   {expandedAttitudes.has(npc.id) && (
                     <div className="mt-1 space-y-1 pl-2 border-l border-slate-800">
                       {partyNames.map((pName) => {

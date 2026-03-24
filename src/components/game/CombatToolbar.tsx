@@ -57,6 +57,7 @@ interface CombatToolbarProps {
   addFlytext?: (col: number, row: number, text: string, type: 'damage' | 'heal' | 'crit' | 'miss' | 'death', gridCols: number, gridRows: number) => void;
   recordKill?: (killerName: string) => void;
   triggerDeathSave?: (characterName: string, message: string) => void;
+  onCombatEnd?: () => void;
 }
 
 export default function CombatToolbar({
@@ -101,6 +102,7 @@ export default function CombatToolbar({
   addFlytext,
   recordKill,
   triggerDeathSave,
+  onCombatEnd,
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -239,6 +241,16 @@ export default function CombatToolbar({
                                 const tr = nextTurn();
                                 playTurnChange();
                                 if (tr.newRound) {
+                                  // Generate round summary from recent combat log entries
+                                  const roundLogs = combatLog.slice(combatLog.lastIndexOf(`--- Round ${combatRound} ---`) + 1);
+                                  const dmgDealt = roundLogs.reduce((s, l) => { const m = l.match(/for (\d+) damage/); return s + (m ? parseInt(m[1]) : 0); }, 0);
+                                  const kills = roundLogs.filter((l) => l.includes(' falls!')).length;
+                                  const parts: string[] = [];
+                                  if (dmgDealt > 0) parts.push(`${dmgDealt} damage dealt`);
+                                  if (kills > 0) parts.push(`${kills} ${kills === 1 ? 'enemy' : 'enemies'} defeated`);
+                                  if (parts.length > 0) {
+                                    setCombatLog((prev) => [...prev, `Round ${combatRound}: ${parts.join(', ')}.`]);
+                                  }
                                   setCombatLog((prev) => [...prev, `--- Round ${combatRound + 1} ---`]);
                                 }
                                 if (tr.deathSaveMessage) {
@@ -829,6 +841,7 @@ export default function CombatToolbar({
                             const goldReward = deadEnemies.reduce((sum, e) => sum + Math.floor((e.cr || 0.25) * 30) + Math.floor(Math.random() * 20), 0);
 
                             setInCombat(false);
+                            onCombatEnd?.();
                             // Remove dead enemies, reset initiative and conditions
                             setUnits((prev: Unit[]) => prev.filter((u) => u.type === 'player' || u.hp > 0).map((u) => ({ ...u, isCurrentTurn: false, initiative: -1, conditions: [] })));
 

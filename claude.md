@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v7.7.0
+## Current Version: v7.8.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added minimap pings — double-click minimap to ping location (pulsing amber circles, fade 3s, broadcast via game_event to all players).
+- Added combat round summary — auto-generated "Round N: X damage dealt, Y enemies defeated" recap after each full round.
+- Added NPC voice pitch — per-NPC pitch slider (0.5 deep → 2.0 high) on NPC tracker cards, overrides TTS name hash.
+- Added encounter mood auto-restore — saves pre-combat ambient mood, restores it when combat ends. Easy encounters use 'mystery' instead of 'combat'.
+- Added DM secret rolls — toggle below DiceRoller (purple accent). Rolls locally without broadcasting. Reveal button sends result to party.
 - Added dice luck tracker — SVG sparkline of last 20 d20 rolls with hot/cold streak detection in the roll history header.
 - Added AI encounter templates — "AI Template" button generates balanced encounter from party level/composition via AI, auto-saves as encounter template.
 - Added cloud session notes — DM freeform textarea in Notes tab with 1.5s debounce auto-save to KV. GET/PUT `/api/campaign/:roomId/notes`.
@@ -1205,12 +1210,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Death save cinematic (screen dim + heartbeat pulse, contextual text by outcome)
 - [x] Dice luck tracker (SVG sparkline of last 20 d20 rolls, hot/cold streak detection)
 - [ ] Bardic inspiration pool (party-shared resource, spend for +1d6 on any roll)
-- [ ] Minimap pings (click minimap to ping a location for the whole party)
+- [x] Minimap pings (double-click minimap, pulsing amber circles, broadcast to party)
 - [ ] Token movement trails (ghosted path showing where a token moved this turn)
-- [ ] Combat round summary (auto-generated "this round:" recap after each full round)
-- [ ] NPC voice pitch (per-NPC pitch adjustment for TTS — low for orcs, high for gnomes)
-- [ ] DM secret rolls (roll dice that only the DM sees, with reveal button)
-- [ ] Encounter mood music auto-switch (tie ambient mood to encounter difficulty)
+- [x] Combat round summary (auto-generated damage/kill recap after each round)
+- [x] NPC voice pitch (per-NPC slider 0.5-2.0 on NPC tracker, overrides TTS hash)
+- [x] DM secret rolls (toggle + local roll + reveal button, purple accent)
+- [x] Encounter mood music auto-switch (mystery for easy, combat for harder, restore on end)
 
 ### v6.0 Feature Ideas
 - [x] AI DM voice narration (browser SpeechSynthesis API, zero deps, works offline)

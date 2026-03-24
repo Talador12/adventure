@@ -511,6 +511,10 @@ interface BattleMapProps {
   onPinRemove?: (pinId: string) => void;
   // Attack indicators
   attackIndicators?: import('../../hooks/useAttackIndicators').AttackIndicator[];
+  /** Callback when minimap is clicked to ping a location */
+  onPing?: (col: number, row: number) => void;
+  /** Incoming pings from other players */
+  incomingPings?: Array<{ col: number; row: number; time: number }>;
   /** Unit ID of the player's own character — enables per-player fog (sees only from their token). When unset, falls back to shared party vision. */
   myUnitId?: string;
   /** Environmental lighting grid — DM can paint bright/dim/dark zones */
@@ -522,7 +526,7 @@ interface BattleMapProps {
   gridType?: 'square' | 'hex';
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], myUnitId, lighting, onLightingChange, onStairClick, gridType: gridTypeProp }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], onPing, incomingPings, myUnitId, lighting, onLightingChange, onStairClick, gridType: gridTypeProp }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -595,6 +599,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const animatingTokensRef = useRef<Map<string, TokenAnim>>(new Map());
   const animFrameRef = useRef<number>(0);
   const [, forceRender] = useState(0); // trigger re-draw during animation
+  // Minimap pings — ephemeral markers visible to all players
+  const [mapPings, setMapPings] = useState<Array<{ col: number; row: number; time: number }>>([]);
 
   // Start a smooth token animation from one grid cell to another (exposed via animateMoveRef)
   const animateToken = useCallback((unitId: string, fromCol: number, fromRow: number, toCol: number, toRow: number, durationMs = 300) => {
@@ -1319,7 +1325,22 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.lineWidth = 1.5;
       ctx.strokeRect(viewX * scale, viewY * scale, viewW * scale, viewH * scale);
     }
-  }, [terrain, positions, units, visibility, explored, effectiveDmMode, gridCols, gridRows, zoom, panOffset, showMinimap]);
+
+    // Draw active pings (pulsing circles that fade over 3 seconds)
+    const now = Date.now();
+    const allPings = [...mapPings, ...(incomingPings || [])].filter((p) => now - p.time < 3000);
+    for (const ping of allPings) {
+      const age = (now - ping.time) / 3000;
+      const px = ping.col * MINIMAP_CELL + MINIMAP_CELL / 2;
+      const py = ping.row * MINIMAP_CELL + MINIMAP_CELL / 2;
+      const radius = 3 + age * 6;
+      ctx.beginPath();
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(251,191,36,${1 - age})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }, [terrain, positions, units, visibility, explored, effectiveDmMode, gridCols, gridRows, zoom, panOffset, showMinimap, mapPings, incomingPings]);
 
   // Animation loop: run requestAnimationFrame while any token is animating
   useEffect(() => {
@@ -1368,7 +1389,14 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       x: -(worldX - viewW / 2) * zoom,
       y: -(worldY - viewH / 2) * zoom,
     });
-  }, [zoom]);
+    // Double-click pings the location for the whole party
+    if (e.detail === 2) {
+      const col = Math.floor(mx / MINIMAP_CELL);
+      const row = Math.floor(my / MINIMAP_CELL);
+      setMapPings((prev) => [...prev.slice(-4), { col, row, time: Date.now() }]);
+      onPing?.(col, row);
+    }
+  }, [zoom, onPing]);
 
   // --- Mouse coordinate helpers ---
   const canvasCoords = useCallback((e: ReactMouseEvent<HTMLCanvasElement> | { clientX: number; clientY: number }): { x: number; y: number; col: number; row: number } => {

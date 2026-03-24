@@ -41,7 +41,8 @@ export function speak(text: string, rate = 0.95, pitch = 0.9): void {
 }
 
 /** Speak as a named NPC — each NPC gets a consistent, unique voice. */
-export function speakAsNPC(npcName: string, text: string): void {
+/** Speak as a named NPC. Optional pitchOverride (0.5-2.0) for manual control — e.g. low for orcs, high for gnomes. */
+export function speakAsNPC(npcName: string, text: string, pitchOverride?: number): void {
   if (!enabled || !text.trim() || typeof speechSynthesis === 'undefined') return;
   const voices = speechSynthesis.getVoices().filter((v) => v.lang.startsWith('en'));
   if (voices.length === 0) { speak(text); return; }
@@ -54,8 +55,8 @@ export function speakAsNPC(npcName: string, text: string): void {
   const voiceIdx = npcVoiceCache.get(npcName)!;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.voice = voices[voiceIdx];
-  // Vary pitch/rate slightly per NPC for more distinction
-  utterance.pitch = 0.7 + (voiceIdx % 5) * 0.15; // 0.7 - 1.3
+  // Vary pitch/rate per NPC — manual override takes priority
+  utterance.pitch = pitchOverride ?? (0.7 + (voiceIdx % 5) * 0.15); // 0.7 - 1.3
   utterance.rate = 0.85 + (voiceIdx % 3) * 0.1;   // 0.85 - 1.05
   utterance.onstart = () => { speaking = true; };
   utterance.onend = () => { speaking = false; };
