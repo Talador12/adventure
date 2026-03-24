@@ -1950,7 +1950,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       if (inCombat && unit) {
         const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
         if (remaining > 0) {
-          const reachable = computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols);
+          const reachable = computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols, gridType);
           setReachableCells(reachable);
         } else {
           setReachableCells(new Map()); // no movement left
@@ -2159,7 +2159,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         if (inCombat && unit) {
           const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
           setReachableCells(remaining > 0
-            ? computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols)
+            ? computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols, gridType)
             : new Map()
           );
         } else {

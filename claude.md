@@ -1184,6 +1184,13 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Hex grid toggle UI + coordinate math (full hex rendering is a future deep integration)
 - [x] Hex grid: full terrain rendering in hex cells (pixelToHex, hex terrain fills, hex grid lines, hex token positioning, hex fog of war, hex drag-drop)
 
+### v17.0 — Post-Roadmap (everything buildable is done, these are new ideas)
+- [x] Hex pathfinding (6-neighbor BFS via getHexNeighbors, offset-row aware, computeReachableCells + isAdjacent accept gridType)
+- [ ] Game.tsx code-split (extract combat view, map view, and narration view into lazy-loaded routes)
+- [ ] Offline mode indicator (banner when WebSocket disconnects, auto-reconnect countdown)
+- [ ] Theme system (light/dark/parchment/high-contrast, CSS custom properties)
+- [ ] Campaign export to PDF (full campaign book with maps, NPCs, quests, session history)
+
 ### v7.0 Feature Ideas
 - [x] AI DM voice: per-NPC voices (hash-based voice assignment with varied pitch/rate)
 - [x] Multi-language UI (I18nProvider + t() + locale JSON files: en/es/fr/de/ja, language selector in header)
