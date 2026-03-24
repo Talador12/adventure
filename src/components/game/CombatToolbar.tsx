@@ -241,6 +241,16 @@ export default function CombatToolbar({
                                 const tr = nextTurn();
                                 playTurnChange();
                                 if (tr.newRound) {
+                                  // Generate round summary from recent combat log entries
+                                  const roundLogs = combatLog.slice(combatLog.lastIndexOf(`--- Round ${combatRound} ---`) + 1);
+                                  const dmgDealt = roundLogs.reduce((s, l) => { const m = l.match(/for (\d+) damage/); return s + (m ? parseInt(m[1]) : 0); }, 0);
+                                  const kills = roundLogs.filter((l) => l.includes(' falls!')).length;
+                                  const parts: string[] = [];
+                                  if (dmgDealt > 0) parts.push(`${dmgDealt} damage dealt`);
+                                  if (kills > 0) parts.push(`${kills} ${kills === 1 ? 'enemy' : 'enemies'} defeated`);
+                                  if (parts.length > 0) {
+                                    setCombatLog((prev) => [...prev, `Round ${combatRound}: ${parts.join(', ')}.`]);
+                                  }
                                   setCombatLog((prev) => [...prev, `--- Round ${combatRound + 1} ---`]);
                                 }
                                 if (tr.deathSaveMessage) {

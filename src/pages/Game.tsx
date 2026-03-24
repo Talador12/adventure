@@ -224,6 +224,7 @@ export default function Game() {
   const [secretRollMode, setSecretRollMode] = useState(false);
   const [secretRolls, setSecretRolls] = useState<Array<{ id: string; die: string; value: number; revealed: boolean }>>([]);
   const preCombatAmbientRef = useRef<AmbientMood>('none');
+  const [incomingPings, setIncomingPings] = useState<Array<{ col: number; row: number; time: number }>>([]);
   const { flytexts, addFlytext } = useHPFlytext();
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
@@ -606,6 +607,7 @@ export default function Game() {
     onVoiceState: (playerId, isTalking, isMuted) => voiceRef.current?.handleVoiceState(playerId, isTalking, isMuted),
     onReadyCheck: () => setReadyCheck({ active: true, responses: {}, startedAt: Date.now() }),
     onReadyResponse: (playerId, playerName) => setReadyCheck((prev) => prev ? { ...prev, responses: { ...prev.responses, [playerName]: true } } : null),
+    onMapPing: (col, row) => setIncomingPings((prev) => [...prev.slice(-4), { col, row, time: Date.now() }]),
   });
 
   // DM tool access: DM gets full controls, non-DM gets read-only narration.
@@ -2734,6 +2736,8 @@ export default function Game() {
                     <BattleMap
                       canUseDMTools={canUseDMTools}
                       myUnitId={wsConnected && !isDM && selectedCharacterId ? selectedCharacterId : undefined}
+                      onPing={(col, row) => broadcastGameEvent('map_ping', { col, row, time: Date.now() })}
+                      incomingPings={incomingPings}
                       lighting={lightingGrid}
                       onLightingChange={canUseDMTools ? setLightingGrid : undefined}
                       onStairClick={floorNames.length > 1 ? (dir) => {
