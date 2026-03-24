@@ -649,6 +649,12 @@ export function exportCampaignBook(
   combatLog: string[],
   quests: Array<{ title: string; description: string; completed: boolean; location?: string }>,
   wikiPages: Array<{ title: string; content: string; category: string }>,
+  extras?: {
+    npcs?: Array<{ name: string; role: string; location: string; faction: string; disposition: number; notes: string; alive: boolean }>;
+    calendarDay?: number;
+    calendarHour?: number;
+    sessionJournal?: Array<{ text: string; date?: string; author?: string }>;
+  },
 ) {
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -686,6 +692,45 @@ export function exportCampaignBook(
     return `<div class="chat-line"><span class="time">[${time}]</span> <strong>${m.username}:</strong> ${m.text}</div>`;
   }).join('\n');
 
+  const npcSection = (extras?.npcs || []).length ? (extras?.npcs || []).map((npc) => `
+    <div class="npc-card">
+      <h4>${npc.name} ${!npc.alive ? '<span class="deceased">(Deceased)</span>' : ''}</h4>
+      <p class="npc-meta">${npc.role}${npc.location ? ` · ${npc.location}` : ''}${npc.faction ? ` · ${npc.faction}` : ''}</p>
+      <p class="disposition">${['Hostile', 'Unfriendly', 'Neutral', 'Friendly', 'Allied'][npc.disposition + 2] || 'Neutral'}</p>
+      ${npc.notes ? `<p class="npc-notes">${npc.notes}</p>` : ''}
+    </div>
+  `).join('') : '';
+
+  const calendarSection = extras?.calendarDay ? (() => {
+    const months = ['Deepwinter', 'Alturiak', 'Ches', 'Tarsakh', 'Mirtul', 'Kythorn', 'Flamerule', 'Highsun', 'Eleasis', 'Elient', 'Marpenoth', 'Nightal'];
+    const day = extras.calendarDay!;
+    const month = months[Math.floor((day - 1) / 30) % 12];
+    const dayOfMonth = ((day - 1) % 30) + 1;
+    const hour = extras.calendarHour ?? 8;
+    const timeOfDay = hour >= 5 && hour < 7 ? 'Dawn' : hour >= 7 && hour < 12 ? 'Morning' : hour >= 12 && hour < 14 ? 'Midday' : hour >= 14 && hour < 18 ? 'Afternoon' : hour >= 18 && hour < 21 ? 'Evening' : 'Night';
+    return `<p class="calendar"><strong>Campaign Date:</strong> ${month} ${dayOfMonth}, Day ${day} · ${String(hour).padStart(2, '0')}:00 (${timeOfDay})</p>`;
+  })() : '';
+
+  const journalSection = (extras?.sessionJournal || []).length ? (extras?.sessionJournal || []).map((entry) => `
+    <div class="journal-entry">
+      ${entry.date ? `<span class="journal-date">${entry.date}</span>` : ''}
+      ${entry.author ? `<span class="journal-author">${entry.author}</span>` : ''}
+      <p>${entry.text}</p>
+    </div>
+  `).join('') : '';
+
+  const tocItems = [
+    'The Party',
+    ...(calendarSection ? ['Campaign Status'] : []),
+    'The Story',
+    ...(questSection ? ['Quests'] : []),
+    ...(npcSection ? ['Notable NPCs'] : []),
+    ...(wikiSection ? ['World Lore'] : []),
+    ...(journalSection ? ['Session Journal'] : []),
+    ...(combatLog.length ? ['Battle Chronicle'] : []),
+    ...(chatMessages.length ? ['Chat Log'] : []),
+  ];
+
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>${campaignName || 'Adventure'} — Campaign Book</title>
 <style>
@@ -712,6 +757,19 @@ export function exportCampaignBook(
   .time { color: #888; }
   .combat-line { font-size: 12px; margin: 1px 0; }
   .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #d4a574; color: #888; font-size: 12px; }
+  .toc { background: #f5f0e8; border: 1px solid #d4a574; border-radius: 8px; padding: 15px 20px; margin: 20px 0; }
+  .toc a { color: #8b4513; text-decoration: none; line-height: 1.8; }
+  .toc a:hover { text-decoration: underline; }
+  .npc-card { background: #f5f0e8; border: 1px solid #d4a574; border-radius: 6px; padding: 10px 15px; margin: 10px 0; page-break-inside: avoid; }
+  .npc-card h4 { margin: 0 0 3px 0; color: #2c1810; }
+  .npc-meta { font-size: 12px; color: #666; margin: 0; }
+  .disposition { font-size: 11px; font-weight: bold; margin: 4px 0 0 0; }
+  .npc-notes { font-style: italic; color: #555; margin: 4px 0 0 0; font-size: 13px; }
+  .deceased { color: #999; font-weight: normal; font-size: 12px; }
+  .calendar { font-size: 14px; color: #555; }
+  .journal-entry { padding: 8px 12px; margin: 6px 0; border-left: 2px solid #d4a574; background: #faf8f0; }
+  .journal-date { font-size: 11px; color: #888; margin-right: 8px; }
+  .journal-author { font-size: 11px; color: #8b4513; font-weight: bold; }
   .btn { display: block; margin: 20px auto; padding: 12px 24px; background: #8b4513; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
   .btn:hover { background: #a0522d; }
 </style></head><body>
@@ -720,19 +778,30 @@ export function exportCampaignBook(
 
 <button class="btn no-print" onclick="window.print()">Print / Save as PDF</button>
 
-<h2>The Party</h2>
+<div class="toc no-print">
+  <h2>Contents</h2>
+  ${tocItems.map((item, i) => `<a href="#section-${i}">${i + 1}. ${item}</a>`).join('<br>')}
+</div>
+
+<h2 id="section-0">The Party</h2>
 ${charSections || '<p><em>No characters.</em></p>'}
 
-<h2>The Story</h2>
+${calendarSection ? `<h2 id="section-${tocItems.indexOf('Campaign Status')}">Campaign Status</h2>${calendarSection}` : ''}
+
+<h2 id="section-${tocItems.indexOf('The Story')}">The Story</h2>
 ${narrativeSection}
 
-${questSection ? `<h2>Quests</h2>${questSection}` : ''}
+${questSection ? `<h2 id="section-${tocItems.indexOf('Quests')}">Quests</h2>${questSection}` : ''}
 
-${wikiSection ? `<h2>World Lore</h2>${wikiSection}` : ''}
+${npcSection ? `<h2 id="section-${tocItems.indexOf('Notable NPCs')}">Notable NPCs</h2>${npcSection}` : ''}
 
-${combatLog.length ? `<h2>Battle Chronicle</h2><div>${combatLog.slice(-30).map((l) => `<div class="combat-line">• ${l}</div>`).join('')}</div>` : ''}
+${wikiSection ? `<h2 id="section-${tocItems.indexOf('World Lore')}">World Lore</h2>${wikiSection}` : ''}
 
-${chatMessages.length ? `<h2>Chat Log</h2><div>${chatSection}</div>` : ''}
+${journalSection ? `<h2 id="section-${tocItems.indexOf('Session Journal')}">Session Journal</h2>${journalSection}` : ''}
+
+${combatLog.length ? `<h2 id="section-${tocItems.indexOf('Battle Chronicle')}">Battle Chronicle</h2><div>${combatLog.slice(-50).map((l) => `<div class="combat-line">• ${l}</div>`).join('')}</div>` : ''}
+
+${chatMessages.length ? `<h2 id="section-${tocItems.indexOf('Chat Log')}">Chat Log</h2><div>${chatSection}</div>` : ''}
 
 <div class="footer">Exported from Adventure VTT — ${date}</div>
 </body></html>`;

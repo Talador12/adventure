@@ -1077,21 +1077,29 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       ctx.restore();
     });
 
-    // Movement range overlay (green tint on reachable cells when dragging)
+    // Movement range overlay (green tint on reachable cells when dragging) — hex or square
     if (reachableCells && dragging) {
       reachableCells.forEach((_cost, key) => {
         const [cStr, rStr] = key.split(',');
         const cc = parseInt(cStr, 10);
         const rr = parseInt(rStr, 10);
-        // Skip the starting cell (where the token is)
         const dragUnit = positions.find((p) => p.unitId === dragging.unitId);
         if (dragUnit && cc === dragUnit.col && rr === dragUnit.row) return;
-        ctx.fillStyle = 'rgba(34,197,94,0.18)';
-        ctx.fillRect(cc * CELL_SIZE, rr * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        // Subtle green border
-        ctx.strokeStyle = 'rgba(34,197,94,0.35)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(cc * CELL_SIZE + 0.5, rr * CELL_SIZE + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
+        if (isHex) {
+          const { x: hx, y: hy } = hexCenter(cc, rr);
+          drawHexPath(ctx, hx, hy);
+          ctx.fillStyle = 'rgba(34,197,94,0.18)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(34,197,94,0.35)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = 'rgba(34,197,94,0.18)';
+          ctx.fillRect(cc * CELL_SIZE, rr * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          ctx.strokeStyle = 'rgba(34,197,94,0.35)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cc * CELL_SIZE + 0.5, rr * CELL_SIZE + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
+        }
       });
     }
 
@@ -1183,12 +1191,21 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         gridRows,
       );
       aoeCells.forEach(({ col: ac, row: ar }) => {
-        ctx.fillStyle = activeAoE.color;
-        ctx.fillRect(ac * CELL_SIZE, ar * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        // Bright border
-        ctx.strokeStyle = activeAoE.color.replace(/[\d.]+\)$/, '0.6)');
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(ac * CELL_SIZE + 1, ar * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+        if (isHex) {
+          const { x: hx, y: hy } = hexCenter(ac, ar);
+          drawHexPath(ctx, hx, hy);
+          ctx.fillStyle = activeAoE.color;
+          ctx.fill();
+          ctx.strokeStyle = activeAoE.color.replace(/[\d.]+\)$/, '0.6)');
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = activeAoE.color;
+          ctx.fillRect(ac * CELL_SIZE, ar * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          ctx.strokeStyle = activeAoE.color.replace(/[\d.]+\)$/, '0.6)');
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(ac * CELL_SIZE + 1, ar * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+        }
       });
     }
 
@@ -1950,7 +1967,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       if (inCombat && unit) {
         const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
         if (remaining > 0) {
-          const reachable = computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols);
+          const reachable = computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols, gridType);
           setReachableCells(reachable);
         } else {
           setReachableCells(new Map()); // no movement left
@@ -2159,7 +2176,7 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         if (inCombat && unit) {
           const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
           setReachableCells(remaining > 0
-            ? computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols)
+            ? computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols, gridType)
             : new Map()
           );
         } else {

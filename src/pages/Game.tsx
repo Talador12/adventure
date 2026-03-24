@@ -26,15 +26,18 @@ import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 import DMSidebar from '../components/game/DMSidebar';
 import NarrationPanel from '../components/game/NarrationPanel';
 import CombatToolbar from '../components/game/CombatToolbar';
-import ShopView from '../components/game/ShopView';
-import SessionJournal, { type JournalEntry } from '../components/game/SessionJournal';
-import MonsterBrowser from '../components/game/MonsterBrowser';
-import RulesReference from '../components/game/RulesReference';
+import { type JournalEntry } from '../components/game/SessionJournal';
 import SessionTimer from '../components/game/SessionTimer';
-import LootTracker, { type LootItem } from '../components/game/LootTracker';
-import EncounterLog from '../components/game/EncounterLog';
-import NpcTracker from '../components/game/NpcTracker';
-import DiceStats from '../components/game/DiceStats';
+import { type LootItem } from '../components/game/LootTracker';
+// Lazy-loaded view components — only loaded when their tab is active
+const ShopView = lazy(() => import('../components/game/ShopView'));
+const SessionJournal = lazy(() => import('../components/game/SessionJournal'));
+const MonsterBrowser = lazy(() => import('../components/game/MonsterBrowser'));
+const RulesReference = lazy(() => import('../components/game/RulesReference'));
+const LootTracker = lazy(() => import('../components/game/LootTracker'));
+const EncounterLog = lazy(() => import('../components/game/EncounterLog'));
+const NpcTracker = lazy(() => import('../components/game/NpcTracker'));
+const DiceStats = lazy(() => import('../components/game/DiceStats'));
 import CombatRecap from '../components/game/CombatRecap';
 import CombatMVP from '../components/game/CombatMVP';
 const EncounterPostmortem = lazy(() => import('../components/game/EncounterPostmortem'));
@@ -61,20 +64,23 @@ import AbilityCheckRoller from '../components/game/AbilityCheckRoller';
 import SavingThrowRoller from '../components/game/SavingThrowRoller';
 import DamageLeaderboard from '../components/game/DamageLeaderboard';
 import SessionStreak from '../components/game/SessionStreak';
+import OfflineBanner from '../components/game/OfflineBanner';
 import { emitPluginEvent, setPluginMessageCallback } from '../lib/plugins';
 import RoundMVP, { useRoundMVP } from '../components/game/RoundMVP';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
-import CampaignTimeline from '../components/game/CampaignTimeline';
-import RelationshipGraph from '../components/game/RelationshipGraph';
-import QuestMap from '../components/game/QuestMap';
+const CampaignTimeline = lazy(() => import('../components/game/CampaignTimeline'));
+const RelationshipGraph = lazy(() => import('../components/game/RelationshipGraph'));
+const QuestMap = lazy(() => import('../components/game/QuestMap'));
 import { useVoiceChat } from '../hooks/useVoiceChat';
-import CombatReplay from '../components/game/CombatReplay';
-import WorldWiki, { type WikiPage } from '../components/game/WorldWiki';
-import CampaignCalendar, { type CalendarState } from '../components/game/CampaignCalendar';
-import CharacterCompare from '../components/game/CharacterCompare';
+const CombatReplay = lazy(() => import('../components/game/CombatReplay'));
+import { type WikiPage } from '../components/game/WorldWiki';
+const WorldWiki = lazy(() => import('../components/game/WorldWiki'));
+import { type CalendarState } from '../components/game/CampaignCalendar';
+const CampaignCalendar = lazy(() => import('../components/game/CampaignCalendar'));
+const CharacterCompare = lazy(() => import('../components/game/CharacterCompare'));
 import { startRecording, recordEvent, stopRecording, isRecording } from '../lib/combatRecorder';
 import type { CombatRecording } from '../lib/combatRecorder';
-import Achievements from '../components/game/Achievements';
+const Achievements = lazy(() => import('../components/game/Achievements'));
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
@@ -1489,7 +1495,7 @@ export default function Game() {
     setShowMonsterBrowser(false);
   }, [selectedCharacter, addDmMessage, setUnits, broadcastGameEvent, terrain, mapPositions]);
 
-  const { status, send } = useWebSocket({
+  const { status, send, reconnectAttemptCount } = useWebSocket({
     roomId: room,
     username: selectedCharacter?.name || currentPlayer.username,
     onMessage: handleWsMessage,
@@ -1958,7 +1964,10 @@ export default function Game() {
           <button
             onClick={() => {
               import('../lib/export').then(({ exportCampaignBook }) => {
-                exportCampaignBook(sceneName || room, characters, dmHistory, chatMessages, combatLog, quests, wikiPages);
+                exportCampaignBook(sceneName || room, characters, dmHistory, chatMessages, combatLog, quests, wikiPages, {
+                  calendarDay: calendar?.currentDay,
+                  calendarHour: calendar?.currentHour,
+                });
               });
             }}
             className="text-[9px] px-2 py-0.5 rounded bg-amber-900/30 border border-amber-700/40 text-amber-300 hover:bg-amber-900/50 font-semibold transition-colors"
@@ -2249,6 +2258,9 @@ export default function Game() {
             onSetDmPersonality={(p) => { setDmPersonality(p); try { localStorage.setItem(`adventure:dm-personality:${room}`, p); } catch { /* ok */ } }}
           />
         )}
+
+        {/* Offline mode banner */}
+        <OfflineBanner status={status} reconnectAttempt={reconnectAttemptCount} />
 
         {/* Ready check banner */}
         {readyCheck?.active && (

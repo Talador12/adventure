@@ -5,6 +5,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { useToast } from '../components/ui/toast';
 import { useGame } from '../contexts/GameContext';
 import { useI18n, LOCALE_NAMES } from '../lib/i18n';
+import { THEMES, getStoredTheme, applyTheme, type ThemeId } from '../lib/themes';
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { CAMPAIGN_TEMPLATES } from '../data/campaignTemplates';
@@ -37,6 +38,7 @@ function getInitialLowFx(): boolean {
 
 export default function Home() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [activeTheme, setActiveTheme] = useState<ThemeId>(getStoredTheme);
   const [lowFx, setLowFx] = useState(getInitialLowFx);
   const [showInstall, setShowInstall] = useState(() => {
     try { return typeof window !== 'undefined' && 'BeforeInstallPromptEvent' in window; } catch { return false; }
@@ -389,10 +391,23 @@ export default function Home() {
               <option key={code} value={code} className="bg-slate-900 text-white">{name}</option>
             ))}
           </select>
-          {/* Theme toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="hover:bg-white/10 text-white" aria-label="Toggle theme">
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
+          {/* Theme selector */}
+          <select
+            value={activeTheme}
+            onChange={(e) => {
+              const id = e.target.value as ThemeId;
+              setActiveTheme(id);
+              applyTheme(id);
+              const def = THEMES.find((t) => t.id === id);
+              setTheme(def?.isDark ? 'dark' : 'light');
+            }}
+            className="text-[9px] px-1 py-1 rounded bg-white/10 text-white/80 border-none font-bold cursor-pointer focus:outline-none"
+            title="Theme"
+          >
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.name}</option>
+            ))}
+          </select>
 
           {/* Profile dropdown (logged in) or Sign In button (logged out) */}
           {user ? (

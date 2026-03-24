@@ -24,6 +24,7 @@ interface UseWebSocketReturn {
   status: ConnectionStatus;
   send: (msg: WSMessage) => void;
   disconnect: () => void;
+  reconnectAttemptCount: number;
 }
 
 const MAX_RECONNECT_DELAY = 10000;
@@ -195,5 +196,5 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
     };
   }, [roomId, enabled, connect, stopPing]);
 
-  return { status, send, disconnect };
+  return { status, send, disconnect, reconnectAttemptCount: reconnectAttempt.current };
 }

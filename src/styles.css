@@ -22,6 +22,63 @@
   --animate-duration-slow: 0.8s;
 }
 
+/* ============================================================
+   Theme overrides via data-theme attribute
+   ============================================================ */
+
+/* Parchment — warm aged-paper tones */
+[data-theme="parchment"] {
+  --color-accent: #b45309;
+  --color-ember: #b45309;
+  --color-ember-dark: #92400e;
+  --color-gold: #d97706;
+}
+html[data-theme="parchment"] {
+  background-color: #fef3c7 !important;
+  color: #451a03;
+}
+html[data-theme="parchment"] .bg-slate-900,
+html[data-theme="parchment"] .bg-\[\#0c0f1a\] {
+  background-color: #fde68a !important;
+}
+html[data-theme="parchment"] .bg-slate-800 {
+  background-color: #fef3c7 !important;
+}
+html[data-theme="parchment"] .text-slate-300,
+html[data-theme="parchment"] .text-slate-400 {
+  color: #78350f !important;
+}
+html[data-theme="parchment"] .border-slate-700,
+html[data-theme="parchment"] .border-slate-800 {
+  border-color: #d97706 !important;
+}
+
+/* High Contrast — maximum readability, large color differences */
+[data-theme="high-contrast"] {
+  --color-accent: #ff6600;
+  --color-ember: #ff6600;
+}
+html[data-theme="high-contrast"] {
+  background-color: #000 !important;
+  color: #fff;
+}
+html[data-theme="high-contrast"] .bg-slate-900,
+html[data-theme="high-contrast"] .bg-\[\#0c0f1a\] {
+  background-color: #000 !important;
+}
+html[data-theme="high-contrast"] .text-slate-300,
+html[data-theme="high-contrast"] .text-slate-400,
+html[data-theme="high-contrast"] .text-slate-500 {
+  color: #fff !important;
+}
+html[data-theme="high-contrast"] .border-slate-700,
+html[data-theme="high-contrast"] .border-slate-800 {
+  border-color: #666 !important;
+}
+html[data-theme="high-contrast"] .bg-slate-800 {
+  background-color: #111 !important;
+}
+
 /* Font smoothing + mobile safe areas */
 html {
   -webkit-font-smoothing: antialiased;

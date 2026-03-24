@@ -25,6 +25,23 @@ export const HAZARD_DAMAGE: Partial<Record<TerrainType, { damage: number; type: 
   poison_gas: { damage: 4, type: 'poison' },
 };
 
+// Hex neighbor offsets (offset coordinates, odd-row shifted right)
+const HEX_NEIGHBORS_EVEN = [
+  { dc: -1, dr: 0 }, { dc: 1, dr: 0 },   // left, right
+  { dc: 0, dr: -1 }, { dc: 1, dr: -1 },   // top-left, top-right
+  { dc: 0, dr: 1 },  { dc: 1, dr: 1 },    // bottom-left, bottom-right
+];
+const HEX_NEIGHBORS_ODD = [
+  { dc: -1, dr: 0 }, { dc: 1, dr: 0 },    // left, right
+  { dc: -1, dr: -1 }, { dc: 0, dr: -1 },  // top-left, top-right
+  { dc: -1, dr: 1 },  { dc: 0, dr: 1 },   // bottom-left, bottom-right
+];
+
+export function getHexNeighbors(col: number, row: number): Array<{ col: number; row: number }> {
+  const offsets = row % 2 === 0 ? HEX_NEIGHBORS_EVEN : HEX_NEIGHBORS_ODD;
+  return offsets.map(({ dc, dr }) => ({ col: col + dc, row: row + dr }));
+}
+
 // BFS to compute cells reachable within a movement budget, respecting terrain costs
 export function computeReachableCells(
   terrain: TerrainType[][],
@@ -33,6 +50,7 @@ export function computeReachableCells(
   maxMovement: number,
   rows: number,
   cols: number,
+  gridType: 'square' | 'hex' = 'square',
 ): Map<string, number> {
   const reachable = new Map<string, number>();
   const key = (c: number, r: number) => `${c},${r}`;
@@ -44,12 +62,14 @@ export function computeReachableCells(
     queue.sort((a, b) => a.cost - b.cost);
     const current = queue.shift()!;
 
-    const neighbors = [
-      { col: current.col - 1, row: current.row },
-      { col: current.col + 1, row: current.row },
-      { col: current.col, row: current.row - 1 },
-      { col: current.col, row: current.row + 1 },
-    ];
+    const neighbors = gridType === 'hex'
+      ? getHexNeighbors(current.col, current.row)
+      : [
+          { col: current.col - 1, row: current.row },
+          { col: current.col + 1, row: current.row },
+          { col: current.col, row: current.row - 1 },
+          { col: current.col, row: current.row + 1 },
+        ];
 
     for (const n of neighbors) {
       if (n.col < 0 || n.col >= cols || n.row < 0 || n.row >= rows) continue;
@@ -104,7 +124,10 @@ export function findBestMoveToward(
 }
 
 // Check if two positions are adjacent (Chebyshev distance <= 1, i.e. including diagonals)
-export function isAdjacent(col1: number, row1: number, col2: number, row2: number): boolean {
+export function isAdjacent(col1: number, row1: number, col2: number, row2: number, gridType: 'square' | 'hex' = 'square'): boolean {
+  if (gridType === 'hex') {
+    return getHexNeighbors(col1, row1).some((n) => n.col === col2 && n.row === row2);
+  }
   return Math.max(Math.abs(col1 - col2), Math.abs(row1 - row2)) <= 1;
 }
 
@@ -119,12 +142,13 @@ export function isFlanking(
   attackerCol: number, attackerRow: number,
   targetCol: number, targetRow: number,
   allyPositions: { col: number; row: number }[],
+  gridType: 'square' | 'hex' = 'square',
 ): boolean {
   // Direction from target to attacker
   const dx = attackerCol - targetCol;
   const dy = attackerRow - targetRow;
   for (const ally of allyPositions) {
-    if (!isAdjacent(ally.col, ally.row, targetCol, targetRow)) continue;
+    if (!isAdjacent(ally.col, ally.row, targetCol, targetRow, gridType)) continue;
     // Direction from target to ally
     const adx = ally.col - targetCol;
     const ady = ally.row - targetRow;
