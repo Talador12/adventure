@@ -529,6 +529,7 @@ export default function CombatToolbar({
                                           {rangeHint}
                                         </span>
                                          <span className="flex items-center gap-1">
+                                          {spell.components && <span className="text-[7px] text-slate-600 font-mono">{spell.components.join('')}</span>}
                                           {spell.aoe && <span className="text-[8px] px-1 py-0 rounded bg-orange-900/50 text-orange-300 font-bold uppercase">AoE</span>}
                                           <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
                                         </span>
@@ -818,6 +819,46 @@ export default function CombatToolbar({
                           >
                             {hasAura ? 'Clear Aura' : 'Set Aura'}
                           </button>
+                        );
+                      })()}
+
+                      {/* Grapple/Shove — contested Athletics checks */}
+                      {inCombat && selectedUnitId && (() => {
+                        const attacker = units.find((u) => u.id === selectedUnitId);
+                        const target = units.find((u) => u.type === 'enemy' && u.hp > 0 && u.id !== selectedUnitId);
+                        if (!attacker || !target) return null;
+                        return (
+                          <div className="flex gap-1">
+                            {(['Grapple', 'Shove'] as const).map((action) => (
+                              <button
+                                key={action}
+                                onClick={() => {
+                                  const atkRoll = Math.floor(Math.random() * 20) + 1;
+                                  const defRoll = Math.floor(Math.random() * 20) + 1;
+                                  const atkMod = Math.floor((attacker.attackBonus || 0) / 2);
+                                  const defMod = Math.floor((target.ac - 10) / 2);
+                                  const atkTotal = atkRoll + atkMod;
+                                  const defTotal = defRoll + defMod;
+                                  const success = atkTotal >= defTotal;
+                                  const msg = `${attacker.name} attempts to ${action.toLowerCase()} ${target.name}: ${atkRoll}+${atkMod}=${atkTotal} vs ${defRoll}+${defMod}=${defTotal} — ${success ? 'Success!' : 'Failed.'}`;
+                                  setCombatLog((prev) => [...prev, msg]);
+                                  addDmMessage(msg);
+                                  if (success) {
+                                    const cond = action === 'Grapple' ? 'grappled' : 'prone';
+                                    setUnits((prev: Unit[]) => prev.map((u) =>
+                                      u.id === target.id
+                                        ? { ...u, conditions: [...(u.conditions || []), { type: cond, source: attacker.name, duration: 99 } as import('../../contexts/GameContext').ActiveCondition] }
+                                        : u
+                                    ));
+                                  }
+                                  setTimeout(broadcastCombatSyncLatest, 50);
+                                }}
+                                className="px-2 py-1 text-[9px] font-semibold rounded border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+                              >
+                                {action}
+                              </button>
+                            ))}
+                          </div>
                         );
                       })()}
 

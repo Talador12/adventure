@@ -392,6 +392,10 @@ export interface Spell {
   appliesCondition?: ConditionType;
   conditionDuration?: number;
   aoe?: AoETemplate;
+  /** Spell components: V=verbal, S=somatic, M=material */
+  components?: ('V' | 'S' | 'M')[];
+  /** Material component description (when M is in components) */
+  material?: string;
 }
 
 // --- Class abilities ---
