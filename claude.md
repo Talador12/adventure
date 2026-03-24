@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v8.0.0
+## Current Version: v8.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added turn order prediction — "in N" count on initiative cards showing turns until each unit acts. Circular distance calculation handles wrap-around.
+- Added death recap — `DeathRecap` component tracks last 3 damage sources per unit. When a unit falls, a recap card appears showing who did the damage, how much, and what type. Total damage summary. Auto-dismisses after 5 seconds.
+- Audited: party formation presets already existed (FormationPresets.tsx — 6 formations, marching order with drag reorder, wall avoidance). Marked done.
+- Audited: auto-loot distribution already existed (staged loot + random loot tables on combat end). Marked done.
 - Added initiative portrait cards — enemy `tokenImage` now shown in initiative bar alongside player portraits. Fallback chain: tokenImage → character portrait → initial letter.
 - Added combat threat indicators — `!!` for deadly enemies, `!` for hard, color-coded (red/orange/yellow) by CR vs average party level.
 - Added HP bar emotional states — bar shakes (damageShake) when HP is critical and unit is still alive. Full HP glows emerald with shadow. The health bar has feelings now.
@@ -1231,14 +1235,12 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Combat threat indicator (!! deadly, ! hard, color-coded by CR vs party level)
 - [x] Environmental hazard zones (lava/acid/poison_gas terrain, patterns, HAZARD_DAMAGE)
 - [x] HP bar emotional states (shake when low, glow when full)
-- [ ] Auto-loot distribution (enemies drop loot on death, distribute via staged loot)
+- [x] Auto-loot distribution (already existed — staged + random loot on combat end)
 - [ ] Dice tower mode (animated perspective dice bounce before landing)
-
-### v15.0 Feature Ideas
 - [ ] Spell range visualization (highlight cells within spell range on hover)
-- [ ] Turn order prediction (show "you're up in N turns" count on initiative cards)
-- [ ] Party formation presets (save/load party positions on the battle map)
-- [ ] Death recap (show what killed a character — last N damage sources)
+- [x] Turn order prediction ("in N" count on initiative cards, circular distance)
+- [x] Party formation presets (already existed — 6 formations, marching order, drag reorder)
+- [x] Death recap (DeathRecap component, last 3 damage sources, auto-dismiss)
 - [ ] Mounted combat support (rider + mount share a token, dismount action)
 - [ ] Grapple/shove automation (contested STR checks with advantage tracking)
 - [x] NPC voice pitch (per-NPC slider 0.5-2.0 on NPC tracker, overrides TTS hash)
