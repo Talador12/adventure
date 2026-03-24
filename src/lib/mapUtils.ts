@@ -1,6 +1,6 @@
 // Shared map types and spatial utilities used by GameContext, BattleMap, and Game.tsx
 
-export type TerrainType = 'floor' | 'wall' | 'water' | 'difficult' | 'door' | 'pit' | 'void' | 'stairs_up' | 'stairs_down';
+export type TerrainType = 'floor' | 'wall' | 'water' | 'difficult' | 'door' | 'pit' | 'void' | 'stairs_up' | 'stairs_down' | 'lava' | 'acid' | 'poison_gas';
 
 export interface TokenPosition {
   unitId: string;
@@ -14,8 +14,15 @@ export const DEFAULT_ROWS = 18;
 // Terrain movement costs (in cells): Infinity = impassable
 export const TERRAIN_COST: Record<TerrainType, number> = {
   floor: 1, door: 1, pit: 1, stairs_up: 1, stairs_down: 1,
-  water: 2, difficult: 2,
+  water: 2, difficult: 2, lava: 2, acid: 2, poison_gas: 1,
   wall: Infinity, void: Infinity,
+};
+
+// Hazard terrain damage per turn start (0 = no damage)
+export const HAZARD_DAMAGE: Partial<Record<TerrainType, { damage: number; type: string }>> = {
+  lava: { damage: 10, type: 'fire' },
+  acid: { damage: 6, type: 'acid' },
+  poison_gas: { damage: 4, type: 'poison' },
 };
 
 // BFS to compute cells reachable within a movement budget, respecting terrain costs
