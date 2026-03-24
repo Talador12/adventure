@@ -142,12 +142,13 @@ export function isFlanking(
   attackerCol: number, attackerRow: number,
   targetCol: number, targetRow: number,
   allyPositions: { col: number; row: number }[],
+  gridType: 'square' | 'hex' = 'square',
 ): boolean {
   // Direction from target to attacker
   const dx = attackerCol - targetCol;
   const dy = attackerRow - targetRow;
   for (const ally of allyPositions) {
-    if (!isAdjacent(ally.col, ally.row, targetCol, targetRow)) continue;
+    if (!isAdjacent(ally.col, ally.row, targetCol, targetRow, gridType)) continue;
     // Direction from target to ally
     const adx = ally.col - targetCol;
     const ady = ally.row - targetRow;
