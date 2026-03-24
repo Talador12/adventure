@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added map waypoint paths — DM draws movement path by clicking cells in sequence. Orange dashed line with numbered dots (green start, red end). 'Go' animates token along path with chained animations. Waypoint tool in DM toolbar.
+- Added session summary card — 'Wrap Up' button shows end-of-session stats overlay: duration, damage dealt, enemies slain, crits, encounters, rounds. Amber-gradient divider. 'Until next time' dismiss.
 - RELEASE 100. v9.0.0. "Roll for the Century."
 - Added campaign world clock — hour of day (0-23) with time-of-day label (Dawn/Morning/Midday/Afternoon/Evening/Night). +1h/+4h advance buttons. Long rest gated to evening/night hours. Color shifts indigo at night, sky during day, amber at dusk.
 - Added session milestones — tracks damage/rolls/kills/crits per session. Toast celebrations at thresholds (100/250/500/1000 damage, 25/50/100 rolls, 5/10/25 kills, 3/5/10 crits). Icon + count + label.
@@ -1226,7 +1228,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - [x] Kill streak tracker (KillStreak: Double Kill → RAMPAGE → LEGENDARY! slide-in banner)
 - [x] Persona-driven README (routing table, accurate feature list, "Roll for initiative.")
 - [x] Persona-driven Makefile (make play / quickstart / dm-guide, grouped help output)
-- [ ] Map waypoint path drawing (DM draws movement paths that animate tokens along them)
+- [x] Map waypoint path drawing (DM draws path, 'Go' animates token along it, numbered dots)
 - [x] Combat encounter templates from AI (AI Template button, auto-generates + saves balanced encounters)
 - [x] Session notes auto-save to cloud (DM textarea + KV endpoints, 1.5s debounce)
 - [x] Player character trading (TradePanel: gold + items between party members)
