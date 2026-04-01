@@ -428,7 +428,23 @@ export default function CombatToolbar({
                                     const flavor = isCrit ? critFlavor() : hitFlavor();
                                     const smiteTag = smiteDmg > 0 ? ` [+${smiteDmg} radiant smite]` : '';
                                     const markTag = hunterMarkDmg > 0 ? ` [+${hunterMarkDmg} hunter's mark]` : '';
-                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage!${smiteTag}${markTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage.${smiteTag}${markTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}`;
+                                    // Critical hit extra effect (random table roll)
+                                    let critEffectTag = '';
+                                    if (isCrit) {
+                                      const CRIT_EFFECTS = [
+                                        { name: 'Lingering Wound', desc: 'bleeding 1d4/turn', cond: 'burning' as const, dur: 1 },
+                                        { name: 'Disoriented', desc: 'disadvantage on next attack', cond: 'stunned' as const, dur: 1 },
+                                        { name: 'Armor Crack', desc: 'AC -1', effect: 'ac' },
+                                        { name: 'Brutal Strike', desc: 'extra damage die' },
+                                        { name: 'Clean Hit', desc: '' },
+                                        { name: 'Clean Hit', desc: '' },
+                                      ];
+                                      const ce = CRIT_EFFECTS[Math.floor(Math.random() * CRIT_EFFECTS.length)];
+                                      if (ce.cond) applyCondition(target.id, { type: ce.cond, duration: ce.dur || 1, source: 'Critical Hit' });
+                                      if (ce.effect === 'ac') setUnits((prev: Unit[]) => prev.map((u) => u.id === target.id ? { ...u, ac: Math.max(5, u.ac - 1) } : u));
+                                      if (ce.desc) critEffectTag = ` [${ce.name}: ${ce.desc}]`;
+                                    }
+                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage!${smiteTag}${markTag}${critEffectTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage.${smiteTag}${markTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, logMsg]);
                                     addDmMessage(logMsg);
                                   } else {
@@ -1524,6 +1540,41 @@ export default function CombatToolbar({
                         >
                           Re-roll Init
                         </button>
+                      )}
+
+                      {/* Skill check — DM or player rolls ability/skill check */}
+                      {selectedCharacter && (
+                        <select
+                          onChange={(e) => {
+                            const skill = e.target.value;
+                            if (!skill) return;
+                            const SKILL_ABILITIES: Record<string, string> = {
+                              Acrobatics: 'DEX', 'Animal Handling': 'WIS', Arcana: 'INT', Athletics: 'STR',
+                              Deception: 'CHA', History: 'INT', Insight: 'WIS', Intimidation: 'CHA',
+                              Investigation: 'INT', Medicine: 'WIS', Nature: 'INT', Perception: 'WIS',
+                              Performance: 'CHA', Persuasion: 'CHA', Religion: 'INT', 'Sleight of Hand': 'DEX',
+                              Stealth: 'DEX', Survival: 'WIS',
+                            };
+                            const ability = SKILL_ABILITIES[skill] || 'STR';
+                            const stat = selectedCharacter.stats[ability as keyof typeof selectedCharacter.stats] || 10;
+                            const abilityMod = Math.floor((stat - 10) / 2);
+                            const prof = selectedCharacter.skillProficiencies?.includes(skill) ? proficiencyBonus(selectedCharacter.level) : 0;
+                            const roll = Math.floor(Math.random() * 20) + 1;
+                            const total = roll + abilityMod + prof;
+                            const profTag = prof > 0 ? ' (proficient)' : '';
+                            const msg = `${selectedCharacter.name} rolls ${skill} check: ${roll}+${abilityMod}${prof > 0 ? `+${prof}` : ''}=${total}${profTag}${roll === 20 ? ' — NAT 20!' : roll === 1 ? ' — NAT 1!' : ''}`;
+                            setCombatLog((prev) => [...prev, msg]);
+                            addDmMessage(msg);
+                            e.target.value = '';
+                          }}
+                          className="text-[9px] px-1.5 py-1 rounded bg-slate-800/60 border border-slate-600/40 text-slate-400 cursor-pointer"
+                          title="Roll a skill check"
+                        >
+                          <option value="">Skill Check...</option>
+                          {Object.keys({ Acrobatics: 1, 'Animal Handling': 1, Arcana: 1, Athletics: 1, Deception: 1, History: 1, Insight: 1, Intimidation: 1, Investigation: 1, Medicine: 1, Nature: 1, Perception: 1, Performance: 1, Persuasion: 1, Religion: 1, 'Sleight of Hand': 1, Stealth: 1, Survival: 1 }).map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
                       )}
 
                       {/* Place persistent spell zone */}

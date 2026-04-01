@@ -8,6 +8,7 @@ import BG3RollPopup from '../components/dice/BG3RollPopup';
 import ChatPanel, { type ChatMessage, type SlashRollResult } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
 import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, type Item, type Spell, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, randomEncounterTheme, hasPendingASI } from '../contexts/GameContext';
+import { calculateEncounterBudget } from '../types/game';
 import LevelUpModal from '../components/game/LevelUpModal';
 import CharacterPicker from '../components/game/CharacterPicker';
 import { type TerrainType, type TokenPosition } from '../lib/mapUtils';
@@ -2497,6 +2498,15 @@ export default function Game() {
               </div>
             </details>
           )}
+
+          {/* Live encounter difficulty badge */}
+          {inCombat && characters.length > 0 && (() => {
+            const budget = calculateEncounterBudget(characters.map((c) => c.level));
+            const enemyXP = units.filter((u) => u.type === 'enemy' && u.hp > 0).reduce((s, u) => s + (u.xpValue || 50), 0);
+            const rating = enemyXP >= budget.deadly ? 'DEADLY' : enemyXP >= budget.hard ? 'HARD' : enemyXP >= budget.medium ? 'MEDIUM' : 'EASY';
+            const color = rating === 'DEADLY' ? 'text-red-400 bg-red-900/30 border-red-600/40' : rating === 'HARD' ? 'text-orange-400 bg-orange-900/30 border-orange-600/40' : rating === 'MEDIUM' ? 'text-yellow-400 bg-yellow-900/30 border-yellow-600/40' : 'text-green-400 bg-green-900/30 border-green-600/40';
+            return <div className={`mx-2 px-2 py-0.5 rounded-full border text-[9px] font-bold ${color}`} title={`Enemy XP: ${enemyXP} | Budget: E${budget.easy}/M${budget.medium}/H${budget.hard}/D${budget.deadly}`}>{rating}</div>;
+          })()}
 
           {/* Encounter XP tracker — during combat */}
           <EncounterXPTracker units={units} playerCount={characters.length} inCombat={inCombat} />

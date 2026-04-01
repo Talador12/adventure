@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 D&D 5e core mechanics + combat polish:
+  - **Skill check system** — skill check dropdown in CombatToolbar: rolls d20 + ability mod + proficiency (if proficient), supports all 18 D&D 5e skills, nat 20/1 callouts, logged to combat log.
+  - **Saving throw proficiencies** — concentration saves now add proficiency bonus when the class is proficient in CON saves (Barbarian, Fighter, Sorcerer). `CLASS_SAVE_PROFICIENCIES` data for all 12 classes.
+  - **Critical hit effects table** — nat 20s now roll from a random effect table: Lingering Wound (bleeding), Disoriented (disadvantage), Armor Crack (AC -1), Brutal Strike (extra die), or Clean Hit (no extra). Applied via conditions + unit stat modifications.
+  - **Encounter difficulty live badge** — combat view shows EASY/MEDIUM/HARD/DEADLY badge based on remaining enemy XP vs party encounter budget, color-coded with hover tooltip showing budget breakdown.
+  - **Token HP bars already existed** — confirmed at BattleMap line 1459 (canvas-rendered HP percentage bars under tokens).
 - 5 new features — terrain hazards, spell zones, NPC dialogue, level-up options, combat recap:
   - **Terrain hazard auto-damage** — units starting their turn on lava (10 fire), acid (6 acid), or poison gas (4 poison) now take automatic damage with combat log annotations. Previously hazards were display-only.
   - **Persistent spell zones on map** — DMs can place named spell effect zones (Wall of Fire, Darkness, Fog Cloud, Spirit Guardians, Spike Growth, Moonbeam) with configurable radius. Stored as `SpellZone` with color/opacity/damage/vision-blocking properties.

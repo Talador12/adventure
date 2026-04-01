@@ -30,7 +30,7 @@ import type {
   CharacterClass,
 } from '../types/game';
 import {
-  CONDITION_EFFECTS, XP_THRESHOLDS, HIT_DIE_AVG, HIT_DIE_SIDES, EMPTY_EQUIPMENT,
+  CONDITION_EFFECTS, XP_THRESHOLDS, HIT_DIE_AVG, HIT_DIE_SIDES, EMPTY_EQUIPMENT, CLASS_SAVE_PROFICIENCIES,
   calculateAC, rollSpellDamage, ASI_LEVELS, hasPendingASI,
 } from '../types/game';
 import { rollLoot } from '../data/items';
@@ -777,6 +777,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
             const char = characters.find((c) => c.id === damagedUnit.characterId);
             if (char) {
               conMod = Math.floor((char.stats.CON - 10) / 2);
+              // Saving throw proficiency: add proficiency bonus if class is proficient in CON saves
+              if (CLASS_SAVE_PROFICIENCIES[char.class]?.includes('CON')) {
+                conMod += proficiencyBonus(char.level);
+              }
               // War Caster feat: +2 to concentration saves
               if ((char.feats || []).includes('war-caster')) conMod += 2;
             }

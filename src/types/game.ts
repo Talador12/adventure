@@ -218,6 +218,33 @@ export interface EnemyTemplate {
 
 // --- Stats ---
 export const STAT_NAMES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
+
+// Class saving throw proficiencies per D&D 5e PHB
+export const CLASS_SAVE_PROFICIENCIES: Record<string, string[]> = {
+  Barbarian: ['STR', 'CON'], Bard: ['DEX', 'CHA'], Cleric: ['WIS', 'CHA'],
+  Druid: ['INT', 'WIS'], Fighter: ['STR', 'CON'], Monk: ['STR', 'DEX'],
+  Paladin: ['WIS', 'CHA'], Ranger: ['STR', 'DEX'], Rogue: ['DEX', 'INT'],
+  Sorcerer: ['CON', 'CHA'], Warlock: ['WIS', 'CHA'], Wizard: ['INT', 'WIS'],
+};
+
+// Skill check system — map skill to ability + proficiency check
+export const SKILL_ABILITIES: Record<string, string> = {
+  Acrobatics: 'DEX', 'Animal Handling': 'WIS', Arcana: 'INT', Athletics: 'STR',
+  Deception: 'CHA', History: 'INT', Insight: 'WIS', Intimidation: 'CHA',
+  Investigation: 'INT', Medicine: 'WIS', Nature: 'INT', Perception: 'WIS',
+  Performance: 'CHA', Persuasion: 'CHA', Religion: 'INT', 'Sleight of Hand': 'DEX',
+  Stealth: 'DEX', Survival: 'WIS',
+};
+
+// Critical hit extra effects table
+export const CRITICAL_HIT_EFFECTS = [
+  { name: 'Lingering Wound', description: 'Target bleeds — takes 1d4 damage at the start of their next turn.', condition: 'burning' as ConditionType, duration: 1 },
+  { name: 'Knockback', description: 'The force of the blow pushes the target 5ft away.', effect: 'knockback' },
+  { name: 'Disoriented', description: 'Target is dazed — disadvantage on next attack.', condition: 'stunned' as ConditionType, duration: 1 },
+  { name: 'Armor Crack', description: 'A piece of armor buckles — target AC reduced by 1 until repaired.', effect: 'ac_reduce' },
+  { name: 'Brutal Strike', description: 'An extra burst of damage — roll weapon die again.', effect: 'extra_die' },
+  { name: 'Clean Hit', description: 'No extra effect beyond the critical damage.', effect: 'none' },
+];
 export type StatName = (typeof STAT_NAMES)[number];
 export type Stats = Record<StatName, number>;
 
