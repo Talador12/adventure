@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { getBonusActionLabel, hasBonusAction } from '../game/BonusActionPanel';
 import { useGame, type Unit, CONDITION_EFFECTS } from '../../contexts/GameContext';
 import { playCountdownTick } from '../../hooks/useSoundFX';
 import { characterMood } from '../../lib/characterMood';
@@ -213,6 +214,12 @@ function InitiativeBarInner({ entries, turnTimerEnabled = true, turnTimeSeconds 
                 <span className="text-sky-400">AC {entry.ac}</span>
                 {entry.reactionUsed && <span className="text-orange-500" title="Reaction used this round">R</span>}
                 {entry.bonusActionUsed && <span className="text-violet-400" title="Bonus action used this turn">B</span>}
+                {!entry.bonusActionUsed && entry.isCurrentTurn && entry.type === 'player' && (() => {
+                  const char = characters.find((c) => c.id === entry.characterId);
+                  if (!char || !hasBonusAction(char.class, char.level)) return null;
+                  const label = getBonusActionLabel(char.class);
+                  return <span className="text-violet-300 text-[7px] animate-pulse" title={`${label} available`}>⚡</span>;
+                })()}
                 {entry.readiedAction && <span className="text-cyan-400" title={`Ready: ${entry.readiedAction.trigger} → ${entry.readiedAction.action}`}>⏳</span>}
                 {/* Concentration indicator */}
                 {entry.concentratingOn && (

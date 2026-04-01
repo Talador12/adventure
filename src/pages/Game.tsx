@@ -26,6 +26,7 @@ import { useUndoRedo } from '../hooks/useUndoRedo';
 import Onboarding from '../components/game/Onboarding';
 import DramaticMoment, { useDramaticMoments } from '../components/game/DramaticMoment';
 const SkillChallenge = lazy(() => import('../components/game/SkillChallenge'));
+const DMQuickRef = lazy(() => import('../components/game/DMQuickRef'));
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
@@ -1378,6 +1379,24 @@ export default function Game() {
     return () => clearInterval(timer);
   }, [inCombat, canUseDMTools, room, getStateForResponse]);
 
+  // Turn reminder — toast when it becomes the player's turn
+  const prevTurnNotifyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!inCombat) return;
+    const currentUnit = units.find((u) => u.isCurrentTurn);
+    if (!currentUnit || currentUnit.type !== 'player') return;
+    if (currentUnit.characterId && currentUnit.characterId === selectedCharacter?.id) {
+      if (prevTurnNotifyRef.current !== currentUnit.id) {
+        prevTurnNotifyRef.current = currentUnit.id;
+        const actions = [];
+        if (!currentUnit.bonusActionUsed) actions.push('bonus action');
+        if (!currentUnit.reactionUsed) actions.push('reaction');
+        const moveFt = Math.max(0, ((currentUnit.speed || 6) - (currentUnit.movementUsed || 0)) * 5);
+        toast(`Your turn! ${moveFt}ft movement${actions.length > 0 ? `, ${actions.join(' + ')} available` : ''}`, 'info');
+      }
+    }
+  }, [units, inCombat, selectedCharacter?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fire rules checks when turn changes
   const prevTurnIndexRef = useRef(turnIndex);
   useEffect(() => {
@@ -2636,11 +2655,14 @@ export default function Game() {
                 <span className="text-slate-500 shrink-0">Lv {selectedCharacter.level}</span>
                 {totalSlots > 0 && <span className={`shrink-0 ${usedSlots < totalSlots ? 'text-blue-400' : 'text-slate-600'}`}>◆ {totalSlots - usedSlots}/{totalSlots}</span>}
                 {selectedCharacter.gold > 0 && <span className="text-amber-500 shrink-0">💰 {selectedCharacter.gold}</span>}
-                {conditions.length > 0 && conditions.map((c) => (
-                  <span key={`${c.type}-${c.source}`} className={`shrink-0 px-1 py-0 rounded border border-slate-700 ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'}`} title={`${c.type}${c.duration > 0 ? ` (${c.duration} turns)` : ''}: ${CONDITION_EFFECTS[c.type]?.description || ''}`}>
-                    {c.type}{c.duration > 0 ? ` ${c.duration}` : ''}
-                  </span>
-                ))}
+                {conditions.length > 0 && conditions.map((c) => {
+                  const rulesText = (() => { try { const { CONDITION_RULES } = require('../data/conditionRules'); return CONDITION_RULES[c.type]; } catch { return null; } })();
+                  return (
+                    <span key={`${c.type}-${c.source}`} className={`shrink-0 px-1 py-0 rounded border border-slate-700 cursor-help ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'}`} title={`${c.type}${c.duration > 0 ? ` (${c.duration} turns)` : ''}${c.source ? ` [${c.source}]` : ''}\n\n${rulesText || CONDITION_EFFECTS[c.type]?.description || ''}`}>
+                      {c.type}{c.duration > 0 ? ` ${c.duration}` : ''}
+                    </span>
+                  );
+                })}
               </div>
             );
           })()}
@@ -2984,6 +3006,9 @@ export default function Game() {
                       onCancel={() => setShowSkillChallenge(false)}
                     />
                   </Suspense>
+                )}
+                {canUseDMTools && (
+                  <Suspense fallback={null}><DMQuickRef /></Suspense>
                 )}
                 {canUseDMTools && !showSkillChallenge && !inCombat && (
                   <button onClick={() => setShowSkillChallenge(true)} className="mx-2 mb-1 text-[9px] px-2 py-1 rounded bg-teal-900/30 border border-teal-600/40 text-teal-400 font-semibold hover:bg-teal-800/40 transition-all" title="Start a group skill challenge">

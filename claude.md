@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 UX polish + code quality features:
+  - **Condition rules reference** — `conditionRules.ts` with full D&D 5e rules text for all 21+ conditions. Quick-stats bar condition badges now show complete rules text with source and duration on hover (`cursor-help`).
+  - **DM quick-reference panel** — `DMQuickRef` component: modal overlay with Difficulty Classes, Actions in Combat, Cover rules, Conditions, and Damage Types. One-click "Quick Ref" button accessible during game.
+  - **Combat turn reminder toast** — players get a toast notification when their turn starts, showing available movement, bonus action, and reaction status.
+  - **Bonus action availability indicator** — pulsing ⚡ on InitiativeBar when it's a player's turn and their class bonus action hasn't been used. `BonusActionPanel` component with `getBonusActionLabel` + `hasBonusAction` utilities for all 10 classes.
+  - **Enhanced condition tooltips** — condition badges throughout the UI now show full rules text, source attribution, and remaining duration in multi-line tooltips.
 - 5 more D&D systems — surprise, encounter templates, death/resurrection, session export, backstory hooks:
   - **Surprise round system** — hidden players can surprise enemies at combat start. Stealth vs passive perception check auto-applies `surprised` condition (can't act/react, -2 AC, duration 1 turn). New `surprised` condition type.
   - **Combat encounter templates** — Save/Load buttons in DMSidebar: DM saves current enemy composition as reusable template (stored in localStorage, max 20). Load spawns all enemies with fresh initiative.
