@@ -393,6 +393,24 @@ export interface Item {
   consumable?: boolean;             // removed from inventory after use
   fuelMax?: number;                 // max fuel charges (e.g. lantern = 60 turns = 6 hours at 6s/turn)
   fuelRemaining?: number;           // current fuel charges remaining
+  weight?: number;                  // weight in pounds (D&D 5e standard)
+}
+
+// Encumbrance system — D&D 5e variant rule
+export function calculateCarryCapacity(strScore: number): { normal: number; encumbered: number; heavilyEncumbered: number; max: number } {
+  return {
+    normal: strScore * 5,            // no penalty
+    encumbered: strScore * 10,       // -10ft speed
+    heavilyEncumbered: strScore * 15, // -20ft speed, disadvantage on ability checks/saves/attacks
+    max: strScore * 15,              // cannot carry more
+  };
+}
+
+export function calculateInventoryWeight(inventory: Item[], equipment: Record<string, Item | null>): number {
+  let weight = 0;
+  for (const item of inventory) weight += (item.weight || 0) * (item.quantity || 1);
+  for (const slot of Object.values(equipment)) if (slot?.weight) weight += slot.weight;
+  return weight;
 }
 
 export interface EquipmentSlots {
@@ -550,8 +568,31 @@ export interface Character {
   hitDiceRemaining: number; // how many hit dice are left to spend (max = level)
   inspiration: boolean; // D&D 5e inspiration — DM grants, player spends for advantage
   exhaustion: number; // D&D 5e exhaustion level (0-6). Cumulative penalties; 6 = death.
+  skillProficiencies?: string[];   // e.g. ['Perception', 'Stealth', 'Athletics']
+  saveProficiencies?: string[];    // e.g. ['STR', 'CON'] — derived from CLASS_SAVE_PROFICIENCIES + multiclass
+  toolProficiencies?: string[];    // e.g. ["Thieves' Tools", 'Herbalism Kit']
+  sorceryPoints?: number;          // Sorcerer: total sorcery points = level
+  sorceryPointsUsed?: number;      // Sorcerer: spent points this rest
+  arcaneRecoveryUsed?: boolean;    // Wizard: used Arcane Recovery this rest
+  spellSlots?: Record<number, number>; // precomputed spell slots by level
   createdAt: number;
 }
+
+// Default skill proficiencies by class
+export const CLASS_SKILL_CHOICES: Record<string, { count: number; options: string[] }> = {
+  Barbarian: { count: 2, options: ['Animal Handling', 'Athletics', 'Intimidation', 'Nature', 'Perception', 'Survival'] },
+  Bard: { count: 3, options: ['Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception', 'History', 'Insight', 'Intimidation', 'Investigation', 'Medicine', 'Nature', 'Perception', 'Performance', 'Persuasion', 'Religion', 'Sleight of Hand', 'Stealth', 'Survival'] },
+  Cleric: { count: 2, options: ['History', 'Insight', 'Medicine', 'Persuasion', 'Religion'] },
+  Druid: { count: 2, options: ['Arcana', 'Animal Handling', 'Insight', 'Medicine', 'Nature', 'Perception', 'Religion', 'Survival'] },
+  Fighter: { count: 2, options: ['Acrobatics', 'Animal Handling', 'Athletics', 'History', 'Insight', 'Intimidation', 'Perception', 'Survival'] },
+  Monk: { count: 2, options: ['Acrobatics', 'Athletics', 'History', 'Insight', 'Religion', 'Stealth'] },
+  Paladin: { count: 2, options: ['Athletics', 'Insight', 'Intimidation', 'Medicine', 'Persuasion', 'Religion'] },
+  Ranger: { count: 3, options: ['Animal Handling', 'Athletics', 'Insight', 'Investigation', 'Nature', 'Perception', 'Stealth', 'Survival'] },
+  Rogue: { count: 4, options: ['Acrobatics', 'Athletics', 'Deception', 'Insight', 'Intimidation', 'Investigation', 'Perception', 'Performance', 'Persuasion', 'Sleight of Hand', 'Stealth'] },
+  Sorcerer: { count: 2, options: ['Arcana', 'Deception', 'Insight', 'Intimidation', 'Persuasion', 'Religion'] },
+  Warlock: { count: 2, options: ['Arcana', 'Deception', 'History', 'Intimidation', 'Investigation', 'Nature', 'Religion'] },
+  Wizard: { count: 2, options: ['Arcana', 'History', 'Insight', 'Investigation', 'Medicine', 'Religion'] },
+};
 
 // --- Dice ---
 export type DieType = 'd2' | 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20';

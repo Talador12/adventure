@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 features — encumbrance, proficiencies, save roller, rest summary, round timer:
+  - **Inventory weight/encumbrance** — `calculateCarryCapacity(STR)` and `calculateInventoryWeight()` in types/game.ts. Item weight field added. D&D 5e variant encumbrance tiers (normal/encumbered/heavily encumbered).
+  - **Character proficiency data system** — `skillProficiencies`, `saveProficiencies`, `toolProficiencies` fields on Character type. `CLASS_SKILL_CHOICES` data for all 12 classes with skill counts and options per PHB.
+  - **Saving throw roller** — "Save..." dropdown in CombatToolbar: rolls d20 + ability mod + proficiency bonus (if class proficient). All 6 saves, nat 20/1 callouts.
+  - **Rest recovery summary** — short rest now shows HP gained + spell slots recovered in DM chat. Long rest shows full recovery details including exhaustion reduction.
+  - **Combat round timer** — tracks elapsed time per round and total combat duration. Round duration logged on new round, total duration logged on combat end.
 - 5 D&D 5e core mechanics + combat polish:
   - **Skill check system** — skill check dropdown in CombatToolbar: rolls d20 + ability mod + proficiency (if proficient), supports all 18 D&D 5e skills, nat 20/1 callouts, logged to combat log.
   - **Saving throw proficiencies** — concentration saves now add proficiency bonus when the class is proficient in CON saves (Barbarian, Fighter, Sorcerer). `CLASS_SAVE_PROFICIENCIES` data for all 12 classes.

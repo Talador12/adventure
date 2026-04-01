@@ -1542,6 +1542,40 @@ export default function CombatToolbar({
                         </button>
                       )}
 
+                      {/* Saving throw — roll with class proficiency */}
+                      {selectedCharacter && (
+                        <select
+                          onChange={(e) => {
+                            const stat = e.target.value;
+                            if (!stat) return;
+                            const score = selectedCharacter.stats[stat as keyof typeof selectedCharacter.stats] || 10;
+                            const abilityMod = Math.floor((score - 10) / 2);
+                            const CLASS_SAVES: Record<string, string[]> = {
+                              Barbarian: ['STR', 'CON'], Bard: ['DEX', 'CHA'], Cleric: ['WIS', 'CHA'],
+                              Druid: ['INT', 'WIS'], Fighter: ['STR', 'CON'], Monk: ['STR', 'DEX'],
+                              Paladin: ['WIS', 'CHA'], Ranger: ['STR', 'DEX'], Rogue: ['DEX', 'INT'],
+                              Sorcerer: ['CON', 'CHA'], Warlock: ['WIS', 'CHA'], Wizard: ['INT', 'WIS'],
+                            };
+                            const prof = (CLASS_SAVES[selectedCharacter.class] || []).includes(stat) ? proficiencyBonus(selectedCharacter.level) : 0;
+                            const roll = Math.floor(Math.random() * 20) + 1;
+                            const total = roll + abilityMod + prof;
+                            const profTag = prof > 0 ? ' (proficient)' : '';
+                            const msg = `${selectedCharacter.name} rolls ${stat} saving throw: ${roll}+${abilityMod}${prof > 0 ? `+${prof}` : ''}=${total}${profTag}${roll === 20 ? ' — NAT 20!' : roll === 1 ? ' — NAT 1!' : ''}`;
+                            setCombatLog((prev) => [...prev, msg]);
+                            addDmMessage(msg);
+                            playDiceRoll();
+                            e.target.value = '';
+                          }}
+                          className="text-[9px] px-1.5 py-1 rounded bg-slate-800/60 border border-slate-600/40 text-slate-400 cursor-pointer"
+                          title="Roll a saving throw"
+                        >
+                          <option value="">Save...</option>
+                          {['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      )}
+
                       {/* Skill check — DM or player rolls ability/skill check */}
                       {selectedCharacter && (
                         <select
@@ -1760,9 +1794,22 @@ export default function CombatToolbar({
                     <>
                       <button
                         onClick={() => {
+                          const beforeHp = selectedCharacter.hp;
+                          const beforeSlots = { ...(selectedCharacter.spellSlotsUsed || {}) };
                           restCharacter(selectedCharacter.id, 'short');
                           playHealing();
                           addFloatingText('Short Rest', 'heal');
+                          // Recovery summary
+                          setTimeout(() => {
+                            const after = characters.find((c) => c.id === selectedCharacter.id);
+                            if (!after) return;
+                            const hpGained = after.hp - beforeHp;
+                            const slotsRecovered = Object.entries(beforeSlots).reduce((sum, [lvl, used]) => sum + Math.max(0, (used as number) - ((after.spellSlotsUsed || {})[Number(lvl)] || 0)), 0);
+                            const parts = [];
+                            if (hpGained > 0) parts.push(`+${hpGained} HP`);
+                            if (slotsRecovered > 0) parts.push(`${slotsRecovered} spell slot${slotsRecovered > 1 ? 's' : ''} recovered`);
+                            if (parts.length > 0) addDmMessage(`*Rest recovery: ${parts.join(', ')}*`);
+                          }, 100);
                           addDmMessage(`${selectedCharacter.name} takes a short rest, tending wounds and catching their breath.`);
                           // Fire-and-forget AI rest narration
                           fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: `${selectedCharacter.name} takes a short rest`, context: sceneName || 'camp', history: [] }) })
@@ -1782,7 +1829,7 @@ export default function CombatToolbar({
                           restCharacter(selectedCharacter.id, 'long');
                           playHealing();
                           addFloatingText('Full Rest', 'heal');
-                          addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored.`);
+                          addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored. All spell slots recovered. Exhaustion reduced by 1.`);
                           fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: `The party makes camp and ${selectedCharacter.name} settles in for a long rest`, context: sceneName || 'a quiet clearing', history: [] }) })
                             .then((r) => r.json() as Promise<{ narration?: string }>)
                             .then((d) => { if (d.narration) addDmMessage(d.narration); })

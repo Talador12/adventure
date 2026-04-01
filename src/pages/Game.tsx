@@ -276,6 +276,8 @@ export default function Game() {
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [initiativeHistory, setInitiativeHistory] = useState<Array<{ round: number; order: Array<{ name: string; initiative: number; hp: number; maxHp: number }> }>>([]);
   const [spellZones, setSpellZones] = useState<import('../types/game').SpellZone[]>([]);
+  const [combatStartTime, setCombatStartTime] = useState<number | null>(null);
+  const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
   const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
     try { return localStorage.getItem('adventure:rulesReminders') !== 'off'; } catch { return true; }
   });
@@ -1312,6 +1314,22 @@ export default function Game() {
 
   // Keep undo system synced with current units
   useEffect(() => { syncUndoUnits(units); }, [units, syncUndoUnits]);
+
+  // Track combat timing
+  useEffect(() => {
+    if (inCombat && !combatStartTime) {
+      setCombatStartTime(Date.now());
+      setRoundStartTime(Date.now());
+    }
+    if (!inCombat && combatStartTime) {
+      const elapsed = Math.round((Date.now() - combatStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      setCombatLog((prev) => [...prev, `Combat lasted ${mins}m ${secs}s (${combatRound} rounds).`]);
+      setCombatStartTime(null);
+      setRoundStartTime(null);
+    }
+  }, [inCombat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save combat state every 30s during combat (DM only) — prevents progress loss on refresh
   useEffect(() => {
@@ -2702,6 +2720,12 @@ export default function Game() {
                   triggerLevelUp={(name, level) => triggerLevelUp(name, level)}
                   onNewRound={(round) => {
                     checkRoundMVP(combatLog, characters.map((c) => c.name), round);
+                    // Log round duration
+                    if (roundStartTime) {
+                      const roundElapsed = Math.round((Date.now() - roundStartTime) / 1000);
+                      setCombatLog((prev) => [...prev, `(Round ${round} took ${roundElapsed}s)`]);
+                    }
+                    setRoundStartTime(Date.now());
                     setInitiativeHistory((prev) => [...prev.slice(-9), {
                       round,
                       order: units.filter((u) => u.hp > 0).map((u) => ({ name: u.name, initiative: u.initiative, hp: u.hp, maxHp: u.maxHp })),
