@@ -57,7 +57,14 @@ export default function Lobby() {
   const [spectators, setSpectators] = useState<{ id: string; username: string; avatar?: string }[]>([]);
   const [isSpectating, setIsSpectating] = useState(false);
   const [dmSeatType, setDmSeatType] = useState<'human' | 'ai'>('human');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const MAX_CHAT_MESSAGES = 300;
+  const [chatMessages, setChatMessagesRaw] = useState<ChatMessage[]>([]);
+  const setChatMessages: typeof setChatMessagesRaw = (action) => {
+    setChatMessagesRaw((prev) => {
+      const next = typeof action === 'function' ? action(prev) : action;
+      return next.length > MAX_CHAT_MESSAGES ? next.slice(-MAX_CHAT_MESSAGES) : next;
+    });
+  };
   const [oldestChatTs, setOldestChatTs] = useState<number | null>(null);
   const [canLoadOlderChat, setCanLoadOlderChat] = useState(true);
   const [loadingOlderChat, setLoadingOlderChat] = useState(false);

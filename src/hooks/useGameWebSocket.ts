@@ -177,6 +177,9 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
           if (msg.rollInterpolationMode === 'strict' || msg.rollInterpolationMode === 'smooth' || msg.rollInterpolationMode === 'auto') {
             onRollInterpolationMode?.(msg.rollInterpolationMode as RollInterpolationMode, msg.autoStrictRttMs as number | undefined, msg.autoStrictJitterMs as number | undefined);
           }
+          setWsConnected(true);
+          // Request full game state sync on (re)connect
+          deps.sendRef.current?.({ type: 'game_event', eventType: 'request_state' });
           // Auto-join campaign party in D1 (fire-and-forget)
           fetch(`/api/party/${encodeURIComponent(room)}/join`, {
             method: 'POST',

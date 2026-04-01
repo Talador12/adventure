@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 production hardening improvements:
+  - **Chat/log history limits** — Lobby chat capped at 300 messages, Game combat log capped at 500 entries. Auto-prunes oldest entries to prevent unbounded memory growth in long sessions.
+  - **Character creation input validation** — name length (1-50 chars), HTML tag stripping, stat clamping (1-30), personality/backstory text sanitized + length-capped. Prevents XSS and garbage data.
+  - **Chat message sanitization** — Lobby DO now strips HTML tags and caps messages at 2000 chars before broadcast.
+  - **WebSocket reconnect state sync** — client sends `request_state` game event on (re)connect to get full game state from host, improving recovery after network drops.
+  - **InitiativeBar React.memo** — wrapped in `memo()` to prevent re-renders when parent state changes but initiative data hasn't.
 - 22 new tests (136 total) covering all new systems:
   - **Weather combat effects** (6 tests): all weather types defined, ranged disadvantage for rain/fog/sandstorm, melee unaffected, snow/sandstorm movement penalty, rollD20WithProne extra disadvantage.
   - **Encumbrance system** (3 tests): carry capacity scales with STR, inventory weight sums with quantity, handles missing weights.

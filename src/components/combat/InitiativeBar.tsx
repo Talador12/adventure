@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useGame, type Unit, CONDITION_EFFECTS } from '../../contexts/GameContext';
 import { playCountdownTick } from '../../hooks/useSoundFX';
 import { characterMood } from '../../lib/characterMood';
@@ -16,7 +16,7 @@ interface InitiativeBarProps {
   onInitiativeChange?: (unitId: string, newInit: number) => void; // DM manual edit
 }
 
-export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTimeSeconds = DEFAULT_TURN_TIME, onTimerExpire, canReorder, myUnitId, onReorder, onInitiativeChange }: InitiativeBarProps) {
+function InitiativeBarInner({ entries, turnTimerEnabled = true, turnTimeSeconds = DEFAULT_TURN_TIME, onTimerExpire, canReorder, myUnitId, onReorder, onInitiativeChange }: InitiativeBarProps) {
   const { players, characters, selectedUnitId, setSelectedUnitId } = useGame();
 
   // Drag reorder state
@@ -376,3 +376,5 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
     </div>
   );
 }
+
+export default memo(InitiativeBarInner);

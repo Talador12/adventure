@@ -274,7 +274,15 @@ export default function Game() {
   const [soundVolume, setSoundVolume] = useState(getVolume());
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [activeDicePack, setActiveDicePack] = useState<DiceSoundPack>(getDiceSoundPack());
-  const [combatLog, setCombatLog] = useState<string[]>([]);
+  const MAX_LOG_ENTRIES = 500;
+  const [combatLogRaw, setCombatLogRaw] = useState<string[]>([]);
+  const combatLog = combatLogRaw;
+  const setCombatLog: typeof setCombatLogRaw = (action) => {
+    setCombatLogRaw((prev) => {
+      const next = typeof action === 'function' ? action(prev) : action;
+      return next.length > MAX_LOG_ENTRIES ? next.slice(-MAX_LOG_ENTRIES) : next;
+    });
+  };
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [initiativeHistory, setInitiativeHistory] = useState<Array<{ round: number; order: Array<{ name: string; initiative: number; hp: number; maxHp: number }> }>>([]);
   const [spellZones, setSpellZones] = useState<import('../types/game').SpellZone[]>([]);

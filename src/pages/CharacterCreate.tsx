@@ -597,11 +597,11 @@ export default function CharacterCreate() {
       appearance,
       background,
       alignment,
-      personalityTraits,
-      ideals,
-      bonds,
-      flaws,
-      backstory,
+        personalityTraits: sanitize(personalityTraits, 500),
+        ideals: sanitize(ideals, 300),
+        bonds: sanitize(bonds, 300),
+        flaws: sanitize(flaws, 300),
+        backstory: sanitize(backstory, 2000),
       appearanceDescription: (analyzeUpload && aiDescription) || undefined,
       playerId: currentPlayer.id,
       gold: 15,
@@ -666,15 +666,21 @@ export default function CharacterCreate() {
       });
       toast(`${name.trim()} updated!`, 'success');
     } else {
+      // Validate inputs before creation
+      const sanitize = (s: string, maxLen = 100) => s.replace(/<[^>]*>/g, '').trim().slice(0, maxLen);
+      const clampStat = (v: number) => Math.max(1, Math.min(30, Math.round(v)));
+      if (!name.trim() || name.trim().length < 1) { toast('Character needs a name!', 'error'); return; }
+      if (name.trim().length > 50) { toast('Name is too long (max 50 characters)', 'error'); return; }
+
       // Create mode
       const character = {
         id: crypto.randomUUID(),
-        name: name.trim(),
+        name: sanitize(name, 50),
         race,
         class: charClass,
         level: 1,
         xp: 0,
-        stats: finalStats,
+        stats: { STR: clampStat(finalStats.STR), DEX: clampStat(finalStats.DEX), CON: clampStat(finalStats.CON), INT: clampStat(finalStats.INT), WIS: clampStat(finalStats.WIS), CHA: clampStat(finalStats.CHA) },
         hp: maxHp,
         maxHp,
         ac: 10 + Math.floor((finalStats.DEX - 10) / 2),

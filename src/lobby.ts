@@ -519,8 +519,11 @@ export class Lobby {
       case 'chat': {
         const session = this.sessions.get(server);
         if (!session) return;
-        const message = (data.message as string) || '';
-        if (!message.trim()) return;
+        const rawMessage = (data.message as string) || '';
+        if (!rawMessage.trim()) return;
+        // Sanitize: strip HTML tags, cap length
+        const message = rawMessage.replace(/<[^>]*>/g, '').trim().slice(0, 2000);
+        if (!message) return;
         // Rate limit chat: max 5 messages per second
         const chatNow = Date.now();
         session.lastGameEvents = session.lastGameEvents.filter((t) => chatNow - t < RATE_LIMIT_WINDOW_MS);
