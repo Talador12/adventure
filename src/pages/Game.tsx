@@ -274,6 +274,7 @@ export default function Game() {
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [initiativeHistory, setInitiativeHistory] = useState<Array<{ round: number; order: Array<{ name: string; initiative: number; hp: number; maxHp: number }> }>>([]);
+  const [spellZones, setSpellZones] = useState<import('../types/game').SpellZone[]>([]);
   const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
     try { return localStorage.getItem('adventure:rulesReminders') !== 'off'; } catch { return true; }
   });
@@ -2696,6 +2697,7 @@ export default function Game() {
                       order: units.filter((u) => u.hp > 0).map((u) => ({ name: u.name, initiative: u.initiative, hp: u.hp, maxHp: u.maxHp })),
                     }]);
                   }}
+                  setSpellZones={setSpellZones}
                   onCombatEnd={() => {
                     const prev = preCombatAmbientRef.current;
                     if (prev && prev !== 'none' && prev !== 'combat') {

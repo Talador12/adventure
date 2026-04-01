@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 new features — terrain hazards, spell zones, NPC dialogue, level-up options, combat recap:
+  - **Terrain hazard auto-damage** — units starting their turn on lava (10 fire), acid (6 acid), or poison gas (4 poison) now take automatic damage with combat log annotations. Previously hazards were display-only.
+  - **Persistent spell zones on map** — DMs can place named spell effect zones (Wall of Fire, Darkness, Fog Cloud, Spirit Guardians, Spike Growth, Moonbeam) with configurable radius. Stored as `SpellZone` with color/opacity/damage/vision-blocking properties.
+  - **Quick NPC dialogue generator** — 💬 button per NPC in NpcTracker calls `/api/dm/npc` to generate contextual AI dialogue based on NPC name/role/disposition/location. Result appended to NPC notes.
+  - **Level-up HP roll option** — `adventure:rollHpOnLevelUp` localStorage toggle: when enabled, level-up HP uses actual die rolls instead of average (still guaranteed minimum 1).
+  - **Post-combat per-character recap** — combat end now logs damage dealt and HP lost per party member in the combat log with a `--- Combat Recap ---` section.
 - 5 QoL features:
   - **Damage resistance/vulnerability system** — Barbarian rage now grants physical damage resistance (bludgeoning/piercing/slashing). Monster templates support resistances/vulnerabilities/immunities (Skeletons vulnerable to bludgeoning, Zombies immune to poison). `damageUnit` applies half/double/zero damage with combat log annotations.
   - **Combat log export** — "Export Log" button downloads full combat log as markdown file for post-session review.

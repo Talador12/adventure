@@ -64,6 +64,7 @@ interface CombatToolbarProps {
   onCombatEnd?: () => void;
   triggerLevelUp?: (charName: string, level: number) => void;
   onNewRound?: (round: number) => void;
+  setSpellZones?: React.Dispatch<React.SetStateAction<import('../../types/game').SpellZone[]>>;
 }
 
 export default function CombatToolbar({
@@ -113,6 +114,7 @@ export default function CombatToolbar({
   onCombatEnd,
   onNewRound,
   triggerLevelUp,
+  setSpellZones,
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -1524,6 +1526,51 @@ export default function CombatToolbar({
                         </button>
                       )}
 
+                      {/* Place persistent spell zone */}
+                      {inCombat && canUseDMTools && (
+                        <button
+                          onClick={() => {
+                            const ZONE_PRESETS = [
+                              { name: 'Wall of Fire', color: 'rgba(239,68,68,0.3)', dmg: 5, dmgType: 'fire', vision: false },
+                              { name: 'Darkness', color: 'rgba(15,23,42,0.8)', dmg: 0, dmgType: '', vision: true },
+                              { name: 'Fog Cloud', color: 'rgba(148,163,184,0.5)', dmg: 0, dmgType: '', vision: true },
+                              { name: 'Spirit Guardians', color: 'rgba(250,204,21,0.2)', dmg: 3, dmgType: 'radiant', vision: false },
+                              { name: 'Spike Growth', color: 'rgba(34,197,94,0.25)', dmg: 2, dmgType: 'piercing', vision: false },
+                              { name: 'Moonbeam', color: 'rgba(147,197,253,0.3)', dmg: 4, dmgType: 'radiant', vision: false },
+                            ];
+                            const choice = window.prompt(`Place spell zone:\n${ZONE_PRESETS.map((z, i) => `${i + 1}. ${z.name}`).join('\n')}\n\nEnter number:`);
+                            if (!choice) return;
+                            const preset = ZONE_PRESETS[parseInt(choice, 10) - 1];
+                            if (!preset) return;
+                            const radius = parseInt(window.prompt(`Radius in cells (e.g. 2 = 10ft, 4 = 20ft):`) || '2', 10) || 2;
+                            const col = parseInt(window.prompt('Center column (0-based):') || '12', 10);
+                            const row = parseInt(window.prompt('Center row (0-based):') || '9', 10);
+                            const cells: Array<{ col: number; row: number }> = [];
+                            for (let r = row - radius; r <= row + radius; r++) {
+                              for (let c = col - radius; c <= col + radius; c++) {
+                                if (r >= 0 && c >= 0) cells.push({ col: c, row: r });
+                              }
+                            }
+                            const zone: import('../../types/game').SpellZone = {
+                              id: `zone-${crypto.randomUUID().slice(0, 8)}`,
+                              name: preset.name, cells, color: preset.color, opacity: 1,
+                              roundsRemaining: -1,
+                              damagePerTurn: preset.dmg || undefined,
+                              damageType: preset.dmgType || undefined,
+                              blocksVision: preset.vision,
+                            };
+                            setSpellZones?.((prev: import('../../types/game').SpellZone[]) => [...prev, zone]);
+                            const msg = `DM places ${preset.name} zone (${radius * 5}ft radius) at [${col},${row}]!`;
+                            setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                            setTimeout(broadcastCombatSyncLatest, 50);
+                          }}
+                          className="text-[9px] px-2 py-1 rounded bg-purple-900/40 border border-purple-600/40 text-purple-300 font-semibold hover:bg-purple-800/40 transition-all"
+                          title="Place a persistent spell effect zone on the battle map"
+                        >
+                          Spell Zone
+                        </button>
+                      )}
+
                       {/* Export combat log as markdown */}
                       {combatLog.length > 5 && (
                         <button
@@ -1552,6 +1599,19 @@ export default function CombatToolbar({
                             const deadEnemies = units.filter((u) => u.type === 'enemy' && u.hp <= 0);
                             const totalXP = deadEnemies.reduce((sum, e) => sum + (e.xpValue || 50 * (selectedCharacter?.level || 1)), 0);
                             const goldReward = deadEnemies.reduce((sum, e) => sum + Math.floor((e.cr || 0.25) * 30) + Math.floor(Math.random() * 20), 0);
+
+                            // Per-character combat damage recap
+                            const playerUnits = units.filter((u) => u.type === 'player');
+                            const recap: string[] = ['--- Combat Recap ---'];
+                            for (const pu of playerUnits) {
+                              const dmgDealt = combatLog.reduce((sum, l) => {
+                                const m = l.match(new RegExp(`${pu.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*for (\\d+) damage`));
+                                return sum + (m ? parseInt(m[1]) : 0);
+                              }, 0);
+                              const hpLost = pu.maxHp - pu.hp;
+                              recap.push(`${pu.name}: ${dmgDealt} dealt, ${hpLost} taken (${pu.hp}/${pu.maxHp} HP)`);
+                            }
+                            if (playerUnits.length > 0) setCombatLog((prev) => [...prev, ...recap]);
 
                             setInCombat(false);
                             onCombatEnd?.();

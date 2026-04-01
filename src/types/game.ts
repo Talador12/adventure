@@ -172,6 +172,20 @@ export interface Unit {
   deathSaves?: { successes: number; failures: number };
 }
 
+// Persistent spell effect zones on the battle map
+export interface SpellZone {
+  id: string;
+  name: string;              // "Wall of Fire", "Darkness", "Fog Cloud"
+  cells: Array<{ col: number; row: number }>;
+  color: string;             // CSS color for overlay
+  opacity: number;           // 0-1
+  roundsRemaining: number;   // -1 = until dismissed
+  damagePerTurn?: number;    // damage dealt to units starting turn in zone
+  damageType?: string;
+  blocksVision?: boolean;    // Darkness, Fog Cloud
+  casterId?: string;         // unit ID of caster (for concentration tracking)
+}
+
 export interface LairAction {
   name: string;
   description: string;

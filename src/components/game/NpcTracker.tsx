@@ -250,6 +250,31 @@ export default function NpcTracker({ roomId, isDM, partyNames = [], onBroadcast,
                   <div className="flex items-center gap-2">
                     <span className={`text-sm font-bold ${!npc.alive ? 'text-red-500 line-through' : 'text-slate-200'}`}>{npc.name}</span>
                     {!npc.alive && <span className="text-[8px] text-red-600 uppercase font-bold">Dead</span>}
+                    {isDM && npc.alive && (
+                      <button
+                        onClick={async (e) => {
+                          const btn = e.currentTarget;
+                          btn.disabled = true;
+                          btn.textContent = '...';
+                          try {
+                            const res = await fetch('/api/dm/npc', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ npcName: npc.name, npcRole: npc.role || 'NPC', context: `Disposition: ${DISPOSITION_LABELS[npc.disposition as keyof typeof DISPOSITION_LABELS]?.label || 'neutral'}. Location: ${npc.location || 'unknown'}. ${npc.notes || ''}`, history: [] }),
+                            });
+                            const data = await res.json() as { dialogue?: string };
+                            if (data.dialogue) {
+                              onBroadcast?.({ type: 'npc_sync', npcs: npcs.map((n) => n.id === npc.id ? { ...n, notes: `${n.notes ? n.notes + '\n' : ''}[${npc.name}]: "${data.dialogue}"` } : n) });
+                              updateNpc(npc.id, { notes: `${npc.notes ? npc.notes + '\n' : ''}[${npc.name}]: "${data.dialogue}"` });
+                            }
+                          } catch { /* ok */ }
+                          btn.disabled = false;
+                          btn.textContent = '💬';
+                        }}
+                        className="text-[10px] text-slate-500 hover:text-[#F38020] transition-colors"
+                        title={`Generate AI dialogue for ${npc.name}`}
+                      >💬</button>
+                    )}
                   </div>
                   {npc.role && <div className="text-[10px] text-slate-500 italic">{npc.role}</div>}
                 </div>

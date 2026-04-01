@@ -10,7 +10,7 @@
 // Everything is re-exported here for backward compatibility.
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
+import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, HAZARD_DAMAGE } from '../lib/mapUtils';
 
 // Re-export all types and constants so existing imports from GameContext keep working
 export * from '../types/game';
@@ -439,7 +439,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
             return sum + (f?.maxHpPerLevel || 0);
           }, 0);
           const levelsGained = level - c.level;
-          const hpGain = ((HIT_DIE_AVG[c.class] || 5) + conMod + featHpPerLevel) * levelsGained;
+          // HP on level up: roll or average (configurable via localStorage)
+          const rollHpOnLevelUp = (() => { try { return localStorage.getItem('adventure:rollHpOnLevelUp') === '1'; } catch { return false; } })();
+          let hpGain = 0;
+          for (let i = 0; i < levelsGained; i++) {
+            const sides = HIT_DIE_SIDES[c.class] || 8;
+            const hitDieRoll = rollHpOnLevelUp ? Math.max(1, Math.floor(Math.random() * sides) + 1) : (HIT_DIE_AVG[c.class] || 5);
+            hpGain += hitDieRoll + conMod + featHpPerLevel;
+          }
           const newMaxHp = c.maxHp + hpGain;
           const hdRemaining = (c.hitDiceRemaining ?? c.level) + levelsGained; // gain hit dice on level up
           return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp, hitDiceRemaining: hdRemaining }; // full heal on level up
@@ -1377,6 +1384,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
       cleared[nextIdx].bonusActionUsed = false; // reset bonus action for new turn
       cleared[nextIdx].disengaged = false; // reset disengage for new turn
       cleared[nextIdx].readiedAction = undefined; // readied actions expire on your next turn
+
+      // Hazard terrain damage: if the unit starts their turn on hazardous terrain, take damage
+      const unitPos = mapPositions.find((p) => p.unitId === cleared[nextIdx].id);
+      if (unitPos && cleared[nextIdx].hp > 0) {
+        const cellType = terrain[unitPos.row]?.[unitPos.col];
+        const hazard = cellType ? HAZARD_DAMAGE[cellType] : undefined;
+        if (hazard && hazard.damage > 0) {
+          cleared[nextIdx].hp = Math.max(0, cleared[nextIdx].hp - hazard.damage);
+          concentrationBreakMessages.current.push(`${cleared[nextIdx].name} takes ${hazard.damage} ${hazard.type} damage from ${cellType}!`);
+        }
+      }
 
       // Death save automation: if the unit starting their turn is unconscious (0 HP), roll a death save
       if (cleared[nextIdx].hp === 0 && cleared[nextIdx].type === 'player' && cleared[nextIdx].characterId) {
