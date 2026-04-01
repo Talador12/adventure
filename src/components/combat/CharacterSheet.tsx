@@ -842,7 +842,9 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         )}
         {!showSkills && (
           <div className="text-[9px] text-slate-600">
-            Passive Perception: {10 + Math.floor((character.stats.WIS - 10) / 2) + ((CLASS_SKILL_PROFICIENCIES[character.class] || []).includes('Perception') ? prof : 0)}
+            Passive Perception: {10 + Math.floor((character.stats.WIS - 10) / 2) + ((character.skillProficiencies || []).includes('Perception') ? prof : 0)} |
+            Passive Insight: {10 + Math.floor((character.stats.WIS - 10) / 2) + ((character.skillProficiencies || []).includes('Insight') ? prof : 0)} |
+            Passive Investigation: {10 + Math.floor((character.stats.INT - 10) / 2) + ((character.skillProficiencies || []).includes('Investigation') ? prof : 0)}
           </div>
         )}
       </div>

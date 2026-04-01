@@ -250,6 +250,23 @@ export default function DMSidebar({
         {/* Encounter tab */}
         {dmSidebarTab === 'encounter' && (
           <>
+            {/* Tavern Rumors */}
+            <button
+              onClick={async () => {
+                const { rollRumors } = await import('../../data/tavernRumors');
+                const rumors = rollRumors(3);
+                const lines = rumors.map((r) => {
+                  const tag = r.type === 'helpful' ? '✅' : r.type === 'misleading' ? '⚠️' : r.type === 'ominous' ? '💀' : '😄';
+                  return `${tag} ${r.text}${r.questHook ? ' *(quest hook)*' : ''}`;
+                });
+                onAddDmMessage(`🍺 **Tavern Rumors:**\n${lines.join('\n')}`);
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Roll 3 tavern rumors — mix of helpful, misleading, ominous, and humorous"
+            >
+              Roll Tavern Rumors
+            </button>
+
             {/* Generate Backstory Plot Hooks */}
             <button
               onClick={async () => {

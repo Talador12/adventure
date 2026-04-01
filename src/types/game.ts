@@ -411,6 +411,9 @@ export interface Item {
   fuelMax?: number;                 // max fuel charges (e.g. lantern = 60 turns = 6 hours at 6s/turn)
   fuelRemaining?: number;           // current fuel charges remaining
   weight?: number;                  // weight in pounds (D&D 5e standard)
+  requiresAttunement?: boolean;      // D&D 5e: max 3 attuned items per character
+  attuned?: boolean;                 // currently attuned by the owning character
+  identified?: boolean;              // false = unidentified magic item (needs Arcana check)
 }
 
 // Encumbrance system — D&D 5e variant rule
@@ -592,6 +595,7 @@ export interface Character {
   sorceryPointsUsed?: number;      // Sorcerer: spent points this rest
   arcaneRecoveryUsed?: boolean;    // Wizard: used Arcane Recovery this rest
   spellSlots?: Record<number, number>; // precomputed spell slots by level
+  attunedItemIds?: string[];         // max 3 attuned magic item IDs
   createdAt: number;
 }
 

@@ -459,7 +459,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Rest: short rest heals hit die + CON, long rest fully heals + resets death saves + clears conditions
   // Both rest types reset class abilities based on the ability's resetsOn property
-  const restCharacter = useCallback((id: string, type: 'short' | 'long') => {
+  const restCharacter = useCallback((id: string, type: 'short' | 'long', hitDiceToSpend?: number) => {
     setCharacters((prev) =>
       prev.map((c) => {
         if (c.id !== id) return c;
@@ -472,12 +472,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
           const newExhaustion = Math.max(0, (c.exhaustion ?? 0) - 1);
           return { ...c, hp: c.maxHp, hitDiceRemaining: Math.min(c.level, hdRemaining + restoreHd), deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as Condition, spellSlotsUsed: {}, classAbilityUsed: false, exhaustion: newExhaustion, arcaneRecoveryUsed: false, sorceryPointsUsed: 0 };
         }
-        // Short rest: spend 1 hit die (roll actual die + CON mod)
-        if (hdRemaining <= 0) return c; // no hit dice left
+        // Short rest: spend hit dice (roll actual die + CON mod per die spent)
+        const diceToSpend = Math.min(hitDiceToSpend ?? 1, hdRemaining);
+        if (diceToSpend <= 0) return c; // no hit dice left
         const conMod = Math.floor((c.stats.CON - 10) / 2);
         const sides = HIT_DIE_SIDES[c.class] || 8;
-        const roll = Math.floor(Math.random() * sides) + 1;
-        const heal = Math.max(1, roll + conMod);
+        let heal = 0;
+        for (let i = 0; i < diceToSpend; i++) {
+          const roll = Math.floor(Math.random() * sides) + 1;
+          heal += Math.max(1, roll + conMod);
+        }
         // Warlock: pact magic slots recover on short rest
         // Wizard: Arcane Recovery — recover spell slots worth up to half wizard level (rounded up)
         let resetSlots = c.spellSlotsUsed;
@@ -498,7 +502,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           }
           if (recovered > 0) resetSlots = newUsed;
         }
-        return { ...c, hp: Math.min(c.maxHp, c.hp + heal), hitDiceRemaining: hdRemaining - 1, condition: c.hp > 0 ? ('normal' as Condition) : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed, spellSlotsUsed: resetSlots || c.spellSlotsUsed, arcaneRecoveryUsed: c.class === 'Wizard' ? true : c.arcaneRecoveryUsed, sorceryPointsUsed: c.class === 'Sorcerer' ? 0 : c.sorceryPointsUsed };
+        return { ...c, hp: Math.min(c.maxHp, c.hp + heal), hitDiceRemaining: hdRemaining - diceToSpend, condition: c.hp > 0 ? ('normal' as Condition) : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed, spellSlotsUsed: resetSlots || c.spellSlotsUsed, arcaneRecoveryUsed: c.class === 'Wizard' ? true : c.arcaneRecoveryUsed, sorceryPointsUsed: c.class === 'Sorcerer' ? 0 : c.sorceryPointsUsed };
       })
     );
     // Long rest also clears all combat conditions on the player's unit

@@ -103,6 +103,8 @@ export function rollTreasureHoard(partyLevel: number): HoardResult {
       damageBonus: entry.damageBonus,
       healAmount: entry.healAmount,
       quantity: 1,
+      requiresAttunement: ['rare', 'epic'].includes(entry.rarity),
+      identified: false, // unidentified until Arcana check
     });
   }
 

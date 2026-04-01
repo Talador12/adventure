@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 core D&D mechanics — attunement, hit dice, passive skills, rumors, identification:
+  - **Magic item attunement** — `requiresAttunement` + `attuned` fields on Item, `attunedItemIds` on Character (max 3). Treasure hoard items now generate with attunement requirement for rare+ items.
+  - **Hit dice spending on short rest** — `restCharacter` now accepts `hitDiceToSpend` parameter, allowing multiple dice to be spent per short rest (each rolled individually + CON mod).
+  - **Passive skills display** — CharacterSheet now shows Passive Perception, Passive Insight, and Passive Investigation (10 + ability mod + proficiency if proficient).
+  - **Tavern rumor table** — `tavernRumors.ts` with 18 rumors across 4 categories (helpful/misleading/ominous/humorous), some flagged as quest hooks. "Roll Tavern Rumors" DM button generates 3 random rumors.
+  - **Magic item identification** — treasure hoard items now spawn unidentified (`identified: false`). Arcana check system planned for next pass.
 - 5 UX polish + code quality features:
   - **Condition rules reference** — `conditionRules.ts` with full D&D 5e rules text for all 21+ conditions. Quick-stats bar condition badges now show complete rules text with source and duration on hover (`cursor-help`).
   - **DM quick-reference panel** — `DMQuickRef` component: modal overlay with Difficulty Classes, Actions in Combat, Cover rules, Conditions, and Damage Types. One-click "Quick Ref" button accessible during game.
