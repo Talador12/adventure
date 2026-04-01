@@ -41,7 +41,7 @@ export default function Lobby() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentPlayer, characters } = useGame();
+  const { currentPlayer, characters, addCharacter } = useGame();
   const room = roomId || 'default';
   const roomLink = `${window.location.origin}/lobby/${room}`;
   const wantsSpectate = searchParams.get('spectate') === '1';
@@ -1435,13 +1435,41 @@ export default function Lobby() {
                 {/* Spectate / Join Seat toggle */}
                 {!isDM && (
                   isSpectating ? (
-                    <button
-                      onClick={() => send({ type: 'claim_seat' })}
-                      className="text-[10px] px-2.5 py-1 rounded bg-emerald-900/30 hover:bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 font-semibold transition-all shrink-0"
-                      title="Join an empty seat"
-                    >
-                      Join a Seat
-                    </button>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => send({ type: 'claim_seat' })}
+                        className="text-[10px] px-2.5 py-1 rounded bg-emerald-900/30 hover:bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 font-semibold transition-all shrink-0"
+                        title="Join an empty seat"
+                      >
+                        Join a Seat
+                      </button>
+                      <button
+                        onClick={() => {
+                          const name = window.prompt('Quick character name:', `Guest ${Math.floor(Math.random() * 999)}`);
+                          if (!name?.trim()) return;
+                          const guestChar = {
+                            id: `guest-${crypto.randomUUID().slice(0, 8)}`,
+                            name: name.trim(),
+                            race: 'Human' as const,
+                            class: 'Fighter' as const,
+                            level: 1,
+                            stats: { STR: 14, DEX: 12, CON: 13, INT: 10, WIS: 11, CHA: 10 },
+                            hp: 12, maxHp: 12, xp: 0, gold: 15,
+                            background: 'Guest Adventurer',
+                            alignment: 'Neutral',
+                            equipment: {},
+                            inventory: [],
+                            appearance: {},
+                          };
+                          addCharacter(guestChar);
+                          send({ type: 'claim_seat' });
+                        }}
+                        className="text-[10px] px-2.5 py-1 rounded bg-teal-900/30 hover:bg-teal-900/50 border border-teal-700/40 text-teal-400 font-semibold transition-all shrink-0"
+                        title="Create a quick guest Fighter and join"
+                      >
+                        Quick Join
+                      </button>
+                    </div>
                   ) : mySeatId ? (
                     <button
                       onClick={() => send({ type: 'spectate' })}

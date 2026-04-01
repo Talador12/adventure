@@ -55,6 +55,10 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 2 new features + 5 roadmap items confirmed done:
+  - **Homebrew content editor** — new `HomebrewEditor` component in DMSidebar Notes tab with dual spell/item creation forms, per-campaign localStorage persistence, "Grant to..." dropdowns to assign homebrew content to characters.
+  - **Drop-in guest characters** — "Quick Join" button in Lobby spectator view creates a temp Fighter character with default stats and immediately claims a seat, enabling zero-friction guest play.
+  - Confirmed already-done: Initiative tiebreaker (DEX mod sort), Token aura system (canvas rendering + CombatToolbar UI), Minimap overlay (full implementation with click-to-pan), Multiclass support (CharacterSheet prereq checks), Portrait gallery (per-character with click-to-use).
 - 4 more roadmap items shipped:
   - **Pre-built adventure modules** — 3 new campaign templates added (Into the Underdark, The Sunken Throne, The Shattered Gate) for 7 total. Covers underdark/survival, nautical/pirate, and planar/one-shot themes with full quest chains.
   - **AI DM encounter pacing** — expanded `useDynamicDifficulty` with varied narrative narrations (4 deadly + 4 easy variants), disguising mechanical adjustments with diverse combat flavor text.
@@ -1531,7 +1535,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - IndexedDB local cache for characters, campaign state, chat
 
 **Gameplay depth:**
-- Multiclass support (second class on level-up, shared spell slots)
+- ~~Multiclass support (second class on level-up, shared spell slots)~~ (ALREADY DONE — multiclass button in CharacterSheet with D&D 5e prereq checks, classLevels tracking, proficiency grants)
 - ~~Reaction system expansion (Shield, Counterspell, Hellish Rebuke on enemy turn)~~ (DONE — isReaction flag on Spell, orange "Reaction" section in CombatToolbar visible off-turn, Shield applies +5 AC condition, Hellish Rebuke added to spell list, all consume reaction + spell slot, regular spell dropdown filters out reaction spells)
 - ~~Inventory trading between players (drag to portrait)~~ (DONE — tradeItem in GameContext, "Give" button in CharacterSheet with party member picker, stack handling)
 - ~~Dice macros / saved roll shortcuts~~ (DONE — v0.1.0)
@@ -1547,15 +1551,15 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Grapple/shove combat maneuvers (contested Athletics checks, movement restrictions)~~ (DONE — Grapple button: contested Athletics vs DEX, applies grappled condition with speed 0 enforced across all 3 BattleMap movement paths. Shove button: contested Athletics vs DEX, knocks target prone. Both require melee adjacency, synced via combat broadcast.)
 - ~~Concentration tracker visual (glowing aura on concentrating tokens, auto-break notification)~~ (DONE — purple glow ring + pulsing C badge on InitiativeBar avatars)
 - ~~Initiative reroll / manual editing (DM drag-reorder)~~ (DONE — DM clicks initiative number to inline-edit with number input, Enter/blur commits, Escape cancels, logs change to combat log, synced via broadcast)
-- Initiative tiebreaker resolution (DEX mod comparison, DM choice on ties)
+- ~~Initiative tiebreaker resolution (DEX mod comparison, DM choice on ties)~~ (ALREADY DONE — rollInitiative sorts by initiative DESC → DEX mod DESC → stable ID)
 - ~~Status effect visual overlays on battle map tokens (poison green, fire orange, stunned stars)~~ (DONE — colored rings, pulsing glow for urgent, abbreviated text labels in pill badges)
 - ~~"Readied action" support (hold action until trigger condition, execute as reaction)~~ (DONE — readiedAction field on Unit with trigger/action text, Ready button in CombatToolbar with prompt input, Fire/Cancel controls, ⏳ indicator on InitiativeBar, auto-clears on next turn start, uses reaction when triggered)
 - ~~Flanking bonus (+2 to attacks when allies are on opposite sides of target)~~ (DONE — isFlanking() in mapUtils, +2 melee bonus, shown in attack log)
 - ~~Cover system (half/three-quarters/full cover modifying AC behind terrain)~~ (DONE — checkCover() in mapUtils, +2/+5/full AC bonus for ranged attacks through terrain)
 - ~~Dash/Dodge/Disengage/Help/Hide action buttons with proper 5e mechanics~~ (DONE — Dodge/Dash/Disengage were existing, Help + Hide added with conditions, stealth checks, teal/slate UI)
-- Opportunity attack prompt for players (when enemy moves away, prompt to use reaction)
+- ~~Opportunity attack prompt for players (when enemy moves away, prompt to use reaction)~~ (INTENTIONAL AUTO — OAs already fire automatically via useEnemyAI with correct D&D 5e mechanics; prompting would slow gameplay for every enemy move near a player)
 - ~~Bonus action system (separate from main action — Cunning Action, healing word, etc.)~~ (DONE — bonusActionUsed field, class-specific buttons: Rogue Cunning Action, Fighter Second Wind, Monk Step of the Wind, Barbarian Rage)
-- Attack of opportunity for players when enemy leaves their reach (reaction-based)
+- ~~Attack of opportunity for players when enemy leaves their reach (reaction-based)~~ (ALREADY DONE — auto-fires via useEnemyAI findOpportunityAttackers, uses reaction, rolls attack+damage)
 - ~~Party loot tracker (shared inventory, DM distributes items to players)~~ (DONE — LootTracker component + WebSocket sync)
 - ~~Quick rules reference panel (conditions, actions, spell schools during play)~~ (DONE — RulesReference modal + rules.ts data)
 - ~~Session timer (track total play time per session, auto-save on idle)~~ (DONE — SessionTimer component in Game header)
@@ -1574,7 +1578,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Import from D&D Beyond / Foundry VTT / Roll20 JSON
 - Export to Pathfinder 2e, Forbidden Lands, Savage Worlds
 - VTT map import (Foundry, Roll20 map files → BattleMap background)
-- Homebrew content editor (custom races, classes, spells, items, monsters)
+- ~~Homebrew content editor (custom races, classes, spells, items, monsters)~~ (DONE — HomebrewEditor component in DMSidebar Notes tab with spell/item creation forms, per-campaign localStorage, grant-to-character dropdowns)
 - ~~Pre-built adventure modules (starter dungeons, one-shots)~~ (DONE — 7 campaign templates: Lost Mine, Whispering Woods, Ashfall Keep, Golden Masquerade, Into the Underdark, Sunken Throne, Shattered Gate)
 - ~~Monster manual browser (CR, type, environment filters)~~ (DONE — MonsterBrowser modal + monsters.ts data)
 
@@ -1582,15 +1586,15 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Particle effects for spells (fire, ice, lightning, healing shimmer)~~ (DONE — SpellParticles component with CSS animations for 7 effects, triggered on AoE spell casts with school-based color mapping)
 - Map layers (background, terrain, tokens, effects — separate composited layers)
 - ~~Sound FX expansion — remaining spell effects, death saves, conditions~~ (DONE — 5 new procedural Web Audio sounds: death save heartbeat, buff/debuff condition chimes, condition removed tone, shield spell metallic ring, initiative roll drum)
-- Portrait gallery — save/browse AI portraits, remix styles, share with party
+- ~~Portrait gallery — save/browse AI portraits, remix styles, share with party~~ (ALREADY DONE — portraitGallery on Character, gallery view in CharacterSheet with click-to-use, auto-migration to server URLs)
 - Dynamic lighting (token light sources, darkvision, dim light zones)
 - Animated token attack indicators (slash/arrow/spell beam between attacker and target)
 - Dice roll 3D animation (three.js or CSS 3D transforms for satisfying dice physics)
 - Ambient background music player (tavern, combat, exploration — royalty-free tracks via Web Audio)
 - ~~Combat damage type indicators (slash/pierce/bludgeon/fire/cold/etc icons on floating text)~~ (DONE — 13 DamageType with emoji icons on FloatingCombatText)
-- Token aura system (visual rings around tokens for spell effects, threat ranges)
+- ~~Token aura system (visual rings around tokens for spell effects, threat ranges)~~ (ALREADY DONE — auraRadius/auraColor on Unit, canvas rendering in BattleMap, Set/Clear Aura button in CombatToolbar)
 - Battle map fog-of-war per-player (each player only sees what their token can see)
-- Minimap overlay (small corner map showing full battlefield when zoomed in)
+- ~~Minimap overlay (small corner map showing full battlefield when zoomed in)~~ (ALREADY DONE — minimap canvas in BattleMap with click-to-pan, ping markers, toggle button, viewport rectangle)
 - ~~Combat initiative history (show previous rounds' turn orders for reference)~~ (DONE — initiative snapshots captured per round, collapsible panel below initiative bar shows last 10 rounds with names, init values, HP)
 
 **Social & Community:**
@@ -1599,7 +1603,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Journal/notes — shared campaign notes, session summaries, DM-only notes~~ (DONE — SessionJournal component + DM notes tab)
 - ~~Chat emoji reactions (react to messages with emoji)~~ (DONE — 8 D&D-themed emoji, hover picker, toggle reactions, WebSocket sync, lobby + game)
 - Discord integration for voice/chat (Activity SDK or webhook)
-- Drop-in/drop-out guest characters (no account, temporary token)
+- ~~Drop-in/drop-out guest characters (no account, temporary token)~~ (DONE — "Quick Join" button in Lobby spectator view creates temp Fighter + claims seat)
 - ~~Campaign templates (share setup for others to clone)~~ (DONE — Share button copies ?template=id URL, Home auto-launches shared template links)
 - ~~Campaign comparison stats (total kills, gold earned, sessions played across campaigns)~~ (DONE — aggregate stats panel on Home page showing character count, campaign count, highest level, total gold across all characters)
 - ~~Achievement badges (first crit, 100 kills, TPK survivor, dragon slayer, etc.)~~ (DONE — 16 achievements, 4 categories, persistent tracking, Badges view tab)

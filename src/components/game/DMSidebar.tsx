@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/GameContext';
 import type { EncounterTemplate } from '../../types/game';
+import HomebrewEditor from './HomebrewEditor';
 import SessionTimer from './SessionTimer';
 import { randomFantasyName } from '../../lib/names';
 import { setAmbientMood, AMBIENT_MOODS, type AmbientMood, mixerAddChannel, mixerRemoveChannel, mixerSetVolume, mixerGetChannels, mixerStopAll } from '../../hooks/useSoundFX';
@@ -701,6 +702,12 @@ export default function DMSidebar({
         {/* Notes tab */}
         {dmSidebarTab === 'notes' && (
           <>
+            {/* Homebrew Content Editor */}
+            <div className="space-y-1.5 mb-3">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Homebrew Content</label>
+              <HomebrewEditor roomId={roomId} />
+            </div>
+
             {/* DM Session Notes — cloud-saved freeform notes */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
