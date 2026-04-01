@@ -55,6 +55,8 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added Paladin Divine Smite + Bard Bardic Inspiration bonus actions — Paladin gets toggleable "Divine Smite" that auto-applies +2d8 radiant on next melee hit (consumes lowest spell slot, doubles on crit, new `smiteArmed` condition). Bard gets "Bardic Inspiration" that grants scaling inspiration die (d6/d8/d10/d12) to an ally, once per short rest.
+- DM initiative manual editing — DMs can now click any initiative number on InitiativeBar to inline-edit it with a number input. Enter/blur commits, Escape cancels, changes synced via combat broadcast and logged.
 - Expanded keyboard shortcuts overlay from 10 items to 28 — now organized into 4 sections (General, Views, Combat, Battle Map) matching all actual Game.tsx key handlers, so players can discover shortcuts they didn't know existed.
 - Added test coverage for new combat mechanics — 10 new tests covering all 18 condition types (including grappled), effectiveAC with conditions, reaction spell isReaction flag + class filtering, Hellish Rebuke availability, Shield properties, bonusActionUsed/readiedAction Unit fields, grappled speed-0 enforcement (114 total, up from 104).
 - Added grapple/shove combat maneuvers — Grapple: contested Athletics check, applies `grappled` condition (new) with speed 0 enforced across all BattleMap movement paths. Shove: contested Athletics check, knocks target prone. Both require melee adjacency and are rose/amber themed.
@@ -1521,7 +1523,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Reaction system expansion (Shield, Counterspell, Hellish Rebuke on enemy turn)~~ (DONE — isReaction flag on Spell, orange "Reaction" section in CombatToolbar visible off-turn, Shield applies +5 AC condition, Hellish Rebuke added to spell list, all consume reaction + spell slot, regular spell dropdown filters out reaction spells)
 - ~~Inventory trading between players (drag to portrait)~~ (DONE — tradeItem in GameContext, "Give" button in CharacterSheet with party member picker, stack handling)
 - ~~Dice macros / saved roll shortcuts~~ (DONE — v0.1.0)
-- Initiative reroll / manual editing (DM drag-reorder)
+- ~~Initiative reroll / manual editing (DM drag-reorder)~~ (DONE — drag-reorder was existing, manual initiative editing added via inline click-to-edit on InitiativeBar)
 - ~~Weather/lighting effects on battle map (rain, fog, darkness, torch light)~~ (DONE — weather overlays + DM selector + WebSocket sync)
 - ~~Random encounter tables (per biome/dungeon level, auto-roll between rests)~~ (DONE — 8 biomes, weighted tables, DMSidebar UI)
 - ~~Downtime activities (crafting, research, carousing)~~ (DONE — 6 activities with ability checks, gold/XP rewards, DMSidebar integration)
@@ -1532,6 +1534,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Legendary actions (boss enemies get extra actions between player turns)~~ (DONE — Unit fields, Adult Dragon 3 + Mind Flayer 2 legendary abilities, useEnemyAI between-turn effect, InitiativeBar indicator)
 - ~~Grapple/shove combat maneuvers (contested Athletics checks, movement restrictions)~~ (DONE — Grapple button: contested Athletics vs DEX, applies grappled condition with speed 0 enforced across all 3 BattleMap movement paths. Shove button: contested Athletics vs DEX, knocks target prone. Both require melee adjacency, synced via combat broadcast.)
 - ~~Concentration tracker visual (glowing aura on concentrating tokens, auto-break notification)~~ (DONE — purple glow ring + pulsing C badge on InitiativeBar avatars)
+- ~~Initiative reroll / manual editing (DM drag-reorder)~~ (DONE — DM clicks initiative number to inline-edit with number input, Enter/blur commits, Escape cancels, logs change to combat log, synced via broadcast)
 - Initiative tiebreaker resolution (DEX mod comparison, DM choice on ties)
 - ~~Status effect visual overlays on battle map tokens (poison green, fire orange, stunned stars)~~ (DONE — colored rings, pulsing glow for urgent, abbreviated text labels in pill badges)
 - ~~"Readied action" support (hold action until trigger condition, execute as reaction)~~ (DONE — readiedAction field on Unit with trigger/action text, Ready button in CombatToolbar with prompt input, Fire/Cancel controls, ⏳ indicator on InitiativeBar, auto-clears on next turn start, uses reaction when triggered)

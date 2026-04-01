@@ -415,7 +415,7 @@ describe('XP and leveling', () => {
 // ---------------------------------------------------------------------------
 describe('conditions', () => {
   it('all condition types have effects defined', () => {
-    const types = ['poisoned', 'stunned', 'frightened', 'blessed', 'hexed', 'burning', 'prone', 'dodging', 'raging', 'inspired', 'helping', 'hidden', 'grappled', 'torchlit', 'darkvision', 'candlelit', 'lantern', 'daylight'];
+    const types = ['poisoned', 'stunned', 'frightened', 'blessed', 'hexed', 'burning', 'prone', 'dodging', 'raging', 'inspired', 'helping', 'hidden', 'grappled', 'smiteArmed', 'torchlit', 'darkvision', 'candlelit', 'lantern', 'daylight'];
     for (const t of types) {
       expect(CONDITION_EFFECTS[t]).toBeDefined();
       expect(CONDITION_EFFECTS[t].description).toBeTruthy();

@@ -2344,6 +2344,12 @@ export default function Game() {
                   setTimeout(broadcastCombatSyncLatest, 50);
                   setCombatLog((prev) => [...prev, 'DM reordered initiative.']);
                 }}
+                onInitiativeChange={canUseDMTools && inCombat ? (unitId, newInit) => {
+                  const unit = units.find((u) => u.id === unitId);
+                  setUnits((prev: Unit[]) => prev.map((u) => u.id === unitId ? { ...u, initiative: newInit } : u));
+                  setTimeout(broadcastCombatSyncLatest, 50);
+                  setCombatLog((prev) => [...prev, `DM set ${unit?.name || 'unit'}'s initiative to ${newInit}.`]);
+                } : undefined}
               />
               {/* Initiative lock toggle (DM only, during combat) */}
               {canUseDMTools && inCombat && (

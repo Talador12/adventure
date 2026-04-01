@@ -388,7 +388,23 @@ export default function CombatToolbar({
 
                                   if (isHit) {
                                     const baseDmg = rollSpellDamage(weaponDie);
-                                    const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus : baseDmg + statMod + weaponDmgBonus + featDmgBonus);
+                                    let smiteDmg = 0;
+                                    // Divine Smite: auto-trigger on melee hit for Paladins with smite armed
+                                    if (isMeleeAttack && selectedCharacter.class === 'Paladin' && playerUnit?.conditions?.some((c) => c.type === 'smiteArmed')) {
+                                      smiteDmg = rollSpellDamage('2d8');
+                                      if (isCrit) smiteDmg *= 2;
+                                      // Spend lowest available spell slot
+                                      const slots = getSpellSlots(selectedCharacter.class, selectedCharacter.level);
+                                      const used = selectedCharacter.spellSlotsUsed || {};
+                                      for (const lvl of Object.keys(slots).map(Number).sort((a, b) => a - b)) {
+                                        if ((used[lvl] || 0) < (slots[lvl] || 0)) {
+                                          castSpell(selectedCharacter.id, 'divine-smite-spell', undefined);
+                                          break;
+                                        }
+                                      }
+                                      removeCondition(playerUnit.id, 'smiteArmed');
+                                    }
+                                    const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus + smiteDmg : baseDmg + statMod + weaponDmgBonus + featDmgBonus + smiteDmg);
                                     totalDamageDealt += finalDmg;
                                     damageUnit(target.id, finalDmg);
                                     recordDamage?.(target.id, selectedCharacter?.name || 'Unknown', finalDmg);
@@ -402,7 +418,8 @@ export default function CombatToolbar({
                                       if (targetPos) addFlytext?.(targetPos.col, targetPos.row, String(finalDmg), 'damage', 20, 20);
                                     }
                                     const flavor = isCrit ? critFlavor() : hitFlavor();
-                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage! ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage. ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}`;
+                                    const smiteTag = smiteDmg > 0 ? ` [+${smiteDmg} radiant smite]` : '';
+                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage!${smiteTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage.${smiteTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, logMsg]);
                                     addDmMessage(logMsg);
                                   } else {
@@ -1032,6 +1049,72 @@ export default function CombatToolbar({
                               }}
                               className="flex items-center gap-1 px-2 py-1 border border-violet-600/50 bg-violet-900/30 text-violet-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-800/40"
                             >⚡ Step of Wind</button>
+                          );
+                        }
+
+                        // Paladin: Divine Smite toggle (auto-applies 2d8 radiant on next melee hit, spends spell slot)
+                        if (charClass === 'Paladin') {
+                          const smiteActive = playerUnit.conditions?.some((c) => c.type === 'smiteArmed');
+                          const spellSlots = getSpellSlots(selectedCharacter.class, selectedCharacter.level);
+                          const usedSlots = selectedCharacter.spellSlotsUsed || {};
+                          const hasSlot = Object.entries(spellSlots).some(([lvl, max]) => (usedSlots[Number(lvl)] || 0) < max);
+                          bonusButtons.push(
+                            <button
+                              key="divine-smite"
+                              disabled={!isPlayerTurn || (bonusUsed && !smiteActive) || (!hasSlot && !smiteActive)}
+                              title={smiteActive ? 'Cancel Divine Smite' : !hasSlot ? 'No spell slots remaining' : 'Arm Divine Smite — next melee hit adds 2d8 radiant + spends a spell slot'}
+                              onClick={() => {
+                                if (smiteActive) {
+                                  removeCondition(playerUnit.id, 'smiteArmed');
+                                  const msg = `${selectedCharacter.name} lowers their divine power.`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                } else {
+                                  applyCondition(playerUnit.id, { type: 'smiteArmed', duration: 1, source: 'Divine Smite' });
+                                  const msg = `${selectedCharacter.name} channels divine energy into their weapon! (Divine Smite armed)`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                }
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className={`flex items-center gap-1 px-2 py-1 border text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                                smiteActive
+                                  ? 'border-amber-500/70 bg-amber-800/40 text-amber-200'
+                                  : 'border-amber-600/50 bg-amber-900/30 text-amber-300 hover:bg-amber-800/40'
+                              }`}
+                            >{smiteActive ? '⚡ Smite ON' : '⚡ Divine Smite'}</button>
+                          );
+                        }
+
+                        // Bard: Bardic Inspiration (bonus action, grant d6 to ally)
+                        if (charClass === 'Bard') {
+                          const usedInspiration = playerUnit.conditions?.some((c) => c.type === 'inspired' && c.source === 'Bardic Inspiration Cooldown');
+                          const inspirationDie = selectedCharacter.level >= 15 ? 'd12' : selectedCharacter.level >= 10 ? 'd10' : selectedCharacter.level >= 5 ? 'd8' : 'd6';
+                          bonusButtons.push(
+                            <button
+                              key="bardic-inspiration"
+                              disabled={!isPlayerTurn || bonusUsed || !!usedInspiration}
+                              title={usedInspiration ? 'Bardic Inspiration already used (resets on short rest)' : bonusUsed ? 'Bonus action already used' : `Bardic Inspiration: Grant a ${inspirationDie} to an ally's next roll`}
+                              onClick={() => {
+                                const allies = units.filter((u) => u.type === 'player' && u.hp > 0 && u.id !== playerUnit.id);
+                                if (allies.length === 0) {
+                                  setShopMessage('No allies to inspire!');
+                                  setTimeout(() => setShopMessage(null), 2500);
+                                  return;
+                                }
+                                const allyNames = allies.map((a) => a.name);
+                                const choice = allies.length === 1 ? allies[0] : (() => {
+                                  const idx = window.prompt(`Choose ally to inspire:\n${allyNames.map((n, i) => `${i + 1}. ${n}`).join('\n')}`);
+                                  if (!idx) return null;
+                                  return allies[parseInt(idx, 10) - 1] || null;
+                                })();
+                                if (!choice) return;
+                                applyCondition(choice.id, { type: 'blessed', duration: 10, source: `Bardic Inspiration (${inspirationDie})` });
+                                applyCondition(playerUnit.id, { type: 'inspired', duration: -1, source: 'Bardic Inspiration Cooldown' });
+                                markBonusUsed();
+                                const msg = `${selectedCharacter.name} inspires ${choice.name} with Bardic Inspiration! (+${inspirationDie} to next roll)`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 border border-indigo-600/50 bg-indigo-900/30 text-indigo-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-indigo-800/40"
+                            >⚡ Inspire ({inspirationDie})</button>
                           );
                         }
 

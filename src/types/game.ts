@@ -14,7 +14,7 @@ export interface Player {
 }
 
 // --- Conditions ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'grappled' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'grappled' | 'smiteArmed' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -35,6 +35,7 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   helping: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Helping an ally — next ally attack vs target has advantage', color: 'text-teal-400' },
   hidden: { attackMod: 2, acMod: 0, saveMod: 0, description: 'Hidden — advantage on next attack, enemies can\'t target you', color: 'text-slate-300' },
   grappled: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Grappled — speed is 0, cannot move', color: 'text-rose-400' },
+  smiteArmed: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Divine Smite armed — next melee hit deals +2d8 radiant', color: 'text-amber-300' },
   torchlit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a torch — 40ft bright light (8 cells)', color: 'text-amber-300' },
   darkvision: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Darkvision spell — 60ft vision in darkness (12 cells)', color: 'text-indigo-300' },
   candlelit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a candle — 10ft bright, 20ft dim', color: 'text-orange-200' },

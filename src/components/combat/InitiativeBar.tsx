@@ -13,14 +13,19 @@ interface InitiativeBarProps {
   canReorder?: boolean; // DM can drag to reorder all cards
   myUnitId?: string; // player's own unit ID — can drag their own card even if !canReorder
   onReorder?: (reorderedIds: string[]) => void; // callback with new order
+  onInitiativeChange?: (unitId: string, newInit: number) => void; // DM manual edit
 }
 
-export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTimeSeconds = DEFAULT_TURN_TIME, onTimerExpire, canReorder, myUnitId, onReorder }: InitiativeBarProps) {
+export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTimeSeconds = DEFAULT_TURN_TIME, onTimerExpire, canReorder, myUnitId, onReorder, onInitiativeChange }: InitiativeBarProps) {
   const { players, characters, selectedUnitId, setSelectedUnitId } = useGame();
 
   // Drag reorder state
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  // Inline initiative editing state (DM only)
+  const [editingInitId, setEditingInitId] = useState<string | null>(null);
+  const [editingInitValue, setEditingInitValue] = useState('');
 
   // Turn timer
   const [timeLeft, setTimeLeft] = useState(turnTimeSeconds);
@@ -211,12 +216,40 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 {entry.readiedAction && <span className="text-cyan-400" title={`Ready: ${entry.readiedAction.trigger} → ${entry.readiedAction.action}`}>⏳</span>}
                 {turnsAway > 0 && <span className="text-slate-600">in {turnsAway}</span>}
                 {entry.initiative > 0 && (
-                  <span className="text-amber-400">
-                    Init {entry.initiative}
-                    {entries.some((e) => e.id !== entry.id && e.initiative === entry.initiative) && entry.dexMod !== undefined && (
-                      <span className="text-amber-600 ml-0.5">(+{entry.dexMod})</span>
-                    )}
-                  </span>
+                  editingInitId === entry.id ? (
+                    <input
+                      type="number"
+                      autoFocus
+                      value={editingInitValue}
+                      onChange={(e) => setEditingInitValue(e.target.value)}
+                      onBlur={() => {
+                        const val = parseInt(editingInitValue, 10);
+                        if (!isNaN(val) && val !== entry.initiative) onInitiativeChange?.(entry.id, val);
+                        setEditingInitId(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                        if (e.key === 'Escape') setEditingInitId(null);
+                      }}
+                      className="w-8 bg-slate-800 border border-amber-600/50 rounded px-1 py-0 text-[9px] text-amber-400 font-mono text-center focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    />
+                  ) : (
+                    <span
+                      className={`text-amber-400 ${onInitiativeChange ? 'cursor-pointer hover:text-amber-300 hover:underline' : ''}`}
+                      title={onInitiativeChange ? 'Click to edit initiative (DM)' : undefined}
+                      onClick={(e) => {
+                        if (!onInitiativeChange) return;
+                        e.stopPropagation();
+                        setEditingInitId(entry.id);
+                        setEditingInitValue(String(entry.initiative));
+                      }}
+                    >
+                      Init {entry.initiative}
+                      {entries.some((e) => e.id !== entry.id && e.initiative === entry.initiative) && entry.dexMod !== undefined && (
+                        <span className="text-amber-600 ml-0.5">(+{entry.dexMod})</span>
+                      )}
+                    </span>
+                  )
                 )}
               </div>
 
