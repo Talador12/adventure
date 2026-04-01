@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 4 new features + 6 roadmap items confirmed done:
+  - **Roll20 JSON character import** — new `roll20Import.ts` parser handles Roll20 character vault format (attribs[] array), maps attributes/inventory/spells, auto-detected in import flow.
+  - **Pathfinder 2e export** — new `exportPathfinder2e()` maps D&D 5e character to PF2e Foundry actor format (class conversion: Paladin→Champion, Warlock→Witch), wired into export format list.
+  - **VTT map URL import** — "URL" button in BattleMap DM tools lets DMs paste map image URLs as backgrounds alongside existing file upload.
+  - **AI session prep** — "AI Session Prep" collapsible in DMSidebar Encounter tab: DM enters session goals, gets AI-generated outline with opening narration, encounters, NPCs, and plot twists via /api/dm/narrate.
+  - Confirmed already-done: D&D Beyond import, Foundry VTT import, AI voice narration (TTS), fog-of-war per-player (computeVisibility), map layers (7 toggleable layers), dynamic lighting.
 - 5 roadmap items shipped + 3 confirmed already done:
   - **Rate limiting on public lobbies** — chat (5/sec) and dice (8/sec) rate limits added to Lobby DO handleMessage, reusing existing lastGameEvents token bucket.
   - **AI companion auto-generation** — AI seats without assigned characters now auto-generate level-matched Fighter/Cleric/Wizard/Rogue companions with class-appropriate stats.
@@ -1581,16 +1587,17 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~NPC relationship tracker (faction standing, NPC disposition, notes)~~ (DONE — NpcTracker component with disposition scale, search/filter, DM controls, localStorage)
 
 **Content & Import/Export:**
-- Import from D&D Beyond / Foundry VTT / Roll20 JSON
-- Export to Pathfinder 2e, Forbidden Lands, Savage Worlds
-- VTT map import (Foundry, Roll20 map files → BattleMap background)
+- ~~Import from D&D Beyond / Foundry VTT / Roll20 JSON~~ (DONE — ddbImport.ts + foundryImport.ts existing, roll20Import.ts added with attribs[] parser, all auto-detected in import flow)
+- ~~Export to Pathfinder 2e~~ (DONE — exportPathfinder2e maps to PF2e Foundry actor format, class conversion, wired into export list)
+- Export to Forbidden Lands, Savage Worlds (remaining cross-system exports)
+- ~~VTT map import (Foundry, Roll20 map files → BattleMap background)~~ (DONE — file upload + URL paste for map images, rendered as BattleMap background)
 - ~~Homebrew content editor (custom races, classes, spells, items, monsters)~~ (DONE — HomebrewEditor component in DMSidebar Notes tab with spell/item creation forms, per-campaign localStorage, grant-to-character dropdowns)
 - ~~Pre-built adventure modules (starter dungeons, one-shots)~~ (DONE — 7 campaign templates: Lost Mine, Whispering Woods, Ashfall Keep, Golden Masquerade, Into the Underdark, Sunken Throne, Shattered Gate)
 - ~~Monster manual browser (CR, type, environment filters)~~ (DONE — MonsterBrowser modal + monsters.ts data)
 
 **Visual & Audio:**
 - ~~Particle effects for spells (fire, ice, lightning, healing shimmer)~~ (DONE — SpellParticles component with CSS animations for 7 effects, triggered on AoE spell casts with school-based color mapping)
-- Map layers (background, terrain, tokens, effects — separate composited layers)
+- ~~Map layers (background, terrain, tokens, effects — separate composited layers)~~ (ALREADY DONE — 7 toggleable layers: terrain, lighting, traps, grid, tokens, fog, effects)
 - ~~Sound FX expansion — remaining spell effects, death saves, conditions~~ (DONE — 5 new procedural Web Audio sounds: death save heartbeat, buff/debuff condition chimes, condition removed tone, shield spell metallic ring, initiative roll drum)
 - ~~Portrait gallery — save/browse AI portraits, remix styles, share with party~~ (ALREADY DONE — portraitGallery on Character, gallery view in CharacterSheet with click-to-use, auto-migration to server URLs)
 - ~~Dynamic lighting (token light sources, darkvision, dim light zones)~~ (ALREADY DONE — effectiveLighting with bright/dim/dark, torch/candle/lantern/darkvision radius, DM painting tools)
@@ -1599,7 +1606,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Ambient background music player (tavern, combat, exploration — royalty-free tracks via Web Audio)~~ (ALREADY DONE — 5 procedural moods in useSoundFX, DM selector UI, auto-switch on combat)
 - ~~Combat damage type indicators (slash/pierce/bludgeon/fire/cold/etc icons on floating text)~~ (DONE — 13 DamageType with emoji icons on FloatingCombatText)
 - ~~Token aura system (visual rings around tokens for spell effects, threat ranges)~~ (ALREADY DONE — auraRadius/auraColor on Unit, canvas rendering in BattleMap, Set/Clear Aura button in CombatToolbar)
-- Battle map fog-of-war per-player (each player only sees what their token can see)
+- ~~Battle map fog-of-war per-player (each player only sees what their token can see)~~ (ALREADY DONE — computeVisibility using player token positions, explored tracking, fog opacity slider)
 - ~~Minimap overlay (small corner map showing full battlefield when zoomed in)~~ (ALREADY DONE — minimap canvas in BattleMap with click-to-pan, ping markers, toggle button, viewport rectangle)
 - ~~Combat initiative history (show previous rounds' turn orders for reference)~~ (DONE — initiative snapshots captured per round, collapsible panel below initiative bar shows last 10 rounds with names, init values, HP)
 
@@ -1619,8 +1626,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~AI player turn logic (AI seats actually play — move, attack, cast)~~ (DONE — useAIPlayerTurn hook with intelligent decision tree, heal/cast/attack/move, feat+proficiency support, Extra Attack, OA handling)
 - ~~AI DM encounter pacing (dynamic difficulty mid-combat)~~ (DONE — useDynamicDifficulty with varied narrative narrations for deadly/easy adjustments, mechanical stat scaling disguised as combat flavor)
 - ~~AI rules lawyer (passive — flags rule violations in chat)~~ (DONE — useRulesReminder hook with client-side pattern matching: unused bonus action reminders for Rogues/Fighters, reaction spell availability for Wizards/Sorcerers, unused movement warnings, concentration save DC callouts. Deduped with 30s window. DM-togglable in DMSidebar settings panel.)
-- AI session prep (DM goals → generated maps + encounters + NPCs)
-- AI voice narration (TTS with distinct NPC voices)
+- ~~AI session prep (DM goals → generated maps + encounters + NPCs)~~ (DONE — AI Session Prep collapsible in DMSidebar Encounter tab, generates session outlines via /api/dm/narrate)
+- ~~AI voice narration (TTS with distinct NPC voices)~~ (ALREADY DONE — tts.ts with SpeechSynthesis API, speak() + speakAsNPC() with per-NPC voice hashing, toggle in Game header)
 - ~~Dynamic difficulty auto-scaling~~ (DONE — useDynamicDifficulty hook, party HP% monitoring, DM toggle in DMSidebar, narrative-disguised adjustments)
 
 ## Known Technical Debt

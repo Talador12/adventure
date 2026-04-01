@@ -161,6 +161,14 @@ export function importJSONFile(): Promise<{ character?: Character; errors: strin
           return;
         }
 
+        // Auto-detect Roll20 character vault format (attribs[] + name)
+        const { isRoll20Character, parseRoll20Character } = await import('./roll20Import');
+        if (isRoll20Character(data)) {
+          const character = parseRoll20Character(data);
+          resolve({ character, errors: [], warnings: ['Imported from Roll20 format'] });
+          return;
+        }
+
         // Native Adventure format
         const result = validateCharacterJSON(data);
         resolve(result.valid ? { character: result.character, errors: [] } : { errors: result.errors });
@@ -361,6 +369,45 @@ export function exportFantasyGrounds(char: Character) {
   downloadFile(`${char.name.replace(/\s+/g, '_')}.fantasy_grounds.xml`, xml, 'application/xml');
 }
 
+// Pathfinder 2e JSON export — maps D&D 5e character to PF2e Foundry actor format
+export function exportPathfinder2e(char: Character) {
+  const pf2eAbilities = {
+    str: { value: char.stats.STR, mod: mod(char.stats.STR) },
+    dex: { value: char.stats.DEX, mod: mod(char.stats.DEX) },
+    con: { value: char.stats.CON, mod: mod(char.stats.CON) },
+    int: { value: char.stats.INT, mod: mod(char.stats.INT) },
+    wis: { value: char.stats.WIS, mod: mod(char.stats.WIS) },
+    cha: { value: char.stats.CHA, mod: mod(char.stats.CHA) },
+  };
+  const PF2E_CLASS_MAP: Record<string, string> = {
+    Fighter: 'fighter', Wizard: 'wizard', Rogue: 'rogue', Cleric: 'cleric',
+    Ranger: 'ranger', Paladin: 'champion', Bard: 'bard', Barbarian: 'barbarian',
+    Sorcerer: 'sorcerer', Warlock: 'witch', Druid: 'druid', Monk: 'monk',
+  };
+  const pf2eActor = {
+    name: char.name, type: 'character',
+    system: {
+      abilities: pf2eAbilities,
+      attributes: { hp: { value: char.hp, max: char.maxHp }, ac: { value: char.ac }, perception: { rank: 1 }, speed: { value: 25 } },
+      details: {
+        level: { value: char.level }, xp: { value: char.xp },
+        ancestry: { value: char.race }, heritage: { value: '' },
+        class: { value: PF2E_CLASS_MAP[char.class] || char.class.toLowerCase() },
+        background: { value: char.background },
+        alignment: { value: char.alignment },
+        biography: { value: [char.backstory, char.personalityTraits, char.ideals, char.bonds, char.flaws].filter(Boolean).join('\n\n') },
+      },
+      currency: { gp: char.gold, sp: 0, cp: 0, pp: 0 },
+    },
+    items: (char.inventory || []).map((item) => ({
+      name: item.name, type: 'equipment',
+      system: { description: { value: item.description || '' }, quantity: item.quantity || 1, price: { value: { gp: item.value || 0 } } },
+    })),
+    flags: { adventure: { sourceSystem: 'dnd5e', originalClass: char.class, importedAt: new Date().toISOString() } },
+  };
+  downloadFile(`${char.name.replace(/\s+/g, '_')}.pf2e.json`, JSON.stringify(pf2eActor, null, 2), 'application/json');
+}
+
 // ============================================================================
 //  Printable HTML character sheet — opens in new tab, user prints to PDF
 // ============================================================================
@@ -535,7 +582,7 @@ export const EXPORT_FORMATS: ExportFormat[] = [
   { id: 'foundry', label: 'Foundry VTT', desc: 'Import directly into Foundry VTT (dnd5e system)', method: 'download', ext: '.json', available: true },
   { id: 'fantasygrounds', label: 'Fantasy Grounds', desc: 'XML character file for Fantasy Grounds', method: 'download', ext: '.xml', available: true },
   { id: 'dndbeyond', label: 'D&D Beyond', desc: 'Formatted text for manual entry (no import API exists)', method: 'clipboard', available: true, systemNote: 'Copy & paste into D&D Beyond fields' },
-  { id: 'pathfinder', label: 'Pathfinder 2e', desc: 'Requires stat conversion — different system', method: 'download', available: false, systemNote: 'Coming soon — needs ability/proficiency conversion' },
+  { id: 'pathfinder2e', label: 'Pathfinder 2e', desc: 'PF2e Foundry actor JSON — maps abilities, class, ancestry', method: 'download', ext: '.json', available: true, systemNote: 'Stats mapped, class converted (Paladin→Champion, Warlock→Witch)' },
   { id: 'forbiddenlands', label: 'Forbidden Lands', desc: 'Year Zero Engine — different mechanics', method: 'download', available: false, systemNote: 'Coming soon — needs full system conversion' },
   { id: 'savaged', label: 'Savage Worlds', desc: 'Attributes/Edges/Hindrances — different system', method: 'download', available: false, systemNote: 'Coming soon — needs full system conversion' },
 ];
@@ -565,6 +612,9 @@ export async function runExport(formatId: string, char: Character): Promise<{ su
       const ok2 = await copyDndBeyondText(char);
       return ok2 ? { success: true, message: 'D&D Beyond text copied to clipboard' } : { success: false, message: 'Clipboard access denied' };
     }
+    case 'pathfinder2e':
+      exportPathfinder2e(char);
+      return { success: true, message: `Saved ${char.name}.pf2e.json` };
     default:
       return { success: false, message: 'Format not yet available' };
   }

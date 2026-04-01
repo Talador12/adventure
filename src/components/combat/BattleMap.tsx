@@ -2606,6 +2606,22 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
                 >
                   {mapUploading ? 'Uploading...' : 'Upload'}
                 </button>
+                <button
+                  onClick={() => {
+                    const url = window.prompt('Paste map image URL (PNG/JPG/WebP):');
+                    if (!url?.trim()) return;
+                    if (!/^https?:\/\/.+\.(png|jpg|jpeg|webp|gif|svg)/i.test(url.trim())) {
+                      alert('URL must point to an image file (PNG/JPG/WebP)');
+                      return;
+                    }
+                    onMapImageChange?.(url.trim());
+                    setMapImageUrl(url.trim());
+                  }}
+                  className="text-[10px] px-2 py-1 rounded bg-slate-800/60 hover:bg-sky-900/40 border border-slate-600/50 text-slate-400 hover:text-sky-300 font-semibold transition-all"
+                  title="Paste a URL to a map image"
+                >
+                  URL
+                </button>
                 {mapImageUrl && (
                   <button
                     onClick={handleClearMapImage}

@@ -249,6 +249,54 @@ export default function DMSidebar({
         {/* Encounter tab */}
         {dmSidebarTab === 'encounter' && (
           <>
+            {/* AI Session Prep — DM enters goals, gets generated content */}
+            <details className="mb-3">
+              <summary className="text-[10px] text-[#F38020] font-bold uppercase tracking-wider cursor-pointer hover:text-[#ff8c2e] select-none">AI Session Prep</summary>
+              <div className="mt-2 space-y-2">
+                <textarea
+                  placeholder="Describe your session goals... (e.g. 'Players explore the ruins, encounter a trapped puzzle room, then fight the necromancer boss')"
+                  rows={3}
+                  className="w-full text-[10px] px-2 py-1.5 rounded bg-slate-800 border border-slate-700 text-slate-300 placeholder-slate-600 resize-none"
+                  id="dm-session-prep-input"
+                />
+                <button
+                  onClick={async () => {
+                    const input = (document.getElementById('dm-session-prep-input') as HTMLTextAreaElement)?.value?.trim();
+                    if (!input) return;
+                    const btn = document.activeElement as HTMLButtonElement;
+                    btn.disabled = true;
+                    btn.textContent = 'Generating...';
+                    try {
+                      const res = await fetch('/api/dm/narrate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          scene: `Session Prep: ${input}`,
+                          action: `Generate a session outline with: 1) Opening narration for the session. 2) 2-3 encounter descriptions with enemy suggestions and difficulty. 3) 2-3 NPC names with personality and role. 4) A potential plot twist or complication. Format as clear sections.`,
+                          context: `This is a D&D 5e campaign. The party is level ${characters.length > 0 ? Math.max(...characters.map((c) => c.level)) : 3}. Party size: ${characters.length || 4} players.`,
+                          history: [],
+                        }),
+                      });
+                      const data = await res.json() as { narration?: string; error?: string };
+                      if (data.narration) {
+                        onAddDmMessage(`📋 **Session Prep**\n${data.narration}`);
+                      } else {
+                        onAddDmMessage('*Session prep generation failed. Try again with more detail.*');
+                      }
+                    } catch {
+                      onAddDmMessage('*Connection error during session prep.*');
+                    } finally {
+                      btn.disabled = false;
+                      btn.textContent = 'Generate Session Outline';
+                    }
+                  }}
+                  className="w-full text-[10px] py-1.5 rounded bg-[#F38020]/20 border border-[#F38020]/40 text-[#F38020] font-semibold hover:bg-[#F38020]/30 transition-all"
+                >
+                  Generate Session Outline
+                </button>
+              </div>
+            </details>
+
             <div className="space-y-2">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Difficulty</label>
               <div className="grid grid-cols-2 gap-1.5">
