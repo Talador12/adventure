@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- **ROADMAP CLEARED** — final 5 items shipped:
+  - **Lobby DO hibernation** — migrated to `this.state.acceptWebSocket()` with `webSocketMessage()`/`webSocketClose()`/`webSocketError()` handlers. Extracted `handlePlayerLeave()` shared method. DO now evicts from memory when idle, reducing cost for inactive lobbies. `rehydrateWebSockets()` re-maps sessions on wake.
+  - **Forbidden Lands export** — `exportForbiddenLands()` maps D&D 5e to Year Zero Engine format (Kin/Profession/Attributes 2-5 scale, gold→silver conversion).
+  - **Savage Worlds export** — `exportSavageWorlds()` maps to SWADE format (die-type attributes d4-d12, class→Edges mapping, rank by level).
+  - **Discord Activity SDK** — `discordActivity.ts` module with iframe detection, participant tracking, Rich Presence updates, activity invite URLs. Auto-initialized in main.tsx on load.
+  - All export formats now available: JSON, Markdown, Clipboard, PDF, Foundry VTT, Fantasy Grounds, D&D Beyond, Pathfinder 2e, Forbidden Lands, Savage Worlds (10 total).
 - 4 new features + 6 roadmap items confirmed done:
   - **Roll20 JSON character import** — new `roll20Import.ts` parser handles Roll20 character vault format (attribs[] array), maps attributes/inventory/spells, auto-detected in import flow.
   - **Pathfinder 2e export** — new `exportPathfinder2e()` maps D&D 5e character to PF2e Foundry actor format (class conversion: Paladin→Champion, Warlock→Witch), wired into export format list.
@@ -1540,7 +1546,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 ### Future versions
 
 **Infrastructure:**
-- Lobby DO hibernation — `this.state.acceptWebSocket()` for cost reduction
+- ~~Lobby DO hibernation — `this.state.acceptWebSocket()` for cost reduction~~ (DONE — migrated to hibernation API with webSocketMessage/webSocketClose/webSocketError handlers, rehydrateWebSockets on wake, handlePlayerLeave extracted)
 - ~~Undo/redo for DM actions (command pattern, rewindable state stack)~~ (DONE — useUndoRedo hook, snapshot-based, Ctrl+Z/Ctrl+Shift+Z, max 20 entries)
 - ~~Rate limiting + abuse protection on public lobbies~~ (DONE — chat 5/sec + dice 8/sec rate limits in Lobby DO, game_event 10/sec existing)
 - Service Worker for offline-first static assets
@@ -1589,7 +1595,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 **Content & Import/Export:**
 - ~~Import from D&D Beyond / Foundry VTT / Roll20 JSON~~ (DONE — ddbImport.ts + foundryImport.ts existing, roll20Import.ts added with attribs[] parser, all auto-detected in import flow)
 - ~~Export to Pathfinder 2e~~ (DONE — exportPathfinder2e maps to PF2e Foundry actor format, class conversion, wired into export list)
-- Export to Forbidden Lands, Savage Worlds (remaining cross-system exports)
+- ~~Export to Forbidden Lands, Savage Worlds (remaining cross-system exports)~~ (DONE — exportForbiddenLands YZE format + exportSavageWorlds SWADE format, both wired into export UI)
 - ~~VTT map import (Foundry, Roll20 map files → BattleMap background)~~ (DONE — file upload + URL paste for map images, rendered as BattleMap background)
 - ~~Homebrew content editor (custom races, classes, spells, items, monsters)~~ (DONE — HomebrewEditor component in DMSidebar Notes tab with spell/item creation forms, per-campaign localStorage, grant-to-character dropdowns)
 - ~~Pre-built adventure modules (starter dungeons, one-shots)~~ (DONE — 7 campaign templates: Lost Mine, Whispering Woods, Ashfall Keep, Golden Masquerade, Into the Underdark, Sunken Throne, Shattered Gate)
@@ -1615,7 +1621,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Campaign timeline / session log (auto-generated, browseable)~~ (DONE — CampaignTimeline component with 9 event types, filter tabs, auto-parse from DM history + combat log)
 - ~~Journal/notes — shared campaign notes, session summaries, DM-only notes~~ (DONE — SessionJournal component + DM notes tab)
 - ~~Chat emoji reactions (react to messages with emoji)~~ (DONE — 8 D&D-themed emoji, hover picker, toggle reactions, WebSocket sync, lobby + game)
-- Discord integration for voice/chat (Activity SDK or webhook)
+- ~~Discord integration for voice/chat (Activity SDK or webhook)~~ (DONE — discordActivity.ts with iframe detection, participant tracking, Rich Presence, invite URLs, auto-init in main.tsx)
 - ~~Drop-in/drop-out guest characters (no account, temporary token)~~ (DONE — "Quick Join" button in Lobby spectator view creates temp Fighter + claims seat)
 - ~~Campaign templates (share setup for others to clone)~~ (DONE — Share button copies ?template=id URL, Home auto-launches shared template links)
 - ~~Campaign comparison stats (total kills, gold earned, sessions played across campaigns)~~ (DONE — aggregate stats panel on Home page showing character count, campaign count, highest level, total gold across all characters)

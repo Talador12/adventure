@@ -408,6 +408,54 @@ export function exportPathfinder2e(char: Character) {
   downloadFile(`${char.name.replace(/\s+/g, '_')}.pf2e.json`, JSON.stringify(pf2eActor, null, 2), 'application/json');
 }
 
+// Forbidden Lands (Year Zero Engine) JSON export
+export function exportForbiddenLands(char: Character) {
+  const yzeAttributes = {
+    strength: Math.max(2, Math.min(5, Math.round((char.stats.STR + char.stats.CON) / 2 / 5))),
+    agility: Math.max(2, Math.min(5, Math.round(char.stats.DEX / 5))),
+    wits: Math.max(2, Math.min(5, Math.round((char.stats.INT + char.stats.WIS) / 2 / 5))),
+    empathy: Math.max(2, Math.min(5, Math.round(char.stats.CHA / 5))),
+  };
+  const FL_KIN: Record<string, string> = { Human: 'human', Elf: 'elf', Dwarf: 'dwarf', Halfling: 'halfling', 'Half-Orc': 'orc', Gnome: 'goblin', Tiefling: 'human', Dragonborn: 'wolfkin', 'Half-Elf': 'half-elf' };
+  const FL_PROF: Record<string, string> = { Fighter: 'fighter', Wizard: 'sorcerer', Rogue: 'rogue', Cleric: 'druid', Ranger: 'hunter', Paladin: 'rider', Bard: 'minstrel', Barbarian: 'fighter', Sorcerer: 'sorcerer', Warlock: 'sorcerer', Druid: 'druid', Monk: 'fighter' };
+  const flChar = {
+    name: char.name, kin: FL_KIN[char.race] || 'human', profession: FL_PROF[char.class] || 'fighter',
+    attributes: yzeAttributes, hitPoints: { current: char.hp, max: char.maxHp },
+    willpower: Math.max(1, yzeAttributes.wits + yzeAttributes.empathy), silver: char.gold * 10,
+    gear: (char.inventory || []).map((item) => ({ name: item.name, weight: 'regular', bonus: 0 })),
+    flags: { adventure: { sourceSystem: 'dnd5e', importedAt: new Date().toISOString() } },
+  };
+  downloadFile(`${char.name.replace(/\s+/g, '_')}.forbidden_lands.json`, JSON.stringify(flChar, null, 2), 'application/json');
+}
+
+// Savage Worlds (SWADE) JSON export
+export function exportSavageWorlds(char: Character) {
+  function abilityToDie(score: number): string {
+    if (score >= 18) return 'd12'; if (score >= 16) return 'd10'; if (score >= 14) return 'd8'; if (score >= 12) return 'd6'; return 'd4';
+  }
+  const edges: string[] = [];
+  if (char.class === 'Fighter' || char.class === 'Barbarian') edges.push('Brawny', 'Sweep');
+  if (char.class === 'Rogue') edges.push('Thief', 'Dodge');
+  if (char.class === 'Wizard' || char.class === 'Sorcerer' || char.class === 'Warlock') edges.push('Arcane Background (Magic)', 'New Power');
+  if (char.class === 'Cleric' || char.class === 'Druid') edges.push('Arcane Background (Miracles)', 'Healer');
+  if (char.class === 'Ranger') edges.push('Woodsman', 'Marksman');
+  if (char.class === 'Bard') edges.push('Charismatic', 'Jack-of-All-Trades');
+  if (char.class === 'Monk') edges.push('Martial Artist', 'First Strike');
+  if (char.class === 'Paladin') edges.push('Champion', 'Arcane Background (Miracles)');
+  const rank = char.level >= 12 ? 'Legendary' : char.level >= 8 ? 'Heroic' : char.level >= 5 ? 'Veteran' : char.level >= 3 ? 'Seasoned' : 'Novice';
+  const swChar = {
+    name: char.name, race: char.race, rank,
+    attributes: { agility: abilityToDie(char.stats.DEX), smarts: abilityToDie(Math.max(char.stats.INT, char.stats.WIS)), spirit: abilityToDie(char.stats.CHA), strength: abilityToDie(char.stats.STR), vigor: abilityToDie(char.stats.CON) },
+    wounds: { current: Math.max(0, Math.floor((char.maxHp - char.hp) / (char.maxHp / 3))), max: 3 },
+    bennies: 3, pace: 6, parry: 4 + Math.floor(mod(char.stats.DEX) / 2), toughness: 4 + Math.floor(mod(char.stats.CON) / 2),
+    edges, hindrances: [],
+    gear: (char.inventory || []).map((item) => ({ name: item.name, damage: item.damage || '', notes: item.description || '' })),
+    money: char.gold,
+    flags: { adventure: { sourceSystem: 'dnd5e', importedAt: new Date().toISOString() } },
+  };
+  downloadFile(`${char.name.replace(/\s+/g, '_')}.savage_worlds.json`, JSON.stringify(swChar, null, 2), 'application/json');
+}
+
 // ============================================================================
 //  Printable HTML character sheet — opens in new tab, user prints to PDF
 // ============================================================================
@@ -583,8 +631,8 @@ export const EXPORT_FORMATS: ExportFormat[] = [
   { id: 'fantasygrounds', label: 'Fantasy Grounds', desc: 'XML character file for Fantasy Grounds', method: 'download', ext: '.xml', available: true },
   { id: 'dndbeyond', label: 'D&D Beyond', desc: 'Formatted text for manual entry (no import API exists)', method: 'clipboard', available: true, systemNote: 'Copy & paste into D&D Beyond fields' },
   { id: 'pathfinder2e', label: 'Pathfinder 2e', desc: 'PF2e Foundry actor JSON — maps abilities, class, ancestry', method: 'download', ext: '.json', available: true, systemNote: 'Stats mapped, class converted (Paladin→Champion, Warlock→Witch)' },
-  { id: 'forbiddenlands', label: 'Forbidden Lands', desc: 'Year Zero Engine — different mechanics', method: 'download', available: false, systemNote: 'Coming soon — needs full system conversion' },
-  { id: 'savaged', label: 'Savage Worlds', desc: 'Attributes/Edges/Hindrances — different system', method: 'download', available: false, systemNote: 'Coming soon — needs full system conversion' },
+  { id: 'forbiddenlands', label: 'Forbidden Lands', desc: 'Year Zero Engine — maps to Kin/Profession/Attributes', method: 'download', ext: '.json', available: true, systemNote: 'Stats converted to YZE scale (2-5), gold→silver' },
+  { id: 'savageworlds', label: 'Savage Worlds', desc: 'SWADE — maps to Traits/Edges/Hindrances', method: 'download', ext: '.json', available: true, systemNote: 'Stats converted to die types (d4-d12), class→Edges' },
 ];
 
 export async function runExport(formatId: string, char: Character): Promise<{ success: boolean; message: string }> {
@@ -615,6 +663,12 @@ export async function runExport(formatId: string, char: Character): Promise<{ su
     case 'pathfinder2e':
       exportPathfinder2e(char);
       return { success: true, message: `Saved ${char.name}.pf2e.json` };
+    case 'forbiddenlands':
+      exportForbiddenLands(char);
+      return { success: true, message: `Saved ${char.name}.forbidden_lands.json` };
+    case 'savageworlds':
+      exportSavageWorlds(char);
+      return { success: true, message: `Saved ${char.name}.savage_worlds.json` };
     default:
       return { success: false, message: 'Format not yet available' };
   }

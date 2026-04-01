@@ -13,6 +13,13 @@ let deferredInstallPrompt: Event | null = null;
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; });
 }
+
+// Discord Activity detection — runs before React mount
+if (typeof window !== 'undefined') {
+  import('./lib/discordActivity').then(({ detectDiscordActivity, initDiscordActivity }) => {
+    if (detectDiscordActivity()) initDiscordActivity();
+  }).catch(() => {});
+}
 export function canInstallPWA(): boolean { return !!deferredInstallPrompt; }
 export async function installPWA(): Promise<void> {
   if (!deferredInstallPrompt) return;

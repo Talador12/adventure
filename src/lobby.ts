@@ -182,7 +182,81 @@ export class Lobby {
     }
     this.state.blockConcurrencyWhile(async () => {
       await this.loadPersistedState();
+      // Rehydrate sessions from hibernated WebSockets on wake
+      this.rehydrateWebSockets();
     });
+  }
+
+  private handlePlayerLeave(session: Session) {
+    // Remove any queued/active rolls from this player
+    this.rollQueue = this.rollQueue.filter((r) => r.playerId !== session.id);
+    if (this.activeRoll?.playerId === session.id) {
+      this.finishActiveRoll('disconnected');
+    }
+
+    // Revert seat to empty when player disconnects
+    if (session.seatId) {
+      const seat = this.seats.find((s) => s.id === session.seatId);
+      if (seat && seat.type === 'human') {
+        seat.type = 'empty';
+        seat.playerId = undefined;
+        seat.username = undefined;
+        seat.avatar = undefined;
+        seat.characterId = undefined;
+        seat.characterName = undefined;
+        seat.ready = false;
+      }
+    }
+
+    this.persistState();
+
+    this.broadcast({
+      type: 'player_left',
+      username: session.username,
+      playerId: session.id,
+      players: this.getPlayerList(),
+      seats: this.seats,
+      timestamp: Date.now(),
+    });
+
+    // DM reassignment: if the DM left, promote the oldest remaining player
+    if (session.id === this.dmPlayerId) {
+      this.dmPlayerId = null;
+      let oldest: Session | null = null;
+      for (const [, s] of this.sessions) {
+        if (!oldest || s.joinedAt < oldest.joinedAt) oldest = s;
+      }
+      if (oldest) {
+        this.dmPlayerId = oldest.id;
+        this.broadcast({
+          type: 'dm_changed',
+          dmPlayerId: oldest.id,
+          dmUsername: oldest.username,
+          timestamp: Date.now(),
+        });
+      }
+    }
+  }
+
+  private rehydrateWebSockets() {
+    // After hibernation wake, this.sessions is empty but WebSockets are alive.
+    // Rehydrate session data from persisted seat state for connected sockets.
+    const sockets = this.state.getWebSockets();
+    for (const ws of sockets) {
+      if (!this.sessions.has(ws)) {
+        // Assign a temporary session — will be replaced when client sends 'join'
+        const tempId = crypto.randomUUID();
+        this.sessions.set(ws, {
+          id: tempId,
+          username: 'Reconnecting...',
+          joinedAt: Date.now(),
+          spectating: false,
+          lastGameEvents: [],
+          lastPongAt: Date.now(),
+          stale: false,
+        });
+      }
+    }
   }
 
   private async loadPersistedState() {
@@ -238,84 +312,57 @@ export class Lobby {
     this.state.storage.put('lobby_state', payload).catch(() => {});
   }
 
+  // Hibernation API: handle incoming WebSocket messages after wake
+  async webSocketMessage(server: WebSocket, message: string | ArrayBuffer) {
+    try {
+      const data = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message));
+      const session = this.sessions.get(server);
+      if (session) this.handleMessage(server, session.id, data);
+    } catch {
+      server.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
+    }
+  }
+
+  // Hibernation API: handle WebSocket close after wake
+  async webSocketClose(server: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
+    const session = this.sessions.get(server);
+    this.sessions.delete(server);
+    if (session) {
+      this.handlePlayerLeave(session);
+    }
+  }
+
+  // Hibernation API: handle WebSocket errors
+  async webSocketError(server: WebSocket, _error: unknown) {
+    const session = this.sessions.get(server);
+    this.sessions.delete(server);
+    if (session) {
+      this.handlePlayerLeave(session);
+    }
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
-    // WebSocket upgrade for real-time lobby
+    // WebSocket upgrade for real-time lobby — uses Hibernation API for cost reduction
     if (request.headers.get('Upgrade') === 'websocket') {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
 
-      server.accept();
+      // Hibernation: DO will be evicted from memory when idle, woken on new messages
+      this.state.acceptWebSocket(server);
+
       // Session is created in the 'join' handler — we need the client's playerId claim first.
       // Store a temporary placeholder so we can still receive messages.
       const tempId = crypto.randomUUID();
       const now = Date.now();
       this.sessions.set(server, { id: tempId, username: 'Anonymous', joinedAt: now, spectating: false, lastGameEvents: [], lastPongAt: now, stale: false });
 
-      server.addEventListener('message', (event) => {
-        try {
-          const data = JSON.parse(event.data as string);
-          const session = this.sessions.get(server);
-          if (session) this.handleMessage(server, session.id, data);
-        } catch {
-          server.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
-        }
-      });
-
+      // Legacy event listener as fallback — hibernation handlers (webSocketClose) take priority
       server.addEventListener('close', () => {
         const session = this.sessions.get(server);
         this.sessions.delete(server);
-        if (session) {
-          // Remove any queued/active rolls from this player
-          this.rollQueue = this.rollQueue.filter((r) => r.playerId !== session.id);
-          if (this.activeRoll?.playerId === session.id) {
-            this.finishActiveRoll('disconnected');
-          }
-
-          // Revert seat to empty when player disconnects
-          if (session.seatId) {
-            const seat = this.seats.find((s) => s.id === session.seatId);
-            if (seat && seat.type === 'human') {
-              seat.type = 'empty';
-              seat.playerId = undefined;
-              seat.username = undefined;
-              seat.avatar = undefined;
-              seat.characterId = undefined;
-              seat.characterName = undefined;
-              seat.ready = false;
-            }
-          }
-
-          this.persistState();
-
-          this.broadcast({
-            type: 'player_left',
-            username: session.username,
-            playerId: session.id,
-            players: this.getPlayerList(),
-            seats: this.seats,
-            timestamp: Date.now(),
-          });
-
-          // DM reassignment: if the DM left, promote the oldest remaining player
-          if (session.id === this.dmPlayerId) {
-            this.dmPlayerId = null;
-            let oldest: Session | null = null;
-            for (const [, s] of this.sessions) {
-              if (!oldest || s.joinedAt < oldest.joinedAt) oldest = s;
-            }
-            if (oldest) {
-              this.dmPlayerId = oldest.id;
-              this.broadcast({
-                type: 'dm_changed',
-                dmPlayerId: oldest.id,
-                dmUsername: oldest.username,
-                timestamp: Date.now(),
-              });
-            }
-          }
-        }
+        if (session) this.handlePlayerLeave(session);
       });
 
       return new Response(null, { status: 101, webSocket: client });
