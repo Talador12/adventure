@@ -1079,6 +1079,61 @@ export default function Home() {
               </button>
               <button
                 onClick={async () => {
+                  if (!user) { toast('Sign in first', 'warning'); return; }
+                  const text = await navigator.clipboard.readText().catch(() => null);
+                  if (!text?.trim()) { toast('Clipboard is empty — copy a character sheet first', 'warning'); return; }
+                  // Try JSON parse first
+                  try {
+                    const json = JSON.parse(text);
+                    const { importCharacterFromJSON } = await import('../lib/export');
+                    const result = await importCharacterFromJSON(json);
+                    if (result.character) {
+                      const imported = { ...result.character, id: crypto.randomUUID(), playerId: user.id || '', createdAt: Date.now() };
+                      addCharacter(imported);
+                      toast(`Imported ${imported.name} from clipboard JSON!`, 'success');
+                      return;
+                    }
+                  } catch { /* not JSON, try text parse */ }
+                  // Text parse: extract stats from common character sheet formats
+                  const nameMatch = text.match(/(?:Name|Character)[:\s]+([^\n]+)/i);
+                  const raceMatch = text.match(/(?:Race|Species)[:\s]+([^\n]+)/i);
+                  const classMatch = text.match(/(?:Class)[:\s]+([^\n]+)/i);
+                  const levelMatch = text.match(/(?:Level|Lv)[:\s]*(\d+)/i);
+                  const statMatches = {
+                    STR: text.match(/STR[:\s]*(\d+)/i)?.[1],
+                    DEX: text.match(/DEX[:\s]*(\d+)/i)?.[1],
+                    CON: text.match(/CON[:\s]*(\d+)/i)?.[1],
+                    INT: text.match(/INT[:\s]*(\d+)/i)?.[1],
+                    WIS: text.match(/WIS[:\s]*(\d+)/i)?.[1],
+                    CHA: text.match(/CHA[:\s]*(\d+)/i)?.[1],
+                  };
+                  const hasStats = Object.values(statMatches).some(Boolean);
+                  if (!nameMatch && !hasStats) { toast('Could not parse character data from clipboard text', 'error'); return; }
+                  const { RACES, CLASSES, EMPTY_EQUIPMENT, DEFAULT_APPEARANCE } = await import('../types/game');
+                  const parsedRace = RACES.find((r) => raceMatch?.[1]?.toLowerCase().includes(r.toLowerCase())) || 'Human';
+                  const parsedClass = CLASSES.find((c) => classMatch?.[1]?.toLowerCase().includes(c.toLowerCase())) || 'Fighter';
+                  const level = parseInt(levelMatch?.[1] || '1', 10) || 1;
+                  const stats = { STR: parseInt(statMatches.STR || '10'), DEX: parseInt(statMatches.DEX || '10'), CON: parseInt(statMatches.CON || '10'), INT: parseInt(statMatches.INT || '10'), WIS: parseInt(statMatches.WIS || '10'), CHA: parseInt(statMatches.CHA || '10') };
+                  const conMod = Math.floor((stats.CON - 10) / 2);
+                  const hp = 10 + conMod + (level - 1) * (5 + conMod);
+                  const char = {
+                    id: crypto.randomUUID(), name: nameMatch?.[1]?.trim() || 'Imported Character',
+                    race: parsedRace as import('../types/game').Race, class: parsedClass as import('../types/game').CharacterClass,
+                    level, stats, hp, maxHp: hp, ac: 10 + Math.floor((stats.DEX - 10) / 2),
+                    xp: 0, gold: 0, background: 'Adventurer', alignment: 'Neutral',
+                    equipment: EMPTY_EQUIPMENT, inventory: [], appearance: DEFAULT_APPEARANCE,
+                    playerId: user.id || '', createdAt: Date.now(),
+                  };
+                  addCharacter(char as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+                  toast(`Imported ${char.name} from clipboard text!`, 'success');
+                }}
+                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-teal-500/50 hover:text-teal-400 transition-all"
+                title="Import character from clipboard text — paste a character sheet or JSON"
+              >
+                Paste
+              </button>
+              <button
+                onClick={async () => {
                   if (!user) { toast('Sign in to restore a backup', 'warning'); return; }
                   const pw = prompt('Backup password:');
                   if (!pw) return;

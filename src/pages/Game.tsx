@@ -2500,6 +2500,27 @@ export default function Game() {
             </div>
           )}
 
+          {/* Re-sort initiative by value (DM tool) */}
+          {inCombat && canUseDMTools && (
+            <button
+              onClick={() => {
+                setUnits((prev) => {
+                  const sorted = [...prev].sort((a, b) => {
+                    if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+                    return (b.dexMod || 0) - (a.dexMod || 0);
+                  });
+                  return sorted;
+                });
+                setCombatLog((prev) => [...prev, 'DM re-sorted initiative order.']);
+                setTimeout(broadcastCombatSyncLatest, 50);
+              }}
+              className="mx-2 text-[8px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-amber-400 hover:border-amber-600/40 font-semibold transition-all"
+              title="Re-sort units by initiative value (highest first, DEX tiebreaker)"
+            >
+              Re-sort Init
+            </button>
+          )}
+
           {/* Initiative history — collapsible previous rounds */}
           {inCombat && initiativeHistory.length > 0 && (
             <details className="mx-2 mb-1">

@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 features — whisper, condition expire, clipboard import, stat tooltips, re-sort initiative:
+  - **DM whisper system** — `/w <username> <message>` in chat sends a private message only visible to the target player. Lobby DO routes whisper to specific WebSocket, echoes confirmation to DM.
+  - **Condition duration auto-expire** — conditions now decrement duration on turn end and auto-remove at 0. Expired conditions logged to combat. Barbarian rage resistances cleaned up when rage expires.
+  - **Clipboard character text import** — "Paste" button on Home parses clipboard text: tries JSON first (D&D Beyond/Foundry/Roll20/native), then falls back to regex extraction of Name/Race/Class/Level/Stats from plaintext character sheets.
+  - **Ability score rich tooltips** — hovering a stat in CharacterSheet now shows: score, modifier, save proficiency status, full save bonus, and related skills list.
+  - **Re-sort initiative button** — DM tool re-sorts all units by initiative value (DESC) with DEX tiebreaker, for when manual edits make the order stale.
 - 5 features — encumbrance, proficiencies, save roller, rest summary, round timer:
   - **Inventory weight/encumbrance** — `calculateCarryCapacity(STR)` and `calculateInventoryWeight()` in types/game.ts. Item weight field added. D&D 5e variant encumbrance tiers (normal/encumbered/heavily encumbered).
   - **Character proficiency data system** — `skillProficiencies`, `saveProficiencies`, `toolProficiencies` fields on Character type. `CLASS_SKILL_CHOICES` data for all 12 classes with skill counts and options per PHB.

@@ -1367,6 +1367,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const currentIdx = prev.findIndex((u) => u.isCurrentTurn);
       const cleared = prev.map((u) => ({ ...u, isCurrentTurn: false }));
 
+      // Decrement condition durations on the unit whose turn just ended
+      if (currentIdx >= 0 && cleared[currentIdx]) {
+        const expiredNames: string[] = [];
+        cleared[currentIdx].conditions = (cleared[currentIdx].conditions || []).filter((c) => {
+          if (c.duration === -1) return true; // permanent until removed
+          c.duration -= 1;
+          if (c.duration <= 0) {
+            expiredNames.push(c.type);
+            return false;
+          }
+          return true;
+        });
+        if (expiredNames.length > 0) {
+          concentrationBreakMessages.current.push(`${cleared[currentIdx].name}'s conditions expired: ${expiredNames.join(', ')}`);
+        }
+        // Remove Barbarian rage resistances when rage expires
+        if (expiredNames.includes('raging') && cleared[currentIdx].resistances) {
+          cleared[currentIdx].resistances = cleared[currentIdx].resistances!.filter((r) => !['bludgeoning', 'piercing', 'slashing'].includes(r));
+        }
+      }
+
       // Find next unit after current (include unconscious players for death saves, skip dead enemies)
       let nextIdx = currentIdx + 1;
       let wrapped = false;

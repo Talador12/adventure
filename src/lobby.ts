@@ -530,6 +530,24 @@ export class Lobby {
         }
         session.lastGameEvents.push(chatNow);
 
+        // Whisper: /w <username> <message> — only DM can whisper
+        const whisperMatch = message.trim().match(/^\/w(?:hisper)?\s+(\S+)\s+(.+)$/i);
+        if (whisperMatch && session.id === this.dmPlayerId) {
+          const targetName = whisperMatch[1].toLowerCase();
+          const whisperText = whisperMatch[2];
+          let sent = false;
+          for (const [ws, s] of this.sessions) {
+            if (s.username.toLowerCase() === targetName || s.id === targetName) {
+              ws.send(JSON.stringify({ type: 'whisper', from: session.username, message: whisperText.trim(), timestamp: Date.now() }));
+              sent = true;
+              break;
+            }
+          }
+          // Echo back to DM
+          server.send(JSON.stringify({ type: 'whisper_sent', to: targetName, message: whisperText.trim(), timestamp: Date.now(), delivered: sent }));
+          break;
+        }
+
         this.broadcast({
           type: 'chat',
           playerId: session.id,

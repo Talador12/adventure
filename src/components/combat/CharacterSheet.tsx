@@ -770,7 +770,7 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
                 key={stat}
                 onClick={() => quickRoll(`${stat} Check`, mod)}
                 className="rounded-lg bg-slate-800 border border-slate-700 p-2 text-center hover:border-slate-500 hover:bg-slate-750 transition-all cursor-pointer group"
-                title={`Roll ${stat} ability check (d20${mod >= 0 ? '+' : ''}${mod})`}
+                title={`${stat}: ${val} (${mod >= 0 ? '+' : ''}${mod})\nSave: ${saveProficiencies.includes(stat) ? '✓ proficient' : '—'} (${mod >= 0 ? '+' : ''}${mod}${saveProficiencies.includes(stat) ? `+${prof}` : ''})\nSkills: ${Object.entries({ Acrobatics: 'DEX', Athletics: 'STR', Arcana: 'INT', Deception: 'CHA', History: 'INT', Insight: 'WIS', Intimidation: 'CHA', Investigation: 'INT', Medicine: 'WIS', Nature: 'INT', Perception: 'WIS', Performance: 'CHA', Persuasion: 'CHA', Religion: 'INT', Stealth: 'DEX', Survival: 'WIS' }).filter(([, ab]) => ab === stat).map(([s]) => s).join(', ') || 'none'}\nClick to roll ${stat} check`}
               >
                 <div className="text-[9px] text-slate-500 uppercase tracking-wider group-hover:text-slate-300 transition-colors">{stat}</div>
                 <div className={`text-lg font-black ${modColor(val)}`}>{val}</div>
