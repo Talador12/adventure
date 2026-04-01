@@ -19,6 +19,7 @@ import { useEnemyAI } from '../hooks/useEnemyAI';
 import { useAIPlayerTurn } from '../hooks/useAIPlayerTurn';
 import { useDynamicDifficulty } from '../hooks/useDynamicDifficulty';
 import { useAttackIndicators } from '../hooks/useAttackIndicators';
+import { useRulesReminder } from '../hooks/useRulesReminder';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
@@ -270,6 +271,9 @@ export default function Game() {
   const [activeDicePack, setActiveDicePack] = useState<DiceSoundPack>(getDiceSoundPack());
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
+  const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
+    try { return localStorage.getItem('adventure:rulesReminders') !== 'off'; } catch { return true; }
+  });
   const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships' | 'wiki' | 'calendar'>('narration');
   // Mobile layout: bottom tab bar controls which panel is visible
   const [mobilePanel, setMobilePanel] = useState<'game' | 'chat' | 'sheet'>('game');
@@ -1235,6 +1239,26 @@ export default function Game() {
     try { return localStorage.getItem(`adventure:dynDiff:${room}`) === '1'; } catch { return false; }
   });
   useDynamicDifficulty({ enabled: dynamicDifficultyEnabled, addDmMessage, broadcastCombatSync });
+
+  // Rules reminder system — passive D&D 5e rule checks
+  const { checkTurnEnd } = useRulesReminder(useCallback((reminder) => {
+    if (!rulesRemindersEnabled) return;
+    setCombatLog((prev) => [...prev, `📋 ${reminder.message}`]);
+  }, [rulesRemindersEnabled]));
+
+  // Fire rules checks when turn changes
+  const prevTurnIndexRef = useRef(turnIndex);
+  useEffect(() => {
+    if (!inCombat || !rulesRemindersEnabled) return;
+    if (prevTurnIndexRef.current === turnIndex) return;
+    const prevIdx = prevTurnIndexRef.current;
+    prevTurnIndexRef.current = turnIndex;
+    // Check the unit whose turn just ended
+    const prevUnit = units[prevIdx];
+    if (!prevUnit || prevUnit.type !== 'player') return;
+    const char = prevUnit.characterId ? characters.find((c) => c.id === prevUnit.characterId) : undefined;
+    checkTurnEnd(prevUnit, char, units);
+  }, [turnIndex, inCombat, rulesRemindersEnabled, units, characters, checkTurnEnd]);
 
   // --- AI Session Recap: "Last time on your adventure..." ---
   const [sessionRecap, setSessionRecap] = useState<string | null>(null);
@@ -2248,6 +2272,11 @@ export default function Game() {
             setDynamicDifficultyEnabled={(v) => {
               setDynamicDifficultyEnabled(v);
               try { localStorage.setItem(`adventure:dynDiff:${room}`, v ? '1' : '0'); } catch { /* ok */ }
+            }}
+            rulesRemindersEnabled={rulesRemindersEnabled}
+            setRulesRemindersEnabled={(v) => {
+              setRulesRemindersEnabled(v);
+              try { localStorage.setItem('adventure:rulesReminders', v ? 'on' : 'off'); } catch { /* ok */ }
             }}
             rollInterpolationMode={rollInterpolationMode}
             effectiveMode={effectiveMode}

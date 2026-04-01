@@ -67,6 +67,9 @@ interface DMSidebarProps {
   // Dynamic difficulty
   dynamicDifficultyEnabled: boolean;
   setDynamicDifficultyEnabled: (v: boolean) => void;
+  // Rules reminders
+  rulesRemindersEnabled?: boolean;
+  setRulesRemindersEnabled?: (v: boolean) => void;
   // Roll sync policy
   rollInterpolationMode?: RollInterpolationMode;
   effectiveMode?: 'smooth' | 'strict';
@@ -182,6 +185,8 @@ export default function DMSidebar({
   onSpawnMonster,
   dynamicDifficultyEnabled,
   setDynamicDifficultyEnabled,
+  rulesRemindersEnabled,
+  setRulesRemindersEnabled,
   rollInterpolationMode,
   effectiveMode,
   autoStrictRttMs,
@@ -465,6 +470,22 @@ export default function DMSidebar({
                 {dynamicDifficultyEnabled ? 'ON' : 'OFF'}
               </button>
             </div>
+            {/* Rules reminders toggle */}
+            {setRulesRemindersEnabled && (
+              <div className="flex items-center justify-between py-1">
+                <span className="text-[10px] text-slate-500">Rules reminders</span>
+                <button
+                  onClick={() => setRulesRemindersEnabled(!rulesRemindersEnabled)}
+                  className={`text-[9px] px-2 py-0.5 rounded-full border font-medium transition-colors ${
+                    rulesRemindersEnabled
+                      ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
+                      : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {rulesRemindersEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            )}
             {/* Encounter difficulty calculator */}
             {(() => {
               const playerUnits = units.filter((u: Unit) => u.characterId);
