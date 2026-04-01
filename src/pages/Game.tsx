@@ -23,6 +23,7 @@ import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useRulesReminder } from '../hooks/useRulesReminder';
 import SpellParticles, { useSpellParticles, type SpellEffect } from '../components/game/SpellParticles';
 import { useUndoRedo } from '../hooks/useUndoRedo';
+import Onboarding from '../components/game/Onboarding';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
@@ -640,6 +641,24 @@ export default function Game() {
     setWikiPages,
     setCalendar,
     setRelationships,
+    onQuickSpawn: useCallback((monsterName: string, count: number) => {
+      // Quick spawn from /spawn chat command — generate enemy units from name
+      const enemies = generateEnemies('medium', characters.length, Math.max(...characters.map((c) => c.level), 1));
+      if (enemies.length === 0) return;
+      const template = enemies[0];
+      const spawned: Unit[] = [];
+      for (let i = 0; i < count; i++) {
+        spawned.push({
+          ...template,
+          id: `qs-${crypto.randomUUID().slice(0, 8)}`,
+          name: count > 1 ? `${monsterName} ${i + 1}` : monsterName,
+          initiative: Math.floor(Math.random() * 20) + 1 + (template.dexMod || 0),
+        });
+      }
+      setUnits((prev) => [...prev, ...spawned]);
+      addDmMessage(`*${count} ${monsterName}${count > 1 ? 's' : ''} spawned via /spawn!*`);
+      setTimeout(broadcastCombatSyncLatest, 50);
+    }, [characters, addDmMessage]),
     setWeather,
     setMapPins,
     selectedCharacterId,
@@ -2566,6 +2585,31 @@ export default function Game() {
           )}
           <PartyVitals characters={characters} inCombat={inCombat} />
 
+          {/* Selected character quick-stats bar */}
+          {selectedCharacter && adventureStarted && (() => {
+            const unit = units.find((u) => u.characterId === selectedCharacter.id);
+            const totalSlots = Object.values(getSpellSlots(selectedCharacter.class, selectedCharacter.level)).reduce((s, v) => s + v, 0);
+            const usedSlots = Object.values(selectedCharacter.spellSlotsUsed || {}).reduce((s: number, v: unknown) => s + (typeof v === 'number' ? v : 0), 0);
+            const conditions = unit?.conditions?.filter((c) => !['torchlit', 'darkvision', 'candlelit', 'lantern', 'daylight'].includes(c.type)) || [];
+            return (
+              <div className="mx-2 flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800/50 text-[9px] overflow-x-auto">
+                <span className="font-bold text-slate-300 shrink-0">{selectedCharacter.name}</span>
+                <span className={`font-mono font-bold shrink-0 ${selectedCharacter.hp <= selectedCharacter.maxHp * 0.25 ? 'text-red-400' : selectedCharacter.hp <= selectedCharacter.maxHp * 0.5 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                  ❤ {selectedCharacter.hp}/{selectedCharacter.maxHp}
+                </span>
+                <span className="text-slate-500 shrink-0">AC {selectedCharacter.ac}</span>
+                <span className="text-slate-500 shrink-0">Lv {selectedCharacter.level}</span>
+                {totalSlots > 0 && <span className={`shrink-0 ${usedSlots < totalSlots ? 'text-blue-400' : 'text-slate-600'}`}>◆ {totalSlots - usedSlots}/{totalSlots}</span>}
+                {selectedCharacter.gold > 0 && <span className="text-amber-500 shrink-0">💰 {selectedCharacter.gold}</span>}
+                {conditions.length > 0 && conditions.map((c) => (
+                  <span key={`${c.type}-${c.source}`} className={`shrink-0 px-1 py-0 rounded border border-slate-700 ${CONDITION_EFFECTS[c.type]?.color || 'text-slate-400'}`} title={`${c.type}${c.duration > 0 ? ` (${c.duration} turns)` : ''}: ${CONDITION_EFFECTS[c.type]?.description || ''}`}>
+                    {c.type}{c.duration > 0 ? ` ${c.duration}` : ''}
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+
           {/* Main content area */}
           <div className="flex-1 p-4 overflow-auto relative">
             {/* Floating combat text overlay */}
@@ -3350,6 +3394,7 @@ export default function Game() {
       <SceneTransition sceneName={sceneName} />
       <DiceTower display={diceTowerDisplay} />
       <LevelUpFanfare display={levelUpDisplay} />
+      <Onboarding />
       <RoundMVP display={roundMVPDisplay} />
       <SessionMilestones toast={milestoneToast} />
       <SessionSummary

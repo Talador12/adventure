@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 features — onboarding, inline dice, quick-stats bar, /spawn command, session summary:
+  - **New player onboarding** — 6-step guided tooltip tour for first-visit users: Welcome, Character, Dice, Combat, Map, Shortcuts. Positioned overlays with progress dots, Skip/Back/Next navigation, permanently dismissed via localStorage.
+  - **Chat inline dice roller** — `[[2d6+3]]` or `((1d20+5))` notation in chat messages auto-rolls server-side in Lobby DO, replacing the notation with bolded results showing individual rolls + total.
+  - **Character quick-stats bar** — always-visible strip below party health showing selected character's HP (color-coded), AC, level, spell slots remaining, gold, and active conditions with duration.
+  - **DM /spawn chat command** — DM types `/spawn goblin 3` in chat to instantly spawn enemies without opening the encounter panel. Broadcasts `quick_spawn` game event, generates units from templates.
+  - **Session auto-summary on long rest** — long rest now sends recent DM history to AI narrator to generate a 2-3 sentence session recap (📜 *Session so far:* prefix).
 - 5 features — whisper, condition expire, clipboard import, stat tooltips, re-sort initiative:
   - **DM whisper system** — `/w <username> <message>` in chat sends a private message only visible to the target player. Lobby DO routes whisper to specific WebSocket, echoes confirmation to DM.
   - **Condition duration auto-expire** — conditions now decrement duration on turn end and auto-remove at 0. Expired conditions logged to combat. Barbarian rage resistances cleaned up when rage expires.

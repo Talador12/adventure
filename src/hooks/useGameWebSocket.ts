@@ -76,6 +76,9 @@ export interface GameWebSocketDeps {
   setCalendar?: React.Dispatch<React.SetStateAction<CalendarState>>;
   setRelationships?: React.Dispatch<React.SetStateAction<RelationshipEdge[]>>;
 
+  // Quick spawn from DM chat command
+  onQuickSpawn?: (monsterName: string, count: number) => void;
+
   // Weather sync
   setWeather?: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
 
@@ -569,6 +572,13 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
                 if (Array.isArray(eventData.items)) {
                   deps.lootSyncRef.current?.(eventData.items as LootItem[]);
                 }
+                break;
+              }
+              case 'quick_spawn': {
+                // DM typed /spawn in chat — trigger encounter generation with monster name
+                const monsterName = eventData.monsterName as string || 'Goblin';
+                const count = Math.min(Math.max(1, Number(eventData.count) || 1), 10);
+                deps.onQuickSpawn?.(monsterName, count);
                 break;
               }
               case 'npc_sync': {

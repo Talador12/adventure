@@ -548,12 +548,49 @@ export class Lobby {
           break;
         }
 
+        // DM quick-spawn: /spawn <monster> [count] — broadcast spawn request to Game.tsx
+        const spawnMatch = message.trim().match(/^\/spawn\s+(.+?)(?:\s+(\d+))?$/i);
+        if (spawnMatch && session.id === this.dmPlayerId) {
+          this.broadcast({
+            type: 'game_event',
+            eventType: 'quick_spawn',
+            monsterName: spawnMatch[1].trim(),
+            count: parseInt(spawnMatch[2] || '1', 10),
+            playerId: session.id,
+            timestamp: Date.now(),
+          });
+          break;
+        }
+
+        // Inline dice notation: detect [[2d6+3]] or ((1d20+5)) in messages and auto-roll
+        let processedMessage = message.trim();
+        const diceRegex = /\[\[(\d+d\d+(?:[+-]\d+)?)\]\]|\(\((\d+d\d+(?:[+-]\d+)?)\)\)/g;
+        let diceMatch;
+        while ((diceMatch = diceRegex.exec(processedMessage)) !== null) {
+          const notation = diceMatch[1] || diceMatch[2];
+          const parsed = notation.match(/^(\d+)d(\d+)([+-]\d+)?$/);
+          if (parsed) {
+            const count = Math.min(parseInt(parsed[1], 10), 20);
+            const sides = Math.min(parseInt(parsed[2], 10), 100);
+            const bonus = parseInt(parsed[3] || '0', 10);
+            let total = bonus;
+            const rolls: number[] = [];
+            for (let i = 0; i < count; i++) {
+              const roll = Math.floor(Math.random() * sides) + 1;
+              rolls.push(roll);
+              total += roll;
+            }
+            const rollStr = `[${rolls.join('+')}${bonus ? (bonus > 0 ? `+${bonus}` : String(bonus)) : ''}=${total}]`;
+            processedMessage = processedMessage.replace(diceMatch[0], `**${notation}** → ${rollStr}`);
+          }
+        }
+
         this.broadcast({
           type: 'chat',
           playerId: session.id,
           username: session.username,
           avatar: session.avatar,
-          message: message.trim(),
+          message: processedMessage,
           timestamp: Date.now(),
         });
         break;

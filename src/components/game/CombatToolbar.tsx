@@ -1830,9 +1830,11 @@ export default function CombatToolbar({
                           playHealing();
                           addFloatingText('Full Rest', 'heal');
                           addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored. All spell slots recovered. Exhaustion reduced by 1.`);
-                          fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: `The party makes camp and ${selectedCharacter.name} settles in for a long rest`, context: sceneName || 'a quiet clearing', history: [] }) })
+                          // AI narration for rest + session summary from recent DM history
+                          const recentHistory = dmHistory.slice(-20);
+                          fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: `The party makes camp and ${selectedCharacter.name} settles in for a long rest. Summarize the session so far in 2-3 sentences as a narrator.`, context: sceneName || 'a quiet clearing', history: recentHistory }) })
                             .then((r) => r.json() as Promise<{ narration?: string }>)
-                            .then((d) => { if (d.narration) addDmMessage(d.narration); })
+                            .then((d) => { if (d.narration) addDmMessage(`📜 *Session so far:* ${d.narration}`); })
                             .catch(() => {});
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-800/50 text-indigo-300 text-xs font-semibold rounded-lg transition-all"
