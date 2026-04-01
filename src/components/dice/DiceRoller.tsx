@@ -545,11 +545,10 @@ const DiceRoller = forwardRef<DiceRollerHandle, DiceRollerProps>(function DiceRo
       <div ref={diceDisplayRef} className={`relative flex items-center justify-center py-6${showBurst && critState === 'crit' ? ' crit-flash' : ''}`} style={showBurst && critState === 'fumble' ? { animation: 'fumbleShake 0.6s ease-out' } : undefined}>
         {/* Dice shape outline — tint gold/red persistently on crit/fumble */}
         {ShapeComponent && (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
+            <div
+              className={`absolute inset-0 flex items-center justify-center ${rolling ? 'animate-dice-tumble' : displayValue !== null ? 'animate-dice-land' : ''}`}
             style={{
               color: critState === 'crit' ? '#facc15' : critState === 'fumble' ? '#ef4444' : activeColor,
-              animation: rolling ? 'diceRoll 0.9s ease-in-out infinite' : 'diceSettle 0.35s ease-out',
               opacity: rolling ? 0.6 : critState ? 0.5 : 0.35,
             }}
           >

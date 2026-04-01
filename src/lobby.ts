@@ -474,6 +474,14 @@ export class Lobby {
         if (!session) return;
         const message = (data.message as string) || '';
         if (!message.trim()) return;
+        // Rate limit chat: max 5 messages per second
+        const chatNow = Date.now();
+        session.lastGameEvents = session.lastGameEvents.filter((t) => chatNow - t < RATE_LIMIT_WINDOW_MS);
+        if (session.lastGameEvents.length >= 5) {
+          server.send(JSON.stringify({ type: 'error', message: 'Slow down — sending messages too fast', timestamp: chatNow }));
+          break;
+        }
+        session.lastGameEvents.push(chatNow);
 
         this.broadcast({
           type: 'chat',
@@ -560,6 +568,14 @@ export class Lobby {
       case 'roll': {
         const session = this.sessions.get(server);
         if (!session) return;
+        // Rate limit dice: max 8 rolls per second
+        const diceNow = Date.now();
+        session.lastGameEvents = session.lastGameEvents.filter((t) => diceNow - t < RATE_LIMIT_WINDOW_MS);
+        if (session.lastGameEvents.length >= 8) {
+          server.send(JSON.stringify({ type: 'error', message: 'Slow down — rolling dice too fast', timestamp: diceNow }));
+          break;
+        }
+        session.lastGameEvents.push(diceNow);
 
         const sides = Math.min(Math.max(Number(data.sides) || 20, 2), 100);
         const die = (data.die as string) || `d${sides}`;

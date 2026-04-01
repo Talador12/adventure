@@ -446,6 +446,30 @@ a:hover {
   animation: damageShake 0.3s ease-in-out;
 }
 
+@keyframes dice-tumble-3d {
+  0% { transform: perspective(200px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
+  25% { transform: perspective(200px) rotateX(180deg) rotateY(90deg) rotateZ(45deg) scale(1.1); }
+  50% { transform: perspective(200px) rotateX(360deg) rotateY(180deg) rotateZ(90deg) scale(0.95); }
+  75% { transform: perspective(200px) rotateX(540deg) rotateY(270deg) rotateZ(135deg) scale(1.05); }
+  100% { transform: perspective(200px) rotateX(720deg) rotateY(360deg) rotateZ(180deg) scale(1); }
+}
+
+.animate-dice-tumble {
+  animation: dice-tumble-3d 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  transform-style: preserve-3d;
+}
+
+@keyframes dice-bounce-land {
+  0% { transform: translateY(-8px) scale(1.15); }
+  40% { transform: translateY(2px) scale(0.95); }
+  70% { transform: translateY(-2px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.animate-dice-land {
+  animation: dice-bounce-land 0.35s ease-out forwards;
+}
+
 @keyframes spell-particle-rise {
   0% { opacity: 0; transform: translateY(0) scale(0.5); }
   15% { opacity: 1; transform: translateY(-5px) scale(1); }

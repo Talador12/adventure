@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 roadmap items shipped + 3 confirmed already done:
+  - **Rate limiting on public lobbies** — chat (5/sec) and dice (8/sec) rate limits added to Lobby DO handleMessage, reusing existing lastGameEvents token bucket.
+  - **AI companion auto-generation** — AI seats without assigned characters now auto-generate level-matched Fighter/Cleric/Wizard/Rogue companions with class-appropriate stats.
+  - **Undo/redo for DM actions** — new `useUndoRedo` hook with snapshot-based command stack (max 20), Ctrl+Z/Ctrl+Shift+Z keyboard shortcuts, combat log annotation.
+  - **Dice 3D animation** — CSS 3D tumble animation (`perspective + rotateX/Y/Z`) during rolls with bounce-land settle, replacing flat spin.
+  - Confirmed already-done: Ambient music (5 procedural moods + full UI), Dynamic lighting (bright/dim/dark + torch radius), Attack indicators (slash/arrow/beam).
 - 2 new features + 5 roadmap items confirmed done:
   - **Homebrew content editor** — new `HomebrewEditor` component in DMSidebar Notes tab with dual spell/item creation forms, per-campaign localStorage persistence, "Grant to..." dropdowns to assign homebrew content to characters.
   - **Drop-in guest characters** — "Quick Join" button in Lobby spectator view creates a temp Fighter character with default stats and immediately claims a seat, enabling zero-friction guest play.
@@ -1529,8 +1535,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 
 **Infrastructure:**
 - Lobby DO hibernation — `this.state.acceptWebSocket()` for cost reduction
-- Undo/redo for DM actions (command pattern, rewindable state stack)
-- Rate limiting + abuse protection on public lobbies
+- ~~Undo/redo for DM actions (command pattern, rewindable state stack)~~ (DONE — useUndoRedo hook, snapshot-based, Ctrl+Z/Ctrl+Shift+Z, max 20 entries)
+- ~~Rate limiting + abuse protection on public lobbies~~ (DONE — chat 5/sec + dice 8/sec rate limits in Lobby DO, game_event 10/sec existing)
 - Service Worker for offline-first static assets
 - IndexedDB local cache for characters, campaign state, chat
 
@@ -1545,7 +1551,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Downtime activities (crafting, research, carousing)~~ (DONE — 6 activities with ability checks, gold/XP rewards, DMSidebar integration)
 - ~~Familiar/companion tokens (separate initiative, player-controlled)~~ (DONE — Summon Companion button for Ranger/Druid/Wizard/Warlock, creates secondary Unit with isCompanion + companionOwnerId, separate initiative, scaled stats, teal-themed UI)
 - ~~Custom monster creator (DM builds custom monsters with ability editor)~~ (DONE — CustomMonsterCreator component with full stat block form, ability editor, localStorage persistence, spawn integration)
-- AI companion auto-generation (auto-create character for AI seats without one assigned)
+- ~~AI companion auto-generation (auto-create character for AI seats without one assigned)~~ (DONE — auto-generates Fighter/Cleric/Wizard/Rogue at party level with class-appropriate stats)
 - ~~Lair actions (boss monsters trigger environmental effects on initiative count 20)~~ (DONE — LairAction interface, Adult Dragon with 3 lair actions, useEnemyAI round-start effect)
 - ~~Legendary actions (boss enemies get extra actions between player turns)~~ (DONE — Unit fields, Adult Dragon 3 + Mind Flayer 2 legendary abilities, useEnemyAI between-turn effect, InitiativeBar indicator)
 - ~~Grapple/shove combat maneuvers (contested Athletics checks, movement restrictions)~~ (DONE — Grapple button: contested Athletics vs DEX, applies grappled condition with speed 0 enforced across all 3 BattleMap movement paths. Shove button: contested Athletics vs DEX, knocks target prone. Both require melee adjacency, synced via combat broadcast.)
@@ -1587,10 +1593,10 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Map layers (background, terrain, tokens, effects — separate composited layers)
 - ~~Sound FX expansion — remaining spell effects, death saves, conditions~~ (DONE — 5 new procedural Web Audio sounds: death save heartbeat, buff/debuff condition chimes, condition removed tone, shield spell metallic ring, initiative roll drum)
 - ~~Portrait gallery — save/browse AI portraits, remix styles, share with party~~ (ALREADY DONE — portraitGallery on Character, gallery view in CharacterSheet with click-to-use, auto-migration to server URLs)
-- Dynamic lighting (token light sources, darkvision, dim light zones)
-- Animated token attack indicators (slash/arrow/spell beam between attacker and target)
-- Dice roll 3D animation (three.js or CSS 3D transforms for satisfying dice physics)
-- Ambient background music player (tavern, combat, exploration — royalty-free tracks via Web Audio)
+- ~~Dynamic lighting (token light sources, darkvision, dim light zones)~~ (ALREADY DONE — effectiveLighting with bright/dim/dark, torch/candle/lantern/darkvision radius, DM painting tools)
+- ~~Animated token attack indicators (slash/arrow/spell beam between attacker and target)~~ (ALREADY DONE — useAttackIndicators hook + drawAttackIndicators canvas rendering for melee/ranged/spell)
+- ~~Dice roll 3D animation (three.js or CSS 3D transforms for satisfying dice physics)~~ (DONE — CSS 3D perspective + rotateX/Y/Z tumble animation during rolls, bounce-land settle on result)
+- ~~Ambient background music player (tavern, combat, exploration — royalty-free tracks via Web Audio)~~ (ALREADY DONE — 5 procedural moods in useSoundFX, DM selector UI, auto-switch on combat)
 - ~~Combat damage type indicators (slash/pierce/bludgeon/fire/cold/etc icons on floating text)~~ (DONE — 13 DamageType with emoji icons on FloatingCombatText)
 - ~~Token aura system (visual rings around tokens for spell effects, threat ranges)~~ (ALREADY DONE — auraRadius/auraColor on Unit, canvas rendering in BattleMap, Set/Clear Aura button in CombatToolbar)
 - Battle map fog-of-war per-player (each player only sees what their token can see)

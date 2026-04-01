@@ -21,6 +21,7 @@ import { useDynamicDifficulty } from '../hooks/useDynamicDifficulty';
 import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useRulesReminder } from '../hooks/useRulesReminder';
 import SpellParticles, { useSpellParticles, type SpellEffect } from '../components/game/SpellParticles';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
@@ -752,6 +753,30 @@ export default function Game() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+      // DM Undo/Redo (Ctrl+Z / Ctrl+Shift+Z) — for combat unit state
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 'z' && !e.shiftKey && canUseDMTools && canUndo) {
+          e.preventDefault();
+          const result = undoDmAction();
+          if (result) {
+            setUnits(result.units);
+            setCombatLog((prev) => [...prev, `DM undid: ${result.label}`]);
+            setTimeout(broadcastCombatSyncLatest, 50);
+          }
+          return;
+        }
+        if ((e.key === 'z' && e.shiftKey || e.key === 'Z') && canUseDMTools && canRedo) {
+          e.preventDefault();
+          const result = redoDmAction();
+          if (result) {
+            setUnits(result.units);
+            setCombatLog((prev) => [...prev, `DM redid: ${result.label}`]);
+            setTimeout(broadcastCombatSyncLatest, 50);
+          }
+          return;
+        }
+      }
+
       // Escape closes modals/panels in priority order (topmost first)
       if (e.key === 'Escape') {
         if (showRulesRef) { setShowRulesRef(false); return; }
@@ -939,11 +964,44 @@ export default function Game() {
     aiUnitsCreatedRef.current = true;
 
     const aiUnits: Unit[] = [];
+    const AI_NAMES = ['Alaric', 'Brenna', 'Caelum', 'Delphine', 'Eldric', 'Fiora', 'Gareth', 'Hester'];
+    const AI_CLASSES: Array<'Fighter' | 'Cleric' | 'Wizard' | 'Rogue'> = ['Fighter', 'Cleric', 'Wizard', 'Rogue'];
+    const AI_RACES: Array<'Human' | 'Elf' | 'Dwarf' | 'Halfling'> = ['Human', 'Elf', 'Dwarf', 'Halfling'];
+    let aiIdx = 0;
     for (const charId of aiCharacterIds) {
       // Skip if unit already exists (from campaign load)
       if (units.some((u) => u.characterId === charId)) continue;
-      const char = characters.find((c) => c.id === charId);
-      if (!char) continue;
+      let char = characters.find((c) => c.id === charId);
+      // Auto-generate character for AI seats without one assigned
+      if (!char) {
+        const cls = AI_CLASSES[aiIdx % AI_CLASSES.length];
+        const race = AI_RACES[aiIdx % AI_RACES.length];
+        const name = AI_NAMES[aiIdx % AI_NAMES.length];
+        const humanLevel = characters.find((c) => !aiCharacterIds.has(c.id))?.level || 1;
+        const hpBase = cls === 'Fighter' ? 10 : cls === 'Cleric' ? 8 : cls === 'Wizard' ? 6 : 8;
+        const conMod = cls === 'Fighter' ? 2 : 1;
+        const hp = hpBase + conMod + (humanLevel - 1) * (Math.floor(hpBase / 2) + 1 + conMod);
+        const generatedChar = {
+          id: charId,
+          name: `${name} (AI)`,
+          race: race as import('../types/game').CharacterRace,
+          class: cls as import('../types/game').CharacterClass,
+          level: humanLevel,
+          stats: cls === 'Fighter' ? { STR: 16, DEX: 13, CON: 14, INT: 10, WIS: 12, CHA: 8 }
+            : cls === 'Cleric' ? { STR: 14, DEX: 10, CON: 13, INT: 10, WIS: 16, CHA: 12 }
+            : cls === 'Wizard' ? { STR: 8, DEX: 14, CON: 12, INT: 16, WIS: 13, CHA: 10 }
+            : { STR: 10, DEX: 16, CON: 12, INT: 13, WIS: 14, CHA: 8 },
+          hp, maxHp: hp, ac: cls === 'Fighter' ? 18 : cls === 'Cleric' ? 16 : cls === 'Rogue' ? 14 : 12,
+          xp: 0, gold: 50,
+          background: 'AI Companion', alignment: 'Neutral Good',
+          equipment: {} as Record<string, never>, inventory: [],
+          appearance: {},
+        };
+        addCharacter(generatedChar);
+        char = generatedChar;
+        addDmMessage(`*${name} joins the party as an AI companion!*`);
+      }
+      aiIdx++;
       const monkSpeedBonus = char.class === 'Monk' ? Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0) : 0;
       aiUnits.push({
         id: `unit-${char.id}`,
@@ -1236,6 +1294,7 @@ export default function Game() {
   // Attack indicators — animated lines on battle map during attacks
   const { indicators: attackIndicators, addIndicator: addAttackIndicator } = useAttackIndicators();
   const { particles: spellParticles, triggerEffect: triggerSpellEffect } = useSpellParticles();
+  const { syncUnits: syncUndoUnits, saveSnapshot, undo: undoDmAction, redo: redoDmAction, canUndo, canRedo } = useUndoRedo();
 
   // Dynamic difficulty — auto-adjust encounter strength mid-combat
   const [dynamicDifficultyEnabled, setDynamicDifficultyEnabled] = useState(() => {
@@ -1248,6 +1307,9 @@ export default function Game() {
     if (!rulesRemindersEnabled) return;
     setCombatLog((prev) => [...prev, `📋 ${reminder.message}`]);
   }, [rulesRemindersEnabled]));
+
+  // Keep undo system synced with current units
+  useEffect(() => { syncUndoUnits(units); }, [units, syncUndoUnits]);
 
   // Fire rules checks when turn changes
   const prevTurnIndexRef = useRef(turnIndex);
