@@ -464,6 +464,102 @@ export function playLootDrop() {
   });
 }
 
+// Death save — ominous low tone with heartbeat pulse
+export function playDeathSave() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  // Deep heartbeat thud
+  for (let i = 0; i < 2; i++) {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 50;
+    const g = ctx.createGain();
+    const t = now + i * 0.35;
+    g.gain.setValueAtTime(0.15, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    osc.connect(g).connect(dest());
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
+  // Eerie high whistle
+  const osc2 = ctx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(800, now);
+  osc2.frequency.linearRampToValueAtTime(600, now + 0.7);
+  const g2 = ctx.createGain();
+  g2.gain.setValueAtTime(0.04, now);
+  g2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+  osc2.connect(g2).connect(dest());
+  osc2.start(now);
+  osc2.stop(now + 0.8);
+}
+
+// Condition applied — short magical chime (buff or debuff)
+export function playConditionApplied(isBuff: boolean = true) {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  const freqs = isBuff ? [600, 900, 1200] : [400, 300, 200];
+  freqs.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    const t = now + i * 0.08;
+    g.gain.setValueAtTime(0.07, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.connect(g).connect(dest());
+    osc.start(t);
+    osc.stop(t + 0.15);
+  });
+}
+
+// Condition removed — quick descending tone
+export function playConditionRemoved() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(800, now);
+  osc.frequency.exponentialRampToValueAtTime(300, now + 0.2);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.06, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+  osc.connect(g).connect(dest());
+  osc.start(now);
+  osc.stop(now + 0.25);
+}
+
+// Shield spell — metallic ring resonance
+export function playShieldSpell() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  [2200, 3300, 4400].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.05, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.3 + i * 0.1);
+    osc.connect(g).connect(dest());
+    osc.start(now);
+    osc.stop(now + 0.4 + i * 0.1);
+  });
+}
+
+// Initiative roll — quick ascending drum roll
+export function playInitiativeRoll() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  for (let i = 0; i < 6; i++) {
+    const { node, gainNode } = noise(ctx, 0.03, 0.08 + i * 0.02);
+    const t = now + i * 0.05;
+    gainNode.gain.setValueAtTime(0.08 + i * 0.02, t);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    node.start(t);
+    node.stop(t + 0.06);
+  }
+}
+
 // Volume control — global mute state
 let muted = localStorage.getItem('adventure:muted') === 'true';
 

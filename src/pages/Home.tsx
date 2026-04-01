@@ -68,6 +68,19 @@ export default function Home() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Auto-launch shared template links (?template=id)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const templateId = params.get('template');
+    if (!templateId) return;
+    const template = CAMPAIGN_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) return;
+    window.history.replaceState({}, '', '/'); // clean URL
+    const roomId = `${template.id}-${Date.now().toString(36)}`;
+    try { localStorage.setItem(`adventure:template:${roomId}`, JSON.stringify(template)); } catch { /* ok */ }
+    navigate(`/lobby/${roomId}`);
+  }, [navigate]);
   const { locale: i18nLocale, setLocale: setI18nLocale, t } = useI18n();
   const { characters, removeCharacter, addCharacter } = useGame();
   const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number; archived?: boolean; archivedAt?: number }>>([]);
@@ -787,9 +800,20 @@ export default function Home() {
               <div className="text-2xl mb-1">{t.icon}</div>
               <div className="text-xs font-bold text-slate-200 group-hover:text-[#F38020] transition-colors">{t.name}</div>
               <div className="text-[9px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{t.description}</div>
-              <div className="flex gap-1 mt-1.5">
+              <div className="flex items-center gap-1 mt-1.5">
                 <span className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-400">Lv {t.suggestedLevel}</span>
                 {t.tags.slice(0, 2).map((tag) => <span key={tag} className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-500">{tag}</span>)}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const url = `${window.location.origin}/?template=${t.id}`;
+                    navigator.clipboard.writeText(url).then(() => toast('Template link copied!', 'success')).catch(() => {});
+                  }}
+                  className="ml-auto text-[8px] text-slate-600 hover:text-[#F38020] transition-colors"
+                  title="Copy shareable template link"
+                >
+                  Share
+                </button>
               </div>
             </button>
           ))}
@@ -824,6 +848,33 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Aggregate stats across all characters */}
+        {characters.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in-up">
+            {(() => {
+              const totalGold = characters.reduce((sum, c) => sum + (c.gold || 0), 0);
+              const totalXP = characters.reduce((sum, c) => sum + (c.xp || 0), 0);
+              const highestLevel = Math.max(...characters.map((c) => c.level || 1));
+              const totalSessions = campaigns.filter((c) => !c.archived).length;
+              const stats = [
+                { label: 'Characters', value: characters.length, icon: '🎭' },
+                { label: 'Campaigns', value: totalSessions, icon: '⚔️' },
+                { label: 'Highest Level', value: highestLevel, icon: '⭐' },
+                { label: 'Total Gold', value: totalGold >= 1000 ? `${(totalGold / 1000).toFixed(1)}k` : String(totalGold), icon: '💰' },
+              ];
+              return stats.map((s) => (
+                <div key={s.label} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-slate-700/30">
+                  <span className="text-lg">{s.icon}</span>
+                  <div>
+                    <div className="text-sm font-bold text-white">{s.value}</div>
+                    <div className="text-[9px] text-slate-500">{s.label}</div>
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         )}
 

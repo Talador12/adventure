@@ -63,7 +63,13 @@ export function useDynamicDifficulty({ enabled, addDmMessage, broadcastCombatSyn
         setTimeout(() => broadcastCombatSync(updated, true, combatRound), 50);
         return updated;
       });
-      addDmMessage('*The enemies seem to falter, their movements growing sluggish...*');
+      const deadlyNarrations = [
+        '*The enemies seem to falter, their movements growing sluggish...*',
+        '*One of the creatures clutches a wound, stumbling backward...*',
+        '*The enemy formation breaks as morale wavers...*',
+        '*A distant horn sounds — the enemies glance nervously toward the exit...*',
+      ];
+      addDmMessage(deadlyNarrations[combatRound % deadlyNarrations.length]);
     } else if (difficulty === 'hard') {
       // Slight nerf: reduce enemy HP by 10%
       setUnits((prev) => {
@@ -92,7 +98,13 @@ export function useDynamicDifficulty({ enabled, addDmMessage, broadcastCombatSyn
         setTimeout(() => broadcastCombatSync(updated, true, combatRound), 50);
         return updated;
       });
-      addDmMessage('*The remaining enemies rally, their strikes growing more desperate and fierce!*');
+      const easyNarrations = [
+        '*The remaining enemies rally, their strikes growing more desperate and fierce!*',
+        '*Reinforcements seem to be on the way — the enemies fight with renewed vigor!*',
+        '*The enemy leader snarls a command, and the creatures attack with coordinated fury!*',
+        '*Something changes in the enemies\' eyes — they fight like cornered animals now.*',
+      ];
+      addDmMessage(easyNarrations[combatRound % easyNarrations.length]);
     }
   }, [enabled, inCombat, combatRound, units, setUnits, addDmMessage, broadcastCombatSync]);
 

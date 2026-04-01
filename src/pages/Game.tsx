@@ -20,6 +20,7 @@ import { useAIPlayerTurn } from '../hooks/useAIPlayerTurn';
 import { useDynamicDifficulty } from '../hooks/useDynamicDifficulty';
 import { useAttackIndicators } from '../hooks/useAttackIndicators';
 import { useRulesReminder } from '../hooks/useRulesReminder';
+import SpellParticles, { useSpellParticles, type SpellEffect } from '../components/game/SpellParticles';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
@@ -271,6 +272,7 @@ export default function Game() {
   const [activeDicePack, setActiveDicePack] = useState<DiceSoundPack>(getDiceSoundPack());
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
+  const [initiativeHistory, setInitiativeHistory] = useState<Array<{ round: number; order: Array<{ name: string; initiative: number; hp: number; maxHp: number }> }>>([]);
   const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
     try { return localStorage.getItem('adventure:rulesReminders') !== 'off'; } catch { return true; }
   });
@@ -1233,6 +1235,7 @@ export default function Game() {
 
   // Attack indicators — animated lines on battle map during attacks
   const { indicators: attackIndicators, addIndicator: addAttackIndicator } = useAttackIndicators();
+  const { particles: spellParticles, triggerEffect: triggerSpellEffect } = useSpellParticles();
 
   // Dynamic difficulty — auto-adjust encounter strength mid-combat
   const [dynamicDifficultyEnabled, setDynamicDifficultyEnabled] = useState(() => {
@@ -1809,6 +1812,9 @@ export default function Game() {
       return;
     }
     playMagicSpell();
+    // Trigger spell particle effects based on spell school/damage type
+    const spellEffectMap: Record<string, SpellEffect> = { evocation: 'fire', necromancy: 'necrotic', abjuration: 'radiant', conjuration: 'force', enchantment: 'ice', transmutation: 'lightning', divination: 'heal', illusion: 'force' };
+    triggerSpellEffect(spellEffectMap[spell.school] || 'force');
     const char = characters.find((c) => c.id === charId);
     const casterName = char?.name || 'Caster';
     const affectedSet = new Set(affectedCells.map((c) => `${c.col},${c.row}`));
@@ -2397,6 +2403,23 @@ export default function Game() {
             </div>
           )}
 
+          {/* Initiative history — collapsible previous rounds */}
+          {inCombat && initiativeHistory.length > 0 && (
+            <details className="mx-2 mb-1">
+              <summary className="text-[9px] text-slate-600 cursor-pointer hover:text-slate-400 select-none">
+                Previous rounds ({initiativeHistory.length})
+              </summary>
+              <div className="mt-1 max-h-24 overflow-y-auto space-y-1 text-[9px]">
+                {initiativeHistory.slice().reverse().map((h) => (
+                  <div key={h.round} className="flex items-center gap-2 text-slate-500">
+                    <span className="text-amber-600 font-bold shrink-0">R{h.round}</span>
+                    <span className="truncate">{h.order.map((u) => `${u.name}(${u.initiative})`).join(' > ')}</span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+
           {/* Encounter XP tracker — during combat */}
           <EncounterXPTracker units={units} playerCount={characters.length} inCombat={inCombat} />
           <EncounterThermometer units={units} inCombat={inCombat} />
@@ -2420,6 +2443,7 @@ export default function Game() {
           <div className="flex-1 p-4 overflow-auto relative">
             {/* Floating combat text overlay */}
             <FloatingCombatText texts={floatingTexts} onExpire={expireFloatingText} />
+            <SpellParticles particles={spellParticles} />
             {!adventureStarted ? (
               // Pre-adventure: Begin Adventure prompt
               <div className="rounded-xl border border-slate-800 bg-slate-900 flex flex-col items-center justify-center h-full gap-6 p-8">
@@ -2588,7 +2612,13 @@ export default function Game() {
                   recordDamage={recordDamage}
                   triggerDeathRecap={triggerDeathRecap}
                   triggerLevelUp={(name, level) => triggerLevelUp(name, level)}
-                  onNewRound={(round) => checkRoundMVP(combatLog, characters.map((c) => c.name), round)}
+                  onNewRound={(round) => {
+                    checkRoundMVP(combatLog, characters.map((c) => c.name), round);
+                    setInitiativeHistory((prev) => [...prev.slice(-9), {
+                      round,
+                      order: units.filter((u) => u.hp > 0).map((u) => ({ name: u.name, initiative: u.initiative, hp: u.hp, maxHp: u.maxHp })),
+                    }]);
+                  }}
                   onCombatEnd={() => {
                     const prev = preCombatAmbientRef.current;
                     if (prev && prev !== 'none' && prev !== 'combat') {

@@ -148,6 +148,9 @@ export interface Unit {
   // Mounted combat — rider and mount share a position on the battle map
   mountId?: string;  // if this unit is a rider, the mount's unit ID
   riderId?: string;  // if this unit is a mount, the rider's unit ID
+  // Companion/familiar — secondary token controlled by a player
+  companionOwnerId?: string; // unit ID of the player who controls this companion
+  isCompanion?: boolean;     // true for familiars, animal companions, summoned creatures
 }
 
 export interface LairAction {

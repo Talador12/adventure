@@ -838,6 +838,56 @@ export default function CombatToolbar({
                         );
                       })()}
 
+                      {/* Summon Companion — create a player-controlled secondary token */}
+                      {inCombat && selectedCharacter && isPlayerTurn && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const hasCompanion = units.some((u) => u.companionOwnerId === playerUnit.id && u.hp > 0);
+                        if (hasCompanion) return null;
+                        const eligibleClasses = ['Ranger', 'Druid', 'Wizard', 'Warlock'];
+                        if (!eligibleClasses.includes(selectedCharacter.class)) return null;
+                        return (
+                          <button
+                            disabled={!isPlayerTurn}
+                            title="Summon a familiar or companion (separate initiative, you control it)"
+                            onClick={() => {
+                              const name = window.prompt('Companion name (e.g. "Owl Familiar", "Wolf"):');
+                              if (!name?.trim()) return;
+                              const companion: Unit = {
+                                id: `companion-${crypto.randomUUID().slice(0, 8)}`,
+                                name: name.trim(),
+                                hp: Math.max(1, Math.floor(selectedCharacter.level * 2)),
+                                maxHp: Math.max(1, Math.floor(selectedCharacter.level * 2)),
+                                ac: 12,
+                                initiative: playerUnit.initiative - 1,
+                                isCurrentTurn: false,
+                                type: 'player' as const,
+                                playerId: playerUnit.playerId,
+                                speed: 6,
+                                movementUsed: 0,
+                                reactionUsed: false,
+                                bonusActionUsed: false,
+                                disengaged: false,
+                                attackBonus: Math.floor(selectedCharacter.level / 4) + 2,
+                                damageDie: '1d4',
+                                damageBonus: 0,
+                                dexMod: 2,
+                                conditions: [],
+                                isCompanion: true,
+                                companionOwnerId: playerUnit.id,
+                              };
+                              setUnits((prev: Unit[]) => [...prev, companion]);
+                              const msg = `${selectedCharacter.name} summons ${name.trim()}!`;
+                              setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-900/30 hover:bg-teal-800/40 border border-teal-600/50 text-teal-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            Summon Companion
+                          </button>
+                        );
+                      })()}
+
                       {/* Help action — give an ally advantage on their next attack against a target */}
                       {inCombat &&
                         selectedCharacter &&

@@ -55,6 +55,16 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 4 more roadmap items shipped:
+  - **Pre-built adventure modules** — 3 new campaign templates added (Into the Underdark, The Sunken Throne, The Shattered Gate) for 7 total. Covers underdark/survival, nautical/pirate, and planar/one-shot themes with full quest chains.
+  - **AI DM encounter pacing** — expanded `useDynamicDifficulty` with varied narrative narrations (4 deadly + 4 easy variants), disguising mechanical adjustments with diverse combat flavor text.
+  - **Campaign templates sharing** — "Share" button on each template copies a `?template=id` URL; Home auto-launches shared template links via URL param detection.
+  - **Particle effects for spells** — new `SpellParticles` component with CSS-animated particles for 7 spell effects (fire/ice/lightning/heal/necrotic/radiant/force), triggered on AoE spell casts with school-based mapping.
+- 4 roadmap items shipped in one pass:
+  - **Combat initiative history** — previous rounds' turn orders tracked and shown in collapsible `<details>` panel below initiative bar (last 10 rounds, with initiative values + HP).
+  - **Sound FX expansion** — 5 new procedural Web Audio sounds: `playDeathSave` (heartbeat + eerie whistle), `playConditionApplied` (buff/debuff chimes), `playConditionRemoved` (descending tone), `playShieldSpell` (metallic resonance), `playInitiativeRoll` (ascending drum roll).
+  - **Campaign comparison stats** — aggregate stats panel on Home (characters, campaigns, highest level, total gold) shown when user has characters.
+  - **Familiar/companion tokens** — "Summon Companion" button for Ranger/Druid/Wizard/Warlock creates a player-controlled secondary unit with `isCompanion`/`companionOwnerId` fields, separate initiative, scaled HP/attack.
 - Added passive rules reminder system — `useRulesReminder` hook watches turn transitions and surfaces gentle combat log reminders for unused bonus actions (Rogue Cunning Action, Fighter Second Wind when low), available reaction spells (Shield for Wizards/Sorcerers), unused movement, and concentration save DCs. Deduped with 30s window. DM toggle in DMSidebar (sky-blue ON/OFF).
 - Added campaign search + sort on Home page — search bar filters campaigns by name/room ID, sort dropdown offers newest/oldest/A-Z ordering. Controls appear automatically when user has 3+ campaigns.
 - Added Paladin Divine Smite + Bard Bardic Inspiration bonus actions — Paladin gets toggleable "Divine Smite" that auto-applies +2d8 radiant on next melee hit (consumes lowest spell slot, doubles on crit, new `smiteArmed` condition). Bard gets "Bardic Inspiration" that grants scaling inspiration die (d6/d8/d10/d12) to an ally, once per short rest.
@@ -1529,7 +1539,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Weather/lighting effects on battle map (rain, fog, darkness, torch light)~~ (DONE — weather overlays + DM selector + WebSocket sync)
 - ~~Random encounter tables (per biome/dungeon level, auto-roll between rests)~~ (DONE — 8 biomes, weighted tables, DMSidebar UI)
 - ~~Downtime activities (crafting, research, carousing)~~ (DONE — 6 activities with ability checks, gold/XP rewards, DMSidebar integration)
-- Familiar/companion tokens (separate initiative, player-controlled)
+- ~~Familiar/companion tokens (separate initiative, player-controlled)~~ (DONE — Summon Companion button for Ranger/Druid/Wizard/Warlock, creates secondary Unit with isCompanion + companionOwnerId, separate initiative, scaled stats, teal-themed UI)
 - ~~Custom monster creator (DM builds custom monsters with ability editor)~~ (DONE — CustomMonsterCreator component with full stat block form, ability editor, localStorage persistence, spawn integration)
 - AI companion auto-generation (auto-create character for AI seats without one assigned)
 - ~~Lair actions (boss monsters trigger environmental effects on initiative count 20)~~ (DONE — LairAction interface, Adult Dragon with 3 lair actions, useEnemyAI round-start effect)
@@ -1565,13 +1575,13 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Export to Pathfinder 2e, Forbidden Lands, Savage Worlds
 - VTT map import (Foundry, Roll20 map files → BattleMap background)
 - Homebrew content editor (custom races, classes, spells, items, monsters)
-- Pre-built adventure modules (starter dungeons, one-shots)
+- ~~Pre-built adventure modules (starter dungeons, one-shots)~~ (DONE — 7 campaign templates: Lost Mine, Whispering Woods, Ashfall Keep, Golden Masquerade, Into the Underdark, Sunken Throne, Shattered Gate)
 - ~~Monster manual browser (CR, type, environment filters)~~ (DONE — MonsterBrowser modal + monsters.ts data)
 
 **Visual & Audio:**
-- Particle effects for spells (fire, ice, lightning, healing shimmer)
+- ~~Particle effects for spells (fire, ice, lightning, healing shimmer)~~ (DONE — SpellParticles component with CSS animations for 7 effects, triggered on AoE spell casts with school-based color mapping)
 - Map layers (background, terrain, tokens, effects — separate composited layers)
-- Sound FX expansion — remaining spell effects, death saves, conditions
+- ~~Sound FX expansion — remaining spell effects, death saves, conditions~~ (DONE — 5 new procedural Web Audio sounds: death save heartbeat, buff/debuff condition chimes, condition removed tone, shield spell metallic ring, initiative roll drum)
 - Portrait gallery — save/browse AI portraits, remix styles, share with party
 - Dynamic lighting (token light sources, darkvision, dim light zones)
 - Animated token attack indicators (slash/arrow/spell beam between attacker and target)
@@ -1581,7 +1591,7 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - Token aura system (visual rings around tokens for spell effects, threat ranges)
 - Battle map fog-of-war per-player (each player only sees what their token can see)
 - Minimap overlay (small corner map showing full battlefield when zoomed in)
-- Combat initiative history (show previous rounds' turn orders for reference)
+- ~~Combat initiative history (show previous rounds' turn orders for reference)~~ (DONE — initiative snapshots captured per round, collapsible panel below initiative bar shows last 10 rounds with names, init values, HP)
 
 **Social & Community:**
 - ~~AI session recap ("last time on..." from combat log + chat)~~ (DONE — auto-narration on game load via DM AI endpoint, amber banner, session-scoped)
@@ -1590,14 +1600,14 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Chat emoji reactions (react to messages with emoji)~~ (DONE — 8 D&D-themed emoji, hover picker, toggle reactions, WebSocket sync, lobby + game)
 - Discord integration for voice/chat (Activity SDK or webhook)
 - Drop-in/drop-out guest characters (no account, temporary token)
-- Campaign templates (share setup for others to clone)
-- Campaign comparison stats (total kills, gold earned, sessions played across campaigns)
+- ~~Campaign templates (share setup for others to clone)~~ (DONE — Share button copies ?template=id URL, Home auto-launches shared template links)
+- ~~Campaign comparison stats (total kills, gold earned, sessions played across campaigns)~~ (DONE — aggregate stats panel on Home page showing character count, campaign count, highest level, total gold across all characters)
 - ~~Achievement badges (first crit, 100 kills, TPK survivor, dragon slayer, etc.)~~ (DONE — 16 achievements, 4 categories, persistent tracking, Badges view tab)
 - ~~Shareable character cards (social media image export with stats + portrait)~~ (DONE — canvas-based 600x340 PNG generation with portrait, stats, equipment, download + clipboard copy)
 
 **AI enhancements:**
 - ~~AI player turn logic (AI seats actually play — move, attack, cast)~~ (DONE — useAIPlayerTurn hook with intelligent decision tree, heal/cast/attack/move, feat+proficiency support, Extra Attack, OA handling)
-- AI DM encounter pacing (dynamic difficulty mid-combat)
+- ~~AI DM encounter pacing (dynamic difficulty mid-combat)~~ (DONE — useDynamicDifficulty with varied narrative narrations for deadly/easy adjustments, mechanical stat scaling disguised as combat flavor)
 - ~~AI rules lawyer (passive — flags rule violations in chat)~~ (DONE — useRulesReminder hook with client-side pattern matching: unused bonus action reminders for Rogues/Fighters, reaction spell availability for Wizards/Sorcerers, unused movement warnings, concentration save DC callouts. Deduped with 30s window. DM-togglable in DMSidebar settings panel.)
 - AI session prep (DM goals → generated maps + encounters + NPCs)
 - AI voice narration (TTS with distinct NPC voices)
