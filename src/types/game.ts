@@ -14,7 +14,7 @@ export interface Player {
 }
 
 // --- Conditions ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'grappled' | 'smiteArmed' | 'hunterMarked' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'grappled' | 'smiteArmed' | 'hunterMarked' | 'surprised' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -37,6 +37,7 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   grappled: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Grappled — speed is 0, cannot move', color: 'text-rose-400' },
   smiteArmed: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Divine Smite armed — next melee hit deals +2d8 radiant', color: 'text-amber-300' },
   hunterMarked: { attackMod: 0, acMod: 0, saveMod: 0, description: "Hunter's Mark — attacks against this target deal +1d6 damage", color: 'text-lime-400' },
+  surprised: { attackMod: -99, acMod: -2, saveMod: 0, description: 'Surprised — cannot move, take actions, or reactions until end of first turn', color: 'text-pink-400' },
   torchlit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a torch — 40ft bright light (8 cells)', color: 'text-amber-300' },
   darkvision: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Darkvision spell — 60ft vision in darkness (12 cells)', color: 'text-indigo-300' },
   candlelit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a candle — 10ft bright, 20ft dim', color: 'text-orange-200' },

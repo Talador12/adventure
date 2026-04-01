@@ -745,6 +745,36 @@ export default function CombatToolbar({
                           );
                         })()}
 
+                      {/* Revive — DM can revive a dead character (requires spell/item) */}
+                      {canUseDMTools && selectedCharacter && selectedCharacter.hp <= 0 && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit || playerUnit.hp > 0) return null;
+                        return (
+                          <div className="flex gap-1">
+                            <button onClick={() => {
+                              setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, hp: 1 } : u));
+                              updateCharacter(selectedCharacter.id, { hp: 1, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as any });
+                              const msg = `${selectedCharacter.name} is stabilized at 1 HP!`;
+                              setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }} className="text-[9px] px-2 py-1 rounded bg-emerald-900/30 border border-emerald-600/40 text-emerald-400 font-semibold hover:bg-emerald-800/40 transition-all" title="Stabilize at 1 HP (Spare the Dying / Medicine check)">
+                              Stabilize
+                            </button>
+                            <button onClick={() => {
+                              const healHp = Math.floor(selectedCharacter.maxHp / 2);
+                              setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, hp: healHp } : u));
+                              updateCharacter(selectedCharacter.id, { hp: healHp, deathSaves: { successes: 0, failures: 0 }, condition: 'normal' as any });
+                              const msg = `${selectedCharacter.name} is revived with ${healHp} HP! (Revivify / healing spell)`;
+                              setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              playHealing();
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }} className="text-[9px] px-2 py-1 rounded bg-yellow-900/30 border border-yellow-600/40 text-yellow-400 font-semibold hover:bg-yellow-800/40 transition-all" title="Revive at half HP (Revivify / Raise Dead)">
+                              Revive
+                            </button>
+                          </div>
+                        );
+                      })()}
+
                       {/* Inspiration — DM grants, player spends for advantage */}
                       {selectedCharacter && (() => {
                         const hasInspiration = selectedCharacter.inspiration;
@@ -1796,6 +1826,27 @@ export default function CombatToolbar({
                           title="Place a persistent spell effect zone on the battle map"
                         >
                           Spell Zone
+                        </button>
+                      )}
+
+                      {/* Export full session log */}
+                      {dmHistory.length > 3 && (
+                        <button
+                          onClick={() => {
+                            const charSummary = characters.map((c) => `- **${c.name}** (${c.race} ${c.class} Lv${c.level}) — ${c.hp}/${c.maxHp} HP, ${c.gold}gp`).join('\n');
+                            const md = `# Session Log — ${new Date().toLocaleDateString()}\n\n## Party\n${charSummary}\n\n## Session Narrative\n${dmHistory.map((l) => l.startsWith('*') || l.startsWith('**') ? l : `> ${l}`).join('\n\n')}\n\n## Combat Log\n${combatLog.map((l) => `- ${l}`).join('\n')}\n\n---\n*Exported from Adventure VTT*`;
+                            const blob = new Blob([md], { type: 'text/markdown' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `session-log-${new Date().toISOString().slice(0, 10)}.md`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          className="text-[9px] px-2 py-1 rounded bg-slate-800/60 border border-slate-600/40 text-slate-500 hover:text-slate-300 font-semibold transition-all"
+                          title="Download full session log (narrative + combat) as markdown"
+                        >
+                          Session Log
                         </button>
                       )}
 

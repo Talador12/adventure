@@ -1330,7 +1330,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
             speed = 6 + Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0);
           }
         }
-        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false, speed };
+        // Surprise detection: hidden players surprise enemies (and vice versa)
+        const isHidden = u.conditions?.some((c) => c.type === 'hidden');
+        const conditions = [...(u.conditions || [])];
+        // If enemy and any player was hidden, this enemy is surprised
+        if (u.type === 'enemy' && prev.some((p) => p.type === 'player' && p.conditions?.some((c) => c.type === 'hidden'))) {
+          const stealthDC = 10 + dexMod; // rough passive perception
+          const partyStealthRoll = Math.floor(Math.random() * 20) + 1 + 3; // party average
+          if (partyStealthRoll >= stealthDC) conditions.push({ type: 'surprised', duration: 1, source: 'Ambush' });
+        }
+        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false, speed, conditions };
       });
       // Sort by initiative descending, then DEX mod tiebreaker, then stable ID comparison
       withInitiative.sort((a, b) => {

@@ -250,6 +250,82 @@ export default function DMSidebar({
         {/* Encounter tab */}
         {dmSidebarTab === 'encounter' && (
           <>
+            {/* Generate Backstory Plot Hooks */}
+            <button
+              onClick={async () => {
+                const backstories = characters.filter((c) => c.backstory?.trim()).map((c) => `${c.name} (${c.race} ${c.class}): ${c.backstory.slice(0, 200)}`).join('\n');
+                if (!backstories) { onAddDmMessage('*No character backstories to generate hooks from.*'); return; }
+                try {
+                  const res = await fetch('/api/dm/narrate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: `Generate 3 plot hooks that tie into these character backstories. Each hook should reference a specific character by name and connect to their history.`, context: backstories, history: [] }),
+                  });
+                  const data = await res.json() as { narration?: string };
+                  if (data.narration) onAddDmMessage(`🎣 **Backstory Plot Hooks:**\n${data.narration}`);
+                } catch { onAddDmMessage('*Failed to generate plot hooks.*'); }
+              }}
+              disabled={!characters.some((c) => c.backstory?.trim())}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-rose-600/20 border border-rose-500/40 text-rose-400 font-semibold hover:bg-rose-500/30 transition-all disabled:opacity-30"
+              title="Generate AI plot hooks tied to character backstories"
+            >
+              Generate Backstory Hooks
+            </button>
+
+            {/* Save/Load Encounter Templates */}
+            <div className="mb-3 space-y-1">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    const enemies = units.filter((u) => u.type === 'enemy');
+                    if (enemies.length === 0) return;
+                    const name = window.prompt('Save encounter as:', `Encounter ${new Date().toLocaleDateString()}`);
+                    if (!name?.trim()) return;
+                    const template = { name: name.trim(), enemies: enemies.map((e) => ({ name: e.name, hp: e.maxHp, ac: e.ac, attackBonus: e.attackBonus, damageDie: e.damageDie, damageBonus: e.damageBonus, dexMod: e.dexMod, cr: e.cr, xpValue: e.xpValue, multiattack: e.multiattack, resistances: e.resistances, vulnerabilities: e.vulnerabilities, immunities: e.immunities })), savedAt: Date.now() };
+                    const saved = JSON.parse(localStorage.getItem(`adventure:encounters:${roomId}`) || '[]') as Array<typeof template>;
+                    saved.push(template);
+                    localStorage.setItem(`adventure:encounters:${roomId}`, JSON.stringify(saved.slice(-20)));
+                    onAddDmMessage(`💾 Saved encounter template: "${name.trim()}" (${enemies.length} enemies)`);
+                  }}
+                  disabled={!units.some((u) => u.type === 'enemy')}
+                  className="flex-1 text-[8px] py-1 rounded bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-emerald-400 font-semibold transition-all disabled:opacity-30"
+                  title="Save current enemies as a reusable template"
+                >
+                  Save
+                </button>
+                <select
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value, 10);
+                    if (isNaN(idx)) return;
+                    const saved = JSON.parse(localStorage.getItem(`adventure:encounters:${roomId}`) || '[]') as Array<{ name: string; enemies: Array<Record<string, unknown>> }>;
+                    const template = saved[idx];
+                    if (!template) return;
+                    const spawned = template.enemies.map((en) => ({
+                      id: `tmpl-${crypto.randomUUID().slice(0, 8)}`,
+                      name: en.name as string, hp: en.hp as number, maxHp: en.hp as number, ac: en.ac as number,
+                      initiative: Math.floor(Math.random() * 20) + 1 + ((en.dexMod as number) || 0),
+                      isCurrentTurn: false, type: 'enemy' as const,
+                      speed: 6, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false,
+                      attackBonus: en.attackBonus as number, damageDie: en.damageDie as string, damageBonus: en.damageBonus as number,
+                      dexMod: en.dexMod as number, cr: en.cr as number, xpValue: en.xpValue as number,
+                      multiattack: en.multiattack as number | undefined, conditions: [],
+                      resistances: en.resistances as string[] | undefined, vulnerabilities: en.vulnerabilities as string[] | undefined, immunities: en.immunities as string[] | undefined,
+                    }));
+                    setUnits((prev) => [...prev, ...spawned]);
+                    onAddDmMessage(`📋 Loaded encounter template: "${template.name}" (${spawned.length} enemies)`);
+                    e.target.value = '';
+                  }}
+                  className="flex-1 text-[8px] px-1 py-1 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400 cursor-pointer"
+                >
+                  <option value="">Load...</option>
+                  {(JSON.parse(localStorage.getItem(`adventure:encounters:${roomId}`) || '[]') as Array<{ name: string }>).map((t, i) => (
+                    <option key={i} value={i}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Chase Scene */}
             <div className="mb-3 flex gap-1.5">
               {['urban', 'wilderness'].map((env) => (

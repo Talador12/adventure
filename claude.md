@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 more D&D systems — surprise, encounter templates, death/resurrection, session export, backstory hooks:
+  - **Surprise round system** — hidden players can surprise enemies at combat start. Stealth vs passive perception check auto-applies `surprised` condition (can't act/react, -2 AC, duration 1 turn). New `surprised` condition type.
+  - **Combat encounter templates** — Save/Load buttons in DMSidebar: DM saves current enemy composition as reusable template (stored in localStorage, max 20). Load spawns all enemies with fresh initiative.
+  - **Character death and resurrection** — DM gets "Stabilize" (1 HP) and "Revive" (half HP) buttons when viewing a downed character. Resets death saves, logs to combat, plays healing sound.
+  - **Session log export** — "Session Log" button exports full session as formatted markdown: party summary, narrative history (DM messages), and combat log in sections.
+  - **Backstory plot hooks** — "Generate Backstory Hooks" DM button sends character backstories to AI and returns 3 personalized plot hooks referencing specific characters.
 - 5 advanced D&D systems:
   - **Skill challenge system** — full `SkillChallenge` component: DM sets DC/successes/failures, players pick from 18 skills (each usable once per character), progress bar with green/red dots, rolls with proficiency, dramatic moment on success.
   - **Monster knowledge checks** — "Recall Lore" button: Arcana check reveals monster AC (DC 10), HP estimate (DC 12), resistances/vulnerabilities (DC 14), immunities (DC 16), abilities (DC 18). Tiered reveal system.
