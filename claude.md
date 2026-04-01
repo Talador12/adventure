@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 exploration + advanced combat features:
+  - **Enemy multiattack** — high-CR enemies (hard/deadly) now get 2-3 attacks per turn in the AI. `multiattack` field on Unit/EnemyTemplate propagated through spawn. AI attack loop checks target HP between attacks, log prefixed with [1/3] etc.
+  - **Random encounter tables** — 5 environment-themed tables (forest/dungeon/mountain/swamp/urban) with 5-6 entries each. DM clicks environment button in DMSidebar to roll. `randomEncounters.ts` module with CR-scaled entries and descriptions.
+  - **In-game time tracker** — always-visible Day N + time-of-day display (🌙Night/🌅Dawn/☀️Day/🌅Dusk) with DM +1h/+6h advance buttons. Synced via `calendar_sync` WebSocket event.
+  - **Travel pace calculator** — `travelPace.ts` module with D&D 5e slow/normal/fast pace data (miles/hour, miles/day, stealth, perception). `calculateTravelTime()` and `partyTravelSpeed()` functions.
+  - **Enemy resistances on spawn** — monster spawn now copies `resistances`/`vulnerabilities`/`immunities` from template to Unit (was missing from spawn function).
 - 5 features + 3 tests — concentration display, exhaustion, inspiration, party inventory, spell prep:
   - **Concentration tracking on InitiativeBar** — units concentrating on a spell show 🎯 + spell name, making it easy to see who's maintaining what.
   - **Exhaustion display on InitiativeBar** — exhaustion level shown as colored E1-E6 badge with tooltip describing cumulative penalties. `EXHAUSTION_EFFECTS` data table for all 7 levels (0-6) with speed/disadvantage/HP/death effects.

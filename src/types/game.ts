@@ -215,6 +215,7 @@ export interface EnemyTemplate {
   resistances?: string[];
   vulnerabilities?: string[];
   immunities?: string[];
+  multiattack?: number; // number of attacks per turn (default 1, bosses get 2-3)
 }
 
 // --- Stats ---

@@ -2568,6 +2568,27 @@ export default function Game() {
             </details>
           )}
 
+          {/* In-game time display + DM advance */}
+          {adventureStarted && (() => {
+            const hour = calendar.currentHour ?? 12;
+            const day = calendar.currentDay;
+            const timeOfDay = hour < 6 ? 'Night' : hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+            const icon = hour < 6 || hour >= 20 ? '🌙' : hour < 8 || hour >= 18 ? '🌅' : '☀️';
+            return (
+              <div className="mx-2 flex items-center gap-1.5 text-[9px]">
+                <span className="text-slate-500">Day {day}</span>
+                <span className="text-slate-600">·</span>
+                <span className="text-slate-400">{icon} {timeOfDay} ({hour}:00)</span>
+                {canUseDMTools && (
+                  <>
+                    <button onClick={() => { const next = { ...calendar, currentHour: (hour + 1) % 24, currentDay: hour === 23 ? day + 1 : day }; setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next }); }} className="text-[8px] px-1 py-0 rounded bg-slate-800 border border-slate-700 text-slate-500 hover:text-amber-400" title="Advance 1 hour">+1h</button>
+                    <button onClick={() => { const newHour = (hour + 6) % 24; const newDay = hour + 6 >= 24 ? day + 1 : day; const next = { ...calendar, currentHour: newHour, currentDay: newDay }; setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next }); }} className="text-[8px] px-1 py-0 rounded bg-slate-800 border border-slate-700 text-slate-500 hover:text-amber-400" title="Advance 6 hours">+6h</button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Live encounter difficulty badge */}
           {inCombat && characters.length > 0 && (() => {
             const budget = calculateEncounterBudget(characters.map((c) => c.level));

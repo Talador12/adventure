@@ -19,13 +19,13 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
   hard: [
     {
       names: ['Ogre', 'Minotaur', 'Owlbear', 'Troll'], cr: 2, hp: [30, 50], ac: 14,
-      attackBonus: 6, damageDie: '2d8', damageBonus: 4, dexMod: 0, xpValue: 450,
+      attackBonus: 6, damageDie: '2d8', damageBonus: 4, dexMod: 0, xpValue: 450, multiattack: 2,
       abilities: [
         { name: 'Crushing Blow', type: 'attack', damageDie: '3d8', attackBonus: 6, cooldown: 3, description: 'A devastating overhead strike.' },
         { name: 'Frightening Roar', type: 'condition', condition: 'frightened', conditionDuration: 2, cooldown: 5, description: 'A terrifying bellow that shakes your resolve.' },
       ],
     },
-    { names: ['Wraith', 'Basilisk', 'Manticore'], cr: 3, hp: [35, 55], ac: 15, attackBonus: 6, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, abilities: [{ name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' }] },
+    { names: ['Wraith', 'Basilisk', 'Manticore'], cr: 3, hp: [35, 55], ac: 15, attackBonus: 6, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700, multiattack: 2, abilities: [{ name: 'Life Drain', type: 'attack', damageDie: '3d6', attackBonus: 6, condition: 'hexed', conditionDuration: 2, cooldown: 3, description: 'Drains life force, leaving the target weakened.' }] },
     {
       names: ['Hell Hound', 'Phase Spider', 'Displacer Beast'], cr: 3, hp: [32, 48], ac: 14,
       attackBonus: 5, damageDie: '2d6', damageBonus: 3, dexMod: 3, xpValue: 700,
@@ -46,7 +46,7 @@ export const ENEMY_TEMPLATES: Record<string, EnemyTemplate[]> = {
   deadly: [
     {
       names: ['Young Dragon', 'Beholder Zombie', 'Hydra', 'Lich Apprentice'], cr: 5, hp: [60, 90], ac: 17,
-      attackBonus: 8, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800,
+      attackBonus: 8, damageDie: '2d10', damageBonus: 5, dexMod: 2, xpValue: 1800, multiattack: 3,
       abilities: [
         { name: 'Breath Weapon', type: 'aoe', damageDie: '6d6', cooldown: 4, description: 'A torrent of elemental fury engulfs the area.', isRanged: true, range: 12 },
         { name: 'Multiattack', type: 'attack', damageDie: '2d8', attackBonus: 8, cooldown: 0, description: 'Strikes twice in rapid succession.' },
@@ -222,6 +222,7 @@ export function generateEnemies(difficulty: string, partyLevel: number, count?: 
       dexMod: template.dexMod, abilities: template.abilities.map((a) => ({ ...a })),
       abilityCooldowns: {}, conditions: [], speed: 6, movementUsed: 0,
       reactionUsed: false, bonusActionUsed: false, disengaged: false, cr: template.cr, xpValue: template.xpValue,
+      multiattack: template.multiattack, resistances: template.resistances, vulnerabilities: template.vulnerabilities, immunities: template.immunities,
     } satisfies Unit;
   });
 }

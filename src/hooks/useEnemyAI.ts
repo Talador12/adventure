@@ -265,14 +265,20 @@ export function useEnemyAI({
         const atkBonus = currentUnit.attackBonus ?? 3;
         const dmgBonus = currentUnit.damageBonus ?? 2;
         const dmgDie = currentUnit.damageDie || '1d6';
+        const numAttacks = currentUnit.multiattack || 1;
         const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
-        const targetAC = effectiveAC(target.ac, target.conditions || []);
-        const { roll: attackRoll, hadAdvantage, hadDisadvantage, rolls: atkRolls } = rollD20WithProne(currentUnit.conditions || [], target.conditions || [], true);
+
+        for (let atkNum = 0; atkNum < numAttacks; atkNum++) {
+          const latestTarget = units.find((u) => u.id === target.id);
+          if (!latestTarget || latestTarget.hp <= 0) break;
+        const targetAC = effectiveAC(latestTarget.ac, latestTarget.conditions || []);
+        const { roll: attackRoll, hadAdvantage, hadDisadvantage, rolls: atkRolls } = rollD20WithProne(currentUnit.conditions || [], latestTarget.conditions || [], true);
         const totalAttack = attackRoll + atkBonus + condAtkMod;
         const isHit = attackRoll === 20 || totalAttack >= targetAC;
         const isCrit = attackRoll === 20;
         const diceTag = (hadAdvantage || hadDisadvantage) ? `rolled ${atkRolls[0]},${atkRolls[1]} [2d20] ` : `rolled ${attackRoll} [d20] `;
         const advTag = hadAdvantage ? ' [adv]' : hadDisadvantage ? ' [disadv]' : '';
+        const multiTag = numAttacks > 1 ? `[${atkNum + 1}/${numAttacks}] ` : '';
 
         if (isHit) {
           const baseDmg = rollSpellDamage(dmgDie);
@@ -280,15 +286,16 @@ export function useEnemyAI({
           damageUnit(target.id, finalDmg);
           playCombatHit();
           if (isCrit) playCritical();
-          addDmMessage(isCrit ? `CRITICAL! ${currentUnit.name} strikes ${target.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}` : `${currentUnit.name} hits ${target.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
-          if (target.hp - finalDmg <= 0) {
+          addDmMessage(isCrit ? `${multiTag}CRITICAL! ${currentUnit.name} strikes ${latestTarget.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}` : `${multiTag}${currentUnit.name} hits ${latestTarget.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
+          if (latestTarget.hp - finalDmg <= 0) {
             playEnemyDeath();
-            addDmMessage(`${target.name} falls!`);
+            addDmMessage(`${latestTarget.name} falls!`);
           }
         } else {
           playCombatMiss();
-          addDmMessage(`${currentUnit.name} misses ${target.name}! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
+          addDmMessage(`${multiTag}${currentUnit.name} misses ${latestTarget.name}! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
         }
+        } // end multiattack loop
       }
 
       // Tick ability cooldowns

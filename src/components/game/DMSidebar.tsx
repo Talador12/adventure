@@ -249,6 +249,31 @@ export default function DMSidebar({
         {/* Encounter tab */}
         {dmSidebarTab === 'encounter' && (
           <>
+            {/* Random Encounter roller */}
+            <div className="mb-3 space-y-1.5">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Random Encounter</label>
+              <div className="flex gap-1.5">
+                {['forest', 'dungeon', 'mountain', 'swamp', 'urban'].map((env) => (
+                  <button
+                    key={env}
+                    onClick={async () => {
+                      const { rollRandomEncounter, rollEncounterCount } = await import('../../data/randomEncounters');
+                      const entry = rollRandomEncounter(env);
+                      const count = rollEncounterCount(entry);
+                      const msg = count > 0
+                        ? `🎲 Random encounter (${env}): **${entry.name}** × ${count} (CR ${entry.cr})\n${entry.description}`
+                        : `🎲 Random encounter (${env}): **${entry.name}**\n${entry.description}`;
+                      onAddDmMessage(msg);
+                    }}
+                    className="text-[8px] px-1.5 py-1 rounded bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-[#F38020] hover:border-[#F38020]/40 font-semibold transition-all capitalize"
+                    title={`Roll random encounter for ${env} environment`}
+                  >
+                    {env}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* AI Session Prep — DM enters goals, gets generated content */}
             <details className="mb-3">
               <summary className="text-[10px] text-[#F38020] font-bold uppercase tracking-wider cursor-pointer hover:text-[#ff8c2e] select-none">AI Session Prep</summary>
