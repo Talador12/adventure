@@ -926,7 +926,7 @@ describe('weather combat effects', () => {
 // ---------------------------------------------------------------------------
 // Encumbrance system
 // ---------------------------------------------------------------------------
-import { calculateCarryCapacity, calculateInventoryWeight } from '../../src/types/game';
+import { calculateCarryCapacity, calculateInventoryWeight, EXHAUSTION_EFFECTS } from '../../src/types/game';
 
 describe('encumbrance system', () => {
   it('calculateCarryCapacity scales with STR', () => {
@@ -953,6 +953,35 @@ describe('encumbrance system', () => {
       { id: '1', name: 'Ring', type: 'misc', rarity: 'rare', description: '', value: 100 },
     ];
     expect(calculateInventoryWeight(items, {})).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Exhaustion effects
+// ---------------------------------------------------------------------------
+describe('exhaustion effects', () => {
+  it('has effects for levels 0-6', () => {
+    for (let i = 0; i <= 6; i++) {
+      expect(EXHAUSTION_EFFECTS[i]).toBeDefined();
+      expect(typeof EXHAUSTION_EFFECTS[i].description).toBe('string');
+    }
+  });
+
+  it('level 0 has no penalties', () => {
+    const e = EXHAUSTION_EFFECTS[0];
+    expect(e.speedMultiplier).toBe(1);
+    expect(e.disadvantageChecks).toBe(false);
+    expect(e.disadvantageAttacksSaves).toBe(false);
+    expect(e.hpMaxHalved).toBe(false);
+    expect(e.speedZero).toBe(false);
+  });
+
+  it('penalties are cumulative at higher levels', () => {
+    expect(EXHAUSTION_EFFECTS[1].disadvantageChecks).toBe(true);
+    expect(EXHAUSTION_EFFECTS[2].speedMultiplier).toBe(0.5);
+    expect(EXHAUSTION_EFFECTS[3].disadvantageAttacksSaves).toBe(true);
+    expect(EXHAUSTION_EFFECTS[4].hpMaxHalved).toBe(true);
+    expect(EXHAUSTION_EFFECTS[5].speedZero).toBe(true);
   });
 });
 

@@ -220,6 +220,17 @@ export interface EnemyTemplate {
 // --- Stats ---
 export const STAT_NAMES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
 
+// D&D 5e Exhaustion effects by level (cumulative)
+export const EXHAUSTION_EFFECTS: Record<number, { description: string; speedMultiplier: number; disadvantageChecks: boolean; disadvantageAttacksSaves: boolean; hpMaxHalved: boolean; speedZero: boolean }> = {
+  0: { description: 'No exhaustion', speedMultiplier: 1, disadvantageChecks: false, disadvantageAttacksSaves: false, hpMaxHalved: false, speedZero: false },
+  1: { description: 'Disadvantage on ability checks', speedMultiplier: 1, disadvantageChecks: true, disadvantageAttacksSaves: false, hpMaxHalved: false, speedZero: false },
+  2: { description: 'Speed halved', speedMultiplier: 0.5, disadvantageChecks: true, disadvantageAttacksSaves: false, hpMaxHalved: false, speedZero: false },
+  3: { description: 'Disadvantage on attack rolls and saving throws', speedMultiplier: 0.5, disadvantageChecks: true, disadvantageAttacksSaves: true, hpMaxHalved: false, speedZero: false },
+  4: { description: 'Hit point maximum halved', speedMultiplier: 0.5, disadvantageChecks: true, disadvantageAttacksSaves: true, hpMaxHalved: true, speedZero: false },
+  5: { description: 'Speed reduced to 0', speedMultiplier: 0, disadvantageChecks: true, disadvantageAttacksSaves: true, hpMaxHalved: true, speedZero: true },
+  6: { description: 'Death', speedMultiplier: 0, disadvantageChecks: true, disadvantageAttacksSaves: true, hpMaxHalved: true, speedZero: true },
+};
+
 // Class saving throw proficiencies per D&D 5e PHB
 export const CLASS_SAVE_PROFICIENCIES: Record<string, string[]> = {
   Barbarian: ['STR', 'CON'], Bard: ['DEX', 'CHA'], Cleric: ['WIS', 'CHA'],

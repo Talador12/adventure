@@ -214,6 +214,21 @@ function InitiativeBarInner({ entries, turnTimerEnabled = true, turnTimeSeconds 
                 {entry.reactionUsed && <span className="text-orange-500" title="Reaction used this round">R</span>}
                 {entry.bonusActionUsed && <span className="text-violet-400" title="Bonus action used this turn">B</span>}
                 {entry.readiedAction && <span className="text-cyan-400" title={`Ready: ${entry.readiedAction.trigger} → ${entry.readiedAction.action}`}>⏳</span>}
+                {/* Concentration indicator */}
+                {entry.concentratingOn && (
+                  <span className="text-blue-400 text-[8px] font-semibold truncate max-w-[60px]" title={`Concentrating on: ${entry.concentratingOn}`}>
+                    🎯{entry.concentratingOn.split(' ')[0]}
+                  </span>
+                )}
+                {/* Exhaustion indicator */}
+                {entry.type === 'player' && (() => {
+                  const char = characters.find((c) => c.id === entry.characterId);
+                  if (!char?.exhaustion || char.exhaustion <= 0) return null;
+                  const lvl = char.exhaustion;
+                  const color = lvl >= 5 ? 'text-red-500' : lvl >= 3 ? 'text-orange-500' : 'text-yellow-500';
+                  const effects = ['', 'Disadv ability checks', 'Speed halved', 'Disadv attacks+saves', 'HP max halved', 'Speed 0', 'DEATH'];
+                  return <span className={`text-[8px] font-bold ${color}`} title={`Exhaustion ${lvl}: ${effects[lvl] || ''}`}>E{lvl}</span>;
+                })()}
                 {/* Mood indicator based on HP/conditions */}
                 {entry.type === 'player' && (() => {
                   const hpPct = entry.maxHp > 0 ? entry.hp / entry.maxHp : 0;

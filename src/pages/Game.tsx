@@ -650,6 +650,7 @@ export default function Game() {
     setWikiPages,
     setCalendar,
     setRelationships,
+    setPartyInventory,
     onQuickSpawn: useCallback((monsterName: string, count: number) => {
       // Quick spawn from /spawn chat command — generate enemy units from name
       const enemies = generateEnemies('medium', characters.length, Math.max(...characters.map((c) => c.level), 1));
@@ -2995,6 +2996,7 @@ export default function Game() {
                     />
                   </div>
                 ) : activeView === 'loot' ? (
+                  <>
                   <LootTracker
                     roomId={room}
                     playerName={currentPlayer.username || 'Unknown'}
@@ -3002,6 +3004,45 @@ export default function Game() {
                     onBroadcast={(evt) => broadcastGameEvent(evt.type, { items: evt.items })}
                     syncRef={lootSyncRef}
                   />
+                  {/* Party shared inventory */}
+                  <details className="mt-3 mx-2">
+                    <summary className="text-[10px] text-[#F38020] font-bold uppercase cursor-pointer hover:text-[#ff8c2e]">Party Loot Bag ({partyInventory.length} items)</summary>
+                    <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                      {partyInventory.length === 0 ? (
+                        <p className="text-[9px] text-slate-600 italic">No shared loot yet. DM can add items or players can deposit.</p>
+                      ) : partyInventory.map((item, idx) => (
+                        <div key={`${item.id}-${idx}`} className="flex items-center justify-between px-2 py-1 rounded bg-slate-800/50 border border-slate-700/30">
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] font-semibold text-amber-300">{item.name}</span>
+                            <span className="text-[8px] text-slate-500 ml-1">{item.type}{item.value ? ` · ${item.value}gp` : ''}</span>
+                          </div>
+                          <button onClick={() => {
+                            if (!selectedCharacter) return;
+                            const char = characters.find((c) => c.id === selectedCharacter.id);
+                            if (!char) return;
+                            addItem(selectedCharacter.id, item);
+                            const next = partyInventory.filter((_, i) => i !== idx);
+                            setPartyInventory(next);
+                            broadcastGameEvent('party_inventory_sync', { items: next });
+                            addDmMessage(`${selectedCharacter.name} takes ${item.name} from the party bag.`);
+                          }} disabled={!selectedCharacter} className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-900/30 border border-emerald-700/40 text-emerald-400 hover:bg-emerald-800/40 disabled:opacity-30 transition-all" title="Take this item">Take</button>
+                        </div>
+                      ))}
+                      {canUseDMTools && (
+                        <button onClick={() => {
+                          const name = window.prompt('Item name:');
+                          if (!name?.trim()) return;
+                          const value = parseInt(window.prompt('Value in gold (0 for free):') || '0', 10) || 0;
+                          const newItem: import('../types/game').Item = { id: `party-${crypto.randomUUID().slice(0, 8)}`, name: name.trim(), type: 'misc', rarity: 'common', description: '', value };
+                          const next = [...partyInventory, newItem];
+                          setPartyInventory(next);
+                          broadcastGameEvent('party_inventory_sync', { items: next });
+                          addDmMessage(`DM adds ${name.trim()} to the party loot bag.`);
+                        }} className="w-full text-[9px] py-1 rounded bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-[#F38020] font-semibold transition-all">+ Add Item to Party Bag</button>
+                      )}
+                    </div>
+                  </details>
+                  </>
                 ) : activeView === 'encounters' ? (
                   <EncounterLog
                     roomId={room}

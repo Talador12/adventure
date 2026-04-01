@@ -78,6 +78,8 @@ export interface GameWebSocketDeps {
 
   // Quick spawn from DM chat command
   onQuickSpawn?: (monsterName: string, count: number) => void;
+  // Party inventory sync
+  setPartyInventory?: React.Dispatch<React.SetStateAction<import('../types/game').Item[]>>;
 
   // Weather sync
   setWeather?: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
@@ -605,6 +607,12 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               case 'relationship_sync': {
                 if (Array.isArray(eventData.edges)) {
                   deps.setRelationships?.(eventData.edges as RelationshipEdge[]);
+                }
+                break;
+              }
+              case 'party_inventory_sync': {
+                if (Array.isArray(eventData.items)) {
+                  deps.setPartyInventory?.(eventData.items as import('../types/game').Item[]);
                 }
                 break;
               }

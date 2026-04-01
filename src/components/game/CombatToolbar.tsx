@@ -745,6 +745,44 @@ export default function CombatToolbar({
                           );
                         })()}
 
+                      {/* Inspiration — DM grants, player spends for advantage */}
+                      {selectedCharacter && (() => {
+                        const hasInspiration = selectedCharacter.inspiration;
+                        if (canUseDMTools && !hasInspiration) {
+                          return (
+                            <button
+                              onClick={() => {
+                                updateCharacter(selectedCharacter.id, { inspiration: true });
+                                const msg = `DM grants Inspiration to ${selectedCharacter.name}!`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                addFloatingText('Inspired!', 'condition');
+                              }}
+                              className="text-[9px] px-2 py-1 rounded bg-yellow-900/30 border border-yellow-600/40 text-yellow-400 font-semibold hover:bg-yellow-800/40 transition-all"
+                              title="Grant Inspiration to this character"
+                            >
+                              Grant Inspiration
+                            </button>
+                          );
+                        }
+                        if (hasInspiration && isPlayerTurn) {
+                          return (
+                            <button
+                              onClick={() => {
+                                updateCharacter(selectedCharacter.id, { inspiration: false });
+                                const msg = `${selectedCharacter.name} uses Inspiration! (advantage on next roll)`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                addFloatingText('Inspiration Used!', 'info');
+                              }}
+                              className="text-[9px] px-2 py-1 rounded bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-bold hover:bg-yellow-500/30 transition-all animate-pulse"
+                              title="Spend Inspiration for advantage on your next roll"
+                            >
+                              ⭐ Use Inspiration
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
+
                       {/* Intimidate — CHA check to frighten an enemy */}
                       {inCombat && selectedCharacter && isPlayerTurn && (() => {
                         const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
