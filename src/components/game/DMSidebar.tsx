@@ -250,6 +250,29 @@ export default function DMSidebar({
         {/* Encounter tab */}
         {dmSidebarTab === 'encounter' && (
           <>
+            {/* Chase Scene */}
+            <div className="mb-3 flex gap-1.5">
+              {['urban', 'wilderness'].map((env) => (
+                <button
+                  key={env}
+                  onClick={async () => {
+                    const { resolveChaseRound } = await import('../../data/chaseObstacles');
+                    const lines: string[] = [`🏃 **Chase Scene (${env})** — Round`];
+                    for (const ch of characters) {
+                      const dexMod = Math.floor(((ch.stats?.DEX ?? 10) - 10) / 2);
+                      const result = resolveChaseRound(ch.name, dexMod, env === 'urban');
+                      lines.push(result.narration);
+                    }
+                    onAddDmMessage(lines.join('\n'));
+                  }}
+                  className="flex-1 text-[9px] py-1 rounded bg-sky-900/30 border border-sky-600/40 text-sky-300 font-semibold hover:bg-sky-800/40 transition-all capitalize"
+                  title={`Run one round of a ${env} chase scene for all party members`}
+                >
+                  {env} Chase
+                </button>
+              ))}
+            </div>
+
             {/* Downtime Activities */}
             <details className="mb-3">
               <summary className="text-[10px] text-slate-500 font-bold uppercase cursor-pointer hover:text-slate-300">Downtime Activities</summary>

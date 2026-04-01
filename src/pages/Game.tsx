@@ -25,6 +25,7 @@ import SpellParticles, { useSpellParticles, type SpellEffect } from '../componen
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import Onboarding from '../components/game/Onboarding';
 import DramaticMoment, { useDramaticMoments } from '../components/game/DramaticMoment';
+const SkillChallenge = lazy(() => import('../components/game/SkillChallenge'));
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
@@ -287,6 +288,7 @@ export default function Game() {
   const [initiativeHistory, setInitiativeHistory] = useState<Array<{ round: number; order: Array<{ name: string; initiative: number; hp: number; maxHp: number }> }>>([]);
   const [spellZones, setSpellZones] = useState<import('../types/game').SpellZone[]>([]);
   const [factions, setFactions] = useState<Array<{ id: string; name: string; reputation: number; description: string }>>([]);
+  const [showSkillChallenge, setShowSkillChallenge] = useState(false);
   const [combatStartTime, setCombatStartTime] = useState<number | null>(null);
   const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
   const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
@@ -2968,6 +2970,25 @@ export default function Game() {
                       </button>
                     )}
                   </div>
+                )}
+
+                {/* Skill Challenge overlay */}
+                {showSkillChallenge && (
+                  <Suspense fallback={null}>
+                    <SkillChallenge
+                      onComplete={(success, challengeLog) => {
+                        setShowSkillChallenge(false);
+                        addDmMessage(challengeLog.join('\n'));
+                        if (success) triggerDramatic('clutch_save', 'CHALLENGE COMPLETE!', 'The party succeeds!');
+                      }}
+                      onCancel={() => setShowSkillChallenge(false)}
+                    />
+                  </Suspense>
+                )}
+                {canUseDMTools && !showSkillChallenge && !inCombat && (
+                  <button onClick={() => setShowSkillChallenge(true)} className="mx-2 mb-1 text-[9px] px-2 py-1 rounded bg-teal-900/30 border border-teal-600/40 text-teal-400 font-semibold hover:bg-teal-800/40 transition-all" title="Start a group skill challenge">
+                    Start Skill Challenge
+                  </button>
                 )}
 
                 {activeView === 'narration' ? (

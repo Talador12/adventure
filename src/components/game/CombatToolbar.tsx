@@ -783,6 +783,36 @@ export default function CombatToolbar({
                         return null;
                       })()}
 
+                      {/* Monster Knowledge — recall info about an enemy */}
+                      {inCombat && selectedCharacter && (() => {
+                        const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                        const enemyTarget = target && target.type === 'enemy' && target.hp > 0 ? target : null;
+                        if (!enemyTarget) return null;
+                        return (
+                          <button
+                            onClick={() => {
+                              const intMod = Math.floor(((selectedCharacter.stats?.INT ?? 10) - 10) / 2);
+                              const roll = Math.floor(Math.random() * 20) + 1 + intMod;
+                              const info: string[] = [];
+                              if (roll >= 10) info.push(`AC: ${enemyTarget.ac}`);
+                              if (roll >= 12) info.push(`HP: ~${Math.round(enemyTarget.maxHp / 5) * 5}`);
+                              if (roll >= 14 && enemyTarget.resistances?.length) info.push(`Resistant to: ${enemyTarget.resistances.join(', ')}`);
+                              if (roll >= 14 && enemyTarget.vulnerabilities?.length) info.push(`Vulnerable to: ${enemyTarget.vulnerabilities.join(', ')}`);
+                              if (roll >= 16 && enemyTarget.immunities?.length) info.push(`Immune to: ${enemyTarget.immunities.join(', ')}`);
+                              if (roll >= 18 && enemyTarget.abilities?.length) info.push(`Abilities: ${enemyTarget.abilities.map((a) => a.name).join(', ')}`);
+                              const msg = info.length > 0
+                                ? `${selectedCharacter.name} recalls lore about ${enemyTarget.name} (Arcana ${roll}): ${info.join(' | ')}`
+                                : `${selectedCharacter.name} tries to recall info about ${enemyTarget.name} but draws a blank. (Arcana ${roll})`;
+                              setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                            }}
+                            className="text-[9px] px-2 py-1 rounded bg-indigo-900/30 border border-indigo-600/40 text-indigo-300 font-semibold hover:bg-indigo-800/40 transition-all"
+                            title={`Roll Arcana to recall ${enemyTarget.name}'s stats, resistances, and abilities`}
+                          >
+                            Recall Lore
+                          </button>
+                        );
+                      })()}
+
                       {/* Intimidate — CHA check to frighten an enemy */}
                       {inCombat && selectedCharacter && isPlayerTurn && (() => {
                         const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
@@ -1690,6 +1720,40 @@ export default function CombatToolbar({
                         </select>
                       )}
 
+                      {/* Place breakable object */}
+                      {inCombat && canUseDMTools && (
+                        <button
+                          onClick={() => {
+                            const OBJECTS = [
+                              { type: 'door', name: 'Wooden Door', hp: 15, ac: 15 },
+                              { type: 'barrel', name: 'Barrel', hp: 10, ac: 11 },
+                              { type: 'wall', name: 'Crumbling Wall', hp: 25, ac: 17 },
+                              { type: 'chest', name: 'Locked Chest', hp: 10, ac: 15 },
+                              { type: 'pillar', name: 'Stone Pillar', hp: 30, ac: 17 },
+                            ];
+                            const choice = window.prompt(`Place object:\n${OBJECTS.map((o, i) => `${i + 1}. ${o.name} (${o.hp}HP AC${o.ac})`).join('\n')}`);
+                            if (!choice) return;
+                            const obj = OBJECTS[parseInt(choice, 10) - 1];
+                            if (!obj) return;
+                            const unit: Unit = {
+                              id: `obj-${crypto.randomUUID().slice(0, 8)}`,
+                              name: obj.name, hp: obj.hp, maxHp: obj.hp, ac: obj.ac,
+                              initiative: 0, isCurrentTurn: false, type: 'enemy' as const,
+                              speed: 0, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false,
+                              isObject: true, objectType: obj.type as Unit['objectType'],
+                              conditions: [], attackBonus: 0, damageDie: '0', damageBonus: 0, dexMod: -5,
+                            };
+                            setUnits((prev: Unit[]) => [...prev, unit]);
+                            setCombatLog((prev) => [...prev, `DM places ${obj.name} (${obj.hp}HP, AC ${obj.ac})`]);
+                            setTimeout(broadcastCombatSyncLatest, 50);
+                          }}
+                          className="text-[9px] px-2 py-1 rounded bg-stone-900/40 border border-stone-600/40 text-stone-300 font-semibold hover:bg-stone-800/40 transition-all"
+                          title="Place a breakable object (door, barrel, wall, chest, pillar)"
+                        >
+                          Object
+                        </button>
+                      )}
+
                       {/* Place persistent spell zone */}
                       {inCombat && canUseDMTools && (
                         <button
@@ -1909,6 +1973,12 @@ export default function CombatToolbar({
                           playHealing();
                           addFloatingText('Full Rest', 'heal');
                           addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored. All spell slots recovered. Exhaustion reduced by 1.`);
+                          // Random chance of rest interruption (20% chance)
+                          if (Math.random() < 0.2) {
+                            const encounters = ['a pack of wolves drawn by the campfire', 'bandits who spotted your camp from the road', 'a wandering undead patrol', 'a curious owlbear investigating the smell of rations', 'goblin scouts who stumbled upon your camp'];
+                            const enc = encounters[Math.floor(Math.random() * encounters.length)];
+                            addDmMessage(`⚠️ **Rest interrupted!** During the third watch, ${enc}! The party must decide: fight or flee.`);
+                          }
                           // AI narration for rest + session summary from recent DM history
                           const recentHistory = dmHistory.slice(-20);
                           fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: `The party makes camp and ${selectedCharacter.name} settles in for a long rest. Summarize the session so far in 2-3 sentences as a narrator.`, context: sceneName || 'a quiet clearing', history: recentHistory }) })

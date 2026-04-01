@@ -216,6 +216,9 @@ export interface EnemyTemplate {
   vulnerabilities?: string[];
   immunities?: string[];
   multiattack?: number; // number of attacks per turn (default 1, bosses get 2-3)
+  // Object/prop — breakable objects (doors, barrels, walls) placed as tokens
+  isObject?: boolean;      // true = not a creature, just an object with HP
+  objectType?: 'door' | 'barrel' | 'wall' | 'chest' | 'pillar' | 'boulder';
 }
 
 // --- Stats ---

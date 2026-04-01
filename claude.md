@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 advanced D&D systems:
+  - **Skill challenge system** — full `SkillChallenge` component: DM sets DC/successes/failures, players pick from 18 skills (each usable once per character), progress bar with green/red dots, rolls with proficiency, dramatic moment on success.
+  - **Monster knowledge checks** — "Recall Lore" button: Arcana check reveals monster AC (DC 10), HP estimate (DC 12), resistances/vulnerabilities (DC 14), immunities (DC 16), abilities (DC 18). Tiered reveal system.
+  - **Chase scene mechanics** — urban + wilderness chase buttons in DMSidebar. Random obstacles per environment (crowd, fallen log, etc) with skill checks. `chaseObstacles.ts` with 10 urban + 5 wilderness obstacles.
+  - **Rest encounter interruption** — 20% chance of long rest being interrupted by a random encounter (wolves, bandits, undead patrol, owlbear, goblins). DM-facing narrative prompt.
+  - **Breakable objects** — "Object" DM button places destructible tokens (Wooden Door, Barrel, Crumbling Wall, Locked Chest, Stone Pillar) with HP/AC. Targetable by player attacks. `isObject`/`objectType` fields on Unit.
 - 5 progression + narrative features:
   - **Treasure hoard tables** — level-scaled random loot generator with gold/gems/magic items per DMG tiers. 4 rarity pools (common→epic) with named items (Flame Tongue, Bag of Holding, Staff of Power etc). "Roll Treasure Hoard" button in DMSidebar.
   - **Milestone XP system** — two DM buttons: "Award XP" (30% of next level to all) and "Level Up All" (instant milestone leveling). Alternative to combat XP for story-driven campaigns.
