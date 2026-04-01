@@ -440,7 +440,8 @@ export default function CombatToolbar({
                       {selectedCharacter &&
                         [...FULL_CASTERS, ...HALF_CASTERS].includes(selectedCharacter.class) &&
                         (() => {
-                          const spells = getClassSpells(selectedCharacter.class, selectedCharacter.level);
+                          const allSpells = getClassSpells(selectedCharacter.class, selectedCharacter.level);
+                          const spells = allSpells.filter((s) => !s.isReaction);
                           const slots = getSpellSlots(selectedCharacter.class, selectedCharacter.level);
                           const used = selectedCharacter.spellSlotsUsed || {};
                           if (spells.length === 0) return null;
@@ -694,6 +695,78 @@ export default function CombatToolbar({
                           );
                         })()}
 
+                      {/* Grapple — contested Athletics check, target speed 0 */}
+                      {inCombat && selectedCharacter && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                        const enemyTarget = target && target.type === 'enemy' && target.hp > 0 ? target : null;
+                        const playerPos = mapPositions.find((p) => p.unitId === playerUnit.id);
+                        const targetPos = enemyTarget ? mapPositions.find((p) => p.unitId === enemyTarget.id) : null;
+                        const adjacent = playerPos && targetPos && isAdjacent(playerPos.col, playerPos.row, targetPos.col, targetPos.row);
+                        const alreadyGrappled = enemyTarget?.conditions?.some((c) => c.type === 'grappled' && c.source === playerUnit.name);
+                        return (
+                          <button
+                            disabled={!isPlayerTurn || !enemyTarget || !adjacent || !!alreadyGrappled}
+                            title={!isPlayerTurn ? 'Wait for your turn' : !enemyTarget ? 'Select an enemy target' : !adjacent ? 'Must be adjacent (5ft)' : alreadyGrappled ? 'Target already grappled by you' : `Grapple ${enemyTarget.name} — contested Athletics check`}
+                            onClick={() => {
+                              if (!enemyTarget) return;
+                              const strMod = Math.floor(((selectedCharacter.stats?.STR ?? 10) - 10) / 2);
+                              const playerRoll = Math.floor(Math.random() * 20) + 1 + strMod;
+                              const enemyAthRoll = Math.floor(Math.random() * 20) + 1 + (enemyTarget.dexMod || 0);
+                              if (playerRoll >= enemyAthRoll) {
+                                applyCondition(enemyTarget.id, { type: 'grappled', duration: -1, source: playerUnit.name });
+                                const msg = `${selectedCharacter.name} grapples ${enemyTarget.name}! (Athletics ${playerRoll} vs ${enemyAthRoll}) — speed is 0`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              } else {
+                                const msg = `${selectedCharacter.name} fails to grapple ${enemyTarget.name}. (Athletics ${playerRoll} vs ${enemyAthRoll})`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              }
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-900/30 hover:bg-rose-800/40 border border-rose-600/50 text-rose-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            Grapple
+                          </button>
+                        );
+                      })()}
+
+                      {/* Shove — contested Athletics, target goes prone or is pushed 5ft */}
+                      {inCombat && selectedCharacter && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                        const enemyTarget = target && target.type === 'enemy' && target.hp > 0 ? target : null;
+                        const playerPos = mapPositions.find((p) => p.unitId === playerUnit.id);
+                        const targetPos = enemyTarget ? mapPositions.find((p) => p.unitId === enemyTarget.id) : null;
+                        const adjacent = playerPos && targetPos && isAdjacent(playerPos.col, playerPos.row, targetPos.col, targetPos.row);
+                        return (
+                          <button
+                            disabled={!isPlayerTurn || !enemyTarget || !adjacent}
+                            title={!isPlayerTurn ? 'Wait for your turn' : !enemyTarget ? 'Select an enemy target' : !adjacent ? 'Must be adjacent (5ft)' : `Shove ${enemyTarget.name} — contested Athletics, prone or push 5ft`}
+                            onClick={() => {
+                              if (!enemyTarget || !playerPos || !targetPos) return;
+                              const strMod = Math.floor(((selectedCharacter.stats?.STR ?? 10) - 10) / 2);
+                              const playerRoll = Math.floor(Math.random() * 20) + 1 + strMod;
+                              const enemyAthRoll = Math.floor(Math.random() * 20) + 1 + (enemyTarget.dexMod || 0);
+                              if (playerRoll >= enemyAthRoll) {
+                                // Knock prone (default shove effect)
+                                applyCondition(enemyTarget.id, { type: 'prone', duration: -1, source: 'Shoved' });
+                                const msg = `${selectedCharacter.name} shoves ${enemyTarget.name} prone! (Athletics ${playerRoll} vs ${enemyAthRoll})`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              } else {
+                                const msg = `${selectedCharacter.name} fails to shove ${enemyTarget.name}. (Athletics ${playerRoll} vs ${enemyAthRoll})`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              }
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-900/30 hover:bg-amber-800/40 border border-amber-600/50 text-amber-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            Shove
+                          </button>
+                        );
+                      })()}
+
                       {/* Mount / Dismount — mounted combat support */}
                       {inCombat && selectedCharacter && (() => {
                         const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
@@ -819,6 +892,225 @@ export default function CombatToolbar({
                             </button>
                           );
                         })()}
+
+                      {/* Ready action — hold your action until a trigger occurs (uses reaction) */}
+                      {inCombat && selectedCharacter && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const hasReadied = !!playerUnit.readiedAction;
+                        if (hasReadied) {
+                          return (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] text-cyan-400 font-semibold max-w-[120px] truncate" title={`Ready: ${playerUnit.readiedAction!.trigger} → ${playerUnit.readiedAction!.action}`}>
+                                ⏳ {playerUnit.readiedAction!.action}
+                              </span>
+                              <button
+                                disabled={!isPlayerTurn || playerUnit.reactionUsed}
+                                title={playerUnit.reactionUsed ? 'Reaction already used' : 'Execute readied action now (uses reaction)'}
+                                onClick={() => {
+                                  const action = playerUnit.readiedAction!;
+                                  setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, readiedAction: undefined, reactionUsed: true } : u));
+                                  const msg = `${selectedCharacter.name} triggers readied action: ${action.action}! (${action.trigger})`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                  setTimeout(broadcastCombatSyncLatest, 50);
+                                }}
+                                className="px-1.5 py-0.5 border border-cyan-600/50 bg-cyan-900/30 text-cyan-300 text-[9px] font-semibold rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-cyan-800/40"
+                              >Fire</button>
+                              <button
+                                title="Cancel readied action"
+                                onClick={() => {
+                                  setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, readiedAction: undefined } : u));
+                                  const msg = `${selectedCharacter.name} drops their readied action.`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                  setTimeout(broadcastCombatSyncLatest, 50);
+                                }}
+                                className="px-1 py-0.5 border border-slate-600/50 text-slate-400 text-[9px] rounded transition-all hover:bg-slate-700/40"
+                              >✕</button>
+                            </div>
+                          );
+                        }
+                        return (
+                          <button
+                            disabled={!isPlayerTurn}
+                            title={!isPlayerTurn ? 'Wait for your turn' : 'Ready an action — hold it until a trigger occurs (uses your reaction when triggered)'}
+                            onClick={() => {
+                              const trigger = window.prompt('Describe the trigger (e.g. "when an enemy moves within 5ft"):');
+                              if (!trigger?.trim()) return;
+                              const action = window.prompt('What action will you take? (e.g. "attack", "cast Shield"):');
+                              if (!action?.trim()) return;
+                              setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, readiedAction: { trigger: trigger.trim(), action: action.trim() } } : u));
+                              const msg = `${selectedCharacter.name} readies an action: "${action.trim()}" (trigger: ${trigger.trim()})`;
+                              setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-900/30 hover:bg-cyan-800/40 border border-cyan-600/50 text-cyan-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            ⏳ Ready
+                          </button>
+                        );
+                      })()}
+
+                      {/* ── Bonus Actions ── */}
+                      {selectedCharacter && inCombat && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit) return null;
+                        const bonusUsed = playerUnit.bonusActionUsed;
+                        const charClass = selectedCharacter.class;
+                        const markBonusUsed = () => {
+                          setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, bonusActionUsed: true } : u));
+                          setTimeout(broadcastCombatSyncLatest, 50);
+                        };
+                        const bonusButtons: JSX.Element[] = [];
+
+                        // Rogue: Cunning Action (Dash, Disengage, or Hide as bonus action)
+                        if (charClass === 'Rogue' && selectedCharacter.level >= 2) {
+                          bonusButtons.push(
+                            <button
+                              key="cunning-dash"
+                              disabled={!isPlayerTurn || bonusUsed}
+                              title={bonusUsed ? 'Bonus action already used' : 'Cunning Action: Dash (bonus action)'}
+                              onClick={() => {
+                                setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, speed: u.speed + 6, bonusActionUsed: true } : u));
+                                const msg = `${selectedCharacter.name} uses Cunning Action: Dash! (+30ft movement)`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 border border-violet-600/50 bg-violet-900/30 text-violet-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-800/40"
+                            >⚡ C.Dash</button>
+                          );
+                          bonusButtons.push(
+                            <button
+                              key="cunning-disengage"
+                              disabled={!isPlayerTurn || bonusUsed}
+                              title={bonusUsed ? 'Bonus action already used' : 'Cunning Action: Disengage (bonus action)'}
+                              onClick={() => {
+                                setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, disengaged: true, bonusActionUsed: true } : u));
+                                const msg = `${selectedCharacter.name} uses Cunning Action: Disengage!`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 border border-violet-600/50 bg-violet-900/30 text-violet-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-800/40"
+                            >⚡ C.Disengage</button>
+                          );
+                        }
+
+                        // Fighter: Second Wind (heal 1d10 + level, once per short rest)
+                        if (charClass === 'Fighter') {
+                          const usedSecondWind = playerUnit.conditions?.some((c) => c.type === 'inspired' && c.source === 'Second Wind Cooldown');
+                          bonusButtons.push(
+                            <button
+                              key="second-wind"
+                              disabled={!isPlayerTurn || bonusUsed || !!usedSecondWind}
+                              title={usedSecondWind ? 'Second Wind already used (resets on short rest)' : bonusUsed ? 'Bonus action already used' : `Second Wind: Heal 1d10+${selectedCharacter.level} HP`}
+                              onClick={() => {
+                                const roll = Math.floor(Math.random() * 10) + 1 + selectedCharacter.level;
+                                const healed = Math.min(roll, playerUnit.maxHp - playerUnit.hp);
+                                setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, hp: Math.min(u.maxHp, u.hp + roll), bonusActionUsed: true } : u));
+                                applyCondition(playerUnit.id, { type: 'inspired', duration: -1, source: 'Second Wind Cooldown' });
+                                const msg = `${selectedCharacter.name} uses Second Wind! (Heals ${healed} HP, rolled ${roll})`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                playHealing();
+                                markBonusUsed();
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 border border-emerald-600/50 bg-emerald-900/30 text-emerald-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-emerald-800/40"
+                            >⚡ Second Wind</button>
+                          );
+                        }
+
+                        // Monk: Step of the Wind (Dash or Disengage as bonus action, level 2+)
+                        if (charClass === 'Monk' && selectedCharacter.level >= 2) {
+                          bonusButtons.push(
+                            <button
+                              key="step-of-wind"
+                              disabled={!isPlayerTurn || bonusUsed}
+                              title={bonusUsed ? 'Bonus action already used' : 'Step of the Wind: Dash + Disengage (bonus action)'}
+                              onClick={() => {
+                                setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, speed: u.speed + 6, disengaged: true, bonusActionUsed: true } : u));
+                                const msg = `${selectedCharacter.name} uses Step of the Wind! (+30ft movement + Disengage)`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 border border-violet-600/50 bg-violet-900/30 text-violet-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-800/40"
+                            >⚡ Step of Wind</button>
+                          );
+                        }
+
+                        // Barbarian: Rage (bonus action, already tracked as condition)
+                        if (charClass === 'Barbarian') {
+                          const isRaging = playerUnit.conditions?.some((c) => c.type === 'raging');
+                          if (!isRaging) {
+                            bonusButtons.push(
+                              <button
+                                key="rage"
+                                disabled={!isPlayerTurn || bonusUsed}
+                                title={bonusUsed ? 'Bonus action already used' : 'Rage! (+2 attack, resistance to physical damage)'}
+                                onClick={() => {
+                                  applyCondition(playerUnit.id, { type: 'raging', duration: 10, source: 'Rage' });
+                                  markBonusUsed();
+                                  const msg = `${selectedCharacter.name} RAGES! (+2 attack, damage resistance)`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 border border-red-600/50 bg-red-900/30 text-red-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-800/40"
+                              >⚡ Rage</button>
+                            );
+                          }
+                        }
+
+                        if (bonusButtons.length === 0) return null;
+                        return (
+                          <>
+                            <span className="text-[9px] text-violet-500 font-bold uppercase tracking-wider ml-1">Bonus</span>
+                            {bonusButtons}
+                          </>
+                        );
+                      })()}
+
+                      {/* ── Reaction Spells (available off-turn) ── */}
+                      {inCombat && selectedCharacter && !isPlayerTurn && (() => {
+                        const playerUnit = units.find((u) => u.characterId === selectedCharacter.id);
+                        if (!playerUnit || playerUnit.hp <= 0 || playerUnit.reactionUsed) return null;
+                        const availableSpells = getClassSpells(selectedCharacter.class, selectedCharacter.level);
+                        const reactionSpells = availableSpells.filter((s) => s.isReaction);
+                        if (reactionSpells.length === 0) return null;
+                        const spellSlots = getSpellSlots(selectedCharacter.class, selectedCharacter.level);
+                        const usedSlots = selectedCharacter.spellSlotsUsed || {};
+                        return (
+                          <>
+                            <span className="text-[9px] text-orange-400 font-bold uppercase tracking-wider ml-1">Reaction</span>
+                            {reactionSpells.map((spell) => {
+                              const slotsAtLevel = spellSlots[spell.level] || 0;
+                              const usedAtLevel = usedSlots[spell.level] || 0;
+                              const hasSlot = slotsAtLevel > usedAtLevel;
+                              return (
+                                <button
+                                  key={spell.id}
+                                  disabled={!hasSlot}
+                                  title={!hasSlot ? `No level ${spell.level} spell slots remaining` : spell.description}
+                                  onClick={() => {
+                                    const result = castSpell(selectedCharacter.id, spell.id);
+                                    if (result.success) {
+                                      playMagicSpell();
+                                      setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, reactionUsed: true } : u));
+                                      // Shield: apply +5 AC condition
+                                      if (spell.id === 'shield') {
+                                        applyCondition(playerUnit.id, { type: 'blessed', duration: 1, source: 'Shield (+5 AC)' });
+                                        setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, ac: u.ac + 5 } : u));
+                                      }
+                                      const msg = `⚡ ${selectedCharacter.name} uses reaction: ${spell.name}! ${result.message}`;
+                                      setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                      setTimeout(broadcastCombatSyncLatest, 50);
+                                    } else {
+                                      setShopMessage(result.message);
+                                      setTimeout(() => setShopMessage(null), 2500);
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 border border-orange-600/50 bg-orange-900/30 text-orange-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-orange-800/40"
+                                >⚡ {spell.name}</button>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
 
                       {/* Light/Extinguish Torch — toggle torchlit condition for extended vision */}
                       {selectedCharacter &&

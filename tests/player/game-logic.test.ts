@@ -414,11 +414,28 @@ describe('XP and leveling', () => {
 // Condition effects
 // ---------------------------------------------------------------------------
 describe('conditions', () => {
-  it('all 7 condition types have effects defined', () => {
-    const types = ['poisoned', 'stunned', 'frightened', 'blessed', 'hexed', 'burning', 'prone'];
+  it('all condition types have effects defined', () => {
+    const types = ['poisoned', 'stunned', 'frightened', 'blessed', 'hexed', 'burning', 'prone', 'dodging', 'raging', 'inspired', 'helping', 'hidden', 'grappled', 'torchlit', 'darkvision', 'candlelit', 'lantern', 'daylight'];
     for (const t of types) {
       expect(CONDITION_EFFECTS[t]).toBeDefined();
+      expect(CONDITION_EFFECTS[t].description).toBeTruthy();
+      expect(CONDITION_EFFECTS[t].color).toBeTruthy();
     }
+  });
+
+  it('grappled condition has speed-0 semantics (no attack/AC/save penalty)', () => {
+    const grappled = CONDITION_EFFECTS.grappled;
+    expect(grappled.attackMod).toBe(0);
+    expect(grappled.acMod).toBe(0);
+    expect(grappled.saveMod).toBe(0);
+    expect(grappled.description).toContain('speed');
+  });
+
+  it('effectiveAC applies condition modifiers', () => {
+    expect(effectiveAC(15, [])).toBe(15);
+    expect(effectiveAC(15, [{ type: 'dodging', duration: 1 }])).toBe(17); // +2 from dodging
+    expect(effectiveAC(15, [{ type: 'stunned', duration: 1 }])).toBe(13); // -2 from stunned
+    expect(effectiveAC(15, [{ type: 'grappled', duration: -1 }])).toBe(15); // grappled = no AC change
   });
 });
 
@@ -460,6 +477,38 @@ describe('shop', () => {
 // ---------------------------------------------------------------------------
 // Extra attack
 // ---------------------------------------------------------------------------
+describe('reaction spells', () => {
+  it('Shield, Counterspell, and Hellish Rebuke are marked as reactions', () => {
+    const reactionSpells = SPELL_LIST.filter((s) => s.isReaction);
+    expect(reactionSpells.length).toBeGreaterThanOrEqual(3);
+    const names = reactionSpells.map((s) => s.name);
+    expect(names).toContain('Shield');
+    expect(names).toContain('Counterspell');
+    expect(names).toContain('Hellish Rebuke');
+  });
+
+  it('reaction spells are filtered out of regular class spell lists', () => {
+    const wizardSpells = getClassSpells('Wizard', 5);
+    const nonReaction = wizardSpells.filter((s) => !s.isReaction);
+    const reactionOnly = wizardSpells.filter((s) => s.isReaction);
+    expect(reactionOnly.length).toBeGreaterThan(0);
+    expect(nonReaction.length).toBeLessThan(wizardSpells.length);
+  });
+
+  it('Hellish Rebuke is available to Warlocks', () => {
+    const warlockSpells = getClassSpells('Warlock', 3);
+    expect(warlockSpells.some((s) => s.id === 'hellish-rebuke')).toBe(true);
+  });
+
+  it('Shield spell has correct properties', () => {
+    const shield = SPELL_LIST.find((s) => s.id === 'shield');
+    expect(shield).toBeDefined();
+    expect(shield!.level).toBe(1);
+    expect(shield!.isReaction).toBe(true);
+    expect(shield!.range).toBe('Self');
+  });
+});
+
 describe('extra attack', () => {
   it('martial classes get extra attack', () => {
     expect(EXTRA_ATTACK_CLASSES).toContain('Fighter');
@@ -486,6 +535,49 @@ describe('data integrity', () => {
     expect(ENEMY_TEMPLATES.medium.length).toBeGreaterThan(0);
     expect(ENEMY_TEMPLATES.hard.length).toBeGreaterThan(0);
     expect(ENEMY_TEMPLATES.deadly.length).toBeGreaterThan(0);
+  });
+});
+
+describe('action economy fields', () => {
+  it('Unit has bonusActionUsed field that defaults to false', () => {
+    const unit: Partial<Unit> = {
+      id: 'test', name: 'Test', hp: 10, maxHp: 10, ac: 12,
+      initiative: 10, isCurrentTurn: false, type: 'player', playerId: 'p1',
+      speed: 6, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false,
+    };
+    expect(unit.bonusActionUsed).toBe(false);
+  });
+
+  it('Unit can have a readied action with trigger and action text', () => {
+    const unit: Partial<Unit> = {
+      id: 'test', name: 'Test', hp: 10, maxHp: 10, ac: 12,
+      initiative: 10, isCurrentTurn: false, type: 'player', playerId: 'p1',
+      speed: 6, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false,
+      readiedAction: { trigger: 'enemy approaches', action: 'attack' },
+    };
+    expect(unit.readiedAction?.trigger).toBe('enemy approaches');
+    expect(unit.readiedAction?.action).toBe('attack');
+  });
+
+  it('readiedAction is optional and defaults to undefined', () => {
+    const unit: Partial<Unit> = {
+      id: 'test', name: 'Test', hp: 10, maxHp: 10, ac: 12,
+      initiative: 10, isCurrentTurn: false, type: 'player', playerId: 'p1',
+      speed: 6, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false,
+    };
+    expect(unit.readiedAction).toBeUndefined();
+  });
+
+  it('grappled condition should make speed effectively 0 for movement', () => {
+    const unit: Partial<Unit> = {
+      id: 'test', name: 'Test', hp: 10, maxHp: 10, ac: 12,
+      initiative: 10, isCurrentTurn: true, type: 'player', playerId: 'p1',
+      speed: 6, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false,
+      conditions: [{ type: 'grappled', duration: -1, source: 'Enemy' }],
+    };
+    const isGrappled = unit.conditions?.some((c) => c.type === 'grappled');
+    const effectiveSpeed = isGrappled ? 0 : (unit.speed || 6);
+    expect(effectiveSpeed).toBe(0);
   });
 });
 

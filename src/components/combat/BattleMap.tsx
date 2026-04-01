@@ -2050,7 +2050,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
       // Compute movement range if in combat
       if (inCombat && unit) {
-        const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
+        const isGrappled = unit.conditions?.some((c) => c.type === 'grappled');
+        const effectiveSpeed = isGrappled ? 0 : (unit.speed || 6);
+        const remaining = effectiveSpeed - (unit.movementUsed || 0);
         if (remaining > 0) {
           const reachable = computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols, gridType);
           setReachableCells(reachable);
@@ -2261,7 +2263,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         setDragging({ unitId: token.unitId, offsetX: x - cx, offsetY: y - cy });
         setDragPos({ x: cx, y: cy });
         if (inCombat && unit) {
-          const remaining = (unit.speed || 6) - (unit.movementUsed || 0);
+          const isGrappledTouch = unit.conditions?.some((c) => c.type === 'grappled');
+          const effSpeed = isGrappledTouch ? 0 : (unit.speed || 6);
+          const remaining = effSpeed - (unit.movementUsed || 0);
           setReachableCells(remaining > 0
             ? computeReachableCells(terrain, token.col, token.row, remaining, gridRows, gridCols, gridType)
             : new Map()
@@ -3193,8 +3197,9 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         {inCombat && (() => {
           const currentUnit = units.find((u) => u.isCurrentTurn);
           if (!currentUnit) return null;
-          const spd = currentUnit.speed || 6;
-          const remaining = spd - (currentUnit.movementUsed || 0);
+           const isGrappledInd = currentUnit.conditions?.some((c) => c.type === 'grappled');
+           const spd = isGrappledInd ? 0 : (currentUnit.speed || 6);
+           const remaining = spd - (currentUnit.movementUsed || 0);
           const hasDashed = (currentUnit.movementUsed || 0) < 0;
           const remainingFt = remaining * 5;
           return (

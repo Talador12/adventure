@@ -221,7 +221,7 @@ export function generateEnemies(difficulty: string, partyLevel: number, count?: 
       attackBonus: template.attackBonus, damageDie: template.damageDie, damageBonus: template.damageBonus,
       dexMod: template.dexMod, abilities: template.abilities.map((a) => ({ ...a })),
       abilityCooldowns: {}, conditions: [], speed: 6, movementUsed: 0,
-      reactionUsed: false, disengaged: false, cr: template.cr, xpValue: template.xpValue,
+      reactionUsed: false, bonusActionUsed: false, disengaged: false, cr: template.cr, xpValue: template.xpValue,
     } satisfies Unit;
   });
 }

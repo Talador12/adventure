@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { useToast } from '../components/ui/toast';
 import { useGame } from '../contexts/GameContext';
-import { useI18n, LOCALE_NAMES } from '../lib/i18n';
+import { useI18n, LOCALE_NAMES, type Locale } from '../lib/i18n';
 import { THEMES, getStoredTheme, applyTheme, type ThemeId } from '../lib/themes';
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,6 +14,15 @@ import { importJSONFile } from '../lib/export';
 import { randomFantasyName } from '../lib/names';
 
 type Theme = 'dark' | 'light';
+type PreferencePayload = {
+  theme?: Theme;
+  activeTheme?: ThemeId;
+  lowFx?: boolean;
+  accentColor?: string;
+  locale?: Locale;
+  updatedAt?: number;
+};
+type PrefSyncState = 'idle' | 'syncing' | 'synced' | 'conflict' | 'offline';
 
 function getSystemTheme(): Theme {
   if (typeof window !== 'undefined' && window.matchMedia) {
@@ -66,12 +75,54 @@ export default function Home() {
   const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
   const [partyMembers, setPartyMembers] = useState<Record<string, Array<{ display_name: string; avatar_url: string | null; role: string }>>>({});
+  const [prefSyncState, setPrefSyncState] = useState<PrefSyncState>('idle');
+  const [lastPrefSyncAt, setLastPrefSyncAt] = useState<number | null>(null);
+  const [prefSyncRetryNonce, setPrefSyncRetryNonce] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<{ roomId: string; name: string } | null>(null);
+  const lastCampaignCacheKeyRef = useRef<string | null>(null);
+  const prefsHydratedUserRef = useRef<string | null>(null);
+  const prefsSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefsRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefsSyncBackoffMsRef = useRef(1000);
+  const prefsNextSyncAtRef = useRef(0);
+  const prefsUpdatedAtRef = useRef<number | null>(null);
 
-  // Fetch saved campaigns + public campaigns on mount
+  const applyServerPreferences = (p: PreferencePayload) => {
+    if (p.theme === 'dark' || p.theme === 'light') setTheme(p.theme);
+    if (typeof p.lowFx === 'boolean') setLowFx(p.lowFx);
+    if (typeof p.accentColor === 'string') setAccentColor(p.accentColor);
+    if (p.locale && LOCALE_NAMES[p.locale]) setI18nLocale(p.locale);
+    if (p.activeTheme && THEMES.some((t) => t.id === p.activeTheme)) {
+      setActiveTheme(p.activeTheme);
+      applyTheme(p.activeTheme);
+      const def = THEMES.find((t) => t.id === p.activeTheme);
+      setTheme(def?.isDark ? 'dark' : 'light');
+    }
+    if (typeof p.updatedAt === 'number') {
+      prefsUpdatedAtRef.current = p.updatedAt;
+      setLastPrefSyncAt(p.updatedAt);
+    }
+  };
+
+  // Fetch saved campaigns + public campaigns.
+  // Campaign cache is user-scoped to avoid cross-account leakage on shared browsers.
   useEffect(() => {
-    // Temp users: load campaign list from localStorage
-    const isTempLogin = (() => { try { const s = localStorage.getItem('adventure:tempUser'); return !!s && JSON.parse(s)?.id?.startsWith('temp-'); } catch { return false; } })();
+    const storedTempUserId = (() => {
+      try {
+        const raw = localStorage.getItem('adventure:tempUser');
+        const parsed = raw ? (JSON.parse(raw) as { id?: string }) : null;
+        return parsed?.id || null;
+      } catch {
+        return null;
+      }
+    })();
+    const effectiveUserId = user?.id || storedTempUserId || 'anon';
+    if (lastCampaignCacheKeyRef.current === effectiveUserId) return;
+    lastCampaignCacheKeyRef.current = effectiveUserId;
+
+    const isTempLogin = !!effectiveUserId.startsWith('temp-');
+    setCampaignsLoading(true);
+
     if (isTempLogin) {
       try {
         const raw = localStorage.getItem('adventure:campaigns');
@@ -84,8 +135,8 @@ export default function Home() {
     } else {
       // Try IndexedDB cache for instant display
       import('../lib/localCache').then(({ getCachedCampaigns }) => {
-        getCachedCampaigns('default').then((cached) => {
-          if (cached?.length && !campaigns.length) setCampaigns(cached as typeof campaigns);
+        getCachedCampaigns(effectiveUserId).then((cached) => {
+          if (cached) setCampaigns(cached as typeof campaigns);
         });
       }).catch(() => {});
       // Then fetch fresh from server (overwrites cache, with ETag)
@@ -102,7 +153,7 @@ export default function Home() {
         .then((data) => {
           if (data?.campaigns?.length) {
             setCampaigns(data.campaigns);
-            import('../lib/localCache').then(({ cacheCampaigns }) => cacheCampaigns('default', data.campaigns!)).catch(() => {});
+            import('../lib/localCache').then(({ cacheCampaigns }) => cacheCampaigns(effectiveUserId, data.campaigns!)).catch(() => {});
           }
         })
         .catch(() => {})
@@ -114,7 +165,7 @@ export default function Home() {
         if (data?.campaigns?.length) setPublicCampaigns(data.campaigns);
       })
       .catch(() => {});
-  }, []);
+  }, [user?.id]);
 
   // Fetch party members for all campaigns (skip for temp users — no auth cookie)
   useEffect(() => {
@@ -219,6 +270,121 @@ export default function Home() {
       })
       .catch(() => {}); // silently fail if backend not running
   }, []);
+
+  // Load server-synced preferences for authenticated users.
+  useEffect(() => {
+    if (!user?.id || user.id.startsWith('temp-')) {
+      setPrefSyncState('idle');
+      return;
+    }
+    prefsHydratedUserRef.current = null;
+    prefsUpdatedAtRef.current = null;
+    setPrefSyncState('syncing');
+
+    fetch('/api/preferences')
+      .then((res) => (res.ok ? (res.json() as Promise<{ preferences?: PreferencePayload | null }>) : null))
+      .then((data) => {
+        const p = data?.preferences;
+        if (p) applyServerPreferences(p);
+        setPrefSyncState('synced');
+      })
+      .catch(() => {
+        setPrefSyncState('offline');
+      })
+      .finally(() => {
+        prefsHydratedUserRef.current = user.id;
+      });
+  }, [user?.id, setI18nLocale]);
+
+  // Push local preference changes to server for authenticated users.
+  useEffect(() => {
+    if (!user?.id || user.id.startsWith('temp-')) return;
+    if (prefsHydratedUserRef.current !== user.id) return;
+
+    const now = Date.now();
+    if (prefsNextSyncAtRef.current > now) {
+      const delay = prefsNextSyncAtRef.current - now;
+      if (prefsRetryTimerRef.current) clearTimeout(prefsRetryTimerRef.current);
+      prefsRetryTimerRef.current = setTimeout(() => {
+        setPrefSyncRetryNonce((n) => n + 1);
+      }, delay);
+      return () => {
+        if (prefsRetryTimerRef.current) clearTimeout(prefsRetryTimerRef.current);
+      };
+    }
+
+    if (prefsSyncTimerRef.current) clearTimeout(prefsSyncTimerRef.current);
+    prefsSyncTimerRef.current = setTimeout(() => {
+      setPrefSyncState('syncing');
+      fetch('/api/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baseUpdatedAt: prefsUpdatedAtRef.current,
+          theme,
+          activeTheme,
+          lowFx,
+          accentColor,
+          locale: i18nLocale,
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) return res.json().then((data) => ({ ok: false as const, status: res.status, data })).catch(() => null);
+          return res.json().then((data) => ({ ok: true as const, data })).catch(() => null);
+        })
+        .then((result) => {
+          if (!result) return;
+          if (result.ok) {
+            const preferences = result.data?.preferences as PreferencePayload | undefined;
+            if (preferences) applyServerPreferences(preferences);
+            prefsSyncBackoffMsRef.current = 1000;
+            prefsNextSyncAtRef.current = 0;
+            if (prefsRetryTimerRef.current) clearTimeout(prefsRetryTimerRef.current);
+            setPrefSyncState('synced');
+            return;
+          }
+          if (result.status === 409) {
+            const remote = result.data?.preferences as PreferencePayload | undefined;
+            if (!remote) return;
+            applyServerPreferences(remote);
+            prefsSyncBackoffMsRef.current = 1000;
+            prefsNextSyncAtRef.current = 0;
+            if (prefsRetryTimerRef.current) clearTimeout(prefsRetryTimerRef.current);
+            setPrefSyncState('conflict');
+            toast('Settings updated from a newer tab', 'info');
+          }
+        })
+        .catch(() => {
+          const backoff = prefsSyncBackoffMsRef.current;
+          prefsNextSyncAtRef.current = Date.now() + backoff;
+          prefsSyncBackoffMsRef.current = Math.min(backoff * 2, 30000);
+          if (prefsRetryTimerRef.current) clearTimeout(prefsRetryTimerRef.current);
+          prefsRetryTimerRef.current = setTimeout(() => {
+            setPrefSyncRetryNonce((n) => n + 1);
+          }, backoff);
+          setPrefSyncState('offline');
+        });
+    }, 500);
+    return () => {
+      if (prefsSyncTimerRef.current) clearTimeout(prefsSyncTimerRef.current);
+      if (prefsRetryTimerRef.current) clearTimeout(prefsRetryTimerRef.current);
+    };
+  }, [user?.id, theme, activeTheme, lowFx, accentColor, i18nLocale, prefSyncRetryNonce]);
+
+  // When network returns, retry preference sync immediately.
+  useEffect(() => {
+    if (!user?.id || user.id.startsWith('temp-')) return;
+    const handleOnline = () => {
+      prefsNextSyncAtRef.current = 0;
+      prefsSyncBackoffMsRef.current = 1000;
+      if (prefsRetryTimerRef.current) clearTimeout(prefsRetryTimerRef.current);
+      setPrefSyncRetryNonce((n) => n + 1);
+    };
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [user?.id]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -341,6 +507,14 @@ export default function Home() {
   const isTempUser = !!user?.id?.startsWith('temp-');
   const avatarUrl = user?.picture || (user?.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : '');
   const userInitial = (user?.global_name || user?.username || '?')[0].toUpperCase();
+  const prefSyncLabel = (() => {
+    if (!user?.id || user.id.startsWith('temp-')) return '';
+    if (prefSyncState === 'syncing') return 'Syncing settings...';
+    if (prefSyncState === 'offline') return 'Settings sync offline';
+    if (prefSyncState === 'conflict') return 'Settings refreshed';
+    if (lastPrefSyncAt) return `Settings synced ${new Date(lastPrefSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    return 'Settings synced';
+  })();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0c0f1a] text-slate-900 dark:text-slate-100 transition-colors">
@@ -383,7 +557,7 @@ export default function Home() {
           {/* Language selector */}
           <select
             value={i18nLocale}
-            onChange={(e) => setI18nLocale(e.target.value as import('../lib/i18n').Locale)}
+            onChange={(e) => setI18nLocale(e.target.value as Locale)}
             className="text-[9px] px-1 py-1 rounded bg-white/10 text-white/80 border-none font-bold cursor-pointer focus:outline-none"
             title="Language"
           >
@@ -408,6 +582,11 @@ export default function Home() {
               <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.name}</option>
             ))}
           </select>
+          {prefSyncLabel && (
+            <span className={`hidden lg:inline text-[9px] font-semibold ${prefSyncState === 'offline' ? 'text-red-200' : prefSyncState === 'conflict' ? 'text-yellow-100' : 'text-white/60'}`} title={prefSyncLabel}>
+              {prefSyncLabel}
+            </span>
+          )}
 
           {/* Profile dropdown (logged in) or Sign In button (logged out) */}
           {user ? (

@@ -159,6 +159,7 @@ export default function Game() {
   const diceRef = useRef<DiceRollerHandle>(null);
   const journalSyncRef = useRef<(entries: JournalEntry[]) => void>(null);
   const lootSyncRef = useRef<(items: LootItem[]) => void>(null);
+  const npcSyncRef = useRef<(npcs: import('../components/game/NpcTracker').NpcRecord[]) => void>(null);
   const selectedUnit = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
 
   const showRollPopup = useCallback((roll: RollPresentation) => {
@@ -624,6 +625,10 @@ export default function Game() {
     getStateForResponse,
     journalSyncRef,
     lootSyncRef,
+    npcSyncRef,
+    setWikiPages,
+    setCalendar,
+    setRelationships,
     setWeather,
     setMapPins,
     selectedCharacterId,
@@ -947,7 +952,7 @@ export default function Game() {
         characterId: char.id,
         speed: 6 + monkSpeedBonus,
         movementUsed: 0,
-        reactionUsed: false,
+        reactionUsed: false, bonusActionUsed: false,
         disengaged: false,
       });
     }
@@ -1397,7 +1402,8 @@ export default function Game() {
               conditions: [],
               speed: 6,
               movementUsed: 0,
-              reactionUsed: false,
+        reactionUsed: false, bonusActionUsed: false,
+
               disengaged: false,
               cr: templateMatch?.cr ?? 1,
               xpValue: templateMatch?.xpValue ?? 200,
@@ -1478,7 +1484,7 @@ export default function Game() {
         attackBonus: monster.attackBonus, damageDie: monster.damageDie, damageBonus: monster.damageBonus,
         dexMod: monster.dexMod, abilities: monster.abilities.map((a) => ({ ...a })),
         abilityCooldowns: {}, conditions: [], speed: monster.speed, movementUsed: 0,
-        reactionUsed: false, disengaged: false, cr: monster.cr, xpValue: monster.xpValue,
+        reactionUsed: false, bonusActionUsed: false, disengaged: false, cr: monster.cr, xpValue: monster.xpValue,
         // Legendary + lair actions — only the first spawned unit of a boss type gets these (not copies)
         ...(i === 0 && monster.legendaryActions ? {
           legendaryActions: monster.legendaryActions,
@@ -2742,6 +2748,8 @@ export default function Game() {
                     roomId={room}
                     isDM={canUseDMTools}
                     partyNames={characters.map((c) => c.name)}
+                    onBroadcast={(evt) => broadcastGameEvent(evt.type, evt)}
+                    syncRef={npcSyncRef}
                   />
                 ) : activeView === 'dicestats' ? (
                   <DiceStats />
@@ -2754,23 +2762,23 @@ export default function Game() {
                     characters={characters.map((c) => ({ name: c.name, level: c.level, class: c.class, gold: c.gold }))}
                   />
                 ) : activeView === 'calendar' ? (
-                  <CampaignCalendar state={calendar} onUpdate={setCalendar} canEdit={canUseDMTools} />
+                  <CampaignCalendar state={calendar} onUpdate={(next) => { setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next }); }} canEdit={canUseDMTools} />
                 ) : activeView === 'wiki' ? (
                   <WorldWiki
                     pages={wikiPages}
                     playerName={currentPlayer.username || 'Unknown'}
                     sceneName={sceneName}
-                    onAddPage={(page) => setWikiPages((prev) => [...prev, page])}
-                    onUpdatePage={(id, updates) => setWikiPages((prev) => prev.map((p) => p.id === id ? { ...p, ...updates } : p))}
-                    onDeletePage={(id) => setWikiPages((prev) => prev.filter((p) => p.id !== id))}
+                    onAddPage={(page) => { const next = [...wikiPages, page]; setWikiPages(next); broadcastGameEvent('wiki_sync', { pages: next }); }}
+                    onUpdatePage={(id, updates) => { const next = wikiPages.map((p) => p.id === id ? { ...p, ...updates } : p); setWikiPages(next); broadcastGameEvent('wiki_sync', { pages: next }); }}
+                    onDeletePage={(id) => { const next = wikiPages.filter((p) => p.id !== id); setWikiPages(next); broadcastGameEvent('wiki_sync', { pages: next }); }}
                   />
                 ) : activeView === 'relationships' ? (
                   <RelationshipGraph
                     characters={characters}
                     edges={relationships}
-                    onAddEdge={(edge) => setRelationships((prev) => [...prev, edge])}
-                    onAddEdges={(newEdges) => setRelationships((prev) => [...prev, ...newEdges])}
-                    onRemoveEdge={(from, to) => setRelationships((prev) => prev.filter((e) => !(e.from === from && e.to === to)))}
+                    onAddEdge={(edge) => { const next = [...relationships, edge]; setRelationships(next); broadcastGameEvent('relationship_sync', { edges: next }); }}
+                    onAddEdges={(newEdges) => { const next = [...relationships, ...newEdges]; setRelationships(next); broadcastGameEvent('relationship_sync', { edges: next }); }}
+                    onRemoveEdge={(from, to) => { const next = relationships.filter((e) => !(e.from === from && e.to === to)); setRelationships(next); broadcastGameEvent('relationship_sync', { edges: next }); }}
                   />
                 ) : activeView === 'achievements' ? (
                   <Achievements

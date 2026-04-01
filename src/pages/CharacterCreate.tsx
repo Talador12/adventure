@@ -351,7 +351,7 @@ export default function CharacterCreate() {
         });
         const data = await res.json() as { portraitId?: string; url?: string; error?: string };
         if (data.portraitId) {
-          setPortrait(dataUrl);
+          setPortrait(data.url || dataUrl);
           setPortraitSource('upload');
           toast('Portrait uploaded and encrypted!', 'success');
         } else {

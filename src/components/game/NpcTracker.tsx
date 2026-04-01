@@ -34,9 +34,13 @@ interface NpcTrackerProps {
   isDM: boolean;
   /** Names of party characters for per-member attitude tracking */
   partyNames?: string[];
+  /** Callback to broadcast NPC state changes to other players via WebSocket */
+  onBroadcast?: (event: { type: string; npcs: NpcRecord[] }) => void;
+  /** Ref for receiving remote NPC state updates */
+  syncRef?: React.MutableRefObject<((npcs: NpcRecord[]) => void) | null>;
 }
 
-export default function NpcTracker({ roomId, isDM, partyNames = [] }: NpcTrackerProps) {
+export default function NpcTracker({ roomId, isDM, partyNames = [], onBroadcast, syncRef }: NpcTrackerProps) {
   const storageKey = `adventure:npcs:${roomId}`;
   const [npcs, setNpcs] = useState<NpcRecord[]>(() => {
     try {
@@ -44,6 +48,12 @@ export default function NpcTracker({ roomId, isDM, partyNames = [] }: NpcTracker
       return stored ? JSON.parse(stored) : [];
     } catch { return []; }
   });
+
+  // Expose sync function for remote updates
+  useEffect(() => {
+    if (syncRef) syncRef.current = (remote: NpcRecord[]) => setNpcs(remote);
+    return () => { if (syncRef) syncRef.current = null; };
+  }, [syncRef]);
 
   // Add form state
   const [showAdd, setShowAdd] = useState(false);
@@ -67,6 +77,10 @@ export default function NpcTracker({ roomId, isDM, partyNames = [] }: NpcTracker
     try { localStorage.setItem(storageKey, JSON.stringify(npcs)); } catch { /* full */ }
   }, [npcs, storageKey]);
 
+  const broadcast = useCallback((nextNpcs: NpcRecord[]) => {
+    onBroadcast?.({ type: 'npc_sync', npcs: nextNpcs });
+  }, [onBroadcast]);
+
   const addNpc = useCallback(() => {
     if (!addName.trim()) return;
     const npc: NpcRecord = {
@@ -80,18 +94,24 @@ export default function NpcTracker({ roomId, isDM, partyNames = [] }: NpcTracker
       alive: true,
       createdAt: Date.now(),
     };
-    setNpcs((prev) => [npc, ...prev]);
+    const next = [npc, ...npcs];
+    setNpcs(next);
+    broadcast(next);
     setAddName(''); setAddRole(''); setAddLocation(''); setAddFaction(''); setAddDisposition(0);
     setShowAdd(false);
-  }, [addName, addRole, addLocation, addFaction, addDisposition]);
+  }, [addName, addRole, addLocation, addFaction, addDisposition, npcs, broadcast]);
 
   const removeNpc = useCallback((id: string) => {
-    setNpcs((prev) => prev.filter((n) => n.id !== id));
-  }, []);
+    const next = npcs.filter((n) => n.id !== id);
+    setNpcs(next);
+    broadcast(next);
+  }, [npcs, broadcast]);
 
   const updateNpc = useCallback((id: string, updates: Partial<NpcRecord>) => {
-    setNpcs((prev) => prev.map((n) => (n.id === id ? { ...n, ...updates } : n)));
-  }, []);
+    const next = npcs.map((n) => (n.id === id ? { ...n, ...updates } : n));
+    setNpcs(next);
+    broadcast(next);
+  }, [npcs, broadcast]);
 
   // Filter + search
   const filtered = npcs.filter((n) => {

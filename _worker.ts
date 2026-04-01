@@ -123,6 +123,18 @@ const GITHUB_REDIRECT_URIS = ['http://localhost:5173/api/auth/github/callback', 
 
 const COOKIE_NAME = 'adventure_session';
 const DEV_JWT_FALLBACK = 'adventure-dev-secret-do-not-use-in-prod';
+const CAMPAIGN_BACKFILL_LIMIT = 500;
+const CAMPAIGN_OWNER_LOOKUP_CHUNK = 100;
+const D1_BATCH_CHUNK = 100;
+const CAMPAIGN_MIGRATION_MARKER_VERSION = 'd1:v1';
+
+function legacyCampaignListKey(userId: string): string {
+  return `user:${userId}:campaigns`;
+}
+
+function campaignMigrationMarkerKey(userId: string): string {
+  return `user:${userId}:campaigns:migrated:${CAMPAIGN_MIGRATION_MARKER_VERSION}`;
+}
 
 function getJwtKey(env: Env) {
   return new TextEncoder().encode(env.JWT_SECRET || DEV_JWT_FALLBACK);
@@ -1326,6 +1338,9 @@ app.get('/api/portrait/:id', async (c) => {
 
   const portraitId = c.req.param('id');
   const secret = c.env.JWT_SECRET || DEV_JWT_FALLBACK;
+  const cacheKey = new Request(c.req.url, { method: 'GET' });
+  const cached = await caches.default.match(cacheKey);
+  if (cached) return cached;
 
   try {
     const stored = await c.env.PORTRAITS.get(`portrait:${portraitId}`, { type: 'arrayBuffer' });
@@ -1339,8 +1354,23 @@ app.get('/api/portrait/:id', async (c) => {
     const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
     const dataUrl = new TextDecoder().decode(decrypted);
 
-    // Return the data URL as JSON (client uses it directly as img src)
-    return c.json({ portrait: dataUrl });
+    const parsed = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!parsed) {
+      return c.json({ error: 'Invalid portrait payload' }, 500);
+    }
+
+    const mimeType = parsed[1] || 'image/png';
+    const base64 = parsed[2] || '';
+    const binary = Uint8Array.from(atob(base64), (ch) => ch.charCodeAt(0));
+
+    const response = new Response(binary, {
+      headers: {
+        'Content-Type': mimeType,
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+      },
+    });
+    c.executionCtx.waitUntil(caches.default.put(cacheKey, response.clone()));
+    return response;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Download failed';
     return c.json({ error: msg }, 500);
@@ -1555,6 +1585,37 @@ app.delete('/api/party/:roomId/leave', async (c) => {
 
 // ── User profile (D1-backed) ──
 
+type UserPreferences = {
+  theme?: 'dark' | 'light';
+  activeTheme?: 'dark' | 'light' | 'parchment' | 'high-contrast';
+  lowFx?: boolean;
+  accentColor?: string;
+  locale?: 'en' | 'es' | 'fr' | 'de' | 'ja';
+  updatedAt?: number;
+};
+
+function sanitizePreferences(input: Record<string, unknown>): UserPreferences {
+  const pref: UserPreferences = {};
+  if (input.theme === 'dark' || input.theme === 'light') pref.theme = input.theme;
+  if (input.activeTheme === 'dark' || input.activeTheme === 'light' || input.activeTheme === 'parchment' || input.activeTheme === 'high-contrast') pref.activeTheme = input.activeTheme;
+  if (typeof input.lowFx === 'boolean') pref.lowFx = input.lowFx;
+  if (typeof input.accentColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.accentColor)) pref.accentColor = input.accentColor;
+  if (input.locale === 'en' || input.locale === 'es' || input.locale === 'fr' || input.locale === 'de' || input.locale === 'ja') pref.locale = input.locale;
+  if (typeof input.updatedAt === 'number' && Number.isFinite(input.updatedAt) && input.updatedAt > 0) pref.updatedAt = input.updatedAt;
+  return pref;
+}
+
+function prefsFromD1Row(row: Record<string, unknown>): UserPreferences {
+  return sanitizePreferences({
+    theme: row.theme,
+    activeTheme: row.active_theme,
+    lowFx: row.low_fx === 1,
+    accentColor: row.accent_color,
+    locale: row.locale,
+    updatedAt: row.updated_at,
+  });
+}
+
 // GET /api/user/me — full user profile from D1 with linked auth providers
 app.get('/api/user/me', async (c) => {
   const internalUserId = await ensureUser(c);
@@ -1575,6 +1636,115 @@ app.get('/api/user/me', async (c) => {
     logError('GET /api/user/me D1 query', err);
     const jwt = await getJwtPayload(c);
     return c.json({ user: jwt?.user || null, providers: [] });
+  }
+});
+
+// GET /api/preferences — load user UI preferences
+app.get('/api/preferences', async (c) => {
+  if (c.env.DB) {
+    const internalUserId = await ensureUser(c);
+    if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+    try {
+      const row = await c.env.DB.prepare(
+        'SELECT theme, active_theme, low_fx, accent_color, locale, updated_at FROM user_preferences WHERE user_id = ?'
+      ).bind(internalUserId).first<Record<string, unknown>>();
+      if (!row) return c.json({ preferences: null });
+      return c.json({ preferences: prefsFromD1Row(row) });
+    } catch (err) {
+      logError('GET /api/preferences D1', err);
+      return c.json({ preferences: null });
+    }
+  }
+
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CHARACTERS) return c.json({ error: 'Preference storage not available' }, 503);
+  try {
+    const raw = (await c.env.CHARACTERS.get(`user:${userId}:prefs`)) as string | null;
+    if (!raw) return c.json({ preferences: null });
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return c.json({ preferences: sanitizePreferences(parsed) });
+  } catch (err) {
+    logError('GET /api/preferences', err);
+    return c.json({ preferences: null });
+  }
+});
+
+// PUT /api/preferences — save user UI preferences
+app.put('/api/preferences', async (c) => {
+  if (c.env.DB) {
+    const internalUserId = await ensureUser(c);
+    if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+    try {
+      const body = await c.req.raw.json() as Record<string, unknown>;
+      const baseUpdatedAt = typeof body.baseUpdatedAt === 'number' && Number.isFinite(body.baseUpdatedAt) ? body.baseUpdatedAt : null;
+      const row = await c.env.DB.prepare(
+        'SELECT theme, active_theme, low_fx, accent_color, locale, updated_at FROM user_preferences WHERE user_id = ?'
+      ).bind(internalUserId).first<Record<string, unknown>>();
+      const current = row ? prefsFromD1Row(row) : null;
+      if (
+        current?.updatedAt &&
+        baseUpdatedAt !== null &&
+        baseUpdatedAt > 0 &&
+        baseUpdatedAt < current.updatedAt
+      ) {
+        return c.json({ error: 'Preferences are stale', preferences: current }, 409);
+      }
+      const preferences = sanitizePreferences(body);
+      const next = { ...(current || {}), ...preferences, updatedAt: Date.now() };
+      await c.env.DB.prepare(
+        `INSERT INTO user_preferences
+          (user_id, theme, active_theme, low_fx, accent_color, locale, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(user_id)
+         DO UPDATE SET
+          theme = excluded.theme,
+          active_theme = excluded.active_theme,
+          low_fx = excluded.low_fx,
+          accent_color = excluded.accent_color,
+          locale = excluded.locale,
+          updated_at = excluded.updated_at`
+      )
+        .bind(
+          internalUserId,
+          next.theme ?? null,
+          next.activeTheme ?? null,
+          typeof next.lowFx === 'boolean' ? (next.lowFx ? 1 : 0) : null,
+          next.accentColor ?? null,
+          next.locale ?? null,
+          next.updatedAt ?? Date.now(),
+        )
+        .run();
+      return c.json({ ok: true, preferences: next });
+    } catch (err) {
+      logError('PUT /api/preferences D1', err);
+      return c.json({ error: 'Failed to save preferences' }, 500);
+    }
+  }
+
+  const userId = await getUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  if (!c.env.CHARACTERS) return c.json({ error: 'Preference storage not available' }, 503);
+  try {
+    const body = await c.req.raw.json() as Record<string, unknown>;
+    const baseUpdatedAt = typeof body.baseUpdatedAt === 'number' && Number.isFinite(body.baseUpdatedAt) ? body.baseUpdatedAt : null;
+    const rawCurrent = (await c.env.CHARACTERS.get(`user:${userId}:prefs`)) as string | null;
+    const current = rawCurrent ? sanitizePreferences(JSON.parse(rawCurrent) as Record<string, unknown>) : null;
+    if (
+      current?.updatedAt &&
+      baseUpdatedAt !== null &&
+      baseUpdatedAt > 0 &&
+      baseUpdatedAt < current.updatedAt
+    ) {
+      return c.json({ error: 'Preferences are stale', preferences: current }, 409);
+    }
+    const preferences = sanitizePreferences(body);
+    const next = { ...(current || {}), ...preferences, updatedAt: Date.now() };
+    await c.env.CHARACTERS.put(`user:${userId}:prefs`, JSON.stringify(next));
+    return c.json({ ok: true, preferences: next });
+  } catch (err) {
+    logError('PUT /api/preferences', err);
+    return c.json({ error: 'Failed to save preferences' }, 500);
   }
 });
 
@@ -1649,6 +1819,65 @@ async function hashPassword(password: string): Promise<string> {
   const data = new TextEncoder().encode(password);
   const hash = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function toEpochMs(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return Date.now();
+  return value < 1_000_000_000_000 ? value * 1000 : value;
+}
+
+function toEpochMsOrZero(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 0;
+  return value < 1_000_000_000_000 ? value * 1000 : value;
+}
+
+function legacyCampaignQualityScore(campaign: Record<string, unknown>): number {
+  let score = 0;
+  const name = String(campaign.name || '').trim();
+  const description = String(campaign.description || '').trim();
+  if (name.length > 0) score += 1;
+  if (description.length > 0) score += 1;
+  if (campaign.visibility === 'public') score += 1;
+  if (typeof campaign.passwordHash === 'string' && campaign.passwordHash.length > 0) score += 1;
+  if (campaign.archived === true) score += 1;
+  return score;
+}
+
+async function anonymizeId(id: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(id));
+  return Array.from(new Uint8Array(digest).slice(0, 6)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function parseLegacyCampaignList(raw: string | null): {
+  legacy: Array<Record<string, unknown>>;
+  invalidJson: boolean;
+  invalidShape: boolean;
+} {
+  if (!raw) return { legacy: [], invalidJson: false, invalidShape: false };
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return { legacy: [], invalidJson: false, invalidShape: true };
+    }
+    return { legacy: parsed as Array<Record<string, unknown>>, invalidJson: false, invalidShape: false };
+  } catch {
+    return { legacy: [], invalidJson: true, invalidShape: false };
+  }
+}
+
+function campaignFromD1Row(row: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {
+    roomId: row.id,
+    name: row.name || row.id,
+    description: row.description || '',
+    visibility: row.visibility || 'private',
+    createdAt: toEpochMs(row.created_at),
+    updatedAt: toEpochMs(row.updated_at),
+    hasPassword: Boolean(row.password_hash),
+  };
+  if (row.archived === 1) result.archived = true;
+  if (typeof row.archived_at === 'number' && row.archived_at > 0) result.archivedAt = toEpochMs(row.archived_at);
+  return result;
 }
 
 // --- Public campaign index helpers ---
@@ -1788,6 +2017,32 @@ app.post('/api/maps/:id/rate', async (c) => {
 
 // GET /api/campaigns/public — browse public campaigns (no auth required)
 app.get('/api/campaigns/public', async (c) => {
+  if (c.env.DB) {
+    try {
+      const rows = await c.env.DB.prepare(
+        `SELECT c.id, c.name, c.description, c.updated_at, u.display_name AS dm_name,
+                (SELECT COUNT(*) FROM party_members pm WHERE pm.campaign_id = c.id AND pm.role = 'player') AS player_count
+         FROM campaigns c
+         LEFT JOIN users u ON u.id = c.owner_id
+         WHERE c.visibility = 'public' AND COALESCE(c.archived, 0) = 0
+         ORDER BY c.updated_at DESC
+         LIMIT 200`
+      ).all<Record<string, unknown>>();
+      const campaigns = (rows.results || []).map((row) => ({
+        roomId: row.id,
+        name: row.name || row.id,
+        description: row.description || '',
+        dmName: row.dm_name || '',
+        playerCount: typeof row.player_count === 'number' ? row.player_count : 0,
+        updatedAt: toEpochMs(row.updated_at),
+      }));
+      return c.json({ campaigns });
+    } catch (err) {
+      logError('GET /api/campaigns/public D1', err);
+      return c.json({ campaigns: [] });
+    }
+  }
+
   if (!c.env.CAMPAIGNS) return c.json({ campaigns: [] });
   try {
     const raw = (await c.env.CAMPAIGNS.get('campaigns:public')) as string | null;
@@ -1803,11 +2058,208 @@ app.get('/api/campaigns/public', async (c) => {
 
 // GET /api/campaigns — list all campaigns for the authenticated user (with ETag)
 app.get('/api/campaigns', async (c) => {
+  if (c.env.DB) {
+    const internalUserId = await ensureUser(c);
+    if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+    try {
+      let rows = await c.env.DB.prepare(
+        `SELECT id, name, description, visibility, archived, archived_at, password_hash, created_at, updated_at
+         FROM campaigns
+         WHERE owner_id = ?
+         ORDER BY updated_at DESC`
+      ).bind(internalUserId).all<Record<string, unknown>>();
+      let campaigns = (rows.results || []).map(campaignFromD1Row);
+
+      // One-time lazy migration: if D1 has no campaigns for this user yet, backfill
+      // from legacy KV metadata so existing users keep their campaign list.
+      if (campaigns.length === 0 && c.env.CAMPAIGNS) {
+        const legacyUserId = await getUserId(c);
+        if (legacyUserId) {
+          let anonUserCache: string | null = null;
+          const getAnonUser = async () => {
+            if (!anonUserCache) anonUserCache = await anonymizeId(internalUserId);
+            return anonUserCache;
+          };
+          const migrationMarkerKey = campaignMigrationMarkerKey(legacyUserId);
+          const migrationMarker = (await c.env.CAMPAIGNS.get(migrationMarkerKey)) as string | null;
+          if (migrationMarker) {
+            const anonUser = await getAnonUser();
+            console.info(`[adventure] campaign_backfill_skipped user=${anonUser} reason=already_migrated`);
+          } else {
+            let raw: string | null = null;
+            let legacyReadSucceeded = false;
+            try {
+              raw = (await c.env.CAMPAIGNS.get(legacyCampaignListKey(legacyUserId))) as string | null;
+              legacyReadSucceeded = true;
+            } catch {
+              const anonUser = await getAnonUser();
+              console.info(`[adventure] campaign_backfill_legacy_read_failed user=${anonUser}`);
+            }
+            const parsed = legacyReadSucceeded ? parseLegacyCampaignList(raw) : { legacy: [], invalidJson: false, invalidShape: false };
+            const legacy = parsed.legacy;
+            if (legacyReadSucceeded && parsed.invalidJson) {
+              const anonUser = await getAnonUser();
+              console.info(`[adventure] campaign_backfill_invalid_json user=${anonUser}`);
+            }
+            if (legacyReadSucceeded && parsed.invalidShape) {
+              const anonUser = await getAnonUser();
+              console.info(`[adventure] campaign_backfill_invalid_shape user=${anonUser}`);
+            }
+          if (legacyReadSucceeded && legacy.length > 0) {
+            let skippedInvalidCount = 0;
+            const dedupedLegacyOrder: string[] = [];
+            const dedupedLegacyMap = new Map<string, Record<string, unknown>>();
+            let skippedDuplicateCount = 0;
+            for (const cp of legacy) {
+              const dedupeKey = String(cp.roomId || '').trim();
+              if (!dedupeKey) {
+                skippedInvalidCount += 1;
+                continue;
+              }
+              const existing = dedupedLegacyMap.get(dedupeKey);
+              if (existing) {
+                skippedDuplicateCount += 1;
+                const existingUpdatedAt = toEpochMsOrZero(existing.updatedAt || existing.createdAt || 0);
+                const incomingUpdatedAt = toEpochMsOrZero(cp.updatedAt || cp.createdAt || 0);
+                const existingQuality = legacyCampaignQualityScore(existing);
+                const incomingQuality = legacyCampaignQualityScore(cp);
+                if (incomingUpdatedAt > existingUpdatedAt || (incomingUpdatedAt === existingUpdatedAt && incomingQuality > existingQuality)) {
+                  dedupedLegacyMap.set(dedupeKey, cp);
+                }
+                continue;
+              }
+              dedupedLegacyOrder.push(dedupeKey);
+              dedupedLegacyMap.set(dedupeKey, cp);
+            }
+            const dedupedLegacy = dedupedLegacyOrder
+              .map((roomId) => ({ roomId, campaign: dedupedLegacyMap.get(roomId)! }))
+              .filter((entry) => !!entry.campaign);
+
+            const backfillStartMs = Date.now();
+            const capped = dedupedLegacy.slice(0, CAMPAIGN_BACKFILL_LIMIT);
+            const truncatedCount = Math.max(0, dedupedLegacy.length - capped.length);
+            let importedCount = 0;
+            let skippedExistingCount = 0;
+            let skippedConflictCount = 0;
+            const backfillStatements: D1PreparedStatement[] = [];
+
+            const existingRows = await c.env.DB.prepare('SELECT id FROM campaigns WHERE owner_id = ?').bind(internalUserId).all<{ id: string }>();
+            const existingIds = new Set((existingRows.results || []).map((row) => row.id));
+
+            const validLegacyIds = Array.from(new Set(capped.map((entry) => entry.roomId)));
+            const ownerByCampaignId = new Map<string, string>();
+            for (let i = 0; i < validLegacyIds.length; i += CAMPAIGN_OWNER_LOOKUP_CHUNK) {
+              const idsChunk = validLegacyIds.slice(i, i + CAMPAIGN_OWNER_LOOKUP_CHUNK);
+              if (idsChunk.length === 0) continue;
+              const placeholders = idsChunk.map(() => '?').join(', ');
+              const rowsForChunk = await c.env.DB.prepare(`SELECT id, owner_id FROM campaigns WHERE id IN (${placeholders})`).bind(...idsChunk).all<{ id: string; owner_id: string }>();
+              for (const row of rowsForChunk.results || []) {
+                ownerByCampaignId.set(row.id, row.owner_id);
+              }
+            }
+
+            for (const { roomId, campaign: cp } of capped) {
+              if (existingIds.has(roomId)) {
+                skippedExistingCount += 1;
+                backfillStatements.push(c.env.DB.prepare(
+                  `INSERT INTO party_members (campaign_id, user_id, character_id, role)
+                   VALUES (?, ?, NULL, 'dm')
+                   ON CONFLICT(campaign_id, user_id) DO UPDATE SET role = 'dm'`
+                ).bind(roomId, internalUserId));
+                continue;
+              }
+
+              const globalOwnerId = ownerByCampaignId.get(roomId);
+              if (globalOwnerId && globalOwnerId !== internalUserId) {
+                skippedConflictCount += 1;
+                continue;
+              }
+
+              const createdAtSec = Math.floor(toEpochMs(cp.createdAt || Date.now()) / 1000);
+              const updatedAtSec = Math.floor(toEpochMs(cp.updatedAt || cp.createdAt || Date.now()) / 1000);
+              const archived = cp.archived === true ? 1 : 0;
+              const archivedAtSec = archived ? Math.floor(toEpochMs(cp.archivedAt || cp.updatedAt || Date.now()) / 1000) : null;
+              const visibilityRaw = String(cp.visibility || 'private');
+              const visibility = visibilityRaw === 'public' ? 'public' : 'private';
+              const passwordHash = typeof cp.passwordHash === 'string' && cp.passwordHash.length > 0 ? cp.passwordHash : null;
+
+              backfillStatements.push(c.env.DB.prepare(
+                `INSERT OR IGNORE INTO campaigns
+                  (id, name, description, owner_id, visibility, archived, archived_at, password_hash, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+              ).bind(
+                roomId,
+                String(cp.name || roomId).slice(0, 100),
+                String(cp.description || '').slice(0, 500),
+                internalUserId,
+                visibility,
+                archived,
+                archivedAtSec,
+                passwordHash,
+                createdAtSec,
+                updatedAtSec,
+              ));
+              importedCount += 1;
+              existingIds.add(roomId);
+
+              backfillStatements.push(c.env.DB.prepare(
+                `INSERT INTO party_members (campaign_id, user_id, character_id, role)
+                 VALUES (?, ?, NULL, 'dm')
+                 ON CONFLICT(campaign_id, user_id) DO UPDATE SET role = 'dm'`
+              ).bind(roomId, internalUserId));
+            }
+
+            await runD1Batches(c.env.DB, backfillStatements, D1_BATCH_CHUNK);
+
+            const anonUser = await getAnonUser();
+            const backfillElapsedMs = Date.now() - backfillStartMs;
+            console.info(`[adventure] campaign_backfill user=${anonUser} legacy=${legacy.length} deduped=${dedupedLegacy.length} skipped_duplicate=${skippedDuplicateCount} capped=${capped.length} truncated=${truncatedCount} imported=${importedCount} skipped_invalid=${skippedInvalidCount} skipped_existing=${skippedExistingCount} skipped_conflict=${skippedConflictCount} statements=${backfillStatements.length} duration_ms=${backfillElapsedMs}`);
+            if (truncatedCount > 0) {
+              console.info(`[adventure] campaign_backfill_truncated user=${anonUser} dropped=${truncatedCount}`);
+            }
+            if (importedCount === 0) {
+              console.info(`[adventure] campaign_backfill_noop user=${anonUser}`);
+            }
+
+            rows = await c.env.DB.prepare(
+              `SELECT id, name, description, visibility, archived, archived_at, password_hash, created_at, updated_at
+               FROM campaigns
+               WHERE owner_id = ?
+               ORDER BY updated_at DESC`
+            ).bind(internalUserId).all<Record<string, unknown>>();
+            campaigns = (rows.results || []).map(campaignFromD1Row);
+          }
+            if (legacyReadSucceeded) {
+              if (legacy.length === 0 && !parsed.invalidJson && !parsed.invalidShape) {
+                const anonUser = await getAnonUser();
+                console.info(`[adventure] campaign_backfill_no_legacy user=${anonUser}`);
+              }
+              try {
+                await c.env.CAMPAIGNS.put(migrationMarkerKey, String(Date.now()));
+              } catch {
+                const anonUser = await getAnonUser();
+                console.info(`[adventure] campaign_backfill_marker_write_failed user=${anonUser}`);
+              }
+            }
+          }
+        }
+      }
+
+      const data = JSON.stringify(campaigns);
+      const etag = await computeETag(data);
+      if (checkNotModified(c, etag)) return new Response(null, { status: 304, headers: { ETag: etag } });
+      return c.json({ campaigns }, { headers: { ETag: etag, 'Cache-Control': 'private, no-cache' } });
+    } catch (err) {
+      logError('GET /api/campaigns D1', err);
+      return c.json({ campaigns: [] });
+    }
+  }
+
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
-    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(legacyCampaignListKey(userId))) as string | null;
     const data = raw || '[]';
     const etag = await computeETag(data);
     if (checkNotModified(c, etag)) return new Response(null, { status: 304, headers: { ETag: etag } });
@@ -1821,6 +2273,39 @@ app.get('/api/campaigns', async (c) => {
 
 // POST /api/campaigns — register a campaign for the user's campaign list
 app.post('/api/campaigns', async (c) => {
+  if (c.env.DB) {
+    const internalUserId = await ensureUser(c);
+    if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+    try {
+      const body = await c.req.json<Record<string, unknown>>();
+      const roomId = String(body.roomId || '').trim();
+      const name = String(body.name || roomId).slice(0, 100);
+      if (!roomId) return c.json({ error: 'roomId is required' }, 400);
+
+      const now = Math.floor(Date.now() / 1000);
+      const existing = await c.env.DB.prepare('SELECT owner_id FROM campaigns WHERE id = ?').bind(roomId).first<{ owner_id: string }>();
+      if (existing && existing.owner_id !== internalUserId) {
+        return c.json({ error: 'Campaign roomId already exists' }, 409);
+      }
+
+      if (!existing) {
+        await c.env.DB.prepare(
+          'INSERT INTO campaigns (id, name, description, owner_id, visibility, archived, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?)'
+        ).bind(roomId, name, '', internalUserId, 'private', now, now).run();
+      }
+      await c.env.DB.prepare(
+        `INSERT INTO party_members (campaign_id, user_id, character_id, role)
+         VALUES (?, ?, NULL, 'dm')
+         ON CONFLICT(campaign_id, user_id) DO UPDATE SET role = 'dm'`
+      ).bind(roomId, internalUserId).run();
+
+      return c.json({ ok: true });
+    } catch (err) {
+      logError('POST /api/campaigns D1', err);
+      return c.json({ error: 'Failed to register campaign' }, 500);
+    }
+  }
+
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
@@ -1830,13 +2315,13 @@ app.post('/api/campaigns', async (c) => {
     const name = String(body.name || roomId);
     if (!roomId) return c.json({ error: 'roomId is required' }, 400);
 
-    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(legacyCampaignListKey(userId))) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
 
     // Don't duplicate
     if (!campaigns.find((c) => c.roomId === roomId)) {
       campaigns.push({ roomId, name, createdAt: Date.now() });
-      await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+      await c.env.CAMPAIGNS.put(legacyCampaignListKey(userId), JSON.stringify(campaigns));
     }
     return c.json({ ok: true });
   } catch (err) {
@@ -1847,13 +2332,64 @@ app.post('/api/campaigns', async (c) => {
 
 // PATCH /api/campaigns/:roomId — update campaign metadata (name, description, visibility)
 app.patch('/api/campaigns/:roomId', async (c) => {
+  if (c.env.DB) {
+    const internalUserId = await ensureUser(c);
+    if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+    try {
+      const roomId = c.req.param('roomId');
+      const body = await c.req.json<Record<string, unknown>>();
+      const row = await c.env.DB.prepare(
+        'SELECT id, name, description, visibility, archived, archived_at, password_hash, created_at, updated_at FROM campaigns WHERE id = ? AND owner_id = ?'
+      ).bind(roomId, internalUserId).first<Record<string, unknown>>();
+      if (!row) return c.json({ error: 'Campaign not found' }, 404);
+
+      const nextName = body.name !== undefined ? String(body.name).slice(0, 100) : String(row.name || roomId);
+      const nextDescription = body.description !== undefined ? String(body.description).slice(0, 500) : String(row.description || '');
+      let nextVisibility = String(row.visibility || 'private');
+      if (body.visibility !== undefined) {
+        const vis = String(body.visibility);
+        if (vis === 'public' || vis === 'private') nextVisibility = vis;
+      }
+
+      let nextPasswordHash = typeof row.password_hash === 'string' ? row.password_hash : null;
+      if (body.password !== undefined) {
+        const pw = String(body.password);
+        if (pw.length > 0) nextPasswordHash = await hashPassword(pw);
+        else nextPasswordHash = null;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      await c.env.DB.prepare(
+        `UPDATE campaigns
+         SET name = ?, description = ?, visibility = ?, password_hash = ?, updated_at = ?
+         WHERE id = ? AND owner_id = ?`
+      ).bind(nextName, nextDescription, nextVisibility, nextPasswordHash, now, roomId, internalUserId).run();
+
+      const campaign = {
+        roomId,
+        name: nextName,
+        description: nextDescription,
+        visibility: nextVisibility,
+        hasPassword: !!nextPasswordHash,
+        passwordHash: nextPasswordHash,
+        updatedAt: Date.now(),
+      } as Record<string, unknown>;
+
+      delete campaign.passwordHash;
+      return c.json({ ok: true, campaign });
+    } catch (err) {
+      logError('PATCH /api/campaigns/:roomId D1', err);
+      return c.json({ error: 'Failed to update campaign' }, 500);
+    }
+  }
+
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
     const roomId = c.req.param('roomId');
     const body = await c.req.json<Record<string, unknown>>();
-    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(legacyCampaignListKey(userId))) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     const campaign = campaigns.find((cp) => cp.roomId === roomId);
     if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
@@ -1874,7 +2410,7 @@ app.patch('/api/campaigns/:roomId', async (c) => {
         campaign.hasPassword = false;
       }
     }
-    await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+    await c.env.CAMPAIGNS.put(legacyCampaignListKey(userId), JSON.stringify(campaigns));
     // Also store password hash in a room-level key so non-owners can verify
     if (campaign.hasPassword && campaign.passwordHash) {
       await c.env.CAMPAIGNS.put(`room:${roomId}:password`, campaign.passwordHash as string);
@@ -1892,19 +2428,46 @@ app.patch('/api/campaigns/:roomId', async (c) => {
 
 // DELETE /api/campaigns/:roomId — soft-delete (archive) a campaign
 app.delete('/api/campaigns/:roomId', async (c) => {
+  if (c.env.DB) {
+    const internalUserId = await ensureUser(c);
+    if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+    try {
+      const roomId = c.req.param('roomId');
+      const permanent = c.req.query('permanent') === '1';
+      const existing = await c.env.DB.prepare('SELECT id FROM campaigns WHERE id = ? AND owner_id = ?').bind(roomId, internalUserId).first<{ id: string }>();
+      if (!existing) return c.json({ error: 'Campaign not found' }, 404);
+
+      if (permanent) {
+        await c.env.DB.prepare('DELETE FROM campaigns WHERE id = ? AND owner_id = ?').bind(roomId, internalUserId).run();
+        if (c.env.CAMPAIGNS) {
+          await c.env.CAMPAIGNS.delete(`campaign:${roomId}`);
+          await c.env.CAMPAIGNS.delete(`room:${roomId}:password`);
+        }
+      } else {
+        const now = Math.floor(Date.now() / 1000);
+        await c.env.DB.prepare('UPDATE campaigns SET archived = 1, archived_at = ?, updated_at = ? WHERE id = ? AND owner_id = ?').bind(now, now, roomId, internalUserId).run();
+      }
+
+      return c.json({ ok: true, permanent });
+    } catch (err) {
+      logError('DELETE /api/campaigns/:roomId D1', err);
+      return c.json({ error: 'Failed to delete campaign' }, 500);
+    }
+  }
+
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
     const roomId = c.req.param('roomId');
     const permanent = c.req.query('permanent') === '1';
-    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(legacyCampaignListKey(userId))) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
 
     if (permanent) {
       // Hard delete — remove from list and delete state
       const filtered = campaigns.filter((cp) => cp.roomId !== roomId);
-      await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(filtered));
+      await c.env.CAMPAIGNS.put(legacyCampaignListKey(userId), JSON.stringify(filtered));
       await c.env.CAMPAIGNS.delete(`campaign:${roomId}`);
       await syncPublicIndex(c.env.CAMPAIGNS, roomId, { visibility: 'private' });
     } else {
@@ -1913,7 +2476,7 @@ app.delete('/api/campaigns/:roomId', async (c) => {
       if (campaign) {
         campaign.archived = true;
         campaign.archivedAt = Date.now();
-        await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+        await c.env.CAMPAIGNS.put(legacyCampaignListKey(userId), JSON.stringify(campaigns));
         // Remove from public index while archived
         await syncPublicIndex(c.env.CAMPAIGNS, roomId, { visibility: 'private' });
       }
@@ -1927,18 +2490,39 @@ app.delete('/api/campaigns/:roomId', async (c) => {
 
 // POST /api/campaigns/:roomId/restore — restore an archived campaign
 app.post('/api/campaigns/:roomId/restore', async (c) => {
+  if (c.env.DB) {
+    const internalUserId = await ensureUser(c);
+    if (!internalUserId) return c.json({ error: 'Not authenticated' }, 401);
+    try {
+      const roomId = c.req.param('roomId');
+      const row = await c.env.DB.prepare(
+        'SELECT id, name, description, visibility, archived, archived_at, password_hash, created_at, updated_at FROM campaigns WHERE id = ? AND owner_id = ?'
+      ).bind(roomId, internalUserId).first<Record<string, unknown>>();
+      if (!row) return c.json({ error: 'Campaign not found' }, 404);
+
+      const now = Math.floor(Date.now() / 1000);
+      await c.env.DB.prepare('UPDATE campaigns SET archived = 0, archived_at = NULL, updated_at = ? WHERE id = ? AND owner_id = ?').bind(now, roomId, internalUserId).run();
+
+      const campaign = campaignFromD1Row({ ...row, archived: 0, archived_at: null, updated_at: now });
+      return c.json({ ok: true, campaign });
+    } catch (err) {
+      logError('POST /api/campaigns/:roomId/restore D1', err);
+      return c.json({ error: 'Failed to restore campaign' }, 500);
+    }
+  }
+
   const userId = await getUserId(c);
   if (!userId) return c.json({ error: 'Not authenticated' }, 401);
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
     const roomId = c.req.param('roomId');
-    const raw = (await c.env.CAMPAIGNS.get(`user:${userId}:campaigns`)) as string | null;
+    const raw = (await c.env.CAMPAIGNS.get(legacyCampaignListKey(userId))) as string | null;
     const campaigns: Record<string, unknown>[] = raw ? JSON.parse(raw) : [];
     const campaign = campaigns.find((cp) => cp.roomId === roomId);
     if (!campaign) return c.json({ error: 'Campaign not found' }, 404);
     delete campaign.archived;
     delete campaign.archivedAt;
-    await c.env.CAMPAIGNS.put(`user:${userId}:campaigns`, JSON.stringify(campaigns));
+    await c.env.CAMPAIGNS.put(legacyCampaignListKey(userId), JSON.stringify(campaigns));
     // Re-sync public index if it was public
     await syncPublicIndex(c.env.CAMPAIGNS, roomId, campaign);
     return c.json({ ok: true, campaign });
@@ -1950,6 +2534,17 @@ app.post('/api/campaigns/:roomId/restore', async (c) => {
 
 // GET /api/lobby/:roomId/info — check if lobby has password (no auth required)
 app.get('/api/lobby/:roomId/info', async (c) => {
+  if (c.env.DB) {
+    try {
+      const roomId = c.req.param('roomId');
+      const row = await c.env.DB.prepare('SELECT password_hash FROM campaigns WHERE id = ? AND COALESCE(archived, 0) = 0').bind(roomId).first<{ password_hash?: string | null }>();
+      return c.json({ hasPassword: !!row?.password_hash });
+    } catch (err) {
+      logError('GET /api/lobby/:roomId/info D1', err);
+      return c.json({ hasPassword: false });
+    }
+  }
+
   if (!c.env.CAMPAIGNS) return c.json({ hasPassword: false });
   try {
     const roomId = c.req.param('roomId');
@@ -1963,6 +2558,23 @@ app.get('/api/lobby/:roomId/info', async (c) => {
 
 // POST /api/lobby/:roomId/verify — verify lobby password (no auth required)
 app.post('/api/lobby/:roomId/verify', async (c) => {
+  if (c.env.DB) {
+    try {
+      const roomId = c.req.param('roomId');
+      const body = await c.req.json<{ password?: string }>();
+      const password = body.password || '';
+      const row = await c.env.DB.prepare('SELECT password_hash FROM campaigns WHERE id = ? AND COALESCE(archived, 0) = 0').bind(roomId).first<{ password_hash?: string | null }>();
+      const storedHash = row?.password_hash || null;
+      if (!storedHash) return c.json({ ok: true });
+      const inputHash = await hashPassword(password);
+      if (inputHash === storedHash) return c.json({ ok: true });
+      return c.json({ ok: false, error: 'Wrong password' }, 403);
+    } catch (err) {
+      logError('POST /api/lobby/:roomId/verify D1', err);
+      return c.json({ error: 'Verification failed' }, 500);
+    }
+  }
+
   if (!c.env.CAMPAIGNS) return c.json({ error: 'Campaign storage not available' }, 503);
   try {
     const roomId = c.req.param('roomId');
@@ -1988,6 +2600,13 @@ async function computeETag(data: string): Promise<string> {
 function checkNotModified(c: { req: { header: (n: string) => string | undefined } }, etag: string): boolean {
   const ifNoneMatch = c.req.header('if-none-match');
   return ifNoneMatch === etag;
+}
+
+async function runD1Batches(db: D1Database, statements: D1PreparedStatement[], chunkSize = 100): Promise<void> {
+  if (statements.length === 0) return;
+  for (let i = 0; i < statements.length; i += chunkSize) {
+    await db.batch(statements.slice(i, i + chunkSize));
+  }
 }
 
 // GET /api/characters — load all characters for the authenticated user (with ETag)
@@ -2016,10 +2635,24 @@ app.put('/api/characters', async (c) => {
   try {
     const { characters } = (await c.req.raw.json()) as { characters: unknown[] };
     if (!Array.isArray(characters)) return c.json({ error: 'characters must be an array' }, 400);
-    // Strip portrait data URLs to save KV space (portraits stored separately in PORTRAITS KV)
+    // Strip inline portrait data URLs to save KV space (portraits should be server URLs)
     const lean = (characters as Record<string, unknown>[]).map((ch) => {
-      const { portrait, ...rest } = ch;
-      return { ...rest, hasPortrait: Boolean(portrait) };
+      const portrait = typeof ch.portrait === 'string' ? ch.portrait : undefined;
+      const portraitGalleryRaw = Array.isArray(ch.portraitGallery) ? ch.portraitGallery : undefined;
+      const portraitGallery = portraitGalleryRaw
+        ?.filter((url): url is string => typeof url === 'string' && !url.startsWith('data:image/'))
+        .slice(0, 10);
+
+      const rest = { ...ch };
+      delete (rest as Record<string, unknown>).portrait;
+      delete (rest as Record<string, unknown>).portraitGallery;
+
+      return {
+        ...rest,
+        portrait: portrait && !portrait.startsWith('data:image/') ? portrait : undefined,
+        portraitGallery,
+        hasPortrait: Boolean(portrait),
+      };
     });
     await c.env.CHARACTERS.put(`user:${userId}:chars`, JSON.stringify(lean));
     return c.json({ ok: true, count: lean.length });

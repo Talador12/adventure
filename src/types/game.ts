@@ -14,7 +14,7 @@ export interface Player {
 }
 
 // --- Conditions ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'grappled' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -34,6 +34,7 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   inspired: { attackMod: 2, acMod: 0, saveMod: 2, description: 'Inspired — +2 to attacks and saves', color: 'text-indigo-400' },
   helping: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Helping an ally — next ally attack vs target has advantage', color: 'text-teal-400' },
   hidden: { attackMod: 2, acMod: 0, saveMod: 0, description: 'Hidden — advantage on next attack, enemies can\'t target you', color: 'text-slate-300' },
+  grappled: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Grappled — speed is 0, cannot move', color: 'text-rose-400' },
   torchlit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a torch — 40ft bright light (8 cells)', color: 'text-amber-300' },
   darkvision: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Darkvision spell — 60ft vision in darkness (12 cells)', color: 'text-indigo-300' },
   candlelit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a candle — 10ft bright, 20ft dim', color: 'text-orange-200' },
@@ -117,6 +118,7 @@ export interface Unit {
   speed: number;
   movementUsed: number;
   reactionUsed: boolean;
+  bonusActionUsed: boolean;
   disengaged: boolean;
   cr?: number;
   xpValue?: number;
@@ -134,6 +136,11 @@ export interface Unit {
   legendaryAbilities?: EnemyAbility[]; // abilities usable as legendary actions
   // Lair actions — environmental effects at initiative count 20 (start of round)
   lairActions?: LairAction[];
+  // Readied action — held action that fires as a reaction when trigger occurs
+  readiedAction?: {
+    trigger: string;    // freeform description: "when an enemy moves within 5ft"
+    action: string;     // what happens: "attack" | "cast Shield" | custom text
+  };
   // Aura visualization — radius circle drawn on battle map around this token
   auraRadius?: number; // in grid cells (e.g., 2 = 10ft)
   auraColor?: string;  // CSS color with alpha (e.g., 'rgba(56,189,248,0.15)')
@@ -399,6 +406,8 @@ export interface Spell {
   components?: ('V' | 'S' | 'M')[];
   /** Material component description (when M is in components) */
   material?: string;
+  /** Whether this spell is cast as a reaction (Shield, Counterspell, Hellish Rebuke) */
+  isReaction?: boolean;
 }
 
 // --- Class abilities ---

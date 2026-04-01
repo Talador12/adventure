@@ -4,7 +4,7 @@ import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
 export default defineWorkersConfig({
   test: {
     globals: true,
-    include: ['tests/multiplayer/**/*.test.ts', 'tests/ai/**/*.test.ts'],
+    include: ['tests/multiplayer/**/*.test.ts', 'tests/ai/**/*.test.ts', 'tests/api/**/*.test.ts'],
     poolOptions: {
       workers: {
         isolatedStorage: false, // required for DO WebSocket tests — DO close handlers fire async and can't be awaited

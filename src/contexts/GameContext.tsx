@@ -243,7 +243,29 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Persist characters to localStorage + server sync on change
   const syncingRef = useRef(false); // prevent save-during-load loops
+  const hydratedCharacterCacheRef = useRef<string | null>(null);
+  const portraitMigrationRef = useRef<Set<string>>(new Set());
   const isTempUser = currentPlayer.id.startsWith('temp-');
+
+  // Hydrate characters from IndexedDB cache when user identity resolves.
+  // This covers cases where localStorage was cleared but IndexedDB still has fresh data.
+  useEffect(() => {
+    if (isTempUser || !currentPlayer.id) return;
+    if (hydratedCharacterCacheRef.current === currentPlayer.id) return;
+    hydratedCharacterCacheRef.current = currentPlayer.id;
+
+    import('../lib/localCache').then(({ getCachedCharacters }) => {
+      getCachedCharacters(currentPlayer.id).then((cached) => {
+        if (!cached || cached.length === 0) return;
+        setCharacters((local) => {
+          if (local.length === 0) return cached as Character[];
+          const localIds = new Set(local.map((c) => c.id));
+          const missingFromLocal = (cached as Character[]).filter((c) => !localIds.has(c.id));
+          return missingFromLocal.length > 0 ? [...local, ...missingFromLocal] : local;
+        });
+      }).catch(() => {});
+    }).catch(() => {});
+  }, [currentPlayer.id, isTempUser]);
   useEffect(() => {
     try {
       localStorage.setItem(CHARACTERS_STORAGE_KEY, JSON.stringify(characters));
@@ -297,6 +319,89 @@ export function GameProvider({ children }: { children: ReactNode }) {
         syncingRef.current = false;
       });
   }, [isTempUser]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Migrate old inline data-URL portraits to server-backed portrait URLs.
+  useEffect(() => {
+    if (isTempUser) return;
+    if (!characters.some((c) => (c.portrait && c.portrait.startsWith('data:image/')) || (c.portraitGallery || []).some((url) => url.startsWith('data:image/')))) return;
+
+    let cancelled = false;
+    const fingerprint = (value: string) => `${value.slice(0, 64)}:${value.length}`;
+    const sameGallery = (a?: string[], b?: string[]): boolean => {
+      if (!a && !b) return true;
+      if (!a || !b) return false;
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i += 1) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    };
+    const uploadPortrait = async (image: string, characterId?: string): Promise<string | null> => {
+      try {
+        const res = await fetch('/api/portrait/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image, characterId }),
+        });
+        if (!res.ok) return null;
+        const data = await res.json() as { url?: string };
+        return data.url || null;
+      } catch {
+        return null;
+      }
+    };
+
+    void (async () => {
+      const updates = new Map<string, { portrait?: string; portraitGallery?: string[] }>();
+
+      for (const character of characters) {
+        let nextPortrait = character.portrait;
+        let nextGallery = character.portraitGallery ? [...character.portraitGallery] : undefined;
+
+        if (nextPortrait && nextPortrait.startsWith('data:image/')) {
+          const key = `p:${character.id}:${fingerprint(nextPortrait)}`;
+          if (!portraitMigrationRef.current.has(key)) {
+            portraitMigrationRef.current.add(key);
+            const url = await uploadPortrait(nextPortrait, character.id);
+            if (url) nextPortrait = url;
+            else portraitMigrationRef.current.delete(key); // retry on next pass
+          }
+        }
+
+        if (nextGallery?.length) {
+          for (let i = 0; i < nextGallery.length; i += 1) {
+            const item = nextGallery[i];
+            if (!item || !item.startsWith('data:image/')) continue;
+            const key = `g:${character.id}:${i}:${fingerprint(item)}`;
+            if (portraitMigrationRef.current.has(key)) continue;
+            portraitMigrationRef.current.add(key);
+            const url = await uploadPortrait(item);
+            if (url) nextGallery[i] = url;
+            else portraitMigrationRef.current.delete(key); // retry on next pass
+          }
+        }
+
+        if (nextPortrait !== character.portrait || !sameGallery(nextGallery, character.portraitGallery)) {
+          updates.set(character.id, { portrait: nextPortrait, portraitGallery: nextGallery });
+        }
+      }
+
+      if (cancelled || updates.size === 0) return;
+      setCharacters((prev) => prev.map((c) => {
+        const next = updates.get(c.id);
+        if (!next) return c;
+        return {
+          ...c,
+          portrait: next.portrait,
+          portraitGallery: next.portraitGallery,
+        };
+      }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [characters, isTempUser]);
 
   const addCharacter = useCallback((c: Character) => {
     setCharacters((prev) => [...prev, c]);
@@ -1182,7 +1287,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
             speed = 6 + Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0);
           }
         }
-        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, reactionUsed: false, disengaged: false, speed };
+        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false, speed };
       });
       // Sort by initiative descending, then DEX mod tiebreaker, then stable ID comparison
       withInitiative.sort((a, b) => {
@@ -1237,7 +1342,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       cleared[nextIdx].isCurrentTurn = true;
       cleared[nextIdx].movementUsed = 0; // reset movement for new turn
       cleared[nextIdx].reactionUsed = false; // reset reaction for new turn
+      cleared[nextIdx].bonusActionUsed = false; // reset bonus action for new turn
       cleared[nextIdx].disengaged = false; // reset disengage for new turn
+      cleared[nextIdx].readiedAction = undefined; // readied actions expire on your next turn
 
       // Death save automation: if the unit starting their turn is unconscious (0 HP), roll a death save
       if (cleared[nextIdx].hp === 0 && cleared[nextIdx].type === 'player' && cleared[nextIdx].characterId) {

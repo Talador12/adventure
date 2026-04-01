@@ -12,6 +12,10 @@ import type { Quest, MapPin } from '../types/game';
 import type { RollInterpolationMode, RollPresentation } from '../types/roll';
 import type { JournalEntry } from '../components/game/SessionJournal';
 import type { LootItem } from '../components/game/LootTracker';
+import type { NpcRecord } from '../components/game/NpcTracker';
+import type { WikiPage } from '../components/game/WorldWiki';
+import type { CalendarState } from '../components/game/CampaignCalendar';
+import type { RelationshipEdge } from '../components/game/RelationshipGraph';
 import { playPlayerJoin } from './useSoundFX';
 import { persistChatMessage } from '../lib/chatApi';
 
@@ -63,6 +67,14 @@ export interface GameWebSocketDeps {
 
   // Loot sync callback ref
   lootSyncRef: React.MutableRefObject<((items: LootItem[]) => void) | null>;
+
+  // NPC sync callback ref
+  npcSyncRef: React.MutableRefObject<((npcs: NpcRecord[]) => void) | null>;
+
+  // Wiki + Calendar + Relationships sync
+  setWikiPages?: React.Dispatch<React.SetStateAction<WikiPage[]>>;
+  setCalendar?: React.Dispatch<React.SetStateAction<CalendarState>>;
+  setRelationships?: React.Dispatch<React.SetStateAction<RelationshipEdge[]>>;
 
   // Weather sync
   setWeather?: (w: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm') => void;
@@ -556,6 +568,30 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               case 'loot_sync': {
                 if (Array.isArray(eventData.items)) {
                   deps.lootSyncRef.current?.(eventData.items as LootItem[]);
+                }
+                break;
+              }
+              case 'npc_sync': {
+                if (Array.isArray(eventData.npcs)) {
+                  deps.npcSyncRef.current?.(eventData.npcs as NpcRecord[]);
+                }
+                break;
+              }
+              case 'wiki_sync': {
+                if (Array.isArray(eventData.pages)) {
+                  deps.setWikiPages?.(eventData.pages as WikiPage[]);
+                }
+                break;
+              }
+              case 'calendar_sync': {
+                if (eventData.calendar && typeof eventData.calendar === 'object') {
+                  deps.setCalendar?.(eventData.calendar as CalendarState);
+                }
+                break;
+              }
+              case 'relationship_sync': {
+                if (Array.isArray(eventData.edges)) {
+                  deps.setRelationships?.(eventData.edges as RelationshipEdge[]);
                 }
                 break;
               }
