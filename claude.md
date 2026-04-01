@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 28 new tests (168 total) covering 7 data modules:
+  - **Treasure hoards** (4 tests): tier scaling, gold generation, item field validation, gem arrays.
+  - **Downtime activities** (4 tests): activity count, success/failure outcomes, pit-fighting gold, unknown activity fallback.
+  - **Tavern rumors** (5 tests): count, valid type, requested count, all 4 categories present, quest hooks exist.
+  - **Chase obstacles** (3 tests): urban/wilderness counts, valid obstacle structure, success/failure narration.
+  - **Travel pace** (5 tests): slow/normal/fast speeds, stealth rules, time calculation, slowest party member, empty party default.
+  - **Condition rules** (3 tests): combat condition text coverage, content verification, unknown condition fallback.
+  - **Bonus action helpers** (4 tests): 10 supported classes, level requirements (Rogue 2, Monk 2, Sorcerer 3), correct labels, Wizard/Warlock return false.
 - 5 core D&D mechanics — attunement, hit dice, passive skills, rumors, identification:
   - **Magic item attunement** — `requiresAttunement` + `attuned` fields on Item, `attunedItemIds` on Character (max 3). Treasure hoard items now generate with attunement requirement for rare+ items.
   - **Hit dice spending on short rest** — `restCharacter` now accepts `hitDiceToSpend` parameter, allowing multiple dice to be spent per short rest (each rolled individually + CON mod).

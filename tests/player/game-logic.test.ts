@@ -1138,3 +1138,237 @@ describe('Roll20 import', () => {
     expect(char.class).toBe('Fighter'); // default
   });
 });
+
+// ---------------------------------------------------------------------------
+// Treasure hoards
+// ---------------------------------------------------------------------------
+import { rollTreasureHoard } from '../../src/data/treasureHoards';
+
+describe('treasure hoards', () => {
+  it('generates gold for all level tiers', () => {
+    for (const level of [1, 5, 12, 18]) {
+      const hoard = rollTreasureHoard(level);
+      expect(hoard.gold).toBeGreaterThan(0);
+      expect(typeof hoard.description).toBe('string');
+    }
+  });
+
+  it('higher tiers generate more gold on average', () => {
+    let lowTotal = 0, highTotal = 0;
+    for (let i = 0; i < 50; i++) { lowTotal += rollTreasureHoard(2).gold; highTotal += rollTreasureHoard(18).gold; }
+    expect(highTotal / 50).toBeGreaterThan(lowTotal / 50);
+  });
+
+  it('generates items with required fields', () => {
+    const hoard = rollTreasureHoard(10);
+    for (const item of hoard.items) {
+      expect(item.id).toBeTruthy();
+      expect(item.name).toBeTruthy();
+      expect(item.type).toBeTruthy();
+      expect(item.rarity).toBeTruthy();
+    }
+  });
+
+  it('generates gems array', () => {
+    const hoard = rollTreasureHoard(8);
+    expect(Array.isArray(hoard.gems)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Downtime activities
+// ---------------------------------------------------------------------------
+import { DOWNTIME_ACTIVITIES, performDowntimeActivity } from '../../src/data/downtimeActivities';
+
+describe('downtime activities', () => {
+  it('has at least 5 activities defined', () => {
+    expect(DOWNTIME_ACTIVITIES.length).toBeGreaterThanOrEqual(5);
+    for (const a of DOWNTIME_ACTIVITIES) {
+      expect(a.id).toBeTruthy();
+      expect(a.name).toBeTruthy();
+      expect(typeof a.daysRequired).toBe('number');
+    }
+  });
+
+  it('performDowntimeActivity returns success/failure with outcome', () => {
+    for (let i = 0; i < 20; i++) {
+      const result = performDowntimeActivity('carousing', 3);
+      expect(typeof result.success).toBe('boolean');
+      expect(typeof result.outcome).toBe('string');
+      expect(typeof result.goldChange).toBe('number');
+    }
+  });
+
+  it('pit-fighting awards gold on success', () => {
+    let foundGold = false;
+    for (let i = 0; i < 50; i++) {
+      const result = performDowntimeActivity('pit-fighting', 10);
+      if (result.success && result.goldChange > 0) foundGold = true;
+    }
+    expect(foundGold).toBe(true);
+  });
+
+  it('returns failure for unknown activity', () => {
+    const result = performDowntimeActivity('nonexistent', 0);
+    expect(result.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tavern rumors
+// ---------------------------------------------------------------------------
+import { rollRumor, rollRumors, TAVERN_RUMORS } from '../../src/data/tavernRumors';
+
+describe('tavern rumors', () => {
+  it('has at least 10 rumors', () => {
+    expect(TAVERN_RUMORS.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('rollRumor returns a valid rumor', () => {
+    const rumor = rollRumor();
+    expect(rumor.text).toBeTruthy();
+    expect(['helpful', 'misleading', 'ominous', 'humorous']).toContain(rumor.type);
+  });
+
+  it('rollRumors returns requested count', () => {
+    const rumors = rollRumors(3);
+    expect(rumors.length).toBe(3);
+    for (const r of rumors) expect(r.text).toBeTruthy();
+  });
+
+  it('has rumors of all 4 types', () => {
+    const types = new Set(TAVERN_RUMORS.map((r) => r.type));
+    expect(types.has('helpful')).toBe(true);
+    expect(types.has('misleading')).toBe(true);
+    expect(types.has('ominous')).toBe(true);
+    expect(types.has('humorous')).toBe(true);
+  });
+
+  it('some rumors are quest hooks', () => {
+    expect(TAVERN_RUMORS.some((r) => r.questHook)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Chase obstacles
+// ---------------------------------------------------------------------------
+import { getChaseObstacle, resolveChaseRound, URBAN_OBSTACLES, WILDERNESS_OBSTACLES } from '../../src/data/chaseObstacles';
+
+describe('chase obstacles', () => {
+  it('has urban and wilderness obstacles', () => {
+    expect(URBAN_OBSTACLES.length).toBeGreaterThanOrEqual(3);
+    expect(WILDERNESS_OBSTACLES.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('getChaseObstacle returns valid obstacle', () => {
+    const urban = getChaseObstacle(true);
+    expect(urban.description).toBeTruthy();
+    expect(urban.skill).toBeTruthy();
+    expect(typeof urban.dc).toBe('number');
+
+    const wild = getChaseObstacle(false);
+    expect(wild.description).toBeTruthy();
+  });
+
+  it('resolveChaseRound produces success/failure narration', () => {
+    let foundSuccess = false, foundFailure = false;
+    for (let i = 0; i < 50; i++) {
+      const result = resolveChaseRound('TestRunner', 3, true);
+      expect(result.narration).toContain('TestRunner');
+      if (result.success) foundSuccess = true; else foundFailure = true;
+    }
+    expect(foundSuccess).toBe(true);
+    expect(foundFailure).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Travel pace
+// ---------------------------------------------------------------------------
+import { TRAVEL_PACES, calculateTravelTime, partyTravelSpeed } from '../../src/lib/travelPace';
+
+describe('travel pace', () => {
+  it('has slow/normal/fast paces defined', () => {
+    expect(TRAVEL_PACES.slow.milesPerHour).toBe(2);
+    expect(TRAVEL_PACES.normal.milesPerHour).toBe(3);
+    expect(TRAVEL_PACES.fast.milesPerHour).toBe(4);
+  });
+
+  it('slow pace allows stealth', () => {
+    expect(TRAVEL_PACES.slow.stealthPossible).toBe(true);
+    expect(TRAVEL_PACES.fast.stealthPossible).toBe(false);
+  });
+
+  it('calculateTravelTime computes days and hours', () => {
+    const trip = calculateTravelTime(48, 'normal');
+    expect(trip.hours).toBe(16);
+    expect(trip.days).toBe(2);
+  });
+
+  it('partyTravelSpeed uses slowest member', () => {
+    expect(partyTravelSpeed([6, 8, 5])).toBe(25); // 5 cells × 5ft = 25ft
+  });
+
+  it('partyTravelSpeed defaults to 30 for empty', () => {
+    expect(partyTravelSpeed([])).toBe(30);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Condition rules
+// ---------------------------------------------------------------------------
+import { CONDITION_RULES, getConditionRules } from '../../src/data/conditionRules';
+
+describe('condition rules', () => {
+  it('has rules for all combat conditions', () => {
+    const expected = ['poisoned', 'stunned', 'frightened', 'prone', 'grappled', 'blessed', 'hexed', 'raging', 'hidden', 'surprised', 'hunterMarked', 'smiteArmed'];
+    for (const c of expected) {
+      expect(CONDITION_RULES[c]).toBeTruthy();
+    }
+  });
+
+  it('getConditionRules returns text for known conditions', () => {
+    expect(getConditionRules('poisoned')).toContain('disadvantage');
+    expect(getConditionRules('grappled')).toContain('speed');
+  });
+
+  it('getConditionRules returns fallback for unknown conditions', () => {
+    const result = getConditionRules('totally_made_up');
+    expect(result).toContain('magical condition');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bonus action helpers
+// ---------------------------------------------------------------------------
+import { hasBonusAction, getBonusActionLabel } from '../../src/components/game/BonusActionPanel';
+
+describe('bonus action helpers', () => {
+  it('hasBonusAction returns true for all 10 supported classes', () => {
+    const supported = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 'Sorcerer'];
+    for (const cls of supported) {
+      expect(hasBonusAction(cls, 5)).toBe(true);
+    }
+  });
+
+  it('hasBonusAction respects level requirements', () => {
+    expect(hasBonusAction('Rogue', 1)).toBe(false);
+    expect(hasBonusAction('Rogue', 2)).toBe(true);
+    expect(hasBonusAction('Monk', 1)).toBe(false);
+    expect(hasBonusAction('Monk', 2)).toBe(true);
+    expect(hasBonusAction('Sorcerer', 2)).toBe(false);
+    expect(hasBonusAction('Sorcerer', 3)).toBe(true);
+  });
+
+  it('getBonusActionLabel returns correct labels', () => {
+    expect(getBonusActionLabel('Barbarian')).toBe('Rage');
+    expect(getBonusActionLabel('Rogue')).toBe('Cunning Action');
+    expect(getBonusActionLabel('Paladin')).toBe('Divine Smite');
+    expect(getBonusActionLabel('Wizard')).toBeNull();
+  });
+
+  it('hasBonusAction returns false for Wizard and Warlock', () => {
+    expect(hasBonusAction('Wizard', 20)).toBe(false);
+    expect(hasBonusAction('Warlock', 20)).toBe(false);
+  });
+});
