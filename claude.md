@@ -55,6 +55,7 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- Added campaign search + sort on Home page — search bar filters campaigns by name/room ID, sort dropdown offers newest/oldest/A-Z ordering. Controls appear automatically when user has 3+ campaigns.
 - Added Paladin Divine Smite + Bard Bardic Inspiration bonus actions — Paladin gets toggleable "Divine Smite" that auto-applies +2d8 radiant on next melee hit (consumes lowest spell slot, doubles on crit, new `smiteArmed` condition). Bard gets "Bardic Inspiration" that grants scaling inspiration die (d6/d8/d10/d12) to an ally, once per short rest.
 - DM initiative manual editing — DMs can now click any initiative number on InitiativeBar to inline-edit it with a number input. Enter/blur commits, Escape cancels, changes synced via combat broadcast and logged.
 - Expanded keyboard shortcuts overlay from 10 items to 28 — now organized into 4 sections (General, Views, Combat, Battle Map) matching all actual Game.tsx key handlers, so players can discover shortcuts they didn't know existed.

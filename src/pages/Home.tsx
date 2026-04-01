@@ -73,6 +73,8 @@ export default function Home() {
   const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number; archived?: boolean; archivedAt?: number }>>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [campaignsLoading, setCampaignsLoading] = useState(true);
+  const [campaignSearch, setCampaignSearch] = useState('');
+  const [campaignSort, setCampaignSort] = useState<'newest' | 'oldest' | 'name'>('newest');
   const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
   const [partyMembers, setPartyMembers] = useState<Record<string, Array<{ display_name: string; avatar_url: string | null; role: string }>>>({});
   const [prefSyncState, setPrefSyncState] = useState<PrefSyncState>('idle');
@@ -836,6 +838,27 @@ export default function Home() {
               + New Campaign
             </Button>
           </div>
+          {/* Search + Sort controls */}
+          {!campaignsLoading && campaigns.filter((c) => !c.archived).length > 2 && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Search campaigns..."
+                value={campaignSearch}
+                onChange={(e) => setCampaignSearch(e.target.value)}
+                className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-slate-700/50 text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-[#F38020]/50"
+              />
+              <select
+                value={campaignSort}
+                onChange={(e) => setCampaignSort(e.target.value as 'newest' | 'oldest' | 'name')}
+                className="text-xs px-2 py-1.5 rounded-lg bg-white/5 border border-slate-700/50 text-slate-400 focus:outline-none cursor-pointer"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="name">A-Z</option>
+              </select>
+            </div>
+          )}
           {campaignsLoading ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
               {[1, 2].map((i) => (
@@ -856,7 +879,15 @@ export default function Home() {
             </div>
           ) : campaigns.filter((c) => !c.archived).length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-children">
-              {campaigns.filter((c) => !c.archived).map((c) => {
+              {campaigns
+                .filter((c) => !c.archived)
+                .filter((c) => !campaignSearch || c.name.toLowerCase().includes(campaignSearch.toLowerCase()) || c.roomId.toLowerCase().includes(campaignSearch.toLowerCase()))
+                .sort((a, b) => {
+                  if (campaignSort === 'name') return a.name.localeCompare(b.name);
+                  if (campaignSort === 'oldest') return a.createdAt - b.createdAt;
+                  return b.createdAt - a.createdAt; // newest (default)
+                })
+                .map((c) => {
                 const members = partyMembers[c.roomId] || [];
                 const dmMember = members.find((m) => m.role === 'dm');
                 const playerCount = members.filter((m) => m.role !== 'dm').length;
