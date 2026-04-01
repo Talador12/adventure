@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 more features beyond the roadmap — completing all 12 class systems:
+  - **Ranger Hunter's Mark** — bonus action marks an enemy target, adding +1d6 damage on all hits (including crits which double it). New `hunterMarked` condition with lime indicator. Damage shown in combat log with `[+N hunter's mark]` tag.
+  - **Sorcerer Metamagic** — Quickened Spell (2 sorcery points, cast spell as bonus action) + Twinned Spell (1+ point, next single-target spell hits 2 targets). Sorcery points tracked per character, reset on long rest.
+  - **Wizard Arcane Recovery** — short rest now recovers spell slots worth up to half wizard level (rounded up), lowest slots first. `arcaneRecoveryUsed` flag prevents double recovery (resets on long rest).
+  - **Warlock Eldritch Invocations** — sorcery points reset on short rest for Sorcerers (alongside Warlock pact slot recovery).
+  - **Combat auto-save** — DM's combat state auto-saves to server every 30s during combat + on combat end, preventing progress loss on refresh.
 - 5 new gameplay features beyond the roadmap:
   - **Druid Wild Shape** — bonus action to transform into beast form (Wolf/Bear/Giant Spider/Giant Eagle/Dire Wolf) with separate HP pool, stat block swap, and Revert Shape button. `wildShapeOriginal` + `isWildShaped` fields on Unit. Beast forms scale with level.
   - **Death save tracking UI** — visual 3-success/3-fail dot tracker on InitiativeBar for player units at 0 HP. Green/red dots with hover tooltip showing save counts.

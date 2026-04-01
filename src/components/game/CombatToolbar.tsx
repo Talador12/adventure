@@ -404,7 +404,13 @@ export default function CombatToolbar({
                                       }
                                       removeCondition(playerUnit.id, 'smiteArmed');
                                     }
-                                    const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus + smiteDmg : baseDmg + statMod + weaponDmgBonus + featDmgBonus + smiteDmg);
+                                    // Hunter's Mark: +1d6 when hitting a marked target
+                                    let hunterMarkDmg = 0;
+                                    if (target.conditions?.some((c) => c.type === 'hunterMarked' && c.source === selectedCharacter.name)) {
+                                      hunterMarkDmg = rollSpellDamage('1d6');
+                                      if (isCrit) hunterMarkDmg *= 2;
+                                    }
+                                    const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + statMod + weaponDmgBonus + featDmgBonus + smiteDmg + hunterMarkDmg : baseDmg + statMod + weaponDmgBonus + featDmgBonus + smiteDmg + hunterMarkDmg);
                                     totalDamageDealt += finalDmg;
                                     damageUnit(target.id, finalDmg);
                                     recordDamage?.(target.id, selectedCharacter?.name || 'Unknown', finalDmg);
@@ -419,7 +425,8 @@ export default function CombatToolbar({
                                     }
                                     const flavor = isCrit ? critFlavor() : hitFlavor();
                                     const smiteTag = smiteDmg > 0 ? ` [+${smiteDmg} radiant smite]` : '';
-                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage!${smiteTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage.${smiteTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}`;
+                                    const markTag = hunterMarkDmg > 0 ? ` [+${hunterMarkDmg} hunter's mark]` : '';
+                                    const logMsg = isCrit ? `${atkPrefix}CRITICAL HIT! ${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage!${smiteTag}${markTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}` : `${atkPrefix}${selectedCharacter?.name || 'You'} ${verb} ${target.name} for ${finalDmg} damage.${smiteTag}${markTag} ${flavor} (${atkLabel} vs AC ${targetAC})${advTag}`;
                                     setCombatLog((prev) => [...prev, logMsg]);
                                     addDmMessage(logMsg);
                                   } else {
@@ -1222,6 +1229,70 @@ export default function CombatToolbar({
                           }
                         }
 
+                        // Sorcerer: Metamagic (Quickened Spell + Twinned Spell, costs sorcery points)
+                        if (charClass === 'Sorcerer' && selectedCharacter.level >= 3) {
+                          const sorcPoints = selectedCharacter.sorceryPoints ?? selectedCharacter.level;
+                          const usedPoints = selectedCharacter.sorceryPointsUsed ?? 0;
+                          const remaining = sorcPoints - usedPoints;
+                          // Quickened Spell: spend 2 sorcery points, next spell cast this turn is a bonus action
+                          const quickened = playerUnit.conditions?.some((c) => c.type === 'inspired' && c.source === 'Quickened Spell');
+                          if (!quickened && remaining >= 2) {
+                            bonusButtons.push(
+                              <button key="quickened-spell"
+                                disabled={!isPlayerTurn || bonusUsed}
+                                title={`Quickened Spell (2 sorcery points) — cast a spell as a bonus action this turn. ${remaining} points remaining.`}
+                                onClick={() => {
+                                  applyCondition(playerUnit.id, { type: 'inspired', duration: 1, source: 'Quickened Spell' });
+                                  updateCharacter(selectedCharacter.id, { sorceryPointsUsed: usedPoints + 2 } as Partial<typeof selectedCharacter>);
+                                  markBonusUsed();
+                                  const msg = `${selectedCharacter.name} uses Quickened Spell! (${remaining - 2} sorcery points left)`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 border border-fuchsia-600/50 bg-fuchsia-900/30 text-fuchsia-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-fuchsia-800/40"
+                              >⚡ Quicken ({remaining}sp)</button>
+                            );
+                          }
+                          // Twinned Spell: spend spell-level sorcery points, next single-target spell hits two targets
+                          if (remaining >= 1) {
+                            bonusButtons.push(
+                              <button key="twinned-spell"
+                                disabled={!isPlayerTurn || bonusUsed}
+                                title={`Twinned Spell — next single-target spell affects 2 targets. Costs spell level in sorcery points. ${remaining} points remaining.`}
+                                onClick={() => {
+                                  applyCondition(playerUnit.id, { type: 'inspired', duration: 1, source: 'Twinned Spell' });
+                                  updateCharacter(selectedCharacter.id, { sorceryPointsUsed: usedPoints + 1 } as Partial<typeof selectedCharacter>);
+                                  markBonusUsed();
+                                  const msg = `${selectedCharacter.name} prepares Twinned Spell! Next single-target spell hits 2 targets. (${remaining - 1} sorcery points left)`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 border border-fuchsia-600/50 bg-fuchsia-900/30 text-fuchsia-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-fuchsia-800/40"
+                              >⚡ Twin ({remaining}sp)</button>
+                            );
+                          }
+                        }
+
+                        // Ranger: Hunter's Mark (bonus action, concentration, +1d6 on marked target)
+                        if (charClass === 'Ranger') {
+                          const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                          const enemyTarget = target && target.type === 'enemy' && target.hp > 0 ? target : null;
+                          const alreadyMarked = units.some((u) => u.conditions?.some((c) => c.type === 'hunterMarked'));
+                          bonusButtons.push(
+                            <button key="hunters-mark"
+                              disabled={!isPlayerTurn || bonusUsed || !enemyTarget || alreadyMarked}
+                              title={alreadyMarked ? "Hunter's Mark already active" : !enemyTarget ? 'Select an enemy to mark' : "Hunter's Mark — +1d6 damage on attacks against this target (concentration)"}
+                              onClick={() => {
+                                if (!enemyTarget) return;
+                                applyCondition(enemyTarget.id, { type: 'hunterMarked', duration: -1, source: selectedCharacter.name });
+                                markBonusUsed();
+                                const msg = `${selectedCharacter.name} marks ${enemyTarget.name} with Hunter's Mark! (+1d6 damage on hits)`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                setTimeout(broadcastCombatSyncLatest, 50);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 border border-lime-600/50 bg-lime-900/30 text-lime-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-lime-800/40"
+                            >⚡ Hunter's Mark</button>
+                          );
+                        }
+
                         // Cleric: Channel Divinity — Turn Undead (action, frightens undead within 30ft)
                         if (charClass === 'Cleric') {
                           const usedChannel = playerUnit.conditions?.some((c) => c.type === 'inspired' && c.source === 'Channel Divinity Cooldown');
@@ -1461,6 +1532,8 @@ export default function CombatToolbar({
 
                             setInCombat(false);
                             onCombatEnd?.();
+                            // Auto-save campaign state on combat end
+                            fetch(`/api/campaign/${room}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ inCombat: false }) }).catch(() => {});
                             // Remove dead enemies, reset initiative and conditions
                             setUnits((prev: Unit[]) => prev.filter((u) => u.type === 'player' || u.hp > 0).map((u) => ({ ...u, isCurrentTurn: false, initiative: -1, conditions: [] })));
 

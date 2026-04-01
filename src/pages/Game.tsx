@@ -1311,6 +1311,20 @@ export default function Game() {
   // Keep undo system synced with current units
   useEffect(() => { syncUndoUnits(units); }, [units, syncUndoUnits]);
 
+  // Auto-save combat state every 30s during combat (DM only) — prevents progress loss on refresh
+  useEffect(() => {
+    if (!inCombat || !canUseDMTools) return;
+    const timer = setInterval(() => {
+      const state = getStateForResponse();
+      fetch(`/api/campaign/${room}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state),
+      }).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [inCombat, canUseDMTools, room, getStateForResponse]);
+
   // Fire rules checks when turn changes
   const prevTurnIndexRef = useRef(turnIndex);
   useEffect(() => {
