@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 22 new tests (136 total) covering all new systems:
+  - **Weather combat effects** (6 tests): all weather types defined, ranged disadvantage for rain/fog/sandstorm, melee unaffected, snow/sandstorm movement penalty, rollD20WithProne extra disadvantage.
+  - **Encumbrance system** (3 tests): carry capacity scales with STR, inventory weight sums with quantity, handles missing weights.
+  - **Class proficiency data** (5 tests): all 12 classes have 2 save proficiencies with valid stats, skill choices per PHB, 18 skills mapped, 5+ crit effects.
+  - **Combat taunts** (5 tests): taunt for any name, undead/beast/dragon categorization, default fallback.
+  - **Roll20 import** (3 tests): format detection, stat/inventory/spell parsing, graceful missing attribute handling.
 - 5 cinematic + immersion features:
   - **Dramatic moment system** — cinematic screen overlay for pivotal moments: CRITICAL HIT (amber flash), BOSS SLAIN (purple for CR 3+), with title/subtitle text + glow effects. `useDramaticMoments` hook with configurable duration per type.
   - **Weather combat effects** — rain/fog/sandstorm now impose ranged attack disadvantage via `rollD20WithProne` extra parameter. `weatherEffects.ts` data module defines per-weather: ranged disadvantage, perception penalty, movement cost, visibility range.

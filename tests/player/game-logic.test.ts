@@ -871,3 +871,236 @@ describe('condition system', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Weather combat effects
+// ---------------------------------------------------------------------------
+import { WEATHER_COMBAT_EFFECTS, getWeatherAttackMod } from '../../src/lib/weatherEffects';
+
+describe('weather combat effects', () => {
+  it('all weather types have combat effect definitions', () => {
+    const types = ['none', 'rain', 'fog', 'snow', 'sandstorm'] as const;
+    for (const t of types) {
+      expect(WEATHER_COMBAT_EFFECTS[t]).toBeDefined();
+      expect(typeof WEATHER_COMBAT_EFFECTS[t].rangedDisadvantage).toBe('boolean');
+      expect(typeof WEATHER_COMBAT_EFFECTS[t].perceptionPenalty).toBe('number');
+    }
+  });
+
+  it('rain/fog/sandstorm impose ranged disadvantage', () => {
+    expect(getWeatherAttackMod('rain', true).disadvantage).toBe(true);
+    expect(getWeatherAttackMod('fog', true).disadvantage).toBe(true);
+    expect(getWeatherAttackMod('sandstorm', true).disadvantage).toBe(true);
+  });
+
+  it('melee attacks are not affected by weather disadvantage', () => {
+    expect(getWeatherAttackMod('rain', false).disadvantage).toBe(false);
+    expect(getWeatherAttackMod('sandstorm', false).disadvantage).toBe(false);
+  });
+
+  it('none weather has no penalties', () => {
+    const none = WEATHER_COMBAT_EFFECTS.none;
+    expect(none.rangedDisadvantage).toBe(false);
+    expect(none.perceptionPenalty).toBe(0);
+    expect(none.movementPenalty).toBe(0);
+    expect(none.visibilityRange).toBe(Infinity);
+  });
+
+  it('snow and sandstorm have movement penalty', () => {
+    expect(WEATHER_COMBAT_EFFECTS.snow.movementPenalty).toBeGreaterThan(0);
+    expect(WEATHER_COMBAT_EFFECTS.sandstorm.movementPenalty).toBeGreaterThan(0);
+  });
+
+  it('rollD20WithProne applies extra disadvantage parameter', () => {
+    // With extra disadvantage, should get lower of two rolls (statistically)
+    let disadvCount = 0;
+    for (let i = 0; i < 100; i++) {
+      const result = rollD20WithProne([], [], true, true);
+      expect(result.hadDisadvantage).toBe(true);
+      if (result.rolls[0] !== result.rolls[1]) disadvCount++;
+    }
+    expect(disadvCount).toBeGreaterThan(0); // at least some had different rolls
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encumbrance system
+// ---------------------------------------------------------------------------
+import { calculateCarryCapacity, calculateInventoryWeight } from '../../src/types/game';
+
+describe('encumbrance system', () => {
+  it('calculateCarryCapacity scales with STR', () => {
+    const cap10 = calculateCarryCapacity(10);
+    expect(cap10.normal).toBe(50);
+    expect(cap10.encumbered).toBe(100);
+    expect(cap10.max).toBe(150);
+
+    const cap20 = calculateCarryCapacity(20);
+    expect(cap20.normal).toBe(100);
+    expect(cap20.max).toBe(300);
+  });
+
+  it('calculateInventoryWeight sums item weights with quantity', () => {
+    const items: Item[] = [
+      { id: '1', name: 'Sword', type: 'weapon', rarity: 'common', description: '', value: 10, weight: 3, quantity: 1 },
+      { id: '2', name: 'Potion', type: 'potion', rarity: 'common', description: '', value: 5, weight: 0.5, quantity: 4 },
+    ];
+    expect(calculateInventoryWeight(items, {})).toBe(5); // 3 + 0.5*4
+  });
+
+  it('calculateInventoryWeight handles items without weight', () => {
+    const items: Item[] = [
+      { id: '1', name: 'Ring', type: 'misc', rarity: 'rare', description: '', value: 100 },
+    ];
+    expect(calculateInventoryWeight(items, {})).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Saving throw proficiencies
+// ---------------------------------------------------------------------------
+import { CLASS_SAVE_PROFICIENCIES, CLASS_SKILL_CHOICES, CRITICAL_HIT_EFFECTS, SKILL_ABILITIES } from '../../src/types/game';
+
+describe('class proficiency data', () => {
+  it('all 12 classes have save proficiencies defined', () => {
+    for (const cls of CLASSES) {
+      expect(CLASS_SAVE_PROFICIENCIES[cls]).toBeDefined();
+      expect(CLASS_SAVE_PROFICIENCIES[cls].length).toBe(2);
+    }
+  });
+
+  it('save proficiencies are valid stat names', () => {
+    const validStats = new Set(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']);
+    for (const [cls, saves] of Object.entries(CLASS_SAVE_PROFICIENCIES)) {
+      for (const save of saves) {
+        expect(validStats.has(save)).toBe(true);
+      }
+    }
+  });
+
+  it('all 12 classes have skill choices defined', () => {
+    for (const cls of CLASSES) {
+      expect(CLASS_SKILL_CHOICES[cls]).toBeDefined();
+      expect(CLASS_SKILL_CHOICES[cls].count).toBeGreaterThan(0);
+      expect(CLASS_SKILL_CHOICES[cls].options.length).toBeGreaterThanOrEqual(CLASS_SKILL_CHOICES[cls].count);
+    }
+  });
+
+  it('skill abilities map covers all 18 D&D 5e skills', () => {
+    const skills = Object.keys(SKILL_ABILITIES);
+    expect(skills.length).toBe(18);
+    expect(skills).toContain('Perception');
+    expect(skills).toContain('Stealth');
+    expect(skills).toContain('Athletics');
+  });
+
+  it('critical hit effects table has at least 5 entries', () => {
+    expect(CRITICAL_HIT_EFFECTS.length).toBeGreaterThanOrEqual(5);
+    for (const effect of CRITICAL_HIT_EFFECTS) {
+      expect(effect.name).toBeTruthy();
+      expect(effect.description).toBeTruthy();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combat taunts
+// ---------------------------------------------------------------------------
+import { getEnemyTaunt, ENEMY_TAUNTS } from '../../src/data/combatTaunts';
+
+describe('combat taunts', () => {
+  it('returns a taunt for any enemy name', () => {
+    const names = ['Goblin', 'Skeleton', 'Wolf', 'Adult Dragon', 'Bandit', 'Unknown Monster'];
+    for (const name of names) {
+      const taunt = getEnemyTaunt(name);
+      expect(typeof taunt).toBe('string');
+      expect(taunt.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('categorizes undead enemies correctly', () => {
+    // Run multiple times to verify category selection
+    for (let i = 0; i < 20; i++) {
+      const taunt = getEnemyTaunt('Skeleton Warrior');
+      expect(ENEMY_TAUNTS.undead).toContain(taunt);
+    }
+  });
+
+  it('categorizes beast enemies correctly', () => {
+    for (let i = 0; i < 20; i++) {
+      const taunt = getEnemyTaunt('Dire Wolf');
+      expect(ENEMY_TAUNTS.beast).toContain(taunt);
+    }
+  });
+
+  it('categorizes dragon enemies correctly', () => {
+    for (let i = 0; i < 20; i++) {
+      const taunt = getEnemyTaunt('Adult Dragon');
+      expect(ENEMY_TAUNTS.dragon).toContain(taunt);
+    }
+  });
+
+  it('falls back to default for unknown enemies', () => {
+    for (let i = 0; i < 20; i++) {
+      const taunt = getEnemyTaunt('Mysterious Entity');
+      expect(ENEMY_TAUNTS.default).toContain(taunt);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Roll20 import parser
+// ---------------------------------------------------------------------------
+import { isRoll20Character, parseRoll20Character } from '../../src/lib/roll20Import';
+
+describe('Roll20 import', () => {
+  it('detects Roll20 character format', () => {
+    expect(isRoll20Character({ name: 'Test', attribs: [] })).toBe(true);
+    expect(isRoll20Character({ classes: [] })).toBe(false);
+    expect(isRoll20Character(null)).toBe(false);
+    expect(isRoll20Character('string')).toBe(false);
+  });
+
+  it('parses basic Roll20 character with stats', () => {
+    const r20 = {
+      name: 'Thorin Ironforge',
+      attribs: [
+        { name: 'strength', current: '18' },
+        { name: 'dexterity', current: '12' },
+        { name: 'constitution', current: '16' },
+        { name: 'intelligence', current: '10' },
+        { name: 'wisdom', current: '14' },
+        { name: 'charisma', current: '8' },
+        { name: 'level', current: '5' },
+        { name: 'hp', current: '45', max: '50' },
+        { name: 'ac', current: '18' },
+        { name: 'race', current: 'Dwarf' },
+        { name: 'base_level', current: 'Fighter' },
+        { name: 'gp', current: '120' },
+        { name: 'background', current: 'Soldier' },
+      ],
+    };
+    const char = parseRoll20Character(r20);
+    expect(char.name).toBe('Thorin Ironforge');
+    expect(char.stats.STR).toBe(18);
+    expect(char.stats.CON).toBe(16);
+    expect(char.level).toBe(5);
+    expect(char.hp).toBe(45);
+    expect(char.maxHp).toBe(50);
+    expect(char.ac).toBe(18);
+    expect(char.race).toBe('Dwarf');
+    expect(char.class).toBe('Fighter');
+    expect(char.gold).toBe(120);
+    expect(char.background).toBe('Soldier');
+  });
+
+  it('handles missing attributes gracefully', () => {
+    const minimal = { name: 'Nobody', attribs: [] };
+    const char = parseRoll20Character(minimal);
+    expect(char.name).toBe('Nobody');
+    expect(char.stats.STR).toBe(10); // defaults to 10 for missing attributes
+    expect(char.level).toBe(1);
+    expect(char.race).toBe('Human'); // default
+    expect(char.class).toBe('Fighter'); // default
+  });
+});
