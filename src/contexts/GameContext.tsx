@@ -471,7 +471,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         const sides = HIT_DIE_SIDES[c.class] || 8;
         const roll = Math.floor(Math.random() * sides) + 1;
         const heal = Math.max(1, roll + conMod);
-        return { ...c, hp: Math.min(c.maxHp, c.hp + heal), hitDiceRemaining: hdRemaining - 1, condition: c.hp > 0 ? ('normal' as Condition) : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed };
+        // Warlock: pact magic slots recover on short rest
+        const resetSlots = c.class === 'Warlock' ? {} : c.spellSlotsUsed;
+        return { ...c, hp: Math.min(c.maxHp, c.hp + heal), hitDiceRemaining: hdRemaining - 1, condition: c.hp > 0 ? ('normal' as Condition) : c.condition, classAbilityUsed: resetAbility ? false : c.classAbilityUsed, spellSlotsUsed: resetSlots || c.spellSlotsUsed };
       })
     );
     // Long rest also clears all combat conditions on the player's unit
@@ -977,7 +979,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
 
         if (spell.damage) {
-          let dmg = rollSpellDamage(spell.damage);
+          // Cantrip scaling: damage dice increase at levels 5, 11, 17
+          let effectiveDamage = spell.damage;
+          if (spell.level === 0 && casterChar) {
+            const lvl = casterChar.level;
+            const dieMatch = spell.damage.match(/^(\d+)(d\d+)$/);
+            if (dieMatch) {
+              const baseDice = parseInt(dieMatch[1], 10);
+              const dieSuffix = dieMatch[2];
+              const scaleMultiplier = lvl >= 17 ? 4 : lvl >= 11 ? 3 : lvl >= 5 ? 2 : 1;
+              effectiveDamage = `${baseDice * scaleMultiplier}${dieSuffix}`;
+            }
+          }
+          let dmg = rollSpellDamage(effectiveDamage);
           if (targetSaved) dmg = Math.floor(dmg / 2); // half damage on save
           if (targetUnitId) damageUnit(targetUnitId, dmg);
           const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';

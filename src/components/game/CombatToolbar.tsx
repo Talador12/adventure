@@ -1168,6 +1168,89 @@ export default function CombatToolbar({
                           );
                         }
 
+                        // Druid: Wild Shape (bonus action, transform into beast with separate HP pool)
+                        if (charClass === 'Druid' && selectedCharacter.level >= 2) {
+                          const isWild = playerUnit.isWildShaped;
+                          const BEAST_FORMS = [
+                            { name: 'Wolf', hp: 11, ac: 13, speed: 8, atk: 4, die: '2d4', dmg: 2, minLevel: 2 },
+                            { name: 'Bear', hp: 34, ac: 11, speed: 8, atk: 5, die: '1d8', dmg: 4, minLevel: 2 },
+                            { name: 'Giant Spider', hp: 26, ac: 14, speed: 6, atk: 5, die: '1d8', dmg: 3, minLevel: 4 },
+                            { name: 'Giant Eagle', hp: 26, ac: 13, speed: 16, atk: 6, die: '2d6', dmg: 3, minLevel: 4 },
+                            { name: 'Dire Wolf', hp: 37, ac: 14, speed: 10, atk: 5, die: '2d6', dmg: 3, minLevel: 8 },
+                          ];
+                          if (isWild) {
+                            bonusButtons.push(
+                              <button key="wild-revert" disabled={!isPlayerTurn || bonusUsed}
+                                title="Revert to humanoid form"
+                                onClick={() => {
+                                  const orig = playerUnit.wildShapeOriginal;
+                                  if (!orig) return;
+                                  setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, name: orig.name, hp: orig.hp, maxHp: orig.maxHp, ac: orig.ac, speed: orig.speed, attackBonus: orig.attackBonus, damageDie: orig.damageDie, damageBonus: orig.damageBonus, isWildShaped: false, wildShapeOriginal: undefined, bonusActionUsed: true } : u));
+                                  const msg = `${orig.name} reverts from Wild Shape!`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                  setTimeout(broadcastCombatSyncLatest, 50);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 border border-green-600/50 bg-green-900/30 text-green-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-green-800/40"
+                              >⚡ Revert Shape</button>
+                            );
+                          } else {
+                            const available = BEAST_FORMS.filter((b) => selectedCharacter.level >= b.minLevel);
+                            bonusButtons.push(
+                              <select key="wild-shape"
+                                disabled={!isPlayerTurn || bonusUsed}
+                                onChange={(e) => {
+                                  const beast = available.find((b) => b.name === e.target.value);
+                                  if (!beast) return;
+                                  setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? {
+                                    ...u,
+                                    wildShapeOriginal: { name: u.name, hp: u.hp, maxHp: u.maxHp, ac: u.ac, speed: u.speed, attackBonus: u.attackBonus, damageDie: u.damageDie, damageBonus: u.damageBonus },
+                                    name: `${selectedCharacter.name} (${beast.name})`, hp: beast.hp, maxHp: beast.hp, ac: beast.ac, speed: beast.speed,
+                                    attackBonus: beast.atk, damageDie: beast.die, damageBonus: beast.dmg,
+                                    isWildShaped: true, bonusActionUsed: true,
+                                  } : u));
+                                  const msg = `${selectedCharacter.name} transforms into a ${beast.name}! (${beast.hp} HP, AC ${beast.ac})`;
+                                  setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                  setTimeout(broadcastCombatSyncLatest, 50);
+                                  e.target.value = '';
+                                }}
+                                className="text-[10px] px-1.5 py-1 rounded bg-green-900/30 border border-green-600/50 text-green-300 font-semibold disabled:opacity-30 cursor-pointer"
+                              >
+                                <option value="">⚡ Wild Shape...</option>
+                                {available.map((b) => <option key={b.name} value={b.name}>{b.name} ({b.hp}HP AC{b.ac})</option>)}
+                              </select>
+                            );
+                          }
+                        }
+
+                        // Cleric: Channel Divinity — Turn Undead (action, frightens undead within 30ft)
+                        if (charClass === 'Cleric') {
+                          const usedChannel = playerUnit.conditions?.some((c) => c.type === 'inspired' && c.source === 'Channel Divinity Cooldown');
+                          bonusButtons.push(
+                            <button key="turn-undead" disabled={!isPlayerTurn || bonusUsed || !!usedChannel}
+                              title={usedChannel ? 'Channel Divinity already used (resets on short rest)' : 'Turn Undead — undead within 30ft must make WIS save or be frightened'}
+                              onClick={() => {
+                                const dc = 8 + proficiencyBonus(selectedCharacter.level) + Math.floor((selectedCharacter.stats.WIS - 10) / 2);
+                                const nearby = units.filter((u) => u.type === 'enemy' && u.hp > 0 && u.name.toLowerCase().match(/undead|skeleton|zombie|ghoul|wight|wraith|specter|vampire|lich/));
+                                let turned = 0;
+                                for (const undead of nearby) {
+                                  const save = Math.floor(Math.random() * 20) + 1 + (undead.dexMod || 0);
+                                  if (save < dc) {
+                                    applyCondition(undead.id, { type: 'frightened', duration: 10, source: 'Turn Undead' });
+                                    turned++;
+                                  }
+                                }
+                                applyCondition(playerUnit.id, { type: 'inspired', duration: -1, source: 'Channel Divinity Cooldown' });
+                                markBonusUsed();
+                                const msg = turned > 0
+                                  ? `${selectedCharacter.name} channels divine energy! ${turned} undead are turned! (DC ${dc})`
+                                  : `${selectedCharacter.name} channels divine energy, but no undead are affected.`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 border border-yellow-600/50 bg-yellow-900/30 text-yellow-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-yellow-800/40"
+                            >⚡ Turn Undead</button>
+                          );
+                        }
+
                         // Barbarian: Rage (bonus action, already tracked as condition)
                         if (charClass === 'Barbarian') {
                           const isRaging = playerUnit.conditions?.some((c) => c.type === 'raging');

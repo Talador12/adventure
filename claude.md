@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 new gameplay features beyond the roadmap:
+  - **Druid Wild Shape** — bonus action to transform into beast form (Wolf/Bear/Giant Spider/Giant Eagle/Dire Wolf) with separate HP pool, stat block swap, and Revert Shape button. `wildShapeOriginal` + `isWildShaped` fields on Unit. Beast forms scale with level.
+  - **Death save tracking UI** — visual 3-success/3-fail dot tracker on InitiativeBar for player units at 0 HP. Green/red dots with hover tooltip showing save counts.
+  - **Spell slot recovery on rest** — Warlock pact magic slots now correctly reset on short rest (other casters only on long rest, which was already working). Matches D&D 5e RAW.
+  - **Cantrip damage scaling** — cantrips (Eldritch Blast, Fire Bolt, etc.) now scale damage dice at levels 5/11/17 per D&D 5e rules (1d→2d→3d→4d).
+  - **Cleric Channel Divinity: Turn Undead** — bonus action that forces undead enemies to make WIS save or be frightened. Once per short rest.
 - **ROADMAP CLEARED** — final 5 items shipped:
   - **Lobby DO hibernation** — migrated to `this.state.acceptWebSocket()` with `webSocketMessage()`/`webSocketClose()`/`webSocketError()` handlers. Extracted `handlePlayerLeave()` shared method. DO now evicts from memory when idle, reducing cost for inactive lobbies. `rehydrateWebSockets()` re-maps sessions on wake.
   - **Forbidden Lands export** — `exportForbiddenLands()` maps D&D 5e to Year Zero Engine format (Kin/Profession/Attributes 2-5 scale, gold→silver conversion).
@@ -1549,8 +1555,8 @@ All 4 enemy AI `nextTurn` calls, `rollInitiative`, player End Turn, Quick Attack
 - ~~Lobby DO hibernation — `this.state.acceptWebSocket()` for cost reduction~~ (DONE — migrated to hibernation API with webSocketMessage/webSocketClose/webSocketError handlers, rehydrateWebSockets on wake, handlePlayerLeave extracted)
 - ~~Undo/redo for DM actions (command pattern, rewindable state stack)~~ (DONE — useUndoRedo hook, snapshot-based, Ctrl+Z/Ctrl+Shift+Z, max 20 entries)
 - ~~Rate limiting + abuse protection on public lobbies~~ (DONE — chat 5/sec + dice 8/sec rate limits in Lobby DO, game_event 10/sec existing)
-- Service Worker for offline-first static assets
-- IndexedDB local cache for characters, campaign state, chat
+- ~~Service Worker for offline-first static assets~~ (ALREADY DONE — assets/sw.js with cache-first strategy, registered in main.tsx)
+- ~~IndexedDB local cache for characters, campaign state, chat~~ (ALREADY DONE — src/lib/localCache.ts with getCachedCharacters/cacheCampaigns, user-scoped keys)
 
 **Gameplay depth:**
 - ~~Multiclass support (second class on level-up, shared spell slots)~~ (ALREADY DONE — multiclass button in CharacterSheet with D&D 5e prereq checks, classLevels tracking, proficiency grants)

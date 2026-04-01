@@ -151,6 +151,20 @@ export interface Unit {
   // Companion/familiar — secondary token controlled by a player
   companionOwnerId?: string; // unit ID of the player who controls this companion
   isCompanion?: boolean;     // true for familiars, animal companions, summoned creatures
+  // Wild Shape — stored original form stats while in beast shape
+  wildShapeOriginal?: {
+    name: string;
+    hp: number;
+    maxHp: number;
+    ac: number;
+    speed: number;
+    attackBonus?: number;
+    damageDie?: string;
+    damageBonus?: number;
+  };
+  isWildShaped?: boolean;
+  // Death saves — tracked per unit for D&D 5e death mechanics
+  deathSaves?: { successes: number; failures: number };
 }
 
 export interface LairAction {

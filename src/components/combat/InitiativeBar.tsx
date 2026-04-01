@@ -214,6 +214,15 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 {entry.reactionUsed && <span className="text-orange-500" title="Reaction used this round">R</span>}
                 {entry.bonusActionUsed && <span className="text-violet-400" title="Bonus action used this turn">B</span>}
                 {entry.readiedAction && <span className="text-cyan-400" title={`Ready: ${entry.readiedAction.trigger} → ${entry.readiedAction.action}`}>⏳</span>}
+                {entry.isWildShaped && <span className="text-green-400" title="Wild Shape active">🐺</span>}
+                {/* Death saves — shown for player units at 0 HP */}
+                {entry.type === 'player' && entry.hp <= 0 && entry.deathSaves && (
+                  <span className="flex items-center gap-0.5" title={`Death Saves: ${entry.deathSaves.successes} success / ${entry.deathSaves.failures} fail`}>
+                    {[0,1,2].map((i) => <span key={`s${i}`} className={`w-1.5 h-1.5 rounded-full ${i < entry.deathSaves!.successes ? 'bg-emerald-400' : 'bg-slate-700'}`} />)}
+                    <span className="text-slate-600 mx-0.5">/</span>
+                    {[0,1,2].map((i) => <span key={`f${i}`} className={`w-1.5 h-1.5 rounded-full ${i < entry.deathSaves!.failures ? 'bg-red-500' : 'bg-slate-700'}`} />)}
+                  </span>
+                )}
                 {turnsAway > 0 && <span className="text-slate-600">in {turnsAway}</span>}
                 {entry.initiative > 0 && (
                   editingInitId === entry.id ? (
