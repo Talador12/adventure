@@ -24,6 +24,7 @@ import { useRulesReminder } from '../hooks/useRulesReminder';
 import SpellParticles, { useSpellParticles, type SpellEffect } from '../components/game/SpellParticles';
 import { useUndoRedo } from '../hooks/useUndoRedo';
 import Onboarding from '../components/game/Onboarding';
+import DramaticMoment, { useDramaticMoments } from '../components/game/DramaticMoment';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
 import { DARKVISION_RACES, DARKVISION_RANGE, NORMAL_VISION_RANGE, type Quest, type MapPin } from '../types/game';
@@ -1317,6 +1318,7 @@ export default function Game() {
   // Attack indicators — animated lines on battle map during attacks
   const { indicators: attackIndicators, addIndicator: addAttackIndicator } = useAttackIndicators();
   const { particles: spellParticles, triggerEffect: triggerSpellEffect } = useSpellParticles();
+  const { active: dramaticEvent, trigger: triggerDramatic } = useDramaticMoments();
   const { syncUnits: syncUndoUnits, saveSnapshot, undo: undoDmAction, redo: redoDmAction, canUndo, canRedo } = useUndoRedo();
 
   // Dynamic difficulty — auto-adjust encounter strength mid-combat
@@ -2785,6 +2787,17 @@ export default function Game() {
                   triggerLevelUp={(name, level) => triggerLevelUp(name, level)}
                   onNewRound={(round) => {
                     checkRoundMVP(combatLog, characters.map((c) => c.name), round);
+                    // Enemy taunt on odd rounds
+                    if (round % 2 === 1) {
+                      const aliveEnemies = units.filter((u) => u.type === 'enemy' && u.hp > 0);
+                      if (aliveEnemies.length > 0) {
+                        const taunter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+                        import('../data/combatTaunts').then(({ getEnemyTaunt }) => {
+                          const taunt = getEnemyTaunt(taunter.name);
+                          addDmMessage(`**${taunter.name}:** ${taunt}`);
+                        }).catch(() => {});
+                      }
+                    }
                     // Log round duration
                     if (roundStartTime) {
                       const roundElapsed = Math.round((Date.now() - roundStartTime) / 1000);
@@ -2797,6 +2810,8 @@ export default function Game() {
                     }]);
                   }}
                   setSpellZones={setSpellZones}
+                  triggerDramatic={triggerDramatic}
+                  weather={weather}
                   onCombatEnd={() => {
                     const prev = preCombatAmbientRef.current;
                     if (prev && prev !== 'none' && prev !== 'combat') {
@@ -3395,6 +3410,7 @@ export default function Game() {
       <DiceTower display={diceTowerDisplay} />
       <LevelUpFanfare display={levelUpDisplay} />
       <Onboarding />
+      <DramaticMoment event={dramaticEvent} />
       <RoundMVP display={roundMVPDisplay} />
       <SessionMilestones toast={milestoneToast} />
       <SessionSummary

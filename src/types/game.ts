@@ -63,7 +63,7 @@ export const LIGHT_SOURCE_RADII: Partial<Record<ConditionType, { bright: number;
 };
 
 // --- Combat roll helpers ---
-export function rollD20WithProne(attackerConditions: ActiveCondition[], targetConditions: ActiveCondition[], isMelee: boolean): { roll: number; hadAdvantage: boolean; hadDisadvantage: boolean; rolls: [number, number] } {
+export function rollD20WithProne(attackerConditions: ActiveCondition[], targetConditions: ActiveCondition[], isMelee: boolean, extraDisadvantage?: boolean): { roll: number; hadAdvantage: boolean; hadDisadvantage: boolean; rolls: [number, number] } {
   const attackerProne = attackerConditions.some((c) => c.type === 'prone');
   const targetProne = targetConditions.some((c) => c.type === 'prone');
   let advantage = false;
@@ -71,6 +71,7 @@ export function rollD20WithProne(attackerConditions: ActiveCondition[], targetCo
   if (attackerProne) disadvantage = true;
   if (targetProne && isMelee) advantage = true;
   if (targetProne && !isMelee) disadvantage = true;
+  if (extraDisadvantage) disadvantage = true; // weather, heavily obscured, etc.
   if (advantage && disadvantage) { advantage = false; disadvantage = false; }
   const r1 = Math.floor(Math.random() * 20) + 1;
   const r2 = Math.floor(Math.random() * 20) + 1;

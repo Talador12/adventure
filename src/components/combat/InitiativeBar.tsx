@@ -214,6 +214,15 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 {entry.reactionUsed && <span className="text-orange-500" title="Reaction used this round">R</span>}
                 {entry.bonusActionUsed && <span className="text-violet-400" title="Bonus action used this turn">B</span>}
                 {entry.readiedAction && <span className="text-cyan-400" title={`Ready: ${entry.readiedAction.trigger} → ${entry.readiedAction.action}`}>⏳</span>}
+                {/* Mood indicator based on HP/conditions */}
+                {entry.type === 'player' && (() => {
+                  const hpPct = entry.maxHp > 0 ? entry.hp / entry.maxHp : 0;
+                  const isFrightened = entry.conditions?.some((c) => c.type === 'frightened');
+                  const isRaging = entry.conditions?.some((c) => c.type === 'raging');
+                  const isPoisoned = entry.conditions?.some((c) => c.type === 'poisoned');
+                  const mood = entry.hp <= 0 ? '💀' : isFrightened ? '😰' : isRaging ? '😡' : isPoisoned ? '🤢' : hpPct <= 0.25 ? '😣' : hpPct <= 0.5 ? '😤' : '😊';
+                  return <span className="text-[8px]" title={`Mood: ${entry.hp <= 0 ? 'Down' : isFrightened ? 'Frightened' : isRaging ? 'Raging' : isPoisoned ? 'Poisoned' : hpPct <= 0.25 ? 'Critical' : hpPct <= 0.5 ? 'Hurt' : 'Good'}`}>{mood}</span>;
+                })()}
                 {entry.isWildShaped && <span className="text-green-400" title="Wild Shape active">🐺</span>}
                 {/* Spell slot indicator for casters */}
                 {entry.type === 'player' && entry.characterId && (() => {

@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 cinematic + immersion features:
+  - **Dramatic moment system** — cinematic screen overlay for pivotal moments: CRITICAL HIT (amber flash), BOSS SLAIN (purple for CR 3+), with title/subtitle text + glow effects. `useDramaticMoments` hook with configurable duration per type.
+  - **Weather combat effects** — rain/fog/sandstorm now impose ranged attack disadvantage via `rollD20WithProne` extra parameter. `weatherEffects.ts` data module defines per-weather: ranged disadvantage, perception penalty, movement cost, visibility range.
+  - **Combat taunt + intimidation system** — enemies shout random taunts on odd rounds (categorized: undead/beast/humanoid/dragon/default). Players can Intimidate (CHA vs WIS) to frighten enemies for 2 turns. `combatTaunts.ts` data module.
+  - **Loot burst animation** — CSS `loot-burst` keyframe for boss kill celebration (scale + float + fade).
+  - **Character mood emoji on InitiativeBar** — auto-set based on HP% and conditions: 😊 good, 😤 hurt, 😣 critical, 😡 raging, 😰 frightened, 🤢 poisoned, 💀 down.
 - 5 features — onboarding, inline dice, quick-stats bar, /spawn command, session summary:
   - **New player onboarding** — 6-step guided tooltip tour for first-visit users: Welcome, Character, Dice, Combat, Map, Shortcuts. Positioned overlays with progress dots, Skip/Back/Next navigation, permanently dismissed via localStorage.
   - **Chat inline dice roller** — `[[2d6+3]]` or `((1d20+5))` notation in chat messages auto-rolls server-side in Lobby DO, replacing the notation with bolded results showing individual rolls + total.

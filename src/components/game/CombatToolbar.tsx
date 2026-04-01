@@ -65,6 +65,8 @@ interface CombatToolbarProps {
   triggerLevelUp?: (charName: string, level: number) => void;
   onNewRound?: (round: number) => void;
   setSpellZones?: React.Dispatch<React.SetStateAction<import('../../types/game').SpellZone[]>>;
+  triggerDramatic?: (type: 'crit' | 'fumble' | 'boss_kill' | 'tpk_threat' | 'clutch_save' | 'level_up', title: string, subtitle?: string) => void;
+  weather?: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm';
 }
 
 export default function CombatToolbar({
@@ -115,6 +117,8 @@ export default function CombatToolbar({
   onNewRound,
   triggerLevelUp,
   setSpellZones,
+  triggerDramatic,
+  weather = 'none',
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -369,7 +373,9 @@ export default function CombatToolbar({
                                 const isMeleeAttack = !weaponIsRanged;
                                 let totalDamageDealt = 0;
                                 for (let atk = 0; atk < numAttacks; atk++) {
-                                  const { roll: attackRoll, hadAdvantage, hadDisadvantage, rolls } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack);
+                                  // Weather disadvantage on ranged attacks
+                                  const weatherRangedPenalty = !isMeleeAttack && (weather === 'rain' || weather === 'fog' || weather === 'sandstorm');
+                                  const { roll: attackRoll, hadAdvantage, hadDisadvantage, rolls } = rollD20WithProne(playerUnit?.conditions || [], target.conditions || [], isMeleeAttack, weatherRangedPenalty);
                                   const totalAttack = attackRoll + statMod + weaponAtkBonus + condAtkMod + featAtkBonus + flankingBonus;
                                   const isHit = attackRoll === 20 || totalAttack >= targetAC;
                                   const isCrit = attackRoll === 20;
@@ -431,6 +437,7 @@ export default function CombatToolbar({
                                     // Critical hit extra effect (random table roll)
                                     let critEffectTag = '';
                                     if (isCrit) {
+                                      triggerDramatic?.('crit', 'CRITICAL HIT!', `${selectedCharacter?.name} strikes true!`);
                                       const CRIT_EFFECTS = [
                                         { name: 'Lingering Wound', desc: 'bleeding 1d4/turn', cond: 'burning' as const, dur: 1 },
                                         { name: 'Disoriented', desc: 'disadvantage on next attack', cond: 'stunned' as const, dur: 1 },
@@ -458,6 +465,7 @@ export default function CombatToolbar({
                                 // Check for enemy death after all attacks
                                 if (target.hp - totalDamageDealt <= 0) {
                                   playEnemyDeath();
+                                  if ((target.cr || 0) >= 3) triggerDramatic?.('boss_kill', `${target.name} SLAIN!`, `${selectedCharacter?.name || 'The party'} fells the beast!`);
                                   const deathMsg = `${target.name} falls! ${killFlavor()}`;
                                   setCombatLog((prev) => [...prev, deathMsg]);
                                   addDmMessage(deathMsg);
@@ -736,6 +744,39 @@ export default function CombatToolbar({
                             </button>
                           );
                         })()}
+
+                      {/* Intimidate — CHA check to frighten an enemy */}
+                      {inCombat && selectedCharacter && isPlayerTurn && (() => {
+                        const target = selectedUnitId ? units.find((u) => u.id === selectedUnitId) : null;
+                        const enemyTarget = target && target.type === 'enemy' && target.hp > 0 ? target : null;
+                        if (!enemyTarget) return null;
+                        const alreadyFrightened = enemyTarget.conditions?.some((c) => c.type === 'frightened');
+                        return (
+                          <button
+                            disabled={!isPlayerTurn || !!alreadyFrightened}
+                            title={alreadyFrightened ? 'Target already frightened' : `Intimidate ${enemyTarget.name} — CHA vs WIS, frightened on success`}
+                            onClick={() => {
+                              const chaMod = Math.floor(((selectedCharacter.stats?.CHA ?? 10) - 10) / 2);
+                              const prof = selectedCharacter.skillProficiencies?.includes('Intimidation') ? proficiencyBonus(selectedCharacter.level) : 0;
+                              const playerRoll = Math.floor(Math.random() * 20) + 1 + chaMod + prof;
+                              const enemyWis = 10 + (enemyTarget.dexMod || 0); // approximate
+                              const dc = 8 + Math.floor((enemyWis - 10) / 2);
+                              if (playerRoll >= dc) {
+                                applyCondition(enemyTarget.id, { type: 'frightened', duration: 2, source: selectedCharacter.name });
+                                const msg = `${selectedCharacter.name} intimidates ${enemyTarget.name}! (${playerRoll} vs DC ${dc}) — Frightened for 2 turns!`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              } else {
+                                const msg = `${selectedCharacter.name} fails to intimidate ${enemyTarget.name}. (${playerRoll} vs DC ${dc})`;
+                                setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                              }
+                              setTimeout(broadcastCombatSyncLatest, 50);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-900/30 hover:bg-orange-800/40 border border-orange-600/50 text-orange-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            Intimidate
+                          </button>
+                        );
+                      })()}
 
                       {/* Grapple — contested Athletics check, target speed 0 */}
                       {inCombat && selectedCharacter && (() => {
