@@ -286,6 +286,7 @@ export default function Game() {
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [initiativeHistory, setInitiativeHistory] = useState<Array<{ round: number; order: Array<{ name: string; initiative: number; hp: number; maxHp: number }> }>>([]);
   const [spellZones, setSpellZones] = useState<import('../types/game').SpellZone[]>([]);
+  const [factions, setFactions] = useState<Array<{ id: string; name: string; reputation: number; description: string }>>([]);
   const [combatStartTime, setCombatStartTime] = useState<number | null>(null);
   const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
   const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
@@ -3072,6 +3073,7 @@ export default function Game() {
                     combatRound={combatRound}
                   />
                 ) : activeView === 'npcs' ? (
+                  <>
                   <NpcTracker
                     roomId={room}
                     isDM={canUseDMTools}
@@ -3079,6 +3081,34 @@ export default function Game() {
                     onBroadcast={(evt) => broadcastGameEvent(evt.type, evt)}
                     syncRef={npcSyncRef}
                   />
+                  {/* Faction reputation tracker */}
+                  <details className="mt-3 mx-2">
+                    <summary className="text-[10px] text-[#F38020] font-bold uppercase cursor-pointer hover:text-[#ff8c2e]">Factions ({factions.length})</summary>
+                    <div className="mt-2 space-y-1.5">
+                      {factions.map((f) => (
+                        <div key={f.id} className="flex items-center justify-between px-2 py-1.5 rounded bg-slate-800/50 border border-slate-700/30">
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] font-semibold text-slate-200">{f.name}</span>
+                            {f.description && <span className="text-[8px] text-slate-500 ml-1.5">{f.description}</span>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {canUseDMTools && <button onClick={() => setFactions((prev) => prev.map((x) => x.id === f.id ? { ...x, reputation: Math.max(-5, x.reputation - 1) } : x))} className="w-4 h-4 rounded text-[9px] border border-slate-700 text-red-400 hover:bg-red-900/30">-</button>}
+                            <span className={`text-[10px] font-bold min-w-[20px] text-center ${f.reputation >= 3 ? 'text-emerald-400' : f.reputation >= 0 ? 'text-slate-300' : 'text-red-400'}`}>{f.reputation > 0 ? `+${f.reputation}` : f.reputation}</span>
+                            {canUseDMTools && <button onClick={() => setFactions((prev) => prev.map((x) => x.id === f.id ? { ...x, reputation: Math.min(5, x.reputation + 1) } : x))} className="w-4 h-4 rounded text-[9px] border border-slate-700 text-emerald-400 hover:bg-emerald-900/30">+</button>}
+                          </div>
+                        </div>
+                      ))}
+                      {canUseDMTools && (
+                        <button onClick={() => {
+                          const name = window.prompt('Faction name:');
+                          if (!name?.trim()) return;
+                          setFactions((prev) => [...prev, { id: `f-${crypto.randomUUID().slice(0, 8)}`, name: name.trim(), reputation: 0, description: '' }]);
+                          broadcastGameEvent('faction_sync', { factions: [...factions, { id: `f-${Date.now()}`, name: name.trim(), reputation: 0, description: '' }] });
+                        }} className="w-full text-[9px] py-1 rounded bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-[#F38020] font-semibold transition-all">+ Add Faction</button>
+                      )}
+                    </div>
+                  </details>
+                  </>
                 ) : activeView === 'dicestats' ? (
                   <DiceStats />
                 ) : activeView === 'timeline' ? (

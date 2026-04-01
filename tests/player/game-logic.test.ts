@@ -976,6 +976,11 @@ describe('exhaustion effects', () => {
     expect(e.speedZero).toBe(false);
   });
 
+  it('level 6 is death', () => {
+    expect(EXHAUSTION_EFFECTS[6].description).toContain('Death');
+    expect(EXHAUSTION_EFFECTS[6].speedZero).toBe(true);
+  });
+
   it('penalties are cumulative at higher levels', () => {
     expect(EXHAUSTION_EFFECTS[1].disadvantageChecks).toBe(true);
     expect(EXHAUSTION_EFFECTS[2].speedMultiplier).toBe(0.5);

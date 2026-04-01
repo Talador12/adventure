@@ -2,6 +2,7 @@
 // Extracted from Game.tsx to reduce file size.
 import { useState, useRef, useEffect } from 'react';
 import { useGame, calculateEncounterBudget, type Unit } from '../../contexts/GameContext';
+import { XP_THRESHOLDS } from '../../types/game';
 import type { EncounterTemplate } from '../../types/game';
 import HomebrewEditor from './HomebrewEditor';
 import SessionTimer from './SessionTimer';
@@ -249,6 +250,84 @@ export default function DMSidebar({
         {/* Encounter tab */}
         {dmSidebarTab === 'encounter' && (
           <>
+            {/* Downtime Activities */}
+            <details className="mb-3">
+              <summary className="text-[10px] text-slate-500 font-bold uppercase cursor-pointer hover:text-slate-300">Downtime Activities</summary>
+              <div className="mt-2 grid grid-cols-2 gap-1">
+                {['crafting', 'research', 'carousing', 'pit-fighting', 'gambling', 'recuperating'].map((actId) => (
+                  <button
+                    key={actId}
+                    onClick={async () => {
+                      const { DOWNTIME_ACTIVITIES, performDowntimeActivity } = await import('../../data/downtimeActivities');
+                      const activity = DOWNTIME_ACTIVITIES.find((a) => a.id === actId);
+                      if (!activity) return;
+                      const char = characters[0];
+                      const skillMod = char ? Math.floor(((char.stats?.CHA ?? 10) - 10) / 2) : 0;
+                      const result = performDowntimeActivity(actId, skillMod);
+                      const goldStr = result.goldChange !== 0 ? ` (${result.goldChange > 0 ? '+' : ''}${result.goldChange} gp)` : '';
+                      onAddDmMessage(`🎲 **Downtime: ${activity.name}**${result.success ? ' ✅' : ' ❌'}\n${result.outcome}${goldStr}`);
+                      if (char && result.goldChange !== 0) updateCharacter(char.id, { gold: Math.max(0, (char.gold || 0) + result.goldChange) });
+                    }}
+                    className="text-[8px] px-1.5 py-1 rounded bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-emerald-400 hover:border-emerald-600/40 font-semibold transition-all capitalize"
+                    title={actId.replace('-', ' ')}
+                  >
+                    {actId.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Milestone XP / Level Grant */}
+            <div className="mb-3 space-y-1.5">
+              <label className="text-[10px] text-slate-500 font-semibold uppercase">Milestone Rewards</label>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => {
+                    for (const ch of characters) {
+                      grantXP(ch.id, Math.floor(XP_THRESHOLDS[ch.level] * 0.3) || 100);
+                    }
+                    onAddDmMessage('🌟 **Milestone XP** awarded to all party members!');
+                  }}
+                  className="flex-1 text-[9px] py-1 rounded bg-purple-900/30 border border-purple-600/40 text-purple-300 font-semibold hover:bg-purple-800/40 transition-all"
+                  title="Award milestone XP (~30% of next level) to all party members"
+                >
+                  Award XP
+                </button>
+                <button
+                  onClick={() => {
+                    for (const ch of characters) {
+                      const xpNeeded = (XP_THRESHOLDS[ch.level] || 0) - ch.xp;
+                      if (xpNeeded > 0) grantXP(ch.id, xpNeeded);
+                    }
+                    onAddDmMessage('⭐ **Milestone Level Up!** All party members advance to the next level!');
+                  }}
+                  className="flex-1 text-[9px] py-1 rounded bg-yellow-900/30 border border-yellow-600/40 text-yellow-300 font-semibold hover:bg-yellow-800/40 transition-all"
+                  title="Instantly level up all party members (milestone leveling)"
+                >
+                  Level Up All
+                </button>
+              </div>
+            </div>
+
+            {/* Treasure Hoard roller */}
+            <div className="mb-3">
+              <button
+                onClick={async () => {
+                  const avgLevel = characters.length > 0 ? Math.round(characters.reduce((s, c) => s + c.level, 0) / characters.length) : 3;
+                  const { rollTreasureHoard } = await import('../../data/treasureHoards');
+                  const hoard = rollTreasureHoard(avgLevel);
+                  let msg = `💰 **Treasure Hoard** (party level ${avgLevel}):\n${hoard.gold} gold`;
+                  if (hoard.gems.length > 0) msg += `\nGems: ${hoard.gems.map((g) => `${g.name} (${g.value}gp)`).join(', ')}`;
+                  if (hoard.items.length > 0) msg += `\nMagic items: ${hoard.items.map((i) => `**${i.name}** (${i.rarity}, ${i.value}gp)`).join(', ')}`;
+                  onAddDmMessage(msg);
+                }}
+                className="w-full text-[10px] py-1.5 rounded bg-amber-600/20 border border-amber-500/40 text-amber-400 font-semibold hover:bg-amber-500/30 transition-all"
+                title="Roll a level-appropriate treasure hoard with gold, gems, and magic items"
+              >
+                Roll Treasure Hoard
+              </button>
+            </div>
+
             {/* Random Encounter roller */}
             <div className="mb-3 space-y-1.5">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Random Encounter</label>

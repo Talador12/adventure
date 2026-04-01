@@ -55,6 +55,12 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 5 progression + narrative features:
+  - **Treasure hoard tables** — level-scaled random loot generator with gold/gems/magic items per DMG tiers. 4 rarity pools (common→epic) with named items (Flame Tongue, Bag of Holding, Staff of Power etc). "Roll Treasure Hoard" button in DMSidebar.
+  - **Milestone XP system** — two DM buttons: "Award XP" (30% of next level to all) and "Level Up All" (instant milestone leveling). Alternative to combat XP for story-driven campaigns.
+  - **Downtime activities** — 7 activities (Crafting, Research, Training, Carousing, Pit Fighting, Gambling, Recuperating) with skill checks, gold costs, and narrative outcomes. Collapsible grid in DMSidebar.
+  - **Faction reputation tracker** — per-faction reputation (-5 to +5) displayed in NPC tab. DM +/- buttons, color-coded (green/neutral/red). "Add Faction" button for campaign-specific organizations.
+  - 1 new test (140 total): exhaustion level 6 = death verification.
 - 5 exploration + advanced combat features:
   - **Enemy multiattack** — high-CR enemies (hard/deadly) now get 2-3 attacks per turn in the AI. `multiattack` field on Unit/EnemyTemplate propagated through spawn. AI attack loop checks target HP between attacks, log prefixed with [1/3] etc.
   - **Random encounter tables** — 5 environment-themed tables (forest/dungeon/mountain/swamp/urban) with 5-6 entries each. DM clicks environment button in DMSidebar to roll. `randomEncounters.ts` module with CR-scaled entries and descriptions.
