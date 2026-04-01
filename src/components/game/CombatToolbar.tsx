@@ -1333,9 +1333,12 @@ export default function CombatToolbar({
                                 title={bonusUsed ? 'Bonus action already used' : 'Rage! (+2 attack, resistance to physical damage)'}
                                 onClick={() => {
                                   applyCondition(playerUnit.id, { type: 'raging', duration: 10, source: 'Rage' });
+                                  // Grant physical damage resistance while raging
+                                  setUnits((prev: Unit[]) => prev.map((u) => u.id === playerUnit.id ? { ...u, resistances: [...new Set([...(u.resistances || []), 'bludgeoning', 'piercing', 'slashing'])] } : u));
                                   markBonusUsed();
-                                  const msg = `${selectedCharacter.name} RAGES! (+2 attack, damage resistance)`;
+                                  const msg = `${selectedCharacter.name} RAGES! (+2 attack, resistance to bludgeoning/piercing/slashing)`;
                                   setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                                  setTimeout(broadcastCombatSyncLatest, 50);
                                 }}
                                 className="flex items-center gap-1 px-2 py-1 border border-red-600/50 bg-red-900/30 text-red-300 text-[10px] font-semibold rounded-md transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-800/40"
                               >⚡ Rage</button>
@@ -1518,6 +1521,26 @@ export default function CombatToolbar({
                           title="Re-roll initiative for all units (DM only)"
                         >
                           Re-roll Init
+                        </button>
+                      )}
+
+                      {/* Export combat log as markdown */}
+                      {combatLog.length > 5 && (
+                        <button
+                          onClick={() => {
+                            const md = `# Combat Log\n\n${combatLog.map((l) => `- ${l}`).join('\n')}\n\n*Exported from Adventure VTT — ${new Date().toLocaleString()}*`;
+                            const blob = new Blob([md], { type: 'text/markdown' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `combat-log-${new Date().toISOString().slice(0, 10)}.md`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          className="text-[9px] px-2 py-1 rounded bg-slate-800/60 border border-slate-600/40 text-slate-500 hover:text-slate-300 font-semibold transition-all"
+                          title="Download combat log as markdown"
+                        >
+                          Export Log
                         </button>
                       )}
 

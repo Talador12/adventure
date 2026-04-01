@@ -152,6 +152,10 @@ export interface Unit {
   // Companion/familiar — secondary token controlled by a player
   companionOwnerId?: string; // unit ID of the player who controls this companion
   isCompanion?: boolean;     // true for familiars, animal companions, summoned creatures
+  // Damage resistance/vulnerability/immunity
+  resistances?: string[];   // half damage: ['bludgeoning', 'piercing', 'slashing', 'fire', 'cold', 'lightning', 'poison', 'acid', 'thunder', 'necrotic', 'radiant', 'psychic', 'force']
+  vulnerabilities?: string[]; // double damage
+  immunities?: string[];     // zero damage
   // Wild Shape — stored original form stats while in beast shape
   wildShapeOriginal?: {
     name: string;
@@ -193,6 +197,9 @@ export interface EnemyTemplate {
   dexMod: number;
   abilities: EnemyAbility[];
   xpValue: number;
+  resistances?: string[];
+  vulnerabilities?: string[];
+  immunities?: string[];
 }
 
 // --- Stats ---

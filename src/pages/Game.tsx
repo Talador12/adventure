@@ -1588,6 +1588,7 @@ export default function Game() {
         dexMod: monster.dexMod, abilities: monster.abilities.map((a) => ({ ...a })),
         abilityCooldowns: {}, conditions: [], speed: monster.speed, movementUsed: 0,
         reactionUsed: false, bonusActionUsed: false, disengaged: false, cr: monster.cr, xpValue: monster.xpValue,
+        resistances: monster.resistances, vulnerabilities: monster.vulnerabilities, immunities: monster.immunities,
         // Legendary + lair actions — only the first spawned unit of a boss type gets these (not copies)
         ...(i === 0 && monster.legendaryActions ? {
           legendaryActions: monster.legendaryActions,

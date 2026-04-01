@@ -215,6 +215,18 @@ export default function InitiativeBar({ entries, turnTimerEnabled = true, turnTi
                 {entry.bonusActionUsed && <span className="text-violet-400" title="Bonus action used this turn">B</span>}
                 {entry.readiedAction && <span className="text-cyan-400" title={`Ready: ${entry.readiedAction.trigger} → ${entry.readiedAction.action}`}>⏳</span>}
                 {entry.isWildShaped && <span className="text-green-400" title="Wild Shape active">🐺</span>}
+                {/* Spell slot indicator for casters */}
+                {entry.type === 'player' && entry.characterId && (() => {
+                  const char = characters.find((c) => c.id === entry.characterId);
+                  if (!char) return null;
+                  const CASTER_CLASSES = ['Wizard', 'Sorcerer', 'Warlock', 'Cleric', 'Druid', 'Bard', 'Paladin', 'Ranger'];
+                  if (!CASTER_CLASSES.includes(char.class)) return null;
+                  const totalSlots = Object.values(char.spellSlots || {}).reduce((s: number, v: unknown) => s + (typeof v === 'number' ? v : 0), 0);
+                  const usedSlots = Object.values(char.spellSlotsUsed || {}).reduce((s: number, v: unknown) => s + (typeof v === 'number' ? v : 0), 0);
+                  const remaining = Math.max(0, totalSlots - usedSlots);
+                  if (totalSlots === 0) return null;
+                  return <span className={`text-[8px] font-mono ${remaining > 0 ? 'text-blue-400' : 'text-slate-600'}`} title={`Spell slots: ${remaining}/${totalSlots}`}>◆{remaining}</span>;
+                })()}
                 {/* Death saves — shown for player units at 0 HP */}
                 {entry.type === 'player' && entry.hp <= 0 && entry.deathSaves && (
                   <span className="flex items-center gap-0.5" title={`Death Saves: ${entry.deathSaves.successes} success / ${entry.deathSaves.failures} fail`}>
