@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.3.0
+## Current Version: v10.4.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 33 tests (460 total) — skill challenges, treasure gen, encounter waves, PC reputation, combat maneuvers, session timer:
+  - **Skill challenge framework** — `skillChallenge.ts` with 5 templates (Chase Scene, Collapsing Dungeon, Diplomatic Negotiation, Wilderness Survival, Heist). Each defines successes required, failures allowed, DC, allowed skills, and outcomes. `resolveCheck()` tracks progress. Visual progress bars with green/red indicators. "Skill Challenge" button in DMSidebar.
+  - **Random treasure generator** — `treasureGenerator.ts` with 4 tiers (minor/moderate/major/legendary) producing gold (4d6×scale), gems (16 types), art objects (12 types), and magic items (4 rarity pools with 4-6 items each). `getTierFromCR()` maps CR to tier. Treasure by tier in DMSidebar dropdown.
+  - **Encounter wave system** — `encounterWaves.ts` with 3 templates (Goblin Ambush, Undead Rising, Bandit Raid). Each has 2-3 waves with round triggers, named units with counts/stats, and narration text. `checkWaveTriggers()` fires waves on schedule. `getUpcomingWaves()` shows what's coming. Wave browser in DMSidebar.
+  - **PC reputation system** — `pcReputation.ts` with dual-axis (fame 0-20, infamy 0-20) per region. 10 title tiers from Unknown to Legend/Villain. `getReputationEffectsForRegion()` returns recognition chance, price modifier, and NPC reaction. Visual star bars. "PC Reputation" button in DMSidebar.
+  - **Combat maneuver library** — `combatManeuvers.ts` with 8 maneuvers (Disarm, Trip, Feint, Called Shot, Overrun, Shield Bash, Mark Target, Taunt). Each has check type (contested/attack/save), attacker/defender abilities, success/fail effects. Action vs bonus action categorization. "Combat Maneuvers" button in DMSidebar.
+  - **Session timer** — `sessionTimer.ts` with 6 default milestones (30m warmup → 4h marathon). `checkMilestones()` fires alerts on time marks. Pause/resume with paused-duration tracking. `getElapsedFormatted()` for display. localStorage persistence per room. "Session Timer" button in DMSidebar.
+- 33 new tests (460 total) covering 6 systems:
+  - **Skill challenges** (6 tests): template count, creation, check tracking, success completion, failure completion, formatted progress.
+  - **Treasure generator** (4 tests): CR-to-tier mapping, gold presence, tier scaling, formatted output.
+  - **Encounter waves** (6 tests): template count, creation, trigger on round, upcoming filtering, enemy count, formatted status.
+  - **PC reputation** (5 tests): title classification, fame adjustment, clamping, effects calculation, empty format.
+  - **Combat maneuvers** (6 tests): count, unique IDs, getter, melee filter, bonus action filter, formatted list.
+  - **Session timer** (6 tests): creation, elapsed ~0 at start, formatted string, pause/resume, format output.
+
 - 6 new systems + 34 tests (427 total) — sidekicks, traps, weather combat, downtime, monster lore, alignment:
   - **Henchman/sidekick system** — `sidekicks.ts` with 3 roles (Warrior/Expert/Spellcaster) using Tasha's simplified stat blocks. `createSidekick()` generates HP/AC/attack scaled by level. Level abilities unlock at 1/3/5/7/10 (Extra Attack, Cunning Action, spell slots, etc). `levelUpSidekick()` recalculates stats. "Sidekicks" button in DMSidebar.
   - **Trap design tool** — `trapDesigner.ts` with 8 pre-built trap templates (Spike Pit, Poison Dart, Fire Glyph, Falling Cage, Alarm Bell, Net Trap, Gas Room, Cursed Idol). Each has trigger type (6 types), effect type (7 types), detection/disable/save DCs, damage, area, and reset mode. Expandable trap browser in DMSidebar.
@@ -266,12 +281,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Skill challenge framework — complex tasks requiring multiple checks with success/failure thresholds
-- Random treasure generator — loot tables by CR and dungeon tier with magic item rolls
-- Encounter wave system — multi-wave combat with reinforcements arriving on schedule
-- PC reputation system — individual character fame/infamy tracked across regions
-- Combat maneuver library — extended martial options (disarm, trip, feint, called shot)
-- Session timer with milestone alerts — track real-time session length with DM-set milestone pings
+- ~~Skill challenge framework~~ **DONE** — `skillChallenge.ts` with 5 templates
+- ~~Random treasure generator~~ **DONE** — `treasureGenerator.ts` with 4 tiers + magic items
+- ~~Encounter wave system~~ **DONE** — `encounterWaves.ts` with 3 templates + round triggers
+- ~~PC reputation system~~ **DONE** — `pcReputation.ts` with fame/infamy per region
+- ~~Combat maneuver library~~ **DONE** — `combatManeuvers.ts` with 8 extended martial options
+- ~~Session timer with milestone alerts~~ **DONE** — `sessionTimer.ts` with pause/resume + 6 milestones
+
+**Wave 9 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Deity/patron system — cleric/warlock patron relationships with boons and demands
+- Random wilderness map generator — procedural terrain layouts for outdoor encounters
+- Character goal tracker — per-character short/long-term goals with DM reward hooks
+- Environmental sound cues — ambient sound descriptions tied to terrain and weather
+- Spell slot recovery variants — arcane recovery, natural recovery, gritty realism resting
+- Initiative tiebreaker rules — DEX mod, then coin flip, with configurable house rules
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

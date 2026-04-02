@@ -3481,3 +3481,246 @@ describe('alignment tracker', () => {
     expect(text).toContain('Lawful');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Skill challenges
+// ---------------------------------------------------------------------------
+import { SKILL_CHALLENGE_TEMPLATES, createChallenge, resolveCheck, formatChallengeStatus } from '../../src/lib/skillChallenge';
+
+describe('skill challenges', () => {
+  it('has at least 4 templates', () => {
+    expect(SKILL_CHALLENGE_TEMPLATES.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('createChallenge initializes at 0/0', () => {
+    const c = createChallenge(SKILL_CHALLENGE_TEMPLATES[0]);
+    expect(c.currentSuccesses).toBe(0);
+    expect(c.currentFailures).toBe(0);
+    expect(c.completed).toBe(false);
+  });
+
+  it('resolveCheck tracks successes', () => {
+    let c = createChallenge(SKILL_CHALLENGE_TEMPLATES[0]);
+    c = resolveCheck(c, 'Thorin', 'Athletics', 20);
+    expect(c.currentSuccesses).toBe(1);
+    expect(c.rounds.length).toBe(1);
+  });
+
+  it('challenge completes on enough successes', () => {
+    let c = createChallenge({ ...SKILL_CHALLENGE_TEMPLATES[0], successesRequired: 2, failuresAllowed: 3 });
+    c = resolveCheck(c, 'A', 'Athletics', 20);
+    c = resolveCheck(c, 'B', 'Athletics', 20);
+    expect(c.completed).toBe(true);
+    expect(c.succeeded).toBe(true);
+  });
+
+  it('challenge fails on too many failures', () => {
+    let c = createChallenge({ ...SKILL_CHALLENGE_TEMPLATES[0], successesRequired: 5, failuresAllowed: 1 });
+    c = resolveCheck(c, 'A', 'Athletics', 1);
+    c = resolveCheck(c, 'B', 'Athletics', 1);
+    expect(c.completed).toBe(true);
+    expect(c.succeeded).toBe(false);
+  });
+
+  it('formatChallengeStatus shows progress bars', () => {
+    const c = createChallenge(SKILL_CHALLENGE_TEMPLATES[0]);
+    const text = formatChallengeStatus(c);
+    expect(text).toContain('Successes');
+    expect(text).toContain('Failures');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Treasure generator
+// ---------------------------------------------------------------------------
+import { getTierFromCR, generateTreasure, formatTreasure } from '../../src/data/treasureGenerator';
+
+describe('treasure generator', () => {
+  it('getTierFromCR maps correctly', () => {
+    expect(getTierFromCR(2)).toBe('minor');
+    expect(getTierFromCR(7)).toBe('moderate');
+    expect(getTierFromCR(14)).toBe('major');
+    expect(getTierFromCR(20)).toBe('legendary');
+  });
+
+  it('generateTreasure always has gold', () => {
+    const roll = generateTreasure('minor');
+    expect(roll.gold).toBeGreaterThan(0);
+    expect(roll.totalValue).toBeGreaterThanOrEqual(roll.gold);
+  });
+
+  it('legendary generates more gold than minor', () => {
+    let minorTotal = 0, legendaryTotal = 0;
+    for (let i = 0; i < 20; i++) { minorTotal += generateTreasure('minor').gold; legendaryTotal += generateTreasure('legendary').gold; }
+    expect(legendaryTotal).toBeGreaterThan(minorTotal);
+  });
+
+  it('formatTreasure includes gold amount', () => {
+    const text = formatTreasure(generateTreasure('moderate'));
+    expect(text).toContain('Gold');
+    expect(text).toContain('Total Value');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter waves
+// ---------------------------------------------------------------------------
+import { WAVE_TEMPLATES, createWaveEncounter, checkWaveTriggers, getUpcomingWaves, getTotalEnemyCount, formatWaveStatus } from '../../src/lib/encounterWaves';
+
+describe('encounter waves', () => {
+  it('has at least 3 wave templates', () => {
+    expect(WAVE_TEMPLATES.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('createWaveEncounter starts at round 0', () => {
+    const enc = createWaveEncounter(WAVE_TEMPLATES[0]);
+    expect(enc.currentRound).toBe(0);
+    expect(enc.waves.every((w) => !w.triggered)).toBe(true);
+  });
+
+  it('checkWaveTriggers fires on correct round', () => {
+    const enc = createWaveEncounter(WAVE_TEMPLATES[0]);
+    const { triggeredWaves } = checkWaveTriggers(enc, 1);
+    expect(triggeredWaves.length).toBeGreaterThanOrEqual(1); // wave 1 triggers on round 1
+  });
+
+  it('getUpcomingWaves excludes triggered', () => {
+    let enc = createWaveEncounter(WAVE_TEMPLATES[0]);
+    const result = checkWaveTriggers(enc, 1);
+    const upcoming = getUpcomingWaves(result.encounter);
+    expect(upcoming.every((w) => !w.triggered)).toBe(true);
+  });
+
+  it('getTotalEnemyCount sums all waves', () => {
+    const enc = createWaveEncounter(WAVE_TEMPLATES[0]);
+    expect(getTotalEnemyCount(enc)).toBeGreaterThan(0);
+  });
+
+  it('formatWaveStatus shows wave info', () => {
+    const enc = createWaveEncounter(WAVE_TEMPLATES[0]);
+    const text = formatWaveStatus(enc);
+    expect(text).toContain(WAVE_TEMPLATES[0].name);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PC reputation
+// ---------------------------------------------------------------------------
+import { getTitle, createPCReputation, adjustReputation, getReputationEffectsForRegion, formatPCReputation } from '../../src/lib/pcReputation';
+
+describe('PC reputation', () => {
+  it('getTitle classifies correctly', () => {
+    expect(getTitle(15, 0)).toBe('Legend');
+    expect(getTitle(0, 15)).toBe('Villain');
+    expect(getTitle(0, 0)).toBe('Unknown');
+    expect(getTitle(12, 12)).toBe('Notorious');
+  });
+
+  it('adjustReputation adds fame', () => {
+    let state = createPCReputation('c1');
+    state = adjustReputation(state, 'r1', 'Neverwinter', 'fame', 5);
+    expect(state.regions.length).toBe(1);
+    expect(state.regions[0].fame).toBe(5);
+  });
+
+  it('reputation clamps to 0-20', () => {
+    let state = createPCReputation('c1');
+    state = adjustReputation(state, 'r1', 'Test', 'fame', 25);
+    expect(state.regions[0].fame).toBe(20);
+  });
+
+  it('getReputationEffectsForRegion returns recognition', () => {
+    const effects = getReputationEffectsForRegion({ regionId: 'r1', regionName: 'Test', fame: 15, infamy: 0, title: 'Hero' });
+    expect(effects.recognitionChance).toBeGreaterThan(0.5);
+    expect(effects.npcReaction).toBe('Welcoming');
+  });
+
+  it('formatPCReputation handles empty', () => {
+    const text = formatPCReputation(createPCReputation('c1'), 'Thorin');
+    expect(text).toContain('Unknown');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combat maneuvers
+// ---------------------------------------------------------------------------
+import { MANEUVERS, getManeuver, getMeleeManeuvers, getBonusActionManeuvers, formatManeuver, formatManeuverList } from '../../src/data/combatManeuvers';
+
+describe('combat maneuvers', () => {
+  it('has at least 7 maneuvers', () => {
+    expect(MANEUVERS.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('all maneuvers have unique IDs', () => {
+    const ids = MANEUVERS.map((m) => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('getManeuver finds by ID', () => {
+    expect(getManeuver('disarm')?.name).toBe('Disarm');
+    expect(getManeuver('trip')?.name).toBe('Trip');
+  });
+
+  it('getMeleeManeuvers filters correctly', () => {
+    const melee = getMeleeManeuvers();
+    for (const m of melee) expect(m.attackType).toBe('melee');
+  });
+
+  it('getBonusActionManeuvers filters correctly', () => {
+    const bonus = getBonusActionManeuvers();
+    for (const m of bonus) expect(m.requiresAction).toBe(false);
+    expect(bonus.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('formatManeuverList includes all maneuvers', () => {
+    const text = formatManeuverList();
+    expect(text).toContain('Disarm');
+    expect(text).toContain('Trip');
+    expect(text).toContain('Feint');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session timer
+// ---------------------------------------------------------------------------
+import { createSessionTimer, getElapsedMinutes, getElapsedFormatted, checkMilestones as checkTimerMilestones, pauseTimer, resumeTimer, formatTimerStatus } from '../../src/lib/sessionTimer';
+
+describe('session timer', () => {
+  it('creates timer with milestones', () => {
+    const timer = createSessionTimer();
+    expect(timer.isRunning).toBe(true);
+    expect(timer.milestones.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('getElapsedMinutes starts at ~0', () => {
+    const timer = createSessionTimer();
+    expect(getElapsedMinutes(timer)).toBeLessThanOrEqual(1);
+  });
+
+  it('getElapsedFormatted returns readable string', () => {
+    const timer = createSessionTimer();
+    const formatted = getElapsedFormatted(timer);
+    expect(formatted).toMatch(/\d+m/);
+  });
+
+  it('pauseTimer stops tracking', () => {
+    const timer = createSessionTimer();
+    const paused = pauseTimer(timer);
+    expect(paused.isRunning).toBe(false);
+    expect(paused.pausedAt).toBeTruthy();
+  });
+
+  it('resumeTimer resumes tracking', () => {
+    let timer = createSessionTimer();
+    timer = pauseTimer(timer);
+    timer = resumeTimer(timer);
+    expect(timer.isRunning).toBe(true);
+    expect(timer.pausedAt).toBeNull();
+  });
+
+  it('formatTimerStatus shows time', () => {
+    const timer = createSessionTimer();
+    const text = formatTimerStatus(timer);
+    expect(text).toContain('Session Timer');
+  });
+});

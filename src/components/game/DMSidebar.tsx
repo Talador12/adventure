@@ -31,6 +31,7 @@ import { ROOM_TEMPLATES, formatRoomDescription } from '../../data/dungeonRoomTem
 import { RECIPES as CRAFTING_RECIPES, formatRecipe as formatCraftingRecipe, getMaterialCost as getMaterialCostFn } from '../../lib/crafting';
 import { TRAP_TEMPLATES as TRAP_TEMPLATES_DATA, formatTrap as formatTrapFn } from '../../data/trapDesigner';
 import { DOWNTIME_ACTIVITIES as DOWNTIME_DATA } from '../../lib/downtimeActivities';
+import { WAVE_TEMPLATES as WAVE_TEMPLATES_DATA } from '../../lib/encounterWaves';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -861,6 +862,107 @@ export default function DMSidebar({
               title="Show alignment tracking with moral choice history"
             >
               ⚖️ Alignment Tracker
+            </button>
+
+            {/* Skill challenge */}
+            <button
+              onClick={async () => {
+                const { SKILL_CHALLENGE_TEMPLATES, createChallenge, formatChallengeStatus } = await import('../../lib/skillChallenge');
+                const template = SKILL_CHALLENGE_TEMPLATES[Math.floor(Math.random() * SKILL_CHALLENGE_TEMPLATES.length)];
+                const challenge = createChallenge(template);
+                onAddDmMessage(formatChallengeStatus(challenge));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all"
+              title="Start a skill challenge — multiple checks toward success/failure threshold"
+            >
+              🎯 Skill Challenge
+            </button>
+
+            {/* Treasure generator */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all cursor-pointer px-2">
+                💰 Random Treasure
+              </summary>
+              <div className="mt-1 space-y-1">
+                {(['minor', 'moderate', 'major', 'legendary'] as const).map((tier) => (
+                  <button
+                    key={tier}
+                    onClick={async () => {
+                      const { generateTreasure, formatTreasure } = await import('../../data/treasureGenerator');
+                      onAddDmMessage(formatTreasure(generateTreasure(tier)));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-yellow-600/40 transition-all text-[9px] text-slate-300 capitalize"
+                  >
+                    {tier === 'minor' ? '🟢' : tier === 'moderate' ? '🟡' : tier === 'major' ? '🟠' : '🔴'} {tier} (CR {tier === 'minor' ? '0-4' : tier === 'moderate' ? '5-10' : tier === 'major' ? '11-16' : '17+'})
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Encounter waves */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all cursor-pointer px-2">
+                🌊 Encounter Waves
+              </summary>
+              <div className="mt-1 space-y-1">
+                {WAVE_TEMPLATES_DATA.map((template, i) => (
+                  <button
+                    key={i}
+                    onClick={async () => {
+                      const { createWaveEncounter, formatWaveStatus } = await import('../../lib/encounterWaves');
+                      onAddDmMessage(formatWaveStatus(createWaveEncounter(template)));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-red-600/40 transition-all text-[9px] text-slate-300"
+                  >
+                    ⚔️ {template.name} ({template.waves.length} waves)
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Combat maneuvers */}
+            <button
+              onClick={async () => {
+                const { formatManeuverList } = await import('../../data/combatManeuvers');
+                onAddDmMessage(formatManeuverList());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all"
+              title="Show extended combat maneuvers — disarm, trip, feint, called shot, etc."
+            >
+              ⚔️ Combat Maneuvers
+            </button>
+
+            {/* Session timer */}
+            <button
+              onClick={async () => {
+                const { createSessionTimer, formatTimerStatus } = await import('../../lib/sessionTimer');
+                const key = `adventure:timer:${roomId}`;
+                let timer;
+                try { timer = JSON.parse(localStorage.getItem(key) || ''); } catch { timer = createSessionTimer(); localStorage.setItem(key, JSON.stringify(timer)); }
+                onAddDmMessage(formatTimerStatus(timer));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-slate-700/30 border border-slate-500/30 text-slate-300 font-semibold hover:bg-slate-600/30 transition-all"
+              title="Session timer with milestone alerts"
+            >
+              ⏱️ Session Timer
+            </button>
+
+            {/* PC Reputation */}
+            <button
+              onClick={async () => {
+                const { createPCReputation, formatPCReputation } = await import('../../lib/pcReputation');
+                const lines = characters.map((c) => {
+                  const raw = localStorage.getItem(`adventure:rep:${c.id}`);
+                  const state = raw ? JSON.parse(raw) : createPCReputation(c.id);
+                  return formatPCReputation(state, c.name);
+                });
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-300 font-semibold hover:bg-amber-800/30 transition-all disabled:opacity-30"
+              title="Per-character fame/infamy reputation across regions"
+            >
+              🌟 PC Reputation
             </button>
 
             {/* Save/Load Encounter Templates */}
