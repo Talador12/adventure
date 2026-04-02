@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.9.0
+## Current Version: v10.0.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 33 tests (324 total) — morale, env destruction, faction rep, initiative variants, NPC schedules, spell components:
+  - **Morale system** — `morale.ts` with 4 morale tiers (fanatical/brave/normal/cowardly) based on CR. `checkMorale()` triggers when casualty threshold is crossed — each surviving enemy rolls vs tier DC with HP bonus/penalty. Fleeing enemies tracked in `MoraleState`. "Morale Check" button in DMSidebar. Narrates routs vs holds.
+  - **Environmental destruction** — `environmentDestruction.ts` — walls (30HP, AC17) and doors (10HP, AC15) can be attacked and destroyed. `damageCell()` resolves attack roll vs AC, reduces HP, returns destruction status + narration. `getDestroyedTerrain()` converts walls→difficult terrain (rubble), doors→floor (open doorway).
+  - **Cross-campaign faction reputation** — `factionReputation.ts` — global faction standings persisted via localStorage. Reputation -10 to +10 with 7 tiers (hated→revered). `getReputationEffects()` returns price modifier (0.7x revered to 2.0x hated), quest access, NPC disposition. `changeReputation()` with event history (capped at 50). Visual reputation bar. "Faction Standings" button in DMSidebar.
+  - **Combat initiative variants** — `initiativeVariants.ts` — 4 systems: Standard (individual d20+DEX), Side (one roll per team), Popcorn (you pick who's next), Speed Factor (action-type modifiers). `rollSideInitiative()` and `rollSpeedFactorInitiative()` with 11 speed factor modifiers (melee +0, ranged +2, heavy -2, move +5, etc). Expandable rules display in DMSidebar.
+  - **Dynamic NPC schedules** — `npcSchedules.ts` — 5 role templates (innkeeper/merchant/guard/priest/thief) with hour-based location+activity entries. `getCurrentLocation()` resolves NPC position from schedule + current hour (handles midnight wraps). `getScheduleTemplate()` matches role keywords. `formatSchedule()` shows current location + full daily timeline.
+  - **Spell component pouch tracking** — `spellComponents.ts` — 20 spells with costly/consumed material components (Revivify 300gp diamonds, Raise Dead 500gp, True Resurrection 25,000gp, etc). `canAffordComponent()` checks gold. `deductComponentCost()` handles consumed vs reusable components. `formatComponentList()` shows party spell costs. "Spell Components" button in DMSidebar.
+- 33 new tests (324 total) covering 6 systems:
+  - **Morale** (5 tests): state creation, no-break when healthy, casualty threshold trigger, CR-based tiers, fleeing ID accumulation.
+  - **Env destruction** (5 tests): destructibility checks, wall/door HP+AC, damage+destruction detection, miss on low roll, terrain replacement.
+  - **Faction reputation** (6 tests): tier classification, rep change (add+create), clamping, effects scaling, formatted output.
+  - **Initiative variants** (6 tests): variant count, unique IDs, side initiative structure, speed modifiers, roll range, rules formatting.
+  - **NPC schedules** (5 tests): template coverage, hour-based location, role keyword matching, unknown role default, formatted output.
+  - **Spell components** (6 tests): key spell lookup, gold affordability, consumed deduction, non-consumed preservation, formatted list, positive costs.
+
 - 6 new systems + 25 tests (291 total) — rivalry board, initiative grouping, party resources, combat combos, encounter predictor, spell targeting:
   - **Character rivalry system** — `characterRivalry.ts` with 8 competitive categories (Slayer/Heavy Hitter/Lucky Strike/Lifesaver/Arcane Master/Damage Sponge/Cheated Death/Cursed). `parseRivalryFromLog()` extracts per-character stats from combat log. `getRivalryLeaders()` finds category winners. "Rivalry Board" button in DMSidebar. PvP-safe — tracks stats, not actual PvP.
   - **Smart initiative grouping** — `initiativeGrouping.ts` groups same-type enemies by base name (strips trailing numbers: "Goblin 1" → "Goblin"). Groups share the highest initiative in the group. Players always individual. `countGroups()` reports grouping stats for DM.
@@ -156,14 +171,26 @@ The complete feature set built from project inception through 46 development ite
 **Wave 4 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
-- Cross-campaign faction reputation — faction standing persists globally via localStorage
+- ~~Cross-campaign faction reputation~~ **DONE** — `factionReputation.ts` with 7 tiers
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in the area simultaneously
-- Environmental destruction — walls/doors have HP, can be attacked and destroyed mid-combat
-- Dynamic NPC schedules — NPCs move between locations based on in-game time of day
-- Morale system — enemies flee when their side takes heavy casualties (50%+ down)
-- Spell component pouch tracking — material components consumed on cast, require restocking
-- Combat initiative variants — side initiative, popcorn initiative, speed factor options
+- ~~Environmental destruction~~ **DONE** — `environmentDestruction.ts` walls/doors with HP
+- ~~Dynamic NPC schedules~~ **DONE** — `npcSchedules.ts` with 5 role templates
+- ~~Morale system~~ **DONE** — `morale.ts` with 4 tiers + flee checks
+- ~~Spell component pouch tracking~~ **DONE** — `spellComponents.ts` with 20 costly spells
+- ~~Combat initiative variants~~ **DONE** — `initiativeVariants.ts` with 4 systems
+
+**Wave 5 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in the area simultaneously
+- Player character bonds — mechanical bonuses when bonded characters fight together
+- Death consequences — lasting scars/penalties from being revived (resurrection sickness)
+- Dungeon room templates — pre-built room layouts (treasure room, boss arena, puzzle chamber)
+- Travel encounter tables — biome-specific random events for overland travel
+- Merchant haggling mini-game — CHA-based bargaining with NPC personality factors
+- Session recap generator — AI summarizes key events for catch-up at next session
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

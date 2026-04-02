@@ -499,6 +499,74 @@ export default function DMSidebar({
               📦 Party Resources
             </button>
 
+            {/* Morale check */}
+            <button
+              onClick={async () => {
+                const { checkMorale, createMoraleState, getMoraleTierFromCR } = await import('../../lib/morale');
+                const enemies = units.filter((u) => u.type === 'enemy');
+                const alive = enemies.filter((u) => u.hp > 0);
+                if (alive.length === 0) { onAddDmMessage('No living enemies to check morale.'); return; }
+                const state = createMoraleState(enemies.length);
+                const avgCR = alive.reduce((s, e) => s + (e.cr || 0), 0) / alive.length;
+                const result = checkMorale(state, getMoraleTierFromCR(avgCR), alive.map((u) => ({ id: u.id, name: u.name, hp: u.hp })));
+                onAddDmMessage(result.narration || `Morale holds — ${alive.length} enemies remain steadfast.`);
+              }}
+              disabled={!inCombat || !units.some((u) => u.type === 'enemy' && u.hp > 0)}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all disabled:opacity-30"
+              title="Check if enemies flee — based on casualties and CR"
+            >
+              💨 Morale Check
+            </button>
+
+            {/* Faction standings */}
+            <button
+              onClick={async () => {
+                const { loadGlobalFactions, formatFactionStandings } = await import('../../lib/factionReputation');
+                onAddDmMessage(formatFactionStandings(loadGlobalFactions()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all"
+              title="Show global faction reputation standings across campaigns"
+            >
+              ⚔️ Faction Standings
+            </button>
+
+            {/* Initiative variant info */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all cursor-pointer px-2">
+                🎲 Initiative Variants
+              </summary>
+              <div className="mt-1 space-y-1">
+                {(['standard', 'side', 'popcorn', 'speed_factor'] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={async () => {
+                      const { formatVariantRules } = await import('../../lib/initiativeVariants');
+                      onAddDmMessage(formatVariantRules(v));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-cyan-600/40 transition-all text-[9px] text-slate-300"
+                  >
+                    {v === 'standard' ? '📋' : v === 'side' ? '⚔️' : v === 'popcorn' ? '🍿' : '⚡'} {v.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Spell component costs */}
+            <button
+              onClick={async () => {
+                const { formatComponentList } = await import('../../data/spellComponents');
+                const knownSpells: string[] = [];
+                for (const c of characters) {
+                  if (c.spells) for (const s of c.spells) knownSpells.push(s.name);
+                }
+                onAddDmMessage(formatComponentList(knownSpells.length > 0 ? knownSpells : ['Revivify', 'Raise Dead', 'Find Familiar', 'Stoneskin']));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all"
+              title="Show material component costs for party spells"
+            >
+              💎 Spell Components
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

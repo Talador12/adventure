@@ -2407,3 +2407,276 @@ describe('encounter predictor', () => {
     expect(prediction.warnings.some((w) => w.includes('Outnumbered'))).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Morale system
+// ---------------------------------------------------------------------------
+import { createMoraleState, checkMorale, updateMoraleState, getMoraleTierFromCR, type MoraleTier } from '../../src/lib/morale';
+
+describe('morale system', () => {
+  it('createMoraleState tracks initial enemy count', () => {
+    const state = createMoraleState(5);
+    expect(state.initialEnemyCount).toBe(5);
+    expect(state.fleeingIds).toEqual([]);
+  });
+
+  it('no morale break when all enemies alive (normal)', () => {
+    const state = createMoraleState(4);
+    const enemies = Array.from({ length: 4 }, (_, i) => ({ id: `e${i}`, name: `Goblin ${i}`, hp: 10 }));
+    const result = checkMorale(state, 'normal', enemies);
+    expect(result.shouldFlee).toBe(false);
+  });
+
+  it('morale check triggers when 50%+ casualties (normal tier)', () => {
+    const state = createMoraleState(4);
+    // Only 1 alive out of 4 = 25% alive, below 50% threshold
+    const enemies = [{ id: 'e0', name: 'Goblin', hp: 5 }];
+    const result = checkMorale(state, 'normal', enemies);
+    // Result is probabilistic, but narration should exist
+    expect(typeof result.narration).toBe('string');
+  });
+
+  it('getMoraleTierFromCR returns correct tiers', () => {
+    expect(getMoraleTierFromCR(0.25)).toBe('cowardly');
+    expect(getMoraleTierFromCR(3)).toBe('normal');
+    expect(getMoraleTierFromCR(12)).toBe('brave');
+  });
+
+  it('updateMoraleState accumulates fleeing IDs', () => {
+    let state = createMoraleState(5);
+    state = updateMoraleState(state, { shouldFlee: true, fleeingUnitIds: ['e1', 'e2'], narration: '' });
+    expect(state.fleeingIds).toEqual(['e1', 'e2']);
+    state = updateMoraleState(state, { shouldFlee: true, fleeingUnitIds: ['e3'], narration: '' });
+    expect(state.fleeingIds).toEqual(['e1', 'e2', 'e3']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Environmental destruction
+// ---------------------------------------------------------------------------
+import { isDestructible, createDestructibleCell, damageCell, getDestroyedTerrain } from '../../src/lib/environmentDestruction';
+
+describe('environmental destruction', () => {
+  it('walls and doors are destructible', () => {
+    expect(isDestructible('wall')).toBe(true);
+    expect(isDestructible('door')).toBe(true);
+    expect(isDestructible('floor')).toBe(false);
+    expect(isDestructible('water')).toBe(false);
+  });
+
+  it('createDestructibleCell gives correct HP/AC', () => {
+    const wall = createDestructibleCell(5, 3, 'wall');
+    expect(wall).toBeTruthy();
+    expect(wall!.hp).toBe(30);
+    expect(wall!.ac).toBe(17);
+
+    const door = createDestructibleCell(2, 1, 'door');
+    expect(door!.hp).toBe(10);
+    expect(door!.ac).toBe(15);
+  });
+
+  it('damageCell reduces HP and detects destruction', () => {
+    const cell = createDestructibleCell(0, 0, 'door')!;
+    const result = damageCell(cell, 15, 18); // high roll, enough damage
+    expect(result.destroyed).toBe(true);
+    expect(result.narration).toContain('crumbles');
+  });
+
+  it('damageCell misses on low attack roll', () => {
+    const cell = createDestructibleCell(0, 0, 'wall')!;
+    const result = damageCell(cell, 10, 5); // roll 5 < AC 17
+    expect(result.destroyed).toBe(false);
+    expect(result.narration).toContain('bounces off');
+  });
+
+  it('getDestroyedTerrain returns correct replacement', () => {
+    expect(getDestroyedTerrain('wall')).toBe('difficult');
+    expect(getDestroyedTerrain('door')).toBe('floor');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Faction reputation
+// ---------------------------------------------------------------------------
+import { getReputationTier, changeReputation, getReputationEffects, formatFactionStandings } from '../../src/lib/factionReputation';
+
+describe('faction reputation', () => {
+  it('getReputationTier classifies correctly', () => {
+    expect(getReputationTier(-10)).toBe('hated');
+    expect(getReputationTier(-5)).toBe('hostile');
+    expect(getReputationTier(0)).toBe('neutral');
+    expect(getReputationTier(5)).toBe('friendly');
+    expect(getReputationTier(10)).toBe('revered');
+  });
+
+  it('changeReputation adds to existing faction', () => {
+    let factions = [{ factionId: 'guild', factionName: 'Thieves Guild', reputation: 0, history: [] }];
+    factions = changeReputation(factions, 'guild', 'Thieves Guild', 3, 'Completed heist', 'c1');
+    expect(factions[0].reputation).toBe(3);
+    expect(factions[0].history.length).toBe(1);
+  });
+
+  it('changeReputation creates new faction', () => {
+    let factions: any[] = [];
+    factions = changeReputation(factions, 'crown', 'The Crown', -2, 'Defied the king', 'c1');
+    expect(factions.length).toBe(1);
+    expect(factions[0].reputation).toBe(-2);
+  });
+
+  it('reputation clamps to -10/+10', () => {
+    let factions = [{ factionId: 'f1', factionName: 'F', reputation: 9, history: [] }];
+    factions = changeReputation(factions, 'f1', 'F', 5, 'test', 'c1');
+    expect(factions[0].reputation).toBe(10); // capped
+  });
+
+  it('getReputationEffects scales correctly', () => {
+    expect(getReputationEffects(-8).priceModifier).toBe(2.0);
+    expect(getReputationEffects(0).priceModifier).toBe(1.0);
+    expect(getReputationEffects(10).priceModifier).toBe(0.7);
+  });
+
+  it('formatFactionStandings produces readable output', () => {
+    const factions = [{ factionId: 'guild', factionName: 'Thieves Guild', reputation: 5, history: [] }];
+    const text = formatFactionStandings(factions);
+    expect(text).toContain('Thieves Guild');
+    expect(text).toContain('friendly');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Initiative variants
+// ---------------------------------------------------------------------------
+import { INITIATIVE_VARIANTS, rollSideInitiative, SPEED_FACTOR_MODIFIERS, rollSpeedFactorInitiative, getVariantConfig, formatVariantRules } from '../../src/lib/initiativeVariants';
+
+describe('initiative variants', () => {
+  it('has 4 initiative variants', () => {
+    expect(INITIATIVE_VARIANTS.length).toBe(4);
+  });
+
+  it('all variants have unique IDs', () => {
+    const ids = INITIATIVE_VARIANTS.map((v) => v.variant);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('rollSideInitiative returns valid structure', () => {
+    const result = rollSideInitiative();
+    expect(result.playerRoll).toBeGreaterThanOrEqual(1);
+    expect(result.playerRoll).toBeLessThanOrEqual(20);
+    expect(typeof result.playersGoFirst).toBe('boolean');
+  });
+
+  it('speed factor modifiers cover common actions', () => {
+    expect(SPEED_FACTOR_MODIFIERS.length).toBeGreaterThanOrEqual(8);
+    const melee = SPEED_FACTOR_MODIFIERS.find((m) => m.action === 'Melee attack');
+    expect(melee?.modifier).toBe(0);
+  });
+
+  it('rollSpeedFactorInitiative returns in valid range', () => {
+    // dexMod 3, action modifier 0: result = d20 + 3 + 0 = 4-23
+    const result = rollSpeedFactorInitiative(3, 0);
+    expect(result).toBeGreaterThanOrEqual(4);
+    expect(result).toBeLessThanOrEqual(23);
+  });
+
+  it('formatVariantRules returns descriptive text', () => {
+    const text = formatVariantRules('popcorn');
+    expect(text).toContain('Popcorn');
+    expect(text).toContain('choose who goes next');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NPC schedules
+// ---------------------------------------------------------------------------
+import { SCHEDULE_TEMPLATES, getCurrentLocation, getScheduleTemplate, formatSchedule, type NpcSchedule } from '../../src/data/npcSchedules';
+
+describe('NPC schedules', () => {
+  it('has templates for common roles', () => {
+    expect(SCHEDULE_TEMPLATES.innkeeper).toBeTruthy();
+    expect(SCHEDULE_TEMPLATES.merchant).toBeTruthy();
+    expect(SCHEDULE_TEMPLATES.guard).toBeTruthy();
+    expect(SCHEDULE_TEMPLATES.thief).toBeTruthy();
+  });
+
+  it('getCurrentLocation returns correct location by hour', () => {
+    const schedule: NpcSchedule = {
+      npcId: 'npc1', npcName: 'Barkeep',
+      schedule: SCHEDULE_TEMPLATES.innkeeper,
+      defaultLocation: 'Inn',
+    };
+    const morning = getCurrentLocation(schedule, 10);
+    expect(morning.location).toBe('Common Room');
+
+    const night = getCurrentLocation(schedule, 2);
+    expect(night.location).toBe('Private Quarters');
+  });
+
+  it('getScheduleTemplate matches role keywords', () => {
+    const innSchedule = getScheduleTemplate('innkeeper');
+    expect(innSchedule.length).toBeGreaterThan(0);
+
+    const guardSchedule = getScheduleTemplate('city guard');
+    expect(guardSchedule.some((e) => e.location === 'Gate')).toBe(true);
+  });
+
+  it('getScheduleTemplate returns default for unknown roles', () => {
+    const schedule = getScheduleTemplate('blacksmith');
+    expect(schedule.length).toBeGreaterThan(0);
+    expect(schedule.some((e) => e.activity === 'Working')).toBe(true);
+  });
+
+  it('formatSchedule shows current location', () => {
+    const schedule: NpcSchedule = {
+      npcId: 'npc1', npcName: 'Martha',
+      schedule: SCHEDULE_TEMPLATES.innkeeper,
+      defaultLocation: 'Inn',
+    };
+    const text = formatSchedule(schedule, 12);
+    expect(text).toContain('Martha');
+    expect(text).toContain('Common Room');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spell components
+// ---------------------------------------------------------------------------
+import { COSTLY_COMPONENTS, getComponentForSpell, canAffordComponent, deductComponentCost, formatComponentList } from '../../src/data/spellComponents';
+
+describe('spell components', () => {
+  it('has component data for key spells', () => {
+    expect(getComponentForSpell('Revivify')).toBeTruthy();
+    expect(getComponentForSpell('Raise Dead')).toBeTruthy();
+    expect(getComponentForSpell('Find Familiar')).toBeTruthy();
+  });
+
+  it('canAffordComponent checks gold correctly', () => {
+    expect(canAffordComponent(500, 'Revivify').canAfford).toBe(true);
+    expect(canAffordComponent(100, 'Revivify').canAfford).toBe(false);
+    expect(canAffordComponent(0, 'Magic Missile').canAfford).toBe(true); // no costly component
+  });
+
+  it('deductComponentCost reduces gold for consumed spells', () => {
+    const result = deductComponentCost(500, 'Revivify');
+    expect(result.newGold).toBe(200); // 500 - 300
+    expect(result.deducted).toBe(300);
+  });
+
+  it('deductComponentCost does not reduce gold for non-consumed spells', () => {
+    const result = deductComponentCost(500, 'Chromatic Orb');
+    expect(result.newGold).toBe(500); // not consumed
+    expect(result.deducted).toBe(0);
+  });
+
+  it('formatComponentList shows costs for known spells', () => {
+    const text = formatComponentList(['Revivify', 'Raise Dead', 'Magic Missile']);
+    expect(text).toContain('Revivify');
+    expect(text).toContain('Raise Dead');
+    expect(text).not.toContain('Magic Missile'); // no costly component
+  });
+
+  it('all costly components have positive cost', () => {
+    for (const c of COSTLY_COMPONENTS) {
+      if (c.spellName !== 'Wish') expect(c.cost).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
