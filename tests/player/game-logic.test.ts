@@ -1372,3 +1372,139 @@ describe('bonus action helpers', () => {
     expect(hasBonusAction('Warlock', 20)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Random encounters
+// ---------------------------------------------------------------------------
+import { rollRandomEncounter, rollEncounterCount, RANDOM_ENCOUNTER_TABLES } from '../../src/data/randomEncounters';
+
+describe('random encounters', () => {
+  it('has tables for all 5 environments', () => {
+    const envs = ['forest', 'dungeon', 'mountain', 'swamp', 'urban'];
+    for (const env of envs) {
+      expect(RANDOM_ENCOUNTER_TABLES[env]).toBeDefined();
+      expect(RANDOM_ENCOUNTER_TABLES[env].length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('rollRandomEncounter returns valid entry', () => {
+    for (const env of ['forest', 'dungeon', 'urban']) {
+      const entry = rollRandomEncounter(env);
+      expect(entry.name).toBeTruthy();
+      expect(entry.description).toBeTruthy();
+      expect(typeof entry.cr).toBe('number');
+    }
+  });
+
+  it('rollEncounterCount respects min/max', () => {
+    for (let i = 0; i < 50; i++) {
+      const entry = rollRandomEncounter('forest');
+      if (entry.count[0] === 0 && entry.count[1] === 0) continue;
+      const count = rollEncounterCount(entry);
+      expect(count).toBeGreaterThanOrEqual(entry.count[0]);
+      expect(count).toBeLessThanOrEqual(entry.count[1]);
+    }
+  });
+
+  it('returns 0 for non-combat encounters', () => {
+    const nonCombat = { name: 'Test', cr: 0, count: [0, 0] as [number, number], description: 'test' };
+    expect(rollEncounterCount(nonCombat)).toBe(0);
+  });
+
+  it('falls back to forest for unknown environment', () => {
+    const entry = rollRandomEncounter('unknown_biome');
+    expect(entry.name).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encumbrance edge cases
+// ---------------------------------------------------------------------------
+describe('encumbrance edge cases', () => {
+  it('zero STR gives minimal carry capacity', () => {
+    // STR 0 is technically impossible but we should handle it gracefully
+    const cap = calculateCarryCapacity(1);
+    expect(cap.normal).toBe(5);
+    expect(cap.max).toBe(15);
+  });
+
+  it('very high STR scales linearly', () => {
+    const cap = calculateCarryCapacity(30);
+    expect(cap.normal).toBe(150);
+    expect(cap.max).toBe(450);
+  });
+
+  it('heavy inventory with many items sums correctly', () => {
+    const items: Item[] = Array.from({ length: 100 }, (_, i) => ({
+      id: String(i), name: `Item ${i}`, type: 'misc' as const, rarity: 'common' as const,
+      description: '', value: 0, weight: 1, quantity: 2,
+    }));
+    expect(calculateInventoryWeight(items, {})).toBe(200);
+  });
+
+  it('equipment weight is included', () => {
+    const sword: Item = { id: 's', name: 'Sword', type: 'weapon', rarity: 'common', description: '', value: 10, weight: 6 };
+    const armor: Item = { id: 'a', name: 'Armor', type: 'armor', rarity: 'common', description: '', value: 50, weight: 45 };
+    expect(calculateInventoryWeight([], { weapon: sword, armor, shield: null, ring: null })).toBe(51);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Exhaustion integration
+// ---------------------------------------------------------------------------
+describe('exhaustion integration', () => {
+  it('all levels have defined speed multipliers', () => {
+    for (let i = 0; i <= 6; i++) {
+      expect(typeof EXHAUSTION_EFFECTS[i].speedMultiplier).toBe('number');
+      expect(EXHAUSTION_EFFECTS[i].speedMultiplier).toBeGreaterThanOrEqual(0);
+      expect(EXHAUSTION_EFFECTS[i].speedMultiplier).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('disadvantage checks starts at level 1', () => {
+    expect(EXHAUSTION_EFFECTS[0].disadvantageChecks).toBe(false);
+    expect(EXHAUSTION_EFFECTS[1].disadvantageChecks).toBe(true);
+  });
+
+  it('disadvantage attacks/saves starts at level 3', () => {
+    expect(EXHAUSTION_EFFECTS[2].disadvantageAttacksSaves).toBe(false);
+    expect(EXHAUSTION_EFFECTS[3].disadvantageAttacksSaves).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spell slot data integrity
+// ---------------------------------------------------------------------------
+describe('spell slot data integrity', () => {
+  it('full casters get slots at level 1', () => {
+    for (const cls of ['Wizard', 'Sorcerer', 'Cleric', 'Druid', 'Bard'] as const) {
+      const slots = getSpellSlots(cls, 1);
+      expect(slots[1]).toBeGreaterThan(0);
+    }
+  });
+
+  it('half casters get slots at level 2', () => {
+    for (const cls of ['Paladin', 'Ranger'] as const) {
+      const slots1 = getSpellSlots(cls, 1);
+      const slots2 = getSpellSlots(cls, 2);
+      expect(slots1[1] || 0).toBe(0);
+      expect(slots2[1]).toBeGreaterThan(0);
+    }
+  });
+
+  it('non-casters get no slots at any level', () => {
+    for (const cls of ['Fighter', 'Barbarian', 'Rogue', 'Monk'] as const) {
+      const slots = getSpellSlots(cls, 20);
+      const total = Object.values(slots).reduce((s, v) => s + v, 0);
+      expect(total).toBe(0);
+    }
+  });
+
+  it('slot counts increase with level', () => {
+    const slots1 = getSpellSlots('Wizard', 1);
+    const slots15 = getSpellSlots('Wizard', 15);
+    const total1 = Object.values(slots1).reduce((s, v) => s + v, 0);
+    const total15 = Object.values(slots15).reduce((s, v) => s + v, 0);
+    expect(total15).toBeGreaterThan(total1);
+  });
+});

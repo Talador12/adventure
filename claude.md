@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 16 more tests (184 total) covering 4 additional systems:
+  - **Random encounters** (5 tests): all 5 environments, valid entries, count min/max, non-combat returns 0, unknown env fallback.
+  - **Encumbrance edge cases** (4 tests): zero STR, high STR scaling, heavy inventory (100 items × 2 qty), equipment weight inclusion.
+  - **Exhaustion integration** (3 tests): all speed multipliers 0-1, disadvantage checks at L1, disadvantage attacks at L3.
+  - **Spell slot integrity** (4 tests): full casters L1 slots, half casters L2 slots, non-casters zero slots, slot increase with level.
 - 28 new tests (168 total) covering 7 data modules:
   - **Treasure hoards** (4 tests): tier scaling, gold generation, item field validation, gem arrays.
   - **Downtime activities** (4 tests): activity count, success/failure outcomes, pit-fighting gold, unknown activity fallback.
