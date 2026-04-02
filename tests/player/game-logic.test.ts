@@ -3724,3 +3724,224 @@ describe('session timer', () => {
     expect(text).toContain('Session Timer');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Deity/patron system
+// ---------------------------------------------------------------------------
+import { PATRONS as DEITY_PATRONS, getPatron, getPatronsByType, formatPatron as formatPatronTest } from '../../src/data/deityPatrons';
+
+describe('deity/patron system', () => {
+  it('has at least 5 patrons', () => {
+    expect(DEITY_PATRONS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('all patrons have unique IDs', () => {
+    const ids = DEITY_PATRONS.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('getPatron finds by ID', () => {
+    expect(getPatron('bahamut')?.name).toBe('Bahamut');
+    expect(getPatron('asmodeus')?.type).toBe('fiend');
+  });
+
+  it('getPatronsByType filters correctly', () => {
+    const deities = getPatronsByType('deity');
+    for (const d of deities) expect(d.type).toBe('deity');
+  });
+
+  it('all patrons have boons and demands', () => {
+    for (const p of DEITY_PATRONS) {
+      expect(p.boons.length).toBeGreaterThanOrEqual(1);
+      expect(p.demands.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('formatPatron includes key info', () => {
+    const text = formatPatronTest(DEITY_PATRONS[0]);
+    expect(text).toContain(DEITY_PATRONS[0].name);
+    expect(text).toContain('Boons');
+    expect(text).toContain('Demands');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wilderness map generator
+// ---------------------------------------------------------------------------
+import { generateWildernessMap, getMapDescription, formatMapGenResult } from '../../src/lib/wildernessMapGen';
+
+describe('wilderness map generator', () => {
+  it('generates grid of correct dimensions', () => {
+    const grid = generateWildernessMap(15, 10, 'forest');
+    expect(grid.length).toBe(10);
+    expect(grid[0].length).toBe(15);
+  });
+
+  it('edges are passable', () => {
+    const grid = generateWildernessMap(20, 16, 'mountain');
+    // Top and bottom rows should be primary terrain (floor)
+    for (let c = 0; c < 20; c++) {
+      expect(grid[0][c]).not.toBe('wall');
+      expect(grid[15][c]).not.toBe('wall');
+    }
+  });
+
+  it('getMapDescription returns text for all biomes', () => {
+    for (const biome of ['forest', 'desert', 'swamp', 'mountain', 'coast', 'plains', 'tundra'] as const) {
+      expect(getMapDescription(biome).length).toBeGreaterThan(10);
+    }
+  });
+
+  it('formatMapGenResult includes biome name', () => {
+    const text = formatMapGenResult('swamp', 20, 16);
+    expect(text).toContain('swamp');
+    expect(text).toContain('20×16');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Character goals
+// ---------------------------------------------------------------------------
+import { createGoalTracker, addGoal, updateGoalStatus, getActiveGoals, getCompletedGoals, formatGoalTracker } from '../../src/lib/characterGoals';
+
+describe('character goals', () => {
+  it('creates empty tracker', () => {
+    expect(createGoalTracker().goals.length).toBe(0);
+  });
+
+  it('addGoal adds to tracker', () => {
+    let t = createGoalTracker();
+    t = addGoal(t, 'c1', 'short_term', 'Find the key', '50xp');
+    expect(t.goals.length).toBe(1);
+    expect(t.goals[0].status).toBe('active');
+  });
+
+  it('updateGoalStatus changes status', () => {
+    let t = createGoalTracker();
+    t = addGoal(t, 'c1', 'long_term', 'Defeat the dragon');
+    const goalId = t.goals[0].id;
+    t = updateGoalStatus(t, goalId, 'completed');
+    expect(t.goals[0].status).toBe('completed');
+    expect(t.goals[0].completedAt).toBeTruthy();
+  });
+
+  it('getActiveGoals filters by status and character', () => {
+    let t = createGoalTracker();
+    t = addGoal(t, 'c1', 'short_term', 'Goal A');
+    t = addGoal(t, 'c2', 'short_term', 'Goal B');
+    t = addGoal(t, 'c1', 'short_term', 'Goal C');
+    expect(getActiveGoals(t, 'c1').length).toBe(2);
+    expect(getActiveGoals(t).length).toBe(3);
+  });
+
+  it('formatGoalTracker shows active goals', () => {
+    let t = createGoalTracker();
+    t = addGoal(t, 'c1', 'quest', 'Save the princess');
+    const text = formatGoalTracker(t, { c1: 'Hero' });
+    expect(text).toContain('Hero');
+    expect(text).toContain('Save the princess');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Ambient sounds
+// ---------------------------------------------------------------------------
+import { SOUNDSCAPES, getSoundscape, getRandomSounds, formatAmbientDescription } from '../../src/data/ambientSounds';
+
+describe('ambient sounds', () => {
+  it('has at least 10 soundscapes', () => {
+    expect(SOUNDSCAPES.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('getSoundscape finds by ID and name', () => {
+    expect(getSoundscape('dungeon')).toBeTruthy();
+    expect(getSoundscape('tavern')?.mood).toBe('calm');
+  });
+
+  it('getRandomSounds returns requested count', () => {
+    const sc = getSoundscape('dungeon')!;
+    const sounds = getRandomSounds(sc, 2);
+    expect(sounds.length).toBe(2);
+  });
+
+  it('formatAmbientDescription includes mood', () => {
+    const text = formatAmbientDescription('dungeon');
+    expect(text).toContain('tense');
+    expect(text).toContain('Dungeon');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spell slot recovery
+// ---------------------------------------------------------------------------
+import { REST_VARIANTS, getRestVariant, calculateArcaneRecovery, calculateRecoveredSlots, formatRestVariant } from '../../src/lib/spellSlotRecovery';
+
+describe('spell slot recovery', () => {
+  it('has 4 rest variants', () => {
+    expect(REST_VARIANTS.length).toBe(4);
+  });
+
+  it('getRestVariant finds standard', () => {
+    expect(getRestVariant('standard').name).toContain('Standard');
+  });
+
+  it('calculateArcaneRecovery scales with level', () => {
+    expect(calculateArcaneRecovery(6).maxTotalLevels).toBe(3);
+    expect(calculateArcaneRecovery(10).maxTotalLevels).toBe(5);
+  });
+
+  it('calculateRecoveredSlots respects limits', () => {
+    const result = calculateRecoveredSlots(3, 5, [{ level: 2, count: 1 }, { level: 1, count: 1 }]);
+    expect(result.totalLevels).toBe(3); // 2 + 1
+    expect(result.valid).toBe(true);
+  });
+
+  it('formatRestVariant includes durations', () => {
+    const text = formatRestVariant('gritty_realism');
+    expect(text).toContain('7 days');
+    expect(text).toContain('Gritty');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Initiative tiebreaker
+// ---------------------------------------------------------------------------
+import { TIEBREAKER_RULES, resolveTiebreaker, sortInitiativeWithTiebreaker, formatTiebreakerRules } from '../../src/lib/initiativeTiebreaker';
+
+describe('initiative tiebreaker', () => {
+  it('has at least 5 rules', () => {
+    expect(TIEBREAKER_RULES.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('dex_mod resolves ties by dex', () => {
+    const a = { id: '1', name: 'A', initiative: 15, dexMod: 3, dexScore: 16, isPlayer: true, level: 5 };
+    const b = { id: '2', name: 'B', initiative: 15, dexMod: 1, dexScore: 12, isPlayer: false, level: 3 };
+    const result = resolveTiebreaker(a, b, 'dex_mod');
+    expect(result).toBeLessThan(0); // b.dexMod < a.dexMod, so a goes first (negative)
+  });
+
+  it('player_first resolves in favor of player', () => {
+    const a = { id: '1', name: 'Player', initiative: 15, dexMod: 1, dexScore: 12, isPlayer: true, level: 5 };
+    const b = { id: '2', name: 'Enemy', initiative: 15, dexMod: 3, dexScore: 16, isPlayer: false, level: 3 };
+    const result = resolveTiebreaker(a, b, 'player_first');
+    expect(result).toBe(-1); // player goes first
+  });
+
+  it('sortInitiativeWithTiebreaker sorts correctly', () => {
+    const units = [
+      { id: '1', name: 'A', initiative: 15, dexMod: 3, dexScore: 16, isPlayer: true, level: 5 },
+      { id: '2', name: 'B', initiative: 20, dexMod: 1, dexScore: 12, isPlayer: false, level: 3 },
+      { id: '3', name: 'C', initiative: 15, dexMod: 1, dexScore: 12, isPlayer: true, level: 7 },
+    ];
+    const sorted = sortInitiativeWithTiebreaker(units, 'dex_mod');
+    expect(sorted[0].name).toBe('B'); // init 20
+    expect(sorted[1].name).toBe('A'); // init 15, dex 3
+    expect(sorted[2].name).toBe('C'); // init 15, dex 1
+  });
+
+  it('formatTiebreakerRules lists all rules', () => {
+    const text = formatTiebreakerRules();
+    expect(text).toContain('DEX Modifier');
+    expect(text).toContain('Coin Flip');
+  });
+});

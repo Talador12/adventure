@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.4.0
+## Current Version: v10.5.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 29 tests (489 total) — deity patrons, wilderness maps, character goals, ambient sounds, spell recovery, tiebreakers:
+  - **Deity/patron system** — `deityPatrons.ts` with 6 patrons across 5 types (Bahamut, Lolth, Titania, Asmodeus, Hadar, Empyrean Steed). Each has boons with mechanical effects, demands, and displeasure penalties. Expandable patron browser in DMSidebar.
+  - **Wilderness map generator** — `wildernessMapGen.ts` with 7 biome presets. Cellular automata smoothing (2 passes) for natural-looking terrain. Seeded RNG for reproducibility. Edges kept passable. Biome selector in DMSidebar.
+  - **Character goal tracker** — `characterGoals.ts` with 4 goal types (short_term/long_term/personal/quest). Add/complete/fail/abandon lifecycle. Per-character filtering. DM reward hooks. Formatted display with type emojis.
+  - **Environmental sound cues** — `ambientSounds.ts` with 12 soundscapes (dungeon/forest-day/forest-night/cave/tavern/city/battlefield/ocean/desert/mountain/swamp/ruins). 5 moods. `getRandomSounds()` picks 3 from the pool. "Ambient Sounds" button in DMSidebar.
+  - **Spell slot recovery variants** — `spellSlotRecovery.ts` with 4 variants (Standard/Arcane Recovery/Natural Recovery/Gritty Realism). `calculateArcaneRecovery()` with level scaling. `calculateRecoveredSlots()` validates slot choices against limits. "Rest Variants" button in DMSidebar.
+  - **Initiative tiebreaker rules** — `initiativeTiebreaker.ts` with 6 configurable rules (DEX mod/DEX score/player first/enemy first/coin flip/higher level). `sortInitiativeWithTiebreaker()` for full initiative ordering. "Tiebreaker Rules" button in DMSidebar.
+- 29 new tests (489 total) covering 6 systems:
+  - **Deity patrons** (6 tests): count, unique IDs, getter, type filter, boons/demands validation, formatted output.
+  - **Wilderness maps** (4 tests): grid dimensions, passable edges, all biome descriptions, formatted result.
+  - **Character goals** (5 tests): empty tracker, add goal, status update, character filtering, formatted output.
+  - **Ambient sounds** (4 tests): soundscape count, getter by ID/name, random sound count, formatted mood.
+  - **Spell slot recovery** (5 tests): variant count, getter, arcane recovery scaling, slot limit validation, gritty realism format.
+  - **Initiative tiebreaker** (4 tests): rule count, DEX resolution, player-first bias, sorted order, formatted rules.
+
 - 6 new systems + 33 tests (460 total) — skill challenges, treasure gen, encounter waves, PC reputation, combat maneuvers, session timer:
   - **Skill challenge framework** — `skillChallenge.ts` with 5 templates (Chase Scene, Collapsing Dungeon, Diplomatic Negotiation, Wilderness Survival, Heist). Each defines successes required, failures allowed, DC, allowed skills, and outcomes. `resolveCheck()` tracks progress. Visual progress bars with green/red indicators. "Skill Challenge" button in DMSidebar.
   - **Random treasure generator** — `treasureGenerator.ts` with 4 tiers (minor/moderate/major/legendary) producing gold (4d6×scale), gems (16 types), art objects (12 types), and magic items (4 rarity pools with 4-6 items each). `getTierFromCR()` maps CR to tier. Treasure by tier in DMSidebar dropdown.
@@ -293,12 +308,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Deity/patron system — cleric/warlock patron relationships with boons and demands
-- Random wilderness map generator — procedural terrain layouts for outdoor encounters
-- Character goal tracker — per-character short/long-term goals with DM reward hooks
-- Environmental sound cues — ambient sound descriptions tied to terrain and weather
-- Spell slot recovery variants — arcane recovery, natural recovery, gritty realism resting
-- Initiative tiebreaker rules — DEX mod, then coin flip, with configurable house rules
+- ~~Deity/patron system~~ **DONE** — `deityPatrons.ts` with 6 patrons across 5 types
+- ~~Random wilderness map generator~~ **DONE** — `wildernessMapGen.ts` with 7 biomes + cellular automata
+- ~~Character goal tracker~~ **DONE** — `characterGoals.ts` with 4 goal types + lifecycle
+- ~~Environmental sound cues~~ **DONE** — `ambientSounds.ts` with 12 soundscapes
+- ~~Spell slot recovery variants~~ **DONE** — `spellSlotRecovery.ts` with 4 rest systems
+- ~~Initiative tiebreaker rules~~ **DONE** — `initiativeTiebreaker.ts` with 6 configurable rules
+
+**Wave 10 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Inspiration point system — earn/spend inspiration with custom DM triggers
+- Random encounter frequency tuner — DM sets encounter chance by day/night/terrain
+- Party formation memory — save/load party arrangements for quick deployment
+- Concentration tracker — auto-prompt saves when concentrating casters take damage
+- Legendary action tracker — manage legendary/lair actions for boss monsters
+- Treasure division calculator — auto-split gold/items among party with fairness scoring
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

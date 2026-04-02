@@ -32,6 +32,7 @@ import { RECIPES as CRAFTING_RECIPES, formatRecipe as formatCraftingRecipe, getM
 import { TRAP_TEMPLATES as TRAP_TEMPLATES_DATA, formatTrap as formatTrapFn } from '../../data/trapDesigner';
 import { DOWNTIME_ACTIVITIES as DOWNTIME_DATA } from '../../lib/downtimeActivities';
 import { WAVE_TEMPLATES as WAVE_TEMPLATES_DATA } from '../../lib/encounterWaves';
+import { PATRONS as PATRON_DATA, formatPatron as formatPatronFn } from '../../data/deityPatrons';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -963,6 +964,87 @@ export default function DMSidebar({
               title="Per-character fame/infamy reputation across regions"
             >
               🌟 PC Reputation
+            </button>
+
+            {/* Deity/patron browser */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all cursor-pointer px-2">
+                🙏 Deity/Patron Browser
+              </summary>
+              <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
+                {PATRON_DATA.map((patron) => (
+                  <button
+                    key={patron.id}
+                    onClick={() => onAddDmMessage(formatPatronFn(patron))}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-purple-600/40 transition-all flex items-center gap-2"
+                    title={patron.description}
+                  >
+                    <span>{patron.emoji}</span>
+                    <span className="text-[9px] text-slate-300">{patron.name}</span>
+                    <span className="text-[8px] text-slate-500 ml-auto">{patron.type}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Wilderness map gen */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all cursor-pointer px-2">
+                🌲 Wilderness Map Gen
+              </summary>
+              <div className="mt-1 space-y-1">
+                {(['forest', 'desert', 'swamp', 'mountain', 'coast', 'plains', 'tundra'] as const).map((biome) => (
+                  <button
+                    key={biome}
+                    onClick={async () => {
+                      const { formatMapGenResult } = await import('../../lib/wildernessMapGen');
+                      onAddDmMessage(formatMapGenResult(biome, 20, 16));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-green-600/40 transition-all text-[9px] text-slate-300 capitalize"
+                  >
+                    {biome}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Ambient sounds */}
+            <button
+              onClick={async () => {
+                const { formatAmbientDescription } = await import('../../data/ambientSounds');
+                const environments = ['dungeon', 'forest-day', 'tavern', 'cave', 'city-day'];
+                const env = environments[Math.floor(Math.random() * environments.length)];
+                onAddDmMessage(formatAmbientDescription(env));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all"
+              title="Random ambient sound description for immersion"
+            >
+              🔊 Ambient Sounds
+            </button>
+
+            {/* Rest variant info */}
+            <button
+              onClick={async () => {
+                const { REST_VARIANTS, formatRestVariant } = await import('../../lib/spellSlotRecovery');
+                const lines = REST_VARIANTS.map((v) => formatRestVariant(v.variant));
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all"
+              title="Compare rest/recovery variants — standard, arcane recovery, gritty realism"
+            >
+              😴 Rest Variants
+            </button>
+
+            {/* Initiative tiebreaker */}
+            <button
+              onClick={async () => {
+                const { formatTiebreakerRules } = await import('../../lib/initiativeTiebreaker');
+                onAddDmMessage(formatTiebreakerRules());
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-slate-700/30 border border-slate-500/30 text-slate-300 font-semibold hover:bg-slate-600/30 transition-all"
+              title="Browse initiative tiebreaker house rules"
+            >
+              🎲 Tiebreaker Rules
             </button>
 
             {/* Save/Load Encounter Templates */}
