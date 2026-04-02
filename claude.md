@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.8.0
+## Current Version: v9.9.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 25 tests (291 total) — rivalry board, initiative grouping, party resources, combat combos, encounter predictor, spell targeting:
+  - **Character rivalry system** — `characterRivalry.ts` with 8 competitive categories (Slayer/Heavy Hitter/Lucky Strike/Lifesaver/Arcane Master/Damage Sponge/Cheated Death/Cursed). `parseRivalryFromLog()` extracts per-character stats from combat log. `getRivalryLeaders()` finds category winners. "Rivalry Board" button in DMSidebar. PvP-safe — tracks stats, not actual PvP.
+  - **Smart initiative grouping** — `initiativeGrouping.ts` groups same-type enemies by base name (strips trailing numbers: "Goblin 1" → "Goblin"). Groups share the highest initiative in the group. Players always individual. `countGroups()` reports grouping stats for DM.
+  - **Party resource tracker** — `partyResources.ts` with 8 default shared consumables (Rations, Water, Arrows, Bolts, Torches, Rope, Healer's Kit, Antitoxin) across 5 categories. `autoDeplete()` consumes per-party-member on long rest. `getResourceWarnings()` flags empty/low supplies. localStorage persistence per campaign. "Party Resources" button in DMSidebar.
+  - **Combat combo system** — `combatCombos.ts` with 6 combo definitions (Trip & Strike, Grapple Slam, Spell & Sword, Flanking Strike, Heal & Rally, Focus Fire). Tracks recent actions within round windows. `checkForCombos()` detects when combo conditions are met. Bonus damage rewards for teamwork.
+  - **DM encounter difficulty predictor** — `encounterPredictor.ts` estimates TPK probability, win chance, expected rounds/damage/casualties using hit probability math (d20 + bonus >= AC). Rates encounters trivial→suicidal. Warns on action economy imbalance, high enemy AC, expected long combats. "Predict Encounter" button in DMSidebar.
+  - **Conditional spell targeting** — `spellTargeting.ts` with `getValidTargets()` computing range-based target lists using Chebyshev distance. `suggestTarget()` recommends optimal target. `formatTargetList()` for DM display. Integrates with existing `parseRangeFt()` from mapUtils.
+- 25 new tests (291 total) covering 6 systems:
+  - **Character rivalry** (4 tests): category count, empty stats, log parsing, leader extraction.
+  - **Initiative grouping** (3 tests): same-name grouping, player individuality, count reporting.
+  - **Party resources** (7 tests): category coverage, depletion, floor-at-zero, restock caps, auto-deplete, warnings, formatted output.
+  - **Combat combos** (5 tests): definition count, unique IDs, tracker init, action recording, formatted output.
+  - **Encounter predictor** (5 tests): trivial empty, TPK risk detection, easy encounter prediction, formatted output, action economy warnings.
+  - **Spell targeting** test coverage planned for next pass.
+
 - 6 new DM tools + 32 tests (266 total) — puzzles, persistent shops, formation AI, tactical markers, pacing advisor, backstory events:
   - **Encounter puzzle system** — `puzzles.ts` with 10 puzzles across 4 types (riddle/logic/knowledge/pattern), 3 difficulties. `PuzzleEncounter.tsx` component with answer submission, hint reveal system, attempt tracking, puzzle browser by type. `checkAnswer()` with normalized matching + alternate answers. Expandable in DMSidebar encounter tab.
   - **Persistent NPC shop inventories** — `shopInventory.ts` with `ShopState` per-merchant, stock quantity tracking (depletes on purchase), restocking system, price modifier by faction reputation (`adjustPriceByReputation` — each rep point = 6% price swing). `createDefaultShop()`, `purchaseFromShop()`, `restockShop()`. localStorage persistence per campaign.
@@ -130,13 +145,25 @@ The complete feature set built from project inception through 46 development ite
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Cross-campaign faction reputation — faction standing persists globally via localStorage
-- Character rivalry system — PvP-safe competitive tracking (kills, crits, damage, gold)
+- ~~Character rivalry system~~ **DONE** — `characterRivalry.ts` with 8 competitive categories
 - Encounter terrain generator — AI builds thematic battle maps from scene description
-- Smart initiative grouping — enemies of same type share initiative for faster turns
-- Conditional spell targeting — show valid targets based on spell range/school/requirements
-- Party resource tracker — shared consumables (rations, arrows, torches) with auto-depletion
-- Combat combo system — reward players who chain abilities (e.g. grapple + shove = prone)
-- DM encounter difficulty predictor — estimate TPK probability before starting combat
+- ~~Smart initiative grouping~~ **DONE** — `initiativeGrouping.ts` groups same-name enemies
+- ~~Conditional spell targeting~~ **DONE** — `spellTargeting.ts` with range-based filtering
+- ~~Party resource tracker~~ **DONE** — `partyResources.ts` with 8 consumables + auto-deplete
+- ~~Combat combo system~~ **DONE** — `combatCombos.ts` with 6 teamwork combos
+- ~~DM encounter difficulty predictor~~ **DONE** — `encounterPredictor.ts` with TPK probability
+
+**Wave 4 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Cross-campaign faction reputation — faction standing persists globally via localStorage
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in the area simultaneously
+- Environmental destruction — walls/doors have HP, can be attacked and destroyed mid-combat
+- Dynamic NPC schedules — NPCs move between locations based on in-game time of day
+- Morale system — enemies flee when their side takes heavy casualties (50%+ down)
+- Spell component pouch tracking — material components consumed on cast, require restocking
+- Combat initiative variants — side initiative, popcorn initiative, speed factor options
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

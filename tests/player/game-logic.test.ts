@@ -2178,3 +2178,232 @@ describe('tactical markers', () => {
     expect(pin.type).toBe('pin');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Character rivalry
+// ---------------------------------------------------------------------------
+import { RIVALRY_CATEGORIES, createEmptyStats, parseRivalryFromLog, getRivalryLeaders, formatRivalryBoard } from '../../src/lib/characterRivalry';
+
+describe('character rivalry', () => {
+  it('has 8 rivalry categories', () => {
+    expect(RIVALRY_CATEGORIES.length).toBe(8);
+  });
+
+  it('createEmptyStats initializes all fields to 0', () => {
+    const stats = createEmptyStats('c1', 'Thorin');
+    expect(stats.kills).toBe(0);
+    expect(stats.crits).toBe(0);
+    expect(stats.damageDealt).toBe(0);
+    expect(stats.characterName).toBe('Thorin');
+  });
+
+  it('parseRivalryFromLog extracts damage per character', () => {
+    const log = ['Thorin attacks Goblin for 12 damage', 'Elara attacks Goblin for 8 damage'];
+    const stats = parseRivalryFromLog(log, ['Thorin', 'Elara']);
+    expect(stats.find((s) => s.characterName === 'Thorin')!.damageDealt).toBe(12);
+    expect(stats.find((s) => s.characterName === 'Elara')!.damageDealt).toBe(8);
+  });
+
+  it('getRivalryLeaders returns leaders with non-zero values', () => {
+    const stats = [
+      { ...createEmptyStats('c1', 'Fighter'), kills: 5, damageDealt: 100, crits: 3 },
+      { ...createEmptyStats('c2', 'Wizard'), kills: 2, damageDealt: 60, spellsCast: 10 },
+    ];
+    const leaders = getRivalryLeaders(stats);
+    expect(leaders.length).toBeGreaterThan(0);
+    const slayer = leaders.find((l) => l.category.id === 'kills');
+    expect(slayer?.leader.characterName).toBe('Fighter');
+  });
+
+  it('formatRivalryBoard produces readable output', () => {
+    const stats = [{ ...createEmptyStats('c1', 'Tank'), kills: 3, damageDealt: 50 }];
+    const text = formatRivalryBoard(stats);
+    expect(text).toContain('Rivalry Board');
+    expect(text).toContain('Tank');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Initiative grouping
+// ---------------------------------------------------------------------------
+import { groupInitiative, countGroups } from '../../src/lib/initiativeGrouping';
+
+describe('initiative grouping', () => {
+  it('groups same-name enemies together', () => {
+    const units = [
+      { id: 'g1', name: 'Goblin 1', type: 'enemy' as const, initiative: 12, hp: 7, maxHp: 7 },
+      { id: 'g2', name: 'Goblin 2', type: 'enemy' as const, initiative: 8, hp: 7, maxHp: 7 },
+      { id: 'p1', name: 'Thorin', type: 'player' as const, initiative: 15, hp: 40, maxHp: 40 },
+    ] as any[];
+    const groups = groupInitiative(units);
+    expect(groups.length).toBe(2); // Thorin + Goblin group
+    const goblinGroup = groups.find((g) => g.isGrouped);
+    expect(goblinGroup).toBeTruthy();
+    expect(goblinGroup!.members.length).toBe(2);
+    expect(goblinGroup!.initiative).toBe(12); // max of 12 and 8
+  });
+
+  it('keeps players as individual entries', () => {
+    const units = [
+      { id: 'p1', name: 'Thorin', type: 'player' as const, initiative: 15 },
+      { id: 'p2', name: 'Elara', type: 'player' as const, initiative: 18 },
+    ] as any[];
+    const groups = groupInitiative(units);
+    expect(groups.length).toBe(2);
+    expect(groups.every((g) => !g.isGrouped)).toBe(true);
+  });
+
+  it('countGroups reports correct totals', () => {
+    const units = [
+      { id: 'g1', name: 'Goblin 1', type: 'enemy' as const, initiative: 10 },
+      { id: 'g2', name: 'Goblin 2', type: 'enemy' as const, initiative: 8 },
+      { id: 'g3', name: 'Goblin 3', type: 'enemy' as const, initiative: 12 },
+      { id: 'p1', name: 'Hero', type: 'player' as const, initiative: 15 },
+    ] as any[];
+    const result = countGroups(units);
+    expect(result.totalUnits).toBe(4);
+    expect(result.groups).toBe(2); // Hero + Goblin group
+    expect(result.grouped).toBe(3); // 3 goblins grouped
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Party resources
+// ---------------------------------------------------------------------------
+import { DEFAULT_RESOURCES, depleteResource, restockResource, autoDeplete, getResourceWarnings, formatResourceStatus } from '../../src/lib/partyResources';
+
+describe('party resources', () => {
+  it('has default resources covering all categories', () => {
+    const categories = new Set(DEFAULT_RESOURCES.map((r) => r.category));
+    expect(categories.has('food')).toBe(true);
+    expect(categories.has('ammunition')).toBe(true);
+    expect(categories.has('light')).toBe(true);
+    expect(categories.has('utility')).toBe(true);
+    expect(categories.has('medical')).toBe(true);
+  });
+
+  it('depleteResource reduces quantity', () => {
+    const resources = [{ ...DEFAULT_RESOURCES[0] }]; // rations
+    const result = depleteResource(resources, 'rations', 3);
+    expect(result.depleted).toBe(true);
+    expect(result.remaining).toBe(resources[0].quantity - 3);
+  });
+
+  it('depleteResource does not go below 0', () => {
+    const resources = [{ ...DEFAULT_RESOURCES[0], quantity: 1 }];
+    const result = depleteResource(resources, 'rations', 5);
+    expect(result.remaining).toBe(0);
+  });
+
+  it('restockResource caps at maxQuantity', () => {
+    const resources = [{ ...DEFAULT_RESOURCES[0], quantity: 48 }]; // max 50
+    const updated = restockResource(resources, 'rations', 10);
+    expect(updated[0].quantity).toBe(50);
+  });
+
+  it('autoDeplete consumes per party member on long rest', () => {
+    const resources = [{ ...DEFAULT_RESOURCES[0] }]; // rations, auto-deplete on long_rest
+    const result = autoDeplete(resources, 'long_rest', 4);
+    expect(result.messages.length).toBeGreaterThan(0);
+    expect(result.resources[0].quantity).toBeLessThan(DEFAULT_RESOURCES[0].quantity);
+  });
+
+  it('getResourceWarnings flags empty and low resources', () => {
+    const resources = [
+      { ...DEFAULT_RESOURCES[0], quantity: 0 }, // empty
+      { ...DEFAULT_RESOURCES[1], quantity: 1 }, // low (1 of 20)
+    ];
+    const warnings = getResourceWarnings(resources);
+    expect(warnings.some((w) => w.includes('Out of'))).toBe(true);
+    expect(warnings.some((w) => w.includes('Low on'))).toBe(true);
+  });
+
+  it('formatResourceStatus includes all categories', () => {
+    const text = formatResourceStatus(DEFAULT_RESOURCES);
+    expect(text).toContain('Party Supplies');
+    expect(text).toContain('Rations');
+    expect(text).toContain('Arrows');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combat combos
+// ---------------------------------------------------------------------------
+import { COMBO_DEFINITIONS, createComboTracker, recordAction, checkForCombos, formatCombo } from '../../src/lib/combatCombos';
+
+describe('combat combos', () => {
+  it('has at least 5 combo definitions', () => {
+    expect(COMBO_DEFINITIONS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('all combos have unique IDs', () => {
+    const ids = COMBO_DEFINITIONS.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('createComboTracker initializes empty', () => {
+    const tracker = createComboTracker();
+    expect(tracker.recentActions).toEqual([]);
+    expect(tracker.triggeredCombos).toEqual([]);
+  });
+
+  it('recordAction adds to recent actions', () => {
+    let tracker = createComboTracker();
+    tracker = recordAction(tracker, 'shove', 1, 'Fighter');
+    expect(tracker.recentActions.length).toBe(1);
+    expect(tracker.recentActions[0].action).toBe('shove');
+  });
+
+  it('formatCombo produces readable output', () => {
+    const combo = COMBO_DEFINITIONS[0]; // trip-strike
+    const text = formatCombo(combo, ['Fighter', 'Rogue']);
+    expect(text).toContain('COMBO');
+    expect(text).toContain(combo.name);
+    expect(text).toContain('Fighter');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter predictor
+// ---------------------------------------------------------------------------
+import { predictEncounter, formatPrediction } from '../../src/lib/encounterPredictor';
+
+describe('encounter predictor', () => {
+  it('returns trivial for empty enemies', () => {
+    const chars = [{ level: 5, hp: 40, maxHp: 40, ac: 18 }] as Character[];
+    const prediction = predictEncounter(chars, []);
+    expect(prediction.rating).toBe('trivial');
+    expect(prediction.winProbability).toBe(1);
+  });
+
+  it('predicts higher TPK risk for outnumbered party', () => {
+    const chars = [{ level: 3, hp: 20, maxHp: 20, ac: 14 }] as Character[];
+    const enemies = [{ hp: 30, ac: 16, attackBonus: 6, avgDamage: 10, count: 5 }];
+    const prediction = predictEncounter(chars, enemies);
+    expect(prediction.tpkProbability).toBeGreaterThan(0);
+    expect(['tough', 'deadly', 'suicidal']).toContain(prediction.rating);
+  });
+
+  it('predicts easy encounters for strong party vs weak enemies', () => {
+    const chars = Array.from({ length: 4 }, () => ({ level: 10, hp: 80, maxHp: 80, ac: 20 })) as Character[];
+    const enemies = [{ hp: 10, ac: 10, attackBonus: 2, avgDamage: 3, count: 2 }];
+    const prediction = predictEncounter(chars, enemies);
+    expect(prediction.winProbability).toBeGreaterThan(0.8);
+    expect(['trivial', 'easy']).toContain(prediction.rating);
+  });
+
+  it('formatPrediction includes rating and probabilities', () => {
+    const chars = [{ level: 5, hp: 30, maxHp: 30, ac: 16 }] as Character[];
+    const prediction = predictEncounter(chars, [{ hp: 20, ac: 14, attackBonus: 4, avgDamage: 8, count: 3 }]);
+    const text = formatPrediction(prediction);
+    expect(text).toContain('Prediction');
+    expect(text).toContain('%');
+  });
+
+  it('warns about action economy imbalance', () => {
+    const chars = [{ level: 5, hp: 30, maxHp: 30, ac: 16 }] as Character[];
+    const enemies = [{ hp: 20, ac: 14, attackBonus: 4, avgDamage: 8, count: 6 }];
+    const prediction = predictEncounter(chars, enemies);
+    expect(prediction.warnings.some((w) => w.includes('Outnumbered'))).toBe(true);
+  });
+});

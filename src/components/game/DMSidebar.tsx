@@ -443,6 +443,62 @@ export default function DMSidebar({
               </div>
             </details>
 
+            {/* Party Rivalry Board */}
+            <button
+              onClick={async () => {
+                const { parseRivalryFromLog, formatRivalryBoard } = await import('../../lib/characterRivalry');
+                const names = characters.map((c) => c.name);
+                const stats = parseRivalryFromLog(combatLog || [], names);
+                onAddDmMessage(formatRivalryBoard(stats));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all disabled:opacity-30"
+              title="Show competitive stats leaderboard between party members"
+            >
+              🏆 Rivalry Board
+            </button>
+
+            {/* Encounter Difficulty Predictor */}
+            <button
+              onClick={async () => {
+                const { predictEncounter, formatPrediction } = await import('../../lib/encounterPredictor');
+                const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0);
+                const enemyProfiles = enemies.map((e) => ({
+                  hp: e.maxHp, ac: e.ac, attackBonus: e.attackBonus || 0,
+                  avgDamage: (e.damageBonus || 0) + 4, count: 1,
+                }));
+                // Group identical enemies
+                const grouped: Record<string, typeof enemyProfiles[0]> = {};
+                for (const ep of enemyProfiles) {
+                  const key = `${ep.hp}-${ep.ac}-${ep.attackBonus}`;
+                  if (grouped[key]) grouped[key].count++;
+                  else grouped[key] = { ...ep };
+                }
+                const prediction = predictEncounter(characters, Object.values(grouped));
+                onAddDmMessage(formatPrediction(prediction));
+              }}
+              disabled={characters.length === 0 || !units.some((u) => u.type === 'enemy' && u.hp > 0)}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all disabled:opacity-30"
+              title="Predict encounter outcome — win probability, TPK risk, estimated rounds"
+            >
+              🔮 Predict Encounter
+            </button>
+
+            {/* Party Resources */}
+            <button
+              onClick={async () => {
+                const { loadResources, formatResourceStatus, getResourceWarnings } = await import('../../lib/partyResources');
+                const resources = loadResources(roomId);
+                const status = formatResourceStatus(resources);
+                const warnings = getResourceWarnings(resources);
+                onAddDmMessage(status + (warnings.length > 0 ? '\n\n' + warnings.join('\n') : ''));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all"
+              title="Show party shared supplies — rations, arrows, torches, etc."
+            >
+              📦 Party Resources
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
