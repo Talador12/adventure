@@ -114,6 +114,11 @@ Server broadcasts:
 - Run `make secrets-development` to set up local dev secrets
 - NEVER commit secrets to `wrangler.toml` or source code
 
+## Response Format
+- At the end of every response, include the local dev server link (`http://localhost:5173`) so the user can check the app and give live feedback.
+- Do multiple roadmap items per request — batch features together.
+- Add new roadmap ideas to `claude.md` after completing existing ones to keep the pipeline full.
+
 ## AI Working Context
 
 Two files per repo:

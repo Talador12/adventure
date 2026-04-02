@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.7.0
+## Current Version: v9.8.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,22 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new DM tools + 32 tests (266 total) — puzzles, persistent shops, formation AI, tactical markers, pacing advisor, backstory events:
+  - **Encounter puzzle system** — `puzzles.ts` with 10 puzzles across 4 types (riddle/logic/knowledge/pattern), 3 difficulties. `PuzzleEncounter.tsx` component with answer submission, hint reveal system, attempt tracking, puzzle browser by type. `checkAnswer()` with normalized matching + alternate answers. Expandable in DMSidebar encounter tab.
+  - **Persistent NPC shop inventories** — `shopInventory.ts` with `ShopState` per-merchant, stock quantity tracking (depletes on purchase), restocking system, price modifier by faction reputation (`adjustPriceByReputation` — each rep point = 6% price swing). `createDefaultShop()`, `purchaseFromShop()`, `restockShop()`. localStorage persistence per campaign.
+  - **Battle formation AI** — `formationAI.ts` with class-role assignment (frontline/ranged/support/flanker) for all 12 classes. `suggestFormation()` computes threat direction from enemy centroid, positions frontline 2 cells toward enemies, ranged 2 cells back, support at center, flankers perpendicular. Terrain-aware with walkability checks and spiral-out fallback for occupied cells. One-click "Formation AI" button in DMSidebar.
+  - **Tactical map markers** — `tacticalMarkers.ts` with 7 strategic marker types (Danger/Objective/Rally/Flank/Retreat/Hold/Ambush), each with emoji, color, and description. `markerToPin()` converts to existing MapPin format. Expandable marker palette in DMSidebar encounter tab. Integrates with existing pin/annotation overlay system.
+  - **Session pacing advisor** — `sessionPacing.ts` analyzes combat round count, party/enemy HP%, session duration, and narrative/combat balance. Generates typed advice (end_combat/call_rest/shift_roleplay/increase_tension/wrap_session) with urgency levels. Warns on 8+ round combats, sub-30% party HP, 3+ hour sessions. "Pacing Advisor" button in DMSidebar.
+  - **Backstory-driven random events** — `backstoryEvents.ts` with 14 event templates across 6 theme families (orphan/criminal/military/noble/arcane/nature/religion/revenge). `findRelevantEvents()` scans backstory+bonds+flaws+background for keyword triggers. `rollBackstoryEvent()` picks a random matching event across all characters. "Backstory Event" button in DMSidebar.
+  - **AGENTS.md updated** — added Response Format section (include dev server link, batch features, pipeline roadmap).
+- 32 new tests (266 total) covering 6 systems:
+  - **Puzzles** (9 tests): library size, unique IDs, hints coverage, answer matching (exact/alternate/rejection), random selection, difficulty filter, type grouping.
+  - **Shop inventory** (6 tests): creation, purchase decrement, out-of-stock rejection, price modifier, reputation discount/markup.
+  - **Formation AI** (4 tests): class role assignment, suggestion generation, formatted output, empty input handling.
+  - **Session pacing** (5 tests): long combat warning, low HP warning, session length, healthy session no-advice, empty format.
+  - **Backstory events** (4 tests): military keyword matching, criminal keyword matching, empty backstory null return, formatted output.
+  - **Tactical markers** (4 tests): marker count, unique types, getter accuracy, pin conversion structure.
+
 - 6 new systems + 20 tests (234 total) — cross-session progression, analytics dashboard, weather progression, quest branching, NPC memory, DM personalities:
   - **Cross-session character progression** — `characterProgression.ts` tracks lifetime XP/gold/kills/sessions across campaigns with 6 achievement tiers (centurion/veteran/legend/wanderer/wealthy/max_level). `CharacterProgressionPanel.tsx` shows stats grid + achievements + recent session history. Progression badges (Rookie→Adventurer→Veteran→Hero→Legend) based on session count.
   - **Campaign analytics dashboard** — `CampaignAnalytics.tsx` renders visual stat cards (damage/kills/crits/spells/healing/nat 1s) with per-character breakdowns including damage bars, kill/crit/spell counts. Expandable in DMSidebar encounter tab. Parses combat log with regex heuristics.
@@ -101,14 +117,26 @@ The complete feature set built from project inception through 46 development ite
 **Next Wave Roadmap:**
 - Campaign world map with fog-of-war travel and location markers
 - Player-to-player item trading with confirmation UI
-- Encounter puzzle system — riddles/logic puzzles that gate progression (DM sets answer, players guess)
-- Character backstory-driven random events — AI generates encounters from backstory themes
-- Battle formation AI suggestions — recommend optimal party positions based on class roles
-- Persistent NPC shop inventories — shops remember stock, prices fluctuate by reputation
+- ~~Encounter puzzle system — riddles/logic puzzles~~ **DONE** — `puzzles.ts` + `PuzzleEncounter.tsx`
+- ~~Character backstory-driven random events~~ **DONE** — `backstoryEvents.ts` with 14 templates
+- ~~Battle formation AI suggestions~~ **DONE** — `formationAI.ts` with class-role positioning
+- ~~Persistent NPC shop inventories~~ **DONE** — `shopInventory.ts` with stock/price tracking
 - Cross-campaign faction reputation — faction standing persists and affects NPC attitudes globally
-- Tactical map annotations — draw arrows/circles on the battle map for strategy planning
+- ~~Tactical map annotations~~ **DONE** — `tacticalMarkers.ts` with 7 strategic marker types
 - Character rivalry system — PvP-safe competitive XP/kill tracking between party members
-- Session pacing advisor — AI suggests when to end combat, transition scenes, or call for rest
+- ~~Session pacing advisor~~ **DONE** — `sessionPacing.ts` with multi-factor analysis
+
+**Wave 3 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Cross-campaign faction reputation — faction standing persists globally via localStorage
+- Character rivalry system — PvP-safe competitive tracking (kills, crits, damage, gold)
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Smart initiative grouping — enemies of same type share initiative for faster turns
+- Conditional spell targeting — show valid targets based on spell range/school/requirements
+- Party resource tracker — shared consumables (rations, arrows, torches) with auto-depletion
+- Combat combo system — reward players who chain abilities (e.g. grapple + shove = prone)
+- DM encounter difficulty predictor — estimate TPK probability before starting combat
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

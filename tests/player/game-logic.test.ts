@@ -1927,3 +1927,254 @@ describe('character progression', () => {
     expect(summary).toContain('7');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Encounter puzzles
+// ---------------------------------------------------------------------------
+import { PUZZLE_LIBRARY, checkAnswer, getRandomPuzzle, getPuzzlesByType } from '../../src/data/puzzles';
+
+describe('encounter puzzles', () => {
+  it('has at least 10 puzzles in the library', () => {
+    expect(PUZZLE_LIBRARY.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('all puzzles have unique IDs', () => {
+    const ids = PUZZLE_LIBRARY.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('all puzzles have at least 1 hint', () => {
+    for (const p of PUZZLE_LIBRARY) {
+      expect(p.hints.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('checkAnswer matches exact answer', () => {
+    const puzzle = PUZZLE_LIBRARY.find((p) => p.id === 'riddle-river')!;
+    expect(checkAnswer(puzzle, 'river')).toBe(true);
+    expect(checkAnswer(puzzle, 'River')).toBe(true);
+    expect(checkAnswer(puzzle, '  RIVER  ')).toBe(true);
+  });
+
+  it('checkAnswer matches alternate answers', () => {
+    const puzzle = PUZZLE_LIBRARY.find((p) => p.id === 'riddle-river')!;
+    expect(checkAnswer(puzzle, 'a river')).toBe(true);
+    expect(checkAnswer(puzzle, 'the river')).toBe(true);
+  });
+
+  it('checkAnswer rejects wrong answers', () => {
+    const puzzle = PUZZLE_LIBRARY.find((p) => p.id === 'riddle-river')!;
+    expect(checkAnswer(puzzle, 'mountain')).toBe(false);
+    expect(checkAnswer(puzzle, '')).toBe(false);
+  });
+
+  it('getRandomPuzzle returns a valid puzzle', () => {
+    const p = getRandomPuzzle();
+    expect(p.id).toBeTruthy();
+    expect(p.prompt).toBeTruthy();
+    expect(p.answer).toBeTruthy();
+  });
+
+  it('getRandomPuzzle filters by difficulty', () => {
+    const easy = getRandomPuzzle('easy');
+    expect(easy.difficulty).toBe('easy');
+  });
+
+  it('getPuzzlesByType groups correctly', () => {
+    const grouped = getPuzzlesByType();
+    expect(Object.keys(grouped).length).toBeGreaterThanOrEqual(3);
+    for (const [type, puzzles] of Object.entries(grouped)) {
+      for (const p of puzzles) expect(p.type).toBe(type);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shop inventory
+// ---------------------------------------------------------------------------
+import { createDefaultShop, purchaseFromShop, adjustPriceByReputation, type ShopStock } from '../../src/lib/shopInventory';
+
+describe('shop inventory', () => {
+  it('createDefaultShop returns valid structure', () => {
+    const stock: ShopStock[] = [{ item: { id: 'i1', name: 'Sword', type: 'weapon', rarity: 'common', description: '', value: 50 }, quantity: 3, basePrice: 50 }];
+    const shop = createDefaultShop('blacksmith', 'The Iron Forge', 'Market District', stock);
+    expect(shop.id).toBe('blacksmith');
+    expect(shop.stock.length).toBe(1);
+    expect(shop.priceModifier).toBe(1.0);
+  });
+
+  it('purchaseFromShop decrements quantity', () => {
+    const stock: ShopStock[] = [{ item: { id: 'i1', name: 'Potion', type: 'potion', rarity: 'common', description: '', value: 25 }, quantity: 5, basePrice: 25 }];
+    const shop = createDefaultShop('apothecary', 'Potions', 'Main St', stock);
+    const result = purchaseFromShop(shop, 'i1');
+    expect(result.success).toBe(true);
+    expect(result.price).toBe(25);
+    expect(shop.stock[0].quantity).toBe(4);
+  });
+
+  it('purchaseFromShop fails when out of stock', () => {
+    const stock: ShopStock[] = [{ item: { id: 'i1', name: 'Rare Gem', type: 'misc', rarity: 'rare', description: '', value: 500 }, quantity: 0, basePrice: 500 }];
+    const shop = createDefaultShop('jeweler', 'Gems', 'Market', stock);
+    const result = purchaseFromShop(shop, 'i1');
+    expect(result.success).toBe(false);
+  });
+
+  it('purchaseFromShop applies price modifier', () => {
+    const stock: ShopStock[] = [{ item: { id: 'i1', name: 'Shield', type: 'armor', rarity: 'common', description: '', value: 100 }, quantity: -1, basePrice: 100 }];
+    const shop = createDefaultShop('armorer', 'Shields', 'Market', stock);
+    shop.priceModifier = 1.5; // 50% markup
+    const result = purchaseFromShop(shop, 'i1');
+    expect(result.price).toBe(150);
+    expect(result.success).toBe(true);
+  });
+
+  it('adjustPriceByReputation gives discount for high rep', () => {
+    const modifier = adjustPriceByReputation(1.0, 5); // max rep
+    expect(modifier).toBeLessThan(1.0);
+  });
+
+  it('adjustPriceByReputation gives markup for low rep', () => {
+    const modifier = adjustPriceByReputation(1.0, -5); // min rep
+    expect(modifier).toBeGreaterThan(1.0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Formation AI
+// ---------------------------------------------------------------------------
+import { getClassRole, suggestFormation, formatFormationAdvice } from '../../src/lib/formationAI';
+
+describe('formation AI', () => {
+  it('assigns correct roles to all classes', () => {
+    expect(getClassRole('Fighter')).toBe('frontline');
+    expect(getClassRole('Wizard')).toBe('ranged');
+    expect(getClassRole('Cleric')).toBe('support');
+    expect(getClassRole('Rogue')).toBe('flanker');
+    expect(getClassRole('Barbarian')).toBe('frontline');
+    expect(getClassRole('Ranger')).toBe('ranged');
+  });
+
+  it('returns suggestions for each character', () => {
+    const chars: Character[] = [
+      { id: 'c1', name: 'Tank', class: 'Fighter', race: 'Human', level: 5, stats: { STR: 16, DEX: 12, CON: 14, INT: 10, WIS: 12, CHA: 8 }, hp: 40, maxHp: 40, ac: 18, xp: 0, gold: 0, background: '', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 5, inspiration: false, exhaustion: 0, createdAt: 0 } as Character,
+      { id: 'c2', name: 'Caster', class: 'Wizard', race: 'Elf', level: 5, stats: { STR: 8, DEX: 14, CON: 12, INT: 18, WIS: 13, CHA: 10 }, hp: 22, maxHp: 22, ac: 12, xp: 0, gold: 0, background: '', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 5, inspiration: false, exhaustion: 0, createdAt: 0 } as Character,
+    ];
+    const positions = [{ unitId: 'c1', col: 10, row: 10 }, { unitId: 'c2', col: 11, row: 10 }];
+    const terrain = Array.from({ length: 20 }, () => Array(20).fill('floor'));
+    const suggestions = suggestFormation(chars, positions, terrain as any, [{ col: 10, row: 5 }], 20, 20);
+    expect(suggestions.length).toBe(2);
+    expect(suggestions[0].role).toBe('frontline');
+    expect(suggestions[1].role).toBe('ranged');
+  });
+
+  it('formatFormationAdvice produces readable output', () => {
+    const suggestions = [
+      { characterId: 'c1', characterName: 'Tank', role: 'frontline' as const, suggestedCol: 10, suggestedRow: 8, reason: 'Frontline position' },
+    ];
+    const text = formatFormationAdvice(suggestions);
+    expect(text).toContain('Tank');
+    expect(text).toContain('frontline');
+  });
+
+  it('returns empty for no characters', () => {
+    expect(suggestFormation([], [], [], [], 20, 20)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session pacing
+// ---------------------------------------------------------------------------
+import { analyzePacing, formatPacingAdvice } from '../../src/lib/sessionPacing';
+
+describe('session pacing', () => {
+  it('warns about long combat (8+ rounds)', () => {
+    const advice = analyzePacing(10, true, 0.8, 0.5, 50, 10, 60, 0);
+    expect(advice.some((a) => a.type === 'end_combat')).toBe(true);
+  });
+
+  it('warns about low party HP', () => {
+    const advice = analyzePacing(3, true, 0.2, 0.5, 20, 5, 60, 0);
+    expect(advice.some((a) => a.type === 'call_rest')).toBe(true);
+  });
+
+  it('suggests wrapping long sessions (3+ hours)', () => {
+    const advice = analyzePacing(0, false, 1.0, 0, 0, 10, 200, 0);
+    expect(advice.some((a) => a.type === 'wrap_session')).toBe(true);
+  });
+
+  it('returns no advice for healthy session', () => {
+    const advice = analyzePacing(0, false, 1.0, 0, 0, 3, 30, 0);
+    expect(advice.length).toBe(0);
+  });
+
+  it('formatPacingAdvice handles empty list', () => {
+    const text = formatPacingAdvice([]);
+    expect(text).toContain('looks good');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Backstory events
+// ---------------------------------------------------------------------------
+import { findRelevantEvents, rollBackstoryEvent, formatBackstoryEvent } from '../../src/data/backstoryEvents';
+
+describe('backstory events', () => {
+  it('finds events for character with military backstory', () => {
+    const char = { id: '1', name: 'Vet', class: 'Fighter', race: 'Human', level: 5, backstory: 'Former soldier in the great war', stats: { STR: 16, DEX: 12, CON: 14, INT: 10, WIS: 12, CHA: 8 }, hp: 40, maxHp: 40, ac: 18, xp: 0, gold: 0, background: 'Soldier', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 5, inspiration: false, exhaustion: 0, createdAt: 0 } as Character;
+    const events = findRelevantEvents(char);
+    expect(events.length).toBeGreaterThan(0);
+    expect(events.some((e) => e.triggerKeywords.some((kw) => kw.includes('soldier') || kw.includes('war')))).toBe(true);
+  });
+
+  it('finds events for character with criminal backstory', () => {
+    const char = { id: '2', name: 'Shadow', class: 'Rogue', race: 'Halfling', level: 3, backstory: 'A thief who grew up in the thieves guild', stats: { STR: 8, DEX: 18, CON: 12, INT: 14, WIS: 10, CHA: 14 }, hp: 18, maxHp: 18, ac: 15, xp: 0, gold: 0, background: 'Criminal', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 3, inspiration: false, exhaustion: 0, createdAt: 0 } as Character;
+    const events = findRelevantEvents(char);
+    expect(events.length).toBeGreaterThan(0);
+  });
+
+  it('returns null for characters with no matching backstory', () => {
+    const char = { id: '3', name: 'Nobody', class: 'Fighter', race: 'Human', level: 1, backstory: '', stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }, hp: 10, maxHp: 10, ac: 10, xp: 0, gold: 0, background: '', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 1, inspiration: false, exhaustion: 0, createdAt: 0 } as Character;
+    const result = rollBackstoryEvent([char]);
+    expect(result).toBeNull();
+  });
+
+  it('formatBackstoryEvent produces readable text', () => {
+    const char = { name: 'Thorin' } as Character;
+    const event = { id: 'test', name: 'Test Event', type: 'encounter' as const, description: 'Something happens', triggerKeywords: [] };
+    const text = formatBackstoryEvent(char, event);
+    expect(text).toContain('Thorin');
+    expect(text).toContain('Test Event');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tactical markers
+// ---------------------------------------------------------------------------
+import { TACTICAL_MARKERS, getMarker, markerToPin } from '../../src/data/tacticalMarkers';
+
+describe('tactical markers', () => {
+  it('has 7 marker types', () => {
+    expect(TACTICAL_MARKERS.length).toBe(7);
+  });
+
+  it('all markers have unique types', () => {
+    const types = TACTICAL_MARKERS.map((m) => m.type);
+    expect(new Set(types).size).toBe(types.length);
+  });
+
+  it('getMarker returns correct marker', () => {
+    expect(getMarker('danger').emoji).toBe('⚠️');
+    expect(getMarker('objective').emoji).toBe('🎯');
+    expect(getMarker('rally').label).toBe('Rally');
+  });
+
+  it('markerToPin creates valid pin structure', () => {
+    const marker = getMarker('hold');
+    const pin = markerToPin(marker, 5, 3, 'dm-player-1');
+    expect(pin.col).toBe(5);
+    expect(pin.row).toBe(3);
+    expect(pin.label).toBe('Hold');
+    expect(pin.id).toBeTruthy();
+    expect(pin.type).toBe('pin');
+  });
+});

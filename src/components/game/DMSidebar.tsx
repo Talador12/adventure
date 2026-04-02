@@ -25,6 +25,8 @@ import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
 import CampaignAnalytics from './CampaignAnalytics';
 import QuestBranching from './QuestBranching';
+import PuzzleEncounter from './PuzzleEncounter';
+import { TACTICAL_MARKERS } from '../../data/tacticalMarkers';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -353,6 +355,93 @@ export default function DMSidebar({
             >
               Generate Backstory Hooks
             </button>
+
+            {/* Backstory-driven random events */}
+            <button
+              onClick={async () => {
+                const { rollBackstoryEvent, formatBackstoryEvent } = await import('../../data/backstoryEvents');
+                const result = rollBackstoryEvent(characters);
+                if (result) {
+                  onAddDmMessage(formatBackstoryEvent(result.character, result.event));
+                } else {
+                  onAddDmMessage('*No backstory-driven events available. Characters need more backstory detail.*');
+                }
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all disabled:opacity-30"
+              title="Roll a random event driven by character backstories"
+            >
+              🎭 Backstory Event
+            </button>
+
+            {/* Encounter Puzzles */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all cursor-pointer px-2">
+                🧩 Encounter Puzzles
+              </summary>
+              <div className="mt-1 p-2 rounded bg-slate-900/50 border border-slate-800/50">
+                <PuzzleEncounter onAddDmMessage={onAddDmMessage} />
+              </div>
+            </details>
+
+            {/* Formation AI Suggestion */}
+            <button
+              onClick={async () => {
+                const { suggestFormation, formatFormationAdvice } = await import('../../lib/formationAI');
+                const playerPositions = mapPositions.filter((p) => units.find((u) => u.id === p.unitId && u.type === 'player'));
+                const enemyPositions = mapPositions.filter((p) => units.find((u) => u.id === p.unitId && u.type === 'enemy' && u.hp > 0)).map((p) => ({ col: p.col, row: p.row }));
+                const terrain = (() => { try { return JSON.parse(localStorage.getItem(`adventure:terrain:${roomId}`) || '[]'); } catch { return []; } })();
+                const suggestions = suggestFormation(characters, playerPositions, terrain, enemyPositions, 20, 20);
+                onAddDmMessage(formatFormationAdvice(suggestions));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all disabled:opacity-30"
+              title="AI suggests optimal party positions based on class roles"
+            >
+              🗺️ Formation AI
+            </button>
+
+            {/* Session Pacing Advisor */}
+            <button
+              onClick={async () => {
+                const { analyzePacing, formatPacingAdvice } = await import('../../lib/sessionPacing');
+                const sessionStart = parseInt(localStorage.getItem(`adventure:sessionStart:${roomId}`) || String(Date.now()), 10);
+                const sessionMinutes = (Date.now() - sessionStart) / 60000;
+                const partyHp = characters.length > 0 ? characters.reduce((s, c) => s + c.hp / Math.max(1, c.maxHp), 0) / characters.length : 1;
+                const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0);
+                const enemyHp = enemies.length > 0 ? enemies.reduce((s, e) => s + e.hp / Math.max(1, e.maxHp), 0) / enemies.length : 0;
+                const combatRound = inCombat ? units.filter((u) => u.isCurrentTurn).length > 0 ? Math.ceil(units.length / Math.max(1, units.length)) : 1 : 0;
+                const advice = analyzePacing(combatRound, inCombat, partyHp, enemyHp, (combatLog || []).length, (dmHistory || []).length, sessionMinutes, 0);
+                onAddDmMessage(formatPacingAdvice(advice));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-sky-400 font-semibold hover:bg-sky-800/30 transition-all"
+              title="AI analyzes session pacing and suggests transitions"
+            >
+              🎬 Pacing Advisor
+            </button>
+
+            {/* Tactical markers */}
+            <details className="mb-3">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-rose-900/20 border border-rose-600/30 text-rose-400 font-semibold hover:bg-rose-800/30 transition-all cursor-pointer px-2">
+                🗡️ Tactical Markers
+              </summary>
+              <div className="mt-1 space-y-1">
+                {TACTICAL_MARKERS.map((m) => (
+                  <button
+                    key={m.type}
+                    onClick={() => {
+                      onAddDmMessage(`${m.emoji} **${m.label}**: ${m.description}\n*Use the Pin tool on the map to place this marker.*`);
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-rose-600/40 transition-all flex items-center gap-2"
+                    title={m.description}
+                  >
+                    <span>{m.emoji}</span>
+                    <span className="text-[9px] text-slate-300">{m.label}</span>
+                    <span className="text-[8px] text-slate-600 ml-auto truncate max-w-[120px]">{m.description}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
 
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
