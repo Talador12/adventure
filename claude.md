@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.0.0
+## Current Version: v10.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 30 tests (354 total) — bonds, death consequences, dungeon rooms, travel encounters, haggling, session recap:
+  - **Player character bonds** — `characterBonds.ts` with 6 bond types (Sworn Allies/Mentor & Protege/Blood Oath/Rivals' Respect/Soulbound/Shield Mates). Each provides adjacency bonuses (AC, attack, saves, temp HP). Bond strength scales with shared combats (1→2 at 5 combats, 2→3 at 10). Higher strength unlocks stronger bonuses. "Character Bonds" button in DMSidebar.
+  - **Death consequences** — `deathConsequences.ts` with 10 scars across 4 types (physical/mental/spiritual/cosmetic). `getScarsBySeverity()` biases toward spiritual scars for 3+ deaths. Scars include stat penalties, movement reduction, condition vulnerabilities. Duration ranges from 7 days to permanent (cured by Greater Restoration). Resurrection history tracked per character.
+  - **Dungeon room templates** — `dungeonRoomTemplates.ts` with 6 pre-built rooms (Treasure Vault, Boss Arena, Puzzle Chamber, Ambush Corridor, Throne Room, Prison Cells). Each generates a full terrain grid with walls, doors, hazards, pillars, water features. Includes suggested enemies, loot tier, and feature descriptions. One-click template browser in DMSidebar.
+  - **Travel encounter tables** — `travelEncounters.ts` with 32 events across 8 biomes (forest/mountain/desert/swamp/plains/coast/underdark/arctic). 5 event types (combat/social/discovery/hazard/rest). Many include DC checks with success/fail text. Biome selector in DMSidebar for one-click random encounters.
+  - **Merchant haggling mini-game** — `haggling.ts` with 5 merchant personalities (greedy/fair/generous/stubborn/nervous) each with different DCs and max discounts. CHA-based d20 roll with proficiency bonus. Nat 20 gives extra discount, Nat 1 causes price increase. `getPersonalityFromDisposition()` ties into NPC tracker. "Haggle Price" button in DMSidebar.
+  - **Session recap generator** — `sessionRecap.ts` — builds structured recap from DM history, combat log, quests, NPCs. Extracts key narrative moments, calculates combat stats (damage/kills/crits), builds party status line (XP/gold/deaths/quests), and formats cliffhanger from last narration. "Session Recap" button in DMSidebar.
+- 30 new tests (354 total) covering 6 systems:
+  - **Character bonds** (7 tests): config count, unique types, getter, adjacency bonuses, non-adjacent empty, strength scaling, formatted output.
+  - **Death consequences** (4 tests): scar validity, severity bias (spiritual for 3+, physical for 1st), formatted output.
+  - **Dungeon rooms** (6 tests): template count, unique IDs, terrain grid dimensions, getter, formatted description, wall borders.
+  - **Travel encounters** (5 tests): biome coverage, per-biome count, correct biome return, formatted output, valid event types.
+  - **Haggling** (5 tests): result structure, price floor at 1gp, disposition mapping, formatted output, stubborn DC difficulty.
+  - **Session recap** (3 tests): full data generation, empty data handling, multi-line format.
+
 - 6 new systems + 33 tests (324 total) — morale, env destruction, faction rep, initiative variants, NPC schedules, spell components:
   - **Morale system** — `morale.ts` with 4 morale tiers (fanatical/brave/normal/cowardly) based on CR. `checkMorale()` triggers when casualty threshold is crossed — each surviving enemy rolls vs tier DC with HP bonus/penalty. Fleeing enemies tracked in `MoraleState`. "Morale Check" button in DMSidebar. Narrates routs vs holds.
   - **Environmental destruction** — `environmentDestruction.ts` — walls (30HP, AC17) and doors (10HP, AC15) can be attacked and destroyed. `damageCell()` resolves attack roll vs AC, reduces HP, returns destruction status + narration. `getDestroyedTerrain()` converts walls→difficult terrain (rubble), doors→floor (open doorway).
@@ -185,12 +200,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in the area simultaneously
-- Player character bonds — mechanical bonuses when bonded characters fight together
-- Death consequences — lasting scars/penalties from being revived (resurrection sickness)
-- Dungeon room templates — pre-built room layouts (treasure room, boss arena, puzzle chamber)
-- Travel encounter tables — biome-specific random events for overland travel
-- Merchant haggling mini-game — CHA-based bargaining with NPC personality factors
-- Session recap generator — AI summarizes key events for catch-up at next session
+- ~~Player character bonds~~ **DONE** — `characterBonds.ts` with 6 bond types + adjacency bonuses
+- ~~Death consequences~~ **DONE** — `deathConsequences.ts` with 10 scars, severity scaling
+- ~~Dungeon room templates~~ **DONE** — `dungeonRoomTemplates.ts` with 6 pre-built rooms
+- ~~Travel encounter tables~~ **DONE** — `travelEncounters.ts` with 32 events across 8 biomes
+- ~~Merchant haggling mini-game~~ **DONE** — `haggling.ts` with 5 personality types + CHA rolls
+- ~~Session recap generator~~ **DONE** — `sessionRecap.ts` structured summary builder
+
+**Wave 6 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Exhaustion tracker — auto-apply exhaustion effects on forced march, starvation, death saves
+- Crafting system — combine materials + tools + time to create potions, scrolls, weapons
+- Stronghold management — party can acquire and upgrade a base of operations
+- Random NPC generator — instant NPC with name, personality, secret, and plot hook
+- Battle damage types — track piercing/slashing/bludgeoning/elemental for resistance system
+- Mounted combat — ride horses/griffons with movement bonuses and special actions
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

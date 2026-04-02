@@ -27,6 +27,7 @@ import CampaignAnalytics from './CampaignAnalytics';
 import QuestBranching from './QuestBranching';
 import PuzzleEncounter from './PuzzleEncounter';
 import { TACTICAL_MARKERS } from '../../data/tacticalMarkers';
+import { ROOM_TEMPLATES, formatRoomDescription } from '../../data/dungeonRoomTemplates';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -565,6 +566,116 @@ export default function DMSidebar({
               title="Show material component costs for party spells"
             >
               💎 Spell Components
+            </button>
+
+            {/* Travel encounter */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-lime-900/20 border border-lime-600/30 text-lime-400 font-semibold hover:bg-lime-800/30 transition-all cursor-pointer px-2">
+                🗺️ Travel Encounters
+              </summary>
+              <div className="mt-1 space-y-1">
+                {(['forest', 'mountain', 'desert', 'swamp', 'plains', 'coast', 'underdark', 'arctic'] as const).map((biome) => (
+                  <button
+                    key={biome}
+                    onClick={async () => {
+                      const { rollTravelEncounter, formatTravelEvent } = await import('../../data/travelEncounters');
+                      onAddDmMessage(formatTravelEvent(rollTravelEncounter(biome)));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-lime-600/40 transition-all text-[9px] text-slate-300 capitalize"
+                  >
+                    {biome === 'forest' ? '🌲' : biome === 'mountain' ? '⛰️' : biome === 'desert' ? '🏜️' : biome === 'swamp' ? '🐊' : biome === 'plains' ? '🌾' : biome === 'coast' ? '🌊' : biome === 'underdark' ? '🕳️' : '❄️'} {biome}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Dungeon room templates */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all cursor-pointer px-2">
+                🏚️ Dungeon Room Templates
+              </summary>
+              <div className="mt-1 space-y-1">
+                {ROOM_TEMPLATES.map((room) => (
+                  <button
+                    key={room.id}
+                    onClick={() => {
+                      onAddDmMessage(formatRoomDescription(room));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-stone-500/40 transition-all flex items-center gap-2"
+                    title={room.description}
+                  >
+                    <span>{room.emoji}</span>
+                    <span className="text-[9px] text-slate-300">{room.name}</span>
+                    <span className="text-[8px] text-slate-600 ml-auto">{room.width}×{room.height}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Haggle */}
+            <button
+              onClick={async () => {
+                const { haggle, formatHaggleResult, getPersonalityFromDisposition } = await import('../../lib/haggling');
+                const selectedChar = characters.find((c) => c.id === selectedCharacterId);
+                if (!selectedChar) { onAddDmMessage('Select a character to haggle.'); return; }
+                const chaMod = Math.floor((selectedChar.stats.CHA - 10) / 2);
+                const profBonus = Math.floor((selectedChar.level - 1) / 4) + 2;
+                const price = parseInt(window.prompt('Item price (gp):', '100') || '0', 10);
+                if (!price) return;
+                const result = haggle(price, chaMod, 'fair', profBonus);
+                onAddDmMessage(formatHaggleResult(result, 'item'));
+              }}
+              disabled={!selectedCharacterId}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all disabled:opacity-30"
+              title="CHA-based haggling mini-game with the selected character"
+            >
+              🤝 Haggle Price
+            </button>
+
+            {/* Session recap */}
+            <button
+              onClick={async () => {
+                const { generateRecap, formatRecap } = await import('../../lib/sessionRecap');
+                const recap = generateRecap({
+                  dmHistory: dmHistory || [],
+                  combatLog: combatLog || [],
+                  sceneName: '',
+                  characterNames: characters.map((c) => c.name),
+                  questsCompleted: [],
+                  npcsEncountered: [],
+                  goldChange: 0,
+                  xpGained: 0,
+                  combatCount: (combatLog || []).filter((l) => l.match(/^--- Round 1/)).length,
+                  deathCount: (combatLog || []).filter((l) => l.includes('falls!')).length,
+                  sessionDurationMinutes: 0,
+                });
+                onAddDmMessage(formatRecap(recap));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all"
+              title="Generate a session recap for catch-up at the next session"
+            >
+              📜 Session Recap
+            </button>
+
+            {/* Character bonds */}
+            <button
+              onClick={async () => {
+                const { formatBondStatus, BOND_CONFIGS } = await import('../../lib/characterBonds');
+                const bondsRaw = localStorage.getItem(`adventure:bonds:${roomId}`);
+                const bonds = bondsRaw ? JSON.parse(bondsRaw) : [];
+                const nameMap: Record<string, string> = {};
+                for (const c of characters) nameMap[c.id] = c.name;
+                if (bonds.length > 0) {
+                  onAddDmMessage(formatBondStatus(bonds, nameMap));
+                } else {
+                  onAddDmMessage('💫 **Character Bonds:**\nNo bonds formed yet. Bond types: ' + BOND_CONFIGS.map((b: any) => `${b.emoji} ${b.name}`).join(', '));
+                }
+              }}
+              disabled={characters.length < 2}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-fuchsia-900/20 border border-fuchsia-600/30 text-fuchsia-400 font-semibold hover:bg-fuchsia-800/30 transition-all disabled:opacity-30"
+              title="View or form bonds between party members for combat bonuses"
+            >
+              💫 Character Bonds
             </button>
 
             {/* Save/Load Encounter Templates */}

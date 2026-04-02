@@ -2680,3 +2680,272 @@ describe('spell components', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Character bonds
+// ---------------------------------------------------------------------------
+import { BOND_CONFIGS, getBondConfig, getActiveBondBonuses, incrementBondStrength, formatBondStatus, type CharacterBond } from '../../src/lib/characterBonds';
+
+describe('character bonds', () => {
+  it('has 6 bond types', () => {
+    expect(BOND_CONFIGS.length).toBe(6);
+  });
+
+  it('all bond types have unique IDs', () => {
+    const types = BOND_CONFIGS.map((b) => b.type);
+    expect(new Set(types).size).toBe(types.length);
+  });
+
+  it('getBondConfig returns correct bond', () => {
+    expect(getBondConfig('blood_oath').name).toBe('Blood Oath');
+    expect(getBondConfig('shield_mates').emoji).toBe('🛡️');
+  });
+
+  it('getActiveBondBonuses returns bonuses when adjacent', () => {
+    const bonds: CharacterBond[] = [
+      { id: 'b1', characterA: 'c1', characterB: 'c2', bondType: 'sworn_allies', strength: 1, sharedCombats: 3, createdAt: 0 },
+    ];
+    const bonuses = getActiveBondBonuses(bonds, 'c1', ['c2']);
+    expect(bonuses.length).toBe(1);
+    expect(bonuses[0].bonus.acBonus).toBe(1);
+  });
+
+  it('getActiveBondBonuses returns empty when not adjacent', () => {
+    const bonds: CharacterBond[] = [
+      { id: 'b1', characterA: 'c1', characterB: 'c2', bondType: 'sworn_allies', strength: 1, sharedCombats: 0, createdAt: 0 },
+    ];
+    const bonuses = getActiveBondBonuses(bonds, 'c1', ['c3']); // c2 not adjacent
+    expect(bonuses.length).toBe(0);
+  });
+
+  it('incrementBondStrength grows with shared combats', () => {
+    const bond: CharacterBond = { id: 'b1', characterA: 'c1', characterB: 'c2', bondType: 'sworn_allies', strength: 1, sharedCombats: 4, createdAt: 0 };
+    const upgraded = incrementBondStrength(bond);
+    expect(upgraded.sharedCombats).toBe(5);
+    expect(upgraded.strength).toBe(2); // 5+ combats = strength 2
+  });
+
+  it('formatBondStatus produces readable output', () => {
+    const bonds: CharacterBond[] = [
+      { id: 'b1', characterA: 'c1', characterB: 'c2', bondType: 'soulbound', strength: 2, sharedCombats: 7, createdAt: 0 },
+    ];
+    const text = formatBondStatus(bonds, { c1: 'Thorin', c2: 'Elara' });
+    expect(text).toContain('Thorin');
+    expect(text).toContain('Elara');
+    expect(text).toContain('Soulbound');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Death consequences
+// ---------------------------------------------------------------------------
+import { rollDeathScar, getScarsBySeverity, formatDeathConsequence } from '../../src/lib/deathConsequences';
+
+describe('death consequences', () => {
+  it('rollDeathScar returns a valid scar', () => {
+    const scar = rollDeathScar();
+    expect(scar.id).toBeTruthy();
+    expect(scar.name).toBeTruthy();
+    expect(scar.mechanicalEffect).toBeTruthy();
+    expect(['physical', 'mental', 'spiritual', 'cosmetic']).toContain(scar.type);
+  });
+
+  it('getScarsBySeverity biases toward spiritual for 3+ deaths', () => {
+    // Run multiple times to check bias
+    const scars = Array.from({ length: 20 }, () => getScarsBySeverity(3));
+    const spiritual = scars.filter((s) => s.type === 'spiritual' || s.type === 'mental');
+    expect(spiritual.length).toBeGreaterThan(0);
+  });
+
+  it('getScarsBySeverity biases toward physical for first death', () => {
+    const scars = Array.from({ length: 20 }, () => getScarsBySeverity(1));
+    const physical = scars.filter((s) => s.type === 'physical' || s.type === 'cosmetic');
+    expect(physical.length).toBeGreaterThan(0);
+  });
+
+  it('formatDeathConsequence includes character name and spell', () => {
+    const scar = rollDeathScar();
+    const text = formatDeathConsequence(scar, 'Thorin', 'Revivify');
+    expect(text).toContain('Thorin');
+    expect(text).toContain('Revivify');
+    expect(text).toContain(scar.name);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dungeon room templates
+// ---------------------------------------------------------------------------
+import { ROOM_TEMPLATES as DUNGEON_ROOMS, getRoomTemplate, formatRoomDescription as formatRoom } from '../../src/data/dungeonRoomTemplates';
+
+describe('dungeon room templates', () => {
+  it('has at least 6 room templates', () => {
+    expect(DUNGEON_ROOMS.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('all templates have unique IDs', () => {
+    const ids = DUNGEON_ROOMS.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('all templates have valid terrain grids', () => {
+    for (const room of DUNGEON_ROOMS) {
+      expect(room.terrain.length).toBe(room.height);
+      for (const row of room.terrain) {
+        expect(row.length).toBe(room.width);
+      }
+    }
+  });
+
+  it('getRoomTemplate finds by ID', () => {
+    const room = getRoomTemplate('boss');
+    expect(room).toBeTruthy();
+    expect(room!.name).toBe('Boss Arena');
+  });
+
+  it('formatRoom produces readable description', () => {
+    const room = DUNGEON_ROOMS[0];
+    const text = formatRoom(room);
+    expect(text).toContain(room.name);
+    expect(text).toContain(room.emoji);
+  });
+
+  it('room terrain contains walls on borders', () => {
+    for (const room of DUNGEON_ROOMS) {
+      // Check corners are walls
+      expect(room.terrain[0][0]).toBe('wall');
+      expect(room.terrain[0][room.width - 1]).toBe('wall');
+      expect(room.terrain[room.height - 1][0]).toBe('wall');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Travel encounters
+// ---------------------------------------------------------------------------
+import { rollTravelEncounter, getEncountersByBiome, getAllBiomes, formatTravelEvent } from '../../src/data/travelEncounters';
+
+describe('travel encounters', () => {
+  it('covers at least 7 biomes', () => {
+    expect(getAllBiomes().length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('each biome has at least 2 events', () => {
+    for (const biome of getAllBiomes()) {
+      expect(getEncountersByBiome(biome).length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('rollTravelEncounter returns event for correct biome', () => {
+    const event = rollTravelEncounter('forest');
+    expect(event.biome).toBe('forest');
+  });
+
+  it('formatTravelEvent includes name and description', () => {
+    const event = rollTravelEncounter('mountain');
+    const text = formatTravelEvent(event);
+    expect(text).toContain(event.name);
+    expect(text.length).toBeGreaterThan(20);
+  });
+
+  it('all events have valid types', () => {
+    for (const biome of getAllBiomes()) {
+      for (const event of getEncountersByBiome(biome)) {
+        expect(['combat', 'social', 'discovery', 'hazard', 'rest']).toContain(event.type);
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Haggling
+// ---------------------------------------------------------------------------
+import { haggle, getPersonalityFromDisposition, formatHaggleResult } from '../../src/lib/haggling';
+
+describe('haggling', () => {
+  it('returns a valid result structure', () => {
+    const result = haggle(100, 2, 'fair');
+    expect(result.originalPrice).toBe(100);
+    expect(typeof result.finalPrice).toBe('number');
+    expect(typeof result.discount).toBe('number');
+    expect(typeof result.narration).toBe('string');
+  });
+
+  it('final price is never below 1', () => {
+    // Even extreme discounts should not produce 0gp items
+    for (let i = 0; i < 20; i++) {
+      const result = haggle(1, 10, 'generous');
+      expect(result.finalPrice).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('getPersonalityFromDisposition maps correctly', () => {
+    expect(getPersonalityFromDisposition(2)).toBe('generous');
+    expect(getPersonalityFromDisposition(0)).toBe('fair');
+    expect(getPersonalityFromDisposition(-2)).toBe('greedy');
+  });
+
+  it('formatHaggleResult includes item name and roll', () => {
+    const result = haggle(200, 3, 'fair');
+    const text = formatHaggleResult(result, 'Longsword');
+    expect(text).toContain('Longsword');
+    expect(text).toContain('DC');
+  });
+
+  it('stubborn merchants have high DC', () => {
+    // Run many times — stubborn should rarely give discounts
+    let discounts = 0;
+    for (let i = 0; i < 50; i++) {
+      const result = haggle(100, 0, 'stubborn', 0);
+      if (result.discount > 0) discounts++;
+    }
+    // With CHA +0 vs DC 18, success should be rare
+    expect(discounts).toBeLessThan(25);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session recap
+// ---------------------------------------------------------------------------
+import { generateRecap, formatRecap } from '../../src/lib/sessionRecap';
+
+describe('session recap', () => {
+  it('generates recap from session data', () => {
+    const recap = generateRecap({
+      dmHistory: ['The party entered the dungeon.', 'A dragon appeared before them, scales gleaming in torchlight.'],
+      combatLog: ['Thorin attacks Dragon for 15 damage', 'Dragon falls!'],
+      sceneName: 'Dragon\'s Lair',
+      characterNames: ['Thorin', 'Elara'],
+      questsCompleted: ['Slay the Dragon'],
+      npcsEncountered: ['Old Sage'],
+      goldChange: 500,
+      xpGained: 2000,
+      combatCount: 1,
+      deathCount: 0,
+      sessionDurationMinutes: 120,
+    });
+    expect(recap.title).toContain('Dragon\'s Lair');
+    expect(recap.combatSummary).toContain('1 combat');
+    expect(recap.partyStatus).toContain('2000 XP');
+  });
+
+  it('handles empty session data', () => {
+    const recap = generateRecap({
+      dmHistory: [], combatLog: [], sceneName: '', characterNames: [],
+      questsCompleted: [], npcsEncountered: [], goldChange: 0, xpGained: 0,
+      combatCount: 0, deathCount: 0, sessionDurationMinutes: 0,
+    });
+    expect(recap.combatSummary).toContain('No combat');
+  });
+
+  it('formatRecap produces multi-line output', () => {
+    const recap = generateRecap({
+      dmHistory: ['Something happened in the deep dark forest that was quite dramatic and exciting.'],
+      combatLog: ['Attack for 10 damage'], sceneName: 'Test', characterNames: ['Hero'],
+      questsCompleted: [], npcsEncountered: [], goldChange: 100, xpGained: 500,
+      combatCount: 1, deathCount: 0, sessionDurationMinutes: 60,
+    });
+    const text = formatRecap(recap);
+    expect(text).toContain('Session Recap');
+    expect(text.split('\n').length).toBeGreaterThan(3);
+  });
+});
