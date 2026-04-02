@@ -3945,3 +3945,231 @@ describe('initiative tiebreaker', () => {
     expect(text).toContain('Coin Flip');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Inspiration system
+// ---------------------------------------------------------------------------
+import { DEFAULT_TRIGGERS, createInspirationState, grantInspiration, spendInspiration, formatInspirationStatus } from '../../src/lib/inspirationSystem';
+
+describe('inspiration system', () => {
+  it('has default triggers', () => {
+    expect(DEFAULT_TRIGGERS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('createInspirationState starts without inspiration', () => {
+    const state = createInspirationState('c1');
+    expect(state.hasInspiration).toBe(false);
+    expect(state.timesEarned).toBe(0);
+  });
+
+  it('grantInspiration gives inspiration', () => {
+    let state = createInspirationState('c1');
+    state = grantInspiration(state, 'great_rp');
+    expect(state.hasInspiration).toBe(true);
+    expect(state.timesEarned).toBe(1);
+  });
+
+  it('spendInspiration removes inspiration', () => {
+    let state = grantInspiration(createInspirationState('c1'), 'clever_plan');
+    const result = spendInspiration(state);
+    expect(result.success).toBe(true);
+    expect(result.state.hasInspiration).toBe(false);
+  });
+
+  it('spendInspiration fails without inspiration', () => {
+    const result = spendInspiration(createInspirationState('c1'));
+    expect(result.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter frequency
+// ---------------------------------------------------------------------------
+import { createFrequencyConfig, rollEncounterCheck, getTimeOfDayFromHour, formatEncounterCheck } from '../../src/lib/encounterFrequency';
+
+describe('encounter frequency', () => {
+  it('createFrequencyConfig sets base chance by danger', () => {
+    expect(createFrequencyConfig('safe').baseChance).toBe(5);
+    expect(createFrequencyConfig('deadly').baseChance).toBe(60);
+  });
+
+  it('getTimeOfDayFromHour maps correctly', () => {
+    expect(getTimeOfDayFromHour(6)).toBe('dawn');
+    expect(getTimeOfDayFromHour(10)).toBe('morning');
+    expect(getTimeOfDayFromHour(14)).toBe('afternoon');
+    expect(getTimeOfDayFromHour(23)).toBe('night');
+    expect(getTimeOfDayFromHour(2)).toBe('midnight');
+  });
+
+  it('rollEncounterCheck returns valid structure', () => {
+    const config = createFrequencyConfig('moderate');
+    const result = rollEncounterCheck(config, 'night', true);
+    expect(typeof result.encounterOccurs).toBe('boolean');
+    expect(result.roll).toBeGreaterThanOrEqual(1);
+    expect(result.roll).toBeLessThanOrEqual(100);
+    expect(result.threshold).toBeGreaterThan(0);
+  });
+
+  it('formatEncounterCheck includes breakdown', () => {
+    const config = createFrequencyConfig('low');
+    const result = rollEncounterCheck(config, 'morning', false);
+    const text = formatEncounterCheck(result);
+    expect(text).toContain('Encounter Check');
+    expect(text).toContain('Base');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Concentration tracker
+// ---------------------------------------------------------------------------
+import { createConcentrationState, startConcentrating, dropConcentration, calculateConcentrationDC, checkConcentration, isConcentrating, formatConcentrationStatus } from '../../src/lib/concentrationTracker';
+
+describe('concentration tracker', () => {
+  it('starts empty', () => {
+    expect(createConcentrationState().entries.length).toBe(0);
+  });
+
+  it('startConcentrating adds entry', () => {
+    let state = createConcentrationState();
+    state = startConcentrating(state, 'c1', 'Wizard', 'Haste', 1);
+    expect(state.entries.length).toBe(1);
+    expect(isConcentrating(state, 'c1')).toBe(true);
+  });
+
+  it('startConcentrating replaces existing', () => {
+    let state = createConcentrationState();
+    state = startConcentrating(state, 'c1', 'Wizard', 'Haste', 1);
+    state = startConcentrating(state, 'c1', 'Wizard', 'Fly', 2);
+    expect(state.entries.length).toBe(1);
+    expect(state.entries[0].spellName).toBe('Fly');
+  });
+
+  it('dropConcentration removes entry', () => {
+    let state = startConcentrating(createConcentrationState(), 'c1', 'Wizard', 'Haste', 1);
+    const result = dropConcentration(state, 'c1');
+    expect(result.droppedSpell).toBe('Haste');
+    expect(result.state.entries.length).toBe(0);
+  });
+
+  it('calculateConcentrationDC uses max(10, dmg/2)', () => {
+    expect(calculateConcentrationDC(8)).toBe(10);
+    expect(calculateConcentrationDC(30)).toBe(15);
+    expect(calculateConcentrationDC(50)).toBe(25);
+  });
+
+  it('checkConcentration returns needs check when concentrating', () => {
+    const state = startConcentrating(createConcentrationState(), 'c1', 'Wizard', 'Haste', 1);
+    const result = checkConcentration(state, 'c1', 20);
+    expect(result.needsCheck).toBe(true);
+    expect(result.dc).toBe(10);
+    expect(result.spellName).toBe('Haste');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Legendary actions
+// ---------------------------------------------------------------------------
+import { LEGENDARY_TEMPLATES as LEG_TEMPLATES, createLegendaryMonster, useLegendaryAction, refreshLegendaryActions, useLairAction, formatLegendaryStatus } from '../../src/lib/legendaryActions';
+
+describe('legendary actions', () => {
+  it('has at least 3 templates', () => {
+    expect(LEG_TEMPLATES.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('createLegendaryMonster starts at max actions', () => {
+    const m = createLegendaryMonster(LEG_TEMPLATES[0]);
+    expect(m.currentLegendaryActions).toBe(m.maxLegendaryActions);
+  });
+
+  it('useLegendaryAction deducts cost', () => {
+    const m = createLegendaryMonster(LEG_TEMPLATES[0]);
+    const result = useLegendaryAction(m, 0); // Detect, cost 1
+    expect(result.success).toBe(true);
+    expect(result.monster.currentLegendaryActions).toBe(m.maxLegendaryActions - 1);
+  });
+
+  it('useLegendaryAction fails when insufficient', () => {
+    let m = createLegendaryMonster(LEG_TEMPLATES[0]);
+    m.currentLegendaryActions = 0;
+    const result = useLegendaryAction(m, 0);
+    expect(result.success).toBe(false);
+  });
+
+  it('refreshLegendaryActions restores to max', () => {
+    let m = createLegendaryMonster(LEG_TEMPLATES[0]);
+    m.currentLegendaryActions = 0;
+    m = refreshLegendaryActions(m);
+    expect(m.currentLegendaryActions).toBe(m.maxLegendaryActions);
+  });
+
+  it('formatLegendaryStatus includes action bar', () => {
+    const m = createLegendaryMonster(LEG_TEMPLATES[0]);
+    const text = formatLegendaryStatus(m);
+    expect(text).toContain(m.name);
+    expect(text).toContain('⚡');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Treasure division
+// ---------------------------------------------------------------------------
+import { divideGold, assignItems, calculateFairness, divideTreasure, formatDivision } from '../../src/lib/treasureDivision';
+
+describe('treasure division', () => {
+  const mockChars = [
+    { id: 'c1', name: 'Fighter', class: 'Fighter', gold: 100, inventory: [] },
+    { id: 'c2', name: 'Wizard', class: 'Wizard', gold: 30, inventory: [] },
+  ] as Character[];
+
+  it('divideGold splits evenly', () => {
+    const result = divideGold(100, mockChars);
+    expect(result['c1'] + result['c2']).toBe(100);
+  });
+
+  it('divideGold gives remainder to poorest', () => {
+    const result = divideGold(101, mockChars);
+    expect(result['c2']).toBeGreaterThan(result['c1']); // Wizard is poorer
+  });
+
+  it('calculateFairness returns 100 for even split', () => {
+    expect(calculateFairness({ c1: 50, c2: 50 }, 100, 2)).toBe(100);
+  });
+
+  it('divideTreasure produces summary', () => {
+    const result = divideTreasure(200, [], mockChars);
+    expect(result.summary).toContain('Gold');
+    expect(result.fairnessScore).toBeGreaterThanOrEqual(90);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Party formation memory
+// ---------------------------------------------------------------------------
+import { saveFormation, applyFormation, formatFormationList, type SavedFormation } from '../../src/lib/partyFormationMemory';
+
+describe('party formation memory', () => {
+  it('applyFormation re-centers positions', () => {
+    const formation: SavedFormation = {
+      id: 'f1', name: 'Test', savedAt: Date.now(),
+      positions: [
+        { characterId: 'c1', relativeCol: -1, relativeRow: 0 },
+        { characterId: 'c2', relativeCol: 1, relativeRow: 0 },
+      ],
+    };
+    const applied = applyFormation(formation, 10, 10);
+    expect(applied[0].col).toBe(9);
+    expect(applied[1].col).toBe(11);
+    expect(applied[0].row).toBe(10);
+  });
+
+  it('formatFormationList shows empty message', () => {
+    expect(formatFormationList([])).toContain('None yet');
+  });
+
+  it('formatFormationList shows saved formations', () => {
+    const formations: SavedFormation[] = [
+      { id: 'f1', name: 'Line', positions: [{ characterId: 'c1', relativeCol: 0, relativeRow: 0 }], savedAt: Date.now() },
+    ];
+    expect(formatFormationList(formations)).toContain('Line');
+  });
+});

@@ -33,6 +33,7 @@ import { TRAP_TEMPLATES as TRAP_TEMPLATES_DATA, formatTrap as formatTrapFn } fro
 import { DOWNTIME_ACTIVITIES as DOWNTIME_DATA } from '../../lib/downtimeActivities';
 import { WAVE_TEMPLATES as WAVE_TEMPLATES_DATA } from '../../lib/encounterWaves';
 import { PATRONS as PATRON_DATA, formatPatron as formatPatronFn } from '../../data/deityPatrons';
+import { LEGENDARY_TEMPLATES as LEGENDARY_DATA } from '../../lib/legendaryActions';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -1045,6 +1046,104 @@ export default function DMSidebar({
               title="Browse initiative tiebreaker house rules"
             >
               🎲 Tiebreaker Rules
+            </button>
+
+            {/* Inspiration */}
+            <button
+              onClick={async () => {
+                const { formatInspirationStatus, createInspirationState } = await import('../../lib/inspirationSystem');
+                const states = characters.map((c) => {
+                  const raw = localStorage.getItem(`adventure:inspiration:${c.id}`);
+                  return raw ? JSON.parse(raw) : createInspirationState(c.id);
+                });
+                const names: Record<string, string> = {};
+                for (const c of characters) names[c.id] = c.name;
+                onAddDmMessage(formatInspirationStatus(states, names));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all disabled:opacity-30"
+              title="View inspiration status for all characters"
+            >
+              ⭐ Inspiration
+            </button>
+
+            {/* Encounter frequency check */}
+            <button
+              onClick={async () => {
+                const { createFrequencyConfig, rollEncounterCheck, formatEncounterCheck, getTimeOfDayFromHour } = await import('../../lib/encounterFrequency');
+                const hour = 12; // default to noon; DM can note actual hour in narration
+                const timeOfDay = getTimeOfDayFromHour(hour);
+                const config = createFrequencyConfig('moderate');
+                const result = rollEncounterCheck(config, timeOfDay, true);
+                onAddDmMessage(formatEncounterCheck(result));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all"
+              title="Roll to see if a random encounter occurs — factors in terrain danger and time of day"
+            >
+              🎲 Encounter Check
+            </button>
+
+            {/* Concentration tracker */}
+            <button
+              onClick={async () => {
+                const { createConcentrationState, formatConcentrationStatus } = await import('../../lib/concentrationTracker');
+                const raw = localStorage.getItem(`adventure:concentration:${roomId}`);
+                const state = raw ? JSON.parse(raw) : createConcentrationState();
+                onAddDmMessage(formatConcentrationStatus(state));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all"
+              title="View who is concentrating on spells and manage concentration checks"
+            >
+              🔮 Concentration
+            </button>
+
+            {/* Legendary actions */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-300 font-semibold hover:bg-amber-800/30 transition-all cursor-pointer px-2">
+                👑 Legendary Monsters
+              </summary>
+              <div className="mt-1 space-y-1">
+                {LEGENDARY_DATA.map((t, i) => (
+                  <button
+                    key={i}
+                    onClick={async () => {
+                      const { createLegendaryMonster, formatLegendaryStatus } = await import('../../lib/legendaryActions');
+                      onAddDmMessage(formatLegendaryStatus(createLegendaryMonster(t)));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-amber-600/40 transition-all text-[9px] text-slate-300"
+                  >
+                    👑 {t.name} ({t.maxLegendaryActions} LA{t.hasLair ? ' + Lair' : ''})
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Treasure division */}
+            <button
+              onClick={async () => {
+                const { divideTreasure, formatDivision } = await import('../../lib/treasureDivision');
+                const gold = parseInt(window.prompt('Total gold to divide:', '100') || '0', 10);
+                if (!gold) return;
+                const result = divideTreasure(gold, [], characters);
+                onAddDmMessage(formatDivision(result));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all disabled:opacity-30"
+              title="Auto-divide gold among party with fairness scoring"
+            >
+              💰 Divide Treasure
+            </button>
+
+            {/* Saved formations */}
+            <button
+              onClick={async () => {
+                const { loadFormations, formatFormationList } = await import('../../lib/partyFormationMemory');
+                onAddDmMessage(formatFormationList(loadFormations(roomId)));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all"
+              title="View and load saved party formations"
+            >
+              📐 Saved Formations
             </button>
 
             {/* Save/Load Encounter Templates */}

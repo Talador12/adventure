@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.5.0
+## Current Version: v10.6.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 28 tests (517 total) — inspiration, encounter frequency, concentration, legendary actions, treasure division, formation memory:
+  - **Inspiration point system** — `inspirationSystem.ts` with 8 default triggers (Great Roleplay, Clever Plan, Team Player, Backstory Moment, etc). `grantInspiration()`/`spendInspiration()` with history tracking. "Inspiration" button in DMSidebar.
+  - **Random encounter frequency tuner** — `encounterFrequency.ts` with 5 terrain danger levels (safe→deadly), 7 time-of-day modifiers, travel bonus. `rollEncounterCheck()` produces d100 vs calculated threshold. `getTimeOfDayFromHour()` for clock integration. "Encounter Check" button in DMSidebar.
+  - **Concentration tracker** — `concentrationTracker.ts` tracks who is concentrating on what spell. `calculateConcentrationDC()` uses max(10, damage/2). `checkConcentration()` returns DC and spell name when caster takes damage. Auto-replaces on new concentration. "Concentration" button in DMSidebar.
+  - **Legendary action tracker** — `legendaryActions.ts` with 3 boss templates (Adult Dragon, Lich, Beholder). Legendary actions with costs (1-3 LA), lair actions on init 20. `useLegendaryAction()` deducts cost, `refreshLegendaryActions()` at turn start. Visual action bar. Expandable browser in DMSidebar.
+  - **Treasure division calculator** — `treasureDivision.ts` auto-splits gold (remainder to poorest), assigns items by class preference (12 class preference maps). `calculateFairness()` scores 0-100. "Divide Treasure" button with gold prompt in DMSidebar.
+  - **Party formation memory** — `partyFormationMemory.ts` saves token positions relative to centroid for re-centering. `saveFormation()`/`applyFormation()` with localStorage persistence (max 10 per room). "Saved Formations" button in DMSidebar.
+- 28 new tests (517 total) covering 6 systems:
+  - **Inspiration** (5 tests): trigger count, empty state, grant, spend, spend-without.
+  - **Encounter frequency** (4 tests): danger base chance, time-of-day mapping, roll structure, formatted breakdown.
+  - **Concentration** (6 tests): empty state, start, replacement, drop, DC calculation, damage check.
+  - **Legendary actions** (6 tests): template count, max actions, cost deduction, insufficient fail, refresh, formatted bar.
+  - **Treasure division** (4 tests): even split, remainder to poorest, fairness score, summary output.
+  - **Formation memory** (3 tests): re-centering, empty format, populated format.
+
 - 6 new systems + 29 tests (489 total) — deity patrons, wilderness maps, character goals, ambient sounds, spell recovery, tiebreakers:
   - **Deity/patron system** — `deityPatrons.ts` with 6 patrons across 5 types (Bahamut, Lolth, Titania, Asmodeus, Hadar, Empyrean Steed). Each has boons with mechanical effects, demands, and displeasure penalties. Expandable patron browser in DMSidebar.
   - **Wilderness map generator** — `wildernessMapGen.ts` with 7 biome presets. Cellular automata smoothing (2 passes) for natural-looking terrain. Seeded RNG for reproducibility. Edges kept passable. Biome selector in DMSidebar.
@@ -320,12 +335,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Inspiration point system — earn/spend inspiration with custom DM triggers
-- Random encounter frequency tuner — DM sets encounter chance by day/night/terrain
-- Party formation memory — save/load party arrangements for quick deployment
-- Concentration tracker — auto-prompt saves when concentrating casters take damage
-- Legendary action tracker — manage legendary/lair actions for boss monsters
-- Treasure division calculator — auto-split gold/items among party with fairness scoring
+- ~~Inspiration point system~~ **DONE** — `inspirationSystem.ts` with 8 DM triggers
+- ~~Random encounter frequency tuner~~ **DONE** — `encounterFrequency.ts` with terrain×time math
+- ~~Party formation memory~~ **DONE** — `partyFormationMemory.ts` with centroid-relative save/load
+- ~~Concentration tracker~~ **DONE** — `concentrationTracker.ts` with DC calculation
+- ~~Legendary action tracker~~ **DONE** — `legendaryActions.ts` with 3 boss templates
+- ~~Treasure division calculator~~ **DONE** — `treasureDivision.ts` with fairness scoring
+
+**Wave 11 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Surprise round detector — check stealth vs perception to determine surprise at combat start
+- Condition duration tracker — auto-decrement spell/condition durations each round
+- XP milestone calculator — DM sets story milestones that award XP on completion
+- Party marching order — configurable column formation for dungeon exploration
+- NPC dialogue tree builder — branching conversation paths with conditional responses
+- Rest interruption system — random encounter chance during long rests with partial recovery
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
