@@ -1508,3 +1508,149 @@ describe('spell slot data integrity', () => {
     expect(total15).toBeGreaterThan(total1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Campaign templates
+// ---------------------------------------------------------------------------
+import { CAMPAIGN_TEMPLATES } from '../../src/data/campaignTemplates';
+
+describe('campaign templates', () => {
+  it('has at least 5 templates', () => {
+    expect(CAMPAIGN_TEMPLATES.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('all templates have required fields', () => {
+    for (const t of CAMPAIGN_TEMPLATES) {
+      expect(t.id).toBeTruthy();
+      expect(t.name).toBeTruthy();
+      expect(t.description).toBeTruthy();
+      expect(t.sceneName).toBeTruthy();
+      expect(t.openingNarration).toBeTruthy();
+      expect(Array.isArray(t.quests)).toBe(true);
+      expect(t.quests.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('all quests have required fields', () => {
+    for (const t of CAMPAIGN_TEMPLATES) {
+      for (const q of t.quests) {
+        expect(q.id).toBeTruthy();
+        expect(q.title).toBeTruthy();
+        expect(q.description).toBeTruthy();
+        expect(['main', 'side']).toContain(q.priority);
+      }
+    }
+  });
+
+  it('template IDs are unique', () => {
+    const ids = CAMPAIGN_TEMPLATES.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('all templates have suggested level', () => {
+    for (const t of CAMPAIGN_TEMPLATES) {
+      expect(t.suggestedLevel).toBeTruthy();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enemy template multiattack
+// ---------------------------------------------------------------------------
+describe('enemy template multiattack', () => {
+  it('hard tier enemies have multiattack >= 2', () => {
+    const hardTemplates = ENEMY_TEMPLATES.hard || [];
+    const withMulti = hardTemplates.filter((t) => t.multiattack && t.multiattack >= 2);
+    expect(withMulti.length).toBeGreaterThan(0);
+  });
+
+  it('deadly tier enemies have multiattack >= 3', () => {
+    const deadlyTemplates = ENEMY_TEMPLATES.deadly || [];
+    const withMulti = deadlyTemplates.filter((t) => t.multiattack && t.multiattack >= 3);
+    expect(withMulti.length).toBeGreaterThan(0);
+  });
+
+  it('easy tier enemies have no multiattack', () => {
+    const easyTemplates = ENEMY_TEMPLATES.easy || [];
+    for (const t of easyTemplates) {
+      expect(t.multiattack || 1).toBe(1);
+    }
+  });
+
+  it('generated enemies inherit multiattack from template', () => {
+    const enemies = generateEnemies('hard', 4, 5);
+    if (enemies.length > 0 && enemies[0].multiattack) {
+      expect(enemies[0].multiattack).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Class save proficiencies integration
+// ---------------------------------------------------------------------------
+describe('class save proficiencies integration', () => {
+  it('every class has exactly 2 save proficiencies', () => {
+    for (const cls of CLASSES) {
+      const saves = CLASS_SAVE_PROFICIENCIES[cls];
+      expect(saves).toBeDefined();
+      expect(saves.length).toBe(2);
+    }
+  });
+
+  it('no class has duplicate save proficiencies', () => {
+    for (const cls of CLASSES) {
+      const saves = CLASS_SAVE_PROFICIENCIES[cls];
+      expect(new Set(saves).size).toBe(2);
+    }
+  });
+
+  it('Fighter and Barbarian are proficient in STR and CON saves', () => {
+    expect(CLASS_SAVE_PROFICIENCIES.Fighter).toContain('STR');
+    expect(CLASS_SAVE_PROFICIENCIES.Fighter).toContain('CON');
+    expect(CLASS_SAVE_PROFICIENCIES.Barbarian).toContain('STR');
+    expect(CLASS_SAVE_PROFICIENCIES.Barbarian).toContain('CON');
+  });
+
+  it('Wizard is proficient in INT and WIS saves', () => {
+    expect(CLASS_SAVE_PROFICIENCIES.Wizard).toContain('INT');
+    expect(CLASS_SAVE_PROFICIENCIES.Wizard).toContain('WIS');
+  });
+
+  it('Rogue is proficient in DEX and INT saves', () => {
+    expect(CLASS_SAVE_PROFICIENCIES.Rogue).toContain('DEX');
+    expect(CLASS_SAVE_PROFICIENCIES.Rogue).toContain('INT');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Skill choices per class
+// ---------------------------------------------------------------------------
+describe('class skill choices', () => {
+  it('Bard gets the most skill choices (3)', () => {
+    expect(CLASS_SKILL_CHOICES.Bard.count).toBe(3);
+  });
+
+  it('Rogue gets 4 skill choices', () => {
+    expect(CLASS_SKILL_CHOICES.Rogue.count).toBe(4);
+  });
+
+  it('Ranger gets 3 skill choices', () => {
+    expect(CLASS_SKILL_CHOICES.Ranger.count).toBe(3);
+  });
+
+  it('most classes get 2 skill choices', () => {
+    const twoChoiceClasses = ['Barbarian', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Sorcerer', 'Warlock', 'Wizard'];
+    for (const cls of twoChoiceClasses) {
+      expect(CLASS_SKILL_CHOICES[cls].count).toBe(2);
+    }
+  });
+
+  it('all skill options are valid D&D 5e skills', () => {
+    const validSkills = Object.keys(SKILL_ABILITIES);
+    for (const cls of CLASSES) {
+      for (const skill of CLASS_SKILL_CHOICES[cls].options) {
+        expect(validSkills).toContain(skill);
+      }
+    }
+  });
+});

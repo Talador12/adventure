@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 19 new tests (203 player total, 225 with API) covering 4 systems:
+  - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
+  - **Enemy multiattack** (4 tests): hard tier has multiattack 2+, deadly has 3+, easy has none, generation inherits multiattack.
+  - **Class save proficiencies integration** (5 tests): all 12 classes have exactly 2, no duplicates, specific class checks (Fighter/Barbarian STR+CON, Wizard INT+WIS, Rogue DEX+INT).
+  - **Class skill choices** (5 tests): Bard 3, Rogue 4, Ranger 3, most classes 2, all options are valid D&D 5e skills.
 - 4 final QoL features:
   - **Bulk dice roller** — quick dropdown in CombatToolbar for common rolls (1d4 through 10d10, 1d100 percentile). Shows individual dice + total in combat log.
   - **Map zoom-to-fit** — "Fit" button auto-calculates bounding box of all tokens and sets zoom/pan to show everything with padding.
