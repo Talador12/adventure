@@ -1939,6 +1939,16 @@ export default function CombatToolbar({
                             }
                             if (playerUnits.length > 0) setCombatLog((prev) => [...prev, ...recap]);
 
+                            // AI combat summary narration
+                            if (combatLog.length > 5) {
+                              const logSummary = combatLog.slice(-30).join('\n');
+                              fetch('/api/dm/narrate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: `Summarize this combat encounter in 2-3 dramatic sentences as a narrator. Focus on the most exciting moments.`, context: logSummary, history: [] })
+                              }).then((r) => r.json() as Promise<{ narration?: string }>).then((d) => {
+                                if (d.narration) addDmMessage(`⚔️ *${d.narration}*`);
+                              }).catch(() => {});
+                            }
+
                             setInCombat(false);
                             onCombatEnd?.();
                             // Auto-save campaign state on combat end
@@ -2071,6 +2081,11 @@ export default function CombatToolbar({
                           playHealing();
                           addFloatingText('Full Rest', 'heal');
                           addDmMessage(`${selectedCharacter.name} settles in for a long rest. HP fully restored. All spell slots recovered. Exhaustion reduced by 1.`);
+                          // Auto-generate diary entry for the resting character
+                          import('../../lib/playerDiary').then(({ generateDiaryEntry, formatDiaryEntry }) => {
+                            const entry = generateDiaryEntry(selectedCharacter, dmHistory.slice(-30), combatLog, calendar?.currentDay || 1);
+                            addDmMessage(formatDiaryEntry(entry));
+                          }).catch(() => {});
                           // Random chance of rest interruption (20% chance)
                           if (Math.random() < 0.2) {
                             const encounters = ['a pack of wolves drawn by the campfire', 'bandits who spotted your camp from the road', 'a wandering undead patrol', 'a curious owlbear investigating the smell of rations', 'goblin scouts who stumbled upon your camp'];

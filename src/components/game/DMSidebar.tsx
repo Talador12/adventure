@@ -435,6 +435,12 @@ export default function DMSidebar({
                   let msg = `💰 **Treasure Hoard** (party level ${avgLevel}):\n${hoard.gold} gold`;
                   if (hoard.gems.length > 0) msg += `\nGems: ${hoard.gems.map((g) => `${g.name} (${g.value}gp)`).join(', ')}`;
                   if (hoard.items.length > 0) msg += `\nMagic items: ${hoard.items.map((i) => `**${i.name}** (${i.rarity}, ${i.value}gp)`).join(', ')}`;
+                  // Smart loot suggestions
+                  if (hoard.items.length > 0 && characters.length > 0) {
+                    const { suggestLootDistribution, formatLootSuggestions } = await import('../../lib/lootDistribution');
+                    const suggestions = suggestLootDistribution(hoard.items, characters);
+                    msg += `\n\n📦 **Suggested Distribution:**\n${formatLootSuggestions(suggestions)}`;
+                  }
                   onAddDmMessage(msg);
                 }}
                 className="w-full text-[10px] py-1.5 rounded bg-amber-600/20 border border-amber-500/40 text-amber-400 font-semibold hover:bg-amber-500/30 transition-all"

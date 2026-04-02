@@ -293,6 +293,7 @@ export default function Game() {
   const [factions, setFactions] = useState<Array<{ id: string; name: string; reputation: number; description: string }>>([]);
   const [showSkillChallenge, setShowSkillChallenge] = useState(false);
   const [showMVPVoting, setShowMVPVoting] = useState(false);
+  const [pcRelationships, setPcRelationships] = useState<import('../data/relationships').CharacterRelationship[]>([]);
   const [mvpVotes, setMvpVotes] = useState<Record<string, string>>({});
   const [combatStartTime, setCombatStartTime] = useState<number | null>(null);
   const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
@@ -1352,6 +1353,19 @@ export default function Game() {
 
   // Keep undo system synced with current units
   useEffect(() => { syncUndoUnits(units); }, [units, syncUndoUnits]);
+
+  // Procedural room description when switching to map view
+  const prevMapViewRef = useRef(false);
+  useEffect(() => {
+    const isMapView = activeView === 'map';
+    if (isMapView && !prevMapViewRef.current && terrain.length > 0) {
+      import('../lib/roomDescriptions').then(({ generateRoomDescription }) => {
+        const desc = generateRoomDescription(terrain);
+        if (desc) addDmMessage(`*${desc}*`);
+      }).catch(() => {});
+    }
+    prevMapViewRef.current = isMapView;
+  }, [activeView]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Smart tactical advice at combat start
   useEffect(() => {

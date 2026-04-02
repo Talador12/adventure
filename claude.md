@@ -63,17 +63,25 @@ The complete feature set built from project inception through 46 development ite
   - **Map hazard chain reactions** — fire (lava) terrain has 15% chance per round to spread to adjacent floor/grass cells. Creates dynamic environmental pressure.
   - **Party formation presets** — wired existing `FormationPresets` component (line/column/wedge/diamond/scatter/circle) into the game view for DM token arrangement.
 
+- 6 narrative + social features:
+  - **Smart loot distribution** — `lootDistribution.ts` scores items per character based on class preference, stat synergy, existing equipment, and HP. Treasure hoard rolls now include "Suggested Distribution" section with per-item recommendations and reasons.
+  - **Character relationship tracker** — `relationships.ts` with 8 relationship types (ally/rival/mentor/protege/friend/romantic/distrustful/neutral), mechanical combat bonuses for adjacent allies, `pcRelationships` state in Game.tsx.
+  - **Procedural room descriptions** — `roomDescriptions.ts` analyzes terrain layout to generate atmospheric flavor text (dungeon/outdoor/lava/ice/water variants). Auto-triggers when switching to map view.
+  - **Combat replay narration** — AI summarizes completed combat as 2-3 dramatic sentences via `/api/dm/narrate` on combat end.
+  - **Auto-generated player diary** — `playerDiary.ts` generates per-character journal entries from their POV on long rest. Analyzes kills, crits, damage taken, and class personality. Mood detection (triumphant/worried/reflective/excited/somber).
+  - **Spectator commentary mode** — `spectatorCommentary.ts` generates sports-broadcast-style play-by-play from combat log entries (crits, kills, healing, round milestones).
+
 **New Roadmap — Next Phase:**
-- AI-generated encounter narration that adapts to combat flow (not just start/end)
-- Player character relationship tracker (ally bonds, rivalry, romance, mentor)
-- Procedural dungeon room descriptions based on map terrain
 - Cross-session character progression (persistent XP/gold/items across campaigns)
-- Campaign world map with fog-of-war travel
-- Spectator mode commentary — AI narrates the game for spectators like a sports broadcast
-- Player character diary — auto-generated journal entries from session events
-- Achievement badges for campaign milestones (100 kills, 10 sessions, etc)
-- Smart loot distribution — suggest who should get which item based on class/build
-- Combat replay system — rewind and replay combat encounters
+- Campaign world map with fog-of-war travel and location markers
+- Achievement badges for campaign milestones (100 kills, 10 sessions, first TPK survived)
+- Combat replay system — rewind and step through past encounters
+- AI DM personality modes (serious/humorous/dramatic/grimdark narrator styles)
+- Player-to-player item trading with confirmation UI
+- Weather progression system — weather changes over time, DM sets forecast
+- NPC relationship memory — NPCs remember past interactions with the party
+- Quest branching based on player choices with consequence tracking
+- Campaign analytics dashboard — session length, combat ratio, XP curve, death count
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
