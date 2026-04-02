@@ -55,6 +55,26 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new features — tactical advice, auto-scale encounters, voice lines, MVP voting, fire spread, formations:
+  - **Smart tactical advice** — `tacticalAdvice.ts` analyzes party comp at combat start: identifies wounded allies, suggests class-specific actions (Cleric heal, Rogue hide, Barbarian rage), focus fire on low-HP enemies, warns when outnumbered. Up to 5 prioritized tips shown in combat log.
+  - **Encounter difficulty auto-scale** — `useDynamicDifficulty` now spawns reinforcements when combat is too easy for 3+ rounds. Reinforcement is a weakened copy of an existing enemy with 70% HP, adding pressure without overwhelming.
+  - **Character voice lines** — `voiceLines.ts` with class-themed catchphrases (Fighter/Wizard/Rogue/Cleric + default) for 7 events (crit/kill/heal/death save/level up/miss). Triggered on nat 20s and kills with DM chat message.
+  - **Session MVP voting** — `MVPVoting` component: DM triggers vote, players pick favorite player, votes synced via WebSocket, winner announced with trophy. Full modal UI with vote tally.
+  - **Map hazard chain reactions** — fire (lava) terrain has 15% chance per round to spread to adjacent floor/grass cells. Creates dynamic environmental pressure.
+  - **Party formation presets** — wired existing `FormationPresets` component (line/column/wedge/diamond/scatter/circle) into the game view for DM token arrangement.
+
+**New Roadmap — Next Phase:**
+- AI-generated encounter narration that adapts to combat flow (not just start/end)
+- Player character relationship tracker (ally bonds, rivalry, romance, mentor)
+- Procedural dungeon room descriptions based on map terrain
+- Cross-session character progression (persistent XP/gold/items across campaigns)
+- Campaign world map with fog-of-war travel
+- Spectator mode commentary — AI narrates the game for spectators like a sports broadcast
+- Player character diary — auto-generated journal entries from session events
+- Achievement badges for campaign milestones (100 kills, 10 sessions, etc)
+- Smart loot distribution — suggest who should get which item based on class/build
+- Combat replay system — rewind and replay combat encounters
+
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
   - **Enemy multiattack** (4 tests): hard tier has multiattack 2+, deadly has 3+, easy has none, generation inherits multiattack.

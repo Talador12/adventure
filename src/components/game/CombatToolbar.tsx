@@ -438,6 +438,10 @@ export default function CombatToolbar({
                                     // Critical hit extra effect (random table roll)
                                     let critEffectTag = '';
                                     if (isCrit) {
+                                      import('../../data/voiceLines').then(({ getVoiceLine }) => {
+                                        const line = getVoiceLine(selectedCharacter?.class || 'Fighter', 'crit');
+                                        addDmMessage(`**${selectedCharacter?.name}:** ${line}`);
+                                      }).catch(() => {});
                                       triggerDramatic?.('crit', 'CRITICAL HIT!', `${selectedCharacter?.name} strikes true!`);
                                       const CRIT_EFFECTS = [
                                         { name: 'Lingering Wound', desc: 'bleeding 1d4/turn', cond: 'burning' as const, dur: 1 },
@@ -466,6 +470,10 @@ export default function CombatToolbar({
                                 // Check for enemy death after all attacks
                                 if (target.hp - totalDamageDealt <= 0) {
                                   playEnemyDeath();
+                                  import('../../data/voiceLines').then(({ getVoiceLine }) => {
+                                    const line = getVoiceLine(selectedCharacter?.class || 'Fighter', 'kill');
+                                    addDmMessage(`**${selectedCharacter?.name}:** ${line}`);
+                                  }).catch(() => {});
                                   if ((target.cr || 0) >= 3) triggerDramatic?.('boss_kill', `${target.name} SLAIN!`, `${selectedCharacter?.name || 'The party'} fells the beast!`);
                                   const deathMsg = `${target.name} falls! ${killFlavor()}`;
                                   setCombatLog((prev) => [...prev, deathMsg]);

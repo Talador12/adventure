@@ -26,6 +26,8 @@ import { useUndoRedo } from '../hooks/useUndoRedo';
 import Onboarding from '../components/game/Onboarding';
 import DramaticMoment, { useDramaticMoments } from '../components/game/DramaticMoment';
 const SkillChallenge = lazy(() => import('../components/game/SkillChallenge'));
+const MVPVoting = lazy(() => import('../components/game/MVPVoting'));
+const FormationPresets = lazy(() => import('../components/game/FormationPresets'));
 const DMQuickRef = lazy(() => import('../components/game/DMQuickRef'));
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useCampaignPersistence, type CampaignLoadResult } from '../hooks/useCampaignPersistence';
@@ -290,6 +292,8 @@ export default function Game() {
   const [spellZones, setSpellZones] = useState<import('../types/game').SpellZone[]>([]);
   const [factions, setFactions] = useState<Array<{ id: string; name: string; reputation: number; description: string }>>([]);
   const [showSkillChallenge, setShowSkillChallenge] = useState(false);
+  const [showMVPVoting, setShowMVPVoting] = useState(false);
+  const [mvpVotes, setMvpVotes] = useState<Record<string, string>>({});
   const [combatStartTime, setCombatStartTime] = useState<number | null>(null);
   const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
   const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
@@ -1348,6 +1352,17 @@ export default function Game() {
 
   // Keep undo system synced with current units
   useEffect(() => { syncUndoUnits(units); }, [units, syncUndoUnits]);
+
+  // Smart tactical advice at combat start
+  useEffect(() => {
+    if (inCombat && units.filter((u) => u.type === 'enemy' && u.hp > 0).length > 0) {
+      import('../lib/tacticalAdvice').then(({ analyzePartyTactics, formatTacticalAdvice }) => {
+        const tips = analyzePartyTactics(units, characters);
+        const formatted = formatTacticalAdvice(tips);
+        if (formatted) setCombatLog((prev) => prev.length <= 3 ? [...prev, `📋 **Tactical Analysis:**\n${formatted}`] : prev);
+      }).catch(() => {});
+    }
+  }, [inCombat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track combat timing
   useEffect(() => {
@@ -2552,6 +2567,11 @@ export default function Game() {
             </div>
           )}
 
+          {/* Party formation presets (DM tool) */}
+          {canUseDMTools && adventureStarted && (
+            <Suspense fallback={null}><FormationPresets /></Suspense>
+          )}
+
           {/* Re-sort initiative by value (DM tool) */}
           {inCombat && canUseDMTools && (
             <button
@@ -3008,7 +3028,10 @@ export default function Game() {
                   </Suspense>
                 )}
                 {canUseDMTools && (
+                  <>
                   <Suspense fallback={null}><DMQuickRef /></Suspense>
+                  <button onClick={() => { setShowMVPVoting(true); setMvpVotes({}); broadcastGameEvent('mvp_start', {}); }} className="text-[9px] px-2 py-1 rounded bg-amber-900/30 border border-amber-600/40 text-amber-400 font-semibold hover:bg-amber-800/40 transition-all" title="Start MVP voting">MVP Vote</button>
+                  </>
                 )}
                 {canUseDMTools && !showSkillChallenge && !inCombat && (
                   <button onClick={() => setShowSkillChallenge(true)} className="mx-2 mb-1 text-[9px] px-2 py-1 rounded bg-teal-900/30 border border-teal-600/40 text-teal-400 font-semibold hover:bg-teal-800/40 transition-all" title="Start a group skill challenge">
@@ -3557,6 +3580,21 @@ export default function Game() {
       <LevelUpFanfare display={levelUpDisplay} />
       <Onboarding />
       <DramaticMoment event={dramaticEvent} />
+      {showMVPVoting && (
+        <Suspense fallback={null}>
+          <MVPVoting
+            players={characters.map((c) => ({ id: c.id, name: c.name }))}
+            currentPlayerId={selectedCharacter?.id || ''}
+            votes={mvpVotes}
+            onVote={(votedForId) => {
+              const next = { ...mvpVotes, [selectedCharacter?.id || '']: votedForId };
+              setMvpVotes(next);
+              broadcastGameEvent('mvp_vote', { votes: next });
+            }}
+            onClose={() => setShowMVPVoting(false)}
+          />
+        </Suspense>
+      )}
       <RoundMVP display={roundMVPDisplay} />
       <SessionMilestones toast={milestoneToast} />
       <SessionSummary

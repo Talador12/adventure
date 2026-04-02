@@ -98,6 +98,24 @@ export function useDynamicDifficulty({ enabled, addDmMessage, broadcastCombatSyn
         setTimeout(() => broadcastCombatSync(updated, true, combatRound), 50);
         return updated;
       });
+      // Auto-scale: if too easy for 3+ rounds, add reinforcements
+      if (combatRound >= 3 && difficulty === 'easy') {
+        const weakestTemplate = aliveEnemies[0];
+        if (weakestTemplate) {
+          const reinforcement = {
+            ...weakestTemplate,
+            id: `reinforce-${crypto.randomUUID().slice(0, 8)}`,
+            name: `${weakestTemplate.name} (reinforcement)`,
+            hp: Math.floor(weakestTemplate.maxHp * 0.7),
+            maxHp: Math.floor(weakestTemplate.maxHp * 0.7),
+            initiative: Math.floor(Math.random() * 20) + 1 + (weakestTemplate.dexMod || 0),
+            isCurrentTurn: false,
+          };
+          setUnits((prev) => [...prev, reinforcement]);
+          addDmMessage('*Reinforcements arrive! A new enemy joins the fray!*');
+        }
+      }
+
       const easyNarrations = [
         '*The remaining enemies rally, their strikes growing more desperate and fierce!*',
         '*Reinforcements seem to be on the way — the enemies fight with renewed vigor!*',

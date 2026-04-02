@@ -1423,7 +1423,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       cleared[nextIdx].disengaged = false; // reset disengage for new turn
       cleared[nextIdx].readiedAction = undefined; // readied actions expire on your next turn
 
-      // Hazard terrain damage: if the unit starts their turn on hazardous terrain, take damage
+      // Hazard terrain damage + chain reactions
       const unitPos = mapPositions.find((p) => p.unitId === cleared[nextIdx].id);
       if (unitPos && cleared[nextIdx].hp > 0) {
         const cellType = terrain[unitPos.row]?.[unitPos.col];
@@ -1431,6 +1431,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (hazard && hazard.damage > 0) {
           cleared[nextIdx].hp = Math.max(0, cleared[nextIdx].hp - hazard.damage);
           concentrationBreakMessages.current.push(`${cleared[nextIdx].name} takes ${hazard.damage} ${hazard.type} damage from ${cellType}!`);
+        }
+      }
+
+      // Fire spread chain reaction: lava/fire terrain has 15% chance to spread to adjacent grass/floor cells
+      if (terrain.length > 0 && Math.random() < 0.15) {
+        const fireTypes = new Set(['lava']);
+        let spread = false;
+        for (let r = 0; r < terrain.length && !spread; r++) {
+          for (let c = 0; c < (terrain[r]?.length || 0) && !spread; c++) {
+            if (!fireTypes.has(terrain[r][c])) continue;
+            const neighbors = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+            for (const [nr, nc] of neighbors) {
+              if (nr >= 0 && nr < terrain.length && nc >= 0 && nc < (terrain[nr]?.length || 0)) {
+                if (terrain[nr][nc] === 'floor' || terrain[nr][nc] === 'grass') {
+                  terrain[nr][nc] = 'lava' as TerrainType;
+                  spread = true;
+                  concentrationBreakMessages.current.push('🔥 Fire spreads to an adjacent cell!');
+                  break;
+                }
+              }
+            }
+          }
         }
       }
 
