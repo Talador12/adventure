@@ -119,6 +119,7 @@ export default function CombatToolbar({
   setSpellZones,
   triggerDramatic,
   weather = 'none',
+  combatLogSearchEnabled = true,
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
@@ -1680,6 +1681,44 @@ export default function CombatToolbar({
                           Re-roll Init
                         </button>
                       )}
+
+                      {/* Bulk dice roller */}
+                      <select
+                        onChange={(e) => {
+                          const notation = e.target.value;
+                          if (!notation) return;
+                          const match = notation.match(/^(\d+)d(\d+)([+-]\d+)?$/);
+                          if (!match) return;
+                          const count = parseInt(match[1], 10);
+                          const sides = parseInt(match[2], 10);
+                          const bonus = parseInt(match[3] || '0', 10);
+                          const rolls: number[] = [];
+                          for (let i = 0; i < count; i++) rolls.push(Math.floor(Math.random() * sides) + 1);
+                          const total = rolls.reduce((s, r) => s + r, 0) + bonus;
+                          const msg = `🎲 ${notation}: [${rolls.join(', ')}]${bonus ? (bonus > 0 ? `+${bonus}` : String(bonus)) : ''} = **${total}**`;
+                          setCombatLog((prev) => [...prev, msg]); addDmMessage(msg);
+                          playDiceRoll();
+                          e.target.value = '';
+                        }}
+                        className="text-[9px] px-1.5 py-1 rounded bg-slate-800/60 border border-slate-600/40 text-slate-400 cursor-pointer"
+                        title="Quick bulk dice roll"
+                      >
+                        <option value="">Dice...</option>
+                        <option value="1d4">1d4</option>
+                        <option value="1d6">1d6</option>
+                        <option value="1d8">1d8</option>
+                        <option value="1d10">1d10</option>
+                        <option value="1d12">1d12</option>
+                        <option value="2d6">2d6</option>
+                        <option value="3d6">3d6</option>
+                        <option value="4d6">4d6</option>
+                        <option value="6d6">6d6 (fireball)</option>
+                        <option value="8d6">8d6</option>
+                        <option value="2d8">2d8</option>
+                        <option value="2d10">2d10</option>
+                        <option value="10d10">10d10</option>
+                        <option value="1d100">1d100 (percentile)</option>
+                      </select>
 
                       {/* Saving throw — roll with class proficiency */}
                       {selectedCharacter && (

@@ -2887,6 +2887,32 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
         >
           Map
         </button>
+        <button
+          onClick={() => {
+            // Zoom-to-fit: calculate bounding box of all tokens and set zoom/pan to show them all
+            if (positions.length === 0) { setZoom(1); setPanOffset({ x: 0, y: 0 }); return; }
+            const minCol = Math.min(...positions.map((p) => p.col));
+            const maxCol = Math.max(...positions.map((p) => p.col));
+            const minRow = Math.min(...positions.map((p) => p.row));
+            const maxRow = Math.max(...positions.map((p) => p.row));
+            const container = containerRef.current;
+            if (!container) return;
+            const pad = 3; // cells padding
+            const spanCols = maxCol - minCol + pad * 2;
+            const spanRows = maxRow - minRow + pad * 2;
+            const containerW = container.clientWidth;
+            const containerH = container.clientHeight;
+            const fitZoom = Math.min(containerW / (spanCols * cellSize), containerH / (spanRows * cellSize), MAX_ZOOM);
+            const centerX = ((minCol + maxCol) / 2) * cellSize;
+            const centerY = ((minRow + maxRow) / 2) * cellSize;
+            setZoom(Math.max(MIN_ZOOM, fitZoom));
+            setPanOffset({ x: containerW / 2 - centerX * fitZoom, y: containerH / 2 - centerY * fitZoom });
+          }}
+          className="text-[10px] px-1.5 py-1 rounded bg-slate-800 text-slate-500 hover:text-slate-300 font-medium transition-colors"
+          title="Zoom to fit all tokens on screen"
+        >
+          Fit
+        </button>
 
         <span className="text-[9px] text-slate-600">{gridCols}x{gridRows} ({gridCols * 5}x{gridRows * 5}ft)</span>
       </div>

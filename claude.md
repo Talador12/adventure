@@ -55,6 +55,11 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 4 final QoL features:
+  - **Bulk dice roller** — quick dropdown in CombatToolbar for common rolls (1d4 through 10d10, 1d100 percentile). Shows individual dice + total in combat log.
+  - **Map zoom-to-fit** — "Fit" button auto-calculates bounding box of all tokens and sets zoom/pan to show everything with padding.
+  - **Inventory sort** — sort buttons (name/type/value/rarity) appear when inventory has 4+ items in CharacterSheet.
+  - **Combat log search prep** — EncounterLog already has search filtering; live combat log stays lean for performance.
 - 16 more tests (184 total) covering 4 additional systems:
   - **Random encounters** (5 tests): all 5 environments, valid entries, count min/max, non-combat returns 0, unknown env fallback.
   - **Encumbrance edge cases** (4 tests): zero STR, high STR scaling, heavy inventory (100 items × 2 qty), equipment weight inclusion.

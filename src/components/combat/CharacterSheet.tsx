@@ -944,6 +944,20 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
         </button>
         {showInventory && (
           <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            {/* Sort controls */}
+            {(character.inventory || []).length > 3 && (
+              <div className="flex gap-1 mb-1">
+                {(['name', 'type', 'value', 'rarity'] as const).map((sortKey) => (
+                  <button key={sortKey} onClick={() => {
+                    const sorted = [...(character.inventory || [])].sort((a, b) => {
+                      if (sortKey === 'value') return (b.value || 0) - (a.value || 0);
+                      return String(a[sortKey] || '').localeCompare(String(b[sortKey] || ''));
+                    });
+                    updateCharacter(character.id, { inventory: sorted });
+                  }} className="text-[7px] px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-500 hover:text-slate-300 capitalize">{sortKey}</button>
+                ))}
+              </div>
+            )}
             {(character.inventory || []).length === 0 ? (
               <div className="text-[10px] text-slate-600 italic text-center py-2">Empty</div>
             ) : (
