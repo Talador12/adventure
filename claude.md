@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.2.0
+## Current Version: v10.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 34 tests (427 total) — sidekicks, traps, weather combat, downtime, monster lore, alignment:
+  - **Henchman/sidekick system** — `sidekicks.ts` with 3 roles (Warrior/Expert/Spellcaster) using Tasha's simplified stat blocks. `createSidekick()` generates HP/AC/attack scaled by level. Level abilities unlock at 1/3/5/7/10 (Extra Attack, Cunning Action, spell slots, etc). `levelUpSidekick()` recalculates stats. "Sidekicks" button in DMSidebar.
+  - **Trap design tool** — `trapDesigner.ts` with 8 pre-built trap templates (Spike Pit, Poison Dart, Fire Glyph, Falling Cage, Alarm Bell, Net Trap, Gas Room, Cursed Idol). Each has trigger type (6 types), effect type (7 types), detection/disable/save DCs, damage, area, and reset mode. Expandable trap browser in DMSidebar.
+  - **Weather-dependent combat modifiers** — `weatherCombatModifiers.ts` with 8 weather conditions (clear/rain/fog/snow/sandstorm/storm/blizzard/heat wave). Each applies typed effects: ranged penalty, visibility range, difficult terrain, perception penalty, concentration DC, fire resistance, cold damage, speed penalty. "Weather Combat Effects" button in DMSidebar reads current weather.
+  - **Downtime activity system** — `downtimeActivities.ts` with 9 activities (weapon training, tool training, language study, research, working, carousing, recuperation, crime, religious service). Each has days/cost/DC/results. `rollComplication()` with 20% chance. Carousing has 6 possible complications including accidental marriage. Expandable activity browser in DMSidebar.
+  - **Monster lore journal** — `monsterLore.ts` with 3-tier progressive reveal system (basic→detailed→expert). Lore levels up automatically with encounters (2=detailed, 4=expert). `getRevealedInfo()` shows cumulative unlocks. `upgradeLore()` for INT check shortcuts. "Monster Lore" button in DMSidebar with localStorage persistence.
+  - **Alignment shift tracker** — `alignmentTracker.ts` with dual-axis system (order -5 to +5, morality -5 to +5). 9 standard D&D alignments computed from axes. 10 pre-built moral choice templates (spared_enemy, killed_prisoner, kept_promise, etc). `detectAlignmentShift()` announces when alignment category changes. Visual bars + history. "Alignment Tracker" button in DMSidebar.
+- 34 new tests (427 total) covering 6 systems:
+  - **Sidekicks** (5 tests): role count, creation stats, HP scaling, level-up, formatted output.
+  - **Trap designer** (5 tests): template count, unique IDs, effect filter, label getters, formatted DCs.
+  - **Weather combat** (6 tests): condition count, clear no-effects, rain ranged penalty, fog visibility, snow terrain, formatted storm.
+  - **Downtime** (5 tests): activity count, unique IDs, work result, training auto-success, formatted output.
+  - **Monster lore** (6 tests): empty journal, first encounter, lore scaling, manual upgrade, cumulative reveals, format handling.
+  - **Alignment** (7 tests): axis classification, state creation, shift + history, clamping, shift detection, moral choices, formatted output.
+
 - 6 new systems + 39 tests (393 total) — exhaustion, crafting, NPC generator, damage types, mounts, strongholds:
   - **Exhaustion tracker** — `exhaustionTracker.ts` with full 5e exhaustion table (6 levels). `addExhaustion()`/`removeExhaustion()` with clamping. `checkForcedMarch()` returns CON save DC after 8+ hours travel. `getSpeedMultiplier()` (halved at L2, zero at L5) and `getMaxHpMultiplier()` (halved at L4). `formatExhaustionStatus()` for per-character display. "Exhaustion Status" button in DMSidebar.
   - **Crafting system** — `crafting.ts` with 8 recipes across 5 categories (potion/scroll/weapon/armor/mundane). Each recipe: materials with costs, tool required, ability check DC, crafting time in days. `attemptCraft()` resolves d20 + ability mod + proficiency vs DC. `getMaterialCost()` sums material costs. Expandable recipe browser in DMSidebar.
@@ -239,12 +254,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Henchman/sidekick system — NPC companions with simplified stat blocks that level with party
-- Trap design tool — DM creates custom traps with trigger, effect, DC, and reset rules
-- Weather-dependent combat modifiers — rain penalizes ranged, fog limits visibility, ice = difficult terrain
-- Downtime activity system — training, research, crafting, working, carousing between adventures
-- Monster lore journal — players unlock monster stats/weaknesses as they encounter them
-- Alignment shift tracker — track moral choices and auto-adjust alignment over time
+- ~~Henchman/sidekick system~~ **DONE** — `sidekicks.ts` with 3 roles + level scaling
+- ~~Trap design tool~~ **DONE** — `trapDesigner.ts` with 8 templates + 6 trigger types
+- ~~Weather-dependent combat modifiers~~ **DONE** — `weatherCombatModifiers.ts` with 8 conditions
+- ~~Downtime activity system~~ **DONE** — `downtimeActivities.ts` with 9 activities + complications
+- ~~Monster lore journal~~ **DONE** — `monsterLore.ts` with 3-tier progressive reveal
+- ~~Alignment shift tracker~~ **DONE** — `alignmentTracker.ts` with dual-axis + moral choices
+
+**Wave 8 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Skill challenge framework — complex tasks requiring multiple checks with success/failure thresholds
+- Random treasure generator — loot tables by CR and dungeon tier with magic item rolls
+- Encounter wave system — multi-wave combat with reinforcements arriving on schedule
+- PC reputation system — individual character fame/infamy tracked across regions
+- Combat maneuver library — extended martial options (disarm, trip, feint, called shot)
+- Session timer with milestone alerts — track real-time session length with DM-set milestone pings
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

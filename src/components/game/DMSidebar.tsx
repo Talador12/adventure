@@ -29,6 +29,8 @@ import PuzzleEncounter from './PuzzleEncounter';
 import { TACTICAL_MARKERS } from '../../data/tacticalMarkers';
 import { ROOM_TEMPLATES, formatRoomDescription } from '../../data/dungeonRoomTemplates';
 import { RECIPES as CRAFTING_RECIPES, formatRecipe as formatCraftingRecipe, getMaterialCost as getMaterialCostFn } from '../../lib/crafting';
+import { TRAP_TEMPLATES as TRAP_TEMPLATES_DATA, formatTrap as formatTrapFn } from '../../data/trapDesigner';
+import { DOWNTIME_ACTIVITIES as DOWNTIME_DATA } from '../../lib/downtimeActivities';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -752,6 +754,113 @@ export default function DMSidebar({
               title="Browse stronghold types the party can acquire and upgrade"
             >
               🏰 Strongholds
+            </button>
+
+            {/* Sidekick/henchman */}
+            <button
+              onClick={async () => {
+                const { SIDEKICK_TEMPLATES, formatSidekick, createSidekick } = await import('../../lib/sidekicks');
+                const lines = ['👥 **Sidekick Templates:**'];
+                for (const t of SIDEKICK_TEMPLATES) {
+                  const example = createSidekick(`Example ${t.name}`, t.role, 5);
+                  lines.push(`${t.emoji} **${t.name}** — ${t.description}`);
+                  lines.push(`  Lv5: ${example.hp} HP, AC ${example.ac}, +${example.attackBonus} (${example.damageDie})`);
+                }
+                onAddDmMessage(lines.join('\n'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all"
+              title="Browse sidekick types — simplified NPC companions that level with the party"
+            >
+              👥 Sidekicks
+            </button>
+
+            {/* Trap designer */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all cursor-pointer px-2">
+                🪤 Trap Templates
+              </summary>
+              <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
+                {TRAP_TEMPLATES_DATA.map((trap) => (
+                  <button
+                    key={trap.id}
+                    onClick={() => onAddDmMessage(formatTrapFn(trap))}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-red-600/40 transition-all flex items-center justify-between"
+                    title={trap.description}
+                  >
+                    <span className="text-[9px] text-slate-300 truncate">{trap.name}</span>
+                    <span className="text-[8px] text-slate-500">DC {trap.saveDC}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Weather combat effects */}
+            <button
+              onClick={async () => {
+                const { formatWeatherCombatEffects } = await import('../../lib/weatherCombatModifiers');
+                onAddDmMessage(formatWeatherCombatEffects(weather));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-sky-400 font-semibold hover:bg-sky-800/30 transition-all"
+              title="Show combat modifiers from current weather"
+            >
+              🌧️ Weather Combat Effects
+            </button>
+
+            {/* Downtime activities */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all cursor-pointer px-2">
+                ☕ Downtime Activities
+              </summary>
+              <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
+                {DOWNTIME_DATA.map((activity) => (
+                  <button
+                    key={activity.id}
+                    onClick={async () => {
+                      const { resolveDowntime, formatDowntimeResult } = await import('../../lib/downtimeActivities');
+                      const result = resolveDowntime(activity, 2, 3);
+                      onAddDmMessage(formatDowntimeResult(activity, result));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-green-600/40 transition-all flex items-center justify-between"
+                    title={activity.description}
+                  >
+                    <span className="text-[9px] text-slate-300">{activity.emoji} {activity.name}</span>
+                    <span className="text-[8px] text-slate-500">{activity.daysRequired}d / {activity.goldCost}gp</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Monster lore journal */}
+            <button
+              onClick={async () => {
+                const { formatJournal, createJournal } = await import('../../lib/monsterLore');
+                const raw = localStorage.getItem(`adventure:lore:${roomId}`);
+                const journal = raw ? JSON.parse(raw) : createJournal();
+                onAddDmMessage(formatJournal(journal));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Monster lore journal — stats revealed as players encounter monsters"
+            >
+              📖 Monster Lore
+            </button>
+
+            {/* Alignment tracker */}
+            <button
+              onClick={async () => {
+                const { createAlignmentState, formatAlignmentStatus, MORAL_CHOICES } = await import('../../lib/alignmentTracker');
+                const lines = characters.map((c) => {
+                  const raw = localStorage.getItem(`adventure:alignment:${c.id}`);
+                  const state = raw ? JSON.parse(raw) : createAlignmentState(c.id);
+                  return formatAlignmentStatus(state, c.name);
+                });
+                lines.push('\n**Moral Choices:** ' + Object.keys(MORAL_CHOICES).map((k) => k.replace(/_/g, ' ')).join(', '));
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all disabled:opacity-30"
+              title="Show alignment tracking with moral choice history"
+            >
+              ⚖️ Alignment Tracker
             </button>
 
             {/* Save/Load Encounter Templates */}

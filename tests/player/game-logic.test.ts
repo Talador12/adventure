@@ -3228,3 +3228,256 @@ describe('stronghold management', () => {
     expect(text).toContain('Available');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Sidekicks
+// ---------------------------------------------------------------------------
+import { SIDEKICK_TEMPLATES, createSidekick, levelUpSidekick, formatSidekick } from '../../src/lib/sidekicks';
+
+describe('sidekicks', () => {
+  it('has 3 sidekick roles', () => {
+    expect(SIDEKICK_TEMPLATES.length).toBe(3);
+  });
+
+  it('createSidekick generates correct stats at level 1', () => {
+    const sk = createSidekick('Bob', 'warrior', 1);
+    expect(sk.name).toBe('Bob');
+    expect(sk.level).toBe(1);
+    expect(sk.hp).toBe(12); // warrior baseHp
+    expect(sk.abilities.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('createSidekick scales HP with level', () => {
+    const lv1 = createSidekick('A', 'warrior', 1);
+    const lv5 = createSidekick('B', 'warrior', 5);
+    expect(lv5.maxHp).toBeGreaterThan(lv1.maxHp);
+  });
+
+  it('levelUpSidekick increases level and stats', () => {
+    const sk = createSidekick('Test', 'expert', 4);
+    const leveled = levelUpSidekick(sk);
+    expect(leveled.level).toBe(5);
+    expect(leveled.maxHp).toBeGreaterThan(sk.maxHp);
+    expect(leveled.abilities.length).toBeGreaterThanOrEqual(sk.abilities.length);
+  });
+
+  it('formatSidekick includes key info', () => {
+    const sk = createSidekick('Mira', 'spellcaster', 3);
+    const text = formatSidekick(sk);
+    expect(text).toContain('Mira');
+    expect(text).toContain('spellcaster');
+    expect(text).toContain('HP');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Trap designer
+// ---------------------------------------------------------------------------
+import { TRAP_TEMPLATES, formatTrap, getTrapsbyEffect, getTriggerLabel, getEffectLabel } from '../../src/data/trapDesigner';
+
+describe('trap designer', () => {
+  it('has at least 7 trap templates', () => {
+    expect(TRAP_TEMPLATES.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('all traps have unique IDs', () => {
+    const ids = TRAP_TEMPLATES.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('getTrapsbyEffect filters correctly', () => {
+    const pits = getTrapsbyEffect('pit');
+    expect(pits.length).toBeGreaterThanOrEqual(1);
+    for (const t of pits) expect(t.effect).toBe('pit');
+  });
+
+  it('getTriggerLabel and getEffectLabel return strings', () => {
+    expect(getTriggerLabel('pressure_plate')).toBe('Pressure Plate');
+    expect(getEffectLabel('damage')).toBe('Damage');
+  });
+
+  it('formatTrap includes DCs and description', () => {
+    const text = formatTrap(TRAP_TEMPLATES[0]);
+    expect(text).toContain('Detection DC');
+    expect(text).toContain('Disable DC');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Weather combat modifiers
+// ---------------------------------------------------------------------------
+import { WEATHER_MODIFIERS, getWeatherModifiers, getRangedPenalty, getVisibilityRange, isDifficultTerrain, formatWeatherCombatEffects } from '../../src/lib/weatherCombatModifiers';
+
+describe('weather combat modifiers', () => {
+  it('has modifiers for at least 7 conditions', () => {
+    expect(WEATHER_MODIFIERS.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('clear weather has no effects', () => {
+    const mod = getWeatherModifiers('none');
+    expect(mod.effects.length).toBe(0);
+  });
+
+  it('rain penalizes ranged attacks', () => {
+    expect(getRangedPenalty('rain')).toBeLessThan(0);
+  });
+
+  it('fog limits visibility', () => {
+    const vis = getVisibilityRange('fog');
+    expect(vis).toBeTruthy();
+    expect(vis!).toBeLessThanOrEqual(10);
+  });
+
+  it('snow creates difficult terrain', () => {
+    expect(isDifficultTerrain('snow')).toBe(true);
+    expect(isDifficultTerrain('none')).toBe(false);
+  });
+
+  it('formatWeatherCombatEffects includes effects', () => {
+    const text = formatWeatherCombatEffects('storm');
+    expect(text).toContain('Thunderstorm');
+    expect(text).toContain('ranged');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Downtime activities
+// ---------------------------------------------------------------------------
+import { DOWNTIME_ACTIVITIES, resolveDowntime, rollComplication, formatDowntimeResult } from '../../src/lib/downtimeActivities';
+
+describe('downtime activities', () => {
+  it('has at least 8 activities', () => {
+    expect(DOWNTIME_ACTIVITIES.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('all activities have unique IDs', () => {
+    const ids = DOWNTIME_ACTIVITIES.map((a) => a.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('resolveDowntime returns valid result', () => {
+    const activity = DOWNTIME_ACTIVITIES.find((a) => a.id === 'work')!;
+    const result = resolveDowntime(activity, 2, 2);
+    expect(typeof result.success).toBe('boolean');
+    expect(result.goldEarned).toBeGreaterThanOrEqual(7);
+  });
+
+  it('training always succeeds (DC 0)', () => {
+    const training = DOWNTIME_ACTIVITIES.find((a) => a.id === 'train-weapon')!;
+    expect(training.checkDC).toBe(0);
+    const result = resolveDowntime(training, 0, 0);
+    expect(result.success).toBe(true);
+  });
+
+  it('formatDowntimeResult includes activity name', () => {
+    const activity = DOWNTIME_ACTIVITIES[0];
+    const result = resolveDowntime(activity, 2, 2);
+    const text = formatDowntimeResult(activity, result);
+    expect(text).toContain(activity.name);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Monster lore journal
+// ---------------------------------------------------------------------------
+import { createJournal, recordEncounter, getLoreLevel, upgradeLore, getRevealedInfo, formatJournal, formatLoreEntry } from '../../src/lib/monsterLore';
+
+describe('monster lore journal', () => {
+  it('creates empty journal', () => {
+    const j = createJournal();
+    expect(j.entries.length).toBe(0);
+  });
+
+  it('recordEncounter adds entry on first encounter', () => {
+    let j = createJournal();
+    j = recordEncounter(j, 'goblin', 'Goblin', false);
+    expect(j.entries.length).toBe(1);
+    expect(j.entries[0].loreLevel).toBe(1);
+  });
+
+  it('lore level increases with encounters', () => {
+    let j = createJournal();
+    j = recordEncounter(j, 'goblin', 'Goblin', false);
+    j = recordEncounter(j, 'goblin', 'Goblin', true);
+    expect(j.entries[0].loreLevel).toBe(2); // 2 encounters = level 2
+    j = recordEncounter(j, 'goblin', 'Goblin', true);
+    j = recordEncounter(j, 'goblin', 'Goblin', true);
+    expect(j.entries[0].loreLevel).toBe(3); // 4 encounters = level 3
+  });
+
+  it('upgradeLore manually increases level', () => {
+    let j = createJournal();
+    j = recordEncounter(j, 'dragon', 'Dragon', false);
+    expect(getLoreLevel(j, 'dragon')).toBe(1);
+    j = upgradeLore(j, 'dragon');
+    expect(getLoreLevel(j, 'dragon')).toBe(2);
+  });
+
+  it('getRevealedInfo returns cumulative info', () => {
+    expect(getRevealedInfo(0).length).toBe(0);
+    expect(getRevealedInfo(1).length).toBeGreaterThan(0);
+    expect(getRevealedInfo(3).length).toBeGreaterThan(getRevealedInfo(1).length);
+  });
+
+  it('formatJournal handles empty and populated', () => {
+    expect(formatJournal(createJournal())).toContain('Empty');
+    let j = createJournal();
+    j = recordEncounter(j, 'orc', 'Orc', true);
+    expect(formatJournal(j)).toContain('Orc');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Alignment tracker
+// ---------------------------------------------------------------------------
+import { getAlignment, getAlignmentName, createAlignmentState, shiftAlignment, detectAlignmentShift, MORAL_CHOICES, formatAlignmentStatus } from '../../src/lib/alignmentTracker';
+
+describe('alignment tracker', () => {
+  it('getAlignment classifies correctly', () => {
+    expect(getAlignment(5, 5)).toBe('LG');
+    expect(getAlignment(-5, -5)).toBe('CE');
+    expect(getAlignment(0, 0)).toBe('TN');
+    expect(getAlignment(3, -3)).toBe('LE');
+    expect(getAlignment(-3, 3)).toBe('CG');
+  });
+
+  it('createAlignmentState initializes at given values', () => {
+    const state = createAlignmentState('c1', 2, -1);
+    expect(state.order).toBe(2);
+    expect(state.morality).toBe(-1);
+  });
+
+  it('shiftAlignment changes axis and records history', () => {
+    let state = createAlignmentState('c1');
+    state = shiftAlignment(state, 'morality', 3, 'Saved orphans', 'campaign1');
+    expect(state.morality).toBe(3);
+    expect(state.history.length).toBe(1);
+  });
+
+  it('shiftAlignment clamps to -5/+5', () => {
+    let state = createAlignmentState('c1', 4, 0);
+    state = shiftAlignment(state, 'order', 10, 'test', 'c1');
+    expect(state.order).toBe(5);
+  });
+
+  it('detectAlignmentShift notices changes', () => {
+    const before = createAlignmentState('c1', 0, 1);
+    const after = shiftAlignment(before, 'morality', -4, 'Evil deed', 'c1');
+    const shift = detectAlignmentShift(before, after);
+    expect(shift).toBeTruthy();
+    expect(shift).toContain('→');
+  });
+
+  it('MORAL_CHOICES has common choices', () => {
+    expect(MORAL_CHOICES.spared_enemy).toBeTruthy();
+    expect(MORAL_CHOICES.killed_prisoner.delta).toBeLessThan(0);
+    expect(MORAL_CHOICES.helped_stranger.delta).toBeGreaterThan(0);
+  });
+
+  it('formatAlignmentStatus shows axes', () => {
+    const state = createAlignmentState('c1', 3, -2);
+    const text = formatAlignmentStatus(state, 'Thorin');
+    expect(text).toContain('Thorin');
+    expect(text).toContain('Lawful');
+  });
+});
