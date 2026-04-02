@@ -28,6 +28,7 @@ import QuestBranching from './QuestBranching';
 import PuzzleEncounter from './PuzzleEncounter';
 import { TACTICAL_MARKERS } from '../../data/tacticalMarkers';
 import { ROOM_TEMPLATES, formatRoomDescription } from '../../data/dungeonRoomTemplates';
+import { RECIPES as CRAFTING_RECIPES, formatRecipe as formatCraftingRecipe, getMaterialCost as getMaterialCostFn } from '../../lib/crafting';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -676,6 +677,81 @@ export default function DMSidebar({
               title="View or form bonds between party members for combat bonuses"
             >
               💫 Character Bonds
+            </button>
+
+            {/* Exhaustion tracker */}
+            <button
+              onClick={async () => {
+                const { formatExhaustionStatus } = await import('../../lib/exhaustionTracker');
+                const lines = characters.map((c) => formatExhaustionStatus(c.name, (c.exhaustion || 0) as any));
+                onAddDmMessage(lines.join('\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-gray-700/30 border border-gray-500/30 text-gray-300 font-semibold hover:bg-gray-600/30 transition-all disabled:opacity-30"
+              title="Show exhaustion levels and effects for all characters"
+            >
+              😴 Exhaustion Status
+            </button>
+
+            {/* Random NPC generator */}
+            <button
+              onClick={async () => {
+                const { generateRandomNpc, formatGeneratedNpc } = await import('../../data/randomNpcGenerator');
+                onAddDmMessage(formatGeneratedNpc(generateRandomNpc()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all"
+              title="Generate a random NPC with name, personality, secret, and plot hook"
+            >
+              👤 Random NPC
+            </button>
+
+            {/* Crafting recipes */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all cursor-pointer px-2">
+                🔨 Crafting Recipes
+              </summary>
+              <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
+                {CRAFTING_RECIPES.map((recipe) => (
+                  <button
+                    key={recipe.id}
+                    onClick={() => onAddDmMessage(formatCraftingRecipe(recipe))}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-yellow-600/40 transition-all flex items-center justify-between"
+                    title={recipe.resultItem.description}
+                  >
+                    <span className="text-[9px] text-slate-300 truncate">{recipe.name}</span>
+                    <span className="text-[8px] text-slate-500">{getMaterialCostFn(recipe)}gp</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Mounted combat */}
+            <button
+              onClick={async () => {
+                const { formatMountList } = await import('../../lib/mountedCombat');
+                onAddDmMessage(formatMountList());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-300 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Show available mounts with stats, speed, and special abilities"
+            >
+              🐎 Mounts & Mounted Combat
+            </button>
+
+            {/* Stronghold */}
+            <button
+              onClick={async () => {
+                const { STRONGHOLD_TYPES } = await import('../../lib/stronghold');
+                const lines = ['🏰 **Stronghold Options:**'];
+                for (const s of STRONGHOLD_TYPES) {
+                  lines.push(`${s.emoji} **${s.name}** (${s.baseCost}gp) — ${s.description}`);
+                  lines.push(`  Income: ${s.baseIncome}gp/week | Upkeep: ${s.baseUpkeep}gp/week | Upgrades: ${s.upgrades.length}`);
+                }
+                onAddDmMessage(lines.join('\n'));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all"
+              title="Browse stronghold types the party can acquire and upgrade"
+            >
+              🏰 Strongholds
             </button>
 
             {/* Save/Load Encounter Templates */}

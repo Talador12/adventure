@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.1.0
+## Current Version: v10.2.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 39 tests (393 total) — exhaustion, crafting, NPC generator, damage types, mounts, strongholds:
+  - **Exhaustion tracker** — `exhaustionTracker.ts` with full 5e exhaustion table (6 levels). `addExhaustion()`/`removeExhaustion()` with clamping. `checkForcedMarch()` returns CON save DC after 8+ hours travel. `getSpeedMultiplier()` (halved at L2, zero at L5) and `getMaxHpMultiplier()` (halved at L4). `formatExhaustionStatus()` for per-character display. "Exhaustion Status" button in DMSidebar.
+  - **Crafting system** — `crafting.ts` with 8 recipes across 5 categories (potion/scroll/weapon/armor/mundane). Each recipe: materials with costs, tool required, ability check DC, crafting time in days. `attemptCraft()` resolves d20 + ability mod + proficiency vs DC. `getMaterialCost()` sums material costs. Expandable recipe browser in DMSidebar.
+  - **Random NPC generator** — `randomNpcGenerator.ts` — one click generates complete NPC: name (20 first × 20 surnames), race (8), gender, occupation (20), personality (12), appearance (10), quirk (8), secret (10), plot hook (10), disposition. "Random NPC" button in DMSidebar.
+  - **Battle damage types** — `damageTypes.ts` with 13 D&D 5e damage types. `getDamageModifier()` checks resistance/vulnerability/immunity lists. `resolveDamage()` halves (resistant), doubles (vulnerable), or zeroes (immune). `resolveMultipleDamage()` handles multi-type attacks (e.g. flaming sword = slashing + fire). Per-type emojis.
+  - **Mounted combat** — `mountedCombat.ts` with 6 mounts (Pony/Horse/Warhorse/Dire Wolf/Griffon/Elephant). Each has speed, HP, AC, cost, special ability. `getMountedSpeed()`, `resolveMountDamage()` with dismount on mount death, `formatMountStatus()`. Griffon has flight + dive attack. "Mounts" button in DMSidebar.
+  - **Stronghold management** — `stronghold.ts` with 4 stronghold types (Tavern/Keep/Wizard Tower/Temple). Each has upgrades (3-4 per type) with prerequisites, costs, build times, and bonuses. Weekly income/upkeep system. `getAvailableUpgrades()` respects prerequisite chains. "Strongholds" button in DMSidebar.
+- 39 new tests (393 total) covering 6 systems:
+  - **Exhaustion** (8 tests): table size, cumulative effects, add/remove clamping, forced march DC, speed multiplier, HP multiplier, formatted output.
+  - **Crafting** (6 tests): recipe count, unique IDs, category filter, material cost math, craft attempt, formatted recipe.
+  - **Random NPC** (4 tests): field completeness, uniqueness, disposition range, formatted output.
+  - **Damage types** (9 tests): type count, immunity/resistance/vulnerability detection, halve/double/zero resolution, multi-type sum, formatted breakdown.
+  - **Mounted combat** (5 tests): mount count, getter, speed calculation, dismount on death, HP tracking, mount list.
+  - **Strongholds** (6 tests): type count, creation, prerequisite exclusion/unlock, net income, formatted status.
+
 - 6 new systems + 30 tests (354 total) — bonds, death consequences, dungeon rooms, travel encounters, haggling, session recap:
   - **Player character bonds** — `characterBonds.ts` with 6 bond types (Sworn Allies/Mentor & Protege/Blood Oath/Rivals' Respect/Soulbound/Shield Mates). Each provides adjacency bonuses (AC, attack, saves, temp HP). Bond strength scales with shared combats (1→2 at 5 combats, 2→3 at 10). Higher strength unlocks stronger bonuses. "Character Bonds" button in DMSidebar.
   - **Death consequences** — `deathConsequences.ts` with 10 scars across 4 types (physical/mental/spiritual/cosmetic). `getScarsBySeverity()` biases toward spiritual scars for 3+ deaths. Scars include stat penalties, movement reduction, condition vulnerabilities. Duration ranges from 7 days to permanent (cured by Greater Restoration). Resurrection history tracked per character.
@@ -212,12 +227,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Exhaustion tracker — auto-apply exhaustion effects on forced march, starvation, death saves
-- Crafting system — combine materials + tools + time to create potions, scrolls, weapons
-- Stronghold management — party can acquire and upgrade a base of operations
-- Random NPC generator — instant NPC with name, personality, secret, and plot hook
-- Battle damage types — track piercing/slashing/bludgeoning/elemental for resistance system
-- Mounted combat — ride horses/griffons with movement bonuses and special actions
+- ~~Exhaustion tracker~~ **DONE** — `exhaustionTracker.ts` with 5e exhaustion table
+- ~~Crafting system~~ **DONE** — `crafting.ts` with 8 recipes across 5 categories
+- ~~Stronghold management~~ **DONE** — `stronghold.ts` with 4 types + upgrade trees
+- ~~Random NPC generator~~ **DONE** — `randomNpcGenerator.ts` one-click complete NPC
+- ~~Battle damage types~~ **DONE** — `damageTypes.ts` with 13 types + resistance resolution
+- ~~Mounted combat~~ **DONE** — `mountedCombat.ts` with 6 mounts + special abilities
+
+**Wave 7 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Henchman/sidekick system — NPC companions with simplified stat blocks that level with party
+- Trap design tool — DM creates custom traps with trigger, effect, DC, and reset rules
+- Weather-dependent combat modifiers — rain penalizes ranged, fog limits visibility, ice = difficult terrain
+- Downtime activity system — training, research, crafting, working, carousing between adventures
+- Monster lore journal — players unlock monster stats/weaknesses as they encounter them
+- Alignment shift tracker — track moral choices and auto-adjust alignment over time
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

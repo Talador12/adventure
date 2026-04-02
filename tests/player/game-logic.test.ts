@@ -2949,3 +2949,282 @@ describe('session recap', () => {
     expect(text.split('\n').length).toBeGreaterThan(3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Exhaustion tracker
+// ---------------------------------------------------------------------------
+import { EXHAUSTION_TABLE, getExhaustionEffects, getExhaustionDescription, addExhaustion, removeExhaustion, checkForcedMarch, getSpeedMultiplier, getMaxHpMultiplier, formatExhaustionStatus } from '../../src/lib/exhaustionTracker';
+
+describe('exhaustion tracker', () => {
+  it('has 6 exhaustion levels', () => {
+    expect(EXHAUSTION_TABLE.length).toBe(6);
+  });
+
+  it('getExhaustionEffects is cumulative', () => {
+    expect(getExhaustionEffects(1).length).toBe(1);
+    expect(getExhaustionEffects(3).length).toBe(3);
+    expect(getExhaustionEffects(6).length).toBe(6);
+  });
+
+  it('addExhaustion caps at 6', () => {
+    expect(addExhaustion(5, 3)).toBe(6);
+    expect(addExhaustion(0, 1)).toBe(1);
+  });
+
+  it('removeExhaustion floors at 0', () => {
+    expect(removeExhaustion(1, 5)).toBe(0);
+    expect(removeExhaustion(3, 1)).toBe(2);
+  });
+
+  it('checkForcedMarch triggers after 8 hours', () => {
+    expect(checkForcedMarch(8).gainExhaustion).toBe(false);
+    expect(checkForcedMarch(9).gainExhaustion).toBe(true);
+    expect(checkForcedMarch(9).dc).toBe(11);
+    expect(checkForcedMarch(12).dc).toBe(14);
+  });
+
+  it('getSpeedMultiplier halves at level 2', () => {
+    expect(getSpeedMultiplier(0)).toBe(1);
+    expect(getSpeedMultiplier(2)).toBe(0.5);
+    expect(getSpeedMultiplier(5)).toBe(0);
+  });
+
+  it('getMaxHpMultiplier halves at level 4', () => {
+    expect(getMaxHpMultiplier(0)).toBe(1);
+    expect(getMaxHpMultiplier(3)).toBe(1);
+    expect(getMaxHpMultiplier(4)).toBe(0.5);
+  });
+
+  it('formatExhaustionStatus shows effects', () => {
+    expect(formatExhaustionStatus('Thorin', 0)).toContain('No exhaustion');
+    expect(formatExhaustionStatus('Thorin', 3)).toContain('Level 3');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Crafting system
+// ---------------------------------------------------------------------------
+import { RECIPES, getRecipesByCategory, getMaterialCost, attemptCraft, formatRecipe as formatCraftRecipe } from '../../src/lib/crafting';
+
+describe('crafting system', () => {
+  it('has at least 8 recipes', () => {
+    expect(RECIPES.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('all recipes have unique IDs', () => {
+    const ids = RECIPES.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('getRecipesByCategory filters correctly', () => {
+    const potions = getRecipesByCategory('potion');
+    expect(potions.length).toBeGreaterThanOrEqual(2);
+    for (const p of potions) expect(p.category).toBe('potion');
+  });
+
+  it('getMaterialCost sums correctly', () => {
+    const recipe = RECIPES.find((r) => r.id === 'heal-potion')!;
+    expect(getMaterialCost(recipe)).toBe(25); // 2*10 + 1*5
+  });
+
+  it('attemptCraft returns valid result', () => {
+    const recipe = RECIPES[0];
+    const result = attemptCraft(recipe, 3, 2);
+    expect(typeof result.success).toBe('boolean');
+    expect(result.dc).toBe(recipe.dcCheck.dc);
+    expect(result.narration.length).toBeGreaterThan(10);
+  });
+
+  it('formatRecipe includes materials and result', () => {
+    const text = formatCraftRecipe(RECIPES[0]);
+    expect(text).toContain(RECIPES[0].name);
+    expect(text).toContain('Tool:');
+    expect(text).toContain('Result:');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Random NPC generator
+// ---------------------------------------------------------------------------
+import { generateRandomNpc, formatGeneratedNpc } from '../../src/data/randomNpcGenerator';
+
+describe('random NPC generator', () => {
+  it('generates NPC with all required fields', () => {
+    const npc = generateRandomNpc();
+    expect(npc.name.length).toBeGreaterThan(0);
+    expect(npc.race.length).toBeGreaterThan(0);
+    expect(npc.occupation.length).toBeGreaterThan(0);
+    expect(npc.personality.length).toBeGreaterThan(0);
+    expect(npc.secret.length).toBeGreaterThan(0);
+    expect(npc.plotHook.length).toBeGreaterThan(0);
+  });
+
+  it('generates unique NPCs', () => {
+    const npcs = Array.from({ length: 10 }, () => generateRandomNpc());
+    const names = npcs.map((n) => n.name);
+    // With 20 first names × 20 surnames, 10 should mostly be unique
+    expect(new Set(names).size).toBeGreaterThanOrEqual(5);
+  });
+
+  it('disposition is in range -2 to 2', () => {
+    for (let i = 0; i < 20; i++) {
+      const npc = generateRandomNpc();
+      expect(npc.disposition).toBeGreaterThanOrEqual(-2);
+      expect(npc.disposition).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('formatGeneratedNpc includes key info', () => {
+    const npc = generateRandomNpc();
+    const text = formatGeneratedNpc(npc);
+    expect(text).toContain(npc.name);
+    expect(text).toContain(npc.occupation);
+    expect(text).toContain('Secret:');
+    expect(text).toContain('Plot hook:');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Damage types
+// ---------------------------------------------------------------------------
+import { ALL_DAMAGE_TYPES, getDamageModifier, resolveDamage, resolveMultipleDamage, formatDamageBreakdown, type DamageType as DmgType } from '../../src/lib/damageTypes';
+
+describe('damage types', () => {
+  it('has 13 damage types', () => {
+    expect(ALL_DAMAGE_TYPES.length).toBe(13);
+  });
+
+  it('getDamageModifier detects immunity', () => {
+    expect(getDamageModifier('fire', [], [], ['fire'])).toBe('immune');
+  });
+
+  it('getDamageModifier detects resistance', () => {
+    expect(getDamageModifier('cold', ['cold'], [], [])).toBe('resistant');
+  });
+
+  it('getDamageModifier detects vulnerability', () => {
+    expect(getDamageModifier('fire', [], ['fire'], [])).toBe('vulnerable');
+  });
+
+  it('resolveDamage halves for resistance', () => {
+    const result = resolveDamage(10, 'fire', ['fire'], [], []);
+    expect(result.final).toBe(5);
+    expect(result.modifier).toBe('resistant');
+  });
+
+  it('resolveDamage doubles for vulnerability', () => {
+    const result = resolveDamage(10, 'cold', [], ['cold'], []);
+    expect(result.final).toBe(20);
+  });
+
+  it('resolveDamage zeroes for immunity', () => {
+    const result = resolveDamage(50, 'poison', [], [], ['poison']);
+    expect(result.final).toBe(0);
+  });
+
+  it('resolveMultipleDamage sums correctly', () => {
+    const instances = [
+      { amount: 10, type: 'slashing' as DmgType, source: 'Sword' },
+      { amount: 5, type: 'fire' as DmgType, source: 'Flaming' },
+    ];
+    const result = resolveMultipleDamage(instances, ['fire'], [], []);
+    expect(result.totalDamage).toBe(12); // 10 + floor(5/2)
+  });
+
+  it('formatDamageBreakdown includes total', () => {
+    const res = resolveDamage(10, 'force', [], [], []);
+    const text = formatDamageBreakdown([res]);
+    expect(text).toContain('Total: 10');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mounted combat
+// ---------------------------------------------------------------------------
+import { MOUNTS, getMount, getMountedSpeed, resolveMountDamage, formatMountStatus, formatMountList, type MountedState } from '../../src/lib/mountedCombat';
+
+describe('mounted combat', () => {
+  it('has at least 5 mount types', () => {
+    expect(MOUNTS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('getMount returns correct mount', () => {
+    expect(getMount('griffon').canFly).toBe(true);
+    expect(getMount('horse').speed).toBe(12);
+  });
+
+  it('getMountedSpeed uses mount speed', () => {
+    const mount = getMount('warhorse');
+    expect(getMountedSpeed(mount, 6)).toBe(12); // mount is faster
+  });
+
+  it('resolveMountDamage dismounts when mount dies', () => {
+    const state: MountedState = { riderId: 'p1', mount: getMount('horse'), mountHp: 5, isMounted: true };
+    const result = resolveMountDamage(state, 10);
+    expect(result.riderDismounted).toBe(true);
+    expect(result.state.isMounted).toBe(false);
+  });
+
+  it('resolveMountDamage tracks HP', () => {
+    const mount = getMount('warhorse');
+    const state: MountedState = { riderId: 'p1', mount, mountHp: mount.hp, isMounted: true };
+    const result = resolveMountDamage(state, 5);
+    expect(result.state.mountHp).toBe(mount.hp - 5);
+    expect(result.riderDismounted).toBe(false);
+  });
+
+  it('formatMountList includes all mounts', () => {
+    const text = formatMountList();
+    expect(text).toContain('Griffon');
+    expect(text).toContain('Warhorse');
+    expect(text).toContain('Flight');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stronghold management
+// ---------------------------------------------------------------------------
+import { STRONGHOLD_TYPES, getStrongholdConfig, createStronghold, getAvailableUpgrades, getNetIncome, formatStrongholdStatus } from '../../src/lib/stronghold';
+
+describe('stronghold management', () => {
+  it('has at least 4 stronghold types', () => {
+    expect(STRONGHOLD_TYPES.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('createStronghold initializes correctly', () => {
+    const sh = createStronghold('tavern', 'The Rusty Flagon');
+    expect(sh.name).toBe('The Rusty Flagon');
+    expect(sh.level).toBe(1);
+    expect(sh.upgrades).toEqual([]);
+  });
+
+  it('getAvailableUpgrades excludes prerequisites', () => {
+    const sh = createStronghold('tavern', 'Test');
+    const available = getAvailableUpgrades(sh);
+    // cellar requires 'rooms' which isn't built yet
+    expect(available.some((u) => u.id === 'cellar')).toBe(false);
+    expect(available.some((u) => u.id === 'rooms')).toBe(true);
+  });
+
+  it('getAvailableUpgrades unlocks prerequisites', () => {
+    const sh = createStronghold('tavern', 'Test');
+    sh.upgrades = ['rooms'];
+    const available = getAvailableUpgrades(sh);
+    expect(available.some((u) => u.id === 'cellar')).toBe(true);
+    expect(available.some((u) => u.id === 'rooms')).toBe(false); // already built
+  });
+
+  it('getNetIncome calculates correctly', () => {
+    const sh = createStronghold('tavern', 'Test');
+    const config = getStrongholdConfig('tavern');
+    expect(getNetIncome(sh)).toBe(config.baseIncome - config.baseUpkeep);
+  });
+
+  it('formatStrongholdStatus shows key info', () => {
+    const sh = createStronghold('keep', 'Fort Valor');
+    const text = formatStrongholdStatus(sh);
+    expect(text).toContain('Fort Valor');
+    expect(text).toContain('Income');
+    expect(text).toContain('Available');
+  });
+});
