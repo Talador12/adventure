@@ -360,6 +360,11 @@ export default function Game() {
 
   // Weather effects on battle map
   const [weather, setWeather] = useState<'none' | 'rain' | 'fog' | 'snow' | 'sandstorm'>('none');
+  // Weather forecast — predicts upcoming weather changes
+  const [weatherForecast, setWeatherForecast] = useState<import('../lib/weatherProgression').WeatherForecast | null>(null);
+  // Quest branching — player choice points
+  const [activeQuestChoice, setActiveQuestChoice] = useState<import('../data/questBranching').QuestChoice | null>(null);
+  const [questChoices, setQuestChoices] = useState<import('../data/questBranching').QuestChoice[]>([]);
 
   // Map pins — DM-placed annotations on the battle map
   const pinStorageKey = `adventure:pins:${room}`;
@@ -2444,7 +2449,11 @@ export default function Game() {
             setTurnTimeSeconds={setTurnTimeSeconds}
             onOpenMonsterBrowser={() => setShowMonsterBrowser(true)}
             weather={weather}
-            setWeather={(w) => { setWeather(w); broadcastGameEvent('weather_change', { weather: w }); }}
+            setWeather={async (w) => {
+              setWeather(w); broadcastGameEvent('weather_change', { weather: w });
+              const { advanceWeather } = await import('../lib/weatherProgression');
+              setWeatherForecast(advanceWeather(w));
+            }}
             roomId={room}
             onApplyFormation={(positions) => { setMapPositions(positions); broadcastGameEvent('formation_apply', { positions }); }}
             mapPins={mapPins}
@@ -2457,6 +2466,8 @@ export default function Game() {
               setDynamicDifficultyEnabled(v);
               try { localStorage.setItem(`adventure:dynDiff:${room}`, v ? '1' : '0'); } catch { /* ok */ }
             }}
+            dmPersonality={dmPersonality}
+            setDmPersonality={(v) => { setDmPersonality(v); try { localStorage.setItem(`adventure:dm-personality:${room}`, v); } catch {} }}
             rulesRemindersEnabled={rulesRemindersEnabled}
             setRulesRemindersEnabled={(v) => {
               setRulesRemindersEnabled(v);
@@ -2484,8 +2495,23 @@ export default function Game() {
             onAddStagedLoot={(item) => setStagedLoot((prev) => [...prev, item])}
             onRemoveStagedLoot={(id) => setStagedLoot((prev) => prev.filter((i) => i.id !== id))}
             onClearStagedLoot={() => setStagedLoot([])}
-            dmPersonality={dmPersonality}
-            onSetDmPersonality={(p) => { setDmPersonality(p); try { localStorage.setItem(`adventure:dm-personality:${room}`, p); } catch { /* ok */ } }}
+            combatLog={combatLog}
+            dmHistory={dmHistory}
+            weatherForecast={weatherForecast}
+            activeQuestChoice={activeQuestChoice}
+            questChoices={questChoices}
+            onQuestChoose={(opt, qc) => {
+              import('../data/questBranching').then(({ applyConsequences }) => {
+                applyConsequences(opt, {
+                  changeGold: (amt) => { if (selectedCharacter) updateCharacter(selectedCharacter.id, { gold: Math.max(0, selectedCharacter.gold + amt) } as Partial<typeof selectedCharacter>); },
+                  addNarration: (text) => addDmMessage(text),
+                });
+              });
+              setQuestChoices((prev) => prev.map((c) => c.id === qc.id ? { ...c, madeChoice: opt.id } : c));
+              setActiveQuestChoice(null);
+            }}
+            onQuestDismiss={() => setActiveQuestChoice(null)}
+            onTriggerQuestBranch={(choice) => { setActiveQuestChoice(choice); if (!questChoices.some((c) => c.id === choice.id)) setQuestChoices((prev) => [...prev, choice]); }}
           />
         )}
 
@@ -2637,8 +2663,31 @@ export default function Game() {
                 <span className="text-slate-400">{icon} {timeOfDay} ({hour}:00)</span>
                 {canUseDMTools && (
                   <>
-                    <button onClick={() => { const next = { ...calendar, currentHour: (hour + 1) % 24, currentDay: hour === 23 ? day + 1 : day }; setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next }); }} className="text-[8px] px-1 py-0 rounded bg-slate-800 border border-slate-700 text-slate-500 hover:text-amber-400" title="Advance 1 hour">+1h</button>
-                    <button onClick={() => { const newHour = (hour + 6) % 24; const newDay = hour + 6 >= 24 ? day + 1 : day; const next = { ...calendar, currentHour: newHour, currentDay: newDay }; setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next }); }} className="text-[8px] px-1 py-0 rounded bg-slate-800 border border-slate-700 text-slate-500 hover:text-amber-400" title="Advance 6 hours">+6h</button>
+                    <button onClick={async () => {
+                      const next = { ...calendar, currentHour: (hour + 1) % 24, currentDay: hour === 23 ? day + 1 : day };
+                      setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next });
+                      // Weather progression
+                      if (weatherForecast && weatherForecast.hoursUntilChange <= 1) {
+                        setWeather(weatherForecast.next); broadcastGameEvent('weather_change', { weather: weatherForecast.next });
+                        const { advanceWeather } = await import('../lib/weatherProgression');
+                        setWeatherForecast(advanceWeather(weatherForecast.next));
+                      } else if (weatherForecast) {
+                        setWeatherForecast({ ...weatherForecast, hoursUntilChange: weatherForecast.hoursUntilChange - 1 });
+                      }
+                    }} className="text-[8px] px-1 py-0 rounded bg-slate-800 border border-slate-700 text-slate-500 hover:text-amber-400" title="Advance 1 hour">+1h</button>
+                    <button onClick={async () => {
+                      const newHour = (hour + 6) % 24; const newDay = hour + 6 >= 24 ? day + 1 : day;
+                      const next = { ...calendar, currentHour: newHour, currentDay: newDay };
+                      setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next });
+                      // Weather progression — advance 6 hours
+                      if (weatherForecast && weatherForecast.hoursUntilChange <= 6) {
+                        setWeather(weatherForecast.next); broadcastGameEvent('weather_change', { weather: weatherForecast.next });
+                        const { advanceWeather } = await import('../lib/weatherProgression');
+                        setWeatherForecast(advanceWeather(weatherForecast.next));
+                      } else if (weatherForecast) {
+                        setWeatherForecast({ ...weatherForecast, hoursUntilChange: weatherForecast.hoursUntilChange - 6 });
+                      }
+                    }} className="text-[8px] px-1 py-0 rounded bg-slate-800 border border-slate-700 text-slate-500 hover:text-amber-400" title="Advance 6 hours">+6h</button>
                   </>
                 )}
               </div>
@@ -3163,6 +3212,7 @@ export default function Game() {
                     partyNames={characters.map((c) => c.name)}
                     onBroadcast={(evt) => broadcastGameEvent(evt.type, evt)}
                     syncRef={npcSyncRef}
+                    currentDay={calendar.currentDay}
                   />
                   {/* Faction reputation tracker */}
                   <details className="mt-3 mx-2">

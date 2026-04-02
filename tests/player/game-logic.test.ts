@@ -1654,3 +1654,276 @@ describe('class skill choices', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Smart loot distribution
+// ---------------------------------------------------------------------------
+import { suggestLootDistribution } from '../../src/lib/lootDistribution';
+
+describe('smart loot distribution', () => {
+  const mockChars: Character[] = [
+    { id: '1', name: 'Fighter', race: 'Human', class: 'Fighter', level: 5, stats: { STR: 16, DEX: 12, CON: 14, INT: 10, WIS: 12, CHA: 8 }, hp: 40, maxHp: 40, ac: 18, xp: 0, gold: 100, background: '', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 5, inspiration: false, exhaustion: 0, createdAt: 0 } as Character,
+    { id: '2', name: 'Wizard', race: 'Elf', class: 'Wizard', level: 5, stats: { STR: 8, DEX: 14, CON: 12, INT: 18, WIS: 13, CHA: 10 }, hp: 22, maxHp: 22, ac: 12, xp: 0, gold: 50, background: '', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 5, inspiration: false, exhaustion: 0, createdAt: 0 } as Character,
+  ];
+
+  it('suggests weapon for Fighter over Wizard', () => {
+    const items: Item[] = [{ id: 'w1', name: 'Sword +1', type: 'weapon', rarity: 'uncommon', description: '', value: 500, attackBonus: 1, damageBonus: 1 }];
+    const suggestions = suggestLootDistribution(items, mockChars);
+    expect(suggestions[0].suggestedCharacter).toBe('Fighter');
+  });
+
+  it('suggests wondrous item for Wizard over Fighter', () => {
+    const items: Item[] = [{ id: 'w2', name: 'Wand of Magic', type: 'misc', rarity: 'uncommon', description: '', value: 300 }];
+    const suggestions = suggestLootDistribution(items, mockChars);
+    expect(suggestions[0].suggestedCharacter).toBe('Wizard');
+  });
+
+  it('returns empty for no items or characters', () => {
+    expect(suggestLootDistribution([], mockChars)).toEqual([]);
+    expect(suggestLootDistribution([{ id: 'x', name: 'X', type: 'misc', rarity: 'common', description: '', value: 0 }], [])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DM personalities
+// ---------------------------------------------------------------------------
+import { DM_PERSONALITIES, getPersonality, getSystemPromptForPersonality } from '../../src/data/dmPersonalities';
+
+describe('DM personalities', () => {
+  it('has 5 personality modes', () => {
+    expect(DM_PERSONALITIES.length).toBe(5);
+  });
+
+  it('all personalities have required fields', () => {
+    for (const p of DM_PERSONALITIES) {
+      expect(p.id).toBeTruthy();
+      expect(p.name).toBeTruthy();
+      expect(p.emoji).toBeTruthy();
+      expect(p.systemPromptSuffix).toBeTruthy();
+      expect(p.combatFlavorStyle).toBeTruthy();
+      expect(p.npcDialogueStyle).toBeTruthy();
+    }
+  });
+
+  it('getPersonality returns correct mode', () => {
+    expect(getPersonality('grimdark').name).toBe('Grimdark');
+    expect(getPersonality('humorous').emoji).toBe('😂');
+  });
+
+  it('getSystemPromptForPersonality returns non-empty string', () => {
+    for (const p of DM_PERSONALITIES) {
+      const prompt = getSystemPromptForPersonality(p.id);
+      expect(prompt.length).toBeGreaterThan(20);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Voice lines
+// ---------------------------------------------------------------------------
+import { getVoiceLine } from '../../src/data/voiceLines';
+
+describe('voice lines', () => {
+  it('returns a string for all classes and event types', () => {
+    const classes = ['Fighter', 'Wizard', 'Rogue', 'Cleric', 'Unknown'];
+    const events = ['crit', 'kill', 'heal', 'miss'] as const;
+    for (const cls of classes) {
+      for (const evt of events) {
+        const line = getVoiceLine(cls, evt);
+        expect(typeof line).toBe('string');
+        expect(line.length).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Room descriptions
+// ---------------------------------------------------------------------------
+import { generateRoomDescription } from '../../src/lib/roomDescriptions';
+
+describe('room descriptions', () => {
+  it('generates text for empty terrain', () => {
+    expect(generateRoomDescription([])).toContain('void');
+  });
+
+  it('generates dungeon description for stone floors', () => {
+    const terrain = Array.from({ length: 5 }, () => Array(5).fill('floor'));
+    const desc = generateRoomDescription(terrain);
+    expect(desc.length).toBeGreaterThan(20);
+  });
+
+  it('generates lava description for volcanic terrain', () => {
+    const terrain = Array.from({ length: 5 }, () => Array(5).fill('lava'));
+    const desc = generateRoomDescription(terrain);
+    expect(desc.toLowerCase()).toMatch(/heat|molten|volcanic/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Weather progression
+// ---------------------------------------------------------------------------
+import { advanceWeather, getWeatherDescription, type WeatherState } from '../../src/lib/weatherProgression';
+
+describe('weather progression', () => {
+  it('returns a forecast with current, next, and hours', () => {
+    const forecast = advanceWeather('none');
+    expect(forecast.current).toBe('none');
+    expect(['none', 'rain', 'fog', 'snow', 'sandstorm']).toContain(forecast.next);
+    expect(forecast.hoursUntilChange).toBeGreaterThanOrEqual(2);
+    expect(forecast.hoursUntilChange).toBeLessThanOrEqual(12);
+  });
+
+  it('handles all weather states without error', () => {
+    const states: WeatherState[] = ['none', 'rain', 'fog', 'snow', 'sandstorm'];
+    for (const s of states) {
+      const forecast = advanceWeather(s);
+      expect(forecast.current).toBe(s);
+      expect(typeof forecast.next).toBe('string');
+    }
+  });
+
+  it('getWeatherDescription returns non-empty text', () => {
+    const forecast = advanceWeather('rain');
+    const desc = getWeatherDescription('rain', forecast);
+    expect(desc.length).toBeGreaterThan(10);
+    expect(desc.toLowerCase()).toContain('rain');
+  });
+
+  it('description mentions upcoming change when weather will shift', () => {
+    const forecast = { current: 'rain' as WeatherState, next: 'fog' as WeatherState, hoursUntilChange: 3 };
+    const desc = getWeatherDescription('rain', forecast);
+    expect(desc).toContain('fog');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Quest branching
+// ---------------------------------------------------------------------------
+import { BRANCHING_TEMPLATES, applyConsequences } from '../../src/data/questBranching';
+
+describe('quest branching', () => {
+  it('has at least 2 branching templates', () => {
+    expect(BRANCHING_TEMPLATES.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('all templates have unique IDs', () => {
+    const ids = BRANCHING_TEMPLATES.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('each template has at least 2 options', () => {
+    for (const t of BRANCHING_TEMPLATES) {
+      expect(t.options.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('each option has at least 1 consequence', () => {
+    for (const t of BRANCHING_TEMPLATES) {
+      for (const opt of t.options) {
+        expect(opt.consequences.length).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+
+  it('applyConsequences fires callbacks correctly', () => {
+    const goldChanges: number[] = [];
+    const narrations: string[] = [];
+    const template = BRANCHING_TEMPLATES[0];
+    const payOption = template.options.find((o) => o.id === 'pay');
+    expect(payOption).toBeTruthy();
+    applyConsequences(payOption!, {
+      changeGold: (amount) => goldChanges.push(amount),
+      addNarration: (text) => narrations.push(text),
+    });
+    expect(goldChanges).toContain(-50);
+    expect(narrations.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Campaign analytics
+// ---------------------------------------------------------------------------
+import { analyzeCombatLog, formatAnalytics } from '../../src/lib/campaignAnalytics';
+
+describe('campaign analytics', () => {
+  const mockCharsForAnalytics: Character[] = [
+    { id: '1', name: 'Thorin', race: 'Dwarf', class: 'Fighter', level: 5, stats: { STR: 16, DEX: 12, CON: 14, INT: 10, WIS: 12, CHA: 8 }, hp: 40, maxHp: 40, ac: 18, xp: 0, gold: 100, background: '', alignment: '', equipment: {}, inventory: [], appearance: {}, spellSlotsUsed: {}, classAbilityUsed: false, feats: [], asiChoicesMade: 0, hitDiceRemaining: 5, inspiration: false, exhaustion: 0, createdAt: 0 } as Character,
+  ];
+
+  it('parses damage from combat log', () => {
+    const log = ['Thorin attacks Goblin for 12 damage', 'Goblin attacks Thorin for 5 damage'];
+    const stats = analyzeCombatLog(log, mockCharsForAnalytics);
+    expect(stats.totalDamageDealt).toBe(17);
+  });
+
+  it('counts kills from combat log', () => {
+    const log = ['Goblin falls!', 'Orc falls!', 'Thorin attacks for 8 damage'];
+    const stats = analyzeCombatLog(log, mockCharsForAnalytics);
+    expect(stats.totalKills).toBe(2);
+  });
+
+  it('counts crits and nat 1s', () => {
+    const log = ['CRITICAL HIT!', 'NAT 20!', 'NAT 1...'];
+    const stats = analyzeCombatLog(log, mockCharsForAnalytics);
+    expect(stats.totalCriticalHits).toBe(2);
+    expect(stats.totalNaturalOnes).toBe(1);
+  });
+
+  it('formatAnalytics produces readable output', () => {
+    const stats = analyzeCombatLog(['Thorin attacks Goblin for 20 damage', 'Goblin falls!'], mockCharsForAnalytics);
+    const text = formatAnalytics(stats);
+    expect(text).toContain('Campaign Analytics');
+    expect(text).toContain('20');
+  });
+
+  it('returns empty stats for empty log', () => {
+    const stats = analyzeCombatLog([], []);
+    expect(stats.totalDamageDealt).toBe(0);
+    expect(stats.totalKills).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Character progression
+// ---------------------------------------------------------------------------
+import { getCharacterLifetime, getProgressionBadge, formatProgressionSummary } from '../../src/lib/characterProgression';
+
+describe('character progression', () => {
+  it('returns empty lifetime for unknown character', () => {
+    const lifetime = getCharacterLifetime('nonexistent-' + Date.now());
+    expect(lifetime.totalSessions).toBe(0);
+    expect(lifetime.totalXP).toBe(0);
+    expect(lifetime.campaignsPlayed).toEqual([]);
+  });
+
+  it('getProgressionBadge returns null for zero sessions', () => {
+    const lifetime = { characterId: 'x', totalXP: 0, totalGold: 0, totalKills: 0, totalSessions: 0, campaignsPlayed: [], achievements: [], snapshots: [] };
+    expect(getProgressionBadge(lifetime)).toBeNull();
+  });
+
+  it('getProgressionBadge returns Rookie at 1 session', () => {
+    const lifetime = { characterId: 'x', totalXP: 0, totalGold: 0, totalKills: 0, totalSessions: 1, campaignsPlayed: ['c1'], achievements: [], snapshots: [] };
+    const badge = getProgressionBadge(lifetime);
+    expect(badge).toBeTruthy();
+    expect(badge!.label).toBe('Rookie');
+  });
+
+  it('getProgressionBadge returns Veteran at 10 sessions', () => {
+    const lifetime = { characterId: 'x', totalXP: 0, totalGold: 0, totalKills: 0, totalSessions: 10, campaignsPlayed: ['c1'], achievements: [], snapshots: [] };
+    expect(getProgressionBadge(lifetime)!.label).toBe('Veteran');
+  });
+
+  it('getProgressionBadge returns Legend at 50 sessions', () => {
+    const lifetime = { characterId: 'x', totalXP: 0, totalGold: 0, totalKills: 0, totalSessions: 50, campaignsPlayed: ['c1'], achievements: [], snapshots: [] };
+    expect(getProgressionBadge(lifetime)!.label).toBe('Legend');
+  });
+
+  it('formatProgressionSummary includes key stats', () => {
+    const lifetime = { characterId: 'x', totalXP: 5000, totalGold: 2500, totalKills: 42, totalSessions: 7, campaignsPlayed: ['c1', 'c2'], achievements: ['veteran'], snapshots: [] };
+    const summary = formatProgressionSummary(lifetime);
+    expect(summary).toContain('5,000');
+    expect(summary).toContain('42');
+    expect(summary).toContain('7');
+  });
+});

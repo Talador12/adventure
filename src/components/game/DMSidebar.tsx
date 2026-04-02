@@ -23,6 +23,8 @@ import BardicInspiration, { getBardicDie } from './BardicInspiration';
 import type { TokenPosition } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import type { RollInterpolationMode } from '../../types/roll';
+import CampaignAnalytics from './CampaignAnalytics';
+import QuestBranching from './QuestBranching';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -72,6 +74,9 @@ interface DMSidebarProps {
   // Rules reminders
   rulesRemindersEnabled?: boolean;
   setRulesRemindersEnabled?: (v: boolean) => void;
+  // DM personality
+  dmPersonality?: import('../../data/dmPersonalities').DMPersonality;
+  setDmPersonality?: (v: import('../../data/dmPersonalities').DMPersonality) => void;
   // Roll sync policy
   rollInterpolationMode?: RollInterpolationMode;
   effectiveMode?: 'smooth' | 'strict';
@@ -91,9 +96,17 @@ interface DMSidebarProps {
   onAddStagedLoot?: (item: import('../../types/game').Item) => void;
   onRemoveStagedLoot?: (itemId: string) => void;
   onClearStagedLoot?: () => void;
-  // DM personality
-  dmPersonality?: string;
-  onSetDmPersonality?: (p: string) => void;
+  // Campaign analytics
+  combatLog?: string[];
+  dmHistory?: string[];
+  // Weather progression
+  weatherForecast?: import('../../lib/weatherProgression').WeatherForecast | null;
+  // Quest branching
+  activeQuestChoice?: import('../../data/questBranching').QuestChoice | null;
+  questChoices?: import('../../data/questBranching').QuestChoice[];
+  onQuestChoose?: (option: import('../../data/questBranching').QuestOption, choice: import('../../data/questBranching').QuestChoice) => void;
+  onQuestDismiss?: () => void;
+  onTriggerQuestBranch?: (choice: import('../../data/questBranching').QuestChoice) => void;
 }
 
 function NpcMemoryViewer({ roomId }: { roomId: string }) {
@@ -189,6 +202,8 @@ export default function DMSidebar({
   setDynamicDifficultyEnabled,
   rulesRemindersEnabled,
   setRulesRemindersEnabled,
+  dmPersonality,
+  setDmPersonality,
   rollInterpolationMode,
   effectiveMode,
   autoStrictRttMs,
@@ -204,8 +219,14 @@ export default function DMSidebar({
   onAddStagedLoot,
   onRemoveStagedLoot,
   onClearStagedLoot,
-  dmPersonality,
-  onSetDmPersonality,
+  combatLog,
+  dmHistory,
+  weatherForecast,
+  activeQuestChoice,
+  questChoices,
+  onQuestChoose,
+  onQuestDismiss,
+  onTriggerQuestBranch,
 }: DMSidebarProps) {
   const { units, setUnits, characters, inCombat, updateCharacter, grantXP, damageUnit, mapPositions, setMapPositions } = useGame();
   const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
@@ -250,6 +271,50 @@ export default function DMSidebar({
         {/* Encounter tab */}
         {dmSidebarTab === 'encounter' && (
           <>
+            {/* Campaign Analytics (expandable) */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all cursor-pointer px-2">
+                📊 Campaign Analytics
+              </summary>
+              <div className="mt-1 p-2 rounded bg-slate-900/50 border border-slate-800/50">
+                <CampaignAnalytics combatLog={combatLog || []} characters={characters} dmHistory={dmHistory || []} />
+              </div>
+            </details>
+
+            {/* Quest branching */}
+            {(activeQuestChoice || (questChoices && questChoices.length > 0)) && (
+              <div className="mb-2">
+                <QuestBranching
+                  activeChoice={activeQuestChoice || null}
+                  onChoose={(opt, qc) => onQuestChoose?.(opt, qc)}
+                  onDismiss={() => onQuestDismiss?.()}
+                  isDM={true}
+                  choices={questChoices || []}
+                  onTriggerBranch={onTriggerQuestBranch}
+                />
+              </div>
+            )}
+            {!activeQuestChoice && (!questChoices || questChoices.length === 0) && onTriggerQuestBranch && (
+              <QuestBranching
+                activeChoice={null}
+                onChoose={() => {}}
+                onDismiss={() => {}}
+                isDM={true}
+                choices={[]}
+                onTriggerBranch={onTriggerQuestBranch}
+              />
+            )}
+
+            {/* Weather forecast */}
+            {weatherForecast && (
+              <div className="mb-2 px-2 py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-[9px] text-sky-400">
+                <span className="font-semibold">Forecast:</span>{' '}
+                {weatherForecast.next !== weatherForecast.current
+                  ? `${weatherForecast.next === 'none' ? 'Clearing up' : weatherForecast.next} in ~${weatherForecast.hoursUntilChange}h`
+                  : 'No change expected'}
+              </div>
+            )}
+
             {/* Tavern Rumors */}
             <button
               onClick={async () => {
@@ -745,6 +810,26 @@ export default function DMSidebar({
                 {dynamicDifficultyEnabled ? 'ON' : 'OFF'}
               </button>
             </div>
+            {/* DM Personality mode */}
+            <div className="flex items-center justify-between py-1">
+              <span className="text-[10px] text-slate-500">DM Style</span>
+              <select
+                value={dmPersonality || 'classic'}
+                onChange={(e) => {
+                  const val = e.target.value as import('../../data/dmPersonalities').DMPersonality;
+                  setDmPersonality?.(val);
+                  try { localStorage.setItem('adventure:dmPersonality', val); } catch {}
+                }}
+                className="text-[9px] px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 cursor-pointer"
+              >
+                <option value="classic">📖 Classic</option>
+                <option value="humorous">😂 Comedic</option>
+                <option value="dramatic">⚡ Epic</option>
+                <option value="grimdark">💀 Grimdark</option>
+                <option value="whimsical">✨ Fairy Tale</option>
+              </select>
+            </div>
+
             {/* Rules reminders toggle */}
             {setRulesRemindersEnabled && (
               <div className="flex items-center justify-between py-1">
@@ -1123,7 +1208,7 @@ export default function DMSidebar({
             )}
 
             {/* AI DM Personality */}
-            {onSetDmPersonality && (
+            {setDmPersonality && (
               <div className="space-y-1.5">
                 <label className="text-[10px] text-slate-500 font-semibold uppercase">AI DM Style</label>
                 <div className="flex flex-wrap gap-1">
@@ -1137,7 +1222,7 @@ export default function DMSidebar({
                   ].map((p) => (
                     <button
                       key={p.id}
-                      onClick={() => onSetDmPersonality(p.id)}
+                      onClick={() => setDmPersonality?.(p.id as import('../../data/dmPersonalities').DMPersonality)}
                       className={`text-[9px] px-2 py-0.5 rounded border font-semibold transition-all ${
                         dmPersonality === p.id ? `bg-slate-700/60 border-slate-500 ${p.color}` : 'bg-slate-800/40 border-slate-700/40 text-slate-500 hover:text-slate-300'
                       }`}

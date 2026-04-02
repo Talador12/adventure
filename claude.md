@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v9.6.0
+## Current Version: v9.7.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 20 tests (234 total) — cross-session progression, analytics dashboard, weather progression, quest branching, NPC memory, DM personalities:
+  - **Cross-session character progression** — `characterProgression.ts` tracks lifetime XP/gold/kills/sessions across campaigns with 6 achievement tiers (centurion/veteran/legend/wanderer/wealthy/max_level). `CharacterProgressionPanel.tsx` shows stats grid + achievements + recent session history. Progression badges (Rookie→Adventurer→Veteran→Hero→Legend) based on session count.
+  - **Campaign analytics dashboard** — `CampaignAnalytics.tsx` renders visual stat cards (damage/kills/crits/spells/healing/nat 1s) with per-character breakdowns including damage bars, kill/crit/spell counts. Expandable in DMSidebar encounter tab. Parses combat log with regex heuristics.
+  - **Weather progression system** — `weatherProgression.ts` with Markov-chain weather transitions (weighted random: none→rain 25%, rain→none 40%, etc). Wired into +1h/+6h time advance buttons — weather changes automatically as in-game hours pass. Forecast display in DMSidebar shows upcoming weather shift. DM setting weather manually initializes a new forecast.
+  - **Quest branching with consequences** — `QuestBranching.tsx` presents decision points to players with consequence previews (gold/faction/NPC disposition/quest unlock). 2 built-in templates (merchant negotiation, prisoner dilemma). DM triggers branch points from template library. Choice history tracked. `applyConsequences()` fires typed callbacks for gold changes, faction shifts, NPC disposition updates, and narrative narration.
+  - **NPC interaction memory** — `NpcTracker.tsx` now has functional `interactionHistory` (capped at 20 entries) and `lastSeenDay` fields. DM "Log Interaction" button records brief notes per NPC. Expandable interaction history panel. Last seen day auto-set from campaign calendar. All synced via WebSocket.
+  - **DM personality modes** — `dmPersonalities.ts` with 5 styles (Classic/Comedic/Epic/Grimdark/Fairy Tale) each with system prompt suffix, combat flavor style, and NPC dialogue style. Selector dropdown in DMSidebar notes tab. Persisted per-campaign in localStorage.
+  - **DMSidebar cleanup** — removed duplicate `dmPersonality` prop (was passed twice with different storage keys). Consolidated to single room-scoped key.
+- 20 new tests (234 total) covering 5 systems:
+  - **Weather progression** (4 tests): forecast structure, all weather states, description text, upcoming change mentions.
+  - **Quest branching** (5 tests): template count, unique IDs, option count, consequence coverage, callback firing.
+  - **Campaign analytics** (5 tests): damage parsing, kill counting, crit/nat 1 detection, formatted output, empty log handling.
+  - **Character progression** (5 tests): empty lifetime, badge null/Rookie/Veteran/Legend tiers, summary formatting.
+  - **Previous uncommitted** (1 test batch): loot distribution, DM personalities, voice lines, room descriptions.
+
 - 6 new features — tactical advice, auto-scale encounters, voice lines, MVP voting, fire spread, formations:
   - **Smart tactical advice** — `tacticalAdvice.ts` analyzes party comp at combat start: identifies wounded allies, suggests class-specific actions (Cleric heal, Rogue hide, Barbarian rage), focus fire on low-HP enemies, warns when outnumbered. Up to 5 prioritized tips shown in combat log.
   - **Encounter difficulty auto-scale** — `useDynamicDifficulty` now spawns reinforcements when combat is too easy for 3+ rounds. Reinforcement is a weakened copy of an existing enemy with 70% HP, adding pressure without overwhelming.
@@ -72,16 +87,28 @@ The complete feature set built from project inception through 46 development ite
   - **Spectator commentary mode** — `spectatorCommentary.ts` generates sports-broadcast-style play-by-play from combat log entries (crits, kills, healing, round milestones).
 
 **New Roadmap — Next Phase:**
-- Cross-session character progression (persistent XP/gold/items across campaigns)
+- ~~Cross-session character progression (persistent XP/gold/items across campaigns)~~ **DONE** — `characterProgression.ts` + `CharacterProgressionPanel.tsx`
 - Campaign world map with fog-of-war travel and location markers
 - Achievement badges for campaign milestones (100 kills, 10 sessions, first TPK survived)
 - Combat replay system — rewind and step through past encounters
-- AI DM personality modes (serious/humorous/dramatic/grimdark narrator styles)
+- ~~AI DM personality modes (serious/humorous/dramatic/grimdark narrator styles)~~ **DONE** — `dmPersonalities.ts` with 5 modes + DM selector
 - Player-to-player item trading with confirmation UI
-- Weather progression system — weather changes over time, DM sets forecast
-- NPC relationship memory — NPCs remember past interactions with the party
-- Quest branching based on player choices with consequence tracking
-- Campaign analytics dashboard — session length, combat ratio, XP curve, death count
+- ~~Weather progression system — weather changes over time, DM sets forecast~~ **DONE** — `weatherProgression.ts` wired into time advance buttons
+- ~~NPC relationship memory — NPCs remember past interactions with the party~~ **DONE** — interaction history + lastSeenDay on NpcTracker
+- ~~Quest branching based on player choices with consequence tracking~~ **DONE** — `questBranching.ts` + `QuestBranching.tsx` with consequence callbacks
+- ~~Campaign analytics dashboard — session length, combat ratio, XP curve, death count~~ **DONE** — `CampaignAnalytics.tsx` + `campaignAnalytics.ts` with per-character breakdowns
+
+**Next Wave Roadmap:**
+- Campaign world map with fog-of-war travel and location markers
+- Player-to-player item trading with confirmation UI
+- Encounter puzzle system — riddles/logic puzzles that gate progression (DM sets answer, players guess)
+- Character backstory-driven random events — AI generates encounters from backstory themes
+- Battle formation AI suggestions — recommend optimal party positions based on class roles
+- Persistent NPC shop inventories — shops remember stock, prices fluctuate by reputation
+- Cross-campaign faction reputation — faction standing persists and affects NPC attitudes globally
+- Tactical map annotations — draw arrows/circles on the battle map for strategy planning
+- Character rivalry system — PvP-safe competitive XP/kill tracking between party members
+- Session pacing advisor — AI suggests when to end combat, transition scenes, or call for rest
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

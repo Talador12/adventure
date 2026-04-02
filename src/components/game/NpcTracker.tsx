@@ -16,6 +16,8 @@ export interface NpcRecord {
   alive: boolean;
   /** TTS voice pitch (0.5 = deep/orcish, 2.0 = high/gnomish). Undefined uses auto from name hash. */
   voicePitch?: number;
+  interactionHistory?: string[];  // brief notes of past interactions ("helped with quest", "was hostile")
+  lastSeenDay?: number;           // in-game day number when last interacted
   createdAt: number;
 }
 
@@ -38,9 +40,11 @@ interface NpcTrackerProps {
   onBroadcast?: (event: { type: string; npcs: NpcRecord[] }) => void;
   /** Ref for receiving remote NPC state updates */
   syncRef?: React.MutableRefObject<((npcs: NpcRecord[]) => void) | null>;
+  /** Current in-game day for lastSeenDay tracking */
+  currentDay?: number;
 }
 
-export default function NpcTracker({ roomId, isDM, partyNames = [], onBroadcast, syncRef }: NpcTrackerProps) {
+export default function NpcTracker({ roomId, isDM, partyNames = [], onBroadcast, syncRef, currentDay }: NpcTrackerProps) {
   const storageKey = `adventure:npcs:${roomId}`;
   const [npcs, setNpcs] = useState<NpcRecord[]>(() => {
     try {
@@ -405,6 +409,26 @@ export default function NpcTracker({ roomId, isDM, partyNames = [], onBroadcast,
                 </div>
               )}
 
+              {/* Interaction history */}
+              {(npc.interactionHistory?.length || 0) > 0 && (
+                <details className="text-[9px]">
+                  <summary className="text-slate-600 cursor-pointer hover:text-slate-400">
+                    Interaction History ({npc.interactionHistory!.length})
+                  </summary>
+                  <div className="mt-1 space-y-0.5 pl-2 border-l border-slate-800 max-h-20 overflow-y-auto">
+                    {npc.interactionHistory!.map((entry, i) => (
+                      <div key={i} className="text-slate-500 flex items-start gap-1">
+                        <span className="text-slate-700 shrink-0">·</span>
+                        <span>{entry}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+              {npc.lastSeenDay != null && (
+                <div className="text-[8px] text-slate-600">Last seen: Day {npc.lastSeenDay}</div>
+              )}
+
               {/* Notes */}
               {isEditing ? (
                 <textarea
@@ -450,6 +474,19 @@ export default function NpcTracker({ roomId, isDM, partyNames = [], onBroadcast,
                     className="text-[9px] px-1.5 py-0.5 rounded border border-slate-700 text-slate-500 hover:text-slate-300 transition-all font-medium"
                   >
                     Edit Notes
+                  </button>
+                  <button
+                    onClick={() => {
+                      const interaction = prompt(`Log interaction with ${npc.name}:`);
+                      if (interaction?.trim()) {
+                        const history = [...(npc.interactionHistory || []), interaction.trim()].slice(-20);
+                        updateNpc(npc.id, { interactionHistory: history, lastSeenDay: currentDay });
+                      }
+                    }}
+                    className="text-[9px] px-1.5 py-0.5 rounded border border-teal-800/40 text-teal-500 hover:bg-teal-900/20 transition-all font-medium"
+                    title="Log a brief interaction note"
+                  >
+                    + Interaction
                   </button>
                   <div className="flex-1" />
                   <button
