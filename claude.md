@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 48 tests (1878 total, +1 pre-existing fix) — magical contracts, treasure maps, wild shape, tavern reputation, divine intervention, siege defense:
+  - **Magical contract system** — `magicalContract.ts` with 4 contracts (infernal/fey/merchant/arcane), clauses with loopholes and penalties, break conditions, detection DCs.
+  - **Treasure map generator** — `treasureMap.ts` with 4 maps (pirate/dwarven/witch/dragon), multi-landmark treasure hunts, riddles with answers, guardians, traps.
+  - **Wild shape bestiary** — `wildShapeBestiary.ts` with 8 forms across 5 roles (scout/combat/utility/transport/infiltration), terrain bonuses, level-gated access, RP notes.
+  - **Tavern reputation tracker** — `tavernReputation.ts` with 4 tiers (dive→exclusive), 6 reputation types with corresponding perks, event recording, ban tracking.
+  - **Divine intervention table** — `divineIntervention.ts` with 8 interventions across 4 scales (subtle→miraculous), faith-scaled rolling, divine costs, witness reactions.
+  - **Siege defense planner** — `siegeDefense.ts` with 2 detailed plans, 6 defense positions, 6 tactics, depletable resources, weak points, morale factors.
+
 - 6 new systems + 50 tests (1830 total) — magical anomalies, ship crew, battlefield scavenge, mirror dimensions, underground factions, ancient prophecies:
   - **Magical anomaly generator** — `magicalAnomaly.ts` with 6 anomaly types (amplification/suppression/wild/temporal/gravitational/sentient), multi-effect zones, dispel DCs, trigger conditions.
   - **Ship crew management** — `shipCrewManagement.ts` with 8 crew roles, 4 quality tiers, hiring/paying/skipping wages, morale and mutiny risk tracking, weekly cost calculation.
@@ -976,17 +984,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Underground faction generator~~ **DONE** — `undergroundFaction.ts` with 5 factions + territory/signal
 - ~~Ancient prophecy generator~~ **DONE** — `ancientProphecy.ts` with 4 prophecies + subversions
 
-**Wave 45 Roadmap:**
+**Wave 45 (1,878 tests — fixed 1 pre-existing broken test):**
+- ~~Magical contract system~~ **DONE** — `magicalContract.ts` with 4 contracts + loopholes
+- ~~Treasure map generator~~ **DONE** — `treasureMap.ts` with 4 maps + riddles + guardians
+- ~~Wild shape bestiary~~ **DONE** — `wildShapeBestiary.ts` with 8 forms + level gating
+- ~~Tavern reputation tracker~~ **DONE** — `tavernReputation.ts` with 6 reputation types + bans
+- ~~Divine intervention table~~ **DONE** — `divineIntervention.ts` with 8 interventions + faith scaling
+- ~~Siege defense planner~~ **DONE** — `siegeDefense.ts` with 2 plans + 6 positions + resources
+
+**Wave 46 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Magical contract system — binding agreements with clauses, loopholes, and consequences
-- Random treasure map generator — multi-step treasure hunts with landmarks and riddles
-- Druid wild shape bestiary — form options with stat blocks, terrain bonuses, and RP notes
-- Tavern reputation tracker — how the party is known in different establishments
-- Random divine intervention table — what happens when a god directly answers a prayer
-- Siege defense planner — fortification setup, resource allocation, and defender tactics
+- Mind control resistance system — progressive willpower degradation and break-free mechanics
+- Random social encounter generator — non-combat encounters with stakes and relationship outcomes
+- Golem crafting instructions — step-by-step construct creation with material requirements
+- Random planar marketplace — exotic shops from different planes with unique merchandise
+- Faction quest chain generator — multi-step quest lines with branching outcomes by faction
+- Death save drama table — narrative beats for the moments between life and death
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

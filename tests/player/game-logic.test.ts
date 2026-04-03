@@ -9580,3 +9580,99 @@ describe('ancient prophecy generator', () => {
   it('each verse has interpretation and trigger', () => { ANCIENT_PROPHECIES.forEach((p) => p.verses.forEach((v) => { expect(v.interpretation.length).toBeGreaterThan(10); expect(v.fulfillmentTrigger.length).toBeGreaterThan(10); })); });
   it('formats without interpretation by default', () => { const p = getRandomAncientProphecy(); expect(formatAncientProphecy(p)).not.toContain('→'); expect(formatAncientProphecy(p, true)).toContain('→'); });
 });
+
+// ---------------------------------------------------------------------------
+// Magical contract system
+// ---------------------------------------------------------------------------
+import { MAGICAL_CONTRACTS, getRandomContract, getContractsByType, getClausesWithLoopholes, getBreakableClauses, getAllContractTypes, formatContract as formatMagicalContract } from '../../src/data/magicalContract';
+
+describe('magical contract system', () => {
+  it('has at least 4 contracts', () => { expect(MAGICAL_CONTRACTS.length).toBeGreaterThanOrEqual(4); });
+  it('has at least 4 types', () => { expect(getAllContractTypes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random contract', () => { const c = getRandomContract(); expect(c.name.length).toBeGreaterThan(3); expect(c.clauses.length).toBeGreaterThanOrEqual(2); });
+  it('filters by type', () => { const infernal = getContractsByType('infernal'); expect(infernal.length).toBeGreaterThanOrEqual(1); });
+  it('most contracts have loopholes', () => { MAGICAL_CONTRACTS.forEach((c) => expect(getClausesWithLoopholes(c).length).toBeGreaterThanOrEqual(1)); });
+  it('some clauses are breakable', () => { const all = MAGICAL_CONTRACTS.flatMap((c) => getBreakableClauses(c)); expect(all.length).toBeGreaterThanOrEqual(2); });
+  it('all have break conditions', () => { MAGICAL_CONTRACTS.forEach((c) => expect(c.breakCondition.length).toBeGreaterThan(10)); });
+  it('formats with loopholes toggle', () => { const c = getRandomContract(); expect(formatMagicalContract(c)).not.toContain('Loophole'); expect(formatMagicalContract(c, true)).toContain('Loophole'); });
+});
+
+// ---------------------------------------------------------------------------
+// Treasure map generator
+// ---------------------------------------------------------------------------
+import { TREASURE_MAPS, getRandomTreasureMap, getMapsByTier, getLandmarkCount, getMapsWithGuardians, formatTreasureMap as formatTreasureHuntMap } from '../../src/data/treasureMap';
+
+describe('treasure map generator', () => {
+  it('has at least 4 maps', () => { expect(TREASURE_MAPS.length).toBeGreaterThanOrEqual(4); });
+  it('generates random map', () => { const m = getRandomTreasureMap(); expect(m.name.length).toBeGreaterThan(3); expect(m.landmarks.length).toBeGreaterThanOrEqual(2); });
+  it('filters by tier', () => { const major = getMapsByTier('major'); expect(major.length).toBeGreaterThanOrEqual(1); major.forEach((m) => expect(m.tier).toBe('major')); });
+  it('landmarks have find DCs', () => { TREASURE_MAPS.forEach((m) => m.landmarks.forEach((l) => expect(l.findDC).toBeGreaterThanOrEqual(10))); });
+  it('all maps have riddles', () => { TREASURE_MAPS.forEach((m) => { expect(m.riddle.length).toBeGreaterThan(10); expect(m.riddleAnswer.length).toBeGreaterThan(0); }); });
+  it('most have guardians', () => { expect(getMapsWithGuardians().length).toBeGreaterThanOrEqual(2); });
+  it('formats with answer toggle', () => { const m = getRandomTreasureMap(); expect(formatTreasureHuntMap(m)).not.toContain('Answer'); expect(formatTreasureHuntMap(m, true)).toContain('Answer'); });
+});
+
+// ---------------------------------------------------------------------------
+// Druid wild shape bestiary
+// ---------------------------------------------------------------------------
+import { WILD_SHAPE_FORMS, getFormsByCR, getFormsByTerrain, getFormsByRole, getFormsByLevel, getAllWildShapeTerrains, formatWildShapeForm } from '../../src/data/wildShapeBestiary';
+
+describe('druid wild shape bestiary', () => {
+  it('has at least 7 forms', () => { expect(WILD_SHAPE_FORMS.length).toBeGreaterThanOrEqual(7); });
+  it('has 7 terrains', () => { expect(getAllWildShapeTerrains().length).toBe(7); });
+  it('filters by CR', () => { const lowCR = getFormsByCR(0.25); expect(lowCR.length).toBeGreaterThanOrEqual(2); lowCR.forEach((f) => expect(f.cr).toBeLessThanOrEqual(0.25)); });
+  it('filters by terrain', () => { const forest = getFormsByTerrain('forest'); expect(forest.length).toBeGreaterThanOrEqual(3); });
+  it('filters by role', () => { const combat = getFormsByRole('combat'); expect(combat.length).toBeGreaterThanOrEqual(2); });
+  it('level-gated forms respect restrictions', () => { const level2 = getFormsByLevel(2); const level8 = getFormsByLevel(8); expect(level8.length).toBeGreaterThan(level2.length); });
+  it('all forms have RP notes', () => { WILD_SHAPE_FORMS.forEach((f) => expect(f.rpNote.length).toBeGreaterThan(10)); });
+  it('formats form', () => { expect(formatWildShapeForm(WILD_SHAPE_FORMS[0])).toContain('HP'); });
+});
+
+// ---------------------------------------------------------------------------
+// Tavern reputation tracker
+// ---------------------------------------------------------------------------
+import { createTavernTracker, addTavern, recordEvent as recordTavernEvent, getTavernReputation as getTavRep, getBannedTaverns, getAllTiers as getAllTavernTiers, formatTavernReputation } from '../../src/data/tavernReputation';
+
+describe('tavern reputation tracker', () => {
+  it('starts empty', () => { expect(createTavernTracker().taverns.length).toBe(0); });
+  it('adds taverns', () => { let t = createTavernTracker(); t = addTavern(t, 'The Rusty Nail', 'dive'); expect(t.taverns.length).toBe(1); });
+  it('prevents duplicates', () => { let t = createTavernTracker(); t = addTavern(t, 'Pub', 'common'); t = addTavern(t, 'Pub', 'common'); expect(t.taverns.length).toBe(1); });
+  it('records events and shifts score', () => { let t = createTavernTracker(); t = addTavern(t, 'Inn', 'common'); t = recordTavernEvent(t, 'Inn', 'Saved the barkeep from thugs', 3); expect(getTavRep(t, 'Inn')!.score).toBe(3); });
+  it('reputation type changes with score', () => { let t = createTavernTracker(); t = addTavern(t, 'Inn', 'common'); t = recordTavernEvent(t, 'Inn', 'Heroic deed', 4); expect(getTavRep(t, 'Inn')!.reputation).toBe('heroes'); });
+  it('has 4 tavern tiers', () => { expect(getAllTavernTiers().length).toBe(4); });
+  it('tracks banned taverns', () => { let t = createTavernTracker(); t = addTavern(t, 'Bar', 'dive'); for (let i = 0; i < 3; i++) t = recordTavernEvent(t, 'Bar', 'Brawl', -2); expect(getBannedTaverns(t).length).toBe(1); });
+  it('formats reputation', () => { let t = createTavernTracker(); t = addTavern(t, 'The Crown', 'upscale'); expect(formatTavernReputation(t.taverns[0])).toContain('The Crown'); });
+});
+
+// ---------------------------------------------------------------------------
+// Divine intervention table
+// ---------------------------------------------------------------------------
+import { DIVINE_INTERVENTIONS, getRandomIntervention, getInterventionsByScale, rollIntervention, getAllScales as getAllDivineScales, formatIntervention } from '../../src/data/divineIntervention';
+
+describe('divine intervention table', () => {
+  it('has at least 7 interventions', () => { expect(DIVINE_INTERVENTIONS.length).toBeGreaterThanOrEqual(7); });
+  it('has 4 scales', () => { expect(getAllDivineScales().length).toBe(4); });
+  it('generates random intervention', () => { const i = getRandomIntervention(); expect(i.name.length).toBeGreaterThan(3); expect(i.mechanicalEffect.length).toBeGreaterThan(10); });
+  it('filters by scale', () => { const dramatic = getInterventionsByScale('dramatic'); expect(dramatic.length).toBeGreaterThanOrEqual(1); });
+  it('roll scales with faith', () => { const results = Array.from({ length: 50 }, () => rollIntervention(10)); const hasSubtle = results.some((r) => r.scale === 'subtle'); const hasDramatic = results.some((r) => r.scale === 'dramatic' || r.scale === 'miraculous'); expect(hasSubtle || hasDramatic).toBe(true); });
+  it('all have divine costs', () => { DIVINE_INTERVENTIONS.forEach((i) => expect(i.divineCost.length).toBeGreaterThan(5)); });
+  it('all have witness reactions', () => { DIVINE_INTERVENTIONS.forEach((i) => expect(i.witnessReaction.length).toBeGreaterThan(10)); });
+  it('formats intervention', () => { expect(formatIntervention(DIVINE_INTERVENTIONS[0])).toContain('Divine cost'); });
+});
+
+// ---------------------------------------------------------------------------
+// Siege defense planner
+// ---------------------------------------------------------------------------
+import { SIEGE_DEFENSE_PLANS, getRandomDefensePlan, getTotalTroops as getSiegeTroops, getPositionByType, getDepletableResources, getAllPositions as getAllDefensePositions, getAllTactics, formatDefensePlan } from '../../src/data/siegeDefense';
+
+describe('siege defense planner', () => {
+  it('has at least 2 plans', () => { expect(SIEGE_DEFENSE_PLANS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random plan', () => { const p = getRandomDefensePlan(); expect(p.fortificationName.length).toBeGreaterThan(3); expect(p.positions.length).toBeGreaterThanOrEqual(2); });
+  it('total troops = positions + reserves', () => { SIEGE_DEFENSE_PLANS.forEach((p) => expect(getSiegeTroops(p)).toBe(p.totalDefenders)); });
+  it('looks up position', () => { const p = SIEGE_DEFENSE_PLANS[0]; const walls = getPositionByType(p, 'walls'); expect(walls).toBeDefined(); expect(walls!.troops).toBeGreaterThan(0); });
+  it('finds depletable resources', () => { const p = SIEGE_DEFENSE_PLANS[0]; const depletable = getDepletableResources(p); expect(depletable.length).toBeGreaterThanOrEqual(2); depletable.forEach((r) => expect(r.depletes).toBe(true)); });
+  it('has 6 defense positions', () => { expect(getAllDefensePositions().length).toBe(6); });
+  it('has 6 tactics', () => { expect(getAllTactics().length).toBe(6); });
+  it('all plans have weak points', () => { SIEGE_DEFENSE_PLANS.forEach((p) => expect(p.weakPoint.length).toBeGreaterThan(20)); });
+  it('formats plan', () => { expect(formatDefensePlan(SIEGE_DEFENSE_PLANS[0])).toContain('Hold time'); });
+});
