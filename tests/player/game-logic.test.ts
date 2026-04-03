@@ -7132,3 +7132,98 @@ describe('combat turn checklist', () => {
     expect(text).toContain('Reaction');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Wilderness landmarks
+// ---------------------------------------------------------------------------
+import { rollLandmark, formatLandmark } from '../../src/data/wildernessLandmarks';
+
+describe('wilderness landmarks', () => {
+  it('generates valid landmark', () => { const l = rollLandmark(); expect(l.name.length).toBeGreaterThan(0); expect(l.description.length).toBeGreaterThan(0); });
+  it('filters by terrain', () => { const l = rollLandmark('mountain'); expect(l.terrain).toContain('mountain'); });
+  it('shows secret when revealed', () => { const l = rollLandmark(); if (l.hasSecret) expect(formatLandmark(l, true)).toContain('Secret'); });
+  it('hides secret by default', () => { const l = rollLandmark(); if (l.hasSecret) expect(formatLandmark(l, false)).not.toContain(l.secret || ''); });
+});
+
+// ---------------------------------------------------------------------------
+// Skill proficiency reference
+// ---------------------------------------------------------------------------
+import { CLASS_SKILL_OPTIONS, getSkillOptions, formatSkillProficiencyRef } from '../../src/data/skillProficiencyRef';
+
+describe('skill proficiency reference', () => {
+  it('has all 12 classes', () => { expect(Object.keys(CLASS_SKILL_OPTIONS).length).toBe(12); });
+  it('Rogue gets 4 choices', () => { expect(getSkillOptions('Rogue').choices).toBe(4); });
+  it('Bard can choose from any skill', () => { expect(getSkillOptions('Bard').from.length).toBe(18); });
+  it('formatSkillProficiencyRef lists all classes', () => { const text = formatSkillProficiencyRef(); expect(text).toContain('Fighter'); expect(text).toContain('Wizard'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ship generator
+// ---------------------------------------------------------------------------
+import { generateShip, formatShip } from '../../src/data/shipGenerator';
+
+describe('ship generator', () => {
+  it('generates with all fields', () => { const s = generateShip(); expect(s.name.length).toBeGreaterThan(0); expect(s.type.length).toBeGreaterThan(0); expect(s.crew).toBeGreaterThanOrEqual(10); });
+  it('formatShip shows captain and cargo', () => { const text = formatShip(generateShip()); expect(text).toContain('Captain'); expect(text).toContain('Cargo'); });
+});
+
+// ---------------------------------------------------------------------------
+// Festival generator
+// ---------------------------------------------------------------------------
+import { generateFestival, formatFestival } from '../../src/data/festivalGenerator';
+
+describe('festival generator', () => {
+  it('generates with events', () => { const f = generateFestival(); expect(f.events.length).toBe(3); expect(f.name.length).toBeGreaterThan(0); });
+  it('formatFestival shows prize', () => { expect(formatFestival(generateFestival())).toContain('Prize'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ability check narrator
+// ---------------------------------------------------------------------------
+import { narrateCheck, getCheckOutcome, formatNarratedCheck } from '../../src/data/abilityCheckNarrator';
+
+describe('ability check narrator', () => {
+  it('getCheckOutcome returns correct outcomes', () => {
+    expect(getCheckOutcome(20, 15)).toBe('critical_success');
+    expect(getCheckOutcome(1, 15)).toBe('critical_failure');
+    expect(getCheckOutcome(15, 15)).toBe('success');
+    expect(getCheckOutcome(10, 15)).toBe('failure');
+  });
+  it('narrateCheck returns text', () => { expect(narrateCheck('Athletics', 'success').length).toBeGreaterThan(0); });
+  it('formatNarratedCheck includes character and skill', () => { const text = formatNarratedCheck('Thorin', 'Athletics', 18, 15); expect(text).toContain('Thorin'); expect(text).toContain('Athletics'); });
+});
+
+// ---------------------------------------------------------------------------
+// Graveyard generator
+// ---------------------------------------------------------------------------
+import { generateTombstone, generateGraveyard, formatGraveyard } from '../../src/data/graveyardGenerator';
+
+describe('graveyard generator', () => {
+  it('generates tombstone with fields', () => { const t = generateTombstone(); expect(t.name.length).toBeGreaterThan(0); expect(t.epitaph.length).toBeGreaterThan(0); expect(t.yearsAgo).toBeGreaterThanOrEqual(1); });
+  it('generateGraveyard returns correct count', () => { expect(generateGraveyard(5).length).toBe(5); });
+  it('formatGraveyard shows names and epitaphs', () => { const text = formatGraveyard(generateGraveyard(2)); expect(text).toContain('Graveyard'); });
+});
+
+// ---------------------------------------------------------------------------
+// Tavern menu
+// ---------------------------------------------------------------------------
+import { TAVERN_MENU, getMenuByType, formatTavernMenu } from '../../src/data/tavernMenu';
+
+describe('tavern menu', () => {
+  it('has at least 8 items', () => { expect(TAVERN_MENU.length).toBeGreaterThanOrEqual(8); });
+  it('getMenuByType filters correctly', () => { const drinks = getMenuByType('drink'); for (const d of drinks) expect(d.type).toBe('drink'); expect(drinks.length).toBeGreaterThanOrEqual(4); });
+  it('some items have effects', () => { expect(TAVERN_MENU.some((m) => m.effect)).toBe(true); });
+  it('formatTavernMenu shows both sections', () => { const text = formatTavernMenu(); expect(text).toContain('Drinks'); expect(text).toContain('Food'); });
+});
+
+// ---------------------------------------------------------------------------
+// Bounty board
+// ---------------------------------------------------------------------------
+import { generateBounty, generateBountyBoard, formatBountyBoard } from '../../src/data/bountyBoard';
+
+describe('bounty board', () => {
+  it('generates valid bounty', () => { const b = generateBounty(); expect(b.targetName.length).toBeGreaterThan(0); expect(b.crime.length).toBeGreaterThan(0); expect(['dead or alive', 'alive only', 'dead only']).toContain(b.deadOrAlive); });
+  it('generateBountyBoard returns correct count', () => { expect(generateBountyBoard(4).length).toBe(4); });
+  it('formatBountyBoard shows WANTED', () => { expect(formatBountyBoard(generateBountyBoard())).toContain('WANTED'); });
+  it('difficulty scales reward', () => { const bounties = Array.from({ length: 20 }, () => generateBounty()); const legendary = bounties.filter((b) => b.difficulty === 'legendary'); for (const b of legendary) expect(b.reward).toContain('2,000'); });
+});

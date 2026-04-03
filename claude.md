@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v12.5.0
+## Current Version: v12.6.0
 
 ### v0.1.0 — Initial Release
 
@@ -719,6 +719,16 @@ The complete feature set built from project inception through 46 development ite
 - ~~Planar reference~~ **DONE** — `planarReference.ts` with 12 D&D planes by category
 - ~~Trinket generator~~ **DONE** — `trinketGenerator.ts` with 30 PHB-style trinkets
 - ~~Combat turn checklist~~ **DONE** — `combatTurnChecklist.ts` with 16 actions by type
+
+**Wave 30 Roadmap (completed — pushing to 1000 tests):**
+- ~~Wilderness landmarks~~ **DONE** — `wildernessLandmarks.ts` with 10 landmarks + secrets
+- ~~Skill proficiency ref~~ **DONE** — `skillProficiencyRef.ts` with all 12 classes
+- ~~Ship generator~~ **DONE** — `shipGenerator.ts` with name/type/crew/cargo/captain/secret
+- ~~Festival generator~~ **DONE** — `festivalGenerator.ts` with events and prizes
+- ~~Check narrator~~ **DONE** — `abilityCheckNarrator.ts` with dramatic descriptions
+- ~~Graveyard generator~~ **DONE** — `graveyardGenerator.ts` with tombstones and secrets
+- ~~Tavern menu~~ **DONE** — `tavernMenu.ts` with 10 items + mechanical effects
+- ~~Bounty board~~ **DONE** — `bountyBoard.ts` with wanted posters and difficulty-scaled rewards
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

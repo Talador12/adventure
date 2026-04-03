@@ -2472,6 +2472,47 @@ export default function DMSidebar({
               📋 Turn Checklist
             </button>
 
+            {/* Landmark */}
+            <button onClick={async () => { const { rollLandmark, formatLandmark } = await import('../../data/wildernessLandmarks'); onAddDmMessage(formatLandmark(rollLandmark(), true)); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="Random wilderness landmark">
+              🏛️ Landmark
+            </button>
+            {/* Skill proficiency ref */}
+            <button onClick={async () => { const { formatSkillProficiencyRef } = await import('../../data/skillProficiencyRef'); onAddDmMessage(formatSkillProficiencyRef()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Skill choices by class">
+              📋 Skill Proficiencies
+            </button>
+            {/* Ship generator */}
+            <button onClick={async () => { const { generateShip, formatShip } = await import('../../data/shipGenerator'); onAddDmMessage(formatShip(generateShip())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all" title="Generate a random ship">
+              ⛵ Random Ship
+            </button>
+            {/* Festival */}
+            <button onClick={async () => { const { generateFestival, formatFestival } = await import('../../data/festivalGenerator'); onAddDmMessage(formatFestival(generateFestival())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Generate a town festival with events">
+              🎉 Festival
+            </button>
+            {/* Graveyard */}
+            <button onClick={async () => { const { generateGraveyard, formatGraveyard } = await import('../../data/graveyardGenerator'); onAddDmMessage(formatGraveyard(generateGraveyard())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-gray-700/30 border border-gray-500/30 text-gray-300 font-semibold hover:bg-gray-600/30 transition-all" title="Random tombstones with epitaphs and secrets">
+              ⚰️ Graveyard
+            </button>
+            {/* Tavern menu */}
+            <button onClick={async () => { const { formatTavernMenu } = await import('../../data/tavernMenu'); onAddDmMessage(formatTavernMenu()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Tavern food and drink menu with effects">
+              🍺 Tavern Menu
+            </button>
+            {/* Bounty board */}
+            <button onClick={async () => { const { generateBountyBoard, formatBountyBoard } = await import('../../data/bountyBoard'); onAddDmMessage(formatBountyBoard(generateBountyBoard())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Random wanted posters with bounties">
+              📜 Bounty Board
+            </button>
+            {/* Check narrator */}
+            <button onClick={async () => { const { formatNarratedCheck } = await import('../../data/abilityCheckNarrator'); const roll = Math.floor(Math.random() * 20) + 1; onAddDmMessage(formatNarratedCheck('Player', 'Athletics', roll, 15)); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all" title="Dramatic narration for ability checks">
+              🎭 Check Narrator
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
