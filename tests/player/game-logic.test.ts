@@ -7596,3 +7596,66 @@ describe('encounter complications', () => {
   it('filters by severity', () => { const dramatic = getComplicationsBySeverity('dramatic'); for (const c of dramatic) expect(c.severity).toBe('dramatic'); expect(dramatic.length).toBeGreaterThanOrEqual(3); });
   it('formatComplication shows mechanical effect', () => { expect(fmtComplication(getRandomComplication())).toContain('⚙️'); });
 });
+
+// ---------------------------------------------------------------------------
+// Weather transitions
+// ---------------------------------------------------------------------------
+import { narrateWeatherChange, getWeatherMoodEffect } from '../../src/data/randomWeatherTransition';
+
+describe('weather transitions', () => {
+  it('narrates specific transitions', () => { expect(narrateWeatherChange('none', 'rain')).toContain('clouds'); });
+  it('handles unknown transitions gracefully', () => { expect(narrateWeatherChange('tornado', 'hail')).toContain('shifts'); });
+  it('getWeatherMoodEffect returns text', () => { expect(getWeatherMoodEffect('rain').length).toBeGreaterThan(0); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat terrain features
+// ---------------------------------------------------------------------------
+import { getRandomTerrainFeature, getMultipleFeatures, formatTerrainFeature as fmtTerrain, formatBattlefieldFeatures } from '../../src/data/randomCombatTerrain';
+
+describe('combat terrain features', () => {
+  it('generates valid feature', () => { const f = getRandomTerrainFeature(); expect(f.name.length).toBeGreaterThan(0); expect(f.mechanicalEffect.length).toBeGreaterThan(0); });
+  it('getMultipleFeatures returns correct count', () => { expect(getMultipleFeatures(3).length).toBe(3); });
+  it('formatBattlefieldFeatures shows multiple', () => { expect(formatBattlefieldFeatures(2)).toContain('Battlefield'); });
+});
+
+// ---------------------------------------------------------------------------
+// Non-gold rewards
+// ---------------------------------------------------------------------------
+import { getRandomReward, getRewardsByCategory, formatReward as fmtReward } from '../../src/data/randomReward';
+
+describe('non-gold rewards', () => {
+  it('generates valid reward', () => { const r = getRandomReward(); expect(r.reward.length).toBeGreaterThan(0); expect(['favor', 'item', 'information', 'service', 'title', 'property']).toContain(r.category); });
+  it('filters by category', () => { const favors = getRewardsByCategory('favor'); for (const f of favors) expect(f.category).toBe('favor'); });
+  it('formatReward shows value', () => { expect(fmtReward(getRandomReward())).toContain('Value'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC relationships
+// ---------------------------------------------------------------------------
+import { getRandomRelationship, formatRelationship as fmtRel } from '../../src/data/randomNpcRelationship';
+
+describe('NPC relationships', () => {
+  it('generates with tension and secret', () => { const r = getRandomRelationship(); expect(r.relationship.length).toBeGreaterThan(0); expect(r.tension.length).toBeGreaterThan(0); expect(r.secret.length).toBeGreaterThan(0); });
+  it('formatRelationship shows both NPCs', () => { const text = fmtRel(getRandomRelationship()); expect(text).toContain('↔'); });
+});
+
+// ---------------------------------------------------------------------------
+// Dungeon doors
+// ---------------------------------------------------------------------------
+import { generateDungeonDoor, formatDungeonDoor as fmtDoor } from '../../src/data/randomDungeonDoor';
+
+describe('dungeon doors', () => {
+  it('generates with material and state', () => { const d = generateDungeonDoor(); expect(d.material.length).toBeGreaterThan(0); expect(d.state.length).toBeGreaterThan(0); expect(d.whatsBehind.length).toBeGreaterThan(0); });
+  it('formatDungeonDoor shows what\'s behind', () => { expect(fmtDoor(generateDungeonDoor())).toContain('Behind'); });
+});
+
+// ---------------------------------------------------------------------------
+// Political intrigue
+// ---------------------------------------------------------------------------
+import { getRandomIntrigue, formatIntrigue as fmtIntrigue } from '../../src/data/randomPoliticalIntrigue';
+
+describe('political intrigue', () => {
+  it('generates with factions', () => { const pi = getRandomIntrigue(); expect(pi.factions.length).toBeGreaterThanOrEqual(2); expect(pi.stakes.length).toBeGreaterThan(0); });
+  it('formatIntrigue shows opportunity and danger', () => { const text = fmtIntrigue(getRandomIntrigue()); expect(text).toContain('Opportunity'); expect(text).toContain('Danger'); });
+});

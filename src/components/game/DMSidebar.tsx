@@ -2658,6 +2658,37 @@ export default function DMSidebar({
               🌋 Combat Twist
             </button>
 
+            {/* Weather transition */}
+            <button onClick={async () => { const { narrateWeatherChange } = await import('../../data/randomWeatherTransition'); onAddDmMessage(narrateWeatherChange(weather, 'rain')); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-sky-400 font-semibold hover:bg-sky-800/30 transition-all" title="Narrate a weather change">
+              🌤️ Weather Shift
+            </button>
+            {/* Battlefield features */}
+            <button onClick={async () => { const { formatBattlefieldFeatures } = await import('../../data/randomCombatTerrain'); onAddDmMessage(formatBattlefieldFeatures()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all" title="Random terrain features for the battlefield">
+              🏔️ Battle Terrain
+            </button>
+            {/* Non-gold reward */}
+            <button onClick={async () => { const { getRandomReward, formatReward } = await import('../../data/randomReward'); onAddDmMessage(formatReward(getRandomReward())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all" title="Non-gold quest reward">
+              🎁 Unique Reward
+            </button>
+            {/* NPC relationship */}
+            <button onClick={async () => { const { getRandomRelationship, formatRelationship } = await import('../../data/randomNpcRelationship'); onAddDmMessage(formatRelationship(getRandomRelationship())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Random connection between two NPCs">
+              🤝 NPC Connection
+            </button>
+            {/* Dungeon door */}
+            <button onClick={async () => { const { generateDungeonDoor, formatDungeonDoor } = await import('../../data/randomDungeonDoor'); onAddDmMessage(formatDungeonDoor(generateDungeonDoor())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Random dungeon door with what's behind it">
+              🚪 Dungeon Door
+            </button>
+            {/* Political intrigue */}
+            <button onClick={async () => { const { getRandomIntrigue, formatIntrigue } = await import('../../data/randomPoliticalIntrigue'); onAddDmMessage(formatIntrigue(getRandomIntrigue())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Random political intrigue with factions">
+              🏛️ Political Intrigue
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
