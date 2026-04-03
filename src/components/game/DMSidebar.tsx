@@ -37,6 +37,7 @@ import { LEGENDARY_TEMPLATES as LEGENDARY_DATA } from '../../lib/legendaryAction
 import { DIALOGUE_TEMPLATES as DIALOGUE_DATA } from '../../data/dialogueTrees';
 import { LAIR_THEMES as LAIR_DATA } from '../../data/lairEffects';
 import { BULK_PRESETS as BULK_PRESETS_DATA } from '../../lib/bulkNpcGenerator';
+import { PRESET_TABLES as ENCOUNTER_TABLE_DATA } from '../../data/encounterTableBuilder';
 import { MINION_TEMPLATES as MINION_DATA } from '../../lib/minionRules';
 
 interface DMSidebarProps {
@@ -1965,6 +1966,98 @@ export default function DMSidebar({
               title="Travel pace reference and speed calculator"
             >
               🗺️ Travel Calculator
+            </button>
+
+            {/* Encounter table roller */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all cursor-pointer px-2">
+                🎲 Encounter Tables
+              </summary>
+              <div className="mt-1 space-y-1">
+                {ENCOUNTER_TABLE_DATA.map((table) => (
+                  <button
+                    key={table.id}
+                    onClick={async () => {
+                      const { rollOnTable, formatTableRoll } = await import('../../data/encounterTableBuilder');
+                      const { roll, entry } = rollOnTable(table);
+                      onAddDmMessage(formatTableRoll(table.name, roll, entry));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-orange-600/40 transition-all text-[9px] text-slate-300"
+                  >
+                    🎲 {table.name} ({table.entries.length} entries)
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Point buy calculator */}
+            <button
+              onClick={async () => {
+                const { createPointBuyState, formatPointBuy } = await import('../../lib/pointBuyCalculator');
+                onAddDmMessage(formatPointBuy(createPointBuyState()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all"
+              title="Show point buy calculator with 27-point system"
+            >
+              📊 Point Buy
+            </button>
+
+            {/* Hit dice tracker */}
+            <button
+              onClick={async () => {
+                const { createHitDiceState, formatPartyHitDice } = await import('../../lib/hitDiceTracker');
+                const states = characters.map((c) => ({ state: createHitDiceState(c.id, c.class, c.level), name: c.name }));
+                onAddDmMessage(formatPartyHitDice(states));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all disabled:opacity-30"
+              title="Show remaining hit dice for all characters"
+            >
+              🎲 Hit Dice
+            </button>
+
+            {/* Ammunition tracker */}
+            <button
+              onClick={async () => {
+                const { createAmmoState, formatAmmoStatus } = await import('../../lib/ammunitionTracker');
+                const lines = characters.map((c) => {
+                  const raw = localStorage.getItem(`adventure:ammo:${c.id}`);
+                  const state = raw ? JSON.parse(raw) : createAmmoState(c.id);
+                  return formatAmmoStatus(state, c.name);
+                });
+                onAddDmMessage(lines.join('\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all disabled:opacity-30"
+              title="Track ammunition per character — arrows, bolts, darts"
+            >
+              🏹 Ammunition
+            </button>
+
+            {/* Map descriptor */}
+            <button
+              onClick={async () => {
+                const { describeMapTerrain } = await import('../../lib/mapDescriptor');
+                const terrain: any[][] = (() => { try { return JSON.parse(localStorage.getItem(`adventure:terrain:${roomId}`) || '[]'); } catch { return []; } })();
+                if (terrain.length === 0) { onAddDmMessage('🗺️ No battle map terrain data available.'); return; }
+                onAddDmMessage(describeMapTerrain(terrain, terrain[0]?.length || 0, terrain.length));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all"
+              title="Generate tactical description from current battle map terrain"
+            >
+              🗺️ Map Description
+            </button>
+
+            {/* Death log */}
+            <button
+              onClick={async () => {
+                const { loadDeathLog, formatDeathLog } = await import('../../data/deathLog');
+                onAddDmMessage(formatDeathLog(loadDeathLog()));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-slate-700/30 border border-slate-500/30 text-slate-300 font-semibold hover:bg-slate-600/30 transition-all"
+              title="Memorial wall — view fallen characters"
+            >
+              ⚰️ Death Log
             </button>
 
             {/* Save/Load Encounter Templates */}

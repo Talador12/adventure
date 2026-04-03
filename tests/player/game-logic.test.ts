@@ -6008,3 +6008,160 @@ describe('travel speed calculator (new)', () => {
     expect(text).toContain('slow');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Encounter table builder
+// ---------------------------------------------------------------------------
+import { PRESET_TABLES, rollOnTable, validateTable, formatTableRoll } from '../../src/data/encounterTableBuilder';
+
+describe('encounter table builder', () => {
+  it('has at least 2 preset tables', () => { expect(PRESET_TABLES.length).toBeGreaterThanOrEqual(2); });
+  it('rollOnTable returns valid entry', () => {
+    const { roll, entry } = rollOnTable(PRESET_TABLES[0]);
+    expect(roll).toBeGreaterThanOrEqual(1);
+    expect(roll).toBeLessThanOrEqual(100);
+    expect(entry.description.length).toBeGreaterThan(0);
+  });
+  it('preset tables cover 1-100', () => {
+    for (const table of PRESET_TABLES) {
+      const result = validateTable(table);
+      expect(result.valid).toBe(true);
+    }
+  });
+  it('formatTableRoll includes roll number', () => {
+    const { roll, entry } = rollOnTable(PRESET_TABLES[0]);
+    const text = formatTableRoll(PRESET_TABLES[0].name, roll, entry);
+    expect(text).toContain(String(roll));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Point buy calculator
+// ---------------------------------------------------------------------------
+import { POINT_BUY_COSTS, createPointBuyState, setScore, calculatePointsUsed, getModifier, formatPointBuy } from '../../src/lib/pointBuyCalculator';
+
+describe('point buy calculator', () => {
+  it('starts at 0 points used', () => { expect(createPointBuyState().pointsUsed).toBe(0); });
+  it('setScore updates points', () => {
+    const result = setScore(createPointBuyState(), 'STR', 15);
+    expect(result.success).toBe(true);
+    expect(result.state.pointsUsed).toBe(9); // cost of 15
+  });
+  it('rejects over-budget', () => {
+    let state = createPointBuyState();
+    state = setScore(state, 'STR', 15).state;
+    state = setScore(state, 'DEX', 15).state;
+    state = setScore(state, 'CON', 15).state;
+    const result = setScore(state, 'INT', 15); // would be 36 > 27
+    expect(result.success).toBe(false);
+  });
+  it('getModifier computes correctly', () => {
+    expect(getModifier(10)).toBe(0);
+    expect(getModifier(16)).toBe(3);
+    expect(getModifier(8)).toBe(-1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hit dice tracker
+// ---------------------------------------------------------------------------
+import { CLASS_HIT_DICE, createHitDiceState, spendHitDie, restoreHitDice, formatHitDice } from '../../src/lib/hitDiceTracker';
+
+describe('hit dice tracker', () => {
+  it('creates state with correct die size', () => {
+    expect(createHitDiceState('c1', 'Barbarian', 5).dieSize).toBe(12);
+    expect(createHitDiceState('c1', 'Wizard', 3).dieSize).toBe(6);
+  });
+  it('spendHitDie reduces remaining', () => {
+    const state = createHitDiceState('c1', 'Fighter', 5);
+    const result = spendHitDie(state, 2); // CON mod +2
+    expect(result.success).toBe(true);
+    expect(result.state.remainingDice).toBe(4);
+    expect(result.healed).toBeGreaterThanOrEqual(1);
+  });
+  it('spendHitDie fails when empty', () => {
+    const state = { ...createHitDiceState('c1', 'Fighter', 5), remainingDice: 0 };
+    expect(spendHitDie(state, 0).success).toBe(false);
+  });
+  it('restoreHitDice restores half on long rest', () => {
+    const state = { ...createHitDiceState('c1', 'Fighter', 6), remainingDice: 0 };
+    const restored = restoreHitDice(state);
+    expect(restored.remainingDice).toBe(3); // half of 6
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Ammunition tracker
+// ---------------------------------------------------------------------------
+import { createAmmoState, fireAmmo, addAmmo, recoverAmmo, getActiveAmmoTypes, formatAmmoStatus } from '../../src/lib/ammunitionTracker';
+
+describe('ammunition tracker', () => {
+  it('starts with 20 arrows', () => { expect(createAmmoState('c1').ammo.arrows).toBe(20); });
+  it('fireAmmo decrements', () => {
+    const result = fireAmmo(createAmmoState('c1'), 'arrows', 1);
+    expect(result.success).toBe(true);
+    expect(result.remaining).toBe(19);
+  });
+  it('fireAmmo fails when empty', () => {
+    const state = { ...createAmmoState('c1'), ammo: { ...createAmmoState('c1').ammo, arrows: 0 } };
+    expect(fireAmmo(state, 'arrows').success).toBe(false);
+  });
+  it('recoverAmmo returns half', () => {
+    const state = createAmmoState('c1');
+    const result = recoverAmmo(state, 'arrows', 10);
+    expect(result.recovered).toBe(5);
+  });
+  it('getActiveAmmoTypes filters non-zero', () => {
+    const state = createAmmoState('c1'); // only arrows > 0
+    expect(getActiveAmmoTypes(state)).toContain('arrows');
+    expect(getActiveAmmoTypes(state)).not.toContain('bolts');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Map descriptor
+// ---------------------------------------------------------------------------
+import { describeMapTerrain } from '../../src/lib/mapDescriptor';
+
+describe('map descriptor', () => {
+  it('describes open terrain', () => {
+    const terrain = Array.from({ length: 10 }, () => Array(10).fill('floor'));
+    const text = describeMapTerrain(terrain as any, 10, 10);
+    expect(text).toContain('open');
+    expect(text).toContain('Open space: 100%');
+  });
+  it('describes terrain with features', () => {
+    const terrain = Array.from({ length: 10 }, () => Array(10).fill('floor'));
+    (terrain as any)[5][5] = 'wall'; (terrain as any)[5][6] = 'wall';
+    (terrain as any)[3][3] = 'water';
+    const text = describeMapTerrain(terrain as any, 10, 10);
+    expect(text).toContain('walls');
+    expect(text).toContain('water');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Death log
+// ---------------------------------------------------------------------------
+import { recordDeath, getDeathCount, getMostDeadlyEnemy, formatDeathLog, type DeathLogState } from '../../src/data/deathLog';
+
+describe('death log', () => {
+  it('records deaths', () => {
+    let state: DeathLogState = { records: [] };
+    state = recordDeath(state, 'Thorin', 'Fighter', 5, 'Dragon fire', 'Adult Red Dragon', 'Mountain Pass', 'c1', 3);
+    expect(getDeathCount(state)).toBe(1);
+    expect(state.records[0].epitaph.length).toBeGreaterThan(0);
+  });
+  it('getMostDeadlyEnemy finds top killer', () => {
+    let state: DeathLogState = { records: [] };
+    state = recordDeath(state, 'A', 'F', 5, 'fire', 'Dragon', 'loc', 'c1', 1);
+    state = recordDeath(state, 'B', 'W', 3, 'fire', 'Dragon', 'loc', 'c1', 2);
+    state = recordDeath(state, 'C', 'R', 4, 'stab', 'Goblin', 'loc', 'c1', 3);
+    const deadliest = getMostDeadlyEnemy(state);
+    expect(deadliest?.name).toBe('Dragon');
+    expect(deadliest?.kills).toBe(2);
+  });
+  it('formatDeathLog handles empty', () => {
+    expect(formatDeathLog({ records: [] })).toContain('No deaths');
+  });
+});

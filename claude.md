@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.6.0
+## Current Version: v11.7.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 22 tests (787 total) — encounter tables, point buy, hit dice, ammunition, map descriptor, death log:
+  - **Encounter table builder** — `encounterTableBuilder.ts` with 2 preset d100 tables (Forest Road, Dungeon Hallway). Each with 7-8 entries covering combat/social/hazard/discovery/nothing. `rollOnTable()` with d100. `validateTable()` ensures 1-100 coverage. Expandable roller in DMSidebar.
+  - **Point buy calculator** — `pointBuyCalculator.ts` with 27-point system, cost table (8=0 to 15=9). `setScore()` validates budget. `getModifier()` for display. "Point Buy" button in DMSidebar.
+  - **Hit dice tracker** — `hitDiceTracker.ts` with class-specific die sizes (d6-d12). `spendHitDie()` rolls + CON mod. `restoreHitDice()` recovers half on long rest. Visual dice bars. "Hit Dice" button in DMSidebar.
+  - **Ammunition tracker** — `ammunitionTracker.ts` with 6 ammo types (arrows/bolts/darts/sling/blowgun/javelins). `fireAmmo()`/`addAmmo()`/`recoverAmmo()` (half recovery post-combat). Low-ammo warnings. "Ammunition" button in DMSidebar.
+  - **Map terrain descriptor** — `mapDescriptor.ts` analyzes battle map terrain grid. Reports density (open/cluttered/dense), feature percentages, and tactical suggestions (cover, difficult terrain, hazards). "Map Description" button in DMSidebar.
+  - **Character death log** — `deathLog.ts` memorial wall with cause, killer, location, session number. Random epitaphs. `getMostDeadlyEnemy()` tracks top killer. "Death Log" button in DMSidebar.
+- 22 new tests (787 total) covering 6 systems:
+  - **Encounter tables** (4 tests): preset count, d100 roll, table validation, formatted output.
+  - **Point buy** (4 tests): zero start, score update, over-budget rejection, modifier math.
+  - **Hit dice** (4 tests): class die size, spend+heal, empty fail, long rest restore.
+  - **Ammunition** (5 tests): default arrows, fire decrement, empty fail, half recovery, active type filter.
+  - **Map descriptor** (2 tests): open terrain, feature detection.
+  - **Death log** (3 tests): record+count, deadliest enemy, empty format.
+
 - 6 new systems + 18 tests (765 total) — passive skills, grapple/shove, dungeon names, party HP, damage analytics, travel speed:
   - **Passive skill display** — `passiveSkills.ts` computes passive Perception/Investigation/Insight (10 + mod + prof). Advantage adds +5, disadvantage -5. `formatPartyPassives()` shows all three for every character. "Passive Skills" button in DMSidebar.
   - **Grapple/shove resolver** — `grappleShove.ts` with size comparison (can only grapple one size larger). Contested Athletics vs Athletics/Acrobatics. Three actions: grapple, shove prone, shove away. Size-blocked narration. Integrates with existing combat.
@@ -611,6 +626,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~Party HP dashboard~~ **DONE** — `partyHpDashboard.ts` with 5-tier status + visual bars
 - ~~Damage log analytics~~ **DONE** — `damageLogAnalytics.ts` with DPR/HPR/per-character
 - ~~Travel speed calculator~~ **DONE** — `travelSpeed.ts` with 3 paces × 7 terrain × mounts
+
+**Wave 21 Roadmap (completed):**
+- ~~Encounter table builder~~ **DONE** — `encounterTableBuilder.ts` with d100 preset tables
+- ~~Point buy calculator~~ **DONE** — `pointBuyCalculator.ts` with 27-point system
+- ~~Hit dice tracker~~ **DONE** — `hitDiceTracker.ts` with class die sizes + rest recovery
+- ~~Ammunition tracker~~ **DONE** — `ammunitionTracker.ts` with 6 ammo types + recovery
+- ~~Map terrain descriptor~~ **DONE** — `mapDescriptor.ts` with tactical analysis
+- ~~Character death log~~ **DONE** — `deathLog.ts` memorial wall with deadliest enemy tracking
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
