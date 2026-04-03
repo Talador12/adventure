@@ -7907,3 +7907,64 @@ describe('encounter setup', () => {
   it('some have special conditions', () => { const all = Array.from({ length: 20 }, () => getRandomSetup()); expect(all.some((s) => s.specialCondition !== null)).toBe(true); });
   it('formatEncounterSetup shows environment', () => { expect(formatEncounterSetup(getRandomSetup())).toContain('Environment'); });
 });
+
+// ---------------------------------------------------------------------------
+// War cries
+// ---------------------------------------------------------------------------
+import { WAR_CRIES, getRandomWarCry, formatWarCry } from '../../src/data/randomWarCry';
+
+describe('war cries', () => {
+  it('has at least 14', () => { expect(WAR_CRIES.length).toBeGreaterThanOrEqual(14); });
+  it('getRandomWarCry returns text', () => { expect(getRandomWarCry().length).toBeGreaterThan(3); });
+  it('formatWarCry shows character name', () => { expect(formatWarCry('Thorin')).toContain('Thorin'); });
+});
+
+// ---------------------------------------------------------------------------
+// Cause of death
+// ---------------------------------------------------------------------------
+import { getRandomCauseOfDeath, formatCauseOfDeath } from '../../src/data/randomDeathCause';
+
+describe('cause of death', () => {
+  it('generates with evidence', () => { const c = getRandomCauseOfDeath(); expect(c.cause.length).toBeGreaterThan(0); expect(c.evidence.length).toBeGreaterThan(0); expect(['natural', 'suspicious', 'obvious_murder']).toContain(c.suspiciousLevel); });
+  it('formatCauseOfDeath shows DC', () => { expect(formatCauseOfDeath(getRandomCauseOfDeath())).toContain('Investigation DC'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ambush spots
+// ---------------------------------------------------------------------------
+import { getRandomAmbushSpot, formatAmbushSpot } from '../../src/data/randomAmbushSpot';
+
+describe('ambush spots', () => {
+  it('generates with counterplay', () => { const a = getRandomAmbushSpot(); expect(a.location.length).toBeGreaterThan(0); expect(a.counterplay.length).toBeGreaterThan(0); });
+  it('formatAmbushSpot shows setup', () => { expect(formatAmbushSpot(getRandomAmbushSpot())).toContain('Ambush Setup'); });
+});
+
+// ---------------------------------------------------------------------------
+// Merchant quirks
+// ---------------------------------------------------------------------------
+import { MERCHANT_QUIRKS, getRandomMerchantQuirk, formatMerchantQuirk } from '../../src/data/randomMerchantQuirk';
+
+describe('merchant quirks', () => {
+  it('has at least 10', () => { expect(MERCHANT_QUIRKS.length).toBeGreaterThanOrEqual(10); });
+  it('formatMerchantQuirk shows label', () => { expect(formatMerchantQuirk()).toContain('Merchant Quirk'); });
+});
+
+// ---------------------------------------------------------------------------
+// Travel flavor
+// ---------------------------------------------------------------------------
+import { TRAVEL_FLAVOR, getRandomTravelFlavor, formatTravelFlavor } from '../../src/data/randomTravelFlavor';
+
+describe('travel flavor', () => {
+  it('has at least 12', () => { expect(TRAVEL_FLAVOR.length).toBeGreaterThanOrEqual(12); });
+  it('getRandomTravelFlavor returns text', () => { expect(getRandomTravelFlavor().length).toBeGreaterThan(10); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC opinions
+// ---------------------------------------------------------------------------
+import { getRandomOpinion, formatNpcOpinion } from '../../src/data/randomNpcOpinion';
+
+describe('NPC opinions', () => {
+  it('generates with hidden truth', () => { const o = getRandomOpinion(); expect(o.opinion.length).toBeGreaterThan(0); expect(o.hiddenTruth.length).toBeGreaterThan(0); expect(['positive', 'negative', 'neutral', 'evasive', 'passionate']).toContain(o.tone); });
+  it('formatNpcOpinion shows topic', () => { expect(formatNpcOpinion(getRandomOpinion())).toContain('Opinion'); });
+});

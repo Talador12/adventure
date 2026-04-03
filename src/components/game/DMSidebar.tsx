@@ -2813,6 +2813,37 @@ export default function DMSidebar({
               ⚔️ Encounter Setup
             </button>
 
+            {/* War cry */}
+            <button onClick={async () => { const { formatWarCry } = await import('../../data/randomWarCry'); onAddDmMessage(formatWarCry()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Random battle shout">
+              ⚔️ War Cry
+            </button>
+            {/* Cause of death */}
+            <button onClick={async () => { const { getRandomCauseOfDeath, formatCauseOfDeath } = await import('../../data/randomDeathCause'); onAddDmMessage(formatCauseOfDeath(getRandomCauseOfDeath())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-gray-700/30 border border-gray-500/30 text-gray-300 font-semibold hover:bg-gray-600/30 transition-all" title="Random cause of death for mystery investigations">
+              💀 Cause of Death
+            </button>
+            {/* Ambush spot */}
+            <button onClick={async () => { const { getRandomAmbushSpot, formatAmbushSpot } = await import('../../data/randomAmbushSpot'); onAddDmMessage(formatAmbushSpot(getRandomAmbushSpot())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Random ambush location with counterplay">
+              🎯 Ambush Spot
+            </button>
+            {/* Merchant quirk */}
+            <button onClick={async () => { const { formatMerchantQuirk } = await import('../../data/randomMerchantQuirk'); onAddDmMessage(formatMerchantQuirk()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Memorable merchant habit">
+              🏪 Merchant Quirk
+            </button>
+            {/* Travel flavor */}
+            <button onClick={async () => { const { formatTravelFlavor } = await import('../../data/randomTravelFlavor'); onAddDmMessage(formatTravelFlavor()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="Atmospheric one-liner for the road">
+              🛤️ Travel Flavor
+            </button>
+            {/* NPC opinion */}
+            <button onClick={async () => { const { getRandomOpinion, formatNpcOpinion } = await import('../../data/randomNpcOpinion'); onAddDmMessage(formatNpcOpinion(getRandomOpinion())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="NPC opinion with hidden truth">
+              💬 NPC Opinion
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
