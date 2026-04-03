@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.3.0
+## Current Version: v11.4.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 24 tests (728 total) — turn timer, languages, potion brewing, terrain reference, spellbooks, handouts:
+  - **Encounter pacing timer** — `encounterPacingTimer.ts` with configurable seconds-per-turn (default 60s, fast 30s, relaxed 120s). Start/end/next-round lifecycle. Tracks average turn time and overtime count. Warning/overtime color states. "Turn Timer" button in DMSidebar.
+  - **Language barrier system** — `languageBarrier.ts` with all 5e languages (8 common, 8 exotic, 2 rare). Race-based default languages for 9 races. `checkPartyLanguages()` finds translators. `getAllKnownLanguages()` aggregates party. "Party Languages" button shows coverage + gaps.
+  - **Potion brewing mini-game** — `potionBrewing.ts` with 10 ingredients across biomes and 6 potion recipes (Minor Heal, Healing, Antitoxin, Fire Resist, Invisibility, Frost Breath). DC checks, ingredient costs, brew times. "Potion Brewing" button in DMSidebar.
+  - **Terrain effect compendium** — `terrainCompendium.ts` with all 11 terrain types. Movement costs, combat effects, hazard damage/saves, hide-ability. `getHazardousTerrain()` for quick hazard reference. "Terrain Reference" button in DMSidebar.
+  - **Spellbook management** — `spellbookManager.ts` with 100-page wizard spellbook. Pages-per-level scaling, copy cost (50gp/level), copy time (2h/level). Duplicate rejection. Level grouping. "Spellbooks" button in DMSidebar.
+  - **Player handout system** — `playerHandouts.ts` with 6 handout types (note/letter/map/journal/scroll/poster). Per-character visibility. Reveal/hide controls. `getHandoutsForCharacter()` filters by access. "Player Handouts" button in DMSidebar.
+- 24 new tests (728 total) covering 6 systems:
+  - **Turn timer** (4 tests): creation, start turn, end turn stats, round increment.
+  - **Languages** (4 tests): racial defaults, understanding check, party translator search, aggregate coverage.
+  - **Potion brewing** (4 tests): recipe count, ingredient count, cost calculation, brew attempt.
+  - **Terrain compendium** (4 tests): type coverage, getter, hazard filter, formatted list.
+  - **Spellbook** (4 tests): empty creation, add spell + pages, duplicate rejection, copy cost scaling.
+  - **Handouts** (4 tests): empty start, creation, reveal, character visibility filtering.
+
 - 6 new systems + 25 tests (704 total) — object tracker, feature cooldowns, multiclass slots, bulk NPCs, combat narration, note tagger:
   - **Object interaction tracker** — `objectInteraction.ts` with 10 object types (door/chest/lever/button/trap_door/gate/shrine/fountain/torch/statue). State tracking (locked/unlocked/open/closed/broken/activated). Position-based lookup. Interaction history. "Object Tracker" button in DMSidebar.
   - **Class feature cooldown manager** — `classFeatureCooldowns.ts` with 16 templates across 8 classes (Action Surge, Rage, Channel Divinity, Wild Shape, Bardic Inspiration, Ki Points, Lay on Hands, Sorcery Points, etc). `useFeature()`/`restoreFeatures()` on short/long rest. Visual use bars. "Feature Cooldowns" button in DMSidebar.
@@ -536,12 +551,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Encounter pacing timer — visible combat round timer with configurable turn limits
-- Language barrier system — track known languages, auto-flag untranslatable NPC speech
-- Potion brewing mini-game — ingredient gathering + brewing check for custom potions
-- Terrain effect compendium — reference for all terrain types with movement/combat effects
-- Spellbook management — wizard-specific spellbook with copying costs and capacity
-- Player handout system — DM creates text/image handouts that players can view in-game
+- ~~Encounter pacing timer~~ **DONE** — `encounterPacingTimer.ts` with 3 speed presets
+- ~~Language barrier system~~ **DONE** — `languageBarrier.ts` with 18 languages + race defaults
+- ~~Potion brewing mini-game~~ **DONE** — `potionBrewing.ts` with 10 ingredients + 6 recipes
+- ~~Terrain effect compendium~~ **DONE** — `terrainCompendium.ts` with 11 terrain types
+- ~~Spellbook management~~ **DONE** — `spellbookManager.ts` with page/cost tracking
+- ~~Player handout system~~ **DONE** — `playerHandouts.ts` with 6 types + visibility control
+
+**Wave 19 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Damage resistance aggregator — combine all sources of resistance/immunity for quick reference
+- Action economy tracker — visualize action/bonus/reaction/movement per turn
+- Encumbrance calculator — track carrying capacity with variant encumbrance rules
+- Proficiency check helper — auto-apply proficiency bonus to skill/tool/save checks
+- Random tavern generator — instant tavern with name, specialty, patrons, and rumors
+- Combat round summary — auto-generate end-of-round damage totals and status changes
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

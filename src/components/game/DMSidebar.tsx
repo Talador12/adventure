@@ -1758,6 +1758,93 @@ export default function DMSidebar({
               📝 Tagged Notes
             </button>
 
+            {/* Turn timer */}
+            <button
+              onClick={async () => {
+                const { createTurnTimer, formatTurnTimer } = await import('../../lib/encounterPacingTimer');
+                const raw = localStorage.getItem(`adventure:turntimer:${roomId}`);
+                const timer = raw ? JSON.parse(raw) : createTurnTimer();
+                onAddDmMessage(formatTurnTimer(timer));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all"
+              title="Combat turn timer with configurable time limits"
+            >
+              ⏱️ Turn Timer
+            </button>
+
+            {/* Languages */}
+            <button
+              onClick={async () => {
+                const { createLanguageState, formatLanguageStatus } = await import('../../lib/languageBarrier');
+                const states = characters.map((c) => createLanguageState(c.id, c.race));
+                const names: Record<string, string> = {};
+                for (const c of characters) names[c.id] = c.name;
+                onAddDmMessage(formatLanguageStatus(states, names));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all disabled:opacity-30"
+              title="Show party language coverage and gaps"
+            >
+              🗣️ Party Languages
+            </button>
+
+            {/* Potion brewing */}
+            <button
+              onClick={async () => {
+                const { formatPotionRecipes } = await import('../../lib/potionBrewing');
+                onAddDmMessage(formatPotionRecipes());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all"
+              title="Potion brewing recipes with ingredients and DCs"
+            >
+              🧪 Potion Brewing
+            </button>
+
+            {/* Terrain reference */}
+            <button
+              onClick={async () => {
+                const { formatTerrainCompendium } = await import('../../data/terrainCompendium');
+                onAddDmMessage(formatTerrainCompendium());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all"
+              title="Reference for all terrain types with movement and combat effects"
+            >
+              🗺️ Terrain Reference
+            </button>
+
+            {/* Spellbook */}
+            <button
+              onClick={async () => {
+                const { createSpellbook, formatSpellbook } = await import('../../lib/spellbookManager');
+                const wizards = characters.filter((c) => c.class === 'Wizard');
+                if (wizards.length === 0) { onAddDmMessage('📕 No wizards in the party.'); return; }
+                const lines = wizards.map((w) => {
+                  const raw = localStorage.getItem(`adventure:spellbook:${w.id}`);
+                  const book = raw ? JSON.parse(raw) : createSpellbook(w.id);
+                  return formatSpellbook(book, w.name);
+                });
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all"
+              title="Wizard spellbook management with copying costs and page tracking"
+            >
+              📕 Spellbooks
+            </button>
+
+            {/* Player handouts */}
+            <button
+              onClick={async () => {
+                const { createHandoutState, formatHandoutList } = await import('../../lib/playerHandouts');
+                const raw = localStorage.getItem(`adventure:handouts:${roomId}`);
+                const state = raw ? JSON.parse(raw) : createHandoutState();
+                onAddDmMessage(formatHandoutList(state));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Create and manage text handouts for players"
+            >
+              📄 Player Handouts
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

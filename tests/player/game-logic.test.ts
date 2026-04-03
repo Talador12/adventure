@@ -5583,3 +5583,153 @@ describe('session note tagger', () => {
     expect(counts['#item']).toBeGreaterThanOrEqual(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Encounter pacing timer
+// ---------------------------------------------------------------------------
+import { DEFAULT_TIMER_CONFIG, createTurnTimer, startTurn, endTurn, nextRound, getElapsedSeconds, formatTurnTimer } from '../../src/lib/encounterPacingTimer';
+
+describe('encounter pacing timer', () => {
+  it('creates timer at round 1', () => { expect(createTurnTimer().currentRound).toBe(1); });
+  it('startTurn records unit and time', () => {
+    const state = startTurn(createTurnTimer(), 'u1');
+    expect(state.currentUnitId).toBe('u1');
+    expect(state.turnStartTime).toBeGreaterThan(0);
+  });
+  it('endTurn tracks duration and stats', () => {
+    let state = startTurn(createTurnTimer(), 'u1');
+    const result = endTurn(state);
+    expect(result.state.totalTurnsTaken).toBe(1);
+    expect(result.state.currentUnitId).toBeNull();
+  });
+  it('nextRound increments round counter', () => {
+    expect(nextRound(createTurnTimer()).currentRound).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Language barrier
+// ---------------------------------------------------------------------------
+import { DND_LANGUAGES, createLanguageState, canUnderstand, checkPartyLanguages, getAllKnownLanguages } from '../../src/lib/languageBarrier';
+
+describe('language barrier', () => {
+  it('creates state with racial languages', () => {
+    const state = createLanguageState('c1', 'Elf');
+    expect(state.knownLanguages).toContain('Common');
+    expect(state.knownLanguages).toContain('Elvish');
+  });
+  it('canUnderstand checks correctly', () => {
+    const state = createLanguageState('c1', 'Elf');
+    expect(canUnderstand(state, 'Elvish')).toBe(true);
+    expect(canUnderstand(state, 'Dwarvish')).toBe(false);
+  });
+  it('checkPartyLanguages finds translators', () => {
+    const party = [createLanguageState('c1', 'Elf'), createLanguageState('c2', 'Dwarf')];
+    expect(checkPartyLanguages(party, 'Elvish').canTranslate).toBe(true);
+    expect(checkPartyLanguages(party, 'Abyssal').canTranslate).toBe(false);
+  });
+  it('getAllKnownLanguages aggregates party', () => {
+    const party = [createLanguageState('c1', 'Elf'), createLanguageState('c2', 'Tiefling')];
+    const all = getAllKnownLanguages(party);
+    expect(all).toContain('Elvish');
+    expect(all).toContain('Infernal');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Potion brewing
+// ---------------------------------------------------------------------------
+import { POTION_RECIPES, INGREDIENTS, attemptBrew, getIngredientCost, formatPotionRecipes } from '../../src/lib/potionBrewing';
+
+describe('potion brewing', () => {
+  it('has at least 5 recipes', () => { expect(POTION_RECIPES.length).toBeGreaterThanOrEqual(5); });
+  it('has at least 8 ingredients', () => { expect(INGREDIENTS.length).toBeGreaterThanOrEqual(8); });
+  it('getIngredientCost sums correctly', () => {
+    const recipe = POTION_RECIPES.find((r) => r.id === 'heal-minor')!;
+    expect(getIngredientCost(recipe)).toBe(10); // 2 × 5gp Healing Herbs
+  });
+  it('attemptBrew returns valid result', () => {
+    const result = attemptBrew(POTION_RECIPES[0], 3, 2);
+    expect(typeof result.success).toBe('boolean');
+    expect(result.narration.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Terrain compendium
+// ---------------------------------------------------------------------------
+import { TERRAIN_COMPENDIUM, getTerrainInfo, getHazardousTerrain, formatTerrainCompendium } from '../../src/data/terrainCompendium';
+
+describe('terrain compendium', () => {
+  it('covers all terrain types', () => { expect(TERRAIN_COMPENDIUM.length).toBeGreaterThanOrEqual(10); });
+  it('getTerrainInfo finds by type', () => {
+    expect(getTerrainInfo('wall')?.name).toBe('Wall');
+    expect(getTerrainInfo('lava')?.isHazard).toBe(true);
+  });
+  it('getHazardousTerrain filters hazards', () => {
+    const hazards = getHazardousTerrain();
+    expect(hazards.every((h) => h.isHazard)).toBe(true);
+    expect(hazards.length).toBeGreaterThanOrEqual(3);
+  });
+  it('formatTerrainCompendium lists all terrain', () => {
+    const text = formatTerrainCompendium();
+    expect(text).toContain('Wall');
+    expect(text).toContain('Lava');
+    expect(text).toContain('Floor');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spellbook management
+// ---------------------------------------------------------------------------
+import { createSpellbook, addSpellToBook, getCopyCost, getCopyTime, getSpellsByLevel, formatSpellbook } from '../../src/lib/spellbookManager';
+
+describe('spellbook management', () => {
+  it('starts empty with 100 pages', () => {
+    const book = createSpellbook('c1');
+    expect(book.entries.length).toBe(0);
+    expect(book.maxPages).toBe(100);
+  });
+  it('addSpellToBook adds and uses pages', () => {
+    let book = createSpellbook('c1');
+    const result = addSpellToBook(book, 'Fireball', 3, 'Evocation', 'level_up');
+    expect(result.success).toBe(true);
+    expect(result.state.entries.length).toBe(1);
+    expect(result.state.usedPages).toBe(3);
+  });
+  it('rejects duplicate spells', () => {
+    let book = addSpellToBook(createSpellbook('c1'), 'Shield', 1, 'Abjuration', 'level_up').state;
+    const result = addSpellToBook(book, 'Shield', 1, 'Abjuration', 'scroll');
+    expect(result.success).toBe(false);
+  });
+  it('getCopyCost scales by level', () => {
+    expect(getCopyCost(1)).toBe(50);
+    expect(getCopyCost(3)).toBe(150);
+    expect(getCopyCost(5)).toBe(250);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Player handouts
+// ---------------------------------------------------------------------------
+import { createHandoutState, addHandout, revealHandout, getHandoutsForCharacter, formatHandoutList } from '../../src/lib/playerHandouts';
+
+describe('player handouts', () => {
+  it('starts empty', () => { expect(createHandoutState().handouts.length).toBe(0); });
+  it('addHandout creates handout', () => {
+    let state = addHandout(createHandoutState(), 'Ancient Map', 'X marks the spot.', 'map_description');
+    expect(state.handouts.length).toBe(1);
+    expect(state.handouts[0].revealed).toBe(true); // visible to all by default
+  });
+  it('revealHandout makes visible', () => {
+    let state = addHandout(createHandoutState(), 'Secret Note', 'For your eyes only.', 'letter', ['c1']);
+    state = revealHandout(state, state.handouts[0].id);
+    expect(state.handouts[0].revealed).toBe(true);
+  });
+  it('getHandoutsForCharacter filters by visibility', () => {
+    let state = addHandout(createHandoutState(), 'Public', 'All see.', 'note');
+    state = addHandout(state, 'Private', 'Only c1.', 'letter', ['c1']);
+    expect(getHandoutsForCharacter(state, 'c1').length).toBe(2);
+    expect(getHandoutsForCharacter(state, 'c2').length).toBe(1); // only public
+  });
+});
