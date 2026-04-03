@@ -10338,3 +10338,93 @@ describe('weapon sentience awakening', () => {
   it('all have final personalities', () => { WEAPON_AWAKENINGS.forEach((a) => expect(a.finalPersonality.length).toBeGreaterThan(15)); });
   it('formats awakening', () => { expect(formatAwakening(WEAPON_AWAKENINGS[0], 2)).toContain('Stage 2'); });
 });
+
+// ---------------------------------------------------------------------------
+// Dark bargain generator
+// ---------------------------------------------------------------------------
+import { DARK_BARGAINS, getRandomBargain, getBargainsBySource, getHighTemptationBargains, getAllBargainSources, formatBargain as formatDarkBargain } from '../../src/data/darkBargain';
+
+describe('dark bargain generator', () => {
+  it('has at least 5 bargains', () => { expect(DARK_BARGAINS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 sources', () => { expect(getAllBargainSources().length).toBeGreaterThanOrEqual(4); });
+  it('generates random bargain', () => { const b = getRandomBargain(); expect(b.name.length).toBeGreaterThan(3); expect(b.immediateGain.length).toBeGreaterThan(10); });
+  it('filters by source', () => { const devil = getBargainsBySource('devil'); expect(devil.length).toBeGreaterThanOrEqual(1); });
+  it('filters high temptation', () => { const tempting = getHighTemptationBargains(8); expect(tempting.length).toBeGreaterThanOrEqual(1); tempting.forEach((b) => expect(b.temptationLevel).toBeGreaterThanOrEqual(8)); });
+  it('all have break conditions', () => { DARK_BARGAINS.forEach((b) => expect(b.breakCondition.length).toBeGreaterThan(15)); });
+  it('formats with hidden toggle', () => { const b = getRandomBargain(); expect(formatDarkBargain(b)).not.toContain('Hidden'); expect(formatDarkBargain(b, true)).toContain('Hidden'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC death scene generator
+// ---------------------------------------------------------------------------
+import { DEATH_SCENES, getRandomDeathScene, getScenesByContext, getScenesWithMechanicalEffects, getAllDeathContexts, formatDeathScene } from '../../src/data/npcDeathScene';
+
+describe('NPC death scene generator', () => {
+  it('has at least 6 scenes', () => { expect(DEATH_SCENES.length).toBeGreaterThanOrEqual(6); });
+  it('covers 6 contexts', () => { expect(getAllDeathContexts().length).toBe(6); });
+  it('generates random scene', () => { const s = getRandomDeathScene(); expect(s.lastWords.length).toBeGreaterThan(10); expect(s.dramaticBeat.length).toBeGreaterThan(15); });
+  it('filters by context', () => { const sacrifice = getScenesByContext('sacrifice'); expect(sacrifice.length).toBeGreaterThanOrEqual(1); });
+  it('most have mechanical effects', () => { expect(getScenesWithMechanicalEffects().length).toBeGreaterThanOrEqual(4); });
+  it('all have memorial options', () => { DEATH_SCENES.forEach((s) => expect(s.memorialOption.length).toBeGreaterThan(15)); });
+  it('formats with NPC name', () => { expect(formatDeathScene(DEATH_SCENES[0], 'Gandalf')).toContain('Gandalf'); });
+});
+
+// ---------------------------------------------------------------------------
+// Lair action generator
+// ---------------------------------------------------------------------------
+import { LAIR_ACTIONS, getRandomLairAction, getLairActionsByTheme, getLairActionsAboveDC, getAllLairThemes, formatLairAction } from '../../src/data/lairAction';
+
+describe('lair action generator', () => {
+  it('has at least 8 actions', () => { expect(LAIR_ACTIONS.length).toBeGreaterThanOrEqual(8); });
+  it('covers at least 5 themes', () => { expect(getAllLairThemes().length).toBeGreaterThanOrEqual(5); });
+  it('generates random action', () => { const a = getRandomLairAction(); expect(a.name.length).toBeGreaterThan(3); expect(a.initiative).toBe(20); });
+  it('filters by theme', () => { const fire = getLairActionsByTheme('fire'); expect(fire.length).toBeGreaterThanOrEqual(1); fire.forEach((a) => expect(a.theme).toBe('fire')); });
+  it('filters above DC', () => { const hard = getLairActionsAboveDC(15); expect(hard.length).toBeGreaterThanOrEqual(3); hard.forEach((a) => expect(a.saveDC).toBeGreaterThanOrEqual(15)); });
+  it('all have areas of effect', () => { LAIR_ACTIONS.forEach((a) => expect(a.areaOfEffect.length).toBeGreaterThan(5)); });
+  it('formats action', () => { expect(formatLairAction(LAIR_ACTIONS[0])).toContain('Save'); });
+});
+
+// ---------------------------------------------------------------------------
+// Planar refugee crisis
+// ---------------------------------------------------------------------------
+import { REFUGEE_GROUPS, getRandomRefugeeGroup, getGroupsByPlane as getRefugeesByPlane, getGroupsWithTensions, getAllRefugeePlanes, formatRefugeeGroup } from '../../src/data/planarRefugee';
+
+describe('planar refugee crisis', () => {
+  it('has at least 4 groups', () => { expect(REFUGEE_GROUPS.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 planes', () => { expect(getAllRefugeePlanes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random group', () => { const g = getRandomRefugeeGroup(); expect(g.name.length).toBeGreaterThan(3); expect(g.needs.length).toBeGreaterThanOrEqual(2); });
+  it('all have tensions', () => { expect(getGroupsWithTensions().length).toBe(REFUGEE_GROUPS.length); });
+  it('all have plot hooks', () => { REFUGEE_GROUPS.forEach((g) => expect(g.plotHook.length).toBeGreaterThan(20)); });
+  it('all offer something in return', () => { REFUGEE_GROUPS.forEach((g) => expect(g.offers.length).toBeGreaterThanOrEqual(2)); });
+  it('formats group', () => { expect(formatRefugeeGroup(REFUGEE_GROUPS[0])).toContain('Tension'); });
+});
+
+// ---------------------------------------------------------------------------
+// Dream combat system
+// ---------------------------------------------------------------------------
+import { DREAM_COMBAT_RULES, getRandomDreamCombat, getDreamCombatByTerrain, getAllDreamTerrains, getAttackCount as getDreamAttacks, formatDreamCombat } from '../../src/data/dreamCombat';
+
+describe('dream combat system', () => {
+  it('has at least 3 terrains', () => { expect(DREAM_COMBAT_RULES.length).toBeGreaterThanOrEqual(3); expect(getAllDreamTerrains().length).toBeGreaterThanOrEqual(3); });
+  it('generates random combat', () => { const c = getRandomDreamCombat(); expect(c.uniqueRules.length).toBeGreaterThanOrEqual(3); expect(c.availableAttacks.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by terrain', () => { const mem = getDreamCombatByTerrain('memory_palace'); expect(mem).toBeDefined(); });
+  it('all have victory/defeat conditions', () => { DREAM_COMBAT_RULES.forEach((c) => { expect(c.victoryCondition.length).toBeGreaterThan(10); expect(c.defeatConsequence.length).toBeGreaterThan(10); }); });
+  it('all have wake conditions', () => { DREAM_COMBAT_RULES.forEach((c) => expect(c.wakeCondition.length).toBeGreaterThan(10)); });
+  it('formats combat', () => { expect(formatDreamCombat(DREAM_COMBAT_RULES[0])).toContain('Attacks'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical library catalog
+// ---------------------------------------------------------------------------
+import { MAGICAL_LIBRARY_CATALOG, getRandomSection, getSectionByName, getBooksByDanger, getBooksWithDefenses, getAllSectionNames, formatSection as formatLibSection } from '../../src/data/magicalLibraryCatalog';
+
+describe('magical library catalog', () => {
+  it('has at least 3 sections', () => { expect(MAGICAL_LIBRARY_CATALOG.length).toBeGreaterThanOrEqual(3); });
+  it('generates random section', () => { const s = getRandomSection(); expect(s.sectionName.length).toBeGreaterThan(3); expect(s.books.length).toBeGreaterThanOrEqual(2); });
+  it('looks up by name', () => { const forbidden = getSectionByName('Forbidden'); expect(forbidden).toBeDefined(); });
+  it('has dangerous books', () => { const lethal = getBooksByDanger('lethal'); expect(lethal.length).toBeGreaterThanOrEqual(1); });
+  it('some books have defenses', () => { expect(getBooksWithDefenses().length).toBeGreaterThanOrEqual(3); });
+  it('all sections have librarians', () => { MAGICAL_LIBRARY_CATALOG.forEach((s) => expect(s.librarian.length).toBeGreaterThan(10)); });
+  it('all sections have hazards', () => { MAGICAL_LIBRARY_CATALOG.forEach((s) => expect(s.sectionHazard.length).toBeGreaterThan(10)); });
+  it('formats section', () => { expect(formatLibSection(MAGICAL_LIBRARY_CATALOG[0])).toContain('Books'); });
+});

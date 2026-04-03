@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 42 tests (2246 total) — dark bargains, NPC death scenes, lair actions, planar refugees, dream combat, magical library:
+  - **Dark bargain generator** — `darkBargain.ts` with 5 bargains from 5 sources (devil/death/hag/eldritch/shadow), hidden costs, escalation mechanics, break conditions, temptation levels.
+  - **NPC death scene** — `npcDeathScene.ts` with 6 scenes across 6 contexts (combat/sacrifice/betrayal/illness/old_age/heroic), last words, dramatic beats, memorial options.
+  - **Lair action generator** — `lairAction.ts` with 10 actions across 7 themes (fire/ice/undead/swamp/arcane/dragon/aberrant), save DCs, areas of effect.
+  - **Planar refugee crisis** — `planarRefugee.ts` with 4 groups from 4 planes, needs/offers, local reactions, tensions, plot hooks.
+  - **Dream combat system** — `dreamCombat.ts` with 3 terrains (memory palace/nightmare/abstract void), unique dream rules, psychic attacks, victory/defeat conditions.
+  - **Magical library catalog** — `magicalLibraryCatalog.ts` with 3 sections (Whispering Stacks/Forbidden Wing/Children\'s Section), books with dangers and defenses, librarians.
+
 - 6 new systems + 46 tests (2204 total) — dragon personalities, cataclysm countdowns, interplanar customs, magical ecosystems, time loop dungeons, weapon sentience:
   - **Dragon personality matrix** — `dragonPersonality.ts` with 4 dragon profiles (red/gold/copper/green), negotiation styles, exploitable traits, parley conditions, sample dialogue.
   - **Cataclysm countdown** — `cataclysmCountdown.ts` with 3 world-ending events (The Unraveling/The Awakening Below/The Final Plague), 3-stage escalation, intervention windows, prevention methods.
@@ -1104,17 +1112,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Time loop dungeon~~ **DONE** — `timeLoopDungeon.ts` with 2 dungeons + cumulative knowledge
 - ~~Weapon sentience awakening~~ **DONE** — `weaponSentienceAwaken.ts` with 3 weapons × 3 stages
 
-**Wave 53 Roadmap:**
+**Wave 53 (2,246 tests):**
+- ~~Dark bargain generator~~ **DONE** — `darkBargain.ts` with 5 bargains + hidden costs + escalation
+- ~~NPC death scene~~ **DONE** — `npcDeathScene.ts` with 6 scenes × 6 contexts + memorials
+- ~~Lair action generator~~ **DONE** — `lairAction.ts` with 10 actions × 7 themes
+- ~~Planar refugee crisis~~ **DONE** — `planarRefugee.ts` with 4 groups + tensions + plot hooks
+- ~~Dream combat system~~ **DONE** — `dreamCombat.ts` with 3 terrains + psychic attacks
+- ~~Magical library catalog~~ **DONE** — `magicalLibraryCatalog.ts` with 3 sections + book defenses
+
+**Wave 54 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Random dark bargain generator — deals with dark powers that always have a price
-- Astral dream combat — psychic battles fought in the dream plane with different rules
-- Magical library catalog — books that fight back, shelves that rearrange, and forbidden sections
-- Random NPC death scene — dramatic last words and dying wishes for important NPCs
-- Lair action generator — boss monster lair effects that change the battlefield each round
-- Planar refugee crisis — displaced populations from other planes seeking asylum
+- Random villain monologue generator — dramatic speeches with interruption mechanics
+- Magical tattoo removal system — consequences of removing enchanted inkwork
+- Random diplomatic gift generator — culturally appropriate gifts for foreign dignitaries
+- Astral weather hazard table — environmental dangers in the space between planes
+- Shapeshifter infiltration detector — methods and DCs for identifying disguised creatures
+- Random dragon hoard layout — treasure room configurations with guardian positions
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
