@@ -7402,3 +7402,70 @@ describe('random dreams', () => {
   it('filters by type', () => { const prophetic = getDreamsByType('prophetic'); for (const d of prophetic) expect(d.type).toBe('prophetic'); expect(prophetic.length).toBeGreaterThanOrEqual(3); });
   it('formatDream includes character name', () => { expect(formatDream(getRandomDream(), 'Thorin')).toContain('Thorin'); });
 });
+
+// ---------------------------------------------------------------------------
+// Random contracts
+// ---------------------------------------------------------------------------
+import { generateContract, formatContract } from '../../src/data/randomContract';
+
+describe('random contracts', () => {
+  it('generates with all fields', () => { const c = generateContract(); expect(c.title.length).toBeGreaterThan(0); expect(c.terms.length).toBeGreaterThan(0); expect(c.loophole.length).toBeGreaterThan(0); });
+  it('formatContract shows loophole', () => { expect(formatContract(generateContract())).toContain('Loophole'); });
+  it('has duration', () => { expect(generateContract().duration.length).toBeGreaterThan(0); });
+});
+
+// ---------------------------------------------------------------------------
+// 5-day forecast
+// ---------------------------------------------------------------------------
+import { generateForecast, formatForecast } from '../../src/data/randomWeather5Day';
+
+describe('5-day forecast', () => {
+  it('generates 5 days', () => { expect(generateForecast(1, 6).days.length).toBe(5); });
+  it('each day has weather', () => { const f = generateForecast(1, 1); for (const d of f.days) { expect(d.weather.temperature.length).toBeGreaterThan(0); expect(d.weather.precipitation.length).toBeGreaterThan(0); } });
+  it('formatForecast shows all days', () => { const text = formatForecast(generateForecast(1, 7)); expect(text).toContain('Day 1'); expect(text).toContain('Day 5'); });
+});
+
+// ---------------------------------------------------------------------------
+// Merchant inventory
+// ---------------------------------------------------------------------------
+import { getMerchantInventory, getRandomMerchantStock, formatMerchantInventory } from '../../src/data/randomMerchantInventory';
+
+describe('merchant inventory', () => {
+  it('general has items', () => { expect(getMerchantInventory('general').length).toBeGreaterThanOrEqual(4); });
+  it('exotic has expensive items', () => { const exotic = getMerchantInventory('exotic'); expect(exotic.some((i) => i.price.includes('500') || i.price.includes('750'))).toBe(true); });
+  it('random stock returns items', () => { expect(getRandomMerchantStock().length).toBeGreaterThan(0); });
+  it('formatMerchantInventory shows name', () => { expect(formatMerchantInventory(getMerchantInventory('potions'), 'Alchemist')).toContain('Alchemist'); });
+});
+
+// ---------------------------------------------------------------------------
+// Town events
+// ---------------------------------------------------------------------------
+import { getRandomTownEvent, formatTownEvent } from '../../src/data/randomTownEvent';
+
+describe('town events', () => {
+  it('generates valid event', () => { const e = getRandomTownEvent(); expect(e.event.length).toBeGreaterThan(0); expect(['celebration', 'crisis', 'mystery', 'political', 'mundane']).toContain(e.type); expect(e.hook.length).toBeGreaterThan(0); });
+  it('formatTownEvent shows hook', () => { expect(formatTownEvent(getRandomTownEvent())).toContain('Hook'); });
+});
+
+// ---------------------------------------------------------------------------
+// Random clues
+// ---------------------------------------------------------------------------
+import { getRandomClue, getClues, formatClues } from '../../src/data/randomClue';
+
+describe('random clues', () => {
+  it('generates valid clue', () => { const c = getRandomClue(); expect(c.description.length).toBeGreaterThan(0); expect(['physical', 'testimony', 'document', 'magical']).toContain(c.type); });
+  it('getClues returns correct count', () => { expect(getClues(4).length).toBe(4); });
+  it('formatClues shows check required', () => { expect(formatClues(getClues())).toContain('Check'); });
+});
+
+// ---------------------------------------------------------------------------
+// Last words
+// ---------------------------------------------------------------------------
+import { getRandomLastWords, getLastWordsByTone, formatLastWords } from '../../src/data/randomLastWords';
+
+describe('last words', () => {
+  it('generates valid last words', () => { const lw = getRandomLastWords(); expect(lw.words.length).toBeGreaterThan(0); expect(['dramatic', 'cryptic', 'peaceful', 'desperate', 'comedic']).toContain(lw.tone); });
+  it('filters by tone', () => { const comedic = getLastWordsByTone('comedic'); for (const lw of comedic) expect(lw.tone).toBe('comedic'); expect(comedic.length).toBeGreaterThanOrEqual(2); });
+  it('some reveal info', () => { const all = Array.from({ length: 20 }, () => getRandomLastWords()); expect(all.some((lw) => lw.revealsInfo)).toBe(true); });
+  it('formatLastWords includes NPC name', () => { expect(formatLastWords(getRandomLastWords(), 'Goblin King')).toContain('Goblin King'); });
+});

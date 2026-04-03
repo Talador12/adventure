@@ -2565,6 +2565,37 @@ export default function DMSidebar({
               💤 Dream
             </button>
 
+            {/* Contract */}
+            <button onClick={async () => { const { generateContract, formatContract } = await import('../../data/randomContract'); onAddDmMessage(formatContract(generateContract())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all" title="Random NPC contract with loopholes">
+              📜 Contract
+            </button>
+            {/* 5-day forecast */}
+            <button onClick={async () => { const { generateForecast, formatForecast } = await import('../../data/randomWeather5Day'); onAddDmMessage(formatForecast(generateForecast(1, 6))); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-sky-400 font-semibold hover:bg-sky-800/30 transition-all" title="5-day weather forecast">
+              🌤️ 5-Day Forecast
+            </button>
+            {/* Merchant inventory */}
+            <button onClick={async () => { const { getRandomMerchantStock, formatMerchantInventory } = await import('../../data/randomMerchantInventory'); onAddDmMessage(formatMerchantInventory(getRandomMerchantStock())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Random merchant stock">
+              🏪 Merchant Stock
+            </button>
+            {/* Town event */}
+            <button onClick={async () => { const { getRandomTownEvent, formatTownEvent } = await import('../../data/randomTownEvent'); onAddDmMessage(formatTownEvent(getRandomTownEvent())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Random town event">
+              🏘️ Town Event
+            </button>
+            {/* Clues */}
+            <button onClick={async () => { const { getClues, formatClues } = await import('../../data/randomClue'); onAddDmMessage(formatClues(getClues())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="Random investigation clues">
+              🔍 Clues
+            </button>
+            {/* Last words */}
+            <button onClick={async () => { const { getRandomLastWords, formatLastWords } = await import('../../data/randomLastWords'); onAddDmMessage(formatLastWords(getRandomLastWords(), 'NPC')); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-gray-700/30 border border-gray-500/30 text-gray-300 font-semibold hover:bg-gray-600/30 transition-all" title="Dramatic dying words for NPCs">
+              🕊️ Last Words
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
