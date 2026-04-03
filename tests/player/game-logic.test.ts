@@ -7968,3 +7968,64 @@ describe('NPC opinions', () => {
   it('generates with hidden truth', () => { const o = getRandomOpinion(); expect(o.opinion.length).toBeGreaterThan(0); expect(o.hiddenTruth.length).toBeGreaterThan(0); expect(['positive', 'negative', 'neutral', 'evasive', 'passionate']).toContain(o.tone); });
   it('formatNpcOpinion shows topic', () => { expect(formatNpcOpinion(getRandomOpinion())).toContain('Opinion'); });
 });
+
+// ---------------------------------------------------------------------------
+// Consequences
+// ---------------------------------------------------------------------------
+import { getRandomConsequence, formatConsequence } from '../../src/data/randomConsequence';
+
+describe('consequences', () => {
+  it('generates with delay', () => { const c = getRandomConsequence(); expect(c.action.length).toBeGreaterThan(0); expect(c.consequence.length).toBeGreaterThan(0); expect(c.delay.length).toBeGreaterThan(0); });
+  it('formatConsequence shows severity', () => { expect(formatConsequence(getRandomConsequence())).toContain('Consequence'); });
+});
+
+// ---------------------------------------------------------------------------
+// Symbols
+// ---------------------------------------------------------------------------
+import { getRandomSymbol, formatSymbol } from '../../src/data/randomSymbol';
+
+describe('symbols', () => {
+  it('generates with meaning and DC', () => { const s = getRandomSymbol(); expect(s.description.length).toBeGreaterThan(0); expect(s.meaning.length).toBeGreaterThan(0); expect(s.identifyDC).toBeGreaterThanOrEqual(8); });
+  it('formatSymbol shows school', () => { expect(formatSymbol(getRandomSymbol())).toContain('Arcana DC'); });
+});
+
+// ---------------------------------------------------------------------------
+// Party dynamics
+// ---------------------------------------------------------------------------
+import { getRandomDynamic, formatPartyDynamic } from '../../src/data/randomPartyDynamic';
+
+describe('party dynamics', () => {
+  it('generates with scene suggestion', () => { const d = getRandomDynamic(); expect(d.dynamic.length).toBeGreaterThan(0); expect(d.sceneSuggestion.length).toBeGreaterThan(0); });
+  it('formatPartyDynamic shows roles', () => { expect(formatPartyDynamic(getRandomDynamic())).toContain('Between'); });
+});
+
+// ---------------------------------------------------------------------------
+// Flavor items
+// ---------------------------------------------------------------------------
+import { FLAVOR_ITEMS, getRandomFlavorItem, formatFlavorItem } from '../../src/data/randomFlavorItem';
+
+describe('flavor items', () => {
+  it('has at least 12', () => { expect(FLAVOR_ITEMS.length).toBeGreaterThanOrEqual(12); });
+  it('formatFlavorItem mentions no mechanical value', () => { expect(formatFlavorItem()).toContain('No mechanical value'); });
+});
+
+// ---------------------------------------------------------------------------
+// Session openers
+// ---------------------------------------------------------------------------
+import { SESSION_OPENERS, getRandomOpener, formatSessionOpener } from '../../src/data/randomSessionOpener';
+
+describe('session openers', () => {
+  it('has at least 10', () => { expect(SESSION_OPENERS.length).toBeGreaterThanOrEqual(10); });
+  it('getRandomOpener returns text', () => { expect(getRandomOpener().length).toBeGreaterThan(10); });
+  it('formatSessionOpener shows label', () => { expect(formatSessionOpener()).toContain('Session Opener'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC reactions
+// ---------------------------------------------------------------------------
+import { getRandomReaction, formatNpcReaction } from '../../src/data/randomNpcReaction';
+
+describe('NPC reactions', () => {
+  it('generates with follow-up', () => { const r = getRandomReaction(); expect(r.reaction.length).toBeGreaterThan(0); expect(r.followUp.length).toBeGreaterThan(0); expect(['hostile', 'suspicious', 'neutral', 'friendly', 'terrified', 'amused']).toContain(r.disposition); });
+  it('formatNpcReaction shows body language', () => { expect(formatNpcReaction(getRandomReaction())).toContain('Body language'); });
+});

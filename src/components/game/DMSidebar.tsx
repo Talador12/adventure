@@ -2844,6 +2844,37 @@ export default function DMSidebar({
               💬 NPC Opinion
             </button>
 
+            {/* Consequence */}
+            <button onClick={async () => { const { getRandomConsequence, formatConsequence } = await import('../../data/randomConsequence'); onAddDmMessage(formatConsequence(getRandomConsequence())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Delayed consequence of past actions">
+              ⏳ Consequence
+            </button>
+            {/* Symbol */}
+            <button onClick={async () => { const { getRandomSymbol, formatSymbol } = await import('../../data/randomSymbol'); onAddDmMessage(formatSymbol(getRandomSymbol())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Mysterious symbol with hidden meaning">
+              🔣 Symbol
+            </button>
+            {/* Party dynamic */}
+            <button onClick={async () => { const { getRandomDynamic, formatPartyDynamic } = await import('../../data/randomPartyDynamic'); onAddDmMessage(formatPartyDynamic(getRandomDynamic())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Roleplay prompt between party members">
+              🤝 Party Dynamic
+            </button>
+            {/* Flavor item */}
+            <button onClick={async () => { const { formatFlavorItem } = await import('../../data/randomFlavorItem'); onAddDmMessage(formatFlavorItem()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all" title="Story hook item with no mechanical value">
+              🎁 Flavor Item
+            </button>
+            {/* Session opener */}
+            <button onClick={async () => { const { formatSessionOpener } = await import('../../data/randomSessionOpener'); onAddDmMessage(formatSessionOpener()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all" title="Dramatic first line to start the session">
+              🎬 Session Opener
+            </button>
+            {/* NPC reaction */}
+            <button onClick={async () => { const { getRandomReaction, formatNpcReaction } = await import('../../data/randomNpcReaction'); onAddDmMessage(formatNpcReaction(getRandomReaction())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all" title="How an NPC reacts to the party">
+              👤 NPC Reaction
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
