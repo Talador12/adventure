@@ -55,6 +55,22 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 32 tests (1282 total, +1 pre-existing fix) — prophecy tracker, NPC farewells, battle cries, terrain advantage, backstory complications, party morale:
+  - **Prophecy fulfillment tracker** — `prophecyFulfillment.ts` with 15 prophecy templates across 6 categories (doom/glory/betrayal/love/discovery/transformation), 10 cryptic sources. `addProphecy()`/`fulfillProphecy()` lifecycle. `getUnfulfilled()`/`getFulfilled()` filters. `getRandomProphecy()` generates with source. Formatted tracker with ☐/☑ status. "Prophecies" button in DMSidebar.
+  - **NPC farewell generator** — `randomNpcFarewell.ts` with 12 farewell lines. `getRandomFarewell()` + `formatNpcFarewell()` with NPC name. Wired existing untracked file + added tests.
+  - **Battle cry generator** — `battleCryGenerator.ts` with race-specific cries (8 races × 3 each) and class-specific cries (12 classes × 3 each) plus 6 generic fallbacks. `getBattleCry()` combines race+class pools. `getBattleCryByRace()`/`getBattleCryByClass()` for targeted generation. "Battle Cry" button in DMSidebar.
+  - **Terrain advantage reference** — `terrainAdvantage.ts` with 10 terrain types (forest/dense_forest/open_field/hills/cave/water_shallow/ruins/bridge/swamp/rooftops). Each has cover bonus, stealth mod, movement cost, advantages/disadvantages list, and best-for class recommendations. `getBestTerrainForClass()` lookup. "Terrain Advantage" button in DMSidebar.
+  - **Backstory complication generator** — `backstoryComplication.ts` with 16 complications across 6 categories (family/enemy/debt/secret/curse/duty) and 3 severity levels (minor/moderate/major). Each has trigger conditions and optional DCs. `getComplicationByCategory()`/`getComplicationBySeverity()` filters. "Backstory Twist" button in DMSidebar.
+  - **Party morale tracker** — `partyMoraleTracker.ts` with 12 event types (victory/defeat/ally_death/ally_revive/critical_hit/critical_fail/rest/treasure/betrayal/inspiration/retreat/boss_kill). Score clamped -10 to +10 across 6 morale levels (triumphant→broken). Mechanical effects: attack/save mods and short rest HP bonus scale with morale. `formatPartyMorale()` with recent event history. "Party Morale" button in DMSidebar.
+  - **Test fix** — resolved import shadowing bug in encounter complications test (`getRandomComplication` alias collision). Test was pre-existing broken, now fixed.
+- 32 new tests (1282 total) covering 6 systems:
+  - **NPC farewells** (3 tests): count, text return, formatted name inclusion.
+  - **Prophecy fulfillment** (7 tests): template count, source count, empty start, add, fulfill+filter, random generation, formatted output.
+  - **Battle cry generator** (6 tests): 8 races, 12 classes, race text, class text, combined pool, formatted name.
+  - **Terrain advantage** (5 tests): terrain count, name lookup, unknown undefined, class filter, formatted output.
+  - **Backstory complications** (5 tests): count, valid generation, category filter, severity filter, formatted icon.
+  - **Party morale tracker** (6 tests): steady start, victory raises, death lowers, clamping, effects scaling, formatted output.
+
 - 6 new systems + 16 tests (823 total) — NPC voice, skill contest, room contents, currency exchange, weather events, camp planner:
   - **NPC voice generator** — `npcVoiceGenerator.ts` with 14 accents, 12 speech patterns, 12 catchphrases, 10 mannerisms, 4 vocabulary levels. "NPC Voice" button in DMSidebar.
   - **Skill contest resolver** — `skillContest.ts` for opposed checks with advantage/disadvantage support. Determines winner with tie handling. "Skill Contest" button in DMSidebar.
@@ -737,6 +753,26 @@ The complete feature set built from project inception through 46 development ite
 - ~~NPC motivation~~ **DONE** — `randomMotivation.ts` with 8 categories + hidden/visible
 - Plus 20 additional tests across existing systems for comprehensive coverage
 - **MILESTONE: 1,000 TESTS PASSING** in ~1.3 seconds
+
+**Wave 33 (1,282 tests — 🎉 fixed 1 pre-existing broken test):**
+- ~~Prophecy fulfillment tracker~~ **DONE** — `prophecyFulfillment.ts` with 15 templates × 6 categories + fulfillment lifecycle
+- ~~NPC farewell generator~~ **DONE** — `randomNpcFarewell.ts` with 12 farewell lines
+- ~~Battle cry generator~~ **DONE** — `battleCryGenerator.ts` with 8 races × 3 + 12 classes × 3 + 6 generic
+- ~~Terrain advantage reference~~ **DONE** — `terrainAdvantage.ts` with 10 terrain types + class recommendations
+- ~~Backstory complication generator~~ **DONE** — `backstoryComplication.ts` with 16 complications × 6 categories × 3 severities
+- ~~Party morale tracker~~ **DONE** — `partyMoraleTracker.ts` with 12 event types + 6 morale levels + mechanical effects
+
+**Wave 34 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Random encounter weather interaction — weather affects encounter types and difficulty
+- NPC loyalty tracker — track NPC allegiance shifts based on party actions
+- Random artifact generator — procedural legendary items with history and powers
+- Puzzle lock system — combination/rune/lever puzzles for doors and chests
+- Party reputation by region — different towns react differently based on party actions there
+- Combat fatigue system — extended combat without rest degrades performance
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

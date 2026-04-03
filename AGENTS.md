@@ -116,8 +116,11 @@ Server broadcasts:
 
 ## Response Format
 - At the end of every response, include the local dev server link (`http://localhost:5173`) so the user can check the app and give live feedback.
-- Do multiple roadmap items per request — batch features together.
+- Keep the localhost dev server running at all times. If it's not running, start it before making changes.
+- Do multiple roadmap items per request — batch features together (aim for 6 systems per pass).
 - Add new roadmap ideas to `claude.md` after completing existing ones to keep the pipeline full.
+- When user says "continue work on github/adventure", pick the next batch of unfinished roadmap items and build them with tests.
+- Always run tests before committing. Fix any failures, including pre-existing ones encountered along the way.
 
 ## AI Working Context
 

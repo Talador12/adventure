@@ -8424,3 +8424,83 @@ describe('camp events', () => {
   it('some have mechanical effects', () => { const all = Array.from({ length: 20 }, () => getRandomCampEvent()); expect(all.some((e) => e.mechanicalEffect !== null)).toBe(true); });
   it('formatCampEvent shows type', () => { expect(formatCampEvent(getRandomCampEvent())).toContain('Camp Event'); });
 });
+
+// ---------------------------------------------------------------------------
+// NPC farewells
+// ---------------------------------------------------------------------------
+import { NPC_FAREWELLS, getRandomFarewell, formatNpcFarewell } from '../../src/data/randomNpcFarewell';
+
+describe('NPC farewells', () => {
+  it('has at least 10', () => { expect(NPC_FAREWELLS.length).toBeGreaterThanOrEqual(10); });
+  it('returns text', () => { expect(getRandomFarewell().length).toBeGreaterThan(10); });
+  it('formatNpcFarewell includes name', () => { expect(formatNpcFarewell('Barkeep')).toContain('Barkeep'); });
+});
+
+// ---------------------------------------------------------------------------
+// Prophecy fulfillment tracker
+// ---------------------------------------------------------------------------
+import { PROPHECY_TEMPLATES, PROPHECY_SOURCES, createProphecyTracker, addProphecy, fulfillProphecy, getUnfulfilled, getFulfilled, getRandomProphecy, formatProphecyTracker } from '../../src/data/prophecyFulfillment';
+
+describe('prophecy fulfillment', () => {
+  it('has at least 12 templates', () => { expect(PROPHECY_TEMPLATES.length).toBeGreaterThanOrEqual(12); });
+  it('has at least 8 sources', () => { expect(PROPHECY_SOURCES.length).toBeGreaterThanOrEqual(8); });
+  it('starts empty', () => { const t = createProphecyTracker(); expect(t.prophecies.length).toBe(0); });
+  it('adds prophecies', () => { let t = createProphecyTracker(); t = addProphecy(t, 'Test prophecy', 'A wizard', 'doom'); expect(t.prophecies.length).toBe(1); expect(t.prophecies[0].fulfilled).toBe(false); });
+  it('fulfills prophecies', () => { let t = createProphecyTracker(); t = addProphecy(t, 'Test', 'Oracle', 'glory'); const id = t.prophecies[0].id; t = fulfillProphecy(t, id, 'During battle'); expect(getFulfilled(t).length).toBe(1); expect(getUnfulfilled(t).length).toBe(0); });
+  it('getRandomProphecy returns valid', () => { const p = getRandomProphecy(); expect(p.text.length).toBeGreaterThan(10); expect(p.source.length).toBeGreaterThan(5); expect(['doom', 'glory', 'betrayal', 'love', 'discovery', 'transformation']).toContain(p.category); });
+  it('formats tracker', () => { const t = createProphecyTracker(); expect(formatProphecyTracker(t)).toContain('None recorded'); });
+});
+
+// ---------------------------------------------------------------------------
+// Battle cry generator
+// ---------------------------------------------------------------------------
+import { getBattleCry, getBattleCryByRace, getBattleCryByClass, formatBattleCry, getAllRaces, getAllClasses } from '../../src/data/battleCryGenerator';
+
+describe('battle cry generator', () => {
+  it('has all 8 races', () => { expect(getAllRaces().length).toBe(8); });
+  it('has all 12 classes', () => { expect(getAllClasses().length).toBe(12); });
+  it('returns text for race', () => { expect(getBattleCryByRace('dwarf').length).toBeGreaterThan(5); });
+  it('returns text for class', () => { expect(getBattleCryByClass('barbarian').length).toBeGreaterThan(5); });
+  it('combined cry includes pool', () => { const cry = getBattleCry('elf', 'wizard'); expect(cry.length).toBeGreaterThan(5); });
+  it('formats with character name', () => { expect(formatBattleCry('Thorin', 'dwarf', 'fighter')).toContain('Thorin'); });
+});
+
+// ---------------------------------------------------------------------------
+// Terrain advantage reference
+// ---------------------------------------------------------------------------
+import { TERRAIN_ADVANTAGES, getTerrainAdvantage, getBestTerrainForClass, formatTerrainAdvantage } from '../../src/data/terrainAdvantage';
+
+describe('terrain advantage', () => {
+  it('has at least 8 terrains', () => { expect(TERRAIN_ADVANTAGES.length).toBeGreaterThanOrEqual(8); });
+  it('looks up by name', () => { const t = getTerrainAdvantage('forest'); expect(t).toBeDefined(); expect(t!.coverBonus).toBe(2); });
+  it('returns undefined for unknown', () => { expect(getTerrainAdvantage('lava_planet')).toBeUndefined(); });
+  it('finds best terrain for class', () => { const rogueTerrains = getBestTerrainForClass('Rogue'); expect(rogueTerrains.length).toBeGreaterThanOrEqual(2); });
+  it('formats terrain', () => { const t = getTerrainAdvantage('open_field')!; expect(formatTerrainAdvantage(t)).toContain('open field'); });
+});
+
+// ---------------------------------------------------------------------------
+// Backstory complications
+// ---------------------------------------------------------------------------
+import { BACKSTORY_COMPLICATIONS, getRandomComplication as getRandomBackstoryComplication, getComplicationByCategory, getComplicationBySeverity as getBackstorySeverity, formatComplication as formatBackstoryComplication } from '../../src/data/backstoryComplication';
+
+describe('backstory complications', () => {
+  it('has at least 12', () => { expect(BACKSTORY_COMPLICATIONS.length).toBeGreaterThanOrEqual(12); });
+  it('generates valid complication', () => { const c = getRandomBackstoryComplication(); expect(c.complication.length).toBeGreaterThan(10); expect(['minor', 'moderate', 'major']).toContain(c.severity); });
+  it('filters by category', () => { const enemies = getComplicationByCategory('enemy'); expect(enemies.length).toBeGreaterThanOrEqual(2); enemies.forEach((c) => expect(c.category).toBe('enemy')); });
+  it('filters by severity', () => { const major = getBackstorySeverity('major'); expect(major.length).toBeGreaterThanOrEqual(3); major.forEach((c) => expect(c.severity).toBe('major')); });
+  it('formats with icon', () => { const c = getRandomBackstoryComplication(); const formatted = formatBackstoryComplication(c); expect(formatted).toContain('Backstory Complication'); });
+});
+
+// ---------------------------------------------------------------------------
+// Party morale tracker
+// ---------------------------------------------------------------------------
+import { createPartyMorale, addMoraleEvent, getMoraleLevel, getMoraleEffects, formatPartyMorale } from '../../src/data/partyMoraleTracker';
+
+describe('party morale tracker', () => {
+  it('starts at steady', () => { const m = createPartyMorale(); expect(getMoraleLevel(m)).toBe('steady'); expect(m.score).toBe(0); });
+  it('victory raises morale', () => { let m = createPartyMorale(); m = addMoraleEvent(m, 'victory', 'Won the fight'); expect(m.score).toBe(2); expect(getMoraleLevel(m)).toBe('steady'); });
+  it('ally death lowers morale', () => { let m = createPartyMorale(); m = addMoraleEvent(m, 'ally_death', 'Fallen comrade'); expect(m.score).toBe(-3); expect(getMoraleLevel(m)).toBe('shaken'); });
+  it('clamps to range', () => { let m = createPartyMorale(); for (let i = 0; i < 10; i++) m = addMoraleEvent(m, 'boss_kill', 'boss'); expect(m.score).toBeLessThanOrEqual(10); for (let i = 0; i < 20; i++) m = addMoraleEvent(m, 'defeat', 'loss'); expect(m.score).toBeGreaterThanOrEqual(-10); });
+  it('effects scale with level', () => { let m = createPartyMorale(); for (let i = 0; i < 5; i++) m = addMoraleEvent(m, 'boss_kill', 'boss'); const effects = getMoraleEffects(m); expect(effects.attackMod).toBeGreaterThan(0); });
+  it('formats with icon', () => { const m = createPartyMorale(); expect(formatPartyMorale(m)).toContain('STEADY'); });
+});
