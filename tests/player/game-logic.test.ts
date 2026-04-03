@@ -8688,3 +8688,98 @@ describe('monster ecology system', () => {
   it('formats biome ecology', () => { expect(formatBiomeEcology('forest')).toContain('Forest Ecology'); });
   it('unknown biome returns no data', () => { expect(formatBiomeEcology('volcano' as any)).toContain('No data'); });
 });
+
+// ---------------------------------------------------------------------------
+// Naval combat system
+// ---------------------------------------------------------------------------
+import { SHIP_TEMPLATES as NAVAL_SHIP_TEMPLATES, NAVAL_ACTIONS, createShip, damageShip, repairShip, isShipSunk, getShipCondition, canPerformAction, getNavalAction, getAllShipClasses, formatShip as formatNavalShip } from '../../src/data/navalCombat';
+
+describe('naval combat system', () => {
+  it('has 6 ship classes', () => { expect(getAllShipClasses().length).toBe(6); });
+  it('has 7 naval actions', () => { expect(NAVAL_ACTIONS.length).toBe(7); });
+  it('creates ship from template', () => { const s = createShip('The Black Pearl', 'galleon'); expect(s.name).toBe('The Black Pearl'); expect(s.hp).toBe(200); expect(s.cannons).toBe(20); });
+  it('damages ship', () => { let s = createShip('Test', 'sloop'); s = damageShip(s, 30); expect(s.hp).toBe(30); });
+  it('repairs ship (capped at max)', () => { let s = createShip('Test', 'sloop'); s = damageShip(s, 20); s = repairShip(s, 100); expect(s.hp).toBe(s.maxHp); });
+  it('detects sinking', () => { let s = createShip('Test', 'rowboat'); s = damageShip(s, 999); expect(isShipSunk(s)).toBe(true); });
+  it('ship condition degrades', () => { let s = createShip('Test', 'galleon'); expect(getShipCondition(s)).toBe('Seaworthy'); s = damageShip(s, 170); expect(getShipCondition(s)).toBe('Sinking'); });
+  it('action requirements work', () => { const rowboat = createShip('Tiny', 'rowboat'); expect(canPerformAction(rowboat, 'fire_cannons')).toBe(false); const warship = createShip('Big', 'warship'); expect(canPerformAction(warship, 'fire_cannons')).toBe(true); });
+  it('looks up action by type', () => { expect(getNavalAction('board')!.name).toBe('Board'); });
+  it('formats ship', () => { expect(formatNavalShip(createShip('HMS Test', 'schooner'))).toContain('HMS Test'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ritual magic circles
+// ---------------------------------------------------------------------------
+import { RITUALS, getRandomRitual, getRitualsBySchool, getRitualsByMinCasters, calculateRitualDC, getAllRitualSchools, formatRitual } from '../../src/data/ritualMagic';
+
+describe('ritual magic circles', () => {
+  it('has at least 6 rituals', () => { expect(RITUALS.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 4 schools', () => { expect(getAllRitualSchools().length).toBeGreaterThanOrEqual(4); });
+  it('generates random ritual', () => { const r = getRandomRitual(); expect(r.name.length).toBeGreaterThan(3); expect(r.minCasters).toBeGreaterThanOrEqual(2); });
+  it('filters by school', () => { const evoc = getRitualsBySchool('evocation'); expect(evoc.length).toBeGreaterThanOrEqual(1); evoc.forEach((r) => expect(r.school).toBe('evocation')); });
+  it('filters by available casters', () => { const with2 = getRitualsByMinCasters(2); const with5 = getRitualsByMinCasters(5); expect(with5.length).toBeGreaterThanOrEqual(with2.length); });
+  it('extra casters reduce DC', () => { const r = RITUALS[0]; const normalDC = calculateRitualDC(r, r.minCasters); const easyDC = calculateRitualDC(r, r.maxCasters); expect(easyDC).toBeLessThanOrEqual(normalDC); });
+  it('formats with school icon', () => { const r = getRitualsBySchool('necromancy')[0]; expect(formatRitual(r)).toContain('💀'); });
+});
+
+// ---------------------------------------------------------------------------
+// Companion animal advancement
+// ---------------------------------------------------------------------------
+import { createCompanion, addCompanionXp, increaseBond, getUnlockedAbilities, getNextAbility, getAllSpecies, formatCompanion } from '../../src/data/companionAnimal';
+
+describe('companion animal advancement', () => {
+  it('has at least 5 species', () => { expect(getAllSpecies().length).toBeGreaterThanOrEqual(5); });
+  it('creates companion at level 1', () => { const c = createCompanion('Fang', 'Wolf'); expect(c).not.toBeNull(); expect(c!.level).toBe(1); expect(c!.name).toBe('Fang'); });
+  it('returns null for unknown species', () => { expect(createCompanion('X', 'Dragon')).toBeNull(); });
+  it('levels up with XP', () => { let c = createCompanion('Pip', 'Hawk')!; c = addCompanionXp(c, 150); expect(c.level).toBe(2); expect(c.maxHp).toBeGreaterThan(6); });
+  it('unlocks abilities at level thresholds', () => { let c = createCompanion('Rex', 'Wolf')!; expect(getUnlockedAbilities(c).length).toBe(1); c = addCompanionXp(c, 350); expect(getUnlockedAbilities(c).length).toBe(2); });
+  it('getNextAbility returns future ability', () => { const c = createCompanion('Hoot', 'Hawk')!; const next = getNextAbility(c); expect(next).not.toBeNull(); expect(next!.level).toBeGreaterThan(1); });
+  it('bond increases capped at 10', () => { let c = createCompanion('Kit', 'Cat')!; for (let i = 0; i < 15; i++) c = increaseBond(c); expect(c.bond).toBe(10); });
+  it('formats companion', () => { const c = createCompanion('Storm', 'Pseudodragon')!; expect(formatCompanion(c)).toContain('Storm'); expect(formatCompanion(c)).toContain('Pseudodragon'); });
+});
+
+// ---------------------------------------------------------------------------
+// Trap disarm mini-game
+// ---------------------------------------------------------------------------
+import { TRAP_DISARM_CHALLENGES, getRandomChallenge, getChallengesByDifficulty, getStepCount, getRequiredSteps, calculateSuccessRate, formatChallenge as formatDisarmChallenge } from '../../src/data/trapDisarm';
+
+describe('trap disarm mini-game', () => {
+  it('has at least 5 challenges', () => { expect(TRAP_DISARM_CHALLENGES.length).toBeGreaterThanOrEqual(5); });
+  it('generates random challenge', () => { const c = getRandomChallenge(); expect(c.name.length).toBeGreaterThan(3); expect(c.steps.length).toBeGreaterThanOrEqual(2); });
+  it('filters by difficulty', () => { const simple = getChallengesByDifficulty('simple'); expect(simple.length).toBeGreaterThanOrEqual(1); simple.forEach((c) => expect(c.difficulty).toBe('simple')); });
+  it('counts steps', () => { const c = TRAP_DISARM_CHALLENGES[0]; expect(getStepCount(c)).toBe(c.steps.length); });
+  it('filters required vs optional steps', () => { const deadly = getChallengesByDifficulty('deadly')[0]; const required = getRequiredSteps(deadly); expect(required.length).toBeLessThanOrEqual(deadly.steps.length); });
+  it('success rate is 0-100', () => { const c = getRandomChallenge(); const rate = calculateSuccessRate(c, { thieves_tools: 5, arcana: 3, investigation: 2, athletics: 1, perception: 2, sleight_of_hand: 4 }); expect(rate).toBeGreaterThanOrEqual(0); expect(rate).toBeLessThanOrEqual(100); });
+  it('higher mods = higher success rate', () => { const c = TRAP_DISARM_CHALLENGES[0]; const lowRate = calculateSuccessRate(c, { thieves_tools: 0, arcana: 0, investigation: 0, athletics: 0, perception: 0, sleight_of_hand: 0 }); const highRate = calculateSuccessRate(c, { thieves_tools: 10, arcana: 10, investigation: 10, athletics: 10, perception: 10, sleight_of_hand: 10 }); expect(highRate).toBeGreaterThanOrEqual(lowRate); });
+  it('formats with steps when requested', () => { const c = getRandomChallenge(); const withSteps = formatDisarmChallenge(c, true); const without = formatDisarmChallenge(c); expect(withSteps.length).toBeGreaterThan(without.length); expect(withSteps).toContain('['); });
+});
+
+// ---------------------------------------------------------------------------
+// Tavern brawl choreographer
+// ---------------------------------------------------------------------------
+import { generateBrawl, getEnvironmentalWeapons, getAllTriggers, BRAWL_TRIGGERS, BRAWL_ENVIRONMENTS, formatBrawl } from '../../src/data/tavernBrawl';
+
+describe('tavern brawl choreographer', () => {
+  it('has at least 6 triggers', () => { expect(BRAWL_TRIGGERS.length).toBeGreaterThanOrEqual(6); expect(getAllTriggers().length).toBeGreaterThanOrEqual(6); });
+  it('has at least 3 environments', () => { expect(BRAWL_ENVIRONMENTS.length).toBeGreaterThanOrEqual(3); });
+  it('generates full brawl', () => { const b = generateBrawl(); expect(b.triggerDescription.length).toBeGreaterThan(10); expect(b.escalation.length).toBeGreaterThanOrEqual(3); expect(b.participants.length).toBeGreaterThanOrEqual(2); });
+  it('has environmental weapons', () => { const b = generateBrawl(); const weapons = getEnvironmentalWeapons(b); expect(weapons.length).toBeGreaterThanOrEqual(3); weapons.forEach((w) => { expect(w.damage.length).toBeGreaterThan(0); expect(['improvised', 'thrown', 'swung']).toContain(w.type); }); });
+  it('has resolutions', () => { const b = generateBrawl(); expect(b.resolution.length).toBeGreaterThanOrEqual(4); b.resolution.forEach((r) => expect(typeof r.reputationChange).toBe('number')); });
+  it('formats brawl', () => { expect(formatBrawl(generateBrawl())).toContain('TAVERN BRAWL'); });
+});
+
+// ---------------------------------------------------------------------------
+// Dream sequence generator
+// ---------------------------------------------------------------------------
+import { DREAMS, getRandomDream as getRandomDreamSequence, getDreamsByType as getDreamSequencesByType, getDreamChoiceCount, getChoicesWithEffects, getAllDreamTypes as getAllDreamSequenceTypes, formatDream as formatDreamSequence } from '../../src/data/dreamSequence';
+
+describe('dream sequence generator', () => {
+  it('has at least 6 dreams', () => { expect(DREAMS.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 5 dream types', () => { expect(getAllDreamSequenceTypes().length).toBeGreaterThanOrEqual(5); });
+  it('generates random dream', () => { const d = getRandomDreamSequence(); expect(d.title.length).toBeGreaterThan(3); expect(d.narration.length).toBeGreaterThan(20); expect(d.imagery.length).toBeGreaterThanOrEqual(2); });
+  it('filters by type', () => { const sym = getDreamSequencesByType('symbolic'); expect(sym.length).toBeGreaterThanOrEqual(1); sym.forEach((d) => expect(d.type).toBe('symbolic')); });
+  it('each dream has 3 choices', () => { DREAMS.forEach((d) => expect(getDreamChoiceCount(d)).toBe(3)); });
+  it('most dreams have mechanical effects', () => { const withEffects = DREAMS.filter((d) => getChoicesWithEffects(d).length > 0); expect(withEffects.length).toBeGreaterThanOrEqual(5); });
+  it('all dreams have wake effects', () => { DREAMS.forEach((d) => expect(d.wakeEffect.length).toBeGreaterThan(10)); });
+  it('formats with type icon', () => { const d = getDreamSequencesByType('nightmare')[0]; expect(formatDreamSequence(d)).toContain('😱'); });
+});

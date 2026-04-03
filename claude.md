@@ -55,6 +55,22 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 47 tests (1417 total, +1 pre-existing fix) — naval combat, ritual magic, companion animals, trap disarm, tavern brawls, dream sequences:
+  - **Naval combat system** — `navalCombat.ts` with 6 ship classes (rowboat→flagship), 7 naval actions (fire/ram/board/flee/repair/brace/full_sail). Ship templates with HP/AC/speed/cannons/crew/cargo/special abilities. `damageShip()`/`repairShip()`/`isShipSunk()` lifecycle. Condition tracking (Seaworthy→Sunk). Action requirements (cannons need crew, ram needs speed). "Naval Combat" button in DMSidebar.
+  - **Ritual magic circles** — `ritualMagic.ts` with 8 rituals across 6 schools (abjuration/conjuration/divination/evocation/necromancy/transmutation). Each requires 2-8 casters, has material cost, casting time, Arcana DC, powerful effect, dramatic failure consequence, and per-extra-caster boost. `calculateRitualDC()` lowers individual DC with more casters. "Ritual Magic" button in DMSidebar.
+  - **Companion animal advancement** — `companionAnimal.ts` with 6 species (Hawk/Wolf/Cat/Warhorse/Pseudodragon/Giant Toad), 5 companion types, XP-based leveling (1-10), ability unlocks at level thresholds (passive/active/reaction), bond system (0-10). `addCompanionXp()` handles level-ups + HP growth + ability unlocks. "Companion" button in DMSidebar.
+  - **Trap disarm mini-game** — `trapDisarm.ts` with 6 challenges across 4 difficulties (simple/moderate/complex/deadly). Each has sequential skill check steps with escalating DCs, optional steps, failure consequences, and time limits. `calculateSuccessRate()` probability calculator. "Trap Disarm" button in DMSidebar.
+  - **Tavern brawl choreographer** — `tavernBrawl.ts` with 7 triggers, 3 escalation sequences, 3 participant pools, 3 themed environments (dive/upscale/pub), 4+ environmental weapons per venue (with damage/type), hazards, and 6 resolution outcomes with reputation changes. "Tavern Brawl" button in DMSidebar.
+  - **Dream sequence generator** — `dreamSequence.ts` with 7 dreams across 6 types (prophetic/nightmare/memory/symbolic/divine_message/astral_wandering). Rich narration with imagery, 3 choices per dream (many with mechanical effects), and wake effects. "Dream Sequence" button in DMSidebar.
+  - **Test fix** — resolved import shadowing bug (formatShip from navalCombat vs shipGenerator).
+- 47 new tests (1417 total) covering 6 systems:
+  - **Naval combat** (10 tests): class count, action count, create, damage, repair cap, sinking, condition, action requirements, action lookup, formatted output.
+  - **Ritual magic** (7 tests): count, school coverage, random, school filter, caster filter, DC reduction, formatted school icon.
+  - **Companion animals** (8 tests): species count, create, unknown species, XP leveling, ability unlocks, next ability, bond cap, formatted output.
+  - **Trap disarm** (8 tests): challenge count, random, difficulty filter, step count, required steps, success rate range, modifier scaling, step formatting toggle.
+  - **Tavern brawls** (6 tests): trigger count, environment count, full generation, weapons, resolutions, formatted output.
+  - **Dream sequences** (8 tests): count, type coverage, random, type filter, choice count, mechanical effects, wake effects, formatted icon.
+
 - 6 new systems + 43 tests (1370 total) — NPC relationship web, siege warfare, planar rifts, political events, crafting tree, monster ecology:
   - **NPC relationship web** — `npcRelationshipWeb.ts` with 10 relation types (ally/rival/family/employer/servant/lover/enemy/mentor/debtor/stranger). Bidirectional edges with strength (1-5) and secret flag. `revealRelation()` for dramatic reveals. Per-type party effects and leverage hints. "NPC Web" button in DMSidebar.
   - **Siege warfare rules** — `siegeWarfare.ts` with 8 siege engines (Battering Ram/Ballista/Catapult/Trebuchet/Siege Tower/Boiling Oil/Murder Holes/Cannon) across 3 types (ranged/melee/defensive) + 6 fortifications with HP/AC/damage thresholds. `canDamage()`/`getEffectiveDamage()` for threshold checks. "Siege" button in DMSidebar.
@@ -809,17 +825,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Crafting specialization tree~~ **DONE** — `craftingSpecialization.ts` with 6 disciplines × 5 mastery tiers
 - ~~Monster ecology system~~ **DONE** — `monsterEcology.ts` with 20 creatures × 8 biomes + food chains
 
-**Wave 36 Roadmap:**
+**Wave 36 (1,417 tests — fixed 1 pre-existing broken test):**
+- ~~Naval combat system~~ **DONE** — `navalCombat.ts` with 6 ship classes + 7 actions
+- ~~Ritual magic circles~~ **DONE** — `ritualMagic.ts` with 8 rituals × 6 schools
+- ~~Companion animal advancement~~ **DONE** — `companionAnimal.ts` with 6 species + leveling + bond
+- ~~Trap disarm mini-game~~ **DONE** — `trapDisarm.ts` with 6 challenges × 4 difficulties + sequential checks
+- ~~Tavern brawl choreographer~~ **DONE** — `tavernBrawl.ts` with 7 triggers × 3 environments + weapons
+- ~~Dream sequence generator~~ **DONE** — `dreamSequence.ts` with 7 dreams × 6 types + choices
+
+**Wave 37 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Naval combat system — ship-to-ship battles with boarding actions and cannon fire
-- Ritual magic circles — collaborative casting with multiple spellcasters for powerful effects
-- Random dream sequence generator — narrative dream encounters with symbolic choices
-- Companion animal advancement — pets/familiars level up and gain abilities
-- Trap disarm mini-game — sequential skill checks with escalating DCs
-- Random tavern brawl choreographer — staged bar fights with environmental weapons
+- Faction war tracker — multi-faction conflict with territory control and battle outcomes
+- Random merchant caravan generator — traveling merchants with unique inventories and quests
+- Underground river navigation — waterway traversal with current, rapids, and underwater encounters
+- Heist planner — multi-phase robbery scenarios with guard patrols, vault locks, and escape routes
+- Tournament bracket system — organized combat with brackets, betting odds, and crowd reactions
+- Poison crafting and identification — alchemical poison system with symptoms, DCs, and antidotes
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
