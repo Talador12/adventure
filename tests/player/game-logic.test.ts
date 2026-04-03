@@ -9772,3 +9772,98 @@ describe('death save drama table', () => {
   it('all have party reactions', () => { DEATH_SAVE_NARRATIONS.forEach((n) => expect(n.partyReaction.length).toBeGreaterThan(5)); });
   it('formats narration', () => { expect(formatDeathNarration(getNarration('nat_20'))).toContain('NAT 20'); });
 });
+
+// ---------------------------------------------------------------------------
+// Alchemy recipe book
+// ---------------------------------------------------------------------------
+import { ALCHEMY_RECIPES, getRecipeByName, getRecipesByCategory as getAlchRecipesByCategory, getRecipesByMaxDC, getIngredientCost as getAlchIngredientCost, getAllCategories as getAllAlchCategories, formatRecipe as formatAlchRecipe } from '../../src/data/alchemyRecipeBook';
+
+describe('alchemy recipe book', () => {
+  it('has at least 7 recipes', () => { expect(ALCHEMY_RECIPES.length).toBeGreaterThanOrEqual(7); });
+  it('covers at least 5 categories', () => { expect(getAllAlchCategories().length).toBeGreaterThanOrEqual(5); });
+  it('looks up by name', () => { const r = getRecipeByName('Alchemist\'s Fire'); expect(r).toBeDefined(); expect(r!.category).toBe('bomb'); });
+  it('filters by category', () => { const potions = getAlchRecipesByCategory('potion'); expect(potions.length).toBeGreaterThanOrEqual(1); });
+  it('filters by max DC', () => { const easy = getRecipesByMaxDC(12); expect(easy.length).toBeGreaterThanOrEqual(1); easy.forEach((r) => expect(r.craftingDC).toBeLessThanOrEqual(12)); });
+  it('all have failure results', () => { ALCHEMY_RECIPES.forEach((r) => expect(r.failureResult.length).toBeGreaterThan(10)); });
+  it('ingredient cost is positive', () => { ALCHEMY_RECIPES.forEach((r) => expect(getAlchIngredientCost(r)).toBeGreaterThan(0)); });
+  it('formats recipe', () => { expect(formatAlchRecipe(ALCHEMY_RECIPES[0])).toContain('Ingredients'); });
+});
+
+// ---------------------------------------------------------------------------
+// Exile/banishment scenario
+// ---------------------------------------------------------------------------
+import { EXILE_SCENARIOS, getRandomExile, getExilesByReason, getExilesBySeverity, getRedemptionPathCount as getExileRedemptions, getAllExileReasons, formatExile } from '../../src/data/exileScenario';
+
+describe('exile/banishment scenario', () => {
+  it('has at least 5 scenarios', () => { expect(EXILE_SCENARIOS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 5 reasons', () => { expect(getAllExileReasons().length).toBeGreaterThanOrEqual(5); });
+  it('generates random exile', () => { const e = getRandomExile(); expect(e.title.length).toBeGreaterThan(3); expect(e.redemptionPaths.length).toBeGreaterThanOrEqual(2); });
+  it('filters by reason', () => { const framed = getExilesByReason('framed'); expect(framed.length).toBeGreaterThanOrEqual(1); });
+  it('filters by severity', () => { const perm = getExilesBySeverity('permanent'); expect(perm.length).toBeGreaterThanOrEqual(1); });
+  it('all have twists', () => { EXILE_SCENARIOS.forEach((s) => expect(s.twist.length).toBeGreaterThan(20)); });
+  it('all have allies', () => { EXILE_SCENARIOS.forEach((s) => expect(s.allies.length).toBeGreaterThan(10)); });
+  it('formats exile', () => { expect(formatExile(EXILE_SCENARIOS[0])).toContain('Redemption'); });
+});
+
+// ---------------------------------------------------------------------------
+// Familiar evolution
+// ---------------------------------------------------------------------------
+import { FAMILIAR_EVOLUTIONS, getEvolution, getFormAtXP, getNextEvolution, getAllFamiliarNames, formatFamiliarEvolution } from '../../src/data/familiarEvolution';
+
+describe('familiar evolution', () => {
+  it('has at least 3 familiars', () => { expect(FAMILIAR_EVOLUTIONS.length).toBeGreaterThanOrEqual(3); });
+  it('each has 4 evolution forms', () => { FAMILIAR_EVOLUTIONS.forEach((e) => expect(e.evolutions.length).toBe(4)); });
+  it('looks up by name', () => { const ember = getEvolution('Ember (Fire Cat)'); expect(ember).toBeDefined(); });
+  it('form scales with XP', () => { const ember = FAMILIAR_EVOLUTIONS[0]; expect(getFormAtXP(ember, 0).form).toBe('basic'); expect(getFormAtXP(ember, 250).form).toBe('enhanced'); expect(getFormAtXP(ember, 700).form).toBe('greater'); });
+  it('next evolution returns future form', () => { const ember = FAMILIAR_EVOLUTIONS[0]; expect(getNextEvolution(ember, 0)!.form).toBe('enhanced'); expect(getNextEvolution(ember, 1500)).toBeNull(); });
+  it('abilities scale with form', () => { FAMILIAR_EVOLUTIONS.forEach((e) => { const basic = e.evolutions[0]; const legendary = e.evolutions[3]; expect(legendary.abilities.length).toBeGreaterThan(basic.abilities.length); }); });
+  it('all have evolution triggers', () => { FAMILIAR_EVOLUTIONS.forEach((e) => expect(e.evolutionTrigger.length).toBeGreaterThan(15)); });
+  it('formats familiar', () => { expect(formatFamiliarEvolution(FAMILIAR_EVOLUTIONS[0], 300)).toContain('enhanced'); });
+});
+
+// ---------------------------------------------------------------------------
+// Wanted poster generator
+// ---------------------------------------------------------------------------
+import { generateWantedPoster, escalateBounty, getAllBountyTiers, getAllCrimeCategories, formatWantedPoster } from '../../src/data/wantedPoster';
+
+describe('wanted poster generator', () => {
+  it('generates poster', () => { const p = generateWantedPoster('Gandalf', 'notable'); expect(p.targetName).toBe('Gandalf'); expect(p.bountyAmount).toBeGreaterThan(0); });
+  it('has 5 bounty tiers', () => { expect(getAllBountyTiers().length).toBe(5); });
+  it('has at least 6 crime categories', () => { expect(getAllCrimeCategories().length).toBeGreaterThanOrEqual(6); });
+  it('bounty scales with tier', () => { const petty = generateWantedPoster('X', 'petty'); const legendary = generateWantedPoster('X', 'legendary'); expect(legendary.bountyAmount).toBeGreaterThan(petty.bountyAmount); });
+  it('escalates bounty tier', () => { let p = generateWantedPoster('Y', 'notable'); p = escalateBounty(p); expect(p.bountyTier).toBe('dangerous'); expect(p.bountyHunters).toBeGreaterThan(1); });
+  it('respects crime parameter', () => { const p = generateWantedPoster('Z', 'dangerous', 'treason'); expect(p.crime).toBe('treason'); });
+  it('formats poster', () => { expect(formatWantedPoster(generateWantedPoster('Test', 'infamous'))).toContain('WANTED'); });
+});
+
+// ---------------------------------------------------------------------------
+// Planar weather
+// ---------------------------------------------------------------------------
+import { PLANAR_WEATHER, getRandomPlanarWeather, getWeatherBySource as getPlanarWeatherBySource, getWeatherWithPlotHooks, getAllWeatherSources, formatPlanarWeather } from '../../src/data/planarWeather';
+
+describe('planar weather', () => {
+  it('has at least 6 events', () => { expect(PLANAR_WEATHER.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 5 sources', () => { expect(getAllWeatherSources().length).toBeGreaterThanOrEqual(5); });
+  it('generates random weather', () => { const w = getRandomPlanarWeather(); expect(w.name.length).toBeGreaterThan(3); expect(w.mechanicalEffects.length).toBeGreaterThanOrEqual(3); });
+  it('filters by source', () => { const fey = getPlanarWeatherBySource('feywild'); expect(fey.length).toBeGreaterThanOrEqual(1); });
+  it('most have plot hooks', () => { expect(getWeatherWithPlotHooks().length).toBeGreaterThanOrEqual(4); });
+  it('all have warning DCs', () => { PLANAR_WEATHER.forEach((w) => expect(w.warningSignsDC).toBeGreaterThanOrEqual(6)); });
+  it('formats weather', () => { expect(formatPlanarWeather(PLANAR_WEATHER[0])).toContain('Effects'); });
+});
+
+// ---------------------------------------------------------------------------
+// Trap corridor designer
+// ---------------------------------------------------------------------------
+import { TRAP_CORRIDORS, getRandomCorridor, getCorridorByName, getTrapCount as getCorridorTraps, getAverageDisarmDC, hasShortcut, formatCorridor } from '../../src/data/trapCorridor';
+
+describe('trap corridor designer', () => {
+  it('has at least 3 corridors', () => { expect(TRAP_CORRIDORS.length).toBeGreaterThanOrEqual(3); });
+  it('generates random corridor', () => { const c = getRandomCorridor(); expect(c.name.length).toBeGreaterThan(3); expect(c.traps.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by name', () => { const g = getCorridorByName('The Gauntlet of Blades'); expect(g).toBeDefined(); expect(g!.traps.length).toBe(5); });
+  it('trap count matches', () => { TRAP_CORRIDORS.forEach((c) => expect(getCorridorTraps(c)).toBe(c.traps.length)); });
+  it('average disarm DC is reasonable', () => { TRAP_CORRIDORS.forEach((c) => { const avg = getAverageDisarmDC(c); if (avg > 0) expect(avg).toBeGreaterThanOrEqual(10); }); });
+  it('some have shortcuts', () => { expect(TRAP_CORRIDORS.filter(hasShortcut).length).toBeGreaterThanOrEqual(1); });
+  it('all have safe spots', () => { TRAP_CORRIDORS.forEach((c) => expect(c.safeSpot.length).toBeGreaterThan(10)); });
+  it('all have final rewards', () => { TRAP_CORRIDORS.forEach((c) => expect(c.finalReward.length).toBeGreaterThan(10)); });
+  it('formats corridor', () => { expect(formatCorridor(TRAP_CORRIDORS[0])).toContain('Reward'); });
+});

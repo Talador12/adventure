@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 47 tests (1973 total, +1 pre-existing fix) — alchemy recipes, exile scenarios, familiar evolution, wanted posters, planar weather, trap corridors:
+  - **Alchemy recipe book** — `alchemyRecipeBook.ts` with 8 recipes across 6 categories, ingredient requirements, crafting DCs, failure results.
+  - **Exile/banishment scenario** — `exileScenario.ts` with 5 scenarios across 6 reasons, multiple redemption paths, severity tiers, twists, allies.
+  - **Familiar evolution** — `familiarEvolution.ts` with 3 familiars (Fire Cat/Shadow Raven/Plant Sprite), 4 evolution forms each, XP scaling, evolution triggers, personality.
+  - **Wanted poster generator** — `wantedPoster.ts` with 5 tiers, 6 crime categories, bounty escalation, hunter counts, alias generation.
+  - **Planar weather** — `planarWeather.ts` with 6 events from 6 sources (Glitter Storm/Sorrow Fog/Ember Rain/Thought Rain/Blood Moon/Radiant Dawn), plot hooks.
+  - **Trap corridor designer** — `trapCorridor.ts` with 3 themed corridors (Blades/Wizard/Temple), sequential traps, safe spots, shortcuts, final rewards.
+
 - 6 new systems + 48 tests (1926 total) — mind control, social encounters, golem crafting, planar marketplace, faction quests, death save drama:
   - **Mind control resistance** — `mindControl.ts` with 6 control sources, 5 resistance stages, willpower degradation, escalating save DCs, ally assist bonuses, break-free mechanics.
   - **Social encounter generator** — `socialEncounter.ts` with 5 encounters across 5 settings, 3 approaches per encounter with skill DCs, critical success/failure outcomes.
@@ -1008,17 +1016,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Faction quest chains~~ **DONE** — `factionQuestChain.ts` with 3 chains + branch points
 - ~~Death save drama~~ **DONE** — `deathSaveDrama.ts` with 16 narrations × 8 moments
 
-**Wave 47 Roadmap:**
+**Wave 47 (1,973 tests — fixed 1 pre-existing broken test):**
+- ~~Alchemy recipe book~~ **DONE** — `alchemyRecipeBook.ts` with 8 recipes × 6 categories
+- ~~Exile/banishment scenario~~ **DONE** — `exileScenario.ts` with 5 scenarios × 6 reasons
+- ~~Familiar evolution~~ **DONE** — `familiarEvolution.ts` with 3 familiars × 4 forms + XP
+- ~~Wanted poster generator~~ **DONE** — `wantedPoster.ts` with 5 tiers + bounty escalation
+- ~~Planar weather~~ **DONE** — `planarWeather.ts` with 6 events × 6 sources + plot hooks
+- ~~Trap corridor designer~~ **DONE** — `trapCorridor.ts` with 3 corridors + sequential traps
+
+**Wave 48 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Alchemy recipe book — combine ingredients from foraging system into potions/salves/bombs
-- Random exile/banishment scenario — why the party was thrown out and how to get back in
-- Arcane familiar evolution — familiars that gain new forms and abilities through XP
-- Wanted poster generator — party members as fugitives with escalating bounty tiers
-- Random planar weather — bizarre weather from other planes bleeding through
-- Trap corridor designer — sequential trap gauntlet with escalating difficulty
+- Bardic inspiration table — dramatic effects beyond the mechanical +1d6
+- Random war room briefing — military intel, terrain maps, and battle strategy suggestions
+- Enchanted forest generator — magical woodlands with unique rules and inhabitants
+- Random noble scandal — political gossip with blackmail potential and social consequences
+- Merchant haggling mini-game — price negotiation with NPC personality modifiers
+- Magical pet peeve system — magic items that have strong opinions about how they're used
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
