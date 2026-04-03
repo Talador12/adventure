@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 48 tests (2158 total) — illithid colonies, ancestral spirits, pocket dimensions, arcane black market, clockwork dungeons, magical weather calendar:
+  - **Illithid colony generator** — `illithidColony.ts` with 2 colonies (enclave/city), elder brain personalities, thrall hierarchies with free will scores, defenses, weaknesses.
+  - **Ancestral spirit guide** — `ancestralSpirit.ts` with 3 spirits (Grandmother Ashwood/Sergeant Ironjaw/Pip the Wanderer), situational guidance with mechanical bonuses, intervention abilities.
+  - **Pocket dimension generator** — `pocketDimension.ts` with 5 dimensions (The Quiet Room/Eternal Arena/Bottled Storm/Memory Palace/Inverted Garden), unique physics per dimension.
+  - **Arcane black market** — `arcaneBlackMarket.ts` with 8 items across 6 categories, hidden catches, legal consequences, risk levels, DM-only reveal toggle.
+  - **Clockwork dungeon generator** — `clockworkDungeon.ts` with 2 mechanized dungeons, gear-driven rooms with mechanisms/timers/puzzles, master gear shutdowns.
+  - **Magical weather calendar** — `magicalWeatherCalendar.ts` with 8 recurring events across 4 seasons × 6 regions, plot hooks, mechanical effects.
+
 - 🏆 **WAVE 50** — 6 new systems + 49 tests (2110 total) — monster harvesting, artifact corruption, NPC voices, evolving traps, cross-plane messengers, astral ship combat:
   - **Monster harvesting** — `monsterHarvesting.ts` with 5 monster profiles, harvestable materials with spoil timers, crafting recipes, preservation methods.
   - **Artifact corruption tracker** — `artifactCorruption.ts` with 3 artifacts (Hungering Blade/Crown of Whispers/Mirror of Vanity), 5-stage corruption, escalating save DCs, purification.
@@ -1072,17 +1080,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Cross-plane messenger~~ **DONE** — `crossPlaneMessenger.ts` with 6 services + package types
 - ~~Astral ship combat~~ **DONE** — `astralShipCombat.ts` with 6 weapons + 4 shields + boarding
 
-**Wave 51 Roadmap:**
+**Wave 51 (2,158 tests):**
+- ~~Illithid colony generator~~ **DONE** — `illithidColony.ts` with 2 colonies + thrall hierarchies
+- ~~Ancestral spirit guide~~ **DONE** — `ancestralSpirit.ts` with 3 spirits + situational guidance
+- ~~Pocket dimension generator~~ **DONE** — `pocketDimension.ts` with 5 dimensions + unique physics
+- ~~Arcane black market~~ **DONE** — `arcaneBlackMarket.ts` with 8 items + hidden catches
+- ~~Clockwork dungeon generator~~ **DONE** — `clockworkDungeon.ts` with 2 dungeons + mechanisms
+- ~~Magical weather calendar~~ **DONE** — `magicalWeatherCalendar.ts` with 8 events × 4 seasons
+
+**Wave 52 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Illithid colony generator — mind flayer lairs with elder brain mechanics and thrall hierarchies
-- Random magical weather calendar — yearly cycle of magical weather events by region
-- Ancestral spirit guide system — departed mentors who offer wisdom and occasional intervention
-- Random pocket dimension generator — small custom planes created by powerful mages
-- Arcane black market catalog — forbidden items, cursed goods, and stolen magical artifacts for sale
-- Clockwork dungeon generator — mechanized dungeons with gear-driven rooms and timed puzzles
+- Dragon personality matrix — unique dragon behaviors, hoard preferences, and negotiation styles
+- Random cataclysm countdown — world-ending events with escalating signs and intervention windows
+- Enchanted weapon sentience awakening — mundane weapons gaining awareness through legendary deeds
+- Random interplanar customs office — bureaucratic plane-crossing with paperwork and inspections
+- Magical ecosystem generator — interconnected magical flora/fauna that react to party actions
+- Time loop dungeon — rooms that reset on party death with cumulative knowledge carried forward
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

@@ -10148,3 +10148,99 @@ describe('astral ship combat expansion', () => {
   it('formats weapon', () => { expect(formatAstralWeapon(ASTRAL_WEAPONS[0])).toContain('Crew'); });
   it('formats shield', () => { expect(formatAstralShield(ASTRAL_SHIELDS[0])).toContain('Absorbs'); });
 });
+
+// ---------------------------------------------------------------------------
+// Illithid colony generator
+// ---------------------------------------------------------------------------
+import { ILLITHID_COLONIES, getRandomColony, getColonyBySize, getTotalThralls, getFreeThralls, getAllColonySizes, formatColony } from '../../src/data/illithidColony';
+
+describe('illithid colony generator', () => {
+  it('has at least 2 colonies', () => { expect(ILLITHID_COLONIES.length).toBeGreaterThanOrEqual(2); });
+  it('has 4 colony sizes', () => { expect(getAllColonySizes().length).toBe(4); });
+  it('generates random colony', () => { const c = getRandomColony(); expect(c.name.length).toBeGreaterThan(3); expect(c.thralls.length).toBeGreaterThanOrEqual(3); });
+  it('filters by size', () => { const cities = getColonyBySize('city'); expect(cities.length).toBeGreaterThanOrEqual(1); });
+  it('estimates total thralls', () => { ILLITHID_COLONIES.forEach((c) => expect(getTotalThralls(c)).toBeGreaterThan(0)); });
+  it('finds thralls with free will', () => { ILLITHID_COLONIES.forEach((c) => expect(getFreeThralls(c).length).toBeGreaterThanOrEqual(1)); });
+  it('all have weaknesses', () => { ILLITHID_COLONIES.forEach((c) => expect(c.weakness.length).toBeGreaterThan(20)); });
+  it('formats colony', () => { expect(formatColony(ILLITHID_COLONIES[0])).toContain('Elder Brain'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ancestral spirit guide
+// ---------------------------------------------------------------------------
+import { ANCESTRAL_SPIRITS, getRandomSpirit, getSpiritsByDisposition, getGuidanceCount, getGuidancesWithBonuses, getAllDispositions as getAllSpiritDispositions, formatSpirit } from '../../src/data/ancestralSpirit';
+
+describe('ancestral spirit guide', () => {
+  it('has at least 3 spirits', () => { expect(ANCESTRAL_SPIRITS.length).toBeGreaterThanOrEqual(3); });
+  it('has at least 3 dispositions', () => { expect(getAllSpiritDispositions().length).toBeGreaterThanOrEqual(3); });
+  it('generates random spirit', () => { const s = getRandomSpirit(); expect(s.name.length).toBeGreaterThan(3); expect(s.guidances.length).toBeGreaterThanOrEqual(3); });
+  it('each spirit has 3+ guidances', () => { ANCESTRAL_SPIRITS.forEach((s) => expect(getGuidanceCount(s)).toBeGreaterThanOrEqual(3)); });
+  it('most guidances have bonuses', () => { ANCESTRAL_SPIRITS.forEach((s) => expect(getGuidancesWithBonuses(s).length).toBeGreaterThanOrEqual(1)); });
+  it('all have summon conditions', () => { ANCESTRAL_SPIRITS.forEach((s) => expect(s.summonCondition.length).toBeGreaterThan(10)); });
+  it('all have intervention abilities', () => { ANCESTRAL_SPIRITS.forEach((s) => expect(s.interventionAbility.length).toBeGreaterThan(10)); });
+  it('formats spirit', () => { expect(formatSpirit(ANCESTRAL_SPIRITS[0])).toContain('Summon'); });
+});
+
+// ---------------------------------------------------------------------------
+// Pocket dimension generator
+// ---------------------------------------------------------------------------
+import { POCKET_DIMENSIONS, getRandomDimension, getDimensionsByPurpose, getDimensionsByStability, getDimensionsWithTreasure as getDimTreasure, getAllPurposes as getAllDimPurposes, formatDimension } from '../../src/data/pocketDimension';
+
+describe('pocket dimension generator', () => {
+  it('has at least 5 dimensions', () => { expect(POCKET_DIMENSIONS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 purposes', () => { expect(getAllDimPurposes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random dimension', () => { const d = getRandomDimension(); expect(d.name.length).toBeGreaterThan(3); expect(d.uniquePhysics.length).toBeGreaterThanOrEqual(3); });
+  it('filters by purpose', () => { const prisons = getDimensionsByPurpose('prison'); expect(prisons.length).toBeGreaterThanOrEqual(1); });
+  it('filters by stability', () => { const collapsing = getDimensionsByStability('collapsing'); expect(collapsing.length).toBeGreaterThanOrEqual(1); });
+  it('most have treasure', () => { expect(getDimTreasure().length).toBeGreaterThanOrEqual(3); });
+  it('all have entry and exit methods', () => { POCKET_DIMENSIONS.forEach((d) => { expect(d.entryMethod.length).toBeGreaterThan(10); expect(d.exitMethod.length).toBeGreaterThan(10); }); });
+  it('formats dimension', () => { expect(formatDimension(POCKET_DIMENSIONS[0])).toContain('Unique physics'); });
+});
+
+// ---------------------------------------------------------------------------
+// Arcane black market catalog
+// ---------------------------------------------------------------------------
+import { BLACK_MARKET_ITEMS, getRandomBlackMarketItem, getItemsByCategory as getBlackMarketByCategory, getItemsByRisk as getBlackMarketByRisk, getAllBlackMarketCategories, formatBlackMarketItem } from '../../src/data/arcaneBlackMarket';
+
+describe('arcane black market catalog', () => {
+  it('has at least 7 items', () => { expect(BLACK_MARKET_ITEMS.length).toBeGreaterThanOrEqual(7); });
+  it('covers at least 5 categories', () => { expect(getAllBlackMarketCategories().length).toBeGreaterThanOrEqual(5); });
+  it('generates random item', () => { const i = getRandomBlackMarketItem(); expect(i.name.length).toBeGreaterThan(3); expect(i.hiddenCatch.length).toBeGreaterThan(10); });
+  it('filters by category', () => { const cursed = getBlackMarketByCategory('cursed'); expect(cursed.length).toBeGreaterThanOrEqual(1); });
+  it('filters by risk', () => { const extreme = getBlackMarketByRisk('extreme'); expect(extreme.length).toBeGreaterThanOrEqual(1); });
+  it('all have legal consequences', () => { BLACK_MARKET_ITEMS.forEach((i) => expect(i.legalConsequence.length).toBeGreaterThan(10)); });
+  it('formats with catch toggle', () => { const i = getRandomBlackMarketItem(); expect(formatBlackMarketItem(i)).not.toContain('Hidden catch'); expect(formatBlackMarketItem(i, true)).toContain('Hidden catch'); });
+});
+
+// ---------------------------------------------------------------------------
+// Clockwork dungeon generator
+// ---------------------------------------------------------------------------
+import { CLOCKWORK_DUNGEONS, getRandomClockworkDungeon, getRoomCount as getClockworkRoomCount, getJammedRooms, getTimedRooms, formatClockworkDungeon } from '../../src/data/clockworkDungeon';
+
+describe('clockwork dungeon generator', () => {
+  it('has at least 2 dungeons', () => { expect(CLOCKWORK_DUNGEONS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random dungeon', () => { const d = getRandomClockworkDungeon(); expect(d.name.length).toBeGreaterThan(3); expect(d.rooms.length).toBeGreaterThanOrEqual(3); });
+  it('rooms have mechanisms', () => { CLOCKWORK_DUNGEONS.forEach((d) => d.rooms.forEach((r) => expect(r.mechanism.length).toBeGreaterThan(3))); });
+  it('some rooms are timed', () => { CLOCKWORK_DUNGEONS.forEach((d) => expect(getTimedRooms(d).length).toBeGreaterThanOrEqual(1)); });
+  it('all have shutdown methods', () => { CLOCKWORK_DUNGEONS.forEach((d) => expect(d.shutdownMethod.length).toBeGreaterThan(15)); });
+  it('all have power sources', () => { CLOCKWORK_DUNGEONS.forEach((d) => expect(d.powerSource.length).toBeGreaterThan(10)); });
+  it('all have lore', () => { CLOCKWORK_DUNGEONS.forEach((d) => expect(d.lore.length).toBeGreaterThan(20)); });
+  it('formats dungeon', () => { expect(formatClockworkDungeon(CLOCKWORK_DUNGEONS[0])).toContain('Shutdown'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical weather calendar
+// ---------------------------------------------------------------------------
+import { MAGICAL_WEATHER_CALENDAR, getWeatherForSeason, getWeatherForRegion, getWeatherForDay, getPlotRelevantWeather, getAllCalendarSeasons, getAllCalendarRegions, formatWeatherDay } from '../../src/data/magicalWeatherCalendar';
+
+describe('magical weather calendar', () => {
+  it('has at least 7 events', () => { expect(MAGICAL_WEATHER_CALENDAR.length).toBeGreaterThanOrEqual(7); });
+  it('has 4 seasons', () => { expect(getAllCalendarSeasons().length).toBe(4); });
+  it('has 6 regions', () => { expect(getAllCalendarRegions().length).toBe(6); });
+  it('filters by season', () => { const winter = getWeatherForSeason('winter'); expect(winter.length).toBeGreaterThanOrEqual(1); });
+  it('filters by region', () => { const coastal = getWeatherForRegion('coastal'); expect(coastal.length).toBeGreaterThanOrEqual(2); });
+  it('looks up specific day', () => { const bloom = getWeatherForDay('spring', 1); expect(bloom).toBeDefined(); expect(bloom!.name).toBe('The Bloom Surge'); });
+  it('most have plot relevance', () => { expect(getPlotRelevantWeather().length).toBeGreaterThanOrEqual(5); });
+  it('all are recurring', () => { MAGICAL_WEATHER_CALENDAR.forEach((w) => expect(w.isRecurring).toBe(true)); });
+  it('formats weather day', () => { expect(formatWeatherDay(MAGICAL_WEATHER_CALENDAR[0])).toContain('Regions'); });
+});
