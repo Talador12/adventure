@@ -8242,3 +8242,63 @@ describe('combat tactics', () => {
   it('generates with counterplay', () => { const t = getRandomTactic(); expect(t.tactic.length).toBeGreaterThan(0); expect(t.counterplay.length).toBeGreaterThan(0); expect(['low', 'medium', 'high', 'genius']).toContain(t.intelligence); });
   it('formatCombatTactic shows intelligence', () => { expect(formatCombatTactic(getRandomTactic())).toContain('INT'); });
 });
+
+// ---------------------------------------------------------------------------
+// NPC jobs
+// ---------------------------------------------------------------------------
+import { getRandomNpcJob, formatNpcJob } from '../../src/data/randomNpcJob';
+
+describe('NPC jobs', () => {
+  it('generates with useful skill', () => { const j = getRandomNpcJob(); expect(j.job.length).toBeGreaterThan(0); expect(j.usefulSkill.length).toBeGreaterThan(0); expect(j.knowledgeArea.length).toBeGreaterThan(0); });
+  it('formatNpcJob shows routine', () => { expect(formatNpcJob(getRandomNpcJob())).toContain('Routine'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat mistakes
+// ---------------------------------------------------------------------------
+import { getRandomMistake as getRandMistake, formatCombatMistake } from '../../src/data/randomCombatMistake';
+
+describe('combat mistakes', () => {
+  it('generates with opening', () => { const m = getRandMistake(); expect(m.mistake.length).toBeGreaterThan(0); expect(m.opening.length).toBeGreaterThan(0); expect(m.duration.length).toBeGreaterThan(0); });
+  it('formatCombatMistake shows opening', () => { expect(formatCombatMistake(getRandMistake())).toContain('Opening'); });
+});
+
+// ---------------------------------------------------------------------------
+// Treasure guardians
+// ---------------------------------------------------------------------------
+import { getRandomGuardian, formatTreasureGuardian } from '../../src/data/randomTreasureGuardian';
+
+describe('treasure guardians', () => {
+  it('generates with weakness', () => { const g = getRandomGuardian(); expect(g.guardian.length).toBeGreaterThan(0); expect(g.weakness.length).toBeGreaterThan(0); });
+  it('formatTreasureGuardian shows bonus', () => { expect(formatTreasureGuardian(getRandomGuardian())).toContain('Bonus'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC filler phrases
+// ---------------------------------------------------------------------------
+import { NPC_FILLER_PHRASES, getRandomPhrase } from '../../src/data/randomNpcPhrase';
+
+describe('NPC filler phrases', () => {
+  it('has at least 12', () => { expect(NPC_FILLER_PHRASES.length).toBeGreaterThanOrEqual(12); });
+  it('returns text', () => { expect(getRandomPhrase().length).toBeGreaterThan(5); });
+});
+
+// ---------------------------------------------------------------------------
+// Party reputation
+// ---------------------------------------------------------------------------
+import { getRandomReputation, formatPartyReputation } from '../../src/data/randomPartyReputation';
+
+describe('party reputation', () => {
+  it('generates with accuracy', () => { const r = getRandomReputation(); expect(r.reputation.length).toBeGreaterThan(0); expect(['accurate', 'exaggerated', 'completely wrong']).toContain(r.accuracy); });
+  it('formatPartyReputation shows source', () => { expect(formatPartyReputation(getRandomReputation())).toContain('Source'); });
+});
+
+// ---------------------------------------------------------------------------
+// Exit lines
+// ---------------------------------------------------------------------------
+import { EXIT_LINES, getRandomExitLine, formatExitLine } from '../../src/data/randomExitLine';
+
+describe('exit lines', () => {
+  it('has at least 12', () => { expect(EXIT_LINES.length).toBeGreaterThanOrEqual(12); });
+  it('formatExitLine shows character name', () => { expect(formatExitLine('Thorin')).toContain('Thorin'); });
+});

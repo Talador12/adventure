@@ -2978,6 +2978,37 @@ export default function DMSidebar({
               🧠 Enemy Tactic
             </button>
 
+            {/* NPC job */}
+            <button onClick={async () => { const { getRandomNpcJob, formatNpcJob } = await import('../../data/randomNpcJob'); onAddDmMessage(formatNpcJob(getRandomNpcJob())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="NPC day job with useful knowledge">
+              👷 NPC Job
+            </button>
+            {/* Enemy mistake */}
+            <button onClick={async () => { const { getRandomMistake, formatCombatMistake } = await import('../../data/randomCombatMistake'); onAddDmMessage(formatCombatMistake(getRandomMistake())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="Enemy makes an error — party gets an opening">
+              😅 Enemy Mistake
+            </button>
+            {/* Treasure guardian */}
+            <button onClick={async () => { const { getRandomGuardian, formatTreasureGuardian } = await import('../../data/randomTreasureGuardian'); onAddDmMessage(formatTreasureGuardian(getRandomGuardian())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="What protects the treasure?">
+              🛡️ Treasure Guardian
+            </button>
+            {/* NPC filler phrase */}
+            <button onClick={async () => { const { formatNpcPhrase } = await import('../../data/randomNpcPhrase'); onAddDmMessage(formatNpcPhrase()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all" title="NPC stalling or thinking out loud">
+              💬 NPC Filler
+            </button>
+            {/* Party reputation */}
+            <button onClick={async () => { const { getRandomReputation, formatPartyReputation } = await import('../../data/randomPartyReputation'); onAddDmMessage(formatPartyReputation(getRandomReputation())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="What do the locals think of the party?">
+              📢 Party Rep
+            </button>
+            {/* Exit line */}
+            <button onClick={async () => { const { formatExitLine } = await import('../../data/randomExitLine'); const name = characters.length > 0 ? characters[Math.floor(Math.random() * characters.length)].name : 'Hero'; onAddDmMessage(formatExitLine(name)); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all" title="Dramatic exit line">
+              🚪 Exit Line
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
