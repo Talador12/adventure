@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 49 tests (1679 total) — warlock patrons, wild magic, haunted locations, diplomacy, guild perks, magical diseases:
+  - **Warlock patron tracker** — `warlockPatron.ts` with 4 patrons (Archfey/Fiend/Great Old One/Celestial), demands with deadlines/rewards/punishments, gifts with hidden costs, displeasure effects, favor thresholds.
+  - **Expanded wild magic** — `wildMagicExpanded.ts` with 30 surges across 4 categories (beneficial/neutral/harmful/chaotic), mechanical effects, durations.
+  - **Haunted location generator** — `hauntedLocation.ts` with 5 locations across 5 haunt types, 3+ manifestations each (visual/auditory/physical/emotional/temporal), investigation clues, cleansing methods with DCs, treasure rewards.
+  - **Diplomatic negotiation** — `diplomaticNegotiation.ts` with 2 scenarios, multi-party negotiations with stances/goals/leverages (hidden and revealed), concessions, deal-breakers, patience timers, possible outcomes.
+  - **Guild membership perks** — `guildMembership.ts` with 3 guilds (Adventurers/Merchants/Mages), 5 ranks per guild with progressive perks and obligations, XP requirements, dues, entry requirements.
+  - **Magical disease system** — `magicalDisease.ts` with 5 diseases across 6 transmission types, progressive symptom stages by day, save DCs, mundane and magical cures, lore.
+
 - 6 new systems + 56 tests (1630 total, +4 pre-existing fixes) — lycanthropy, deity pantheon, magical tattoos, mass combat, thieves guild, dungeon dressing:
   - **Lycanthropy progression** — `lycanthropy.ts` with 5 types (werewolf/wererat/wereboar/weretiger/werebear), 5 infection stages (bitten→embraced), moon-phase triggers, control DCs, hybrid form stats, cure conditions that scale with progression.
   - **Deity pantheon builder** — `deityPantheon.ts` with 6 deities (Solara/Morthain/Korrath/Aelindra/Vex/Verdania), domains, holy symbols, 3+ commandments each, blessing/wrath effects, inter-deity rivalries and alliances.
@@ -912,17 +920,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Thieves guild job board~~ **DONE** — `thievesGuildJobs.ts` with 8 jobs × 6 types + complications
 - ~~Dungeon room dressing~~ **DONE** — `dungeonRoomDressing.ts` with 8 archetypes + loot + traps
 
-**Wave 41 Roadmap:**
+**Wave 41 (1,679 tests):**
+- ~~Warlock patron tracker~~ **DONE** — `warlockPatron.ts` with 4 patrons + demands/gifts/displeasure
+- ~~Expanded wild magic~~ **DONE** — `wildMagicExpanded.ts` with 30 surges × 4 categories
+- ~~Haunted location generator~~ **DONE** — `hauntedLocation.ts` with 5 locations × 5 haunt types
+- ~~Diplomatic negotiation~~ **DONE** — `diplomaticNegotiation.ts` with 2 scenarios + leverage/concessions
+- ~~Guild membership perks~~ **DONE** — `guildMembership.ts` with 3 guilds × 5 ranks + progressive perks
+- ~~Magical disease system~~ **DONE** — `magicalDisease.ts` with 5 diseases × 6 transmissions + progressive symptoms
+
+**Wave 42 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Warlock patron relationship tracker — patron demands, gifts, and displeasure mechanics
-- Random wild magic surge table (expanded) — 50+ results beyond the PHB table
-- Haunted location generator — ghostly manifestations with investigation and cleansing mechanics
-- Diplomatic negotiation system — structured talks with leverage, concessions, and deal-breaking
-- Random guild membership perks — benefits and obligations by guild rank
-- Magical disease system — arcane plagues with symptoms, transmission, and magical cures
+- Airship encounter table — sky-based encounters with altitude hazards and aerial combat
+- Random detective case generator — crime scenes with clues, suspects, motives, and red herrings
+- Elemental weapon infusion — temporary weapon enchantments with elemental damage and effects
+- NPC schedule system — daily routines for NPCs that create windows for interaction or ambush
+- Random planar travel side effects — what happens to travelers between planes
+- Gladiator arena progression — ranked arena fights with crowd favor and sponsor mechanics
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

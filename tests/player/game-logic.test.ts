@@ -9188,3 +9188,100 @@ describe('dungeon room dressing', () => {
   it('all rooms have small details', () => { DRESSED_ROOMS.forEach((r) => expect(r.smallDetails.length).toBeGreaterThanOrEqual(2)); });
   it('formats room', () => { expect(formatRoomDressing(getRandomRoomDressing())).toContain('Furniture'); });
 });
+
+// ---------------------------------------------------------------------------
+// Warlock patron tracker
+// ---------------------------------------------------------------------------
+import { PATRONS as WARLOCK_PATRONS, getPatron as getWarlockPatron, getRandomDemand, getRandomDispleasure, getAllPatronTypes, formatPatron as formatWarlockPatron } from '../../src/data/warlockPatron';
+
+describe('warlock patron tracker', () => {
+  it('has at least 4 patrons', () => { expect(WARLOCK_PATRONS.length).toBeGreaterThanOrEqual(4); });
+  it('looks up patron', () => { const p = getWarlockPatron('fiend'); expect(p).toBeDefined(); expect(p!.name.length).toBeGreaterThan(3); });
+  it('each patron has demands', () => { WARLOCK_PATRONS.forEach((p) => expect(p.demands.length).toBeGreaterThanOrEqual(2)); });
+  it('each patron has gifts', () => { WARLOCK_PATRONS.forEach((p) => expect(p.gifts.length).toBeGreaterThanOrEqual(1)); });
+  it('each patron has displeasure effects', () => { WARLOCK_PATRONS.forEach((p) => expect(p.displeasureEffects.length).toBeGreaterThanOrEqual(2)); });
+  it('gets random demand', () => { const d = getRandomDemand('archfey'); expect(d).not.toBeNull(); expect(d!.demand.length).toBeGreaterThan(10); });
+  it('gets random displeasure', () => { const d = getRandomDispleasure('great_old_one'); expect(d).not.toBeNull(); expect(d!.length).toBeGreaterThan(10); });
+  it('returns null for unknown', () => { expect(getRandomDemand('unknown' as any)).toBeNull(); });
+  it('formats patron', () => { expect(formatWarlockPatron(WARLOCK_PATRONS[0])).toContain('Communication'); });
+});
+
+// ---------------------------------------------------------------------------
+// Expanded wild magic surge
+// ---------------------------------------------------------------------------
+import { EXPANDED_SURGES, rollExpandedSurge, getExpandedSurgeById, getExpandedSurgesByCategory, getExpandedSurgeCount, getAllSurgeCategories, formatExpandedSurge } from '../../src/data/wildMagicExpanded';
+
+describe('expanded wild magic surge', () => {
+  it('has 30 surges', () => { expect(EXPANDED_SURGES.length).toBe(30); expect(getExpandedSurgeCount()).toBe(30); });
+  it('has 4 categories', () => { expect(getAllSurgeCategories().length).toBe(4); });
+  it('rolls random surge', () => { const s = rollExpandedSurge(); expect(s.description.length).toBeGreaterThan(10); });
+  it('looks up by id', () => { const s = getExpandedSurgeById(10); expect(s).toBeDefined(); expect(s!.category).toBe('beneficial'); });
+  it('filters by category', () => { const beneficial = getExpandedSurgesByCategory('beneficial'); expect(beneficial.length).toBeGreaterThanOrEqual(5); beneficial.forEach((s) => expect(s.category).toBe('beneficial')); });
+  it('all surges have durations', () => { EXPANDED_SURGES.forEach((s) => expect(s.duration.length).toBeGreaterThan(0)); });
+  it('formats surge', () => { expect(formatExpandedSurge(EXPANDED_SURGES[0])).toContain('Wild Surge'); });
+});
+
+// ---------------------------------------------------------------------------
+// Haunted location generator
+// ---------------------------------------------------------------------------
+import { HAUNTED_LOCATIONS, getRandomHauntedLocation, getLocationsByHauntType, getLocationsByDanger, getAllHauntTypes, formatHauntedLocation } from '../../src/data/hauntedLocation';
+
+describe('haunted location generator', () => {
+  it('has at least 5 locations', () => { expect(HAUNTED_LOCATIONS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 haunt types', () => { expect(getAllHauntTypes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random location', () => { const l = getRandomHauntedLocation(); expect(l.name.length).toBeGreaterThan(3); expect(l.manifestations.length).toBeGreaterThanOrEqual(2); });
+  it('filters by haunt type', () => { const poltergeist = getLocationsByHauntType('poltergeist'); expect(poltergeist.length).toBeGreaterThanOrEqual(1); });
+  it('filters by danger', () => { const deadly = getLocationsByDanger('deadly'); expect(deadly.length).toBeGreaterThanOrEqual(1); });
+  it('all locations have cleansing methods', () => { HAUNTED_LOCATIONS.forEach((l) => { expect(l.cleansingMethod.length).toBeGreaterThan(20); expect(l.cleansingDC).toBeGreaterThanOrEqual(12); }); });
+  it('all locations have investigation clues', () => { HAUNTED_LOCATIONS.forEach((l) => expect(l.investigationClues.length).toBeGreaterThanOrEqual(2)); });
+  it('all locations have treasure rewards', () => { HAUNTED_LOCATIONS.forEach((l) => expect(l.treasureIfCleansed.length).toBeGreaterThan(10)); });
+  it('formats location', () => { expect(formatHauntedLocation(getRandomHauntedLocation())).toContain('Manifestations'); });
+});
+
+// ---------------------------------------------------------------------------
+// Diplomatic negotiation system
+// ---------------------------------------------------------------------------
+import { NEGOTIATION_SCENARIOS, getRandomScenario, getAllScenarios, getPartyLeverage, getTotalLeverageStrength, formatScenario } from '../../src/data/diplomaticNegotiation';
+
+describe('diplomatic negotiation system', () => {
+  it('has at least 2 scenarios', () => { expect(NEGOTIATION_SCENARIOS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random scenario', () => { const s = getRandomScenario(); expect(s.title.length).toBeGreaterThan(3); expect(s.parties.length).toBeGreaterThanOrEqual(2); });
+  it('parties have goals and deal breakers', () => { NEGOTIATION_SCENARIOS.forEach((s) => s.parties.forEach((p) => { expect(p.goals.length).toBeGreaterThanOrEqual(1); expect(p.dealBreaker.length).toBeGreaterThan(10); })); });
+  it('leverage can be hidden', () => { const s = NEGOTIATION_SCENARIOS[0]; const all = getPartyLeverage(s.parties[0]); const revealed = getPartyLeverage(s.parties[0], true); expect(all.length).toBeGreaterThanOrEqual(revealed.length); });
+  it('calculates total leverage', () => { const s = NEGOTIATION_SCENARIOS[0]; const strength = getTotalLeverageStrength(s.parties[0]); expect(strength).toBeGreaterThan(0); });
+  it('all scenarios have possible outcomes', () => { NEGOTIATION_SCENARIOS.forEach((s) => expect(s.possibleOutcomes.length).toBeGreaterThanOrEqual(2)); });
+  it('formats scenario', () => { expect(formatScenario(getRandomScenario())).toContain('Stakes'); });
+});
+
+// ---------------------------------------------------------------------------
+// Guild membership perks
+// ---------------------------------------------------------------------------
+import { GUILDS, getGuild, getPerksForRank, getObligationsForRank, getAllGuildTypes, formatGuild as formatGuildMembership } from '../../src/data/guildMembership';
+
+describe('guild membership perks', () => {
+  it('has at least 3 guilds', () => { expect(GUILDS.length).toBeGreaterThanOrEqual(3); });
+  it('looks up guild', () => { const g = getGuild('adventurers'); expect(g).toBeDefined(); expect(g!.name.length).toBeGreaterThan(3); });
+  it('higher ranks unlock more perks', () => { const g = getGuild('adventurers')!; const init = getPerksForRank(g, 'initiate'); const master = getPerksForRank(g, 'master'); expect(master.length).toBeGreaterThan(init.length); });
+  it('obligations accumulate with rank', () => { const g = getGuild('adventurers')!; const officer = getObligationsForRank(g, 'officer'); expect(officer.length).toBeGreaterThanOrEqual(1); });
+  it('all guilds have 5 ranks', () => { GUILDS.forEach((g) => expect(g.ranks.length).toBe(5)); });
+  it('all guilds have mottos', () => { GUILDS.forEach((g) => expect(g.motto.length).toBeGreaterThan(3)); });
+  it('all guilds have dues', () => { GUILDS.forEach((g) => expect(g.dues.length).toBeGreaterThan(0)); });
+  it('formats guild', () => { expect(formatGuildMembership(getGuild('mages')!, 'veteran')).toContain('Active Perks'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical disease system
+// ---------------------------------------------------------------------------
+import { MAGICAL_DISEASES, getRandomDisease, getDiseasesByTransmission, getDiseasesBySeverity, getSymptomsAtDay, hasMundaneCure, getAllTransmissionTypes, formatDisease as formatMagicalDisease } from '../../src/data/magicalDisease';
+
+describe('magical disease system', () => {
+  it('has at least 5 diseases', () => { expect(MAGICAL_DISEASES.length).toBeGreaterThanOrEqual(5); });
+  it('generates random disease', () => { const d = getRandomDisease(); expect(d.name.length).toBeGreaterThan(3); expect(d.symptoms.length).toBeGreaterThanOrEqual(2); });
+  it('filters by transmission', () => { const touch = getDiseasesByTransmission('touch'); expect(touch.length).toBeGreaterThanOrEqual(1); touch.forEach((d) => expect(d.transmission).toBe('touch')); });
+  it('filters by severity', () => { const severe = getDiseasesBySeverity('severe'); expect(severe.length).toBeGreaterThanOrEqual(1); });
+  it('symptoms appear progressively', () => { const d = MAGICAL_DISEASES[0]; const day1 = getSymptomsAtDay(d, 1); const day7 = getSymptomsAtDay(d, 7); expect(day7.length).toBeGreaterThanOrEqual(day1.length); });
+  it('some have mundane cures', () => { const withMundane = MAGICAL_DISEASES.filter(hasMundaneCure); const withoutMundane = MAGICAL_DISEASES.filter((d) => !hasMundaneCure(d)); expect(withMundane.length).toBeGreaterThanOrEqual(1); expect(withoutMundane.length).toBeGreaterThanOrEqual(1); });
+  it('all have magical cures', () => { MAGICAL_DISEASES.forEach((d) => expect(d.magicalCure.length).toBeGreaterThan(10)); });
+  it('covers multiple transmission types', () => { expect(getAllTransmissionTypes().length).toBeGreaterThanOrEqual(4); });
+  it('formats disease', () => { expect(formatMagicalDisease(MAGICAL_DISEASES[0], 3)).toContain('Active Symptoms'); });
+});
