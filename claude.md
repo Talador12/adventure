@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 47 tests (2061 total) — encounter tuner, arcane research, NPC backstories, weather terrain, ancient ruins, magical communication:
+  - **Encounter difficulty tuner** — `encounterDifficultyTuner.ts` with D&D 5e XP thresholds, party condition assessment, healer/tank/magic item CR adjustments, warning flags.
+  - **Arcane research breakthrough** — `arcaneResearch.ts` with 5 projects across 5 fields, weekly DC progression, breakthrough/partial/catastrophic results, completion chance calculator.
+  - **NPC backstory generator** — `npcBackstoryGen.ts` with 6 backstories across 6 themes (tragic/heroic/criminal/scholarly/spiritual/mundane), secrets, party connections, plot hooks.
+  - **Weather terrain modifier** — `weatherTerrainMod.ts` with 15 weather×terrain combos, movement/cover/visibility/stealth modifiers, special effects per combination.
+  - **Ancient ruin floor plan** — `ancientRuinLayout.ts` with 2 multi-room ruins (5 rooms each), room connections, traps, encounters, loot, boss rooms, lore.
+  - **Magical communication** — `magicalCommunication.ts` with 6 methods (sending stones→blood link), reliability tiers, interception risks, network creation, flavor text.
+
 - 🎉 **2,000 TEST MILESTONE** — 6 new systems + 41 tests (2014 total, +1 pre-existing fix) — bardic inspiration, enchanted forests, noble scandals, merchant haggling, magical pet peeves, war room briefings:
   - **Bardic inspiration table** — `bardicInspiration.ts` with 10 effects across 6 moments (attack/save/check/damage/death/social), narrations, bard actions, crowd reactions.
   - **Enchanted forest generator** — `enchantedForest.ts` with 4 forests (sentient/corrupted/fey_touched/time_lost), unique rules per forest, inhabitants, central features, quest hooks.
@@ -1040,17 +1048,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Magical pet peeve system~~ **DONE** — `magicalPetPeeve.ts` with 8 opinionated items
 - ~~War room briefing generator~~ **DONE** — `warRoomBriefing.ts` with 3 operations + intel reliability
 
-**Wave 49 Roadmap:**
+**Wave 49 (2,061 tests):**
+- ~~Encounter difficulty tuner~~ **DONE** — `encounterDifficultyTuner.ts` with XP thresholds + party assessment
+- ~~Arcane research breakthrough~~ **DONE** — `arcaneResearch.ts` with 5 projects + catastrophic failures
+- ~~NPC backstory generator~~ **DONE** — `npcBackstoryGen.ts` with 6 backstories + secret toggle
+- ~~Weather terrain modifier~~ **DONE** — `weatherTerrainMod.ts` with 15 weather×terrain combos
+- ~~Ancient ruin floor plan~~ **DONE** — `ancientRuinLayout.ts` with 2 multi-room ruins + connections
+- ~~Magical communication~~ **DONE** — `magicalCommunication.ts` with 6 methods + interception risks
+
+**Wave 50 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Random encounter difficulty tuner — auto-adjust CR based on party composition and resources
-- Arcane research breakthrough system — long-term magical research with eureka moments
-- Random NPC backstory generator — complete backstories with hooks for DMs
-- Weather-based terrain modifier — how weather changes combat terrain bonuses
-- Ancient ruin floor plan generator — procedural dungeon layouts with room connections
-- Magical communication system — sending stones, message spells, and crystal ball networks
+- Astral ship combat expansion — spelljammer weapons, shields, and boarding actions
+- Random artifact corruption tracker — how powerful items corrupt their wielders over time
+- Monster harvesting system — what body parts are valuable and what they can craft
+- Random NPC voice/accent generator — speech patterns for DM roleplay
+- Magical trap evolution — traps that learn from failed disarm attempts
+- Cross-plane messenger service — FedEx but for the multiverse
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

@@ -9956,3 +9956,98 @@ describe('war room briefing generator', () => {
   it('all have strategy suggestions', () => { WAR_ROOM_BRIEFINGS.forEach((b) => expect(b.suggestedStrategy.length).toBeGreaterThan(20)); });
   it('formats briefing', () => { expect(formatBriefing(WAR_ROOM_BRIEFINGS[0])).toContain('Strategy'); });
 });
+
+// ---------------------------------------------------------------------------
+// Encounter difficulty tuner
+// ---------------------------------------------------------------------------
+import { calculateDifficulty, getXPThreshold, assessPartyCondition, getAllDifficultyTiers, formatDifficultyAdjustment } from '../../src/data/encounterDifficultyTuner';
+
+describe('encounter difficulty tuner', () => {
+  it('has 4 difficulty tiers', () => { expect(getAllDifficultyTiers().length).toBe(4); });
+  it('calculates difficulty for a party', () => { const adj = calculateDifficulty({ averageLevel: 5, memberCount: 4, condition: 'fresh', hasHealer: true, hasTank: true, magicItemCount: 1 }, 'medium'); expect(adj.adjustedCR).toBeGreaterThan(0); expect(adj.recommendedEnemyCount).toBeGreaterThanOrEqual(1); });
+  it('depleted party gets lower CR', () => { const fresh = calculateDifficulty({ averageLevel: 5, memberCount: 4, condition: 'fresh', hasHealer: true, hasTank: true, magicItemCount: 0 }, 'hard'); const depleted = calculateDifficulty({ averageLevel: 5, memberCount: 4, condition: 'depleted', hasHealer: true, hasTank: true, magicItemCount: 0 }, 'hard'); expect(depleted.warningFlags.length).toBeGreaterThan(fresh.warningFlags.length); });
+  it('no healer reduces CR', () => { const adj = calculateDifficulty({ averageLevel: 3, memberCount: 4, condition: 'fresh', hasHealer: false, hasTank: true, magicItemCount: 0 }, 'medium'); expect(adj.reasoning.some((r) => r.includes('healer'))).toBe(true); });
+  it('XP thresholds scale with level', () => { expect(getXPThreshold(1, 'easy')).toBeLessThan(getXPThreshold(10, 'easy')); });
+  it('assesses party condition', () => { expect(assessPartyCondition(100, 100)).toBe('fresh'); expect(assessPartyCondition(10, 10)).toBe('critical'); });
+  it('formats adjustment', () => { const adj = calculateDifficulty({ averageLevel: 5, memberCount: 4, condition: 'fresh', hasHealer: true, hasTank: true, magicItemCount: 0 }, 'medium'); expect(formatDifficultyAdjustment(adj)).toContain('CR'); });
+});
+
+// ---------------------------------------------------------------------------
+// Arcane research breakthrough
+// ---------------------------------------------------------------------------
+import { RESEARCH_PROJECTS, getRandomProject, getProjectsByField, getProjectsByType as getResearchByType, getProjectsByMaxCost as getResearchByCost, calculateCompletionChance, getAllResearchFields, formatProject } from '../../src/data/arcaneResearch';
+
+describe('arcane research breakthrough', () => {
+  it('has at least 5 projects', () => { expect(RESEARCH_PROJECTS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 fields', () => { expect(getAllResearchFields().length).toBeGreaterThanOrEqual(4); });
+  it('generates random project', () => { const p = getRandomProject(); expect(p.name.length).toBeGreaterThan(3); expect(p.breakthrough.length).toBeGreaterThan(20); });
+  it('filters by field', () => { const nec = getProjectsByField('necromancy'); expect(nec.length).toBeGreaterThanOrEqual(1); });
+  it('filters by cost', () => { const cheap = getResearchByCost(500); expect(cheap.length).toBeGreaterThanOrEqual(1); });
+  it('completion chance scales with modifier', () => { const low = calculateCompletionChance(15, 0); const high = calculateCompletionChance(15, 8); expect(high).toBeGreaterThan(low); });
+  it('all have catastrophic failures', () => { RESEARCH_PROJECTS.forEach((p) => expect(p.catastrophicFailure.length).toBeGreaterThan(15)); });
+  it('formats project', () => { expect(formatProject(RESEARCH_PROJECTS[0])).toContain('Breakthrough'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC backstory generator
+// ---------------------------------------------------------------------------
+import { NPC_BACKSTORIES, getRandomBackstory, getBackstoriesByTheme, getAllThemes as getAllBackstoryThemes, formatBackstory as formatNpcBackstory } from '../../src/data/npcBackstoryGen';
+
+describe('NPC backstory generator', () => {
+  it('has at least 6 backstories', () => { expect(NPC_BACKSTORIES.length).toBeGreaterThanOrEqual(6); });
+  it('covers 6 themes', () => { expect(getAllBackstoryThemes().length).toBe(6); });
+  it('generates random backstory', () => { const b = getRandomBackstory(); expect(b.origin.length).toBeGreaterThan(10); expect(b.plotHook.length).toBeGreaterThan(10); });
+  it('filters by theme', () => { const tragic = getBackstoriesByTheme('tragic'); expect(tragic.length).toBeGreaterThanOrEqual(1); });
+  it('all have secrets', () => { NPC_BACKSTORIES.forEach((b) => expect(b.secret.length).toBeGreaterThan(20)); });
+  it('all have party connections', () => { NPC_BACKSTORIES.forEach((b) => expect(b.connection.length).toBeGreaterThan(10)); });
+  it('formats with secret toggle', () => { const b = getRandomBackstory(); expect(formatNpcBackstory(b)).not.toContain('Secret'); expect(formatNpcBackstory(b, true)).toContain('Secret'); });
+});
+
+// ---------------------------------------------------------------------------
+// Weather terrain modifier
+// ---------------------------------------------------------------------------
+import { WEATHER_TERRAIN_EFFECTS, getWeatherTerrainEffect, getEffectsForWeather, getEffectsForTerrain, getWorstVisibility, getBestStealth, getAllWeatherConditions, getAllTerrainTypes as getAllWTTerrains, formatWeatherTerrain } from '../../src/data/weatherTerrainMod';
+
+describe('weather terrain modifier', () => {
+  it('has at least 12 effects', () => { expect(WEATHER_TERRAIN_EFFECTS.length).toBeGreaterThanOrEqual(12); });
+  it('covers at least 6 weather types', () => { expect(getAllWeatherConditions().length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 5 terrain types', () => { expect(getAllWTTerrains().length).toBeGreaterThanOrEqual(5); });
+  it('looks up specific combo', () => { const e = getWeatherTerrainEffect('rain', 'forest'); expect(e).toBeDefined(); expect(e!.movementMod).toBeLessThan(0); });
+  it('returns undefined for unknown combo', () => { expect(getWeatherTerrainEffect('clear', 'cave')).toBeUndefined(); });
+  it('worst visibility is very negative', () => { expect(getWorstVisibility().visibilityMod).toBeLessThanOrEqual(-5); });
+  it('best stealth is positive', () => { expect(getBestStealth().stealthMod).toBeGreaterThanOrEqual(4); });
+  it('formats effect', () => { expect(formatWeatherTerrain(WEATHER_TERRAIN_EFFECTS[0])).toContain('Speed'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ancient ruin floor plan
+// ---------------------------------------------------------------------------
+import { ANCIENT_RUINS, getRandomRuin, getRuinByType, getRoomById, getRoomsWithEncounters as getRuinEncounters, getRoomsWithLoot as getRuinLoot, getAllRuinTypes, formatRuin } from '../../src/data/ancientRuinLayout';
+
+describe('ancient ruin floor plan', () => {
+  it('has at least 2 ruins', () => { expect(ANCIENT_RUINS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 types', () => { expect(getAllRuinTypes().length).toBeGreaterThanOrEqual(2); });
+  it('generates random ruin', () => { const r = getRandomRuin(); expect(r.name.length).toBeGreaterThan(3); expect(r.rooms.length).toBeGreaterThanOrEqual(4); });
+  it('looks up by type', () => { const temple = getRuinByType('temple'); expect(temple).toBeDefined(); });
+  it('rooms are connected', () => { ANCIENT_RUINS.forEach((r) => r.rooms.forEach((room) => expect(room.connections.length).toBeGreaterThanOrEqual(1))); });
+  it('has rooms with encounters', () => { ANCIENT_RUINS.forEach((r) => expect(getRuinEncounters(r).length).toBeGreaterThanOrEqual(1)); });
+  it('has rooms with loot', () => { ANCIENT_RUINS.forEach((r) => expect(getRuinLoot(r).length).toBeGreaterThanOrEqual(2)); });
+  it('boss room exists', () => { ANCIENT_RUINS.forEach((r) => expect(getRoomById(r, r.bossRoom)).toBeDefined()); });
+  it('formats ruin', () => { expect(formatRuin(ANCIENT_RUINS[0])).toContain('Boss'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical communication system
+// ---------------------------------------------------------------------------
+import { COMMUNICATION_METHODS, getMethod, getMethodsByReliability, getFreeMethods, createNetwork, getAllMethods as getAllCommMethods, formatMethod as formatCommMethod } from '../../src/data/magicalCommunication';
+
+describe('magical communication system', () => {
+  it('has 6 communication methods', () => { expect(COMMUNICATION_METHODS.length).toBe(6); expect(getAllCommMethods().length).toBe(6); });
+  it('looks up method', () => { const stones = getMethod('sending_stones'); expect(stones).toBeDefined(); expect(stones!.reliability).toBe('perfect'); });
+  it('filters by reliability', () => { const perfect = getMethodsByReliability('perfect'); expect(perfect.length).toBeGreaterThanOrEqual(1); });
+  it('finds free methods', () => { const free = getFreeMethods(); expect(free.length).toBeGreaterThanOrEqual(3); free.forEach((m) => expect(m.cost).toBe(0)); });
+  it('creates network', () => { const n = createNetwork('Party Comms', 'sending_stones', ['Alice', 'Bob']); expect(n.members.length).toBe(2); expect(n.compromised).toBe(false); });
+  it('all have interception risks', () => { COMMUNICATION_METHODS.forEach((m) => expect(m.interceptionRisk.length).toBeGreaterThan(10)); });
+  it('all have flavor text', () => { COMMUNICATION_METHODS.forEach((m) => expect(m.flavor.length).toBeGreaterThan(15)); });
+  it('formats method', () => { expect(formatCommMethod(COMMUNICATION_METHODS[0])).toContain('Interception'); });
+});
