@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 51 tests (1574 total) — library research, festivals, wilderness survival, legendary weapons, summoning mishaps, astral encounters:
+  - **Library research system** — `libraryResearch.ts` with 4 libraries (private_shelf→grand_archive), books with research bonuses (1-5) and hidden secrets, 8 knowledge domains, search/best-book/secret filtering. "Library" button in DMSidebar.
+  - **Advanced festival generator** — `festivalAdvanced.ts` with 6 festivals across 6 types (religious/harvest/martial/arcane/seasonal/memorial). Named activities with skill DCs and prizes, plot hooks, atmospheric descriptions, and special foods. "Festival" button in DMSidebar.
+  - **Wilderness survival tracker** — `wildernessSurvival.ts` with 7 biome profiles, hunger/thirst/exposure scales (0-10), 6-level effect escalation per need, `advanceDay()` lifecycle with eat/drink/shelter booleans, morale tracking, biome-specific daily hazards. "Survival" button in DMSidebar.
+  - **Legendary weapon awakening** — `legendaryWeapon.ts` with 4 weapons (Dawnbreaker/Voidfang/Stormcaller/Whisperwind), 3-stage awakening progression with specific deeds required, weapon personalities and alignments, dormant→fully awakened formatting. "Legendary Weapon" button in DMSidebar.
+  - **Summoning circle mishap table** — `summoningMishap.ts` with 12 mishaps across 4 severities (amusing→catastrophic). Each has mechanical effects, duration, and resolution methods. `rollMishap()` scales severity with spell level. "Summoning Mishap" button in DMSidebar.
+  - **Astral projection encounters** — `astralEncounter.ts` with 10 encounters across 6 astral zones. Silver cord risk tracking, reaction types, CR ratings, mechanical effects, and loot. `getCordDangerEncounters()`/`getSafeEncounters()` filters. "Astral Encounter" button in DMSidebar.
+
 - 6 new systems + 56 tests (1523 total, +2 pre-existing fixes) — court intrigue, shipwrecks, advanced bounties, layered curses, alchemy foraging, spelljammer helms:
   - **Court intrigue system** — `courtIntrigue.ts` with 5 noble houses (Valerian/Ashford/Drakenmoor/Thornwall/Silvertongue), each with power/wealth/influence stats (1-10), leader/heir, 2 secrets each, ambitions. Alliances and rivalries with strength/intensity. Scandals with severity/leverage/discoveryDC. Favor tracking (owed_to_party/owed_by_party). "Court Intrigue" button in DMSidebar.
   - **Shipwreck generator** — `shipwreckGenerator.ts` with 4 wrecks across 4 causes (storm/sea_monster/mutiny/curse). Cargo manifests with value/salvageDC/salvageable flags, named survivors with roles/conditions/secrets, structural hazards with DCs. `getTotalCargoValue()`/`getSalvageableCargo()` for loot planning. "Shipwreck" button in DMSidebar.
@@ -880,17 +888,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Alchemical foraging~~ **DONE** — `alchemicalForaging.ts` with 12 ingredients × 8 biomes × 4 seasons
 - ~~Spelljammer helm system~~ **DONE** — `spelljammerHelm.ts` with 5 helms + 7 hazards + 5 encounters
 
-**Wave 39 Roadmap:**
+**Wave 39 (1,574 tests):**
+- ~~Library research system~~ **DONE** — `libraryResearch.ts` with 4 libraries + books with secrets
+- ~~Advanced festival generator~~ **DONE** — `festivalAdvanced.ts` with 6 festivals × 6 types + activities
+- ~~Wilderness survival tracker~~ **DONE** — `wildernessSurvival.ts` with 7 biomes + hunger/thirst/exposure
+- ~~Legendary weapon awakening~~ **DONE** — `legendaryWeapon.ts` with 4 weapons × 3 stages + deeds
+- ~~Summoning circle mishap table~~ **DONE** — `summoningMishap.ts` with 12 mishaps × 4 severities
+- ~~Astral projection encounters~~ **DONE** — `astralEncounter.ts` with 10 encounters × 6 zones + cord risk
+
+**Wave 40 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Astral projection encounter table — encounters unique to out-of-body astral travel
-- Library/archive research system — book collections with knowledge checks and discovery mechanics
-- Random festival/holiday generator — cultural celebrations with games, contests, and plot hooks
-- Wilderness survival tracker — hunger/thirst/exposure with resource management and foraging integration
-- Legendary weapon awakening — dormant weapons that unlock powers through specific deeds
-- Summoning circle mishap table — what goes wrong when planar summoning fails
+- Lycanthropy progression system — stages of infection with moon-phase triggers and transformation rules
+- Random thieves guild job board — heist-adjacent contracts with difficulty and payout tiers
+- Deity pantheon builder — gods with domains, holy symbols, commandments, and inter-deity rivalries
+- Magical tattoo system — inkwork that grants abilities with attunement and upgrade paths
+- Random dungeon room dressing — furniture, traps, ambiance, and loot per room archetype
+- Mass combat rules — army-scale battles with unit types, morale, and commander abilities
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

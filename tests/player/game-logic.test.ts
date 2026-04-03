@@ -8985,3 +8985,102 @@ describe('spelljammer helm system', () => {
   it('formats helm', () => { expect(formatHelm(HELMS[0])).toContain('speed'); });
   it('formats hazard', () => { expect(formatHazard(SPACE_HAZARDS[0])).toContain('DC'); });
 });
+
+// ---------------------------------------------------------------------------
+// Library research system
+// ---------------------------------------------------------------------------
+import { LIBRARIES, getLibraryBySize, searchLibrary, getBestBookForDomain, getBooksWithSecrets, getAllDomains, formatLibrary } from '../../src/data/libraryResearch';
+
+describe('library research system', () => {
+  it('has at least 4 libraries', () => { expect(LIBRARIES.length).toBeGreaterThanOrEqual(4); });
+  it('libraries scale in size', () => { const sizes = LIBRARIES.map((l) => l.books.length); expect(sizes[sizes.length - 1]).toBeGreaterThan(sizes[0]); });
+  it('looks up by size', () => { const uni = getLibraryBySize('university'); expect(uni).toBeDefined(); expect(uni!.books.length).toBeGreaterThanOrEqual(3); });
+  it('searches by domain', () => { const uni = getLibraryBySize('university')!; const arcana = searchLibrary(uni, 'arcana'); expect(arcana.length).toBeGreaterThanOrEqual(1); arcana.forEach((b) => expect(b.domain).toBe('arcana')); });
+  it('finds best book for domain', () => { const uni = getLibraryBySize('university')!; const best = getBestBookForDomain(uni, 'monsters'); expect(best).not.toBeNull(); expect(best!.researchBonus).toBeGreaterThanOrEqual(2); });
+  it('returns null for missing domain', () => { const shelf = getLibraryBySize('private_shelf')!; expect(getBestBookForDomain(shelf, 'planes')).toBeNull(); });
+  it('finds books with secrets', () => { const uni = getLibraryBySize('university')!; expect(getBooksWithSecrets(uni).length).toBeGreaterThanOrEqual(1); });
+  it('has 8 knowledge domains', () => { expect(getAllDomains().length).toBe(8); });
+  it('formats library', () => { expect(formatLibrary(LIBRARIES[0])).toContain('Research DC'); });
+});
+
+// ---------------------------------------------------------------------------
+// Advanced festival generator
+// ---------------------------------------------------------------------------
+import { ADVANCED_FESTIVALS, getRandomAdvancedFestival, getAdvancedFestivalsByType, getActivityCount as getFestActivityCount, getAllAdvancedFestivalTypes, formatAdvancedFestival } from '../../src/data/festivalAdvanced';
+
+describe('advanced festival generator', () => {
+  it('has at least 6 festivals', () => { expect(ADVANCED_FESTIVALS.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 5 types', () => { expect(getAllAdvancedFestivalTypes().length).toBeGreaterThanOrEqual(5); });
+  it('generates random festival', () => { const f = getRandomAdvancedFestival(); expect(f.name.length).toBeGreaterThan(3); expect(f.activities.length).toBeGreaterThanOrEqual(2); });
+  it('filters by type', () => { const martial = getAdvancedFestivalsByType('martial'); expect(martial.length).toBeGreaterThanOrEqual(1); martial.forEach((f) => expect(f.type).toBe('martial')); });
+  it('all festivals have plot hooks', () => { ADVANCED_FESTIVALS.forEach((f) => expect(f.plotHook.length).toBeGreaterThan(20)); });
+  it('all festivals have special food', () => { ADVANCED_FESTIVALS.forEach((f) => expect(f.specialFood.length).toBeGreaterThan(5)); });
+  it('activities have DCs', () => { ADVANCED_FESTIVALS.forEach((f) => f.activities.forEach((a) => expect(a.dc).toBeGreaterThanOrEqual(10))); });
+  it('formats festival', () => { expect(formatAdvancedFestival(getRandomAdvancedFestival())).toContain('Activities'); });
+});
+
+// ---------------------------------------------------------------------------
+// Wilderness survival tracker
+// ---------------------------------------------------------------------------
+import { BIOME_PROFILES, createSurvivalState, advanceDay, getBiomeProfile, getHungerLevel, getThirstLevel, getAllSurvivalBiomes, formatSurvivalState } from '../../src/data/wildernessSurvival';
+
+describe('wilderness survival tracker', () => {
+  it('has 7 biome profiles', () => { expect(BIOME_PROFILES.length).toBe(7); expect(getAllSurvivalBiomes().length).toBe(7); });
+  it('starts clean', () => { const s = createSurvivalState(); expect(s.hunger).toBe(0); expect(s.thirst).toBe(0); expect(s.morale).toBe(0); });
+  it('eating/drinking reduces needs', () => { let s = createSurvivalState(); s = advanceDay(s, false, false, true, 'temperate'); expect(s.hunger).toBeGreaterThan(0); s = advanceDay(s, true, true, true, 'temperate'); expect(s.hunger).toBeLessThan(2); });
+  it('desert doubles thirst', () => { let s = createSurvivalState(); s = advanceDay(s, true, false, false, 'ocean'); expect(s.thirst).toBe(2); });
+  it('exposure increases without shelter in risky biomes', () => { let s = createSurvivalState(); s = advanceDay(s, true, true, false, 'arctic'); expect(s.exposure).toBe(1); });
+  it('hunger levels escalate', () => { expect(getHungerLevel(0).level).toBe('Satisfied'); expect(getHungerLevel(5).level).toBe('Hungry'); expect(getHungerLevel(9).level).toBe('Starving'); });
+  it('thirst levels escalate', () => { expect(getThirstLevel(0).level).toBe('Hydrated'); expect(getThirstLevel(5).level).toBe('Parched'); expect(getThirstLevel(9).level).toBe('Critical'); });
+  it('biome profiles have forage DCs', () => { BIOME_PROFILES.forEach((b) => expect(b.foragedc).toBeGreaterThanOrEqual(8)); });
+  it('formats survival state', () => { expect(formatSurvivalState(createSurvivalState())).toContain('Survival Status'); });
+});
+
+// ---------------------------------------------------------------------------
+// Legendary weapon awakening
+// ---------------------------------------------------------------------------
+import { LEGENDARY_WEAPONS, getRandomLegendaryWeapon, getWeaponByCategory, getWeaponStage, getNextDeed, getAllCategories as getAllWeaponCategories, formatLegendaryWeapon } from '../../src/data/legendaryWeapon';
+
+describe('legendary weapon awakening', () => {
+  it('has at least 4 weapons', () => { expect(LEGENDARY_WEAPONS.length).toBeGreaterThanOrEqual(4); });
+  it('generates random weapon', () => { const w = getRandomLegendaryWeapon(); expect(w.name.length).toBeGreaterThan(3); expect(w.stages.length).toBeGreaterThanOrEqual(2); expect(w.personality.length).toBeGreaterThan(10); });
+  it('filters by category', () => { const swords = getWeaponByCategory('sword'); expect(swords.length).toBeGreaterThanOrEqual(1); swords.forEach((w) => expect(w.category).toBe('sword')); });
+  it('stages are sequential', () => { LEGENDARY_WEAPONS.forEach((w) => { const nums = w.stages.map((s) => s.stage); expect(nums).toEqual([1, 2, 3]); }); });
+  it('looks up stage', () => { const w = LEGENDARY_WEAPONS[0]; expect(getWeaponStage(w, 2)!.name.length).toBeGreaterThan(0); });
+  it('next deed works', () => { const w = LEGENDARY_WEAPONS[0]; expect(getNextDeed(w, 0)).toBeDefined(); expect(getNextDeed(w, 3)).toBeNull(); });
+  it('all weapons have alignment', () => { LEGENDARY_WEAPONS.forEach((w) => expect(['good', 'neutral', 'evil']).toContain(w.alignment)); });
+  it('formats dormant weapon', () => { const w = LEGENDARY_WEAPONS[0]; expect(formatLegendaryWeapon(w, 0)).toContain('Dormant'); });
+  it('formats awakened weapon', () => { const w = LEGENDARY_WEAPONS[0]; expect(formatLegendaryWeapon(w, 2)).toContain('Stage 2'); });
+});
+
+// ---------------------------------------------------------------------------
+// Summoning circle mishap table
+// ---------------------------------------------------------------------------
+import { SUMMONING_MISHAPS, getRandomMishap, getMishapsBySeverity as getMishapSeverity, rollMishap, getAllSeverities, formatMishap } from '../../src/data/summoningMishap';
+
+describe('summoning circle mishap table', () => {
+  it('has at least 10 mishaps', () => { expect(SUMMONING_MISHAPS.length).toBeGreaterThanOrEqual(10); });
+  it('has 4 severity levels', () => { expect(getAllSeverities().length).toBe(4); });
+  it('generates random mishap', () => { const m = getRandomMishap(); expect(m.name.length).toBeGreaterThan(3); expect(m.resolution.length).toBeGreaterThan(5); });
+  it('filters by severity', () => { const dangerous = getMishapSeverity('dangerous'); expect(dangerous.length).toBeGreaterThanOrEqual(3); dangerous.forEach((m) => expect(m.severity).toBe('dangerous')); });
+  it('rollMishap returns valid mishap', () => { const m = rollMishap(3); expect(m.name.length).toBeGreaterThan(0); expect(getAllSeverities()).toContain(m.severity); });
+  it('all mishaps have durations', () => { SUMMONING_MISHAPS.forEach((m) => expect(m.duration.length).toBeGreaterThan(0)); });
+  it('all mishaps have resolutions', () => { SUMMONING_MISHAPS.forEach((m) => expect(m.resolution.length).toBeGreaterThan(5)); });
+  it('formats mishap', () => { expect(formatMishap(getRandomMishap())).toContain('Effect'); });
+});
+
+// ---------------------------------------------------------------------------
+// Astral projection encounters
+// ---------------------------------------------------------------------------
+import { ASTRAL_ENCOUNTERS, getRandomAstralEncounter, getEncountersByZone as getAstralByZone, getCordDangerEncounters, getSafeEncounters, getAllAstralZones, formatAstralEncounter } from '../../src/data/astralEncounter';
+
+describe('astral projection encounters', () => {
+  it('has at least 8 encounters', () => { expect(ASTRAL_ENCOUNTERS.length).toBeGreaterThanOrEqual(8); });
+  it('covers at least 5 zones', () => { expect(getAllAstralZones().length).toBeGreaterThanOrEqual(5); });
+  it('generates random encounter', () => { const e = getRandomAstralEncounter(); expect(e.name.length).toBeGreaterThan(3); expect(e.description.length).toBeGreaterThan(20); });
+  it('filters by zone', () => { const githyanki = getAstralByZone('githyanki_territory'); expect(githyanki.length).toBeGreaterThanOrEqual(1); githyanki.forEach((e) => expect(e.zone).toBe('githyanki_territory')); });
+  it('some encounters risk silver cord', () => { const dangerous = getCordDangerEncounters(); expect(dangerous.length).toBeGreaterThanOrEqual(2); dangerous.forEach((e) => expect(e.silverCordRisk).toBe(true)); });
+  it('some encounters are safe', () => { const safe = getSafeEncounters(); expect(safe.length).toBeGreaterThanOrEqual(2); safe.forEach((e) => { expect(e.silverCordRisk).toBe(false); expect(e.reaction).not.toBe('hostile'); }); });
+  it('some encounters have loot', () => { const withLoot = ASTRAL_ENCOUNTERS.filter((e) => e.loot !== null); expect(withLoot.length).toBeGreaterThanOrEqual(3); });
+  it('formats encounter', () => { const e = getRandomAstralEncounter(); expect(formatAstralEncounter(e)).toContain('CR'); });
+});
