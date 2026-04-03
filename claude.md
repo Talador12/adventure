@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.8.0
+## Current Version: v11.9.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 16 tests (823 total) — NPC voice, skill contest, room contents, currency exchange, weather events, camp planner:
+  - **NPC voice generator** — `npcVoiceGenerator.ts` with 14 accents, 12 speech patterns, 12 catchphrases, 10 mannerisms, 4 vocabulary levels. "NPC Voice" button in DMSidebar.
+  - **Skill contest resolver** — `skillContest.ts` for opposed checks with advantage/disadvantage support. Determines winner with tie handling. "Skill Contest" button in DMSidebar.
+  - **Room contents generator** — `roomContents.ts` with 15 furniture, 12 clutter, 9 atmospheres, 8 interesting details. One-click room dressing. "Room Contents" button in DMSidebar.
+  - **Currency exchange** — `currencyExchange.ts` with 8 regional currencies (Dragons, Suns, Nobles, Guilders, Mithral, Iron Marks, Trade Shells). `convert()` between any two. "Currency Exchange" button in DMSidebar.
+  - **Weather events** — `weatherEvents.ts` with 10 dramatic events (Eclipse, Meteor Shower, Blood Rain, Earthquake, Tornado, etc) across 4 severity levels. "Weather Event" button in DMSidebar.
+  - **Camp planner** — `campPlanner.ts` with 7 camp features (fire, tent, alarm, traps, lookout, cache, pen). `suggestCampSetup()` auto-picks by party size + caster presence. Security/comfort/stealth rating bars. "Camp Planner" button in DMSidebar.
+- 16 new tests (823 total) covering 6 systems:
+  - **NPC voice** (2 tests): field completeness, formatted output.
+  - **Skill contest** (2 tests): winner determination, advantage bias.
+  - **Room contents** (2 tests): section coverage, formatted categories.
+  - **Currency exchange** (4 tests): count, identity conversion, rate math, formatted list.
+  - **Weather events** (3 tests): valid event, severity filter, formatted output.
+  - **Camp planner** (3 tests): suggestion includes basics, rating calculation, formatted bars.
+
 - 6 new systems + 20 tests (807 total) — coins, quest gen, light sources, DC ref, magic items, watch scheduler:
   - **Coin converter** — `coinConverter.ts` with cp/sp/ep/gp/pp + auto-simplify + split.
   - **Random quest generator** — `questGenerator.ts` with 7 types + complications.
@@ -649,6 +664,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~DC reference~~ **DONE** — `dcReference.ts` with 6 difficulty tiers + examples
 - ~~Random magic item generator~~ **DONE** — `magicItemGenerator.ts` with effects + quirks
 - ~~Watch scheduler~~ **DONE** — `watchScheduler.ts` with Perception-priority assignment
+
+**Wave 23 Roadmap (completed):**
+- ~~NPC voice generator~~ **DONE** — `npcVoiceGenerator.ts` with accents/patterns/catchphrases/mannerisms
+- ~~Skill contest resolver~~ **DONE** — `skillContest.ts` with opposed checks + advantage
+- ~~Room contents generator~~ **DONE** — `roomContents.ts` with furniture/clutter/atmosphere/details
+- ~~Currency exchange~~ **DONE** — `currencyExchange.ts` with 8 regional currencies
+- ~~Weather events~~ **DONE** — `weatherEvents.ts` with 10 dramatic events × 4 severities
+- ~~Camp planner~~ **DONE** — `campPlanner.ts` with security/comfort/stealth ratings
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

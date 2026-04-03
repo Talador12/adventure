@@ -2139,6 +2139,81 @@ export default function DMSidebar({
               🌙 Watch Schedule
             </button>
 
+            {/* NPC voice */}
+            <button
+              onClick={async () => {
+                const { generateNpcVoice, formatNpcVoice } = await import('../../data/npcVoiceGenerator');
+                onAddDmMessage(formatNpcVoice(generateNpcVoice()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all"
+              title="Generate a random NPC voice/accent for roleplay"
+            >
+              🎭 NPC Voice
+            </button>
+
+            {/* Skill contest */}
+            <button
+              onClick={async () => {
+                const { resolveContest, formatContestResult } = await import('../../lib/skillContest');
+                const result = resolveContest('Player', 'Athletics', 5, false, 'NPC', 'Athletics', 3, false);
+                onAddDmMessage(formatContestResult(result));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all"
+              title="Resolve an opposed skill contest"
+            >
+              ⚔️ Skill Contest
+            </button>
+
+            {/* Room contents */}
+            <button
+              onClick={async () => {
+                const { generateRoomContents, formatRoomContents } = await import('../../data/roomContents');
+                onAddDmMessage(formatRoomContents(generateRoomContents()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all"
+              title="Generate random furniture, debris, and clutter for a room"
+            >
+              🏚️ Room Contents
+            </button>
+
+            {/* Currency exchange */}
+            <button
+              onClick={async () => {
+                const { formatExchangeRates } = await import('../../lib/currencyExchange');
+                onAddDmMessage(formatExchangeRates());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all"
+              title="Show regional currency exchange rates"
+            >
+              💱 Currency Exchange
+            </button>
+
+            {/* Weather event */}
+            <button
+              onClick={async () => {
+                const { rollWeatherEvent, formatWeatherEvent } = await import('../../data/weatherEvents');
+                onAddDmMessage(formatWeatherEvent(rollWeatherEvent()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-sky-400 font-semibold hover:bg-sky-800/30 transition-all"
+              title="Roll a dramatic one-off weather event"
+            >
+              🌪️ Weather Event
+            </button>
+
+            {/* Camp planner */}
+            <button
+              onClick={async () => {
+                const { suggestCampSetup, createCampSetup, formatCampSetup } = await import('../../lib/campPlanner');
+                const hasCaster = characters.some((c) => ['Wizard', 'Cleric', 'Druid', 'Bard', 'Sorcerer', 'Warlock'].includes(c.class));
+                const features = suggestCampSetup(characters.length || 4, hasCaster, 'forest');
+                onAddDmMessage(formatCampSetup(createCampSetup(features)));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all"
+              title="Auto-suggest camp setup with security, comfort, and stealth ratings"
+            >
+              🏕️ Camp Planner
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

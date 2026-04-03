@@ -6318,3 +6318,135 @@ describe('watch scheduler', () => {
     expect(text).toContain(':00');
   });
 });
+
+// ---------------------------------------------------------------------------
+// NPC voice generator
+// ---------------------------------------------------------------------------
+import { generateNpcVoice, formatNpcVoice } from '../../src/data/npcVoiceGenerator';
+
+describe('NPC voice generator', () => {
+  it('generates voice with all fields', () => {
+    const voice = generateNpcVoice();
+    expect(voice.accent.length).toBeGreaterThan(0);
+    expect(voice.speechPattern.length).toBeGreaterThan(0);
+    expect(voice.catchphrase.length).toBeGreaterThan(0);
+    expect(voice.mannerism.length).toBeGreaterThan(0);
+    expect(['simple', 'normal', 'flowery', 'archaic']).toContain(voice.vocabulary);
+  });
+  it('formatNpcVoice includes all sections', () => {
+    const text = formatNpcVoice(generateNpcVoice());
+    expect(text).toContain('Accent');
+    expect(text).toContain('Speech');
+    expect(text).toContain('Catchphrase');
+    expect(text).toContain('Mannerism');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Skill contest
+// ---------------------------------------------------------------------------
+import { resolveContest, formatContestResult } from '../../src/lib/skillContest';
+
+describe('skill contest', () => {
+  it('resolves with a winner or tie', () => {
+    const result = resolveContest('Fighter', 'Athletics', 5, false, 'Goblin', 'Athletics', -1, false);
+    expect(['initiator', 'responder', 'tie']).toContain(result.winner);
+    expect(result.initiatorTotal).toBeGreaterThanOrEqual(1);
+    expect(result.narration).toContain('Contest');
+  });
+  it('advantage gives higher average', () => {
+    let advWins = 0;
+    for (let i = 0; i < 50; i++) {
+      const r = resolveContest('A', 'STR', 0, true, 'B', 'STR', 0, false);
+      if (r.winner === 'initiator') advWins++;
+    }
+    expect(advWins).toBeGreaterThan(15); // advantage should win more often
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Room contents
+// ---------------------------------------------------------------------------
+import { generateRoomContents as genRoom, formatRoomContents as fmtRoom } from '../../src/data/roomContents';
+
+describe('room contents', () => {
+  it('generates room with all sections', () => {
+    const room = genRoom();
+    expect(room.furniture.length).toBeGreaterThanOrEqual(2);
+    expect(room.clutter.length).toBeGreaterThanOrEqual(1);
+    expect(room.atmosphere.length).toBeGreaterThan(0);
+    expect(room.interestingDetail.length).toBeGreaterThan(0);
+  });
+  it('formatRoomContents includes categories', () => {
+    const text = fmtRoom(genRoom());
+    expect(text).toContain('Furniture');
+    expect(text).toContain('Clutter');
+    expect(text).toContain('Detail');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Currency exchange
+// ---------------------------------------------------------------------------
+import { REGIONAL_CURRENCIES, convert, formatExchangeRates } from '../../src/lib/currencyExchange';
+
+describe('currency exchange', () => {
+  it('has at least 7 currencies', () => { expect(REGIONAL_CURRENCIES.length).toBeGreaterThanOrEqual(7); });
+  it('convert gold to gold = same amount', () => {
+    expect(convert(10, 'gp', 'gp').result).toBe(10);
+  });
+  it('convert respects rates', () => {
+    const result = convert(10, 'gp', 'iron'); // 1gp = 5 iron marks
+    expect(result.result).toBe(50);
+  });
+  it('formatExchangeRates lists currencies', () => {
+    expect(formatExchangeRates()).toContain('Exchange');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Weather events
+// ---------------------------------------------------------------------------
+import { rollWeatherEvent, getEventsBySeverity, formatWeatherEvent as fmtWeatherEvt } from '../../src/data/weatherEvents';
+
+describe('weather events', () => {
+  it('rollWeatherEvent returns valid event', () => {
+    const event = rollWeatherEvent();
+    expect(event.name.length).toBeGreaterThan(0);
+    expect(['minor', 'moderate', 'severe', 'catastrophic']).toContain(event.severity);
+  });
+  it('getEventsBySeverity filters correctly', () => {
+    const severe = getEventsBySeverity('severe');
+    for (const e of severe) expect(e.severity).toBe('severe');
+  });
+  it('formatWeatherEvent includes severity', () => {
+    const text = fmtWeatherEvt(rollWeatherEvent());
+    expect(text.length).toBeGreaterThan(20);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Camp planner
+// ---------------------------------------------------------------------------
+import { createCampSetup, suggestCampSetup, formatCampSetup } from '../../src/lib/campPlanner';
+
+describe('camp planner', () => {
+  it('suggestCampSetup includes fire and tents', () => {
+    const features = suggestCampSetup(4, true, 'forest');
+    expect(features).toContain('campfire');
+    expect(features).toContain('tent');
+    expect(features).toContain('alarm_spell'); // has caster
+  });
+  it('createCampSetup calculates ratings', () => {
+    const camp = createCampSetup(['campfire', 'tent', 'alarm_spell']);
+    expect(camp.securityLevel).toBeGreaterThan(0);
+    expect(camp.comfortLevel).toBeGreaterThan(0);
+  });
+  it('formatCampSetup shows bars', () => {
+    const camp = createCampSetup(['campfire', 'lookout_post']);
+    const text = formatCampSetup(camp);
+    expect(text).toContain('Security');
+    expect(text).toContain('Comfort');
+    expect(text).toContain('Stealth');
+  });
+});
