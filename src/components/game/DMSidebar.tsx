@@ -2406,6 +2406,36 @@ export default function DMSidebar({
               🌙 Rest Benefits
             </button>
 
+            {/* Critical hit table */}
+            <button onClick={async () => { const { rollCritEffect, formatCritEffect, getCritDamageTypes } = await import('../../data/criticalHitTable'); const types = getCritDamageTypes(); const type = types[Math.floor(Math.random() * types.length)]; onAddDmMessage(formatCritEffect(rollCritEffect(type), 'Attacker', 'Target')); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Roll a dramatic critical hit effect by damage type">
+              ⚡ Crit Table
+            </button>
+
+            {/* Prophecy */}
+            <button onClick={async () => { const { generateProphecy, formatProphecy } = await import('../../data/prophecyGenerator'); onAddDmMessage(formatProphecy(generateProphecy())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Generate a cryptic prophecy for quest hooks">
+              🔮 Prophecy
+            </button>
+
+            {/* Saving throw ref */}
+            <button onClick={async () => { const { formatSavingThrowRef } = await import('../../data/savingThrowRef'); onAddDmMessage(formatSavingThrowRef()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Quick reference for all 6 saving throws with DCs">
+              🎲 Save Reference
+            </button>
+
+            {/* Guild generator */}
+            <button onClick={async () => { const { generateGuild, formatGuild } = await import('../../data/guildGenerator'); onAddDmMessage(formatGuild(generateGuild())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Generate a random guild with leader, HQ, and secret agenda">
+              ⚜️ Random Guild
+            </button>
+
+            {/* Level-up checklist */}
+            <button onClick={async () => { const { formatLevelUpChecklist } = await import('../../data/levelUpChecklist'); if (selectedCharacterId) { const c = characters.find((ch) => ch.id === selectedCharacterId); if (c) { onAddDmMessage(formatLevelUpChecklist(c.level + 1, c.class, c.name)); return; } } const lines = characters.map((c) => formatLevelUpChecklist(c.level + 1, c.class, c.name)); onAddDmMessage(lines.join('\n\n')); }}
+              disabled={characters.length === 0} className="w-full mb-3 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all disabled:opacity-30" title="Step-by-step level-up checklist">
+              📈 Level-Up Checklist
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

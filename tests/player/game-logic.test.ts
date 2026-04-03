@@ -6936,3 +6936,101 @@ describe('rest benefit summary', () => {
     expect(text).toContain('HP');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Critical hit table
+// ---------------------------------------------------------------------------
+import { CRIT_TABLE, rollCritEffect, getCritDamageTypes, formatCritEffect } from '../../src/data/criticalHitTable';
+
+describe('critical hit table', () => {
+  it('has effects for common damage types', () => {
+    expect(getCritDamageTypes()).toContain('slashing');
+    expect(getCritDamageTypes()).toContain('fire');
+    expect(getCritDamageTypes().length).toBeGreaterThanOrEqual(5);
+  });
+  it('rollCritEffect returns valid effect', () => {
+    const effect = rollCritEffect('slashing');
+    expect(effect.damageType).toBe('slashing');
+    expect(effect.effect.length).toBeGreaterThan(0);
+  });
+  it('formatCritEffect includes names', () => {
+    const text = formatCritEffect(rollCritEffect('fire'), 'Fighter', 'Goblin');
+    expect(text).toContain('Fighter');
+    expect(text).toContain('Goblin');
+    expect(text).toContain('CRITICAL');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Prophecy generator
+// ---------------------------------------------------------------------------
+import { generateProphecy, formatProphecy } from '../../src/data/prophecyGenerator';
+
+describe('prophecy generator', () => {
+  it('generates prophecy with text and interpretation', () => {
+    const p = generateProphecy();
+    expect(p.text.length).toBeGreaterThan(10);
+    expect(p.interpretation.length).toBeGreaterThan(0);
+    expect(['quest', 'character', 'world', 'combat']).toContain(p.relatedTo);
+  });
+  it('formatProphecy includes DM note', () => { expect(formatProphecy(generateProphecy())).toContain('DM Note'); });
+});
+
+// ---------------------------------------------------------------------------
+// Saving throw reference
+// ---------------------------------------------------------------------------
+import { SAVING_THROWS, getSaveInfo, formatSavingThrowRef } from '../../src/data/savingThrowRef';
+
+describe('saving throw reference', () => {
+  it('has all 6 abilities', () => { expect(SAVING_THROWS.length).toBe(6); });
+  it('getSaveInfo finds by ability', () => {
+    expect(getSaveInfo('DEX')?.description).toContain('Dodging');
+    expect(getSaveInfo('WIS')?.commonSources).toContain('Hold Person');
+  });
+  it('formatSavingThrowRef lists all saves', () => {
+    const text = formatSavingThrowRef();
+    expect(text).toContain('STR');
+    expect(text).toContain('CHA');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Guild generator
+// ---------------------------------------------------------------------------
+import { generateGuild, formatGuild } from '../../src/data/guildGenerator';
+
+describe('guild generator', () => {
+  it('generates with all fields', () => {
+    const guild = generateGuild();
+    expect(guild.name.length).toBeGreaterThan(0);
+    expect(guild.purpose.length).toBeGreaterThan(0);
+    expect(guild.secretAgenda.length).toBeGreaterThan(0);
+  });
+  it('formatGuild shows secret agenda', () => { expect(formatGuild(generateGuild())).toContain('Secret'); });
+});
+
+// ---------------------------------------------------------------------------
+// Level-up checklist
+// ---------------------------------------------------------------------------
+import { LEVEL_UP_STEPS, getStepsForLevel, formatLevelUpChecklist } from '../../src/data/levelUpChecklist';
+
+describe('level-up checklist', () => {
+  it('has at least 8 steps', () => { expect(LEVEL_UP_STEPS.length).toBeGreaterThanOrEqual(8); });
+  it('ASI levels include ASI step', () => {
+    const steps = getStepsForLevel(4, 'Fighter');
+    expect(steps.some((s) => s.title.includes('ASI'))).toBe(true);
+  });
+  it('non-ASI levels exclude ASI step', () => {
+    const steps = getStepsForLevel(3, 'Fighter');
+    expect(steps.some((s) => s.title.includes('ASI'))).toBe(false);
+  });
+  it('spellcaster gets spell steps', () => {
+    const steps = getStepsForLevel(5, 'Wizard');
+    expect(steps.some((s) => s.title.includes('Spell'))).toBe(true);
+  });
+  it('formatLevelUpChecklist shows character info', () => {
+    const text = formatLevelUpChecklist(5, 'Wizard', 'Gandalf');
+    expect(text).toContain('Gandalf');
+    expect(text).toContain('Level 5');
+  });
+});

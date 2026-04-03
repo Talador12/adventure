@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v12.3.0
+## Current Version: v12.4.0
 
 ### v0.1.0 — Initial Release
 
@@ -704,6 +704,13 @@ The complete feature set built from project inception through 46 development ite
 - ~~Wilderness hazards~~ **DONE** — `wildernessHazards.ts` with 10 hazards × terrain filtering
 - ~~Weakness finder~~ **DONE** — `damageWeaknessFinder.ts` suggesting best damage types
 - ~~Rest benefit summary~~ **DONE** — `restBenefitSummary.ts` with short/long rest details per character
+
+**Wave 28 Roadmap (completed — 🎉 200+ SYSTEMS MILESTONE!):**
+- ~~Critical hit table~~ **DONE** — `criticalHitTable.ts` with effects by damage type (slashing/piercing/bludgeoning/fire/cold/lightning)
+- ~~Prophecy generator~~ **DONE** — `prophecyGenerator.ts` with template-based cryptic prophecies
+- ~~Saving throw reference~~ **DONE** — `savingThrowRef.ts` with all 6 saves + common DCs
+- ~~Guild generator~~ **DONE** — `guildGenerator.ts` with name/purpose/leader/HQ/secret agenda
+- ~~Level-up checklist~~ **DONE** — `levelUpChecklist.ts` with class-aware step-by-step guide
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
