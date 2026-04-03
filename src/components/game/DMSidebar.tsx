@@ -2340,6 +2340,36 @@ export default function DMSidebar({
               ⏳ Time Narrator
             </button>
 
+            {/* Random riddle */}
+            <button onClick={async () => { const { getRandomRiddle, formatRiddle } = await import('../../data/riddleGenerator'); onAddDmMessage(formatRiddle(getRandomRiddle())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all" title="Generate a random riddle">
+              🧩 Random Riddle
+            </button>
+
+            {/* Poison list */}
+            <button onClick={async () => { const { formatPoisonList } = await import('../../lib/poisonCrafting'); onAddDmMessage(formatPoisonList()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="Browse poisons with harvest DCs and effects">
+              ☠️ Poisons
+            </button>
+
+            {/* Encounter narrator */}
+            <button onClick={async () => { const { formatEncounterOpening, getAllThemes } = await import('../../data/encounterNarrator'); const themes = getAllThemes(); onAddDmMessage(formatEncounterOpening(themes[Math.floor(Math.random() * themes.length)])); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Dramatic opening narration for combat">
+              🎭 Combat Opening
+            </button>
+
+            {/* Formation presets */}
+            <button onClick={async () => { const { formatFormationPresets } = await import('../../data/formationPresets'); onAddDmMessage(formatFormationPresets()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all" title="Pre-built tactical formations">
+              📐 Formation Presets
+            </button>
+
+            {/* Session XP */}
+            <button onClick={async () => { const { calculateSessionXP, formatSessionXP, xpFromCR } = await import('../../lib/sessionXPCalculator'); const enemies = units.filter((u) => u.type === 'enemy' && u.hp <= 0); const sources = enemies.map((e) => ({ source: e.name, amount: xpFromCR(e.cr || 0), type: 'combat' as const })); onAddDmMessage(formatSessionXP(calculateSessionXP(sources, characters.length || 4))); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Calculate session XP from defeated enemies">
+              🏆 Session XP
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

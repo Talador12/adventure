@@ -6694,3 +6694,105 @@ describe('time narrator', () => {
   it('short rest has narration', () => { expect(narrateShortRest().length).toBeGreaterThan(10); });
   it('long rest has narration', () => { expect(narrateLongRest().length).toBeGreaterThan(10); });
 });
+
+// ---------------------------------------------------------------------------
+// Riddle generator
+// ---------------------------------------------------------------------------
+import { RIDDLES, getRandomRiddle, formatRiddle } from '../../src/data/riddleGenerator';
+
+describe('riddle generator', () => {
+  it('has at least 10 riddles', () => { expect(RIDDLES.length).toBeGreaterThanOrEqual(10); });
+  it('getRandomRiddle filters by difficulty', () => {
+    const easy = getRandomRiddle('easy');
+    expect(easy.difficulty).toBe('easy');
+  });
+  it('unidentified hides answer', () => { expect(formatRiddle(RIDDLES[0], false)).toContain('Answer hidden'); });
+  it('identified shows answer', () => { expect(formatRiddle(RIDDLES[0], true)).toContain(RIDDLES[0].answer); });
+});
+
+// ---------------------------------------------------------------------------
+// Poison crafting
+// ---------------------------------------------------------------------------
+import { POISONS, getPoison, applyPoison, harvestPoison, formatPoisonList } from '../../src/lib/poisonCrafting';
+
+describe('poison crafting', () => {
+  it('has at least 7 poisons', () => { expect(POISONS.length).toBeGreaterThanOrEqual(7); });
+  it('getPoison finds by ID', () => { expect(getPoison('drow')?.name).toBe('Drow Poison'); });
+  it('applyPoison returns application text', () => { expect(applyPoison('Dagger', 'basic')).toContain('Basic Poison'); });
+  it('harvestPoison returns roll result', () => {
+    const result = harvestPoison('serpent', 5);
+    expect(typeof result.success).toBe('boolean');
+    expect(result.roll).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter narrator
+// ---------------------------------------------------------------------------
+import { getEncounterOpening, getAllThemes, formatEncounterOpening } from '../../src/data/encounterNarrator';
+
+describe('encounter narrator', () => {
+  it('has at least 4 themes', () => { expect(getAllThemes().length).toBeGreaterThanOrEqual(4); });
+  it('getEncounterOpening returns text and mood', () => {
+    const opening = getEncounterOpening('ambush');
+    expect(opening.text.length).toBeGreaterThan(10);
+    expect(['tense', 'surprise', 'dramatic', 'horror', 'action']).toContain(opening.mood);
+  });
+  it('formatEncounterOpening includes mood emoji', () => { expect(formatEncounterOpening('monster').length).toBeGreaterThan(5); });
+});
+
+// ---------------------------------------------------------------------------
+// Deity prayer
+// ---------------------------------------------------------------------------
+import { createPrayerState, pray, resetDailyPrayers, formatPrayerStatus } from '../../src/lib/deityPrayer';
+
+describe('deity prayer', () => {
+  it('creates state with devotion 5', () => { expect(createPrayerState('c1', 'Bahamut').devotion).toBe(5); });
+  it('pray increments prayers today', () => {
+    const result = pray(createPrayerState('c1', 'Pelor'));
+    expect(result.state.prayersToday).toBe(1);
+    expect(result.result.narration.length).toBeGreaterThan(0);
+  });
+  it('resetDailyPrayers clears count', () => {
+    let state = pray(createPrayerState('c1', 'Pelor')).state;
+    state = resetDailyPrayers(state);
+    expect(state.prayersToday).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Formation presets
+// ---------------------------------------------------------------------------
+import { FORMATION_PRESETS, getFormation, formatFormationPresets } from '../../src/data/formationPresets';
+
+describe('formation presets', () => {
+  it('has at least 5 presets', () => { expect(FORMATION_PRESETS.length).toBeGreaterThanOrEqual(5); });
+  it('getFormation finds by name', () => { expect(getFormation('Wedge')?.emoji).toBe('🔺'); });
+  it('all presets have positions', () => { for (const f of FORMATION_PRESETS) expect(f.positions.length).toBeGreaterThanOrEqual(3); });
+});
+
+// ---------------------------------------------------------------------------
+// Session XP calculator
+// ---------------------------------------------------------------------------
+import { calculateSessionXP, xpFromCR, xpToNextLevel, formatSessionXP } from '../../src/lib/sessionXPCalculator';
+
+describe('session XP calculator', () => {
+  it('sums XP sources', () => {
+    const result = calculateSessionXP([{ source: 'Goblin', amount: 50, type: 'combat' }, { source: 'Quest', amount: 200, type: 'quest' }], 4);
+    expect(result.totalXP).toBe(250);
+    expect(result.perCharacter).toBe(62);
+  });
+  it('xpFromCR returns correct values', () => {
+    expect(xpFromCR(1)).toBe(200);
+    expect(xpFromCR(5)).toBe(1800);
+    expect(xpFromCR(10)).toBe(5900);
+  });
+  it('xpToNextLevel scales', () => {
+    expect(xpToNextLevel(1)).toBe(300);
+    expect(xpToNextLevel(5)).toBe(14000);
+  });
+  it('formatSessionXP groups by type', () => {
+    const result = calculateSessionXP([{ source: 'A', amount: 100, type: 'combat' }], 4);
+    expect(formatSessionXP(result)).toContain('combat');
+  });
+});

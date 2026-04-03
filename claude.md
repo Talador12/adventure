@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v12.1.0
+## Current Version: v12.2.0
 
 ### v0.1.0 — Initial Release
 
@@ -688,6 +688,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~Curse generator~~ **DONE** — `curseGenerator.ts` with 10 curses × 3 severities
 - ~~Loot log~~ **DONE** — `lootLog.ts` with item tracking + distribution status
 - ~~Time narrator~~ **DONE** — `timeNarrator.ts` with terrain/weather flavor text
+
+**Wave 26 Roadmap (completed):**
+- ~~Riddle generator~~ **DONE** — `riddleGenerator.ts` with 12 riddles × 3 difficulties
+- ~~Poison crafting~~ **DONE** — `poisonCrafting.ts` with 8 poisons + harvest/apply
+- ~~Encounter narrator~~ **DONE** — `encounterNarrator.ts` with 5 themes × dramatic openings
+- ~~Deity prayer~~ **DONE** — `deityPrayer.ts` with devotion tracking + daily boons
+- ~~Formation presets~~ **DONE** — `formationPresets.ts` with 6 tactical formations
+- ~~Session XP calculator~~ **DONE** — `sessionXPCalculator.ts` with CR-to-XP + per-character split
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
