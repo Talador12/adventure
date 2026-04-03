@@ -9482,3 +9482,101 @@ describe('ship cargo manifest generator', () => {
   it('manifest detects smuggling risk', () => { const manifests = Array.from({ length: 20 }, () => generateManifest('northern_kingdom', 'southern_empire', 6)); expect(manifests.some((m) => m.smugglingRisk)).toBe(true); });
   it('formats manifest', () => { expect(formatManifest(generateManifest('elven_ports', 'dwarven_holds'))).toContain('Total Value'); });
 });
+
+// ---------------------------------------------------------------------------
+// Magical anomaly generator
+// ---------------------------------------------------------------------------
+import { MAGICAL_ANOMALIES, getRandomAnomaly, getAnomaliesByType, getDispellableAnomalies, getAllAnomalyTypes, formatAnomaly } from '../../src/data/magicalAnomaly';
+
+describe('magical anomaly generator', () => {
+  it('has at least 6 anomalies', () => { expect(MAGICAL_ANOMALIES.length).toBeGreaterThanOrEqual(6); });
+  it('has 6 anomaly types', () => { expect(getAllAnomalyTypes().length).toBe(6); });
+  it('generates random anomaly', () => { const a = getRandomAnomaly(); expect(a.name.length).toBeGreaterThan(3); expect(a.effects.length).toBeGreaterThanOrEqual(3); });
+  it('filters by type', () => { const wild = getAnomaliesByType('wild'); expect(wild.length).toBeGreaterThanOrEqual(1); });
+  it('some are dispellable', () => { const d = getDispellableAnomalies(); expect(d.length).toBeGreaterThanOrEqual(3); d.forEach((a) => expect(a.dispelDC).not.toBeNull()); });
+  it('some are permanent', () => { expect(MAGICAL_ANOMALIES.some((a) => a.dispelDC === null)).toBe(true); });
+  it('all have trigger conditions', () => { MAGICAL_ANOMALIES.forEach((a) => expect(a.triggerCondition.length).toBeGreaterThan(10)); });
+  it('formats anomaly', () => { expect(formatAnomaly(MAGICAL_ANOMALIES[0])).toContain('Effects'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ship crew management
+// ---------------------------------------------------------------------------
+import { CREW_TEMPLATES, createCrewState, hireCrew, payWages, skipPayday, checkMutiny as checkCrewMutiny, getCrewByRole, getWeeklyCost, getAllRoles as getAllCrewRoles, formatCrewState } from '../../src/data/shipCrewManagement';
+
+describe('ship crew management', () => {
+  it('has at least 6 crew templates', () => { expect(CREW_TEMPLATES.length).toBeGreaterThanOrEqual(6); });
+  it('has 8 crew roles', () => { expect(getAllCrewRoles().length).toBe(8); });
+  it('starts empty', () => { const s = createCrewState(); expect(s.members.length).toBe(0); expect(s.mutinyRisk).toBe(0); });
+  it('hires crew', () => { let s = createCrewState(); s = hireCrew(s, 'navigator', 'veteran'); expect(s.members.length).toBe(1); });
+  it('paying wages improves morale', () => { let s = createCrewState(); s = hireCrew(s, 'cook', 'green'); const before = s.morale; const { state } = payWages(s); expect(state.morale).toBeGreaterThanOrEqual(before); });
+  it('skipping pay increases mutiny risk', () => { let s = createCrewState(); s = hireCrew(s, 'swab', 'green'); s = skipPayday(s); expect(s.mutinyRisk).toBeGreaterThan(0); expect(s.morale).toBeLessThan(5); });
+  it('weekly cost = sum of wages', () => { let s = createCrewState(); s = hireCrew(s, 'gunner', 'elite'); s = hireCrew(s, 'cook', 'green'); expect(getWeeklyCost(s)).toBe(s.members.reduce((sum, m) => sum + m.wage, 0)); });
+  it('mutiny check returns boolean', () => { const s = createCrewState(); expect(typeof checkCrewMutiny(s)).toBe('boolean'); });
+  it('formats crew state', () => { let s = createCrewState(); s = hireCrew(s, 'bosun', 'able'); expect(formatCrewState(s)).toContain('Mutiny Risk'); });
+});
+
+// ---------------------------------------------------------------------------
+// Battlefield scavenger loot
+// ---------------------------------------------------------------------------
+import { BATTLEFIELD_LOOT, getRandomBattlefieldLoot, getLootByBattleType, getActualValue, getTotalLootValue as getBattlefieldLootValue, getItemsByCategory as getScavengeByCategory, formatBattlefieldLoot } from '../../src/data/battlefieldScavenge';
+
+describe('battlefield scavenger loot', () => {
+  it('has at least 3 battle types', () => { expect(BATTLEFIELD_LOOT.length).toBeGreaterThanOrEqual(3); });
+  it('generates random loot', () => { const l = getRandomBattlefieldLoot(); expect(l.items.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by battle type', () => { const dragon = getLootByBattleType('Dragon\'s Lair'); expect(dragon).toBeDefined(); });
+  it('actual value respects condition', () => { const loot = BATTLEFIELD_LOOT[0]; const pristine = loot.items.find((i) => i.condition === 'pristine'); const damaged = loot.items.find((i) => i.condition === 'damaged'); if (pristine && damaged && pristine.baseValue === damaged.baseValue) { expect(getActualValue(pristine)).toBeGreaterThan(getActualValue(damaged)); } });
+  it('total loot value is positive', () => { BATTLEFIELD_LOOT.forEach((l) => expect(getBattlefieldLootValue(l)).toBeGreaterThan(0)); });
+  it('all battlefields have hazards', () => { BATTLEFIELD_LOOT.forEach((l) => expect(l.hazards.length).toBeGreaterThanOrEqual(1)); });
+  it('filters by category', () => { const loot = BATTLEFIELD_LOOT[0]; const weapons = getScavengeByCategory(loot, 'weapon'); weapons.forEach((i) => expect(i.category).toBe('weapon')); });
+  it('formats loot', () => { expect(formatBattlefieldLoot(BATTLEFIELD_LOOT[0])).toContain('salvage value'); });
+});
+
+// ---------------------------------------------------------------------------
+// Mirror dimension generator
+// ---------------------------------------------------------------------------
+import { MIRROR_DIMENSIONS, getRandomMirrorDimension, getDimensionsByType, getDimensionsByDanger, getDimensionsWithTreasure, getAllMirrorTypes, formatMirrorDimension } from '../../src/data/mirrorDimension';
+
+describe('mirror dimension generator', () => {
+  it('has at least 5 dimensions', () => { expect(MIRROR_DIMENSIONS.length).toBeGreaterThanOrEqual(5); });
+  it('has 6 mirror types', () => { expect(getAllMirrorTypes().length).toBe(6); });
+  it('generates random dimension', () => { const d = getRandomMirrorDimension(); expect(d.name.length).toBeGreaterThan(3); expect(d.twistedRules.length).toBeGreaterThanOrEqual(3); });
+  it('filters by type', () => { const shadow = getDimensionsByType('shadow'); expect(shadow.length).toBeGreaterThanOrEqual(1); });
+  it('filters by danger', () => { const lethal = getDimensionsByDanger('lethal'); expect(lethal.length).toBeGreaterThanOrEqual(1); });
+  it('some have treasure', () => { expect(getDimensionsWithTreasure().length).toBeGreaterThanOrEqual(3); });
+  it('all have entry and exit conditions', () => { MIRROR_DIMENSIONS.forEach((d) => { expect(d.entryMethod.length).toBeGreaterThan(10); expect(d.exitCondition.length).toBeGreaterThan(10); }); });
+  it('formats dimension', () => { expect(formatMirrorDimension(MIRROR_DIMENSIONS[0])).toContain('Twisted Rules'); });
+});
+
+// ---------------------------------------------------------------------------
+// Underground faction generator
+// ---------------------------------------------------------------------------
+import { UNDERGROUND_FACTIONS, getRandomFaction as getRandomUnderworldFaction, getFactionsBySpecialty, getFactionByTerritory, getMostInfluential, getAllSpecialties as getAllFactionSpecialties, formatFaction as formatUndergroundFaction } from '../../src/data/undergroundFaction';
+
+describe('underground faction generator', () => {
+  it('has at least 5 factions', () => { expect(UNDERGROUND_FACTIONS.length).toBeGreaterThanOrEqual(5); });
+  it('has at least 5 specialties', () => { expect(getAllFactionSpecialties().length).toBeGreaterThanOrEqual(5); });
+  it('generates random faction', () => { const f = getRandomUnderworldFaction(); expect(f.name.length).toBeGreaterThan(3); expect(f.signalPhrase.length).toBeGreaterThan(5); });
+  it('filters by specialty', () => { const thieves = getFactionsBySpecialty('theft'); expect(thieves.length).toBeGreaterThanOrEqual(1); });
+  it('searches by territory', () => { const docks = getFactionByTerritory('Docks'); expect(docks.length).toBeGreaterThanOrEqual(1); });
+  it('finds most influential', () => { const top = getMostInfluential(); expect(top.influence).toBeGreaterThanOrEqual(7); });
+  it('all have weaknesses', () => { UNDERGROUND_FACTIONS.forEach((f) => expect(f.weakness.length).toBeGreaterThan(20)); });
+  it('all have recruitment methods', () => { UNDERGROUND_FACTIONS.forEach((f) => expect(f.recruitmentMethod.length).toBeGreaterThan(15)); });
+  it('formats faction', () => { expect(formatUndergroundFaction(UNDERGROUND_FACTIONS[0])).toContain('Signal'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ancient prophecy generator
+// ---------------------------------------------------------------------------
+import { ANCIENT_PROPHECIES, getRandomProphecy as getRandomAncientProphecy, getPropheciesByTone, getVerseCount as getProphecyVerseCount, getUnfulfilledVerses, getAllTones, formatProphecy as formatAncientProphecy } from '../../src/data/ancientProphecy';
+
+describe('ancient prophecy generator', () => {
+  it('has at least 4 prophecies', () => { expect(ANCIENT_PROPHECIES.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 tones', () => { expect(getAllTones().length).toBeGreaterThanOrEqual(4); });
+  it('generates random prophecy', () => { const p = getRandomAncientProphecy(); expect(p.title.length).toBeGreaterThan(3); expect(p.verses.length).toBeGreaterThanOrEqual(3); });
+  it('filters by tone', () => { const ominous = getPropheciesByTone('ominous'); expect(ominous.length).toBeGreaterThanOrEqual(1); });
+  it('all verses start unfulfilled', () => { ANCIENT_PROPHECIES.forEach((p) => expect(getUnfulfilledVerses(p).length).toBe(p.verses.length)); });
+  it('all prophecies have subversions', () => { ANCIENT_PROPHECIES.forEach((p) => expect(p.subversion.length).toBeGreaterThan(20)); });
+  it('each verse has interpretation and trigger', () => { ANCIENT_PROPHECIES.forEach((p) => p.verses.forEach((v) => { expect(v.interpretation.length).toBeGreaterThan(10); expect(v.fulfillmentTrigger.length).toBeGreaterThan(10); })); });
+  it('formats without interpretation by default', () => { const p = getRandomAncientProphecy(); expect(formatAncientProphecy(p)).not.toContain('→'); expect(formatAncientProphecy(p, true)).toContain('→'); });
+});

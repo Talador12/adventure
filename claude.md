@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 50 tests (1830 total) — magical anomalies, ship crew, battlefield scavenge, mirror dimensions, underground factions, ancient prophecies:
+  - **Magical anomaly generator** — `magicalAnomaly.ts` with 6 anomaly types (amplification/suppression/wild/temporal/gravitational/sentient), multi-effect zones, dispel DCs, trigger conditions.
+  - **Ship crew management** — `shipCrewManagement.ts` with 8 crew roles, 4 quality tiers, hiring/paying/skipping wages, morale and mutiny risk tracking, weekly cost calculation.
+  - **Battlefield scavenger loot** — `battlefieldScavenge.ts` with 3 battle types, 5 item conditions with value multipliers, find DCs, post-battle hazards, category filtering.
+  - **Mirror dimension generator** — `mirrorDimension.ts` with 6 types (shadow/reversed/nightmare/utopia/broken/echo), twisted rules, entry/exit conditions, encounters, treasure.
+  - **Underground faction generator** — `undergroundFaction.ts` with 5 factions, 6 specialties, territory maps, weaknesses, recruitment methods, signal phrases.
+  - **Ancient prophecy generator** — `ancientProphecy.ts` with 4 multi-verse prophecies, 5 tones, DM interpretations, fulfillment triggers, subversion mechanics, interpretation-toggle formatting.
+
 - 6 new systems + 52 tests (1780 total) — vampire bloodlines, sentient items, downtime, natural disasters, caravan ambushes, ship cargo:
   - **Vampire bloodline system** — `vampireBloodline.ts` with 2 bloodlines, 5 age stages, blood pool scaling, 5 powers per bloodline with age requirements and blood costs, humanity score, feeding mechanics.
   - **Sentient item personality** — `sentientItem.ts` with 6 items, 6 personality types, goals/fears/quirks/conflict triggers, relationship levels, communication styles, INT/WIS/CHA scores.
@@ -960,17 +968,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Caravan ambush generator~~ **DONE** — `caravanAmbush.ts` with 5 ambushes × 5 terrains + tactics
 - ~~Ship cargo manifest~~ **DONE** — `shipCargo.ts` with 10 goods × 6 regions + smuggling detection
 
-**Wave 44 Roadmap:**
+**Wave 44 (1,830 tests):**
+- ~~Magical anomaly generator~~ **DONE** — `magicalAnomaly.ts` with 6 anomaly types + multi-effect zones
+- ~~Ship crew management~~ **DONE** — `shipCrewManagement.ts` with 8 roles + morale/mutiny system
+- ~~Battlefield scavenger loot~~ **DONE** — `battlefieldScavenge.ts` with 3 battle types + condition values
+- ~~Mirror dimension generator~~ **DONE** — `mirrorDimension.ts` with 6 types + twisted rules
+- ~~Underground faction generator~~ **DONE** — `undergroundFaction.ts` with 5 factions + territory/signal
+- ~~Ancient prophecy generator~~ **DONE** — `ancientProphecy.ts` with 4 prophecies + subversions
+
+**Wave 45 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Underground faction generator — competing criminal/political organizations with influence maps
-- Random mirror dimension generator — alternate reality encounters with twisted versions of familiar places
-- Battlefield scavenger loot table — post-battle equipment salvage with condition and value
-- Random magical anomaly generator — zones where magic behaves differently
-- Ship crew management — hiring, loyalty, mutiny risk, and crew skill checks
-- Ancient prophecy generator — cryptic multi-part prophecies with fulfillment triggers
+- Magical contract system — binding agreements with clauses, loopholes, and consequences
+- Random treasure map generator — multi-step treasure hunts with landmarks and riddles
+- Druid wild shape bestiary — form options with stat blocks, terrain bonuses, and RP notes
+- Tavern reputation tracker — how the party is known in different establishments
+- Random divine intervention table — what happens when a god directly answers a prayer
+- Siege defense planner — fortification setup, resource allocation, and defender tactics
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
