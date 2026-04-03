@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.1.0
+## Current Version: v11.2.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 26 tests (679 total) — ritual casting, familiars, encounter budget, backstory builder, status reference, party analyzer:
+  - **Ritual casting tracker** — `ritualCasting.ts` with 17 ritual spells. `canRitualCast()` for 5 classes. `getRitualSpellsByLevel()` filters by max spell level. Formatted spell list with cast times. "Ritual Spells" button in DMSidebar.
+  - **Familiar manager** — `familiarManager.ts` with 12 familiar forms (bat→raven) each with HP, AC, speed, senses, and special abilities. `summonFamiliar()`/`dismissFamiliar()` lifecycle. `addScoutReport()` for tracking intel. "Familiars" button in DMSidebar.
+  - **Encounter budget calculator** — `encounterBudget.ts` with DMG XP thresholds for all 20 levels × 4 difficulties. `getEncounterMultiplier()` for monster count scaling (×1 to ×4). `evaluateEncounter()` classifies actual encounters. "Encounter Budget" button in DMSidebar.
+  - **Backstory questionnaire** — `backstoryQuestionnaire.ts` with 12 questions across 4 categories (Origins/Motivation/Personality/Relationships). `buildBackstory()` assembles answers into structured text. `getRandomPrompts()` for quick sessions. "Backstory Builder" button in DMSidebar.
+  - **Status effect reference** — `statusEffectReference.ts` with all 15 5e conditions (Blinded→Exhaustion) including emoji, description, mechanical effects, and end conditions. `searchStatusEffects()` for quick lookup. "Status Effects" button in DMSidebar.
+  - **Party composition analyzer** — `partyAnalyzer.ts` with 7 party roles (tank/healer/damage/control/support/scout/face). Maps all 12 classes to primary + secondary roles. Identifies gaps and suggests classes to fill them. "Party Analyzer" button in DMSidebar.
+- 26 new tests (679 total) covering 6 systems:
+  - **Ritual casting** (5 tests): spell count, class eligibility, level filter, formatted output.
+  - **Familiars** (5 tests): form count, summon, dismiss, scout reports, options list.
+  - **Encounter budget** (4 tests): budget calculation, multiplier scaling, difficulty classification, formatted tiers.
+  - **Backstory** (4 tests): question count, category grouping, random prompts, built text.
+  - **Status effects** (4 tests): effect count, name lookup, keyword search, all-effects format.
+  - **Party analyzer** (4 tests): filled roles, missing roles, class suggestions, formatted output.
+
 - 6 new systems + 25 tests (653 total) — warbands, quest rewards, world clock, advantage tracker, combat log search, weather gen:
   - **Warband builder** — `warbandBuilder.ts` with 5 ranks (leader/lieutenant/elite/soldier/minion) each with HP/AC/attack multipliers. `createWarband()` generates a full faction. `killMember()` tracks casualties and adjusts morale (leader death = -30%). "Create Warband" button in DMSidebar.
   - **Quest reward scaler** — `questRewardScaler.ts` auto-scales gold, XP, and magic item chance by party level, party size, and difficulty (trivial→deadly). Magic item rarity scales with level (common→uncommon→rare). "Quest Rewards" button shows all 5 difficulty tiers.
@@ -482,12 +497,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Ritual casting tracker — track which spells can be cast as rituals (10 min extra time, no slot)
-- Familiar manager — track familiar HP, abilities, and scout reports
-- Encounter budget calculator — XP budget by party level for balanced encounter design
-- Character backstory questionnaire — guided backstory builder with prompts for key details
-- Status effect reference — quick-lookup for all 5e conditions with mechanical effects
-- Party composition analyzer — identify gaps in party roles and suggest recruitment
+- ~~Ritual casting tracker~~ **DONE** — `ritualCasting.ts` with 17 spells for 5 classes
+- ~~Familiar manager~~ **DONE** — `familiarManager.ts` with 12 forms + scout reports
+- ~~Encounter budget calculator~~ **DONE** — `encounterBudget.ts` with DMG XP thresholds
+- ~~Backstory questionnaire~~ **DONE** — `backstoryQuestionnaire.ts` with 12 guided questions
+- ~~Status effect reference~~ **DONE** — `statusEffectReference.ts` with 15 5e conditions
+- ~~Party composition analyzer~~ **DONE** — `partyAnalyzer.ts` with 7 roles × 12 classes
+
+**Wave 17 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Object interaction tracker — track doors opened, levers pulled, items interacted with
+- Class feature cooldown manager — track uses of channel divinity, action surge, rage, etc
+- Multi-class spell slot calculator — compute combined slots for multiclassed casters
+- Bulk NPC stat block generator — create N enemies at once with randomized HP
+- Combat narration templates — auto-generate dramatic hit/miss/crit descriptions
+- Session notes auto-tagger — tag notes with #combat, #lore, #npc for searchable history
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

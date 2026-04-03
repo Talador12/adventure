@@ -5274,3 +5274,150 @@ describe('random weather generator', () => {
     expect(text).toContain('autumn');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Ritual casting
+// ---------------------------------------------------------------------------
+import { RITUAL_SPELLS, canRitualCast, getRitualSpellsByLevel, formatRitualSpells } from '../../src/lib/ritualCasting';
+
+describe('ritual casting', () => {
+  it('has at least 15 ritual spells', () => { expect(RITUAL_SPELLS.length).toBeGreaterThanOrEqual(15); });
+  it('Wizard can ritual cast', () => { expect(canRitualCast('Wizard')).toBe(true); });
+  it('Fighter cannot ritual cast', () => { expect(canRitualCast('Fighter')).toBe(false); });
+  it('getRitualSpellsByLevel filters correctly', () => {
+    const lv1 = getRitualSpellsByLevel(1);
+    expect(lv1.every((s) => s.level <= 1)).toBe(true);
+    expect(lv1.length).toBeGreaterThanOrEqual(5);
+  });
+  it('formatRitualSpells shows spells for caster', () => {
+    const text = formatRitualSpells('Cleric', 5);
+    expect(text).toContain('Ritual Spells');
+    expect(text).toContain('Detect Magic');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Familiar manager
+// ---------------------------------------------------------------------------
+import { FAMILIAR_FORMS, summonFamiliar, dismissFamiliar, addScoutReport, formatFamiliarStatus, formatFamiliarOptions } from '../../src/lib/familiarManager';
+
+describe('familiar manager', () => {
+  it('has 12 familiar forms', () => { expect(Object.keys(FAMILIAR_FORMS).length).toBe(12); });
+  it('summonFamiliar creates state', () => {
+    const state = summonFamiliar('c1', 'owl', 'Archimedes');
+    expect(state.familiar.name).toBe('Archimedes');
+    expect(state.familiar.form).toBe('owl');
+    expect(state.dismissed).toBe(false);
+  });
+  it('dismissFamiliar marks as dismissed', () => {
+    const state = dismissFamiliar(summonFamiliar('c1', 'cat', 'Whiskers'));
+    expect(state.dismissed).toBe(true);
+  });
+  it('addScoutReport tracks reports', () => {
+    let state = summonFamiliar('c1', 'hawk', 'Sky');
+    state = addScoutReport(state, '3 goblins ahead');
+    expect(state.scoutReports.length).toBe(1);
+  });
+  it('formatFamiliarOptions lists all forms', () => {
+    const text = formatFamiliarOptions();
+    expect(text).toContain('owl');
+    expect(text).toContain('cat');
+    expect(text).toContain('raven');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter budget
+// ---------------------------------------------------------------------------
+import { calculateBudget, evaluateEncounter, getEncounterMultiplier, formatEncounterBudget } from '../../src/lib/encounterBudget';
+
+describe('encounter budget', () => {
+  it('calculateBudget sums per level', () => {
+    const budget = calculateBudget([5, 5, 5, 5]);
+    expect(budget.easy).toBe(1000); // 250 * 4
+    expect(budget.medium).toBe(2000);
+  });
+  it('getEncounterMultiplier scales with count', () => {
+    expect(getEncounterMultiplier(1)).toBe(1);
+    expect(getEncounterMultiplier(3)).toBe(2);
+    expect(getEncounterMultiplier(15)).toBe(4);
+  });
+  it('evaluateEncounter classifies difficulty', () => {
+    const result = evaluateEncounter([5, 5, 5, 5], [500, 500]); // 1000 XP × 1.5 = 1500
+    expect(['easy', 'medium']).toContain(result.difficulty);
+  });
+  it('formatEncounterBudget shows all tiers', () => {
+    const text = formatEncounterBudget([5, 5, 5, 5]);
+    expect(text).toContain('Easy');
+    expect(text).toContain('Deadly');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Backstory questionnaire
+// ---------------------------------------------------------------------------
+import { BACKSTORY_QUESTIONS, getQuestionsByCategory, getRandomPrompts, buildBackstory, formatQuestionnairePreview } from '../../src/data/backstoryQuestionnaire';
+
+describe('backstory questionnaire', () => {
+  it('has at least 10 questions', () => { expect(BACKSTORY_QUESTIONS.length).toBeGreaterThanOrEqual(10); });
+  it('getQuestionsByCategory groups correctly', () => {
+    const grouped = getQuestionsByCategory();
+    expect(Object.keys(grouped).length).toBeGreaterThanOrEqual(3);
+  });
+  it('getRandomPrompts returns requested count', () => {
+    expect(getRandomPrompts(3).length).toBe(3);
+  });
+  it('buildBackstory generates text from answers', () => {
+    const text = buildBackstory({ origin: 'A small village', motivation: 'Revenge' }, 'Thorin');
+    expect(text).toContain('Thorin');
+    expect(text).toContain('small village');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Status effect reference
+// ---------------------------------------------------------------------------
+import { STATUS_EFFECTS, getStatusEffect, searchStatusEffects, formatStatusEffect, formatAllStatusEffects } from '../../src/data/statusEffectReference';
+
+describe('status effect reference', () => {
+  it('has 15 status effects', () => { expect(STATUS_EFFECTS.length).toBe(15); });
+  it('getStatusEffect finds by name', () => {
+    expect(getStatusEffect('Poisoned')?.emoji).toBe('☠️');
+    expect(getStatusEffect('Prone')?.emoji).toBe('🔻');
+  });
+  it('searchStatusEffects finds by keyword', () => {
+    const results = searchStatusEffects('prone');
+    expect(results.length).toBeGreaterThan(0);
+  });
+  it('formatAllStatusEffects lists all', () => {
+    const text = formatAllStatusEffects();
+    expect(text).toContain('Blinded');
+    expect(text).toContain('Unconscious');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Party analyzer
+// ---------------------------------------------------------------------------
+import { analyzeParty, formatPartyAnalysis } from '../../src/lib/partyAnalyzer';
+
+describe('party analyzer', () => {
+  it('identifies filled roles', () => {
+    const result = analyzeParty([{ name: 'A', class: 'Fighter' }, { name: 'B', class: 'Cleric' }]);
+    expect(result.filledRoles.has('tank')).toBe(true);
+    expect(result.filledRoles.has('healer')).toBe(true);
+  });
+  it('identifies missing roles', () => {
+    const result = analyzeParty([{ name: 'A', class: 'Fighter' }]);
+    expect(result.missingRoles).toContain('healer');
+  });
+  it('suggests classes for missing critical roles', () => {
+    const result = analyzeParty([{ name: 'A', class: 'Wizard' }]);
+    expect(result.suggestions.some((s) => s.includes('Tank') || s.includes('Healer'))).toBe(true);
+  });
+  it('formatPartyAnalysis shows all members', () => {
+    const text = formatPartyAnalysis([{ name: 'Thorin', class: 'Fighter' }, { name: 'Elara', class: 'Wizard' }]);
+    expect(text).toContain('Thorin');
+    expect(text).toContain('Elara');
+  });
+});

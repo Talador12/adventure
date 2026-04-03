@@ -1587,6 +1587,84 @@ export default function DMSidebar({
               🌤️ Random Weather
             </button>
 
+            {/* Ritual casting */}
+            <button
+              onClick={async () => {
+                const { formatRitualSpells } = await import('../../lib/ritualCasting');
+                const casters = characters.filter((c) => ['Wizard', 'Cleric', 'Druid', 'Bard', 'Artificer'].includes(c.class));
+                if (casters.length === 0) { onAddDmMessage('📜 No ritual casters in the party.'); return; }
+                const lines = casters.map((c) => formatRitualSpells(c.class, c.level));
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all disabled:opacity-30"
+              title="Show available ritual spells by class and level"
+            >
+              📜 Ritual Spells
+            </button>
+
+            {/* Familiar manager */}
+            <button
+              onClick={async () => {
+                const { formatFamiliarOptions } = await import('../../lib/familiarManager');
+                onAddDmMessage(formatFamiliarOptions());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all"
+              title="Browse familiar forms with stats and abilities"
+            >
+              🐾 Familiars
+            </button>
+
+            {/* Encounter budget */}
+            <button
+              onClick={async () => {
+                const { formatEncounterBudget } = await import('../../lib/encounterBudget');
+                const levels = characters.map((c) => c.level);
+                onAddDmMessage(formatEncounterBudget(levels.length > 0 ? levels : [5, 5, 5, 5]));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all"
+              title="Show XP budget for Easy/Medium/Hard/Deadly encounters"
+            >
+              📊 Encounter Budget
+            </button>
+
+            {/* Status effects reference */}
+            <button
+              onClick={async () => {
+                const { formatAllStatusEffects } = await import('../../data/statusEffectReference');
+                onAddDmMessage(formatAllStatusEffects());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all"
+              title="Quick reference for all 5e conditions and their effects"
+            >
+              📋 Status Effects
+            </button>
+
+            {/* Party analyzer */}
+            <button
+              onClick={async () => {
+                const { formatPartyAnalysis } = await import('../../lib/partyAnalyzer');
+                onAddDmMessage(formatPartyAnalysis(characters.map((c) => ({ name: c.name, class: c.class }))));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all disabled:opacity-30"
+              title="Analyze party composition — find role gaps and suggest classes"
+            >
+              👥 Party Analyzer
+            </button>
+
+            {/* Backstory questionnaire */}
+            <button
+              onClick={async () => {
+                const { formatQuestionnairePreview } = await import('../../data/backstoryQuestionnaire');
+                onAddDmMessage(formatQuestionnairePreview());
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-rose-900/20 border border-rose-600/30 text-rose-400 font-semibold hover:bg-rose-800/30 transition-all"
+              title="Guided backstory builder with 12 questions across 4 categories"
+            >
+              📝 Backstory Builder
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
