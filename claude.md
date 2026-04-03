@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v14.2.0
+## Current Version: v15.0.0 — 🎉 300 SYSTEMS + 1,200 TESTS 🎉
 
 ### v0.1.0 — Initial Release
 

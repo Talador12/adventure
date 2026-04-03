@@ -2906,6 +2906,47 @@ export default function DMSidebar({
               ⚠️ Dungeon Hazard
             </button>
 
+            {/* Terrain smell */}
+            <button onClick={async () => { const { formatTerrainSmell } = await import('../../data/randomTerrainSmell'); onAddDmMessage(formatTerrainSmell('dungeon')); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="What does this place smell like?">
+              👃 Terrain Smell
+            </button>
+            {/* NPC appearance */}
+            <button onClick={async () => { const { formatNpcAppearance } = await import('../../data/randomNpcAppearance'); onAddDmMessage(formatNpcAppearance()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all" title="One distinguishing physical feature">
+              👤 NPC Feature
+            </button>
+            {/* Door state */}
+            <button onClick={async () => { const { getRandomDoorState, formatDoorState } = await import('../../data/randomDoorState'); onAddDmMessage(formatDoorState(getRandomDoorState())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all" title="What's the door like?">
+              🚪 Door State
+            </button>
+            {/* Combat taunt */}
+            <button onClick={async () => { const { formatCombatTaunt } = await import('../../data/randomCombatTaunt'); onAddDmMessage(formatCombatTaunt()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Enemy mid-combat taunt">
+              😤 Combat Taunt
+            </button>
+            {/* Mystery detail */}
+            <button onClick={async () => { const { formatMysteryDetail } = await import('../../data/randomMysteryClue'); onAddDmMessage(formatMysteryDetail()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Something doesn't add up">
+              🔍 Mystery Detail
+            </button>
+            {/* NPC fear */}
+            <button onClick={async () => { const { getRandomNpcFear, formatNpcFear } = await import('../../data/randomNpcFear'); onAddDmMessage(formatNpcFear(getRandomNpcFear())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="What is this NPC afraid of?">
+              😨 NPC Fear
+            </button>
+            {/* Defeat narration */}
+            <button onClick={async () => { const { getDefeatNarration, formatDefeatNarration } = await import('../../data/randomCombatDefeat'); onAddDmMessage(formatDefeatNarration(getDefeatNarration())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-gray-700/30 border border-gray-500/30 text-gray-300 font-semibold hover:bg-gray-600/30 transition-all" title="Narration for when the party loses">
+              💀 Defeat Narration
+            </button>
+            {/* Loot description */}
+            <button onClick={async () => { const { formatLootDescription } = await import('../../data/randomLootDescription'); onAddDmMessage(formatLootDescription()); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="How the party finds the treasure">
+              💎 Loot Found
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
