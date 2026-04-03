@@ -55,6 +55,22 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 56 tests (1523 total, +2 pre-existing fixes) — court intrigue, shipwrecks, advanced bounties, layered curses, alchemy foraging, spelljammer helms:
+  - **Court intrigue system** — `courtIntrigue.ts` with 5 noble houses (Valerian/Ashford/Drakenmoor/Thornwall/Silvertongue), each with power/wealth/influence stats (1-10), leader/heir, 2 secrets each, ambitions. Alliances and rivalries with strength/intensity. Scandals with severity/leverage/discoveryDC. Favor tracking (owed_to_party/owed_by_party). "Court Intrigue" button in DMSidebar.
+  - **Shipwreck generator** — `shipwreckGenerator.ts` with 4 wrecks across 4 causes (storm/sea_monster/mutiny/curse). Cargo manifests with value/salvageDC/salvageable flags, named survivors with roles/conditions/secrets, structural hazards with DCs. `getTotalCargoValue()`/`getSalvageableCargo()` for loot planning. "Shipwreck" button in DMSidebar.
+  - **Advanced bounty board** — `bountyBoardAdvanced.ts` with 6 bounties across 6 types (kill/capture/retrieve/investigate/escort/clear) and 4 tiers (copper→platinum). Named targets with last-seen/danger-level, complications, rival hunters with cooperation flags, bonus rewards. "Bounty Board" button in DMSidebar.
+  - **Layered curse system** — `curseLayered.ts` with 5 curses across 5 origins (demonic/fey/arcane/undead/divine) and 4 severities. Multi-stage progression (2-4 stages each) with named stages, mechanical effects, progression triggers, and day timers. 2-3 removal conditions per curse (some requiring specific quests, not just Remove Curse). "Layered Curse" button in DMSidebar.
+  - **Alchemical foraging** — `alchemicalForaging.ts` with 12 ingredients across 8 biomes and 4 seasons. Rarity-based forage DCs, values, and 2-3 uses per ingredient. `forage()` function with skill modifier and quality scaling (poor/standard/excellent). Year-round ingredients for underdark. "Foraging" button in DMSidebar.
+  - **Spelljammer helm system** — `spelljammerHelm.ts` with 5 helm types (minor/major/artifact/lifejammer/series), 7 space hazards across 6 regions (wildspace/astral_sea/phlogiston/crystal_sphere/asteroid_field/nebula), 5 space encounters. `calculateTravelTime()` with helm × spell level speed. "Spelljammer" button in DMSidebar.
+  - **Test fixes** — resolved 2 pre-existing import shadowing bugs (formatNobleHouse, calculateTravelTime).
+- 56 new tests (1523 total) covering 6 systems:
+  - **Court intrigue** (10 tests): house count, scandals, creation, lookup, power calc, scandal filter, favor adding, secrets, formatted house, formatted state.
+  - **Shipwrecks** (9 tests): wreck count, random, cause filter, condition filter, cargo value, salvageable filter, hooks, hazards, formatted output.
+  - **Advanced bounties** (8 tests): count, random, type filter, difficulty filter, rival hunters, deadlines, danger levels, formatted output.
+  - **Layered curses** (8 tests): count, random, origin filter, severity filter, progressive stages, removal methods, severity scaling, formatted stage.
+  - **Alchemical foraging** (10 tests): ingredient count, biome count, biome filter, season filter, year-round availability, rarity filter, uses, failed forage, quality scaling, formatted output.
+  - **Spelljammer helms** (11 tests): helm count, hazard count, encounter count, helm lookup, hazard region, encounter region, travel time, artifact speed, region count, formatted helm, formatted hazard.
+
 - 6 new systems + 50 tests (1467 total) — faction wars, merchant caravans, heist planner, tournament brackets, poison crafting, underground rivers:
   - **Faction war tracker** — `factionWar.ts` with 5 factions (Iron Crown/Shadow Pact/Temple of Light/Free Cities/Pirate Fleet), 10 territories with defense bonuses and resources, battle resolution (d20+strength vs d20+strength+defense), territory capture, contested zones. `resolveBattle()`/`applyBattleResult()` lifecycle. "Faction War" button in DMSidebar.
   - **Merchant caravan generator** — `merchantCaravan.ts` with 6 origins (eastern_empire/northern_wastes/elven_woods/dwarven_holds/desert_tribes/underdark). Each has named merchant with personality, 4 unique items (common→exotic), quest hook, guard count, danger level. 24 total items with mechanical descriptions. "Merchant Caravan" button in DMSidebar.
@@ -856,17 +872,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Poison crafting system~~ **DONE** — `poisonCrafting.ts` with 8 poisons × 4 delivery × 4 rarity
 - ~~Underground river navigation~~ **DONE** — `undergroundRiver.ts` with 7 segments + 3 routes + hazards
 
-**Wave 38 Roadmap:**
+**Wave 38 (1,523 tests — fixed 2 pre-existing broken tests):**
+- ~~Court intrigue system~~ **DONE** — `courtIntrigue.ts` with 5 noble houses + scandals + favors
+- ~~Shipwreck generator~~ **DONE** — `shipwreckGenerator.ts` with 4 wrecks + cargo + survivors + hazards
+- ~~Advanced bounty board~~ **DONE** — `bountyBoardAdvanced.ts` with 6 bounties + rival hunters
+- ~~Layered curse system~~ **DONE** — `curseLayered.ts` with 5 curses × multi-stage progression
+- ~~Alchemical foraging~~ **DONE** — `alchemicalForaging.ts` with 12 ingredients × 8 biomes × 4 seasons
+- ~~Spelljammer helm system~~ **DONE** — `spelljammerHelm.ts` with 5 helms + 7 hazards + 5 encounters
+
+**Wave 39 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Court intrigue system — noble houses with power levels, alliances, scandals, and favors owed
-- Random shipwreck generator — wrecked vessels with cargo manifests, survivors, and hazards
-- Alchemical ingredient foraging — biome-based reagent gathering with seasonal availability
-- Bounty board system — posted bounties with targets, rewards, deadlines, and rival hunters
-- Curse generator — layered curses with progression stages, triggers, and complex removal conditions
-- Spelljammer helm system — astral ship navigation with gravity planes and phlogiston hazards
+- Astral projection encounter table — encounters unique to out-of-body astral travel
+- Library/archive research system — book collections with knowledge checks and discovery mechanics
+- Random festival/holiday generator — cultural celebrations with games, contests, and plot hooks
+- Wilderness survival tracker — hunger/thirst/exposure with resource management and foraging integration
+- Legendary weapon awakening — dormant weapons that unlock powers through specific deeds
+- Summoning circle mishap table — what goes wrong when planar summoning fails
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

@@ -8881,3 +8881,107 @@ describe('underground river navigation', () => {
   it('formats segment', () => { expect(formatSegment(RIVER_SEGMENTS[0])).toContain('Navigation DC'); });
   it('formats route', () => { expect(formatRiverRoute(RIVER_ROUTES[0])).toContain('Equipment'); });
 });
+
+// ---------------------------------------------------------------------------
+// Court intrigue system
+// ---------------------------------------------------------------------------
+import { NOBLE_HOUSES, SCANDALS as COURT_SCANDALS, createCourtState, addFavor, getHouseByName, getHousePower, getScandalsForHouse, getAllHouseNames, formatNobleHouse as formatCourtHouse, formatCourtState } from '../../src/data/courtIntrigue';
+
+describe('court intrigue system', () => {
+  it('has at least 4 noble houses', () => { expect(NOBLE_HOUSES.length).toBeGreaterThanOrEqual(4); });
+  it('has scandals for multiple houses', () => { expect(COURT_SCANDALS.length).toBeGreaterThanOrEqual(4); });
+  it('creates court state', () => { const s = createCourtState(); expect(s.houses.length).toBeGreaterThanOrEqual(4); expect(s.alliances.length).toBeGreaterThanOrEqual(1); expect(s.rivalries.length).toBeGreaterThanOrEqual(1); });
+  it('looks up house by name', () => { const s = createCourtState(); const h = getHouseByName(s, 'House Valerian'); expect(h).toBeDefined(); expect(h!.motto.length).toBeGreaterThan(0); });
+  it('calculates house power', () => { const h = NOBLE_HOUSES[0]; const power = getHousePower(h); expect(power).toBeGreaterThanOrEqual(1); expect(power).toBeLessThanOrEqual(10); });
+  it('finds scandals for house', () => { const s = createCourtState(); const scandals = getScandalsForHouse(s, 'House Valerian'); expect(scandals.length).toBeGreaterThanOrEqual(1); });
+  it('adds favors', () => { let s = createCourtState(); s = addFavor(s, 'House Ashford', 'owed_to_party', 'minor', 'Helped at the ball'); expect(s.favors.length).toBe(1); });
+  it('all houses have secrets', () => { NOBLE_HOUSES.forEach((h) => expect(h.secrets.length).toBeGreaterThanOrEqual(1)); });
+  it('formats noble house', () => { expect(formatCourtHouse(NOBLE_HOUSES[0])).toContain('House Valerian'); });
+  it('formats court state', () => { expect(formatCourtState(createCourtState())).toContain('Court Intrigue'); });
+});
+
+// ---------------------------------------------------------------------------
+// Shipwreck generator
+// ---------------------------------------------------------------------------
+import { SHIPWRECKS, getRandomShipwreck, getShipwrecksByCause, getShipwrecksByCondition, getTotalCargoValue, getSalvageableCargo, formatShipwreck } from '../../src/data/shipwreckGenerator';
+
+describe('shipwreck generator', () => {
+  it('has at least 4 wrecks', () => { expect(SHIPWRECKS.length).toBeGreaterThanOrEqual(4); });
+  it('generates random wreck', () => { const w = getRandomShipwreck(); expect(w.shipName.length).toBeGreaterThan(3); expect(w.cargo.length).toBeGreaterThanOrEqual(2); });
+  it('filters by cause', () => { const storm = getShipwrecksByCause('storm'); expect(storm.length).toBeGreaterThanOrEqual(1); storm.forEach((w) => expect(w.cause).toBe('storm')); });
+  it('filters by condition', () => { const sunk = getShipwrecksByCondition('sunk'); expect(sunk.length).toBeGreaterThanOrEqual(1); });
+  it('calculates salvageable cargo value', () => { SHIPWRECKS.forEach((w) => { const val = getTotalCargoValue(w); expect(val).toBeGreaterThanOrEqual(0); }); });
+  it('filters salvageable cargo', () => { const w = SHIPWRECKS[0]; const salvageable = getSalvageableCargo(w); salvageable.forEach((c) => expect(c.salvageable).toBe(true)); });
+  it('all wrecks have hooks', () => { SHIPWRECKS.forEach((w) => expect(w.hook.length).toBeGreaterThan(20)); });
+  it('all wrecks have hazards', () => { SHIPWRECKS.forEach((w) => expect(w.hazards.length).toBeGreaterThanOrEqual(1)); });
+  it('formats wreck', () => { expect(formatShipwreck(getRandomShipwreck())).toContain('Salvageable'); });
+});
+
+// ---------------------------------------------------------------------------
+// Advanced bounty board
+// ---------------------------------------------------------------------------
+import { ADVANCED_BOUNTIES, getRandomAdvancedBounty, getAdvancedBountiesByType, getAdvancedBountiesByDifficulty, getBountiesWithRivals, formatAdvancedBounty } from '../../src/data/bountyBoardAdvanced';
+
+describe('advanced bounty board', () => {
+  it('has at least 5 bounties', () => { expect(ADVANCED_BOUNTIES.length).toBeGreaterThanOrEqual(5); });
+  it('generates random bounty', () => { const b = getRandomAdvancedBounty(); expect(b.title.length).toBeGreaterThan(3); expect(b.target.name.length).toBeGreaterThan(3); expect(b.complications.length).toBeGreaterThanOrEqual(1); });
+  it('filters by type', () => { const retrieve = getAdvancedBountiesByType('retrieve'); expect(retrieve.length).toBeGreaterThanOrEqual(1); retrieve.forEach((b) => expect(b.type).toBe('retrieve')); });
+  it('filters by difficulty', () => { const gold = getAdvancedBountiesByDifficulty('gold'); expect(gold.length).toBeGreaterThanOrEqual(1); gold.forEach((b) => expect(b.difficulty).toBe('gold')); });
+  it('some have rival hunters', () => { const withRivals = getBountiesWithRivals(); expect(withRivals.length).toBeGreaterThanOrEqual(2); withRivals.forEach((b) => expect(b.rivalHunter).not.toBeNull()); });
+  it('all bounties have deadlines', () => { ADVANCED_BOUNTIES.forEach((b) => expect(b.deadline.length).toBeGreaterThan(0)); });
+  it('all targets have danger levels', () => { ADVANCED_BOUNTIES.forEach((b) => expect(b.target.dangerLevel.length).toBeGreaterThan(5)); });
+  it('formats bounty', () => { expect(formatAdvancedBounty(getRandomAdvancedBounty())).toContain('Target'); });
+});
+
+// ---------------------------------------------------------------------------
+// Layered curse system
+// ---------------------------------------------------------------------------
+import { LAYERED_CURSES, getRandomLayeredCurse, getLayeredCursesByOrigin, getLayeredCursesBySeverity, getStageCount as getCurseStageCount, getRemovalMethodCount, formatLayeredCurse } from '../../src/data/curseLayered';
+
+describe('layered curse system', () => {
+  it('has at least 5 curses', () => { expect(LAYERED_CURSES.length).toBeGreaterThanOrEqual(5); });
+  it('generates random curse', () => { const c = getRandomLayeredCurse(); expect(c.name.length).toBeGreaterThan(3); expect(c.stages.length).toBeGreaterThanOrEqual(2); expect(c.lore.length).toBeGreaterThan(10); });
+  it('filters by origin', () => { const fey = getLayeredCursesByOrigin('fey'); expect(fey.length).toBeGreaterThanOrEqual(1); fey.forEach((c) => expect(c.origin).toBe('fey')); });
+  it('filters by severity', () => { const legendary = getLayeredCursesBySeverity('legendary'); expect(legendary.length).toBeGreaterThanOrEqual(1); });
+  it('curses have progressive stages', () => { LAYERED_CURSES.forEach((c) => { const stages = c.stages.map((s) => s.stage); expect(stages).toEqual([...stages].sort((a, b) => a - b)); }); });
+  it('all curses have removal methods', () => { LAYERED_CURSES.forEach((c) => expect(getRemovalMethodCount(c)).toBeGreaterThanOrEqual(2)); });
+  it('severe/legendary curses have more stages', () => { const minor = LAYERED_CURSES.find((c) => c.severity === 'minor')!; const severe = LAYERED_CURSES.find((c) => c.severity === 'severe')!; expect(getCurseStageCount(severe)).toBeGreaterThan(getCurseStageCount(minor)); });
+  it('formats with stage', () => { const c = getRandomLayeredCurse(); expect(formatLayeredCurse(c, 1)).toContain('Stage 1'); });
+});
+
+// ---------------------------------------------------------------------------
+// Alchemical ingredient foraging
+// ---------------------------------------------------------------------------
+import { ALCHEMICAL_INGREDIENTS, getIngredientsByBiome, getIngredientsBySeason, getIngredientsByRarity, forage, getAllForagingBiomes, formatIngredient, formatForagingResult } from '../../src/data/alchemicalForaging';
+
+describe('alchemical ingredient foraging', () => {
+  it('has at least 10 ingredients', () => { expect(ALCHEMICAL_INGREDIENTS.length).toBeGreaterThanOrEqual(10); });
+  it('has 8 foraging biomes', () => { expect(getAllForagingBiomes().length).toBe(8); });
+  it('filters by biome', () => { const forest = getIngredientsByBiome('forest'); expect(forest.length).toBeGreaterThanOrEqual(2); forest.forEach((i) => expect(i.biomes).toContain('forest')); });
+  it('filters by season', () => { const winter = getIngredientsBySeason('arctic', 'winter'); expect(winter.length).toBeGreaterThanOrEqual(1); });
+  it('year-round ingredients always available', () => { const underdark = getIngredientsBySeason('underdark', 'spring'); const underdarkWinter = getIngredientsBySeason('underdark', 'winter'); const yearRound = ALCHEMICAL_INGREDIENTS.filter((i) => i.biomes.includes('underdark') && i.seasons.length === 0); expect(underdark.length).toBeGreaterThanOrEqual(yearRound.length); expect(underdarkWinter.length).toBeGreaterThanOrEqual(yearRound.length); });
+  it('filters by rarity', () => { const rare = getIngredientsByRarity('rare'); expect(rare.length).toBeGreaterThanOrEqual(2); rare.forEach((i) => expect(i.rarity).toBe('rare')); });
+  it('all ingredients have uses', () => { ALCHEMICAL_INGREDIENTS.forEach((i) => expect(i.uses.length).toBeGreaterThanOrEqual(2)); });
+  it('forage can return null (failed roll)', () => { const results = Array.from({ length: 50 }, () => forage('desert', 'winter', -10)); expect(results.some((r) => r === null)).toBe(true); });
+  it('forage quality scales with roll', () => { const results = Array.from({ length: 50 }, () => forage('forest', 'spring', 15)).filter(Boolean); if (results.length > 0) { expect(results.some((r) => r!.quality === 'excellent' || r!.quality === 'standard')).toBe(true); } });
+  it('formats ingredient', () => { expect(formatIngredient(ALCHEMICAL_INGREDIENTS[0])).toContain('Biomes'); });
+});
+
+// ---------------------------------------------------------------------------
+// Spelljammer helm system
+// ---------------------------------------------------------------------------
+import { HELMS, SPACE_HAZARDS, SPACE_ENCOUNTERS, getHelmByType, getAllHelmTypes, getHazardsByRegion, getEncountersByRegion, getAllRegions as getAllSpaceRegions, calculateTravelTime as calcSpaceTravel, formatHelm, formatHazard } from '../../src/data/spelljammerHelm';
+
+describe('spelljammer helm system', () => {
+  it('has 5 helm types', () => { expect(HELMS.length).toBe(5); expect(getAllHelmTypes().length).toBe(5); });
+  it('has at least 5 hazards', () => { expect(SPACE_HAZARDS.length).toBeGreaterThanOrEqual(5); });
+  it('has at least 4 encounters', () => { expect(SPACE_ENCOUNTERS.length).toBeGreaterThanOrEqual(4); });
+  it('looks up helm by type', () => { const h = getHelmByType('major'); expect(h).toBeDefined(); expect(h!.speedMultiplier).toBe(2); });
+  it('hazards filter by region', () => { const phlog = getHazardsByRegion('phlogiston'); expect(phlog.length).toBeGreaterThanOrEqual(1); phlog.forEach((h) => expect(h.region).toBe('phlogiston')); });
+  it('encounters filter by region', () => { const astral = getEncountersByRegion('astral_sea'); expect(astral.length).toBeGreaterThanOrEqual(1); });
+  it('calculates travel time', () => { const hours = calcSpaceTravel(100, 'minor', 3); expect(hours).toBeGreaterThan(0); expect(hours).toBeLessThan(Infinity); const faster = calcSpaceTravel(100, 'major', 3); expect(faster).toBeLessThanOrEqual(hours); });
+  it('artifact helm is fastest', () => { const minor = calcSpaceTravel(300, 'minor', 5); const artifact = calcSpaceTravel(300, 'artifact', 5); expect(artifact).toBeLessThan(minor); });
+  it('covers multiple space regions', () => { expect(getAllSpaceRegions().length).toBeGreaterThanOrEqual(4); });
+  it('formats helm', () => { expect(formatHelm(HELMS[0])).toContain('speed'); });
+  it('formats hazard', () => { expect(formatHazard(SPACE_HAZARDS[0])).toContain('DC'); });
+});
