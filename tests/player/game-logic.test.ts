@@ -10244,3 +10244,97 @@ describe('magical weather calendar', () => {
   it('all are recurring', () => { MAGICAL_WEATHER_CALENDAR.forEach((w) => expect(w.isRecurring).toBe(true)); });
   it('formats weather day', () => { expect(formatWeatherDay(MAGICAL_WEATHER_CALENDAR[0])).toContain('Regions'); });
 });
+
+// ---------------------------------------------------------------------------
+// Dragon personality matrix
+// ---------------------------------------------------------------------------
+import { DRAGON_PROFILES, getDragonProfile, getProfilesByNegotiationStyle, getExploitableTraits, getAllDragonColors, formatDragonProfile } from '../../src/data/dragonPersonality';
+
+describe('dragon personality matrix', () => {
+  it('has at least 4 profiles', () => { expect(DRAGON_PROFILES.length).toBeGreaterThanOrEqual(4); });
+  it('looks up by color', () => { const red = getDragonProfile('red'); expect(red).toBeDefined(); expect(red!.negotiationStyle).toBe('imperious'); });
+  it('filters by negotiation style', () => { const scholarly = getProfilesByNegotiationStyle('scholarly'); expect(scholarly.length).toBeGreaterThanOrEqual(1); });
+  it('finds exploitable traits', () => { DRAGON_PROFILES.forEach((p) => expect(getExploitableTraits(p).length).toBeGreaterThanOrEqual(1)); });
+  it('all have parley conditions', () => { DRAGON_PROFILES.forEach((p) => expect(p.parleyCondition.length).toBeGreaterThan(15)); });
+  it('all have sample dialogue', () => { DRAGON_PROFILES.forEach((p) => expect(p.sampleDialogue.length).toBeGreaterThanOrEqual(3)); });
+  it('formats profile', () => { expect(formatDragonProfile(DRAGON_PROFILES[0])).toContain('Parley'); });
+});
+
+// ---------------------------------------------------------------------------
+// Cataclysm countdown
+// ---------------------------------------------------------------------------
+import { CATACLYSMS, getRandomCataclysm, getCataclysmsByType, getTotalDaysToFinal, getCurrentStage, getAllCataclysmTypes, formatCataclysm } from '../../src/data/cataclysmCountdown';
+
+describe('cataclysm countdown', () => {
+  it('has at least 3 cataclysms', () => { expect(CATACLYSMS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 types', () => { expect(getAllCataclysmTypes().length).toBeGreaterThanOrEqual(3); });
+  it('generates random cataclysm', () => { const c = getRandomCataclysm(); expect(c.name.length).toBeGreaterThan(3); expect(c.stages.length).toBeGreaterThanOrEqual(3); });
+  it('total days > 0', () => { CATACLYSMS.forEach((c) => expect(getTotalDaysToFinal(c)).toBeGreaterThan(0)); });
+  it('gets current stage by days', () => { const c = CATACLYSMS[0]; expect(getCurrentStage(c, 0).stage).toBe(1); expect(getCurrentStage(c, 999).stage).toBe(3); });
+  it('all have prevention methods', () => { CATACLYSMS.forEach((c) => expect(c.preventionMethod.length).toBeGreaterThan(20)); });
+  it('formats cataclysm', () => { expect(formatCataclysm(CATACLYSMS[0])).toContain('Prevention'); });
+});
+
+// ---------------------------------------------------------------------------
+// Interplanar customs office
+// ---------------------------------------------------------------------------
+import { CUSTOMS_OFFICES, getRandomCustomsOffice, getOfficeByPlane, getCorruptOfficers, getTotalFormCount, formatCustomsOffice } from '../../src/data/interplanarCustoms';
+
+describe('interplanar customs office', () => {
+  it('has at least 3 offices', () => { expect(CUSTOMS_OFFICES.length).toBeGreaterThanOrEqual(3); });
+  it('generates random office', () => { const o = getRandomCustomsOffice(); expect(o.planeName.length).toBeGreaterThan(3); expect(o.officers.length).toBeGreaterThanOrEqual(1); });
+  it('looks up by plane', () => { const hells = getOfficeByPlane('Hells'); expect(hells).toBeDefined(); });
+  it('some have corrupt officers', () => { const allCorrupt = CUSTOMS_OFFICES.flatMap(getCorruptOfficers); expect(allCorrupt.length).toBeGreaterThanOrEqual(1); });
+  it('all have prohibited items', () => { CUSTOMS_OFFICES.forEach((o) => expect(o.prohibitedItems.length).toBeGreaterThanOrEqual(2)); });
+  it('all have plot hooks', () => { CUSTOMS_OFFICES.forEach((o) => expect(o.plotHook.length).toBeGreaterThan(15)); });
+  it('all have required forms', () => { CUSTOMS_OFFICES.forEach((o) => expect(getTotalFormCount(o)).toBeGreaterThanOrEqual(1)); });
+  it('formats office', () => { expect(formatCustomsOffice(CUSTOMS_OFFICES[0])).toContain('Prohibited'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical ecosystem generator
+// ---------------------------------------------------------------------------
+import { MAGICAL_ECOSYSTEMS, getRandomEcosystem, getEcosystemByBiome, getHarvestableOrganisms, getReversibleReactions, getAllEcosystemBiomes, formatEcosystem } from '../../src/data/magicalEcosystem';
+
+describe('magical ecosystem generator', () => {
+  it('has at least 2 ecosystems', () => { expect(MAGICAL_ECOSYSTEMS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 biomes', () => { expect(getAllEcosystemBiomes().length).toBeGreaterThanOrEqual(2); });
+  it('generates random ecosystem', () => { const e = getRandomEcosystem(); expect(e.organisms.length).toBeGreaterThanOrEqual(3); expect(e.reactions.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by biome', () => { const forest = getEcosystemByBiome('enchanted_forest'); expect(forest).toBeDefined(); });
+  it('has harvestable organisms', () => { MAGICAL_ECOSYSTEMS.forEach((e) => expect(getHarvestableOrganisms(e).length).toBeGreaterThanOrEqual(1)); });
+  it('most reactions are reversible', () => { MAGICAL_ECOSYSTEMS.forEach((e) => expect(getReversibleReactions(e).length).toBeGreaterThanOrEqual(1)); });
+  it('all have collapse warnings', () => { MAGICAL_ECOSYSTEMS.forEach((e) => expect(e.collapseWarning.length).toBeGreaterThan(20)); });
+  it('formats ecosystem', () => { expect(formatEcosystem(MAGICAL_ECOSYSTEMS[0])).toContain('Organisms'); });
+});
+
+// ---------------------------------------------------------------------------
+// Time loop dungeon
+// ---------------------------------------------------------------------------
+import { TIME_LOOP_DUNGEONS, getRandomTimeLoop, getTimeLoopByMechanic, getRoomCount as getLoopRoomCount, getAllLoopMechanics, formatTimeLoop } from '../../src/data/timeLoopDungeon';
+
+describe('time loop dungeon', () => {
+  it('has at least 2 dungeons', () => { expect(TIME_LOOP_DUNGEONS.length).toBeGreaterThanOrEqual(2); });
+  it('has 4 loop mechanics', () => { expect(getAllLoopMechanics().length).toBe(4); });
+  it('generates random time loop', () => { const d = getRandomTimeLoop(); expect(d.name.length).toBeGreaterThan(3); expect(d.rooms.length).toBeGreaterThanOrEqual(3); });
+  it('rooms have loop clues', () => { TIME_LOOP_DUNGEONS.forEach((d) => d.rooms.forEach((r) => expect(r.loopClue.length).toBeGreaterThan(10))); });
+  it('all have escape conditions', () => { TIME_LOOP_DUNGEONS.forEach((d) => expect(d.escapCondition.length).toBeGreaterThan(15)); });
+  it('all have max loop consequences', () => { TIME_LOOP_DUNGEONS.forEach((d) => expect(d.consequenceOfMaxLoops.length).toBeGreaterThan(15)); });
+  it('all have lore', () => { TIME_LOOP_DUNGEONS.forEach((d) => expect(d.lore.length).toBeGreaterThan(20)); });
+  it('formats time loop', () => { expect(formatTimeLoop(TIME_LOOP_DUNGEONS[0])).toContain('Escape'); });
+});
+
+// ---------------------------------------------------------------------------
+// Weapon sentience awakening
+// ---------------------------------------------------------------------------
+import { WEAPON_AWAKENINGS, getRandomAwakening, getAwakeningByTrigger, getAwakeningStage as getWeaponStage, getAllTriggers as getAllAwakeningTriggers, formatAwakening } from '../../src/data/weaponSentienceAwaken';
+
+describe('weapon sentience awakening', () => {
+  it('has at least 3 awakenings', () => { expect(WEAPON_AWAKENINGS.length).toBeGreaterThanOrEqual(3); });
+  it('has 6 trigger types', () => { expect(getAllAwakeningTriggers().length).toBe(6); });
+  it('generates random awakening', () => { const a = getRandomAwakening(); expect(a.weaponType.length).toBeGreaterThan(3); expect(a.stages.length).toBeGreaterThanOrEqual(3); });
+  it('filters by trigger', () => { const nearDeath = getAwakeningByTrigger('wielder_near_death'); expect(nearDeath.length).toBeGreaterThanOrEqual(1); });
+  it('stages have 3 progressive stages', () => { WEAPON_AWAKENINGS.forEach((a) => { expect(a.stages.length).toBe(3); expect(a.stages[0].stage).toBe(1); expect(a.stages[2].stage).toBe(3); }); });
+  it('all have conflict risks', () => { WEAPON_AWAKENINGS.forEach((a) => expect(a.conflictRisk.length).toBeGreaterThan(15)); });
+  it('all have final personalities', () => { WEAPON_AWAKENINGS.forEach((a) => expect(a.finalPersonality.length).toBeGreaterThan(15)); });
+  it('formats awakening', () => { expect(formatAwakening(WEAPON_AWAKENINGS[0], 2)).toContain('Stage 2'); });
+});

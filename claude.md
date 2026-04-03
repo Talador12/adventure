@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 46 tests (2204 total) — dragon personalities, cataclysm countdowns, interplanar customs, magical ecosystems, time loop dungeons, weapon sentience:
+  - **Dragon personality matrix** — `dragonPersonality.ts` with 4 dragon profiles (red/gold/copper/green), negotiation styles, exploitable traits, parley conditions, sample dialogue.
+  - **Cataclysm countdown** — `cataclysmCountdown.ts` with 3 world-ending events (The Unraveling/The Awakening Below/The Final Plague), 3-stage escalation, intervention windows, prevention methods.
+  - **Interplanar customs office** — `interplanarCustoms.ts` with 3 offices (Mechanus/Nine Hells/Feywild), corrupt officers, prohibited items, absurd forms, plot hooks.
+  - **Magical ecosystem** — `magicalEcosystem.ts` with 2 ecosystems (Singing Canopy/Resonance Network), interconnected organisms, party-triggered reactions, collapse warnings.
+  - **Time loop dungeon** — `timeLoopDungeon.ts` with 2 dungeons, rooms with loop clues/death traps, cumulative knowledge, max loop consequences.
+  - **Weapon sentience awakening** — `weaponSentienceAwaken.ts` with 3 weapons gaining awareness through deeds, 3-stage personality development, conflict risks.
+
 - 6 new systems + 48 tests (2158 total) — illithid colonies, ancestral spirits, pocket dimensions, arcane black market, clockwork dungeons, magical weather calendar:
   - **Illithid colony generator** — `illithidColony.ts` with 2 colonies (enclave/city), elder brain personalities, thrall hierarchies with free will scores, defenses, weaknesses.
   - **Ancestral spirit guide** — `ancestralSpirit.ts` with 3 spirits (Grandmother Ashwood/Sergeant Ironjaw/Pip the Wanderer), situational guidance with mechanical bonuses, intervention abilities.
@@ -1088,17 +1096,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Clockwork dungeon generator~~ **DONE** — `clockworkDungeon.ts` with 2 dungeons + mechanisms
 - ~~Magical weather calendar~~ **DONE** — `magicalWeatherCalendar.ts` with 8 events × 4 seasons
 
-**Wave 52 Roadmap:**
+**Wave 52 (2,204 tests):**
+- ~~Dragon personality matrix~~ **DONE** — `dragonPersonality.ts` with 4 profiles + negotiation styles
+- ~~Cataclysm countdown~~ **DONE** — `cataclysmCountdown.ts` with 3 events × 3 stages + intervention
+- ~~Interplanar customs~~ **DONE** — `interplanarCustoms.ts` with 3 offices + absurd bureaucracy
+- ~~Magical ecosystem~~ **DONE** — `magicalEcosystem.ts` with 2 ecosystems + party reactions
+- ~~Time loop dungeon~~ **DONE** — `timeLoopDungeon.ts` with 2 dungeons + cumulative knowledge
+- ~~Weapon sentience awakening~~ **DONE** — `weaponSentienceAwaken.ts` with 3 weapons × 3 stages
+
+**Wave 53 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Dragon personality matrix — unique dragon behaviors, hoard preferences, and negotiation styles
-- Random cataclysm countdown — world-ending events with escalating signs and intervention windows
-- Enchanted weapon sentience awakening — mundane weapons gaining awareness through legendary deeds
-- Random interplanar customs office — bureaucratic plane-crossing with paperwork and inspections
-- Magical ecosystem generator — interconnected magical flora/fauna that react to party actions
-- Time loop dungeon — rooms that reset on party death with cumulative knowledge carried forward
+- Random dark bargain generator — deals with dark powers that always have a price
+- Astral dream combat — psychic battles fought in the dream plane with different rules
+- Magical library catalog — books that fight back, shelves that rearrange, and forbidden sections
+- Random NPC death scene — dramatic last words and dying wishes for important NPCs
+- Lair action generator — boss monster lair effects that change the battlefield each round
+- Planar refugee crisis — displaced populations from other planes seeking asylum
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
