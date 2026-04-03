@@ -10428,3 +10428,97 @@ describe('magical library catalog', () => {
   it('all sections have hazards', () => { MAGICAL_LIBRARY_CATALOG.forEach((s) => expect(s.sectionHazard.length).toBeGreaterThan(10)); });
   it('formats section', () => { expect(formatLibSection(MAGICAL_LIBRARY_CATALOG[0])).toContain('Books'); });
 });
+
+// ---------------------------------------------------------------------------
+// Villain monologue generator
+// ---------------------------------------------------------------------------
+import { VILLAIN_MONOLOGUES, getRandomMonologue, getMonologuesByArchetype, getMonologuesByMoment, getAllArchetypes as getAllVillainArchetypes, getAllMonologueMoments, formatMonologue } from '../../src/data/villainMonologue';
+
+describe('villain monologue generator', () => {
+  it('has at least 6 monologues', () => { expect(VILLAIN_MONOLOGUES.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 5 archetypes', () => { expect(getAllVillainArchetypes().length).toBeGreaterThanOrEqual(5); });
+  it('generates random monologue', () => { const m = getRandomMonologue(); expect(m.speech.length).toBeGreaterThan(50); expect(m.dramaticPause.length).toBeGreaterThan(10); });
+  it('filters by archetype', () => { const tragic = getMonologuesByArchetype('tragic'); expect(tragic.length).toBeGreaterThanOrEqual(1); });
+  it('all have interruption mechanics', () => { VILLAIN_MONOLOGUES.forEach((m) => { expect(m.interruptionDC).toBeGreaterThanOrEqual(8); expect(m.ifInterrupted.length).toBeGreaterThan(10); }); });
+  it('all have completion effects', () => { VILLAIN_MONOLOGUES.forEach((m) => expect(m.ifCompleted.length).toBeGreaterThan(15)); });
+  it('formats monologue', () => { expect(formatMonologue(VILLAIN_MONOLOGUES[0])).toContain('Interrupt DC'); });
+});
+
+// ---------------------------------------------------------------------------
+// Diplomatic gift generator
+// ---------------------------------------------------------------------------
+import { DIPLOMATIC_GIFTS, getRandomGift as getRandomDiploGift, getGiftsForCulture, getGiftsWithTaboos, getAllGiftCultures, formatGift as formatDiploGift } from '../../src/data/diplomaticGift';
+
+describe('diplomatic gift generator', () => {
+  it('has at least 8 gifts', () => { expect(DIPLOMATIC_GIFTS.length).toBeGreaterThanOrEqual(8); });
+  it('covers at least 6 cultures', () => { expect(getAllGiftCultures().length).toBeGreaterThanOrEqual(6); });
+  it('generates random gift', () => { const g = getRandomDiploGift(); expect(g.culturalSignificance.length).toBeGreaterThan(15); });
+  it('filters by culture', () => { const dwarven = getGiftsForCulture('dwarven'); expect(dwarven.length).toBeGreaterThanOrEqual(1); });
+  it('most have taboos', () => { expect(getGiftsWithTaboos().length).toBeGreaterThanOrEqual(5); });
+  it('all have cultural significance', () => { DIPLOMATIC_GIFTS.forEach((g) => expect(g.culturalSignificance.length).toBeGreaterThan(15)); });
+  it('formats gift', () => { expect(formatDiploGift(DIPLOMATIC_GIFTS[0])).toContain('Significance'); });
+});
+
+// ---------------------------------------------------------------------------
+// Shapeshifter detector
+// ---------------------------------------------------------------------------
+import { DETECTION_TECHNIQUES, getTechniquesForType, getTechniquesByMethod, getMostReliableTechniques, getAllShapeshifterTypes, getAllDetectionMethods, formatTechnique } from '../../src/data/shapeshifterDetector';
+
+describe('shapeshifter detector', () => {
+  it('has at least 8 techniques', () => { expect(DETECTION_TECHNIQUES.length).toBeGreaterThanOrEqual(8); });
+  it('has 7 shapeshifter types', () => { expect(getAllShapeshifterTypes().length).toBe(7); });
+  it('has 5 detection methods', () => { expect(getAllDetectionMethods().length).toBe(5); });
+  it('finds techniques for type', () => { const doppel = getTechniquesForType('doppelganger'); expect(doppel.length).toBeGreaterThanOrEqual(3); });
+  it('filters by method', () => { const magical = getTechniquesByMethod('magical'); expect(magical.length).toBeGreaterThanOrEqual(1); });
+  it('has reliable options', () => { const reliable = getMostReliableTechniques(); expect(reliable.length).toBeGreaterThanOrEqual(2); reliable.forEach((t) => expect(t.falsePositiveChance).toBeLessThanOrEqual(5)); });
+  it('truesight works on everything', () => { const truesight = DETECTION_TECHNIQUES.find((t) => t.name.includes('Truesight')); expect(truesight!.effectiveAgainst.length).toBe(7); });
+  it('formats technique', () => { expect(formatTechnique(DETECTION_TECHNIQUES[0])).toContain('Effective vs'); });
+});
+
+// ---------------------------------------------------------------------------
+// Dragon hoard layout
+// ---------------------------------------------------------------------------
+import { HOARD_LAYOUTS, getRandomHoardLayout, getLayoutsBySize as getHoardsBySize, getZonesWithTraps as getHoardTraps, getHighestValueZone, getAllHoardSizes, formatHoardLayout } from '../../src/data/dragonHoardLayout';
+
+describe('dragon hoard layout', () => {
+  it('has at least 3 layouts', () => { expect(HOARD_LAYOUTS.length).toBeGreaterThanOrEqual(3); });
+  it('has 4 hoard sizes', () => { expect(getAllHoardSizes().length).toBe(4); });
+  it('generates random layout', () => { const l = getRandomHoardLayout(); expect(l.zones.length).toBeGreaterThanOrEqual(3); expect(l.totalValue).toBeGreaterThan(0); });
+  it('has trapped zones', () => { HOARD_LAYOUTS.forEach((l) => expect(getHoardTraps(l).length).toBeGreaterThanOrEqual(1)); });
+  it('highest value zone exists', () => { HOARD_LAYOUTS.forEach((l) => expect(getHighestValueZone(l).lootValue).toBeGreaterThan(0)); });
+  it('all have alarm triggers', () => { HOARD_LAYOUTS.forEach((l) => expect(l.alarmTrigger.length).toBeGreaterThan(15)); });
+  it('all have escape routes', () => { HOARD_LAYOUTS.forEach((l) => expect(l.escapeRoute.length).toBeGreaterThan(10)); });
+  it('all have hidden caches', () => { HOARD_LAYOUTS.forEach((l) => expect(l.hiddenCacheDC).toBeGreaterThanOrEqual(16)); });
+  it('formats layout', () => { expect(formatHoardLayout(HOARD_LAYOUTS[0])).toContain('Alarm'); });
+});
+
+// ---------------------------------------------------------------------------
+// Astral weather hazards
+// ---------------------------------------------------------------------------
+import { ASTRAL_WEATHER_HAZARDS, getRandomAstralWeather, getHazardByType as getAstralHazardByType, getHazardsWithBenefits as getAstralBenefits, getAllAstralWeatherTypes, formatAstralWeather } from '../../src/data/astralWeatherHazard';
+
+describe('astral weather hazards', () => {
+  it('has 6 hazard types', () => { expect(ASTRAL_WEATHER_HAZARDS.length).toBe(6); expect(getAllAstralWeatherTypes().length).toBe(6); });
+  it('generates random hazard', () => { const h = getRandomAstralWeather(); expect(h.mechanicalEffects.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by type', () => { const storm = getAstralHazardByType('psychic_storm'); expect(storm).toBeDefined(); });
+  it('some have benefits', () => { expect(getAstralBenefits().length).toBeGreaterThanOrEqual(3); });
+  it('all have avoidance methods', () => { ASTRAL_WEATHER_HAZARDS.forEach((h) => expect(h.avoidance.length).toBeGreaterThan(15)); });
+  it('all have warning DCs', () => { ASTRAL_WEATHER_HAZARDS.forEach((h) => expect(h.warningSignsDC).toBeGreaterThanOrEqual(8)); });
+  it('formats hazard', () => { expect(formatAstralWeather(ASTRAL_WEATHER_HAZARDS[0])).toContain('Effects'); });
+});
+
+// ---------------------------------------------------------------------------
+// Tattoo removal system
+// ---------------------------------------------------------------------------
+import { TATTOO_REMOVAL_OPTIONS, getRemovalOption, getSafeOptions, getOptionsByMaxCost, getLeastPainful, getAllRemovalMethods, formatRemovalOption } from '../../src/data/tattooRemoval';
+
+describe('tattoo removal system', () => {
+  it('has 6 removal methods', () => { expect(TATTOO_REMOVAL_OPTIONS.length).toBe(6); expect(getAllRemovalMethods().length).toBe(6); });
+  it('looks up by method', () => { const divine = getRemovalOption('divine'); expect(divine).toBeDefined(); expect(divine!.risk).toBe('safe'); });
+  it('has safe options', () => { const safe = getSafeOptions(); expect(safe.length).toBeGreaterThanOrEqual(2); safe.forEach((o) => expect(o.risk).toBe('safe')); });
+  it('filters by cost', () => { const free = getOptionsByMaxCost(0); expect(free.length).toBeGreaterThanOrEqual(2); });
+  it('least painful has low score', () => { expect(getLeastPainful().painLevel).toBeLessThanOrEqual(2); });
+  it('all have failure effects', () => { TATTOO_REMOVAL_OPTIONS.forEach((o) => expect(o.failureEffect.length).toBeGreaterThan(15)); });
+  it('pain levels vary', () => { const pains = TATTOO_REMOVAL_OPTIONS.map((o) => o.painLevel); expect(Math.max(...pains) - Math.min(...pains)).toBeGreaterThanOrEqual(5); });
+  it('formats option', () => { expect(formatRemovalOption(TATTOO_REMOVAL_OPTIONS[0])).toContain('Pain'); });
+});

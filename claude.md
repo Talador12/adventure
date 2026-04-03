@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 🎉 **+1000 TESTS MILESTONE** — 6 new systems + 46 tests (2292 total) — villain monologues, diplomatic gifts, shapeshifter detectors, dragon hoards, astral weather, tattoo removal:
+  - **Villain monologue generator** — `villainMonologue.ts` with 6 monologues across 6 archetypes, interruption DCs, dramatic pauses, completion effects.
+  - **Diplomatic gift generator** — `diplomaticGift.ts` with 9 gifts across 7 cultures, cultural significance, taboos, reaction outcomes.
+  - **Shapeshifter detector** — `shapeshifterDetector.ts` with 10 techniques across 5 methods, false positive rates, effectiveness per type.
+  - **Dragon hoard layout** — `dragonHoardLayout.ts` with 3 layouts (red/blue/green), treasure zones, guardian positions, alarm triggers, escape routes.
+  - **Astral weather hazards** — `astralWeatherHazard.ts` with 6 hazards (psychic storm/color cascade/temporal eddy/gravity wave/void pocket/memory rain).
+  - **Tattoo removal system** — `tattooRemoval.ts` with 6 methods across 4 risk levels, pain scales, success/failure effects, side effects.
+
 - 6 new systems + 42 tests (2246 total) — dark bargains, NPC death scenes, lair actions, planar refugees, dream combat, magical library:
   - **Dark bargain generator** — `darkBargain.ts` with 5 bargains from 5 sources (devil/death/hag/eldritch/shadow), hidden costs, escalation mechanics, break conditions, temptation levels.
   - **NPC death scene** — `npcDeathScene.ts` with 6 scenes across 6 contexts (combat/sacrifice/betrayal/illness/old_age/heroic), last words, dramatic beats, memorial options.
@@ -1120,17 +1128,23 @@ The complete feature set built from project inception through 46 development ite
 - ~~Dream combat system~~ **DONE** — `dreamCombat.ts` with 3 terrains + psychic attacks
 - ~~Magical library catalog~~ **DONE** — `magicalLibraryCatalog.ts` with 3 sections + book defenses
 
-**Wave 54 Roadmap:**
+**Wave 54 — 🎉 +1000 TESTS IN ONE SESSION (2,292 tests):**
+- ~~Villain monologue generator~~ **DONE** — `villainMonologue.ts` with 6 archetypes + interruption
+- ~~Diplomatic gift generator~~ **DONE** — `diplomaticGift.ts` with 9 gifts × 7 cultures + taboos
+- ~~Shapeshifter detector~~ **DONE** — `shapeshifterDetector.ts` with 10 techniques × 5 methods
+- ~~Dragon hoard layout~~ **DONE** — `dragonHoardLayout.ts` with 3 layouts + zones + alarms
+- ~~Astral weather hazards~~ **DONE** — `astralWeatherHazard.ts` with 6 hazards + benefits
+- ~~Tattoo removal system~~ **DONE** — `tattooRemoval.ts` with 6 methods + pain levels
+
+**Wave 55 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
-- Encounter terrain generator — AI builds thematic battle maps from scene description
-- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Random villain monologue generator — dramatic speeches with interruption mechanics
-- Magical tattoo removal system — consequences of removing enchanted inkwork
-- Random diplomatic gift generator — culturally appropriate gifts for foreign dignitaries
-- Astral weather hazard table — environmental dangers in the space between planes
-- Shapeshifter infiltration detector — methods and DCs for identifying disguised creatures
-- Random dragon hoard layout — treasure room configurations with guardian positions
+- Random battlefield aftermath — post-combat environment storytelling and scavenging
+- Arcane addiction system — magical dependency with withdrawal and escalation
+- Random NPC pet/companion — memorable animals that follow NPCs around
+- Cursed artifact auction — bidding wars for dangerous magical items
+- Random ancient language decoder — in-game translation puzzles for inscriptions
+- Magical weather forecast — predicting upcoming magical events based on signs
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
