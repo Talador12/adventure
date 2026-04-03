@@ -10051,3 +10051,100 @@ describe('magical communication system', () => {
   it('all have flavor text', () => { COMMUNICATION_METHODS.forEach((m) => expect(m.flavor.length).toBeGreaterThan(15)); });
   it('formats method', () => { expect(formatCommMethod(COMMUNICATION_METHODS[0])).toContain('Interception'); });
 });
+
+// ---------------------------------------------------------------------------
+// Monster harvesting system
+// ---------------------------------------------------------------------------
+import { HARVEST_PROFILES, getHarvestProfile, getMaterialsByUse, getPerishableMaterials, getCraftableItems, getTotalHarvestValue as getMonsterHarvestValue, getAllMonsterNames, formatHarvestProfile } from '../../src/data/monsterHarvesting';
+
+describe('monster harvesting system', () => {
+  it('has at least 5 profiles', () => { expect(HARVEST_PROFILES.length).toBeGreaterThanOrEqual(5); });
+  it('looks up by name', () => { const dragon = getHarvestProfile('Dragon'); expect(dragon).toBeDefined(); expect(dragon!.materials.length).toBeGreaterThanOrEqual(3); });
+  it('filters by use', () => { const alchemy = getMaterialsByUse('alchemy'); expect(alchemy.length).toBeGreaterThanOrEqual(3); });
+  it('finds perishable materials', () => { const perishable = getPerishableMaterials(); expect(perishable.length).toBeGreaterThanOrEqual(3); perishable.forEach((m) => expect(m.spoilsIn).not.toBeNull()); });
+  it('finds craftable items', () => { const craftable = getCraftableItems(); expect(craftable.length).toBeGreaterThanOrEqual(4); craftable.forEach((m) => expect(m.craftableItem).not.toBeNull()); });
+  it('total harvest value is positive', () => { HARVEST_PROFILES.forEach((p) => expect(getMonsterHarvestValue(p)).toBeGreaterThan(0)); });
+  it('all have special notes', () => { HARVEST_PROFILES.forEach((p) => expect(p.specialNote.length).toBeGreaterThan(10)); });
+  it('formats profile', () => { expect(formatHarvestProfile(HARVEST_PROFILES[0])).toContain('Total value'); });
+});
+
+// ---------------------------------------------------------------------------
+// Artifact corruption tracker
+// ---------------------------------------------------------------------------
+import { CORRUPTION_PROFILES, getCorruptionProfile, getStageByName, getCorruptionStageOrder, isFullyCorrupted, getAllArtifactNames, formatCorruptionProfile } from '../../src/data/artifactCorruption';
+
+describe('artifact corruption tracker', () => {
+  it('has at least 3 artifacts', () => { expect(CORRUPTION_PROFILES.length).toBeGreaterThanOrEqual(3); });
+  it('has 5 corruption stages', () => { expect(getCorruptionStageOrder().length).toBe(5); });
+  it('looks up profile', () => { const blade = getCorruptionProfile('Hungering'); expect(blade).toBeDefined(); expect(blade!.stages.length).toBe(5); });
+  it('stages have escalating DCs', () => { CORRUPTION_PROFILES.forEach((p) => { const dcs = p.stages.map((s) => s.saveDC); for (let i = 1; i < dcs.length; i++) expect(dcs[i]).toBeGreaterThanOrEqual(dcs[i - 1]); }); });
+  it('consumed is fully corrupted', () => { expect(isFullyCorrupted('consumed')).toBe(true); expect(isFullyCorrupted('clean')).toBe(false); });
+  it('all have purification costs', () => { CORRUPTION_PROFILES.forEach((p) => expect(p.purificationCost.length).toBeGreaterThan(15)); });
+  it('all have resistance methods', () => { CORRUPTION_PROFILES.forEach((p) => expect(p.resistanceMethod.length).toBeGreaterThan(10)); });
+  it('formats profile', () => { expect(formatCorruptionProfile(CORRUPTION_PROFILES[0], 'tempted')).toContain('TEMPTED'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC voice/accent generator
+// ---------------------------------------------------------------------------
+import { NPC_VOICES, getRandomVoice, getVoicesByType, getVoicesByAccent, getAllVoiceTypes, getAllAccents, formatVoiceProfile } from '../../src/data/npcVoiceAccent';
+
+describe('NPC voice/accent generator', () => {
+  it('has at least 8 voices', () => { expect(NPC_VOICES.length).toBeGreaterThanOrEqual(8); });
+  it('has at least 6 voice types', () => { expect(getAllVoiceTypes().length).toBeGreaterThanOrEqual(6); });
+  it('has at least 5 accents', () => { expect(getAllAccents().length).toBeGreaterThanOrEqual(5); });
+  it('generates random voice', () => { const v = getRandomVoice(); expect(v.samplePhrases.length).toBeGreaterThanOrEqual(3); expect(v.catchphrase.length).toBeGreaterThan(3); });
+  it('filters by type', () => { const gruff = getVoicesByType('gruff'); expect(gruff.length).toBeGreaterThanOrEqual(1); });
+  it('all have RP tips', () => { NPC_VOICES.forEach((v) => expect(v.rpTip.length).toBeGreaterThan(15)); });
+  it('formats voice', () => { expect(formatVoiceProfile(NPC_VOICES[0])).toContain('RP tip'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical trap evolution
+// ---------------------------------------------------------------------------
+import { EVOLVING_TRAPS, getRandomEvolvingTrap, getCurrentDC as getEvolvingDC, getActiveEvolutions, getAllTrapIntelligences, formatEvolvingTrap } from '../../src/data/evolvingTrap';
+
+describe('magical trap evolution', () => {
+  it('has at least 3 traps', () => { expect(EVOLVING_TRAPS.length).toBeGreaterThanOrEqual(3); });
+  it('has 4 intelligence levels', () => { expect(getAllTrapIntelligences().length).toBe(4); });
+  it('generates random trap', () => { const t = getRandomEvolvingTrap(); expect(t.name.length).toBeGreaterThan(3); expect(t.evolutions.length).toBeGreaterThanOrEqual(3); });
+  it('DC increases with failures', () => { const t = EVOLVING_TRAPS[0]; expect(getEvolvingDC(t, 0)).toBe(t.baseDC); expect(getEvolvingDC(t, 3)).toBeGreaterThan(t.baseDC); });
+  it('evolutions activate progressively', () => { const t = EVOLVING_TRAPS[0]; expect(getActiveEvolutions(t, 0).length).toBe(0); expect(getActiveEvolutions(t, 3).length).toBe(3); });
+  it('all have weaknesses', () => { EVOLVING_TRAPS.forEach((t) => expect(t.weakness.length).toBeGreaterThan(15)); });
+  it('formats trap', () => { expect(formatEvolvingTrap(EVOLVING_TRAPS[0], 2)).toContain('Active adaptations'); });
+});
+
+// ---------------------------------------------------------------------------
+// Cross-plane messenger service
+// ---------------------------------------------------------------------------
+import { MESSENGER_SERVICES, getRandomService, getServicesBySpeed, getServicesForPlane, getServicesForPackage, getMostReliable, getAllSpeeds as getAllDeliverySpeeds, formatService } from '../../src/data/crossPlaneMessenger';
+
+describe('cross-plane messenger service', () => {
+  it('has at least 5 services', () => { expect(MESSENGER_SERVICES.length).toBeGreaterThanOrEqual(5); });
+  it('has 4 delivery speeds', () => { expect(getAllDeliverySpeeds().length).toBe(4); });
+  it('generates random service', () => { const s = getRandomService(); expect(s.name.length).toBeGreaterThan(3); expect(s.operatingPlanes.length).toBeGreaterThanOrEqual(2); });
+  it('filters by speed', () => { const instant = getServicesBySpeed('instant'); expect(instant.length).toBeGreaterThanOrEqual(1); });
+  it('filters by plane', () => { const material = getServicesForPlane('Material'); expect(material.length).toBeGreaterThanOrEqual(4); });
+  it('filters by package type', () => { const living = getServicesForPackage('living_creature'); expect(living.length).toBeGreaterThanOrEqual(1); });
+  it('most reliable has high score', () => { expect(getMostReliable().reliability).toBeGreaterThanOrEqual(9); });
+  it('all have restrictions', () => { MESSENGER_SERVICES.forEach((s) => expect(s.specialRestrictions.length).toBeGreaterThanOrEqual(1)); });
+  it('formats service', () => { expect(formatService(MESSENGER_SERVICES[0])).toContain('Planes'); });
+});
+
+// ---------------------------------------------------------------------------
+// Astral ship combat expansion
+// ---------------------------------------------------------------------------
+import { ASTRAL_WEAPONS, ASTRAL_SHIELDS, BOARDING_ACTIONS, getWeapon as getAstralWeapon, getWeaponsByType as getAstralWeaponsByType, getShield as getAstralShield, getAllWeaponTypes as getAllAstralWeaponTypes, getAllShieldTypes, formatWeapon as formatAstralWeapon, formatShield as formatAstralShield } from '../../src/data/astralShipCombat';
+
+describe('astral ship combat expansion', () => {
+  it('has at least 5 weapons', () => { expect(ASTRAL_WEAPONS.length).toBeGreaterThanOrEqual(5); });
+  it('has at least 4 shields', () => { expect(ASTRAL_SHIELDS.length).toBeGreaterThanOrEqual(4); });
+  it('has at least 4 boarding actions', () => { expect(BOARDING_ACTIONS.length).toBeGreaterThanOrEqual(4); });
+  it('looks up weapon', () => { const ballista = getAstralWeapon('Ballista'); expect(ballista).toBeDefined(); });
+  it('filters weapons by type', () => { expect(getAllAstralWeaponTypes().length).toBeGreaterThanOrEqual(5); });
+  it('looks up shield', () => { const barrier = getAstralShield('arcane_barrier'); expect(barrier).toBeDefined(); expect(barrier!.hpAbsorbed).toBeGreaterThan(0); });
+  it('has 4 shield types', () => { expect(getAllShieldTypes().length).toBe(4); });
+  it('boarding actions have counters', () => { BOARDING_ACTIONS.forEach((a) => expect(a.counterAction.length).toBeGreaterThan(10)); });
+  it('formats weapon', () => { expect(formatAstralWeapon(ASTRAL_WEAPONS[0])).toContain('Crew'); });
+  it('formats shield', () => { expect(formatAstralShield(ASTRAL_SHIELDS[0])).toContain('Absorbs'); });
+});

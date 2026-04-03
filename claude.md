@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 🏆 **WAVE 50** — 6 new systems + 49 tests (2110 total) — monster harvesting, artifact corruption, NPC voices, evolving traps, cross-plane messengers, astral ship combat:
+  - **Monster harvesting** — `monsterHarvesting.ts` with 5 monster profiles, harvestable materials with spoil timers, crafting recipes, preservation methods.
+  - **Artifact corruption tracker** — `artifactCorruption.ts` with 3 artifacts (Hungering Blade/Crown of Whispers/Mirror of Vanity), 5-stage corruption, escalating save DCs, purification.
+  - **NPC voice/accent generator** — `npcVoiceAccent.ts` with 8 voices × 8 accents, sample phrases, catchphrases, RP tips for DMs.
+  - **Evolving traps** — `evolvingTrap.ts` with 3 traps (3 intelligence levels) that learn from failed disarms, escalating DCs, weaknesses.
+  - **Cross-plane messenger** — `crossPlaneMessenger.ts` with 6 services (Ethereal Post/Modron Express/Imp Couriers/Dream Network/Dryad Root Mail/Planar Teleport), reliability ratings, package types.
+  - **Astral ship combat** — `astralShipCombat.ts` with 6 weapons, 4 shields, 4 boarding actions with counter-actions.
+
 - 6 new systems + 47 tests (2061 total) — encounter tuner, arcane research, NPC backstories, weather terrain, ancient ruins, magical communication:
   - **Encounter difficulty tuner** — `encounterDifficultyTuner.ts` with D&D 5e XP thresholds, party condition assessment, healer/tank/magic item CR adjustments, warning flags.
   - **Arcane research breakthrough** — `arcaneResearch.ts` with 5 projects across 5 fields, weekly DC progression, breakthrough/partial/catastrophic results, completion chance calculator.
@@ -1056,17 +1064,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Ancient ruin floor plan~~ **DONE** — `ancientRuinLayout.ts` with 2 multi-room ruins + connections
 - ~~Magical communication~~ **DONE** — `magicalCommunication.ts` with 6 methods + interception risks
 
-**Wave 50 Roadmap:**
+**Wave 50 — 🏆 THE FIFTY (2,110 tests):**
+- ~~Monster harvesting~~ **DONE** — `monsterHarvesting.ts` with 5 profiles + spoil timers + crafting
+- ~~Artifact corruption tracker~~ **DONE** — `artifactCorruption.ts` with 3 artifacts × 5 stages
+- ~~NPC voice/accent generator~~ **DONE** — `npcVoiceAccent.ts` with 8 voices + RP tips
+- ~~Evolving traps~~ **DONE** — `evolvingTrap.ts` with 3 traps + adaptive intelligence
+- ~~Cross-plane messenger~~ **DONE** — `crossPlaneMessenger.ts` with 6 services + package types
+- ~~Astral ship combat~~ **DONE** — `astralShipCombat.ts` with 6 weapons + 4 shields + boarding
+
+**Wave 51 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Astral ship combat expansion — spelljammer weapons, shields, and boarding actions
-- Random artifact corruption tracker — how powerful items corrupt their wielders over time
-- Monster harvesting system — what body parts are valuable and what they can craft
-- Random NPC voice/accent generator — speech patterns for DM roleplay
-- Magical trap evolution — traps that learn from failed disarm attempts
-- Cross-plane messenger service — FedEx but for the multiverse
+- Illithid colony generator — mind flayer lairs with elder brain mechanics and thrall hierarchies
+- Random magical weather calendar — yearly cycle of magical weather events by region
+- Ancestral spirit guide system — departed mentors who offer wisdom and occasional intervention
+- Random pocket dimension generator — small custom planes created by powerful mages
+- Arcane black market catalog — forbidden items, cursed goods, and stolen magical artifacts for sale
+- Clockwork dungeon generator — mechanized dungeons with gear-driven rooms and timed puzzles
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
