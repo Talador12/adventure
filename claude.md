@@ -55,6 +55,15 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 44 tests (2336 total) + TEST FILE SPLIT — arcane addiction, cursed auctions, NPC pets, ancient language, battlefield aftermath, magical forecasts:
+  - **Test infrastructure: split `game-logic.test.ts`** into `game-logic.test.ts` (1250 original tests) + `wave-systems.test.ts` (1086 session tests). Clean separation, zero import collisions.
+  - **Arcane addiction** — `arcaneAddiction.ts` with 3 profiles (potion abuse/wild magic/leyline siphoning), 5 escalating stages, withdrawal DCs, cure methods, relapse triggers.
+  - **Cursed artifact auction** — `cursedAuction.ts` with 2 auctions, lots with hidden natures, rival bidders, house rules, plot twists.
+  - **NPC pet/companion** — `npcPetCompanion.ts` with 6 memorable pets (General Whiskers the one-eyed cat, Echo the raven that speaks in dead people's voices, Duchess the pig in a tiny crown).
+  - **Ancient language decoder** — `ancientLanguageDecoder.ts` with 6 inscription puzzles across 6 language families, partial clues, translation rewards.
+  - **Battlefield aftermath** — `battlefieldAftermath.ts` with 3 aftermaths (skirmish/battle/siege), sensory details, scavenge opportunities, narrative moments.
+  - **Magical weather forecast** — `magicalForecast.ts` with 6 forecasts, signs/accuracy/false alarm rates, preparation advice.
+
 - 🎉 **+1000 TESTS MILESTONE** — 6 new systems + 46 tests (2292 total) — villain monologues, diplomatic gifts, shapeshifter detectors, dragon hoards, astral weather, tattoo removal:
   - **Villain monologue generator** — `villainMonologue.ts` with 6 monologues across 6 archetypes, interruption DCs, dramatic pauses, completion effects.
   - **Diplomatic gift generator** — `diplomaticGift.ts` with 9 gifts across 7 cultures, cultural significance, taboos, reaction outcomes.
@@ -1136,15 +1145,26 @@ The complete feature set built from project inception through 46 development ite
 - ~~Astral weather hazards~~ **DONE** — `astralWeatherHazard.ts` with 6 hazards + benefits
 - ~~Tattoo removal system~~ **DONE** — `tattooRemoval.ts` with 6 methods + pain levels
 
-**Wave 55 Roadmap:**
+**Wave 55 (2,336 tests + test file split):**
+- ~~Test file split~~ **DONE** — `game-logic.test.ts` (1250) + `wave-systems.test.ts` (1086)
+- ~~Arcane addiction~~ **DONE** — `arcaneAddiction.ts` with 3 profiles × 5 stages
+- ~~Cursed artifact auction~~ **DONE** — `cursedAuction.ts` with 2 auctions + cursed lots
+- ~~NPC pet/companion~~ **DONE** — `npcPetCompanion.ts` with 6 memorable pets
+- ~~Ancient language decoder~~ **DONE** — `ancientLanguageDecoder.ts` with 6 puzzles × 6 languages
+- ~~Battlefield aftermath~~ **DONE** — `battlefieldAftermath.ts` with 3 scales + narrative moments
+- ~~Magical weather forecast~~ **DONE** — `magicalForecast.ts` with 6 forecasts + false alarm rates
+
+**Wave 56 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
-- Random battlefield aftermath — post-combat environment storytelling and scavenging
-- Arcane addiction system — magical dependency with withdrawal and escalation
-- Random NPC pet/companion — memorable animals that follow NPCs around
-- Cursed artifact auction — bidding wars for dangerous magical items
-- Random ancient language decoder — in-game translation puzzles for inscriptions
-- Magical weather forecast — predicting upcoming magical events based on signs
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Random villain lair designer — themed boss rooms with environmental storytelling
+- Magical bond system — shared HP or abilities between bonded party members
+- Random quest reward negotiation — NPCs who haggle over payment for completed quests
+- Artifact history generator — procedural backstories for legendary items spanning millennia
+- Random tavern entertainment — live acts, gambling games, and underground fight clubs
+- Magical creature domestication — taming wild magical beasts with patience and skill checks
+- Cross-campaign timeline — track world events across multiple play sessions
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

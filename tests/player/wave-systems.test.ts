@@ -2098,3 +2098,95 @@ describe('tattoo removal system', () => {
   it('pain levels vary', () => { const pains = TATTOO_REMOVAL_OPTIONS.map((o) => o.painLevel); expect(Math.max(...pains) - Math.min(...pains)).toBeGreaterThanOrEqual(5); });
   it('formats option', () => { expect(formatRemovalOption(TATTOO_REMOVAL_OPTIONS[0])).toContain('Pain'); });
 });
+
+// ---------------------------------------------------------------------------
+// Arcane addiction system
+// ---------------------------------------------------------------------------
+import { ADDICTION_PROFILES, getAddictionProfile, getAllAddictionSources, getAllStages as getAllAddictionStages, formatAddiction } from '../../src/data/arcaneAddiction';
+
+describe('arcane addiction system', () => {
+  it('has at least 3 profiles', () => { expect(ADDICTION_PROFILES.length).toBeGreaterThanOrEqual(3); });
+  it('has 5 addiction stages', () => { expect(getAllAddictionStages().length).toBe(5); });
+  it('looks up by source', () => { const p = getAddictionProfile('potion_abuse'); expect(p).toBeDefined(); expect(p!.stages.length).toBeGreaterThanOrEqual(3); });
+  it('withdrawal DCs escalate', () => { ADDICTION_PROFILES.forEach((p) => { const dcs = p.stages.map((s) => s.saveDC); for (let i = 1; i < dcs.length; i++) expect(dcs[i]).toBeGreaterThanOrEqual(dcs[i - 1]); }); });
+  it('all have cure methods', () => { ADDICTION_PROFILES.forEach((p) => expect(p.cureMethod.length).toBeGreaterThan(15)); });
+  it('all have relapse triggers', () => { ADDICTION_PROFILES.forEach((p) => expect(p.relapseTrigger.length).toBeGreaterThan(10)); });
+  it('formats addiction', () => { expect(formatAddiction(ADDICTION_PROFILES[0], 'dependent')).toContain('dependent'); });
+});
+
+// ---------------------------------------------------------------------------
+// Cursed artifact auction
+// ---------------------------------------------------------------------------
+import { CURSED_AUCTIONS, getRandomAuction, getTotalLots, getCursedLots, getHighRiskLots, formatAuction } from '../../src/data/cursedAuction';
+
+describe('cursed artifact auction', () => {
+  it('has at least 2 auctions', () => { expect(CURSED_AUCTIONS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random auction', () => { const a = getRandomAuction(); expect(a.auctionName.length).toBeGreaterThan(3); expect(a.lots.length).toBeGreaterThanOrEqual(3); });
+  it('counts lots', () => { CURSED_AUCTIONS.forEach((a) => expect(getTotalLots(a)).toBe(a.lots.length)); });
+  it('most lots are cursed', () => { CURSED_AUCTIONS.forEach((a) => expect(getCursedLots(a).length).toBeGreaterThanOrEqual(1)); });
+  it('all have plot twists', () => { CURSED_AUCTIONS.forEach((a) => expect(a.plotTwist.length).toBeGreaterThan(20)); });
+  it('all have house rules', () => { CURSED_AUCTIONS.forEach((a) => expect(a.houseRules.length).toBeGreaterThanOrEqual(3)); });
+  it('formats auction', () => { expect(formatAuction(CURSED_AUCTIONS[0])).toContain('Lot'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC pet/companion
+// ---------------------------------------------------------------------------
+import { NPC_PETS, getRandomPet, getPetsByRole, getPetsWithPlotRelevance, getPetsWithMechanicalUse, getAllPetRoles, formatPet } from '../../src/data/npcPetCompanion';
+
+describe('NPC pet/companion', () => {
+  it('has at least 6 pets', () => { expect(NPC_PETS.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 5 roles', () => { expect(getAllPetRoles().length).toBeGreaterThanOrEqual(5); });
+  it('generates random pet', () => { const p = getRandomPet(); expect(p.name.length).toBeGreaterThan(2); expect(p.quirk.length).toBeGreaterThan(10); });
+  it('most have plot relevance', () => { expect(getPetsWithPlotRelevance().length).toBeGreaterThanOrEqual(3); });
+  it('most have mechanical use', () => { expect(getPetsWithMechanicalUse().length).toBeGreaterThanOrEqual(3); });
+  it('all have owner relationships', () => { NPC_PETS.forEach((p) => expect(p.ownerRelationship.length).toBeGreaterThan(10)); });
+  it('formats pet', () => { expect(formatPet(NPC_PETS[0])).toContain('Quirk'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ancient language decoder
+// ---------------------------------------------------------------------------
+import { INSCRIPTION_PUZZLES, getRandomPuzzle as getRandomInscription, getPuzzlesByLanguage, getAllLanguageFamilies, formatPuzzle as formatInscription } from '../../src/data/ancientLanguageDecoder';
+
+describe('ancient language decoder', () => {
+  it('has at least 6 puzzles', () => { expect(INSCRIPTION_PUZZLES.length).toBeGreaterThanOrEqual(6); });
+  it('covers 6 language families', () => { expect(getAllLanguageFamilies().length).toBe(6); });
+  it('generates random puzzle', () => { const p = getRandomInscription(); expect(p.inscription.length).toBeGreaterThan(5); expect(p.translation.length).toBeGreaterThan(10); });
+  it('filters by language', () => { const draconic = getPuzzlesByLanguage('draconic'); expect(draconic.length).toBeGreaterThanOrEqual(1); });
+  it('all have partial clues', () => { INSCRIPTION_PUZZLES.forEach((p) => expect(p.partialClue.length).toBeGreaterThan(15)); });
+  it('all have rewards', () => { INSCRIPTION_PUZZLES.forEach((p) => expect(p.reward.length).toBeGreaterThan(10)); });
+  it('formats with translation toggle', () => { const p = getRandomInscription(); expect(formatInscription(p)).not.toContain('Translation'); expect(formatInscription(p, true)).toContain('Translation'); });
+});
+
+// ---------------------------------------------------------------------------
+// Battlefield aftermath
+// ---------------------------------------------------------------------------
+import { BATTLEFIELD_AFTERMATHS, getRandomAftermath, getAftermathByScale, getAftermathsWithSurvivors, getAllBattleScales, formatAftermath } from '../../src/data/battlefieldAftermath';
+
+describe('battlefield aftermath', () => {
+  it('has at least 3 aftermaths', () => { expect(BATTLEFIELD_AFTERMATHS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 scales', () => { expect(getAllBattleScales().length).toBeGreaterThanOrEqual(3); });
+  it('generates random aftermath', () => { const a = getRandomAftermath(); expect(a.details.length).toBeGreaterThanOrEqual(3); expect(a.scavengeOpportunities.length).toBeGreaterThanOrEqual(3); });
+  it('all have survivors', () => { expect(getAftermathsWithSurvivors().length).toBe(BATTLEFIELD_AFTERMATHS.length); });
+  it('all have narrative moments', () => { BATTLEFIELD_AFTERMATHS.forEach((a) => expect(a.narrativeMoment.length).toBeGreaterThan(20)); });
+  it('all have environmental hazards', () => { BATTLEFIELD_AFTERMATHS.forEach((a) => expect(a.environmentalHazard.length).toBeGreaterThan(15)); });
+  it('scavenge items have DCs', () => { BATTLEFIELD_AFTERMATHS.forEach((a) => a.scavengeOpportunities.forEach((s) => expect(s.findDC).toBeGreaterThanOrEqual(8))); });
+  it('formats aftermath', () => { expect(formatAftermath(BATTLEFIELD_AFTERMATHS[0])).toContain('Hazard'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical weather forecast
+// ---------------------------------------------------------------------------
+import { MAGICAL_FORECASTS, getRandomForecast, getForecastsByAccuracy, getReliableForecasts, getAllForecastAccuracies, formatForecast } from '../../src/data/magicalForecast';
+
+describe('magical weather forecast', () => {
+  it('has at least 6 forecasts', () => { expect(MAGICAL_FORECASTS.length).toBeGreaterThanOrEqual(6); });
+  it('has 4 accuracy levels', () => { expect(getAllForecastAccuracies().length).toBe(4); });
+  it('generates random forecast', () => { const f = getRandomForecast(); expect(f.signs.length).toBeGreaterThanOrEqual(2); expect(f.prediction.length).toBeGreaterThan(20); });
+  it('filters by accuracy', () => { const certain = getForecastsByAccuracy('certain'); expect(certain.length).toBeGreaterThanOrEqual(1); certain.forEach((f) => expect(f.accuracy).toBe('certain')); });
+  it('reliable forecasts have low false alarm', () => { const reliable = getReliableForecasts(); expect(reliable.length).toBeGreaterThanOrEqual(2); reliable.forEach((f) => expect(f.falseAlarmChance).toBeLessThanOrEqual(15)); });
+  it('all have preparation advice', () => { MAGICAL_FORECASTS.forEach((f) => expect(f.preparationAdvice.length).toBeGreaterThan(15)); });
+  it('all have mechanical impact', () => { MAGICAL_FORECASTS.forEach((f) => expect(f.mechanicalImpact.length).toBeGreaterThan(15)); });
+  it('formats forecast', () => { expect(formatForecast(MAGICAL_FORECASTS[0])).toContain('Signs'); });
+});
