@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.9.0
+## Current Version: v11.0.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 32 tests (628 total) — prepared spells, wild magic, healing surges, terrain escalation, stances, ASI planner:
+  - **Prepared spell management** — `preparedSpells.ts` with 3 spell styles (prepared/known/none) mapped to all 12 classes. `getMaxPreparedSpells()` scales by level + ability mod. Prepare/unprepare with slot tracking. Non-casters filtered. "Spell Preparation" usable in character management.
+  - **Wild magic surge table** — `wildMagicSurge.ts` with 50 effects across 4 severities (harmless/beneficial/chaotic/dangerous). d20 check (surge on nat 1), then random d50 effect. Ranges from "turn into a potted plant" to "cast Fireball centered on yourself". "Wild Magic Surge" button in DMSidebar.
+  - **Healing surge system** — `healingSurge.ts` with 4e-inspired surges. Max surges = CON mod + half level. Each surge heals 25% max HP. `useSurge()`/`restoreSurges()` on long rest. "Healing Surges" button in DMSidebar.
+  - **Terrain hazard escalation** — `terrainEscalation.ts` with 5 escalation types (Fire/Flood/Collapse/Fog/Acid). Damage and area increase each round with thematic descriptions per stage. Coverage bar visualization. Expandable escalation picker in DMSidebar.
+  - **Combat stance system** — `combatStances.ts` with 5 stances (Balanced/Aggressive/Defensive/Reckless/Protective). Each trades attack, damage, AC, speed, and saves. `applyStanceModifiers()` for integration. "Combat Stances" button in DMSidebar.
+  - **ASI planner** — `asiPlanner.ts` with ASI level tables (standard + Fighter/Rogue bonus). 10 popular feat recommendations filtered by class. `suggestASI()` recommends stat boost vs feat based on current scores. "ASI Planner" button in DMSidebar.
+- 32 new tests (628 total) covering 6 systems:
+  - **Prepared spells** (5 tests): style classification, max prepared scaling, prepare success, max limit fail, unprepare.
+  - **Wild magic** (5 tests): 50-entry table, descriptions/mechanics, check boolean, effect validity, formatted output.
+  - **Healing surges** (5 tests): max surge scaling, heal-per-surge, use+decrement, empty fail, long rest restore.
+  - **Terrain escalation** (5 tests): config count, round 0 start, advance+increase, damage scaling, coverage bar.
+  - **Combat stances** (5 tests): stance count, balanced no-mods, aggressive trade-off, modifier application, formatted list.
+  - **ASI planner** (7 tests): standard ASI levels, fighter bonus, level detection, next ASI, feat filter, stat suggestion, formatted plan.
+
 - 6 new systems + 25 tests (596 total) — reactions, ready actions, spell DCs, OA detection, cover, initiative re-roll:
   - **Reaction tracker** — `reactionTracker.ts` tracks per-unit reaction availability. `useReaction()` marks used + reason. `refreshReaction()` on turn start. `refreshAllReactions()` for new round. "Reactions" button in DMSidebar.
   - **Ready action queue** — `readyAction.ts` manages held actions with trigger conditions. `readyAction()` stores action/trigger/round. `resolveReadiedAction()` fires when triggered. `expireReadiedActions()` cleans up old entries. "Ready Actions" button in DMSidebar.
@@ -428,12 +443,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Prepared spell management — track prepared vs known spells with daily preparation
-- Wild magic surge table — auto-roll on sorcerer spell casts with 50-entry surge table
-- Healing surge system — 4e-inspired bonus healing option for recovery-poor parties
-- Terrain hazard escalation — environmental dangers that worsen each round (spreading fire, rising water)
-- Combat stance system — aggressive/defensive/balanced stances with trade-offs
-- Ability score improvement planner — show ASI options and feat recommendations at level-up
+- ~~Prepared spell management~~ **DONE** — `preparedSpells.ts` with 3 styles for all classes
+- ~~Wild magic surge table~~ **DONE** — `wildMagicSurge.ts` with 50 effects × 4 severities
+- ~~Healing surge system~~ **DONE** — `healingSurge.ts` with CON-scaled surges
+- ~~Terrain hazard escalation~~ **DONE** — `terrainEscalation.ts` with 5 types + round scaling
+- ~~Combat stance system~~ **DONE** — `combatStances.ts` with 5 stances + trade-offs
+- ~~ASI planner~~ **DONE** — `asiPlanner.ts` with feat recommendations + stat suggestions
+
+**Wave 15 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Warband builder — create persistent enemy factions with named leaders and rank structure
+- Quest reward scaler — auto-adjust gold/XP/items by party level and quest difficulty
+- Persistent world clock — track in-game days, weeks, months with event scheduling
+- Ability check advantage tracker — track when characters have advantage/disadvantage on checks
+- Combat log search — full-text search through combat log history with filtering
+- Random weather generator — procedural daily weather with seasonal patterns and extremes
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

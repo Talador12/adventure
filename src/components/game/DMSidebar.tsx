@@ -1424,6 +1424,93 @@ export default function DMSidebar({
               🎲 Re-Roll Initiative
             </button>
 
+            {/* Wild magic surge */}
+            <button
+              onClick={async () => {
+                const { rollWildMagicCheck, rollSurgeEffect, formatSurgeEffect } = await import('../../data/wildMagicSurge');
+                if (rollWildMagicCheck()) {
+                  onAddDmMessage(formatSurgeEffect(rollSurgeEffect()));
+                } else {
+                  onAddDmMessage('🎲 Wild Magic check: No surge this time. (Rolled > 1)');
+                }
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-fuchsia-900/20 border border-fuchsia-600/30 text-fuchsia-400 font-semibold hover:bg-fuchsia-800/30 transition-all"
+              title="Roll wild magic check — d20, surge on nat 1, then d50 for effect"
+            >
+              🌀 Wild Magic Surge
+            </button>
+
+            {/* Combat stances */}
+            <button
+              onClick={async () => {
+                const { formatStanceOptions } = await import('../../lib/combatStances');
+                onAddDmMessage(formatStanceOptions());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all"
+              title="Show combat stance options with trade-offs"
+            >
+              ⚔️ Combat Stances
+            </button>
+
+            {/* Terrain escalation */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all cursor-pointer px-2">
+                🔥 Terrain Hazard Escalation
+              </summary>
+              <div className="mt-1 space-y-1">
+                {(['fire', 'flood', 'collapse', 'fog', 'acid'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={async () => {
+                      const { createEscalation, advanceEscalation } = await import('../../lib/terrainEscalation');
+                      const state = createEscalation(type);
+                      const result = advanceEscalation(state);
+                      onAddDmMessage(result.narration);
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-orange-600/40 transition-all text-[9px] text-slate-300 capitalize"
+                  >
+                    {type === 'fire' ? '🔥' : type === 'flood' ? '🌊' : type === 'collapse' ? '🪨' : type === 'fog' ? '🌫️' : '🧪'} {type}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* ASI planner */}
+            <button
+              onClick={async () => {
+                const { formatASIPlan } = await import('../../lib/asiPlanner');
+                if (selectedCharacterId) {
+                  const c = characters.find((ch) => ch.id === selectedCharacterId);
+                  if (c) { onAddDmMessage(formatASIPlan(c.class, c.level, c.stats)); return; }
+                }
+                const lines = characters.map((c) => formatASIPlan(c.class, c.level, c.stats));
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all disabled:opacity-30"
+              title="ASI/feat recommendations for level-up planning"
+            >
+              📈 ASI Planner
+            </button>
+
+            {/* Healing surges */}
+            <button
+              onClick={async () => {
+                const { createHealingSurgeState, formatSurgeStatus } = await import('../../lib/healingSurge');
+                const lines = characters.map((c) => {
+                  const conMod = Math.floor((c.stats.CON - 10) / 2);
+                  const state = createHealingSurgeState(c.id, c.level, conMod, c.maxHp);
+                  return formatSurgeStatus(state, c.name);
+                });
+                onAddDmMessage(lines.join('\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all disabled:opacity-30"
+              title="4e-style healing surges — bonus healing for recovery-poor parties"
+            >
+              💉 Healing Surges
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

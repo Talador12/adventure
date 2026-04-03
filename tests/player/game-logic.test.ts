@@ -4834,3 +4834,235 @@ describe('initiative re-roll', () => {
     expect(text).toContain('15 → 8');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Prepared spells
+// ---------------------------------------------------------------------------
+import { CLASS_SPELL_STYLE, getMaxPreparedSpells, createPreparationState, prepareSpell, unprepareSpell, formatPreparationStatus } from '../../src/lib/preparedSpells';
+
+describe('prepared spells', () => {
+  it('classifies spell styles correctly', () => {
+    expect(CLASS_SPELL_STYLE['Wizard']).toBe('prepared');
+    expect(CLASS_SPELL_STYLE['Bard']).toBe('known');
+    expect(CLASS_SPELL_STYLE['Fighter']).toBe('none');
+  });
+
+  it('getMaxPreparedSpells scales with level and mod', () => {
+    expect(getMaxPreparedSpells('Wizard', 5, 4)).toBe(9); // 5 + 4
+    expect(getMaxPreparedSpells('Paladin', 6, 3)).toBe(6); // floor(6/2) + 3
+  });
+
+  it('prepareSpell succeeds and tracks', () => {
+    let state = createPreparationState('c1', 'Wizard', 5, 4);
+    const result = prepareSpell(state, 'Fireball');
+    expect(result.success).toBe(true);
+    expect(result.state.preparedSpells).toContain('Fireball');
+  });
+
+  it('prepareSpell fails at max', () => {
+    let state = createPreparationState('c1', 'Wizard', 1, 0); // max 1
+    state = prepareSpell(state, 'Shield').state;
+    const result = prepareSpell(state, 'Fireball');
+    expect(result.success).toBe(false);
+  });
+
+  it('unprepareSpell removes spell', () => {
+    let state = prepareSpell(createPreparationState('c1', 'Wizard', 5, 4), 'Fireball').state;
+    state = unprepareSpell(state, 'Fireball');
+    expect(state.preparedSpells).not.toContain('Fireball');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wild magic surge
+// ---------------------------------------------------------------------------
+import { WILD_MAGIC_TABLE, rollWildMagicCheck, rollSurgeEffect, formatSurgeEffect } from '../../src/data/wildMagicSurge';
+
+describe('wild magic surge', () => {
+  it('has 50 effects', () => {
+    expect(WILD_MAGIC_TABLE.length).toBe(50);
+  });
+
+  it('all effects have descriptions and mechanics', () => {
+    for (const e of WILD_MAGIC_TABLE) {
+      expect(e.description.length).toBeGreaterThan(0);
+      expect(e.mechanical.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('rollWildMagicCheck returns boolean', () => {
+    expect(typeof rollWildMagicCheck()).toBe('boolean');
+  });
+
+  it('rollSurgeEffect returns valid effect', () => {
+    const effect = rollSurgeEffect();
+    expect(effect.roll).toBeGreaterThanOrEqual(1);
+    expect(['harmless', 'beneficial', 'chaotic', 'dangerous']).toContain(effect.severity);
+  });
+
+  it('formatSurgeEffect includes severity icon', () => {
+    const text = formatSurgeEffect(WILD_MAGIC_TABLE[0]);
+    expect(text).toContain('Wild Magic Surge');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Healing surges
+// ---------------------------------------------------------------------------
+import { calculateMaxSurges, calculateHealingPerSurge, createHealingSurgeState, useSurge, restoreSurges, formatSurgeStatus as formatHealingSurge } from '../../src/lib/healingSurge';
+
+describe('healing surges', () => {
+  it('calculateMaxSurges scales with level and CON', () => {
+    expect(calculateMaxSurges(5, 2)).toBe(4); // 2 + floor(5/2)
+    expect(calculateMaxSurges(1, -1)).toBe(1); // min 1
+  });
+
+  it('calculateHealingPerSurge is quarter of max HP', () => {
+    expect(calculateHealingPerSurge(40)).toBe(10);
+    expect(calculateHealingPerSurge(3)).toBe(1); // min 1
+  });
+
+  it('useSurge heals and decrements', () => {
+    const state = createHealingSurgeState('c1', 5, 2, 40);
+    const result = useSurge(state);
+    expect(result.success).toBe(true);
+    expect(result.healed).toBe(10);
+    expect(result.state.currentSurges).toBe(state.maxSurges - 1);
+  });
+
+  it('useSurge fails when empty', () => {
+    const state = { ...createHealingSurgeState('c1', 5, 2, 40), currentSurges: 0 };
+    expect(useSurge(state).success).toBe(false);
+  });
+
+  it('restoreSurges refills on long rest', () => {
+    const state = { ...createHealingSurgeState('c1', 5, 2, 40), currentSurges: 0 };
+    const restored = restoreSurges(state);
+    expect(restored.currentSurges).toBe(restored.maxSurges);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Terrain escalation
+// ---------------------------------------------------------------------------
+import { ESCALATION_CONFIGS, createEscalation, advanceEscalation, formatEscalationStatus } from '../../src/lib/terrainEscalation';
+
+describe('terrain escalation', () => {
+  it('has at least 5 escalation types', () => {
+    expect(ESCALATION_CONFIGS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('createEscalation starts at round 0', () => {
+    const state = createEscalation('fire');
+    expect(state.currentRound).toBe(0);
+    expect(state.affectedCells).toBe(0);
+  });
+
+  it('advanceEscalation increases round and damage', () => {
+    const state = createEscalation('fire');
+    const result = advanceEscalation(state);
+    expect(result.state.currentRound).toBe(1);
+    expect(result.state.affectedCells).toBeGreaterThan(0);
+    expect(result.narration.length).toBeGreaterThan(0);
+  });
+
+  it('damage escalates each round', () => {
+    let state = createEscalation('collapse');
+    const r1 = advanceEscalation(state);
+    const r2 = advanceEscalation(r1.state);
+    expect(r2.damage).toBeGreaterThan(r1.damage);
+  });
+
+  it('formatEscalationStatus shows coverage bar', () => {
+    let state = createEscalation('flood');
+    state = advanceEscalation(state).state; // advance once so cells > 0
+    const text = formatEscalationStatus(state);
+    expect(text).toContain('Rising Water');
+    expect(text).toContain('░'); // bar characters present
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combat stances
+// ---------------------------------------------------------------------------
+import { STANCES, getStance, applyStanceModifiers, formatStanceOptions } from '../../src/lib/combatStances';
+
+describe('combat stances', () => {
+  it('has 5 stances', () => {
+    expect(STANCES.length).toBe(5);
+  });
+
+  it('balanced has no modifiers', () => {
+    const b = getStance('balanced');
+    expect(b.attackBonus).toBe(0);
+    expect(b.acBonus).toBe(0);
+  });
+
+  it('aggressive trades AC for attack', () => {
+    const a = getStance('aggressive');
+    expect(a.attackBonus).toBeGreaterThan(0);
+    expect(a.acBonus).toBeLessThan(0);
+  });
+
+  it('applyStanceModifiers applies correctly', () => {
+    const result = applyStanceModifiers(5, 3, 16, 6, 'aggressive');
+    expect(result.attack).toBe(7); // 5 + 2
+    expect(result.ac).toBe(14); // 16 - 2
+  });
+
+  it('formatStanceOptions lists all stances', () => {
+    const text = formatStanceOptions();
+    expect(text).toContain('Aggressive');
+    expect(text).toContain('Defensive');
+    expect(text).toContain('Reckless');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ASI planner
+// ---------------------------------------------------------------------------
+import { getASILevels, isASILevel, getNextASILevel, recommendFeats, suggestASI, POPULAR_FEATS, formatASIPlan } from '../../src/lib/asiPlanner';
+
+describe('ASI planner', () => {
+  it('standard classes get ASIs at 4,8,12,16,19', () => {
+    const levels = getASILevels('Wizard');
+    expect(levels).toContain(4);
+    expect(levels).toContain(8);
+    expect(levels).toContain(19);
+  });
+
+  it('fighters get bonus ASIs', () => {
+    const levels = getASILevels('Fighter');
+    expect(levels).toContain(6);
+    expect(levels).toContain(14);
+    expect(levels.length).toBe(7); // 5 standard + 2 bonus
+  });
+
+  it('isASILevel detects correctly', () => {
+    expect(isASILevel('Wizard', 4)).toBe(true);
+    expect(isASILevel('Wizard', 3)).toBe(false);
+  });
+
+  it('getNextASILevel finds next', () => {
+    expect(getNextASILevel('Wizard', 3)).toBe(4);
+    expect(getNextASILevel('Wizard', 4)).toBe(8);
+    expect(getNextASILevel('Wizard', 19)).toBeNull();
+  });
+
+  it('recommendFeats filters by class', () => {
+    const feats = recommendFeats('Wizard', { INT: 18, WIS: 12, CHA: 10, STR: 8, DEX: 14, CON: 14 });
+    expect(feats.some((f) => f.name === 'War Caster')).toBe(true);
+    expect(feats.some((f) => f.name === 'Great Weapon Master')).toBe(false); // not for Wizard
+  });
+
+  it('suggestASI recommends stat boost when below 20', () => {
+    const suggestion = suggestASI({ INT: 16, WIS: 12, CHA: 10, STR: 8, DEX: 14, CON: 14 }, 'Wizard');
+    expect(suggestion).toContain('INT');
+  });
+
+  it('formatASIPlan includes next ASI and feats', () => {
+    const text = formatASIPlan('Wizard', 3, { INT: 16, WIS: 12, CHA: 10, STR: 8, DEX: 14, CON: 14 });
+    expect(text).toContain('Level 4');
+    expect(text).toContain('Recommended Feats');
+  });
+});
