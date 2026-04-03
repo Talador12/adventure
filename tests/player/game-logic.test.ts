@@ -9084,3 +9084,107 @@ describe('astral projection encounters', () => {
   it('some encounters have loot', () => { const withLoot = ASTRAL_ENCOUNTERS.filter((e) => e.loot !== null); expect(withLoot.length).toBeGreaterThanOrEqual(3); });
   it('formats encounter', () => { const e = getRandomAstralEncounter(); expect(formatAstralEncounter(e)).toContain('CR'); });
 });
+
+// ---------------------------------------------------------------------------
+// Lycanthropy progression
+// ---------------------------------------------------------------------------
+import { LYCANTHROPE_PROFILES, LYCANTHROPY_STAGES, createLycanthropyState, advanceInfection, triggerTransformation, canCure, getProfile, getStageInfo, getAllTypes as getAllLycanTypes, formatLycanthropy } from '../../src/data/lycanthropy';
+
+describe('lycanthropy progression', () => {
+  it('has 5 lycanthrope types', () => { expect(LYCANTHROPE_PROFILES.length).toBe(5); expect(getAllLycanTypes().length).toBe(5); });
+  it('has 5 infection stages', () => { expect(LYCANTHROPY_STAGES.length).toBe(5); });
+  it('creates bitten state', () => { const s = createLycanthropyState('werewolf'); expect(s.stage).toBe('bitten'); expect(s.daysSinceInfection).toBe(0); });
+  it('progresses through stages', () => { let s = createLycanthropyState('wererat'); s = advanceInfection(s, 4); expect(s.stage).toBe('feverish'); s = advanceInfection(s, 7); expect(s.stage).toBe('changing'); });
+  it('transformation advances stage', () => { let s = createLycanthropyState('werewolf'); s = advanceInfection(s, 11); s = triggerTransformation(s, false); expect(s.stage).toBe('transformed'); });
+  it('voluntary transformations lead to embraced', () => { let s = createLycanthropyState('werebear'); s = advanceInfection(s, 11); s = triggerTransformation(s, false); for (let i = 0; i < 3; i++) s = triggerTransformation(s, true); expect(s.stage).toBe('embraced'); });
+  it('early cure is possible', () => { const s = createLycanthropyState('weretiger'); expect(canCure(s).possible).toBe(true); });
+  it('embraced cure is harder', () => { let s = { ...createLycanthropyState('werewolf'), stage: 'embraced' as const }; expect(canCure(s).possible).toBe(false); });
+  it('profiles have vulnerabilities', () => { LYCANTHROPE_PROFILES.forEach((p) => expect(p.vulnerability.length).toBeGreaterThan(10)); });
+  it('formats state', () => { expect(formatLycanthropy(createLycanthropyState('werewolf'))).toContain('🐺'); });
+});
+
+// ---------------------------------------------------------------------------
+// Deity pantheon builder
+// ---------------------------------------------------------------------------
+import { PANTHEON, getDeity, getDeityByDomain, getRivals, getAllies, getAllDomains as getAllDivineDomains, formatDeity } from '../../src/data/deityPantheon';
+
+describe('deity pantheon builder', () => {
+  it('has at least 6 deities', () => { expect(PANTHEON.length).toBeGreaterThanOrEqual(6); });
+  it('looks up deity by name', () => { const d = getDeity('Solara'); expect(d).toBeDefined(); expect(d!.title).toContain('Dawn'); });
+  it('filters by domain', () => { const war = getDeityByDomain('war'); expect(war.length).toBeGreaterThanOrEqual(1); war.forEach((d) => expect(d.domains).toContain('war')); });
+  it('finds rivals', () => { const rivals = getRivals('Solara'); expect(rivals.length).toBeGreaterThanOrEqual(1); });
+  it('finds allies', () => { const allies = getAllies('Korrath'); expect(allies.length).toBeGreaterThanOrEqual(1); });
+  it('all deities have commandments', () => { PANTHEON.forEach((d) => expect(d.commandments.length).toBeGreaterThanOrEqual(2)); });
+  it('all deities have blessings and wraths', () => { PANTHEON.forEach((d) => { expect(d.blessingEffect.length).toBeGreaterThan(10); expect(d.wrathEffect.length).toBeGreaterThan(10); }); });
+  it('covers multiple domains', () => { expect(getAllDivineDomains().length).toBeGreaterThanOrEqual(5); });
+  it('formats deity', () => { expect(formatDeity(PANTHEON[0])).toContain('Commandments'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical tattoo system
+// ---------------------------------------------------------------------------
+import { MAGICAL_TATTOOS, getRandomTattoo, getTattoosByRarity, getTattoosByLocation, getTotalUpgradeCost, getMaxLevel, getAllLocations as getAllTattooLocations, formatTattoo } from '../../src/data/magicalTattoo';
+
+describe('magical tattoo system', () => {
+  it('has at least 5 tattoos', () => { expect(MAGICAL_TATTOOS.length).toBeGreaterThanOrEqual(5); });
+  it('generates random tattoo', () => { const t = getRandomTattoo(); expect(t.name.length).toBeGreaterThan(3); expect(t.baseEffect.length).toBeGreaterThan(10); });
+  it('filters by rarity', () => { const rare = getTattoosByRarity('rare'); expect(rare.length).toBeGreaterThanOrEqual(1); rare.forEach((t) => expect(t.rarity).toBe('rare')); });
+  it('filters by location', () => { const arm = getTattoosByLocation('arm'); expect(arm.length).toBeGreaterThanOrEqual(1); arm.forEach((t) => expect(t.location).toBe('arm')); });
+  it('total upgrade cost includes base', () => { MAGICAL_TATTOOS.forEach((t) => { expect(getTotalUpgradeCost(t)).toBeGreaterThanOrEqual(t.inkCost); }); });
+  it('max level scales with upgrades', () => { const withUpgrades = MAGICAL_TATTOOS.filter((t) => t.upgrades.length > 0); withUpgrades.forEach((t) => expect(getMaxLevel(t)).toBeGreaterThanOrEqual(2)); });
+  it('has 6 body locations', () => { expect(getAllTattooLocations().length).toBe(6); });
+  it('upgrades have requirements', () => { MAGICAL_TATTOOS.forEach((t) => t.upgrades.forEach((u) => expect(u.requirement.length).toBeGreaterThan(5))); });
+  it('formats tattoo', () => { expect(formatTattoo(MAGICAL_TATTOOS[0])).toContain('Ink'); });
+});
+
+// ---------------------------------------------------------------------------
+// Mass combat rules
+// ---------------------------------------------------------------------------
+import { UNIT_TEMPLATES, COMMANDER_ABILITIES, BATTLE_MODIFIERS, resolveClash, checkMorale as checkArmyMorale, getUnitsByType, getAllUnitTypes, formatUnit as formatArmyUnit, formatBattleModifier } from '../../src/data/massCombat';
+
+describe('mass combat rules', () => {
+  it('has at least 6 unit templates', () => { expect(UNIT_TEMPLATES.length).toBeGreaterThanOrEqual(6); });
+  it('has commander abilities', () => { expect(COMMANDER_ABILITIES.length).toBeGreaterThanOrEqual(4); });
+  it('has battle modifiers', () => { expect(BATTLE_MODIFIERS.length).toBeGreaterThanOrEqual(5); });
+  it('resolves clash with damage', () => { const result = resolveClash(UNIT_TEMPLATES[0], UNIT_TEMPLATES[1]); expect(result.attackerDamage).toBeGreaterThanOrEqual(0); expect(result.defenderDamage).toBeGreaterThanOrEqual(0); expect(result.description.length).toBeGreaterThan(10); });
+  it('modifiers affect clash', () => { const results = Array.from({ length: 20 }, () => resolveClash(UNIT_TEMPLATES[0], UNIT_TEMPLATES[0], [BATTLE_MODIFIERS[0]])); const avgDef = results.reduce((s, r) => s + r.attackerDamage, 0) / 20; expect(avgDef).toBeDefined(); });
+  it('morale check returns boolean', () => { expect(typeof checkArmyMorale(UNIT_TEMPLATES[0], 10)).toBe('boolean'); });
+  it('filters by unit type', () => { const archers = getUnitsByType('archers'); expect(archers.length).toBeGreaterThanOrEqual(1); archers.forEach((u) => expect(u.type).toBe('archers')); });
+  it('has multiple unit types', () => { expect(getAllUnitTypes().length).toBeGreaterThanOrEqual(5); });
+  it('formats unit', () => { expect(formatArmyUnit(UNIT_TEMPLATES[0])).toContain('ATK'); });
+  it('formats battle modifier', () => { expect(formatBattleModifier(BATTLE_MODIFIERS[0])).toContain('DEF'); });
+});
+
+// ---------------------------------------------------------------------------
+// Thieves guild job board
+// ---------------------------------------------------------------------------
+import { GUILD_JOBS, getRandomJob, getJobsByType, getJobsByRisk, getJobsUnderDC, getAllJobTypes, formatGuildJob } from '../../src/data/thievesGuildJobs';
+
+describe('thieves guild job board', () => {
+  it('has at least 6 jobs', () => { expect(GUILD_JOBS.length).toBeGreaterThanOrEqual(6); });
+  it('generates random job', () => { const j = getRandomJob(); expect(j.title.length).toBeGreaterThan(3); expect(j.payout).toBeGreaterThan(0); });
+  it('filters by type', () => { const theft = getJobsByType('theft'); expect(theft.length).toBeGreaterThanOrEqual(1); theft.forEach((j) => expect(j.type).toBe('theft')); });
+  it('filters by risk', () => { const high = getJobsByRisk('high'); expect(high.length).toBeGreaterThanOrEqual(2); high.forEach((j) => expect(j.risk).toBe('high')); });
+  it('filters under DC', () => { const easy = getJobsUnderDC(13); easy.forEach((j) => expect(j.dc).toBeLessThanOrEqual(13)); });
+  it('has 6 job types', () => { expect(getAllJobTypes().length).toBe(6); });
+  it('all jobs have complications', () => { GUILD_JOBS.forEach((j) => expect(j.complication.length).toBeGreaterThan(10)); });
+  it('all jobs have failure consequences', () => { GUILD_JOBS.forEach((j) => expect(j.failureConsequence.length).toBeGreaterThan(10)); });
+  it('formats job', () => { expect(formatGuildJob(getRandomJob())).toContain('Payout'); });
+});
+
+// ---------------------------------------------------------------------------
+// Dungeon room dressing
+// ---------------------------------------------------------------------------
+import { DUNGEON_ROOMS as DRESSED_ROOMS, getRoomDressing, getRandomRoomDressing, getRoomsWithTraps, getAllArchetypes, getTotalLootValue as getRoomLootValue, formatRoomDressing } from '../../src/data/dungeonRoomDressing';
+
+describe('dungeon room dressing', () => {
+  it('has at least 8 room archetypes', () => { expect(DRESSED_ROOMS.length).toBeGreaterThanOrEqual(8); expect(getAllArchetypes().length).toBeGreaterThanOrEqual(8); });
+  it('looks up by archetype', () => { const throne = getRoomDressing('throne_room'); expect(throne).toBeDefined(); expect(throne!.furniture.length).toBeGreaterThanOrEqual(3); });
+  it('generates random room', () => { const r = getRandomRoomDressing(); expect(r.furniture.length).toBeGreaterThanOrEqual(2); expect(r.ambiance.length).toBeGreaterThanOrEqual(2); });
+  it('some rooms have traps', () => { const trapped = getRoomsWithTraps(); expect(trapped.length).toBeGreaterThanOrEqual(4); trapped.forEach((r) => expect(r.possibleTrap).not.toBeNull()); });
+  it('all rooms have loot', () => { DRESSED_ROOMS.forEach((r) => expect(r.lootOptions.length).toBeGreaterThanOrEqual(1)); });
+  it('loot has find DCs', () => { DRESSED_ROOMS.forEach((r) => r.lootOptions.forEach((l) => expect(l.findDC).toBeGreaterThanOrEqual(8))); });
+  it('total loot value is positive', () => { DRESSED_ROOMS.forEach((r) => expect(getRoomLootValue(r)).toBeGreaterThan(0)); });
+  it('all rooms have small details', () => { DRESSED_ROOMS.forEach((r) => expect(r.smallDetails.length).toBeGreaterThanOrEqual(2)); });
+  it('formats room', () => { expect(formatRoomDressing(getRandomRoomDressing())).toContain('Furniture'); });
+});

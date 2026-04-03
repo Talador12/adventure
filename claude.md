@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 56 tests (1630 total, +4 pre-existing fixes) — lycanthropy, deity pantheon, magical tattoos, mass combat, thieves guild, dungeon dressing:
+  - **Lycanthropy progression** — `lycanthropy.ts` with 5 types (werewolf/wererat/wereboar/weretiger/werebear), 5 infection stages (bitten→embraced), moon-phase triggers, control DCs, hybrid form stats, cure conditions that scale with progression.
+  - **Deity pantheon builder** — `deityPantheon.ts` with 6 deities (Solara/Morthain/Korrath/Aelindra/Vex/Verdania), domains, holy symbols, 3+ commandments each, blessing/wrath effects, inter-deity rivalries and alliances.
+  - **Magical tattoo system** — `magicalTattoo.ts` with 6 tattoos across 6 body locations, rarity tiers, ink costs, application DCs, 2-3 upgrade levels with specific deed requirements.
+  - **Mass combat rules** — `massCombat.ts` with 8 army units across 7 types, 5 commander abilities, 6 battle modifiers, `resolveClash()` + `checkMorale()` mechanics.
+  - **Thieves guild job board** — `thievesGuildJobs.ts` with 8 jobs across 6 types (theft/smuggling/forgery/intimidation/information/sabotage), 4 risk levels, complications, failure consequences.
+  - **Dungeon room dressing** — `dungeonRoomDressing.ts` with 8 room archetypes (throne/prison/lab/barracks/temple/library/treasury/crypt), furniture, ambiance, small details, loot with find DCs, traps.
+
 - 6 new systems + 51 tests (1574 total) — library research, festivals, wilderness survival, legendary weapons, summoning mishaps, astral encounters:
   - **Library research system** — `libraryResearch.ts` with 4 libraries (private_shelf→grand_archive), books with research bonuses (1-5) and hidden secrets, 8 knowledge domains, search/best-book/secret filtering. "Library" button in DMSidebar.
   - **Advanced festival generator** — `festivalAdvanced.ts` with 6 festivals across 6 types (religious/harvest/martial/arcane/seasonal/memorial). Named activities with skill DCs and prizes, plot hooks, atmospheric descriptions, and special foods. "Festival" button in DMSidebar.
@@ -896,17 +904,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Summoning circle mishap table~~ **DONE** — `summoningMishap.ts` with 12 mishaps × 4 severities
 - ~~Astral projection encounters~~ **DONE** — `astralEncounter.ts` with 10 encounters × 6 zones + cord risk
 
-**Wave 40 Roadmap:**
+**Wave 40 (1,630 tests — fixed 4 pre-existing broken tests):**
+- ~~Lycanthropy progression~~ **DONE** — `lycanthropy.ts` with 5 types × 5 stages + cure conditions
+- ~~Deity pantheon builder~~ **DONE** — `deityPantheon.ts` with 6 deities + domains + rivalries
+- ~~Magical tattoo system~~ **DONE** — `magicalTattoo.ts` with 6 tattoos × 6 locations + upgrades
+- ~~Mass combat rules~~ **DONE** — `massCombat.ts` with 8 units + 5 commander abilities + 6 modifiers
+- ~~Thieves guild job board~~ **DONE** — `thievesGuildJobs.ts` with 8 jobs × 6 types + complications
+- ~~Dungeon room dressing~~ **DONE** — `dungeonRoomDressing.ts` with 8 archetypes + loot + traps
+
+**Wave 41 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Lycanthropy progression system — stages of infection with moon-phase triggers and transformation rules
-- Random thieves guild job board — heist-adjacent contracts with difficulty and payout tiers
-- Deity pantheon builder — gods with domains, holy symbols, commandments, and inter-deity rivalries
-- Magical tattoo system — inkwork that grants abilities with attunement and upgrade paths
-- Random dungeon room dressing — furniture, traps, ambiance, and loot per room archetype
-- Mass combat rules — army-scale battles with unit types, morale, and commander abilities
+- Warlock patron relationship tracker — patron demands, gifts, and displeasure mechanics
+- Random wild magic surge table (expanded) — 50+ results beyond the PHB table
+- Haunted location generator — ghostly manifestations with investigation and cleansing mechanics
+- Diplomatic negotiation system — structured talks with leverage, concessions, and deal-breaking
+- Random guild membership perks — benefits and obligations by guild rank
+- Magical disease system — arcane plagues with symptoms, transmission, and magical cures
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
