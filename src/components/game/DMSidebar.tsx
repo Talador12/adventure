@@ -2370,6 +2370,42 @@ export default function DMSidebar({
               🏆 Session XP
             </button>
 
+            {/* AC breakdown */}
+            <button onClick={async () => { const { calculateACBreakdown, formatACBreakdown } = await import('../../lib/acBreakdown'); const lines = characters.map((c) => formatACBreakdown(calculateACBreakdown('None', Math.floor((c.stats.DEX - 10) / 2), false, 0), c.name)); onAddDmMessage(lines.join('\n\n')); }}
+              disabled={characters.length === 0} className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all disabled:opacity-30" title="Show AC breakdown for all characters">
+              🛡️ AC Breakdown
+            </button>
+
+            {/* Noble house */}
+            <button onClick={async () => { const { generateNobleHouse, formatNobleHouse } = await import('../../data/nobleHouseGenerator'); onAddDmMessage(formatNobleHouse(generateNobleHouse())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Generate a random noble house">
+              🏰 Noble House
+            </button>
+
+            {/* Spell slots */}
+            <button onClick={async () => { const { createSpellSlotState, formatSpellSlots } = await import('../../lib/spellSlotTracker'); const casters = characters.filter((c) => ['Wizard','Sorcerer','Bard','Cleric','Druid','Warlock','Paladin','Ranger'].includes(c.class)); if (casters.length === 0) { onAddDmMessage('🔮 No spellcasters.'); return; } const lines = casters.map((c) => formatSpellSlots(createSpellSlotState(c.id, c.level), c.name)); onAddDmMessage(lines.join('\n\n')); }}
+              disabled={characters.length === 0} className="w-full mb-2 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all disabled:opacity-30" title="Show spell slot usage per caster">
+              🔮 Spell Slots
+            </button>
+
+            {/* Wilderness hazard */}
+            <button onClick={async () => { const { rollWildernessHazard, formatWildernessHazard } = await import('../../data/wildernessHazards'); onAddDmMessage(formatWildernessHazard(rollWildernessHazard())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Roll a random wilderness hazard">
+              ⚠️ Wilderness Hazard
+            </button>
+
+            {/* Weakness finder */}
+            <button onClick={async () => { const { analyzeWeaknesses, formatWeaknessAnalysis } = await import('../../lib/damageWeaknessFinder'); const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0); if (enemies.length === 0) { onAddDmMessage('No enemies to analyze.'); return; } const lines = enemies.map((e) => formatWeaknessAnalysis(analyzeWeaknesses(e.resistances || [], e.immunities || [], e.vulnerabilities || []), e.name)); onAddDmMessage(lines.join('\n\n')); }}
+              disabled={!units.some((u) => u.type === 'enemy' && u.hp > 0)} className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all disabled:opacity-30" title="Find best damage types against enemies">
+              🎯 Weakness Finder
+            </button>
+
+            {/* Rest benefits */}
+            <button onClick={async () => { const { calculateLongRestBenefits, formatRestBenefits } = await import('../../lib/restBenefitSummary'); const benefits = characters.map((c) => calculateLongRestBenefits(c.name, c.class, c.hp, c.maxHp, c.hitDiceRemaining || c.level, c.level, c.exhaustion || 0)); onAddDmMessage(formatRestBenefits(benefits, 'long')); }}
+              disabled={characters.length === 0} className="w-full mb-3 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all disabled:opacity-30" title="Show what each character recovers on a long rest">
+              🌙 Rest Benefits
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

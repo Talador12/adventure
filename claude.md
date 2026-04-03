@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v12.2.0
+## Current Version: v12.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -696,6 +696,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~Deity prayer~~ **DONE** — `deityPrayer.ts` with devotion tracking + daily boons
 - ~~Formation presets~~ **DONE** — `formationPresets.ts` with 6 tactical formations
 - ~~Session XP calculator~~ **DONE** — `sessionXPCalculator.ts` with CR-to-XP + per-character split
+
+**Wave 27 Roadmap (completed — 🎉 900 TEST MILESTONE!):**
+- ~~AC breakdown~~ **DONE** — `acBreakdown.ts` with armor type + DEX cap + shield + magic
+- ~~Noble house generator~~ **DONE** — `nobleHouseGenerator.ts` with name/sigil/motto/wealth/specialty
+- ~~Spell slot tracker~~ **DONE** — `spellSlotTracker.ts` with PHB slot table for all 20 levels
+- ~~Wilderness hazards~~ **DONE** — `wildernessHazards.ts` with 10 hazards × terrain filtering
+- ~~Weakness finder~~ **DONE** — `damageWeaknessFinder.ts` suggesting best damage types
+- ~~Rest benefit summary~~ **DONE** — `restBenefitSummary.ts` with short/long rest details per character
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

@@ -6796,3 +6796,143 @@ describe('session XP calculator', () => {
     expect(formatSessionXP(result)).toContain('combat');
   });
 });
+
+// ---------------------------------------------------------------------------
+// AC breakdown
+// ---------------------------------------------------------------------------
+import { calculateACBreakdown, formatACBreakdown, getArmorNames } from '../../src/lib/acBreakdown';
+
+describe('AC breakdown', () => {
+  it('unarmored = 10 + DEX', () => {
+    const result = calculateACBreakdown('None', 3, false);
+    expect(result.total).toBe(13);
+  });
+  it('plate + shield = 20', () => {
+    const result = calculateACBreakdown('Plate', 3, true);
+    expect(result.total).toBe(20); // 18 + 0 DEX (heavy) + 2 shield
+  });
+  it('medium armor caps DEX at +2', () => {
+    const result = calculateACBreakdown('Chain Shirt', 4, false);
+    expect(result.total).toBe(15); // 13 + 2 (capped)
+  });
+  it('magic bonus adds correctly', () => {
+    expect(calculateACBreakdown('Leather', 2, false, 1).total).toBe(14); // 11 + 2 + 1
+  });
+  it('getArmorNames lists all options', () => { expect(getArmorNames().length).toBeGreaterThanOrEqual(10); });
+});
+
+// ---------------------------------------------------------------------------
+// Noble house generator
+// ---------------------------------------------------------------------------
+import { generateNobleHouse, formatNobleHouse } from '../../src/data/nobleHouseGenerator';
+
+describe('noble house generator', () => {
+  it('generates with all fields', () => {
+    const house = generateNobleHouse();
+    expect(house.name.length).toBeGreaterThan(0);
+    expect(house.sigil.length).toBeGreaterThan(0);
+    expect(house.motto.length).toBeGreaterThan(0);
+    expect(['modest', 'wealthy', 'opulent', 'declining']).toContain(house.wealth);
+  });
+  it('formatNobleHouse shows sigil and motto', () => {
+    const text = formatNobleHouse(generateNobleHouse());
+    expect(text).toContain('Sigil');
+    expect(text).toContain('Motto');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spell slot tracker
+// ---------------------------------------------------------------------------
+import { createSpellSlotState, useSlot, restoreAllSlots, getRemainingSlots, formatSpellSlots } from '../../src/lib/spellSlotTracker';
+
+describe('spell slot tracker', () => {
+  it('level 5 caster has 3rd level slots', () => {
+    const state = createSpellSlotState('c1', 5);
+    expect(getRemainingSlots(state, 3)).toBe(2);
+  });
+  it('useSlot decrements', () => {
+    let state = createSpellSlotState('c1', 5);
+    const result = useSlot(state, 1);
+    expect(result.success).toBe(true);
+    expect(getRemainingSlots(result.state, 1)).toBe(3);
+  });
+  it('useSlot fails when empty', () => {
+    let state = createSpellSlotState('c1', 5);
+    for (let i = 0; i < 4; i++) state = useSlot(state, 1).state;
+    expect(useSlot(state, 1).success).toBe(false);
+  });
+  it('restoreAllSlots refills', () => {
+    let state = createSpellSlotState('c1', 5);
+    state = useSlot(state, 1).state;
+    state = restoreAllSlots(state);
+    expect(getRemainingSlots(state, 1)).toBe(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wilderness hazards
+// ---------------------------------------------------------------------------
+import { rollWildernessHazard, formatWildernessHazard } from '../../src/data/wildernessHazards';
+
+describe('wilderness hazards', () => {
+  it('generates valid hazard', () => {
+    const h = rollWildernessHazard();
+    expect(h.name.length).toBeGreaterThan(0);
+    expect(h.check.length).toBeGreaterThan(0);
+  });
+  it('filters by terrain', () => {
+    const h = rollWildernessHazard('swamp');
+    expect(h.terrain).toContain('swamp');
+  });
+  it('formatWildernessHazard shows check', () => { expect(formatWildernessHazard(rollWildernessHazard())).toContain('Check'); });
+});
+
+// ---------------------------------------------------------------------------
+// Damage weakness finder
+// ---------------------------------------------------------------------------
+import { analyzeWeaknesses, formatWeaknessAnalysis } from '../../src/lib/damageWeaknessFinder';
+
+describe('damage weakness finder', () => {
+  it('finds vulnerabilities', () => {
+    const result = analyzeWeaknesses([], [], ['fire']);
+    expect(result.bestTypes).toContain('fire');
+    expect(result.suggestion).toContain('double');
+  });
+  it('identifies immunities', () => {
+    const result = analyzeWeaknesses([], ['poison'], []);
+    expect(result.immuneTypes).toContain('poison');
+  });
+  it('suggests normal types when no vulnerabilities', () => {
+    const result = analyzeWeaknesses(['fire'], [], []);
+    expect(result.suggestion.length).toBeGreaterThan(0);
+    expect(result.worstTypes).toContain('fire');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Rest benefit summary
+// ---------------------------------------------------------------------------
+import { calculateShortRestBenefits, calculateLongRestBenefits, formatRestBenefits } from '../../src/lib/restBenefitSummary';
+
+describe('rest benefit summary', () => {
+  it('short rest shows hit dice option', () => {
+    const b = calculateShortRestBenefits('Fighter', 'Fighter', 20, 40, 3, 5);
+    expect(b.hpRecovered).toContain('3');
+  });
+  it('long rest restores all HP', () => {
+    const b = calculateLongRestBenefits('Wizard', 'Wizard', 10, 30, 1, 5, 0);
+    expect(b.hpRecovered).toContain('20 healed');
+    expect(b.spellSlotsRecovered).toContain('All');
+  });
+  it('long rest removes exhaustion', () => {
+    const b = calculateLongRestBenefits('Fighter', 'Fighter', 40, 40, 5, 5, 2);
+    expect(b.exhaustionRemoved).toBe(true);
+  });
+  it('formatRestBenefits shows all characters', () => {
+    const benefits = [calculateLongRestBenefits('A', 'Fighter', 30, 40, 3, 5, 0)];
+    const text = formatRestBenefits(benefits, 'long');
+    expect(text).toContain('A');
+    expect(text).toContain('HP');
+  });
+});
