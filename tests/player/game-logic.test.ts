@@ -8029,3 +8029,64 @@ describe('NPC reactions', () => {
   it('generates with follow-up', () => { const r = getRandomReaction(); expect(r.reaction.length).toBeGreaterThan(0); expect(r.followUp.length).toBeGreaterThan(0); expect(['hostile', 'suspicious', 'neutral', 'friendly', 'terrified', 'amused']).toContain(r.disposition); });
   it('formatNpcReaction shows body language', () => { expect(formatNpcReaction(getRandomReaction())).toContain('Body language'); });
 });
+
+// ---------------------------------------------------------------------------
+// PC moments
+// ---------------------------------------------------------------------------
+import { getRandomPCMoment, formatPCMoment } from '../../src/data/randomPCMoment';
+
+describe('PC moments', () => {
+  it('generates with trigger and reward', () => { const m = getRandomPCMoment(); expect(m.prompt.length).toBeGreaterThan(0); expect(m.trigger.length).toBeGreaterThan(0); expect(['backstory', 'skill', 'moral', 'social', 'combat']).toContain(m.type); });
+  it('formatPCMoment shows character name', () => { expect(formatPCMoment(getRandomPCMoment(), 'Thorin')).toContain('Thorin'); });
+});
+
+// ---------------------------------------------------------------------------
+// Room purposes
+// ---------------------------------------------------------------------------
+import { getRandomRoomPurpose, formatRoomPurpose } from '../../src/data/randomRoomPurpose';
+
+describe('room purposes', () => {
+  it('generates with evidence and state', () => { const p = getRandomRoomPurpose(); expect(p.purpose.length).toBeGreaterThan(0); expect(p.evidence.length).toBeGreaterThan(0); expect(['none', 'low', 'medium', 'high']).toContain(p.lootChance); });
+  it('formatRoomPurpose shows loot chance', () => { expect(formatRoomPurpose(getRandomRoomPurpose())).toContain('Loot chance'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat morale events
+// ---------------------------------------------------------------------------
+import { getRandomMoraleEvent, formatMoraleEvent } from '../../src/data/randomCombatMorale';
+
+describe('combat morale events', () => {
+  it('generates with trigger and effect', () => { const e = getRandomMoraleEvent(); expect(e.trigger.length).toBeGreaterThan(0); expect(e.mechanicalEffect.length).toBeGreaterThan(0); });
+  it('formatMoraleEvent shows reaction', () => { expect(formatMoraleEvent(getRandomMoraleEvent())).toContain('Reaction'); });
+});
+
+// ---------------------------------------------------------------------------
+// Weather details
+// ---------------------------------------------------------------------------
+import { WEATHER_DETAILS, getWeatherDetail, formatWeatherDetail } from '../../src/data/randomWeatherDetail';
+
+describe('weather details', () => {
+  it('has details for common weather', () => { expect(WEATHER_DETAILS['none'].length).toBeGreaterThanOrEqual(3); expect(WEATHER_DETAILS['rain'].length).toBeGreaterThanOrEqual(3); });
+  it('getWeatherDetail returns text for known weather', () => { expect(getWeatherDetail('rain').length).toBeGreaterThan(10); });
+  it('defaults to clear for unknown weather', () => { expect(getWeatherDetail('tornado').length).toBeGreaterThan(5); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC goals
+// ---------------------------------------------------------------------------
+import { getRandomNpcGoal, formatNpcGoal } from '../../src/data/randomNpcGoal';
+
+describe('NPC goals', () => {
+  it('generates with obstacle', () => { const g = getRandomNpcGoal(); expect(g.goal.length).toBeGreaterThan(0); expect(g.obstacle.length).toBeGreaterThan(0); expect(['low', 'medium', 'high', 'desperate']).toContain(g.urgency); });
+  it('formatNpcGoal shows willing to pay', () => { expect(formatNpcGoal(getRandomNpcGoal())).toContain('Willing to pay'); });
+});
+
+// ---------------------------------------------------------------------------
+// Dungeon hazards
+// ---------------------------------------------------------------------------
+import { getRandomDungeonHazard, formatDungeonHazard } from '../../src/data/randomDungeonHazard';
+
+describe('dungeon hazards', () => {
+  it('generates with detection and avoidance', () => { const h = getRandomDungeonHazard(); expect(h.hazard.length).toBeGreaterThan(0); expect(h.detection.length).toBeGreaterThan(0); expect(h.avoidance.length).toBeGreaterThan(0); });
+  it('formatDungeonHazard shows effect', () => { expect(formatDungeonHazard(getRandomDungeonHazard())).toContain('Effect'); });
+});

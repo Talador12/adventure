@@ -2875,6 +2875,37 @@ export default function DMSidebar({
               👤 NPC Reaction
             </button>
 
+            {/* PC spotlight */}
+            <button onClick={async () => { const { getRandomPCMoment, formatPCMoment } = await import('../../data/randomPCMoment'); const name = characters.length > 0 ? characters[Math.floor(Math.random() * characters.length)].name : 'A PC'; onAddDmMessage(formatPCMoment(getRandomPCMoment(), name)); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Spotlight moment for a PC">
+              ⭐ PC Spotlight
+            </button>
+            {/* Room purpose */}
+            <button onClick={async () => { const { getRandomRoomPurpose, formatRoomPurpose } = await import('../../data/randomRoomPurpose'); onAddDmMessage(formatRoomPurpose(getRandomRoomPurpose())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all" title="What was this room used for?">
+              🏰 Room Purpose
+            </button>
+            {/* Morale event */}
+            <button onClick={async () => { const { getRandomMoraleEvent, formatMoraleEvent } = await import('../../data/randomCombatMorale'); onAddDmMessage(formatMoraleEvent(getRandomMoraleEvent())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Enemy morale reaction">
+              💨 Morale Event
+            </button>
+            {/* Weather detail */}
+            <button onClick={async () => { const { formatWeatherDetail } = await import('../../data/randomWeatherDetail'); onAddDmMessage(formatWeatherDetail(weather)); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-sky-400 font-semibold hover:bg-sky-800/30 transition-all" title="Atmospheric weather one-liner">
+              🌤️ Weather Detail
+            </button>
+            {/* NPC goal */}
+            <button onClick={async () => { const { getRandomNpcGoal, formatNpcGoal } = await import('../../data/randomNpcGoal'); onAddDmMessage(formatNpcGoal(getRandomNpcGoal())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="What does this NPC want right now?">
+              🎯 NPC Goal
+            </button>
+            {/* Dungeon hazard */}
+            <button onClick={async () => { const { getRandomDungeonHazard, formatDungeonHazard } = await import('../../data/randomDungeonHazard'); onAddDmMessage(formatDungeonHazard(getRandomDungeonHazard())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all" title="Environmental dungeon danger">
+              ⚠️ Dungeon Hazard
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
