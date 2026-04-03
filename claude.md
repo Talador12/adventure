@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.6.0
+## Current Version: v10.7.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 25 tests (542 total) — surprise round, condition duration, XP milestones, marching order, dialogue trees, rest interruption:
+  - **Surprise round detector** — `surpriseRound.ts` rolls each ambusher's stealth vs targets' passive perception. `rollSurprise()` with optional advantage. Identifies total surprise, partial surprise, or no surprise. `calculatePassivePerception()` helper. "Surprise Check" button in DMSidebar.
+  - **Condition duration tracker** — `conditionDuration.ts` tracks active conditions per character with round-based or save-ends durations. `advanceRound()` auto-decrements, returns expired and save-needed lists. `formatRoundAdvance()` for turn-start announcements. "Condition Durations" button in DMSidebar.
+  - **XP milestone calculator** — `xpMilestones.ts` with 8 templates across 5 categories (story/exploration/social/combat/secret). `addMilestone()`/`completeMilestone()` with double-award protection. Total XP tracking. "XP Milestones" button in DMSidebar.
+  - **Party marching order** — `marchingOrder.ts` with 5 positions (Point/Front/Middle/Rear/Guard). Auto-assigns by class (Rogue→point, Fighter→front, Wizard→middle). `getTrapTarget()` and `getAmbushTarget()` for encounter resolution. Perks/risks per position. "Marching Order" button in DMSidebar.
+  - **NPC dialogue tree builder** — `dialogueTrees.ts` with 3 templates (Merchant Haggle, Suspicious Guard, Mysterious Stranger). Branching nodes with skill check requirements, item/gold/reputation consequences. `formatDialogueNode()` with numbered options. Expandable browser in DMSidebar.
+  - **Rest interruption system** — `restInterruption.ts` rolls per 2-hour watch period. `calculateInterruptionChance()` factors terrain danger and watch schedule. `calculatePartialRecovery()` gives short rest equivalent for interrupted long rests. "Rest Interruption Check" button in DMSidebar.
+- 25 new tests (542 total) covering 6 systems:
+  - **Surprise round** (3 tests): result structure, passive perception math, high-stealth surprise.
+  - **Condition duration** (5 tests): empty state, add tracking, round decrement+expire, save-ends flagging, target filter.
+  - **XP milestones** (4 tests): template count, add, complete+award, double-award prevention.
+  - **Marching order** (4 tests): auto-assign by class, trap target, ambush positions, position descriptions.
+  - **Dialogue trees** (4 tests): template count, valid start nodes, getter, formatted options.
+  - **Rest interruption** (5 tests): danger scaling, watch halving, structure, full recovery, partial recovery.
+
 - 6 new systems + 28 tests (517 total) — inspiration, encounter frequency, concentration, legendary actions, treasure division, formation memory:
   - **Inspiration point system** — `inspirationSystem.ts` with 8 default triggers (Great Roleplay, Clever Plan, Team Player, Backstory Moment, etc). `grantInspiration()`/`spendInspiration()` with history tracking. "Inspiration" button in DMSidebar.
   - **Random encounter frequency tuner** — `encounterFrequency.ts` with 5 terrain danger levels (safe→deadly), 7 time-of-day modifiers, travel bonus. `rollEncounterCheck()` produces d100 vs calculated threshold. `getTimeOfDayFromHour()` for clock integration. "Encounter Check" button in DMSidebar.
@@ -347,12 +362,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Surprise round detector — check stealth vs perception to determine surprise at combat start
-- Condition duration tracker — auto-decrement spell/condition durations each round
-- XP milestone calculator — DM sets story milestones that award XP on completion
-- Party marching order — configurable column formation for dungeon exploration
-- NPC dialogue tree builder — branching conversation paths with conditional responses
-- Rest interruption system — random encounter chance during long rests with partial recovery
+- ~~Surprise round detector~~ **DONE** — `surpriseRound.ts` with stealth vs passive perception
+- ~~Condition duration tracker~~ **DONE** — `conditionDuration.ts` with round decrement + save-ends
+- ~~XP milestone calculator~~ **DONE** — `xpMilestones.ts` with 8 templates across 5 categories
+- ~~Party marching order~~ **DONE** — `marchingOrder.ts` with 5 positions + class auto-assign
+- ~~NPC dialogue tree builder~~ **DONE** — `dialogueTrees.ts` with 3 branching templates
+- ~~Rest interruption system~~ **DONE** — `restInterruption.ts` with watch schedule + partial recovery
+
+**Wave 12 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Lair effect generator — dynamic environmental hazards on initiative 20 for boss lairs
+- Minion rules — simplified 1-HP enemies that die on any hit for horde encounters
+- Bloodied condition — visual/mechanical indicator when enemies drop below 50% HP
+- Flanking calculator — auto-detect flanking positions and apply advantage/bonus
+- Death save tracker UI — visual death save widget with auto-stabilize at 3 successes
+- Treasure map system — collectible map fragments that reveal hidden locations when assembled
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

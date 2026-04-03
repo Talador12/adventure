@@ -4173,3 +4173,215 @@ describe('party formation memory', () => {
     expect(formatFormationList(formations)).toContain('Line');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Surprise round
+// ---------------------------------------------------------------------------
+import { rollSurprise, calculatePassivePerception, formatSurpriseResult } from '../../src/lib/surpriseRound';
+
+describe('surprise round', () => {
+  it('rollSurprise returns valid structure', () => {
+    const ambushers = [{ id: 'e1', name: 'Goblin', isPlayer: false, stealthMod: 6, passivePerception: 9 }];
+    const targets = [{ id: 'p1', name: 'Fighter', isPlayer: true, stealthMod: 0, passivePerception: 12 }];
+    const result = rollSurprise(ambushers, targets);
+    expect(typeof result.anyonesSurprised).toBe('boolean');
+    expect(result.stealthRolls.length).toBe(1);
+    expect(result.narration.length).toBeGreaterThan(0);
+  });
+
+  it('calculatePassivePerception computes correctly', () => {
+    expect(calculatePassivePerception(3, true, 2)).toBe(15); // 10 + 3 + 2
+    expect(calculatePassivePerception(1, false, 3)).toBe(11); // 10 + 1
+  });
+
+  it('high stealth surprises low perception targets', () => {
+    const ambushers = [{ id: 'e1', name: 'Assassin', isPlayer: false, stealthMod: 20, passivePerception: 10 }];
+    const targets = [{ id: 'p1', name: 'Commoner', isPlayer: true, stealthMod: 0, passivePerception: 5 }];
+    // With +20 stealth mod, min roll is 21, which beats pp 5
+    const result = rollSurprise(ambushers, targets);
+    expect(result.surprisedUnits).toContain('p1');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Condition duration
+// ---------------------------------------------------------------------------
+import { createConditionState, addCondition, advanceRound, getConditionsForTarget, formatConditionStatus } from '../../src/lib/conditionDuration';
+
+describe('condition duration', () => {
+  it('starts empty', () => {
+    expect(createConditionState().conditions.length).toBe(0);
+  });
+
+  it('addCondition tracks conditions', () => {
+    let state = createConditionState();
+    state = addCondition(state, 'c1', 'Fighter', 'Paralyzed', 'Hold Person', 'rounds', 3, 'Cannot move or act');
+    expect(state.conditions.length).toBe(1);
+    expect(state.conditions[0].remainingRounds).toBe(3);
+  });
+
+  it('advanceRound decrements and expires', () => {
+    let state = addCondition(createConditionState(), 'c1', 'F', 'Stunned', 'Test', 'rounds', 1, 'desc');
+    const result = advanceRound(state);
+    expect(result.expired.length).toBe(1);
+    expect(result.expired[0].conditionName).toBe('Stunned');
+  });
+
+  it('save_ends conditions are flagged each round', () => {
+    let state = addCondition(createConditionState(), 'c1', 'F', 'Frightened', 'Fear', 'save_ends', 0, 'desc', 15, 'WIS');
+    const result = advanceRound(state);
+    expect(result.saveNeeded.length).toBe(1);
+    expect(result.saveNeeded[0].saveEndDC).toBe(15);
+  });
+
+  it('getConditionsForTarget filters by target', () => {
+    let state = addCondition(createConditionState(), 'c1', 'A', 'X', 'S', 'rounds', 2, 'd');
+    state = addCondition(state, 'c2', 'B', 'Y', 'S', 'rounds', 2, 'd');
+    expect(getConditionsForTarget(state, 'c1').length).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// XP milestones
+// ---------------------------------------------------------------------------
+import { createMilestoneTracker, addMilestone, completeMilestone, formatMilestoneTracker, MILESTONE_TEMPLATES } from '../../src/lib/xpMilestones';
+
+describe('XP milestones', () => {
+  it('has at least 6 templates', () => {
+    expect(MILESTONE_TEMPLATES.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('addMilestone adds to tracker', () => {
+    let t = createMilestoneTracker();
+    t = addMilestone(t, 'Test', 'Do the thing', 500, 'story');
+    expect(t.milestones.length).toBe(1);
+    expect(t.milestones[0].completed).toBe(false);
+  });
+
+  it('completeMilestone awards XP', () => {
+    let t = addMilestone(createMilestoneTracker(), 'Test', 'desc', 300, 'combat');
+    const id = t.milestones[0].id;
+    const result = completeMilestone(t, id);
+    expect(result.xpAwarded).toBe(300);
+    expect(result.tracker.totalXPAwarded).toBe(300);
+    expect(result.tracker.milestones[0].completed).toBe(true);
+  });
+
+  it('completeMilestone does not double-award', () => {
+    let t = addMilestone(createMilestoneTracker(), 'Test', 'd', 100, 'story');
+    const id = t.milestones[0].id;
+    t = completeMilestone(t, id).tracker;
+    const result = completeMilestone(t, id);
+    expect(result.xpAwarded).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Marching order
+// ---------------------------------------------------------------------------
+import { createMarchingOrder, getTrapTarget, getAmbushTarget, formatMarchingOrder, POSITION_DESCRIPTIONS } from '../../src/lib/marchingOrder';
+
+describe('marching order', () => {
+  it('auto-assigns based on class', () => {
+    const chars = [
+      { id: 'c1', name: 'Scout', class: 'Rogue' },
+      { id: 'c2', name: 'Tank', class: 'Fighter' },
+      { id: 'c3', name: 'Healer', class: 'Cleric' },
+      { id: 'c4', name: 'Watcher', class: 'Monk' },
+    ];
+    const order = createMarchingOrder(chars);
+    expect(order.slots.length).toBe(4);
+    expect(order.slots[0].position).toBe('point'); // first always point
+    expect(order.slots[3].position).toBe('guard'); // last always guard
+  });
+
+  it('getTrapTarget returns point scout', () => {
+    const order = createMarchingOrder([{ id: 'c1', name: 'A', class: 'Rogue' }, { id: 'c2', name: 'B', class: 'Fighter' }]);
+    const target = getTrapTarget(order);
+    expect(target?.position).toBe('point');
+  });
+
+  it('getAmbushTarget returns correct positions', () => {
+    const chars = [{ id: 'c1', name: 'A', class: 'Rogue' }, { id: 'c2', name: 'B', class: 'Fighter' }, { id: 'c3', name: 'C', class: 'Monk' }];
+    const order = createMarchingOrder(chars);
+    const frontAmbush = getAmbushTarget(order, false);
+    expect(frontAmbush.some((s) => s.position === 'point' || s.position === 'front')).toBe(true);
+  });
+
+  it('has descriptions for all positions', () => {
+    for (const pos of ['point', 'front', 'middle', 'rear', 'guard'] as const) {
+      expect(POSITION_DESCRIPTIONS[pos].label.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dialogue trees
+// ---------------------------------------------------------------------------
+import { DIALOGUE_TEMPLATES as DIALOGUE_TREES, getDialogueTree, getNode, formatDialogueNode } from '../../src/data/dialogueTrees';
+
+describe('dialogue trees', () => {
+  it('has at least 3 templates', () => {
+    expect(DIALOGUE_TREES.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('all trees have valid start nodes', () => {
+    for (const tree of DIALOGUE_TREES) {
+      const start = getNode(tree, tree.startNodeId);
+      expect(start).toBeTruthy();
+      expect(start!.npcText.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('getDialogueTree finds by ID', () => {
+    expect(getDialogueTree('merchant-haggle')?.npcName).toBe('Merchant');
+  });
+
+  it('formatDialogueNode includes options', () => {
+    const tree = DIALOGUE_TREES[0];
+    const node = getNode(tree, tree.startNodeId)!;
+    const text = formatDialogueNode(tree.npcName, node);
+    expect(text).toContain(tree.npcName);
+    expect(text).toContain('1.'); // first option numbered
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Rest interruption
+// ---------------------------------------------------------------------------
+import { calculateInterruptionChance, rollRestInterruption, calculatePartialRecovery, formatRestResult } from '../../src/lib/restInterruption';
+
+describe('rest interruption', () => {
+  it('calculateInterruptionChance scales with danger', () => {
+    const safe = calculateInterruptionChance(0, true);
+    const dangerous = calculateInterruptionChance(5, true);
+    expect(dangerous).toBeGreaterThan(safe);
+  });
+
+  it('watch halves chance', () => {
+    const noWatch = calculateInterruptionChance(2, false);
+    const withWatch = calculateInterruptionChance(2, true);
+    expect(withWatch).toBeLessThan(noWatch);
+  });
+
+  it('rollRestInterruption returns valid structure', () => {
+    const attempt = rollRestInterruption('long', 0, true);
+    expect(attempt.type).toBe('long');
+    expect(attempt.hoursRequired).toBe(8);
+    expect(typeof attempt.interrupted).toBe('boolean');
+  });
+
+  it('calculatePartialRecovery gives full benefits when not interrupted', () => {
+    const attempt = { type: 'long' as const, startHour: 22, hoursCompleted: 8, hoursRequired: 8, interrupted: false, interruptionHour: 0, encounterOccurred: false };
+    const recovery = calculatePartialRecovery(attempt, 50, 5);
+    expect(recovery.hpRecovered).toBe(100);
+    expect(recovery.spellSlotsRecovered).toBe(true);
+  });
+
+  it('interrupted rest gives partial or no recovery', () => {
+    const attempt = { type: 'long' as const, startHour: 22, hoursCompleted: 2, hoursRequired: 8, interrupted: true, interruptionHour: 2, encounterOccurred: true };
+    const recovery = calculatePartialRecovery(attempt, 50, 5);
+    expect(recovery.spellSlotsRecovered).toBe(false);
+    expect(recovery.description).toContain('short rest');
+  });
+});

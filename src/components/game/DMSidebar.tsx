@@ -34,6 +34,7 @@ import { DOWNTIME_ACTIVITIES as DOWNTIME_DATA } from '../../lib/downtimeActiviti
 import { WAVE_TEMPLATES as WAVE_TEMPLATES_DATA } from '../../lib/encounterWaves';
 import { PATRONS as PATRON_DATA, formatPatron as formatPatronFn } from '../../data/deityPatrons';
 import { LEGENDARY_TEMPLATES as LEGENDARY_DATA } from '../../lib/legendaryActions';
+import { DIALOGUE_TEMPLATES as DIALOGUE_DATA } from '../../data/dialogueTrees';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -1144,6 +1145,101 @@ export default function DMSidebar({
               title="View and load saved party formations"
             >
               📐 Saved Formations
+            </button>
+
+            {/* Surprise round */}
+            <button
+              onClick={async () => {
+                const { rollSurprise, formatSurpriseResult } = await import('../../lib/surpriseRound');
+                const players = characters.map((c) => ({ id: c.id, name: c.name, isPlayer: true, stealthMod: Math.floor((c.stats.DEX - 10) / 2), passivePerception: 10 + Math.floor((c.stats.WIS - 10) / 2) }));
+                const enemies = units.filter((u) => u.type === 'enemy' && u.hp > 0).map((u) => ({ id: u.id, name: u.name, isPlayer: false, stealthMod: u.dexMod || 0, passivePerception: 10 }));
+                if (enemies.length === 0) { onAddDmMessage('No enemies to check surprise against.'); return; }
+                const result = rollSurprise(enemies, players); // enemies ambushing players
+                onAddDmMessage(formatSurpriseResult(result));
+              }}
+              disabled={!units.some((u) => u.type === 'enemy' && u.hp > 0)}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all disabled:opacity-30"
+              title="Roll surprise — enemies' stealth vs party's passive perception"
+            >
+              💥 Surprise Check
+            </button>
+
+            {/* Condition duration */}
+            <button
+              onClick={async () => {
+                const { createConditionState, formatConditionStatus } = await import('../../lib/conditionDuration');
+                const raw = localStorage.getItem(`adventure:conditions:${roomId}`);
+                const state = raw ? JSON.parse(raw) : createConditionState();
+                onAddDmMessage(formatConditionStatus(state));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all"
+              title="View active conditions and their remaining durations"
+            >
+              ⏳ Condition Durations
+            </button>
+
+            {/* XP milestones */}
+            <button
+              onClick={async () => {
+                const { createMilestoneTracker, formatMilestoneTracker } = await import('../../lib/xpMilestones');
+                const raw = localStorage.getItem(`adventure:milestones:${roomId}`);
+                const tracker = raw ? JSON.parse(raw) : createMilestoneTracker();
+                onAddDmMessage(formatMilestoneTracker(tracker));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Story milestones that award XP on completion"
+            >
+              🏆 XP Milestones
+            </button>
+
+            {/* Marching order */}
+            <button
+              onClick={async () => {
+                const { createMarchingOrder, formatMarchingOrder } = await import('../../lib/marchingOrder');
+                const order = createMarchingOrder(characters.map((c) => ({ id: c.id, name: c.name, class: c.class })));
+                onAddDmMessage(formatMarchingOrder(order));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all disabled:opacity-30"
+              title="Auto-assign marching order based on class roles"
+            >
+              🚶 Marching Order
+            </button>
+
+            {/* Dialogue trees */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all cursor-pointer px-2">
+                💬 Dialogue Templates
+              </summary>
+              <div className="mt-1 space-y-1">
+                {DIALOGUE_DATA.map((tree) => (
+                  <button
+                    key={tree.id}
+                    onClick={async () => {
+                      const { getNode, formatDialogueNode } = await import('../../data/dialogueTrees');
+                      const startNode = tree.nodes.find((n) => n.id === tree.startNodeId);
+                      if (startNode) onAddDmMessage(formatDialogueNode(tree.npcName, startNode));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-blue-600/40 transition-all text-[9px] text-slate-300"
+                  >
+                    💬 {tree.npcName}: {tree.description}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Rest interruption */}
+            <button
+              onClick={async () => {
+                const { rollRestInterruption, calculatePartialRecovery, formatRestResult } = await import('../../lib/restInterruption');
+                const attempt = rollRestInterruption('long', 2, true);
+                const recovery = calculatePartialRecovery(attempt, 50, 5);
+                onAddDmMessage(formatRestResult(attempt, recovery));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all"
+              title="Roll for rest interruption — random encounter during long rest with partial recovery"
+            >
+              🏕️ Rest Interruption Check
             </button>
 
             {/* Save/Load Encounter Templates */}
