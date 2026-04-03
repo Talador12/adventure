@@ -8783,3 +8783,101 @@ describe('dream sequence generator', () => {
   it('all dreams have wake effects', () => { DREAMS.forEach((d) => expect(d.wakeEffect.length).toBeGreaterThan(10)); });
   it('formats with type icon', () => { const d = getDreamSequencesByType('nightmare')[0]; expect(formatDreamSequence(d)).toContain('😱'); });
 });
+
+// ---------------------------------------------------------------------------
+// Faction war tracker
+// ---------------------------------------------------------------------------
+import { createFactionWar, resolveBattle, applyBattleResult, getContestedTerritories, getFactionTerritories, getFactionStrength, DEFAULT_FACTIONS, DEFAULT_TERRITORIES, formatFactionWar } from '../../src/data/factionWar';
+
+describe('faction war tracker', () => {
+  it('has at least 4 default factions', () => { expect(DEFAULT_FACTIONS.length).toBeGreaterThanOrEqual(4); });
+  it('has at least 8 territories', () => { expect(DEFAULT_TERRITORIES.length).toBeGreaterThanOrEqual(8); });
+  it('creates war state', () => { const s = createFactionWar(); expect(s.turn).toBe(1); expect(s.factions.length).toBeGreaterThanOrEqual(4); });
+  it('resolves battles', () => { const s = createFactionWar(); const result = resolveBattle(s, 'The Iron Crown', 'Black Marsh'); expect(result).not.toBeNull(); expect(result!.attackerRoll).toBeGreaterThan(0); expect(['The Iron Crown', 'Shadow Pact']).toContain(result!.winner); });
+  it('applies battle results', () => { const s = createFactionWar(); const result = resolveBattle(s, 'The Iron Crown', 'Neutral Wilds')!; const updated = applyBattleResult(s, result); expect(updated.battles.length).toBe(1); });
+  it('returns null for unknown combatants', () => { const s = createFactionWar(); expect(resolveBattle(s, 'Nonexistent', 'Capital')).toBeNull(); });
+  it('finds contested territories', () => { const s = createFactionWar(); expect(getContestedTerritories(s).length).toBeGreaterThanOrEqual(1); });
+  it('calculates faction strength (base + territories)', () => { const s = createFactionWar(); const str = getFactionStrength(s, 'The Iron Crown'); expect(str).toBeGreaterThan(DEFAULT_FACTIONS[0].strength); });
+  it('formats war state', () => { expect(formatFactionWar(createFactionWar())).toContain('Faction War'); });
+});
+
+// ---------------------------------------------------------------------------
+// Merchant caravan generator
+// ---------------------------------------------------------------------------
+import { generateCaravan, getCaravanByOrigin, getAllOrigins, getExoticItems, formatCaravan } from '../../src/data/merchantCaravan';
+
+describe('merchant caravan generator', () => {
+  it('has 6 origins', () => { expect(getAllOrigins().length).toBe(6); });
+  it('generates random caravan', () => { const c = generateCaravan(); expect(c.caravan_name.length).toBeGreaterThan(3); expect(c.inventory.length).toBeGreaterThanOrEqual(3); expect(c.merchant.name.length).toBeGreaterThan(3); });
+  it('generates by origin', () => { const c = getCaravanByOrigin('dwarven_holds'); expect(c.origin).toBe('dwarven_holds'); expect(c.merchant.specialty).toContain('Weapons'); });
+  it('each origin has quest hook', () => { getAllOrigins().forEach((o) => { const c = generateCaravan(o); expect(c.questHook.length).toBeGreaterThan(20); }); });
+  it('some origins have exotic items', () => { const exotic = getExoticItems(generateCaravan('elven_woods')); expect(exotic.length).toBeGreaterThanOrEqual(1); });
+  it('all items have prices', () => { const c = generateCaravan(); c.inventory.forEach((i) => expect(i.price).toBeGreaterThan(0)); });
+  it('formats caravan', () => { expect(formatCaravan(generateCaravan())).toContain('Merchant'); });
+});
+
+// ---------------------------------------------------------------------------
+// Heist planner
+// ---------------------------------------------------------------------------
+import { HEISTS, getRandomHeist, getHeistByDifficulty, getPhaseCount, getTotalGuards, formatHeist } from '../../src/data/heistPlanner';
+
+describe('heist planner', () => {
+  it('has at least 4 heists', () => { expect(HEISTS.length).toBeGreaterThanOrEqual(4); });
+  it('generates random heist', () => { const h = getRandomHeist(); expect(h.name.length).toBeGreaterThan(3); expect(h.phases.length).toBeGreaterThanOrEqual(2); });
+  it('filters by difficulty', () => { const grand = getHeistByDifficulty('grand_heist'); expect(grand.length).toBeGreaterThanOrEqual(1); grand.forEach((h) => expect(h.difficulty).toBe('grand_heist')); });
+  it('phase count matches', () => { HEISTS.forEach((h) => expect(getPhaseCount(h)).toBe(h.phases.length)); });
+  it('harder heists have more phases', () => { const petty = getHeistByDifficulty('petty_theft')[0]; const impossible = getHeistByDifficulty('impossible')[0]; expect(getPhaseCount(impossible)).toBeGreaterThan(getPhaseCount(petty)); });
+  it('counts guards', () => { HEISTS.forEach((h) => expect(getTotalGuards(h)).toBeGreaterThanOrEqual(1)); });
+  it('all heists have complications', () => { HEISTS.forEach((h) => expect(h.complication.length).toBeGreaterThan(10)); });
+  it('all heists have escape routes', () => { HEISTS.forEach((h) => expect(h.escapeRoutes.length).toBeGreaterThanOrEqual(2)); });
+  it('formats heist', () => { expect(formatHeist(getRandomHeist())).toContain('Target'); });
+});
+
+// ---------------------------------------------------------------------------
+// Tournament bracket system
+// ---------------------------------------------------------------------------
+import { createTournament, resolveMatch, calculatePayout, getRandomCrowdReaction, getAllTournamentTypes, FIGHTERS as TOURNEY_FIGHTERS, formatTournament } from '../../src/data/tournamentBracket';
+
+describe('tournament bracket system', () => {
+  it('has at least 6 fighters', () => { expect(TOURNEY_FIGHTERS.length).toBeGreaterThanOrEqual(6); });
+  it('has 5 tournament types', () => { expect(getAllTournamentTypes().length).toBe(5); });
+  it('creates tournament with fighters', () => { const t = createTournament('Grand Arena', 'melee', 4); expect(t.name).toBe('Grand Arena'); expect(t.fighters.length).toBe(4); expect(t.rules.length).toBeGreaterThanOrEqual(3); });
+  it('resolves matches', () => { const f1 = TOURNEY_FIGHTERS[0]; const f2 = TOURNEY_FIGHTERS[1]; const result = resolveMatch(f1, f2); expect([f1.name, f2.name]).toContain(result.winner.name); expect(result.description.length).toBeGreaterThan(10); });
+  it('calculates payout', () => { expect(calculatePayout(100, 2.0)).toBe(200); expect(calculatePayout(50, 8.0)).toBe(400); });
+  it('crowd reactions are varied', () => { const reactions = new Set(Array.from({ length: 20 }, () => getRandomCrowdReaction())); expect(reactions.size).toBeGreaterThanOrEqual(3); });
+  it('formats tournament', () => { const t = createTournament('Test Cup', 'jousting'); expect(formatTournament(t)).toContain('Test Cup'); expect(formatTournament(t)).toContain('jousting'); });
+});
+
+// ---------------------------------------------------------------------------
+// Poison crafting system
+// ---------------------------------------------------------------------------
+import { POISONS as ALCHEMY_POISONS, getRandomPoison, getPoisonsByDelivery, getPoisonsByRarity, getCraftingCost as getPoisonCraftCost, canIdentify, getAllDeliveryMethods, formatPoison as formatAlchemyPoison } from '../../src/data/poisonCrafting';
+
+describe('poison crafting system', () => {
+  it('has at least 6 poisons', () => { expect(ALCHEMY_POISONS.length).toBeGreaterThanOrEqual(6); });
+  it('has 4 delivery methods', () => { expect(getAllDeliveryMethods().length).toBe(4); });
+  it('generates random poison', () => { const p = getRandomPoison(); expect(p.name.length).toBeGreaterThan(3); expect(p.symptoms.length).toBeGreaterThanOrEqual(2); expect(p.saveDC).toBeGreaterThanOrEqual(10); });
+  it('filters by delivery', () => { const ingested = getPoisonsByDelivery('ingested'); expect(ingested.length).toBeGreaterThanOrEqual(2); ingested.forEach((p) => expect(p.delivery).toBe('ingested')); });
+  it('filters by rarity', () => { const rare = getPoisonsByRarity('rare'); expect(rare.length).toBeGreaterThanOrEqual(2); rare.forEach((p) => expect(p.rarity).toBe('rare')); });
+  it('crafting cost = sum of ingredients', () => { ALCHEMY_POISONS.forEach((p) => { const cost = p.ingredients.reduce((s, i) => s + i.cost, 0); expect(getPoisonCraftCost(p)).toBe(cost); }); });
+  it('identification depends on modifier', () => { const easy = ALCHEMY_POISONS.find((p) => p.identifyDC === 10)!; expect(canIdentify(easy, 0)).toBe(true); const hard = ALCHEMY_POISONS.find((p) => p.identifyDC >= 18)!; expect(canIdentify(hard, 0)).toBe(false); });
+  it('formats identified vs unidentified', () => { const p = getRandomPoison(); expect(formatAlchemyPoison(p, true)).toContain(p.name); expect(formatAlchemyPoison(p, false)).toContain('Unknown Poison'); });
+});
+
+// ---------------------------------------------------------------------------
+// Underground river navigation
+// ---------------------------------------------------------------------------
+import { RIVER_SEGMENTS, RIVER_ROUTES, getRandomSegment as getRandomRiverSegment, getSegmentsByType, getRoute as getRiverRoute, getAllRoutes, getSegmentsWithTreasure, getSegmentsWithEncounters, formatSegment, formatRoute as formatRiverRoute } from '../../src/data/undergroundRiver';
+
+describe('underground river navigation', () => {
+  it('has at least 6 segments', () => { expect(RIVER_SEGMENTS.length).toBeGreaterThanOrEqual(6); });
+  it('has at least 3 routes', () => { expect(RIVER_ROUTES.length).toBeGreaterThanOrEqual(3); });
+  it('generates random segment', () => { const s = getRandomRiverSegment(); expect(s.name.length).toBeGreaterThan(3); expect(s.description.length).toBeGreaterThan(20); });
+  it('filters by type', () => { const rapids = getSegmentsByType('rapids'); expect(rapids.length).toBeGreaterThanOrEqual(1); rapids.forEach((s) => expect(s.type).toBe('rapids')); });
+  it('looks up route', () => { const r = getRiverRoute('The Deep Dive'); expect(r).toBeDefined(); expect(r!.segments.length).toBeGreaterThanOrEqual(3); });
+  it('some segments have treasure', () => { expect(getSegmentsWithTreasure().length).toBeGreaterThanOrEqual(2); });
+  it('some segments have encounters', () => { expect(getSegmentsWithEncounters().length).toBeGreaterThanOrEqual(2); });
+  it('routes have required equipment', () => { getAllRoutes().forEach((r) => expect(r.requiredEquipment.length).toBeGreaterThanOrEqual(2)); });
+  it('formats segment', () => { expect(formatSegment(RIVER_SEGMENTS[0])).toContain('Navigation DC'); });
+  it('formats route', () => { expect(formatRiverRoute(RIVER_ROUTES[0])).toContain('Equipment'); });
+});

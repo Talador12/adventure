@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 50 tests (1467 total) — faction wars, merchant caravans, heist planner, tournament brackets, poison crafting, underground rivers:
+  - **Faction war tracker** — `factionWar.ts` with 5 factions (Iron Crown/Shadow Pact/Temple of Light/Free Cities/Pirate Fleet), 10 territories with defense bonuses and resources, battle resolution (d20+strength vs d20+strength+defense), territory capture, contested zones. `resolveBattle()`/`applyBattleResult()` lifecycle. "Faction War" button in DMSidebar.
+  - **Merchant caravan generator** — `merchantCaravan.ts` with 6 origins (eastern_empire/northern_wastes/elven_woods/dwarven_holds/desert_tribes/underdark). Each has named merchant with personality, 4 unique items (common→exotic), quest hook, guard count, danger level. 24 total items with mechanical descriptions. "Merchant Caravan" button in DMSidebar.
+  - **Heist planner** — `heistPlanner.ts` with 4 heists across 4 difficulties (petty_theft→impossible). Multi-phase plans with primary skill DCs, alternative approaches, failure consequences, guard patrols with weaknesses, escape routes with risk levels, time limits, and complications. "Heist" button in DMSidebar.
+  - **Tournament bracket system** — `tournamentBracket.ts` with 8 fighters (with odds/style/special moves), 5 tournament types (melee/archery/jousting/magic_duel/grand_melee), match resolution, betting payouts, 8 crowd reactions, per-type rules. "Tournament" button in DMSidebar.
+  - **Poison crafting system** — `poisonCrafting.ts` with 8 poisons across 4 delivery methods (ingested/injury/inhaled/contact) and 4 rarities. Each has save DC, onset, symptoms, effect, duration, antidote, crafting DC, ingredients with costs, and identification DC. `canIdentify()` + identified/unidentified formatting. "Poison" button in DMSidebar.
+  - **Underground river navigation** — `undergroundRiver.ts` with 7 river segments (calm/rapids/waterfall/flooded_chamber/underground_lake/narrow_passage/whirlpool), hazards with DCs and damage, encounters, treasure, and 3 pre-built routes with required equipment. "Underground River" button in DMSidebar.
+- 50 new tests (1467 total) covering 6 systems:
+  - **Faction war** (9 tests): faction count, territory count, creation, battle resolution, battle application, null for unknown, contested territories, strength calculation, formatted output.
+  - **Merchant caravans** (7 tests): origin count, random, by origin, quest hooks, exotic items, item prices, formatted output.
+  - **Heist planner** (9 tests): count, random, difficulty filter, phase count, difficulty scaling, guard count, complications, escape routes, formatted output.
+  - **Tournament brackets** (7 tests): fighter count, type count, creation, match resolution, payout calculation, crowd reactions, formatted output.
+  - **Poison crafting** (8 tests): count, delivery methods, random, delivery filter, rarity filter, crafting cost, identification, identified/unidentified format.
+  - **Underground rivers** (10 tests): segment count, route count, random, type filter, route lookup, treasure segments, encounter segments, route equipment, formatted segment, formatted route.
+
 - 6 new systems + 47 tests (1417 total, +1 pre-existing fix) — naval combat, ritual magic, companion animals, trap disarm, tavern brawls, dream sequences:
   - **Naval combat system** — `navalCombat.ts` with 6 ship classes (rowboat→flagship), 7 naval actions (fire/ram/board/flee/repair/brace/full_sail). Ship templates with HP/AC/speed/cannons/crew/cargo/special abilities. `damageShip()`/`repairShip()`/`isShipSunk()` lifecycle. Condition tracking (Seaworthy→Sunk). Action requirements (cannons need crew, ram needs speed). "Naval Combat" button in DMSidebar.
   - **Ritual magic circles** — `ritualMagic.ts` with 8 rituals across 6 schools (abjuration/conjuration/divination/evocation/necromancy/transmutation). Each requires 2-8 casters, has material cost, casting time, Arcana DC, powerful effect, dramatic failure consequence, and per-extra-caster boost. `calculateRitualDC()` lowers individual DC with more casters. "Ritual Magic" button in DMSidebar.
@@ -833,17 +848,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Tavern brawl choreographer~~ **DONE** — `tavernBrawl.ts` with 7 triggers × 3 environments + weapons
 - ~~Dream sequence generator~~ **DONE** — `dreamSequence.ts` with 7 dreams × 6 types + choices
 
-**Wave 37 Roadmap:**
+**Wave 37 (1,467 tests):**
+- ~~Faction war tracker~~ **DONE** — `factionWar.ts` with 5 factions + 10 territories + battle resolution
+- ~~Merchant caravan generator~~ **DONE** — `merchantCaravan.ts` with 6 origins × 4 items + quest hooks
+- ~~Heist planner~~ **DONE** — `heistPlanner.ts` with 4 heists × 4 difficulties + multi-phase plans
+- ~~Tournament bracket system~~ **DONE** — `tournamentBracket.ts` with 8 fighters × 5 types + betting
+- ~~Poison crafting system~~ **DONE** — `poisonCrafting.ts` with 8 poisons × 4 delivery × 4 rarity
+- ~~Underground river navigation~~ **DONE** — `undergroundRiver.ts` with 7 segments + 3 routes + hazards
+
+**Wave 38 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Faction war tracker — multi-faction conflict with territory control and battle outcomes
-- Random merchant caravan generator — traveling merchants with unique inventories and quests
-- Underground river navigation — waterway traversal with current, rapids, and underwater encounters
-- Heist planner — multi-phase robbery scenarios with guard patrols, vault locks, and escape routes
-- Tournament bracket system — organized combat with brackets, betting odds, and crowd reactions
-- Poison crafting and identification — alchemical poison system with symptoms, DCs, and antidotes
+- Court intrigue system — noble houses with power levels, alliances, scandals, and favors owed
+- Random shipwreck generator — wrecked vessels with cargo manifests, survivors, and hazards
+- Alchemical ingredient foraging — biome-based reagent gathering with seasonal availability
+- Bounty board system — posted bounties with targets, rewards, deadlines, and rival hunters
+- Curse generator — layered curses with progression stages, triggers, and complex removal conditions
+- Spelljammer helm system — astral ship navigation with gravity planes and phlogiston hazards
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
