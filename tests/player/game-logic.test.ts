@@ -5066,3 +5066,211 @@ describe('ASI planner', () => {
     expect(text).toContain('Recommended Feats');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Warband builder
+// ---------------------------------------------------------------------------
+import { createWarband, getAliveCount, getTotalCount, getLeader, killMember, formatWarband } from '../../src/data/warbandBuilder';
+
+describe('warband builder', () => {
+  it('creates warband with correct member count', () => {
+    const wb = createWarband('Test', 'Evil', 10, 12, 3, { leader: { count: 1 }, lieutenant: { count: 0 }, elite: { count: 2 }, soldier: { count: 3 }, minion: { count: 4 } });
+    expect(getTotalCount(wb)).toBe(10);
+    expect(getAliveCount(wb)).toBe(10);
+    expect(wb.morale).toBe(100);
+  });
+
+  it('leader has scaled HP/AC/attack', () => {
+    const wb = createWarband('T', 'F', 10, 12, 3, { leader: { count: 1 }, lieutenant: { count: 0 }, elite: { count: 0 }, soldier: { count: 0 }, minion: { count: 0 } });
+    const leader = getLeader(wb);
+    expect(leader).toBeTruthy();
+    expect(leader!.maxHp).toBe(30); // 10 * 3
+    expect(leader!.ac).toBe(16); // 12 + 4
+  });
+
+  it('killMember reduces morale', () => {
+    const wb = createWarband('T', 'F', 10, 12, 3, { leader: { count: 1 }, lieutenant: { count: 0 }, elite: { count: 0 }, soldier: { count: 4 }, minion: { count: 0 } });
+    const soldierIds = wb.members.filter((m) => m.rank === 'soldier').map((m) => m.id);
+    const updated = killMember(wb, soldierIds[0]);
+    expect(updated.morale).toBeLessThan(100);
+    expect(getAliveCount(updated)).toBe(4);
+  });
+
+  it('formatWarband shows leader and ranks', () => {
+    const wb = createWarband('Raiders', 'Orcs', 10, 12, 3, { leader: { count: 1, names: ['Gruumsh'] }, lieutenant: { count: 0 }, elite: { count: 1 }, soldier: { count: 2 }, minion: { count: 0 } });
+    const text = formatWarband(wb);
+    expect(text).toContain('Raiders');
+    expect(text).toContain('Gruumsh');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Quest reward scaler
+// ---------------------------------------------------------------------------
+import { scaleReward, formatScaledReward } from '../../src/lib/questRewardScaler';
+
+describe('quest reward scaler', () => {
+  it('scales gold with level', () => {
+    const low = scaleReward(3, 4, 'medium');
+    const high = scaleReward(10, 4, 'medium');
+    expect(high.gold).toBeGreaterThan(low.gold);
+  });
+
+  it('deadly gives more than easy', () => {
+    const easy = scaleReward(5, 4, 'easy');
+    const deadly = scaleReward(5, 4, 'deadly');
+    expect(deadly.gold).toBeGreaterThan(easy.gold);
+    expect(deadly.xpPerCharacter).toBeGreaterThan(easy.xpPerCharacter);
+  });
+
+  it('formatScaledReward includes gold and XP', () => {
+    const reward = scaleReward(5, 4, 'hard');
+    const text = formatScaledReward(reward, 4, 'hard');
+    expect(text).toContain('Gold');
+    expect(text).toContain('XP');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// World clock
+// ---------------------------------------------------------------------------
+import { createWorldClock, advanceTime, advanceDays, addEvent, getUpcomingEvents, getTimeOfDayLabel, formatWorldDate, DEFAULT_MONTH_NAMES } from '../../src/lib/worldClock';
+
+describe('world clock', () => {
+  it('creates at year 1490 by default', () => {
+    const clock = createWorldClock();
+    expect(clock.currentDate.year).toBe(1490);
+    expect(clock.monthNames.length).toBe(12);
+  });
+
+  it('advanceTime wraps days correctly', () => {
+    const clock = createWorldClock();
+    const advanced = advanceTime(clock, 30); // 30 hours = next day + 6 hours
+    expect(advanced.currentDate.day).toBe(2);
+    expect(advanced.currentDate.hour).toBe(14); // 8 + 30 - 24
+  });
+
+  it('advanceDays wraps months', () => {
+    let clock = createWorldClock();
+    clock.currentDate.day = 28;
+    clock = advanceDays(clock, 5); // day 33 → month 2, day 3
+    expect(clock.currentDate.month).toBe(2);
+    expect(clock.currentDate.day).toBe(3);
+  });
+
+  it('getTimeOfDayLabel returns correct labels', () => {
+    expect(getTimeOfDayLabel(6)).toBe('Dawn');
+    expect(getTimeOfDayLabel(12)).toBe('Midday');
+    expect(getTimeOfDayLabel(22)).toBe('Night');
+  });
+
+  it('addEvent and getUpcomingEvents work', () => {
+    let clock = createWorldClock();
+    clock = addEvent(clock, 'Festival', { year: 1490, month: 1, day: 10, hour: 12 }, 'Annual harvest festival');
+    const upcoming = getUpcomingEvents(clock, 30);
+    expect(upcoming.length).toBe(1);
+    expect(upcoming[0].name).toBe('Festival');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Advantage tracker
+// ---------------------------------------------------------------------------
+import { createAdvantageState, addAdvantage, addDisadvantage, clearExpired, resolveAdvantage, formatAdvantageStatus } from '../../src/lib/advantageTracker';
+
+describe('advantage tracker', () => {
+  it('starts normal', () => {
+    expect(resolveAdvantage(createAdvantageState('c1'))).toBe('normal');
+  });
+
+  it('advantage source gives advantage', () => {
+    let state = addAdvantage(createAdvantageState('c1'), 'Bless');
+    expect(resolveAdvantage(state)).toBe('advantage');
+  });
+
+  it('disadvantage source gives disadvantage', () => {
+    let state = addDisadvantage(createAdvantageState('c1'), 'Poisoned');
+    expect(resolveAdvantage(state)).toBe('disadvantage');
+  });
+
+  it('advantage + disadvantage = normal (5e rule)', () => {
+    let state = createAdvantageState('c1');
+    state = addAdvantage(state, 'Bless');
+    state = addDisadvantage(state, 'Poisoned');
+    expect(resolveAdvantage(state)).toBe('normal');
+  });
+
+  it('clearExpired removes old sources', () => {
+    let state = addAdvantage(createAdvantageState('c1'), 'Bless', 3);
+    state = clearExpired(state, 5); // round 5, expires at 3
+    expect(resolveAdvantage(state)).toBe('normal');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combat log search
+// ---------------------------------------------------------------------------
+import { classifyLogEntry, searchCombatLog, getLogStats, formatSearchResults } from '../../src/lib/combatLogSearch';
+
+describe('combat log search', () => {
+  it('classifies entries correctly', () => {
+    expect(classifyLogEntry('Thorin attacks for 12 damage')).toBe('damage');
+    expect(classifyLogEntry('Goblin falls!')).toBe('kill');
+    expect(classifyLogEntry('CRITICAL HIT!')).toBe('crit');
+    expect(classifyLogEntry('Elara casts Fireball')).toBe('spell');
+  });
+
+  it('searchCombatLog finds matching entries', () => {
+    const log = ['Thorin attacks for 12 damage', 'Elara heals for 8', 'Goblin falls!'];
+    const results = searchCombatLog(log, 'Thorin');
+    expect(results.length).toBe(1);
+    expect(results[0].entry).toContain('Thorin');
+  });
+
+  it('getLogStats counts by type', () => {
+    const log = ['Attack for 5 damage', 'Attack for 3 damage', 'Goblin falls!', 'CRITICAL HIT!'];
+    const stats = getLogStats(log);
+    expect(stats.damage).toBe(2);
+    expect(stats.kill).toBe(1);
+    expect(stats.crit).toBe(1);
+  });
+
+  it('formatSearchResults handles empty', () => {
+    expect(formatSearchResults([], 'missing')).toContain('No results');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Random weather generator
+// ---------------------------------------------------------------------------
+import { getSeasonFromMonth, generateDailyWeather, formatDailyWeather } from '../../src/lib/randomWeatherGen';
+
+describe('random weather generator', () => {
+  it('getSeasonFromMonth maps correctly', () => {
+    expect(getSeasonFromMonth(1)).toBe('winter');
+    expect(getSeasonFromMonth(4)).toBe('spring');
+    expect(getSeasonFromMonth(7)).toBe('summer');
+    expect(getSeasonFromMonth(10)).toBe('autumn');
+  });
+
+  it('generateDailyWeather returns valid structure', () => {
+    const weather = generateDailyWeather('summer');
+    expect(weather.temperature.length).toBeGreaterThan(0);
+    expect(weather.precipitation.length).toBeGreaterThan(0);
+    expect(weather.wind.length).toBeGreaterThan(0);
+    expect(weather.tempValue).toBeGreaterThanOrEqual(65);
+    expect(weather.tempValue).toBeLessThanOrEqual(95);
+  });
+
+  it('winter generates cold temperatures', () => {
+    const weather = generateDailyWeather('winter');
+    expect(weather.tempValue).toBeLessThanOrEqual(40);
+  });
+
+  it('formatDailyWeather includes season emoji', () => {
+    const weather = generateDailyWeather('autumn');
+    const text = formatDailyWeather(weather, 'autumn');
+    expect(text).toContain('🍂');
+    expect(text).toContain('autumn');
+  });
+});

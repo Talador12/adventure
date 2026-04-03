@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.0.0
+## Current Version: v11.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 25 tests (653 total) — warbands, quest rewards, world clock, advantage tracker, combat log search, weather gen:
+  - **Warband builder** — `warbandBuilder.ts` with 5 ranks (leader/lieutenant/elite/soldier/minion) each with HP/AC/attack multipliers. `createWarband()` generates a full faction. `killMember()` tracks casualties and adjusts morale (leader death = -30%). "Create Warband" button in DMSidebar.
+  - **Quest reward scaler** — `questRewardScaler.ts` auto-scales gold, XP, and magic item chance by party level, party size, and difficulty (trivial→deadly). Magic item rarity scales with level (common→uncommon→rare). "Quest Rewards" button shows all 5 difficulty tiers.
+  - **Persistent world clock** — `worldClock.ts` with 12 named fantasy months (Deepwinter→Drawing Down), 30-day months, year/month/day/hour tracking. `advanceTime()`/`advanceDays()` with proper wrapping. `addEvent()` + `getUpcomingEvents()` for scheduling. "World Clock" button in DMSidebar.
+  - **Advantage tracker** — `advantageTracker.ts` implements 5e rule: any advantage + any disadvantage = normal (regardless of count). `addAdvantage()`/`addDisadvantage()` with reason + optional round expiry. `clearExpired()` for round cleanup.
+  - **Combat log search** — `combatLogSearch.ts` classifies entries into 7 types (damage/kill/heal/crit/miss/spell/condition/other). `searchCombatLog()` with keyword + type + character filters. `getLogStats()` for combat summary. "Combat Log Search" button with prompt in DMSidebar.
+  - **Random weather generator** — `randomWeatherGen.ts` with 4 seasons, temperature ranges, weighted precipitation (6-7 types per season), 5 wind levels, visibility, and special events (aurora borealis, pollen storms, heat waves). "Random Weather" button in DMSidebar.
+- 25 new tests (653 total) covering 6 systems:
+  - **Warband** (4 tests): member count, leader scaling, kill+morale, formatted output.
+  - **Quest rewards** (3 tests): level scaling, difficulty scaling, formatted output.
+  - **World clock** (5 tests): default creation, hour wrapping, day/month wrapping, time-of-day labels, event scheduling.
+  - **Advantage tracker** (5 tests): normal start, advantage, disadvantage, cancel-out rule, expiry.
+  - **Combat log search** (4 tests): entry classification, keyword search, type stats, empty results.
+  - **Weather generator** (4 tests): season mapping, valid structure, winter cold temps, formatted output.
+
 - 6 new systems + 32 tests (628 total) — prepared spells, wild magic, healing surges, terrain escalation, stances, ASI planner:
   - **Prepared spell management** — `preparedSpells.ts` with 3 spell styles (prepared/known/none) mapped to all 12 classes. `getMaxPreparedSpells()` scales by level + ability mod. Prepare/unprepare with slot tracking. Non-casters filtered. "Spell Preparation" usable in character management.
   - **Wild magic surge table** — `wildMagicSurge.ts` with 50 effects across 4 severities (harmless/beneficial/chaotic/dangerous). d20 check (surge on nat 1), then random d50 effect. Ranges from "turn into a potted plant" to "cast Fireball centered on yourself". "Wild Magic Surge" button in DMSidebar.
@@ -455,12 +470,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Warband builder — create persistent enemy factions with named leaders and rank structure
-- Quest reward scaler — auto-adjust gold/XP/items by party level and quest difficulty
-- Persistent world clock — track in-game days, weeks, months with event scheduling
-- Ability check advantage tracker — track when characters have advantage/disadvantage on checks
-- Combat log search — full-text search through combat log history with filtering
-- Random weather generator — procedural daily weather with seasonal patterns and extremes
+- ~~Warband builder~~ **DONE** — `warbandBuilder.ts` with 5 ranks + morale + casualties
+- ~~Quest reward scaler~~ **DONE** — `questRewardScaler.ts` with level×difficulty scaling
+- ~~Persistent world clock~~ **DONE** — `worldClock.ts` with 12 named months + events
+- ~~Advantage tracker~~ **DONE** — `advantageTracker.ts` with 5e cancel-out rule
+- ~~Combat log search~~ **DONE** — `combatLogSearch.ts` with 7-type classification + filters
+- ~~Random weather generator~~ **DONE** — `randomWeatherGen.ts` with 4 seasons + special events
+
+**Wave 16 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Ritual casting tracker — track which spells can be cast as rituals (10 min extra time, no slot)
+- Familiar manager — track familiar HP, abilities, and scout reports
+- Encounter budget calculator — XP budget by party level for balanced encounter design
+- Character backstory questionnaire — guided backstory builder with prompts for key details
+- Status effect reference — quick-lookup for all 5e conditions with mechanical effects
+- Party composition analyzer — identify gaps in party roles and suggest recruitment
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

@@ -1511,6 +1511,82 @@ export default function DMSidebar({
               💉 Healing Surges
             </button>
 
+            {/* Warband */}
+            <button
+              onClick={async () => {
+                const { createWarband, formatWarband } = await import('../../data/warbandBuilder');
+                const name = window.prompt('Warband name:', 'Goblin Raiders') || 'Warband';
+                const wb = createWarband(name, name, 15, 13, 4, { leader: { count: 1, names: [`${name} Chief`] }, lieutenant: { count: 0 }, elite: { count: 2 }, soldier: { count: 4 }, minion: { count: 6 } });
+                onAddDmMessage(formatWarband(wb));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all"
+              title="Create a persistent enemy warband with ranks and morale"
+            >
+              ⚔️ Create Warband
+            </button>
+
+            {/* Quest reward scaler */}
+            <button
+              onClick={async () => {
+                const { scaleReward, formatScaledReward } = await import('../../lib/questRewardScaler');
+                const avgLevel = characters.length > 0 ? Math.round(characters.reduce((s, c) => s + c.level, 0) / characters.length) : 5;
+                const difficulties = ['trivial', 'easy', 'medium', 'hard', 'deadly'] as const;
+                const lines = difficulties.map((d) => formatScaledReward(scaleReward(avgLevel, characters.length, d), characters.length, d));
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Show level-scaled quest rewards for all difficulties"
+            >
+              🏆 Quest Rewards
+            </button>
+
+            {/* World clock */}
+            <button
+              onClick={async () => {
+                const { createWorldClock, formatWorldClock } = await import('../../lib/worldClock');
+                const raw = localStorage.getItem(`adventure:worldclock:${roomId}`);
+                const clock = raw ? JSON.parse(raw) : createWorldClock();
+                onAddDmMessage(formatWorldClock(clock));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all"
+              title="Persistent world calendar with named months and event scheduling"
+            >
+              📅 World Clock
+            </button>
+
+            {/* Combat log search */}
+            <button
+              onClick={async () => {
+                const { getLogStats, searchCombatLog, formatSearchResults } = await import('../../lib/combatLogSearch');
+                const query = window.prompt('Search combat log:', '') || '';
+                if (!query) {
+                  const stats = getLogStats(combatLog || []);
+                  onAddDmMessage(`📋 **Combat Log Stats:**\n⚔️ Damage: ${stats.damage} | 💀 Kills: ${stats.kill} | 💚 Heals: ${stats.heal} | 🎯 Crits: ${stats.crit} | ❌ Misses: ${stats.miss} | ✨ Spells: ${stats.spell}`);
+                  return;
+                }
+                const results = searchCombatLog(combatLog || [], query);
+                onAddDmMessage(formatSearchResults(results, query));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-slate-700/30 border border-slate-500/30 text-slate-300 font-semibold hover:bg-slate-600/30 transition-all"
+              title="Search combat log — keyword search or view stats"
+            >
+              🔍 Combat Log Search
+            </button>
+
+            {/* Random weather */}
+            <button
+              onClick={async () => {
+                const { generateDailyWeather, formatDailyWeather, getSeasonFromMonth } = await import('../../lib/randomWeatherGen');
+                const month = 6; // default summer
+                const season = getSeasonFromMonth(month);
+                onAddDmMessage(formatDailyWeather(generateDailyWeather(season), season));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-sky-900/20 border border-sky-600/30 text-sky-400 font-semibold hover:bg-sky-800/30 transition-all"
+              title="Generate random daily weather with temperature, precipitation, wind, and special events"
+            >
+              🌤️ Random Weather
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
