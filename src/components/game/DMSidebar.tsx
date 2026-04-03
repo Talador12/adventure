@@ -36,6 +36,7 @@ import { PATRONS as PATRON_DATA, formatPatron as formatPatronFn } from '../../da
 import { LEGENDARY_TEMPLATES as LEGENDARY_DATA } from '../../lib/legendaryActions';
 import { DIALOGUE_TEMPLATES as DIALOGUE_DATA } from '../../data/dialogueTrees';
 import { LAIR_THEMES as LAIR_DATA } from '../../data/lairEffects';
+import { BULK_PRESETS as BULK_PRESETS_DATA } from '../../lib/bulkNpcGenerator';
 import { MINION_TEMPLATES as MINION_DATA } from '../../lib/minionRules';
 
 interface DMSidebarProps {
@@ -1663,6 +1664,98 @@ export default function DMSidebar({
               title="Guided backstory builder with 12 questions across 4 categories"
             >
               📝 Backstory Builder
+            </button>
+
+            {/* Object interaction tracker */}
+            <button
+              onClick={async () => {
+                const { createObjectTracker, formatObjectTracker } = await import('../../lib/objectInteraction');
+                const raw = localStorage.getItem(`adventure:objects:${roomId}`);
+                const tracker = raw ? JSON.parse(raw) : createObjectTracker();
+                onAddDmMessage(formatObjectTracker(tracker));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all"
+              title="Track doors, levers, chests, and other interactable objects"
+            >
+              🚪 Object Tracker
+            </button>
+
+            {/* Class feature cooldowns */}
+            <button
+              onClick={async () => {
+                const { getClassFeatures, formatFeatureCooldowns } = await import('../../lib/classFeatureCooldowns');
+                const lines = characters.map((c) => formatFeatureCooldowns(getClassFeatures(c.class, c.level), c.name));
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all disabled:opacity-30"
+              title="Track class feature uses — action surge, rage, channel divinity, etc"
+            >
+              ⚡ Feature Cooldowns
+            </button>
+
+            {/* Multiclass spell slots */}
+            <button
+              onClick={async () => {
+                const { formatMulticlassSlots } = await import('../../lib/multiclassSpellSlots');
+                const classes = characters.map((c) => ({ class: c.class, level: c.level }));
+                onAddDmMessage(formatMulticlassSlots(classes));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all disabled:opacity-30"
+              title="Calculate combined spell slots for multiclass characters"
+            >
+              📖 Multiclass Slots
+            </button>
+
+            {/* Bulk enemy generator */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all cursor-pointer px-2">
+                ⚔️ Bulk Enemy Gen
+              </summary>
+              <div className="mt-1 space-y-1">
+                {BULK_PRESETS_DATA.map((preset, i) => (
+                  <button
+                    key={i}
+                    onClick={async () => {
+                      const { generateBulkEnemies, formatBulkEnemies } = await import('../../lib/bulkNpcGenerator');
+                      onAddDmMessage(formatBulkEnemies(generateBulkEnemies(preset)));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-red-600/40 transition-all flex items-center justify-between text-[9px] text-slate-300"
+                  >
+                    <span>{preset.baseName} ×{preset.count}</span>
+                    <span className="text-slate-500">{preset.baseHp}HP AC{preset.ac}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Combat narration */}
+            <button
+              onClick={async () => {
+                const { formatNarrationPreview } = await import('../../data/combatNarration');
+                onAddDmMessage(formatNarrationPreview());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Preview combat narration templates for hits, misses, crits, kills"
+            >
+              🎭 Combat Narration
+            </button>
+
+            {/* Session notes tagger */}
+            <button
+              onClick={async () => {
+                const { createNoteTaggger, getTagCounts, formatNotesWithTags } = await import('../../lib/sessionNoteTagger');
+                const raw = localStorage.getItem(`adventure:tagnotes:${roomId}`);
+                const state = raw ? JSON.parse(raw) : createNoteTaggger();
+                const counts = getTagCounts(state);
+                const countLines = Object.entries(counts).filter(([, v]) => v > 0).map(([k, v]) => `${k}: ${v}`).join(', ');
+                onAddDmMessage(formatNotesWithTags(state.notes) + (countLines ? `\n\nTag counts: ${countLines}` : ''));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all"
+              title="View auto-tagged session notes — searchable by #combat, #lore, #npc, etc"
+            >
+              📝 Tagged Notes
             </button>
 
             {/* Save/Load Encounter Templates */}

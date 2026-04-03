@@ -5421,3 +5421,165 @@ describe('party analyzer', () => {
     expect(text).toContain('Elara');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Object interaction tracker
+// ---------------------------------------------------------------------------
+import { createObjectTracker, addObject, interactWithObject, getObjectsAtPosition, formatObjectTracker } from '../../src/lib/objectInteraction';
+
+describe('object interaction tracker', () => {
+  it('starts empty', () => { expect(createObjectTracker().objects.length).toBe(0); });
+  it('addObject adds to tracker', () => {
+    let t = addObject(createObjectTracker(), 'door', 'Iron Door', 5, 3, 'locked', 15);
+    expect(t.objects.length).toBe(1);
+    expect(t.objects[0].state).toBe('locked');
+  });
+  it('interactWithObject changes state', () => {
+    let t = addObject(createObjectTracker(), 'lever', 'Rusty Lever', 2, 2);
+    const id = t.objects[0].id;
+    t = interactWithObject(t, id, 'activated', 'Pulled the lever');
+    expect(t.objects[0].state).toBe('activated');
+    expect(t.objects[0].interactionHistory.length).toBe(1);
+  });
+  it('getObjectsAtPosition filters by location', () => {
+    let t = addObject(createObjectTracker(), 'chest', 'Chest', 5, 5);
+    t = addObject(t, 'door', 'Door', 3, 3);
+    expect(getObjectsAtPosition(t, 5, 5).length).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Class feature cooldowns
+// ---------------------------------------------------------------------------
+import { CLASS_FEATURE_TEMPLATES as FEAT_TEMPLATES, getClassFeatures, useFeature, restoreFeatures, formatFeatureCooldowns } from '../../src/lib/classFeatureCooldowns';
+
+describe('class feature cooldowns', () => {
+  it('has templates for major classes', () => { expect(FEAT_TEMPLATES.length).toBeGreaterThanOrEqual(12); });
+  it('getClassFeatures returns features by class and level', () => {
+    const features = getClassFeatures('Fighter', 5);
+    expect(features.some((f) => f.name === 'Action Surge')).toBe(true);
+    expect(features.some((f) => f.name === 'Second Wind')).toBe(true);
+  });
+  it('useFeature decrements', () => {
+    const features = getClassFeatures('Fighter', 5);
+    const surge = features.find((f) => f.name === 'Action Surge')!;
+    const result = useFeature(features, surge.id);
+    expect(result.success).toBe(true);
+    const updated = result.features.find((f) => f.id === surge.id)!;
+    expect(updated.currentUses).toBe(0);
+  });
+  it('restoreFeatures refills on short rest', () => {
+    let features = getClassFeatures('Fighter', 5);
+    const surge = features.find((f) => f.name === 'Action Surge')!;
+    features = useFeature(features, surge.id).features;
+    features = restoreFeatures(features, 'short_rest');
+    expect(features.find((f) => f.id === surge.id)!.currentUses).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multiclass spell slots
+// ---------------------------------------------------------------------------
+import { getCasterLevel, calculateCombinedCasterLevel, getMulticlassSpellSlots, formatMulticlassSlots } from '../../src/lib/multiclassSpellSlots';
+
+describe('multiclass spell slots', () => {
+  it('getCasterLevel classifies correctly', () => {
+    expect(getCasterLevel('Wizard')).toBe('full');
+    expect(getCasterLevel('Paladin')).toBe('half');
+    expect(getCasterLevel('Fighter')).toBe('third');
+    expect(getCasterLevel('Barbarian')).toBe('none');
+  });
+  it('calculateCombinedCasterLevel adds levels', () => {
+    expect(calculateCombinedCasterLevel([{ class: 'Wizard', level: 5 }, { class: 'Cleric', level: 3 }])).toBe(8);
+    expect(calculateCombinedCasterLevel([{ class: 'Wizard', level: 5 }, { class: 'Paladin', level: 6 }])).toBe(8); // 5 + floor(6/2)
+  });
+  it('getMulticlassSpellSlots returns correct slots', () => {
+    const slots = getMulticlassSpellSlots([{ class: 'Wizard', level: 5 }]);
+    expect(slots[0]).toBe(4); // 1st level slots at caster level 5
+    expect(slots[2]).toBe(2); // 3rd level slots
+  });
+  it('formatMulticlassSlots includes class info', () => {
+    const text = formatMulticlassSlots([{ class: 'Bard', level: 3 }, { class: 'Warlock', level: 2 }]);
+    expect(text).toContain('Bard 3');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bulk NPC generator
+// ---------------------------------------------------------------------------
+import { generateBulkEnemies, BULK_PRESETS, formatBulkEnemies } from '../../src/lib/bulkNpcGenerator';
+
+describe('bulk NPC generator', () => {
+  it('generates correct count', () => {
+    const enemies = generateBulkEnemies(BULK_PRESETS[0]);
+    expect(enemies.length).toBe(BULK_PRESETS[0].count);
+  });
+  it('HP varies within range', () => {
+    const config = BULK_PRESETS[0]; // Goblin, baseHP 7, variance 3
+    const enemies = generateBulkEnemies(config);
+    for (const e of enemies) {
+      expect(e.hp).toBeGreaterThanOrEqual(config.baseHp - config.hpVariance);
+      expect(e.hp).toBeLessThanOrEqual(config.baseHp + config.hpVariance);
+    }
+  });
+  it('has at least 5 presets', () => { expect(BULK_PRESETS.length).toBeGreaterThanOrEqual(5); });
+  it('formatBulkEnemies includes total XP', () => {
+    const text = formatBulkEnemies(generateBulkEnemies(BULK_PRESETS[0]));
+    expect(text).toContain('Total XP');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combat narration
+// ---------------------------------------------------------------------------
+import { getRandomNarration, getNarrationCount, getAllTypes, formatNarrationPreview } from '../../src/data/combatNarration';
+
+describe('combat narration', () => {
+  it('has all 6 narration types', () => { expect(getAllTypes().length).toBe(6); });
+  it('each type has at least 5 templates', () => {
+    for (const t of getAllTypes()) expect(getNarrationCount(t)).toBeGreaterThanOrEqual(5);
+  });
+  it('getRandomNarration substitutes names', () => {
+    const text = getRandomNarration('hit', 'Thorin', 'Goblin');
+    expect(text).toContain('Thorin');
+    expect(text).toContain('Goblin');
+  });
+  it('formatNarrationPreview shows example', () => {
+    const text = formatNarrationPreview();
+    expect(text).toContain('Combat Narration');
+    expect(text).toContain('Example');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session note tagger
+// ---------------------------------------------------------------------------
+import { createNoteTaggger, autoTagNote, addNote, searchByTag, getTagCounts } from '../../src/lib/sessionNoteTagger';
+
+describe('session note tagger', () => {
+  it('autoTagNote detects combat keywords', () => {
+    const tags = autoTagNote('The fighter made a devastating attack roll');
+    expect(tags).toContain('#combat');
+  });
+  it('autoTagNote detects lore keywords', () => {
+    const tags = autoTagNote('An ancient legend spoke of this artifact');
+    expect(tags).toContain('#lore');
+  });
+  it('addNote stores with auto-tags', () => {
+    let state = addNote(createNoteTaggger(), 'Bought a potion from the merchant', 'session1');
+    expect(state.notes.length).toBe(1);
+    expect(state.notes[0].tags).toContain('#item');
+    expect(state.notes[0].tags).toContain('#npc');
+  });
+  it('searchByTag filters correctly', () => {
+    let state = addNote(createNoteTaggger(), 'Entered the dungeon cave', 'session1');
+    state = addNote(state, 'The fighter attacked the dragon', 'session1');
+    expect(searchByTag(state, '#location').length).toBe(1);
+    expect(searchByTag(state, '#combat').length).toBe(1);
+  });
+  it('getTagCounts sums correctly', () => {
+    let state = addNote(createNoteTaggger(), 'Found gold in the dungeon cave', 'session1');
+    const counts = getTagCounts(state);
+    expect(counts['#item']).toBeGreaterThanOrEqual(1);
+  });
+});

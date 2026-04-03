@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.2.0
+## Current Version: v11.3.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 25 tests (704 total) — object tracker, feature cooldowns, multiclass slots, bulk NPCs, combat narration, note tagger:
+  - **Object interaction tracker** — `objectInteraction.ts` with 10 object types (door/chest/lever/button/trap_door/gate/shrine/fountain/torch/statue). State tracking (locked/unlocked/open/closed/broken/activated). Position-based lookup. Interaction history. "Object Tracker" button in DMSidebar.
+  - **Class feature cooldown manager** — `classFeatureCooldowns.ts` with 16 templates across 8 classes (Action Surge, Rage, Channel Divinity, Wild Shape, Bardic Inspiration, Ki Points, Lay on Hands, Sorcery Points, etc). `useFeature()`/`restoreFeatures()` on short/long rest. Visual use bars. "Feature Cooldowns" button in DMSidebar.
+  - **Multi-class spell slot calculator** — `multiclassSpellSlots.ts` with PHB p.165 spell slot table for all 20 combined caster levels. Full/half/third caster classification for all classes. `calculateCombinedCasterLevel()` + `getMulticlassSpellSlots()`. "Multiclass Slots" button in DMSidebar.
+  - **Bulk NPC stat block generator** — `bulkNpcGenerator.ts` with 6 presets (Goblin/Skeleton/Bandit/Kobold/Orc/Guard). HP randomized within variance range. Auto-rolled initiative. Total XP calculation. Expandable preset browser in DMSidebar.
+  - **Combat narration templates** — `combatNarration.ts` with 6 types (hit/miss/crit/fumble/kill/heal) × 5-8 templates each. `getRandomNarration()` with {attacker}/{target} substitution. "Combat Narration" button previews all types + example.
+  - **Session notes auto-tagger** — `sessionNoteTagger.ts` with 10 tag types (#combat/#lore/#npc/#quest/#item/#location/#decision/#death/#levelup/#recap). Keyword-based auto-detection. `searchByTag()`/`searchByKeyword()`. Tag count statistics. "Tagged Notes" button in DMSidebar.
+- 25 new tests (704 total) covering 6 systems:
+  - **Object tracker** (4 tests): empty start, add, state change + history, position filtering.
+  - **Feature cooldowns** (4 tests): template count, class+level filtering, use decrement, short rest restore.
+  - **Multiclass slots** (4 tests): caster level classification, combined level math, slot table, formatted output.
+  - **Bulk NPCs** (4 tests): count, HP variance range, preset count, total XP format.
+  - **Combat narration** (4 tests): type count, template count per type, name substitution, preview format.
+  - **Note tagger** (5 tests): combat keyword detection, lore detection, auto-tagged storage, tag search, tag counts.
+
 - 6 new systems + 26 tests (679 total) — ritual casting, familiars, encounter budget, backstory builder, status reference, party analyzer:
   - **Ritual casting tracker** — `ritualCasting.ts` with 17 ritual spells. `canRitualCast()` for 5 classes. `getRitualSpellsByLevel()` filters by max spell level. Formatted spell list with cast times. "Ritual Spells" button in DMSidebar.
   - **Familiar manager** — `familiarManager.ts` with 12 familiar forms (bat→raven) each with HP, AC, speed, senses, and special abilities. `summonFamiliar()`/`dismissFamiliar()` lifecycle. `addScoutReport()` for tracking intel. "Familiars" button in DMSidebar.
@@ -509,12 +524,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Object interaction tracker — track doors opened, levers pulled, items interacted with
-- Class feature cooldown manager — track uses of channel divinity, action surge, rage, etc
-- Multi-class spell slot calculator — compute combined slots for multiclassed casters
-- Bulk NPC stat block generator — create N enemies at once with randomized HP
-- Combat narration templates — auto-generate dramatic hit/miss/crit descriptions
-- Session notes auto-tagger — tag notes with #combat, #lore, #npc for searchable history
+- ~~Object interaction tracker~~ **DONE** — `objectInteraction.ts` with 10 types + state tracking
+- ~~Class feature cooldown manager~~ **DONE** — `classFeatureCooldowns.ts` with 16 templates
+- ~~Multi-class spell slot calculator~~ **DONE** — `multiclassSpellSlots.ts` with PHB table
+- ~~Bulk NPC stat block generator~~ **DONE** — `bulkNpcGenerator.ts` with 6 presets + variance
+- ~~Combat narration templates~~ **DONE** — `combatNarration.ts` with 6 types × 5-8 templates
+- ~~Session notes auto-tagger~~ **DONE** — `sessionNoteTagger.ts` with 10 auto-tag types
+
+**Wave 18 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Encounter pacing timer — visible combat round timer with configurable turn limits
+- Language barrier system — track known languages, auto-flag untranslatable NPC speech
+- Potion brewing mini-game — ingredient gathering + brewing check for custom potions
+- Terrain effect compendium — reference for all terrain types with movement/combat effects
+- Spellbook management — wizard-specific spellbook with copying costs and capacity
+- Player handout system — DM creates text/image handouts that players can view in-game
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
