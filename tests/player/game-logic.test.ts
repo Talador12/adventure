@@ -8597,3 +8597,94 @@ describe('weather encounter interaction', () => {
   it('each weather has flavor text', () => { getAllWeatherTypes().forEach((w) => { const e = getWeatherEncounterEffect(w); expect(e!.flavorText.length).toBeGreaterThan(20); }); });
   it('formats with icon', () => { const e = getWeatherEncounterEffect('blizzard')!; expect(formatWeatherEncounterEffect(e)).toContain('🌨️'); });
 });
+
+// ---------------------------------------------------------------------------
+// NPC relationship web
+// ---------------------------------------------------------------------------
+import { createRelationshipWeb, addRelation, removeRelation, revealRelation, getRelationsForNpc, getKnownRelations, getSecretRelations, getAllRelationTypes, formatRelation, formatRelationshipWeb } from '../../src/data/npcRelationshipWeb';
+
+describe('NPC relationship web', () => {
+  it('starts empty', () => { expect(createRelationshipWeb().relations.length).toBe(0); });
+  it('adds relations', () => { let w = createRelationshipWeb(); w = addRelation(w, 'Alice', 'Bob', 'ally', 'Old friends'); expect(w.relations.length).toBe(1); });
+  it('prevents duplicate edges', () => { let w = createRelationshipWeb(); w = addRelation(w, 'A', 'B', 'ally', 'x'); w = addRelation(w, 'A', 'B', 'rival', 'y'); w = addRelation(w, 'B', 'A', 'enemy', 'z'); expect(w.relations.length).toBe(1); });
+  it('removes relations', () => { let w = createRelationshipWeb(); w = addRelation(w, 'A', 'B', 'ally', 'x'); w = removeRelation(w, 'A', 'B'); expect(w.relations.length).toBe(0); });
+  it('tracks secrets', () => { let w = createRelationshipWeb(); w = addRelation(w, 'A', 'B', 'lover', 'secret affair', 3, true); expect(getSecretRelations(w).length).toBe(1); expect(getKnownRelations(w).length).toBe(0); w = revealRelation(w, 'A', 'B'); expect(getSecretRelations(w).length).toBe(0); expect(getKnownRelations(w).length).toBe(1); });
+  it('finds relations for NPC', () => { let w = createRelationshipWeb(); w = addRelation(w, 'A', 'B', 'ally', 'x'); w = addRelation(w, 'A', 'C', 'rival', 'y'); expect(getRelationsForNpc(w, 'A').length).toBe(2); expect(getRelationsForNpc(w, 'B').length).toBe(1); });
+  it('has 10 relation types', () => { expect(getAllRelationTypes().length).toBe(10); });
+  it('formats relation', () => { let w = createRelationshipWeb(); w = addRelation(w, 'King', 'Advisor', 'mentor', 'Trained since youth'); expect(formatRelation(w.relations[0])).toContain('King'); });
+  it('formats empty web', () => { expect(formatRelationshipWeb(createRelationshipWeb())).toContain('No known connections'); });
+});
+
+// ---------------------------------------------------------------------------
+// Siege warfare
+// ---------------------------------------------------------------------------
+import { SIEGE_ENGINES, FORTIFICATIONS, getSiegeEngine, getSiegeEnginesByType, getFortification, canDamage, getEffectiveDamage, formatSiegeEngine, formatFortification } from '../../src/data/siegeWarfare';
+
+describe('siege warfare', () => {
+  it('has at least 6 siege engines', () => { expect(SIEGE_ENGINES.length).toBeGreaterThanOrEqual(6); });
+  it('has at least 4 fortifications', () => { expect(FORTIFICATIONS.length).toBeGreaterThanOrEqual(4); });
+  it('looks up engine by name', () => { const ram = getSiegeEngine('Battering Ram'); expect(ram).toBeDefined(); expect(ram!.type).toBe('melee'); });
+  it('filters by type', () => { const ranged = getSiegeEnginesByType('ranged'); expect(ranged.length).toBeGreaterThanOrEqual(2); ranged.forEach((e) => expect(e.type).toBe('ranged')); });
+  it('damage threshold works', () => { const wall = getFortification('Stone Wall (10 ft)')!; expect(canDamage(wall, 15)).toBe(true); expect(canDamage(wall, 5)).toBe(false); expect(getEffectiveDamage(wall, 15)).toBe(15); expect(getEffectiveDamage(wall, 5)).toBe(0); });
+  it('formats engine', () => { expect(formatSiegeEngine(SIEGE_ENGINES[0])).toContain('Battering Ram'); });
+  it('formats fortification', () => { expect(formatFortification(FORTIFICATIONS[0])).toContain('🏰'); });
+});
+
+// ---------------------------------------------------------------------------
+// Planar rift generator
+// ---------------------------------------------------------------------------
+import { getRandomRift, getRiftByPlane, getAllPlanes, formatRift } from '../../src/data/planarRift';
+
+describe('planar rift generator', () => {
+  it('has 10 planes', () => { expect(getAllPlanes().length).toBe(10); });
+  it('generates random rift', () => { const r = getRandomRift(); expect(r.name.length).toBeGreaterThan(3); expect(r.description.length).toBeGreaterThan(20); expect(r.environmentalEffects.length).toBeGreaterThanOrEqual(2); });
+  it('looks up by plane', () => { const r = getRiftByPlane('abyss'); expect(r).toBeDefined(); expect(r!.name).toBe('Demon Gate'); });
+  it('returns undefined for unknown', () => { expect(getRiftByPlane('candy_land' as any)).toBeUndefined(); });
+  it('all rifts have closing conditions', () => { getAllPlanes().forEach((p) => { const r = getRiftByPlane(p)!; expect(r.closingCondition.length).toBeGreaterThan(10); expect(r.dcToClose).toBeGreaterThanOrEqual(12); }); });
+  it('formats with plane icon', () => { const r = getRiftByPlane('feywild')!; expect(formatRift(r)).toContain('🌸'); expect(formatRift(r)).toContain('Effects'); });
+});
+
+// ---------------------------------------------------------------------------
+// Political events
+// ---------------------------------------------------------------------------
+import { POLITICAL_EVENTS, getRandomPoliticalEvent, getEventsByCategory, getEventsBySeverity, formatPoliticalEvent } from '../../src/data/politicalEvent';
+
+describe('political events', () => {
+  it('has at least 8 events', () => { expect(POLITICAL_EVENTS.length).toBeGreaterThanOrEqual(8); });
+  it('generates random event', () => { const e = getRandomPoliticalEvent(); expect(e.title.length).toBeGreaterThan(3); expect(e.consequences.length).toBeGreaterThanOrEqual(2); expect(e.opportunities.length).toBeGreaterThanOrEqual(2); });
+  it('filters by category', () => { const conflicts = getEventsByCategory('conflict'); expect(conflicts.length).toBeGreaterThanOrEqual(1); conflicts.forEach((e) => expect(e.category).toBe('conflict')); });
+  it('filters by severity', () => { const major = getEventsBySeverity('major'); expect(major.length).toBeGreaterThanOrEqual(2); major.forEach((e) => expect(e.severity).toBe('major')); });
+  it('has faction shifts', () => { const e = getRandomPoliticalEvent(); expect(e.factionShifts.length).toBeGreaterThanOrEqual(1); e.factionShifts.forEach((f) => { expect(f.faction.length).toBeGreaterThan(0); expect(typeof f.change).toBe('number'); }); });
+  it('formats with icon', () => { expect(formatPoliticalEvent(getRandomPoliticalEvent())).toContain('Consequences'); });
+});
+
+// ---------------------------------------------------------------------------
+// Crafting specialization tree
+// ---------------------------------------------------------------------------
+import { createSpecialization, addCraftingXp, getAvailableRecipes, getTierBonus, getCraftingDC, getAllDisciplines, formatSpecialization } from '../../src/data/craftingSpecialization';
+
+describe('crafting specialization tree', () => {
+  it('has 6 disciplines', () => { expect(getAllDisciplines().length).toBe(6); });
+  it('starts as novice', () => { const s = createSpecialization('blacksmithing'); expect(s.tier).toBe('novice'); expect(s.xp).toBe(0); });
+  it('levels up with XP', () => { let s = createSpecialization('alchemy'); s = addCraftingXp(s, 150); expect(s.tier).toBe('apprentice'); s = addCraftingXp(s, 200); expect(s.tier).toBe('journeyman'); });
+  it('novice sees only novice recipes', () => { const s = createSpecialization('blacksmithing'); const recipes = getAvailableRecipes(s); expect(recipes.every((r) => r.tier === 'novice')).toBe(true); });
+  it('higher tiers see more recipes', () => { let s = createSpecialization('blacksmithing'); const noviceCount = getAvailableRecipes(s).length; s = addCraftingXp(s, 150); const apprenticeCount = getAvailableRecipes(s).length; expect(apprenticeCount).toBeGreaterThanOrEqual(noviceCount); });
+  it('tier bonus reduces DC', () => { const recipe = getAvailableRecipes(createSpecialization('blacksmithing'))[0]; expect(getCraftingDC(recipe, 'novice')).toBe(recipe.dc); expect(getCraftingDC(recipe, 'master')).toBeLessThan(recipe.dc); });
+  it('formats specialization', () => { expect(formatSpecialization(createSpecialization('enchanting'))).toContain('enchanting'); expect(formatSpecialization(createSpecialization('enchanting'))).toContain('NOVICE'); });
+});
+
+// ---------------------------------------------------------------------------
+// Monster ecology system
+// ---------------------------------------------------------------------------
+import { ECOLOGY, getEcologyByBiome, getApexPredator, getFoodChain, getEncounterProbability, getAllBiomes as getEcologyBiomes, formatEcologyEntry, formatBiomeEcology } from '../../src/data/monsterEcology';
+
+describe('monster ecology system', () => {
+  it('has at least 15 entries', () => { expect(ECOLOGY.length).toBeGreaterThanOrEqual(15); });
+  it('covers at least 6 biomes', () => { expect(getEcologyBiomes().length).toBeGreaterThanOrEqual(6); });
+  it('each biome has an apex predator', () => { getEcologyBiomes().forEach((b) => { const apex = getApexPredator(b); expect(apex).toBeDefined(); expect(apex!.role).toBe('apex_predator'); }); });
+  it('food chain returns predator-prey pairs', () => { const chain = getFoodChain('forest'); expect(chain.length).toBeGreaterThanOrEqual(2); chain.forEach((c) => { expect(c.predator.length).toBeGreaterThan(0); }); });
+  it('encounter probability scales with population', () => { const rare = ECOLOGY.find((e) => e.population === 'rare')!; const common = ECOLOGY.find((e) => e.population === 'common')!; expect(getEncounterProbability(rare)).toBeLessThan(getEncounterProbability(common)); });
+  it('formats entry with role icon', () => { const owlbear = ECOLOGY.find((e) => e.creature === 'Owlbear')!; expect(formatEcologyEntry(owlbear)).toContain('🦁'); expect(formatEcologyEntry(owlbear)).toContain('Hunts'); });
+  it('formats biome ecology', () => { expect(formatBiomeEcology('forest')).toContain('Forest Ecology'); });
+  it('unknown biome returns no data', () => { expect(formatBiomeEcology('volcano' as any)).toContain('No data'); });
+});

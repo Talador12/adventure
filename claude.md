@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 43 tests (1370 total) — NPC relationship web, siege warfare, planar rifts, political events, crafting tree, monster ecology:
+  - **NPC relationship web** — `npcRelationshipWeb.ts` with 10 relation types (ally/rival/family/employer/servant/lover/enemy/mentor/debtor/stranger). Bidirectional edges with strength (1-5) and secret flag. `revealRelation()` for dramatic reveals. Per-type party effects and leverage hints. "NPC Web" button in DMSidebar.
+  - **Siege warfare rules** — `siegeWarfare.ts` with 8 siege engines (Battering Ram/Ballista/Catapult/Trebuchet/Siege Tower/Boiling Oil/Murder Holes/Cannon) across 3 types (ranged/melee/defensive) + 6 fortifications with HP/AC/damage thresholds. `canDamage()`/`getEffectiveDamage()` for threshold checks. "Siege" button in DMSidebar.
+  - **Planar rift generator** — `planarRift.ts` with 10 planes (Feywild/Shadowfell/4 Elementals/Abyss/Celestial/Astral/Ethereal). Each has environmental effects, creature risks, duration, and closing conditions with DCs. "Planar Rift" button in DMSidebar.
+  - **Random political event** — `politicalEvent.ts` with 10 events across 6 categories (succession/conflict/diplomacy/corruption/revolution/disaster) and 4 severities. Consequences, party opportunities, and faction shift values. "Political Event" button in DMSidebar.
+  - **Crafting specialization tree** — `craftingSpecialization.ts` with 6 disciplines (blacksmithing/alchemy/enchanting/leatherworking/woodcarving/jewelcrafting). 5 mastery tiers (novice→master) with XP progression. Per-tier DC reduction, quality bonuses, and speed multipliers. Recipes gated by tier. "Crafting" button in DMSidebar.
+  - **Monster ecology system** — `monsterEcology.ts` with 20 creatures across 8 biomes. Predator/prey chains, 6 ecological roles (apex_predator/predator/scavenger/herbivore/parasite/ambusher), population rarity, and behavioral descriptions. `getFoodChain()` for biome food webs. "Ecology" button in DMSidebar.
+- 43 new tests (1370 total) covering 6 systems:
+  - **NPC relationship web** (9 tests): empty start, add, duplicate prevention, remove, secret tracking + reveal, NPC filter, type count, formatted relation, formatted web.
+  - **Siege warfare** (7 tests): engine count, fortification count, name lookup, type filter, damage threshold, formatted engine, formatted fortification.
+  - **Planar rifts** (6 tests): plane count, random generation, plane lookup, unknown undefined, closing conditions, formatted icon.
+  - **Political events** (6 tests): event count, random generation, category filter, severity filter, faction shifts, formatted output.
+  - **Crafting specialization** (7 tests): discipline count, novice start, XP leveling, novice recipes, tier unlocks, DC reduction, formatted output.
+  - **Monster ecology** (8 tests): entry count, biome count, apex per biome, food chains, probability scaling, formatted entry, formatted biome, unknown biome.
+
 - 6 new systems + 45 tests (1327 total, +4 pre-existing fixes) — NPC loyalty, artifact gen, puzzle locks, combat fatigue, regional reputation, weather encounters:
   - **NPC loyalty tracker** — `npcLoyalty.ts` with 7 loyalty levels (devoted→enemy), score-based tracking (-10 to +10), preset positive/negative actions, faction association. `recordLoyaltyEvent()` shifts score. `getLoyalNpcs()`/`getHostileNpcs()` filters. "NPC Loyalty" button in DMSidebar.
   - **Random artifact generator** — `artifactGenerator.ts` with 6 artifact types (weapon/armor/jewelry/tome/staff/relic), 10 name prefixes × type-specific suffixes, 8 origins, type-specific powers (3 per type), 5 curses + 40% no-curse chance, 8 history entries. `generateArtifact()` procedural creation. "Generate Artifact" button in DMSidebar.
@@ -786,17 +801,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Regional reputation tracker~~ **DONE** — `regionalReputation.ts` with 7 tiers + per-region effects
 - ~~Weather encounter interaction~~ **DONE** — `weatherEncounterInteraction.ts` with 8 weather types × encounter modifiers
 
-**Wave 35 Roadmap:**
+**Wave 35 (1,370 tests):**
+- ~~NPC relationship web~~ **DONE** — `npcRelationshipWeb.ts` with 10 relation types + secret flags
+- ~~Siege warfare rules~~ **DONE** — `siegeWarfare.ts` with 8 engines + 6 fortifications + damage thresholds
+- ~~Planar rift generator~~ **DONE** — `planarRift.ts` with 10 planes + environmental effects
+- ~~Random political event~~ **DONE** — `politicalEvent.ts` with 10 events × 6 categories + faction shifts
+- ~~Crafting specialization tree~~ **DONE** — `craftingSpecialization.ts` with 6 disciplines × 5 mastery tiers
+- ~~Monster ecology system~~ **DONE** — `monsterEcology.ts` with 20 creatures × 8 biomes + food chains
+
+**Wave 36 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Random NPC relationship web — NPCs have relationships with each other that affect party interactions
-- Siege warfare rules — siege engines, wall HP, battering rams, boiling oil
-- Planar rift generator — random portals to other planes with environmental effects
-- Random political event — coups, elections, assassinations that change the campaign world
-- Crafting specialization tree — upgrade paths for crafted items with mastery bonuses
-- Monster ecology system — predator/prey chains that affect encounter probability by region
+- Naval combat system — ship-to-ship battles with boarding actions and cannon fire
+- Ritual magic circles — collaborative casting with multiple spellcasters for powerful effects
+- Random dream sequence generator — narrative dream encounters with symbolic choices
+- Companion animal advancement — pets/familiars level up and gain abilities
+- Trap disarm mini-game — sequential skill checks with escalating DCs
+- Random tavern brawl choreographer — staged bar fights with environmental weapons
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
