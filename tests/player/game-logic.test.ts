@@ -9676,3 +9676,99 @@ describe('siege defense planner', () => {
   it('all plans have weak points', () => { SIEGE_DEFENSE_PLANS.forEach((p) => expect(p.weakPoint.length).toBeGreaterThan(20)); });
   it('formats plan', () => { expect(formatDefensePlan(SIEGE_DEFENSE_PLANS[0])).toContain('Hold time'); });
 });
+
+// ---------------------------------------------------------------------------
+// Mind control resistance
+// ---------------------------------------------------------------------------
+import { CONTROL_PROFILES, createMindControlState, degradeWillpower, resistSuccessfully, breakFree, getControlProfile, getCurrentSaveDC, isFullyControlled, getAllControlSources, formatMindControlState } from '../../src/data/mindControl';
+
+describe('mind control resistance', () => {
+  it('has 6 control sources', () => { expect(CONTROL_PROFILES.length).toBe(6); expect(getAllControlSources().length).toBe(6); });
+  it('starts aware with full willpower', () => { const s = createMindControlState('enchantment'); expect(s.stage).toBe('aware'); expect(s.willpower).toBe(10); });
+  it('degradation reduces willpower', () => { let s = createMindControlState('psionic'); s = degradeWillpower(s); expect(s.willpower).toBeLessThan(10); });
+  it('resistance restores willpower', () => { let s = createMindControlState('demonic'); s = degradeWillpower(s); s = degradeWillpower(s); s = resistSuccessfully(s); expect(s.willpower).toBeGreaterThan(s.willpower - 2); });
+  it('break free restores to full', () => { let s = createMindControlState('fey_charm'); s = degradeWillpower(s); s = breakFree(s); expect(s.willpower).toBe(10); expect(s.stage).toBe('aware'); });
+  it('fully controlled at 0', () => { let s = createMindControlState('vampiric'); for (let i = 0; i < 20; i++) s = degradeWillpower(s); expect(isFullyControlled(s)).toBe(true); expect(s.stage).toBe('puppet'); });
+  it('save DC escalates', () => { let s = createMindControlState('enchantment'); const initial = getCurrentSaveDC(s); s = degradeWillpower(s); expect(getCurrentSaveDC(s)).toBeGreaterThanOrEqual(initial); });
+  it('profiles have ally assist bonuses', () => { CONTROL_PROFILES.forEach((p) => expect(p.allyAssistBonus).toBeGreaterThanOrEqual(2)); });
+  it('formats state', () => { expect(formatMindControlState(createMindControlState('psionic'))).toContain('Willpower'); });
+});
+
+// ---------------------------------------------------------------------------
+// Social encounter generator
+// ---------------------------------------------------------------------------
+import { SOCIAL_ENCOUNTERS, getRandomSocialEncounter, getEncountersBySetting, getEncountersByStake, getAllSettings as getAllSocialSettings, formatSocialEncounter } from '../../src/data/socialEncounter';
+
+describe('social encounter generator', () => {
+  it('has at least 5 encounters', () => { expect(SOCIAL_ENCOUNTERS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 settings', () => { expect(getAllSocialSettings().length).toBeGreaterThanOrEqual(4); });
+  it('generates random encounter', () => { const e = getRandomSocialEncounter(); expect(e.title.length).toBeGreaterThan(3); expect(e.approaches.length).toBeGreaterThanOrEqual(3); });
+  it('filters by setting', () => { const tavern = getEncountersBySetting('tavern'); expect(tavern.length).toBeGreaterThanOrEqual(1); });
+  it('all have critical success/failure', () => { SOCIAL_ENCOUNTERS.forEach((e) => { expect(e.criticalSuccess.length).toBeGreaterThan(10); expect(e.criticalFailure.length).toBeGreaterThan(10); }); });
+  it('approaches have skill DCs', () => { SOCIAL_ENCOUNTERS.forEach((e) => e.approaches.forEach((a) => expect(a.dc).toBeGreaterThanOrEqual(0))); });
+  it('formats encounter', () => { expect(formatSocialEncounter(SOCIAL_ENCOUNTERS[0])).toContain('Approaches'); });
+});
+
+// ---------------------------------------------------------------------------
+// Golem crafting instructions
+// ---------------------------------------------------------------------------
+import { GOLEM_BLUEPRINTS, getBlueprint, getBlueprintsByCost, getBlueprintsByLevel, getStepCount as getGolemSteps, getAllGolemTypes, formatBlueprint } from '../../src/data/golemCrafting';
+
+describe('golem crafting instructions', () => {
+  it('has at least 3 blueprints', () => { expect(GOLEM_BLUEPRINTS.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by type', () => { const iron = getBlueprint('iron'); expect(iron).toBeDefined(); expect(iron!.cr).toBe(16); });
+  it('filters by cost', () => { const cheap = getBlueprintsByCost(5000); expect(cheap.length).toBeGreaterThanOrEqual(1); cheap.forEach((b) => expect(b.totalCost).toBeLessThanOrEqual(5000)); });
+  it('filters by level', () => { const lowLevel = getBlueprintsByLevel(9); const highLevel = getBlueprintsByLevel(17); expect(highLevel.length).toBeGreaterThanOrEqual(lowLevel.length); });
+  it('steps have failure consequences', () => { GOLEM_BLUEPRINTS.forEach((b) => b.steps.forEach((s) => expect(s.failureConsequence.length).toBeGreaterThan(10))); });
+  it('all have weaknesses', () => { GOLEM_BLUEPRINTS.forEach((b) => expect(b.weakness.length).toBeGreaterThan(10)); });
+  it('all have control methods', () => { GOLEM_BLUEPRINTS.forEach((b) => expect(b.controlMethod.length).toBeGreaterThan(10)); });
+  it('formats blueprint', () => { expect(formatBlueprint(GOLEM_BLUEPRINTS[0])).toContain('Materials'); });
+});
+
+// ---------------------------------------------------------------------------
+// Planar marketplace
+// ---------------------------------------------------------------------------
+import { PLANAR_SHOPS, getRandomPlanarShop, getShopByPlane, getItemsFromAllShops, getAllMarketPlanes, formatPlanarShop } from '../../src/data/planarMarketplace';
+
+describe('planar marketplace', () => {
+  it('has at least 4 shops', () => { expect(PLANAR_SHOPS.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 planes', () => { expect(getAllMarketPlanes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random shop', () => { const s = getRandomPlanarShop(); expect(s.name.length).toBeGreaterThan(3); expect(s.items.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by plane', () => { const fey = getShopByPlane('feywild'); expect(fey).toBeDefined(); expect(fey!.currency).not.toContain('gold'); });
+  it('collects all items', () => { expect(getItemsFromAllShops().length).toBeGreaterThanOrEqual(10); });
+  it('all shops have danger warnings', () => { PLANAR_SHOPS.forEach((s) => expect(s.dangerWarning.length).toBeGreaterThan(10)); });
+  it('some items have side effects', () => { const allItems = getItemsFromAllShops(); expect(allItems.some((i) => i.sideEffect !== null)).toBe(true); });
+  it('formats shop', () => { expect(formatPlanarShop(PLANAR_SHOPS[0])).toContain('Currency'); });
+});
+
+// ---------------------------------------------------------------------------
+// Faction quest chain generator
+// ---------------------------------------------------------------------------
+import { FACTION_QUEST_CHAINS, getRandomQuestChain, getChainByFaction, getBranchPoints, getStepCount as getQuestSteps, getAllQuestFactions, formatQuestChain } from '../../src/data/factionQuestChain';
+
+describe('faction quest chain generator', () => {
+  it('has at least 3 chains', () => { expect(FACTION_QUEST_CHAINS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 factions', () => { expect(getAllQuestFactions().length).toBeGreaterThanOrEqual(3); });
+  it('generates random chain', () => { const c = getRandomQuestChain(); expect(c.chainName.length).toBeGreaterThan(3); expect(c.steps.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by faction', () => { const crown = getChainByFaction('crown'); expect(crown).toBeDefined(); });
+  it('has branch points', () => { FACTION_QUEST_CHAINS.forEach((c) => expect(getBranchPoints(c).length).toBeGreaterThanOrEqual(1)); });
+  it('branches have options', () => { FACTION_QUEST_CHAINS.forEach((c) => getBranchPoints(c).forEach((s) => expect(s.branchOptions!.length).toBeGreaterThanOrEqual(2))); });
+  it('all have betrayal options', () => { FACTION_QUEST_CHAINS.forEach((c) => { expect(c.betrayalOption.length).toBeGreaterThan(10); expect(c.betrayalConsequence.length).toBeGreaterThan(10); }); });
+  it('formats chain', () => { expect(formatQuestChain(FACTION_QUEST_CHAINS[0])).toContain('Step'); });
+});
+
+// ---------------------------------------------------------------------------
+// Death save drama table
+// ---------------------------------------------------------------------------
+import { DEATH_SAVE_NARRATIONS, getNarration, getAllNarrations, getAllMoments, getNarrationCount as getDeathNarrationCount, formatNarration as formatDeathNarration } from '../../src/data/deathSaveDrama';
+
+describe('death save drama table', () => {
+  it('has at least 14 narrations', () => { expect(DEATH_SAVE_NARRATIONS.length).toBeGreaterThanOrEqual(14); expect(getDeathNarrationCount()).toBeGreaterThanOrEqual(14); });
+  it('has 8 moment types', () => { expect(getAllMoments().length).toBe(8); });
+  it('generates narration for each moment', () => { getAllMoments().forEach((m) => { const n = getNarration(m); expect(n.narration.length).toBeGreaterThan(20); }); });
+  it('each moment has at least 2 variants', () => { getAllMoments().forEach((m) => expect(getAllNarrations(m).length).toBeGreaterThanOrEqual(2)); });
+  it('nat 20 narrations are triumphant', () => { getAllNarrations('nat_20').forEach((n) => expect(n.mechanicalNote).toContain('regain 1 HP')); });
+  it('final failure narrations are final', () => { getAllNarrations('final_failure').forEach((n) => expect(n.mechanicalNote).toContain('Dead')); });
+  it('all have party reactions', () => { DEATH_SAVE_NARRATIONS.forEach((n) => expect(n.partyReaction.length).toBeGreaterThan(5)); });
+  it('formats narration', () => { expect(formatDeathNarration(getNarration('nat_20'))).toContain('NAT 20'); });
+});

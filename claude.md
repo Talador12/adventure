@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 48 tests (1926 total) — mind control, social encounters, golem crafting, planar marketplace, faction quests, death save drama:
+  - **Mind control resistance** — `mindControl.ts` with 6 control sources, 5 resistance stages, willpower degradation, escalating save DCs, ally assist bonuses, break-free mechanics.
+  - **Social encounter generator** — `socialEncounter.ts` with 5 encounters across 5 settings, 3 approaches per encounter with skill DCs, critical success/failure outcomes.
+  - **Golem crafting instructions** — `golemCrafting.ts` with 3 blueprints (flesh/clay/iron), step-by-step crafting with failure consequences, material costs, min caster levels.
+  - **Planar marketplace** — `planarMarketplace.ts` with 4 shops from different planes, non-gold currencies (memories, secrets, years of life), items with side effects.
+  - **Faction quest chain generator** — `factionQuestChain.ts` with 3 chains (crown/underworld/temple), 3-step progressions with branch points, betrayal options.
+  - **Death save drama table** — `deathSaveDrama.ts` with 16 narrations across 8 moments, party reactions, mechanical notes, 2+ variants per moment.
+
 - 6 new systems + 48 tests (1878 total, +1 pre-existing fix) — magical contracts, treasure maps, wild shape, tavern reputation, divine intervention, siege defense:
   - **Magical contract system** — `magicalContract.ts` with 4 contracts (infernal/fey/merchant/arcane), clauses with loopholes and penalties, break conditions, detection DCs.
   - **Treasure map generator** — `treasureMap.ts` with 4 maps (pirate/dwarven/witch/dragon), multi-landmark treasure hunts, riddles with answers, guardians, traps.
@@ -992,17 +1000,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Divine intervention table~~ **DONE** — `divineIntervention.ts` with 8 interventions + faith scaling
 - ~~Siege defense planner~~ **DONE** — `siegeDefense.ts` with 2 plans + 6 positions + resources
 
-**Wave 46 Roadmap:**
+**Wave 46 (1,926 tests):**
+- ~~Mind control resistance~~ **DONE** — `mindControl.ts` with 6 sources + willpower degradation
+- ~~Social encounter generator~~ **DONE** — `socialEncounter.ts` with 5 encounters + approaches
+- ~~Golem crafting instructions~~ **DONE** — `golemCrafting.ts` with 3 blueprints + step-by-step
+- ~~Planar marketplace~~ **DONE** — `planarMarketplace.ts` with 4 shops + non-gold currencies
+- ~~Faction quest chains~~ **DONE** — `factionQuestChain.ts` with 3 chains + branch points
+- ~~Death save drama~~ **DONE** — `deathSaveDrama.ts` with 16 narrations × 8 moments
+
+**Wave 47 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Mind control resistance system — progressive willpower degradation and break-free mechanics
-- Random social encounter generator — non-combat encounters with stakes and relationship outcomes
-- Golem crafting instructions — step-by-step construct creation with material requirements
-- Random planar marketplace — exotic shops from different planes with unique merchandise
-- Faction quest chain generator — multi-step quest lines with branching outcomes by faction
-- Death save drama table — narrative beats for the moments between life and death
+- Alchemy recipe book — combine ingredients from foraging system into potions/salves/bombs
+- Random exile/banishment scenario — why the party was thrown out and how to get back in
+- Arcane familiar evolution — familiars that gain new forms and abilities through XP
+- Wanted poster generator — party members as fugitives with escalating bounty tiers
+- Random planar weather — bizarre weather from other planes bleeding through
+- Trap corridor designer — sequential trap gauntlet with escalating difficulty
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
