@@ -5733,3 +5733,146 @@ describe('player handouts', () => {
     expect(getHandoutsForCharacter(state, 'c2').length).toBe(1); // only public
   });
 });
+
+// ---------------------------------------------------------------------------
+// Resistance aggregator
+// ---------------------------------------------------------------------------
+import { aggregateResistances, formatAggregatedResistances } from '../../src/lib/resistanceAggregator';
+
+describe('resistance aggregator', () => {
+  it('aggregates from multiple sources', () => {
+    const sources = [
+      { source: 'Racial', resistances: ['fire' as const], immunities: [], vulnerabilities: [] },
+      { source: 'Ring', resistances: ['cold' as const], immunities: [], vulnerabilities: [] },
+    ];
+    const agg = aggregateResistances(sources);
+    expect(agg.resistances.length).toBe(2);
+  });
+  it('immunity overrides resistance', () => {
+    const sources = [
+      { source: 'Racial', resistances: ['fire' as const], immunities: [], vulnerabilities: [] },
+      { source: 'Spell', resistances: [], immunities: ['fire' as const], vulnerabilities: [] },
+    ];
+    const agg = aggregateResistances(sources);
+    expect(agg.resistances.some((r) => r.type === 'fire')).toBe(false);
+    expect(agg.immunities.some((i) => i.type === 'fire')).toBe(true);
+  });
+  it('formatAggregatedResistances shows defenses', () => {
+    const agg = aggregateResistances([{ source: 'Bear Totem', resistances: ['slashing' as const, 'bludgeoning' as const], immunities: [], vulnerabilities: [] }]);
+    const text = formatAggregatedResistances(agg, 'Barbarian');
+    expect(text).toContain('Barbarian');
+    expect(text).toContain('Resistant');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Action economy
+// ---------------------------------------------------------------------------
+import { createActionEconomy, useAction, useBonusAction, useMovement, getRemainingMovement, resetTurn, formatActionEconomy } from '../../src/lib/actionEconomy';
+
+describe('action economy', () => {
+  it('starts with all actions available', () => {
+    const state = createActionEconomy('u1', 6);
+    expect(state.actionUsed).toBe(false);
+    expect(getRemainingMovement(state)).toBe(6);
+  });
+  it('useAction marks action used', () => { expect(useAction(createActionEconomy('u1', 6)).actionUsed).toBe(true); });
+  it('useMovement reduces remaining', () => {
+    const state = useMovement(createActionEconomy('u1', 6), 3);
+    expect(getRemainingMovement(state)).toBe(3);
+  });
+  it('resetTurn restores action/bonus/movement', () => {
+    let state = useAction(useBonusAction(useMovement(createActionEconomy('u1', 6), 4)));
+    state = resetTurn(state);
+    expect(state.actionUsed).toBe(false);
+    expect(getRemainingMovement(state)).toBe(6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Encumbrance calculator
+// ---------------------------------------------------------------------------
+import { calculateCarryCapacity as calcCarryCap, calculateEncumbrance, estimateInventoryWeight as estInvWeight, formatEncumbrance as formatEnc } from '../../src/lib/encumbranceCalc';
+
+describe('encumbrance calculator (new)', () => {
+  it('carry capacity = STR × 15', () => { expect(calcCarryCap(16)).toBe(240); });
+  it('variant encumbrance at STR×5', () => {
+    const result = calculateEncumbrance(90, 16, 'variant'); // 90 > 16*5=80
+    expect(result.encumbered).toBe(true);
+    expect(result.speedPenalty).toBe(2);
+  });
+  it('not encumbered under threshold', () => {
+    const result = calculateEncumbrance(50, 16, 'variant');
+    expect(result.encumbered).toBe(false);
+  });
+  it('estimateInventoryWeight defaults to 1lb each', () => {
+    expect(estInvWeight([{ name: 'a' }, { name: 'b' }, { name: 'c' }])).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Proficiency helper
+// ---------------------------------------------------------------------------
+import { SKILL_ABILITIES, getSkillAbility, calculateCheckBonus, rollCheck } from '../../src/lib/proficiencyHelper';
+
+describe('proficiency helper', () => {
+  it('maps skills to abilities', () => {
+    expect(getSkillAbility('Athletics')).toBe('STR');
+    expect(getSkillAbility('Stealth')).toBe('DEX');
+    expect(getSkillAbility('Arcana')).toBe('INT');
+  });
+  it('calculateCheckBonus with proficiency', () => {
+    const result = calculateCheckBonus(16, 5, true); // +3 mod, +3 prof
+    expect(result.total).toBe(6);
+  });
+  it('expertise doubles proficiency', () => {
+    const result = calculateCheckBonus(16, 5, true, true); // +3 mod, +6 prof
+    expect(result.total).toBe(9);
+  });
+  it('rollCheck returns valid result', () => {
+    const result = rollCheck('Stealth', 16, 5, true);
+    expect(result.total).toBeGreaterThanOrEqual(4); // min d20(1) + 6
+    expect(result.description).toContain('Stealth');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tavern generator
+// ---------------------------------------------------------------------------
+import { generateTavern, formatTavern } from '../../src/data/tavernGenerator';
+
+describe('tavern generator', () => {
+  it('generates tavern with all fields', () => {
+    const tavern = generateTavern();
+    expect(tavern.name.length).toBeGreaterThan(0);
+    expect(tavern.specialty.length).toBeGreaterThan(0);
+    expect(tavern.patrons.length).toBeGreaterThanOrEqual(2);
+    expect(tavern.rumors.length).toBeGreaterThanOrEqual(1);
+  });
+  it('formatTavern includes barkeep and rumors', () => {
+    const text = formatTavern(generateTavern());
+    expect(text).toContain('Barkeep');
+    expect(text).toContain('Rumors');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combat round summary
+// ---------------------------------------------------------------------------
+import { summarizeRound, summarizeEntireCombat, formatRoundSummary } from '../../src/lib/combatRoundSummary';
+
+describe('combat round summary', () => {
+  it('summarizeEntireCombat counts correctly', () => {
+    const log = ['--- Round 1 ---', 'Attack for 10 damage', 'CRITICAL HIT!', 'Goblin falls!', '--- Round 2 ---', 'Attack for 5 damage'];
+    const stats = summarizeEntireCombat(log);
+    expect(stats.rounds).toBe(2);
+    expect(stats.totalDamage).toBe(15);
+    expect(stats.totalKills).toBe(1);
+    expect(stats.totalCrits).toBe(1);
+  });
+  it('summarizeRound extracts round entries', () => {
+    const log = ['--- Round 1 ---', 'Attack for 10 damage', '--- Round 2 ---', 'Heal for 8'];
+    const summary = summarizeRound(log, 1);
+    expect(summary.totalDamageDealt).toBe(10);
+  });
+});

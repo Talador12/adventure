@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.4.0
+## Current Version: v11.5.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 19 tests (747 total) — resistance aggregator, action economy, encumbrance, proficiency, tavern gen, round summary:
+  - **Damage resistance aggregator** — `resistanceAggregator.ts` combines all resistance/immunity/vulnerability sources. Immunity overrides resistance (5e rule). Source tracking per type. "Resistances" button in DMSidebar.
+  - **Action economy tracker** — `actionEconomy.ts` visualizes action/bonus/reaction/movement per turn. `useAction()`/`useBonusAction()`/`useMovement()` with movement bar. `resetTurn()` for new turn. Visual bars with remaining movement.
+  - **Encumbrance calculator** — `encumbranceCalc.ts` with 3 rules (standard/variant/none). Variant: encumbered at STR×5, heavily at STR×10. Speed penalties, capacity bars. `estimateInventoryWeight()` default 1lb/item.
+  - **Proficiency check helper** — `proficiencyHelper.ts` with all 18 skill→ability mappings. `calculateCheckBonus()` with proficiency + expertise. `rollCheck()` with advantage/disadvantage. Formatted results.
+  - **Random tavern generator** — `tavernGenerator.ts` with 10 prefixes × 15 nouns, 5 types, 10 specialties, 6 atmospheres, 10 barkeeps, 10 patrons, 10 rumors. One-click complete tavern. "Random Tavern" button in DMSidebar.
+  - **Combat round summary** — `combatRoundSummary.ts` extracts per-round stats (damage/healing/kills/crits) from combat log. `summarizeEntireCombat()` for totals. Key moment extraction. "Combat Summary" button in DMSidebar.
+- 19 new tests (747 total) covering 6 systems:
+  - **Resistance aggregator** (3 tests): multi-source aggregation, immunity override, formatted output.
+  - **Action economy** (4 tests): fresh state, action use, movement tracking, turn reset.
+  - **Encumbrance** (4 tests): carry capacity, variant threshold, under threshold, weight estimation.
+  - **Proficiency** (4 tests): skill-ability mapping, proficiency bonus, expertise doubling, roll check.
+  - **Tavern** (2 tests): field completeness, formatted output.
+  - **Round summary** (2 tests): entire combat stats, per-round extraction.
+
 - 6 new systems + 24 tests (728 total) — turn timer, languages, potion brewing, terrain reference, spellbooks, handouts:
   - **Encounter pacing timer** — `encounterPacingTimer.ts` with configurable seconds-per-turn (default 60s, fast 30s, relaxed 120s). Start/end/next-round lifecycle. Tracks average turn time and overtime count. Warning/overtime color states. "Turn Timer" button in DMSidebar.
   - **Language barrier system** — `languageBarrier.ts` with all 5e languages (8 common, 8 exotic, 2 rare). Race-based default languages for 9 races. `checkPartyLanguages()` finds translators. `getAllKnownLanguages()` aggregates party. "Party Languages" button shows coverage + gaps.
@@ -563,12 +578,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Damage resistance aggregator — combine all sources of resistance/immunity for quick reference
-- Action economy tracker — visualize action/bonus/reaction/movement per turn
-- Encumbrance calculator — track carrying capacity with variant encumbrance rules
-- Proficiency check helper — auto-apply proficiency bonus to skill/tool/save checks
-- Random tavern generator — instant tavern with name, specialty, patrons, and rumors
-- Combat round summary — auto-generate end-of-round damage totals and status changes
+- ~~Damage resistance aggregator~~ **DONE** — `resistanceAggregator.ts` with immunity override
+- ~~Action economy tracker~~ **DONE** — `actionEconomy.ts` with visual movement bars
+- ~~Encumbrance calculator~~ **DONE** — `encumbranceCalc.ts` with 3 rule variants
+- ~~Proficiency check helper~~ **DONE** — `proficiencyHelper.ts` with 18 skill mappings
+- ~~Random tavern generator~~ **DONE** — `tavernGenerator.ts` with full tavern generation
+- ~~Combat round summary~~ **DONE** — `combatRoundSummary.ts` with per-round + total stats
+
+**Wave 20 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Passive skill display — auto-compute and show passive Perception, Investigation, Insight
+- Grapple/shove resolver — contested Athletics check with size modifiers
+- Random dungeon name generator — procedural dungeon names from word parts
+- Party HP dashboard — visual overview of all character HP bars at a glance
+- Damage log analytics — per-session graphs of damage dealt/taken over time
+- Travel speed calculator — compute travel time by terrain, pace, and encumbrance
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

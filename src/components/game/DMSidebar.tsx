@@ -1845,6 +1845,65 @@ export default function DMSidebar({
               📄 Player Handouts
             </button>
 
+            {/* Resistance aggregator */}
+            <button
+              onClick={async () => {
+                const { formatAggregatedResistances, aggregateResistances } = await import('../../lib/resistanceAggregator');
+                const lines = units.filter((u) => u.type === 'enemy' && u.hp > 0).map((u) => {
+                  const sources = [{ source: u.name, resistances: u.resistances || [], immunities: u.immunities || [], vulnerabilities: u.vulnerabilities || [] }];
+                  return formatAggregatedResistances(aggregateResistances(sources as any), u.name);
+                });
+                onAddDmMessage(lines.length > 0 ? lines.join('\n\n') : '🛡️ No enemies to analyze.');
+              }}
+              disabled={!units.some((u) => u.type === 'enemy' && u.hp > 0)}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all disabled:opacity-30"
+              title="Show combined damage resistances and immunities for enemies"
+            >
+              🛡️ Resistances
+            </button>
+
+            {/* Encumbrance */}
+            <button
+              onClick={async () => {
+                const { calculateEncumbrance, formatEncumbrance, estimateInventoryWeight } = await import('../../lib/encumbranceCalc');
+                const lines = characters.map((c) => {
+                  const weight = estimateInventoryWeight(c.inventory || []);
+                  return formatEncumbrance(calculateEncumbrance(weight, c.stats.STR, 'variant'), c.name);
+                });
+                onAddDmMessage(lines.join('\n'));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all disabled:opacity-30"
+              title="Calculate carrying capacity and encumbrance for all characters"
+            >
+              ⚖️ Encumbrance
+            </button>
+
+            {/* Random tavern */}
+            <button
+              onClick={async () => {
+                const { generateTavern, formatTavern } = await import('../../data/tavernGenerator');
+                onAddDmMessage(formatTavern(generateTavern()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Generate a random tavern with barkeep, patrons, and rumors"
+            >
+              🍺 Random Tavern
+            </button>
+
+            {/* Round summary */}
+            <button
+              onClick={async () => {
+                const { summarizeEntireCombat } = await import('../../lib/combatRoundSummary');
+                const stats = summarizeEntireCombat(combatLog || []);
+                onAddDmMessage(`📊 **Combat Summary:**\nRounds: ${stats.rounds} | Damage: ${stats.totalDamage} | Healing: ${stats.totalHealing} | Kills: ${stats.totalKills} | Crits: ${stats.totalCrits}`);
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all"
+              title="Summarize combat totals — damage, healing, kills, crits"
+            >
+              📊 Combat Summary
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
