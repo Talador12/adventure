@@ -2782,6 +2782,37 @@ export default function DMSidebar({
               🏰 Dungeon Feature
             </button>
 
+            {/* Title */}
+            <button onClick={async () => { const { getRandomTitle, formatTitle: fmtT } = await import('../../data/randomTitle'); onAddDmMessage(fmtT(getRandomTitle())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Earnable title with perks">
+              👑 Random Title
+            </button>
+            {/* NPC tick */}
+            <button onClick={async () => { const { formatNpcTick } = await import('../../data/randomNpcTick'); onAddDmMessage(formatNpcTick()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all" title="Subtle NPC habit">
+              🎭 NPC Habit
+            </button>
+            {/* Encounter twist */}
+            <button onClick={async () => { const { getRandomEncounterTwist, formatEncounterTwist } = await import('../../data/randomEncounterTwist'); onAddDmMessage(formatEncounterTwist(getRandomEncounterTwist())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Yes but... twist for any encounter">
+              🔀 Encounter Twist
+            </button>
+            {/* Legend */}
+            <button onClick={async () => { const { getRandomLegend, formatLegend } = await import('../../data/randomLegend'); onAddDmMessage(formatLegend(getRandomLegend())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Local myth with truth rating">
+              📜 Local Legend
+            </button>
+            {/* Victory narration */}
+            <button onClick={async () => { const { getVictoryNarration, formatVictoryNarration } = await import('../../data/randomCombatVictory'); onAddDmMessage(formatVictoryNarration(getVictoryNarration())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="Dramatic narration for combat victory">
+              🏆 Victory Narration
+            </button>
+            {/* Encounter setup */}
+            <button onClick={async () => { const { getRandomSetup, formatEncounterSetup } = await import('../../data/randomEncounterSetup'); onAddDmMessage(formatEncounterSetup(getRandomSetup())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Pre-combat positioning and conditions">
+              ⚔️ Encounter Setup
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

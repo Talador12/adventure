@@ -7845,3 +7845,65 @@ describe('dungeon features', () => {
   it('interactive features have checks', () => { const all = Array.from({ length: 30 }, () => getRandomDungeonFeature()); const interactive = all.filter((f) => f.interactive); for (const f of interactive) expect(f.check).toBeTruthy(); });
   it('formatDungeonFeature shows feature text', () => { expect(formatDungeonFeature(getRandomDungeonFeature())).toContain('Dungeon Feature'); });
 });
+
+// ---------------------------------------------------------------------------
+// Titles
+// ---------------------------------------------------------------------------
+import { getRandomTitle as getRandTitle, formatTitle as fmtTitle } from '../../src/data/randomTitle';
+
+describe('titles', () => {
+  it('generates with perks', () => { const t = getRandTitle(); expect(t.title.length).toBeGreaterThan(0); expect(t.perks.length).toBeGreaterThan(0); expect(t.requirements.length).toBeGreaterThan(0); });
+  it('formatTitle shows source', () => { expect(fmtTitle(getRandTitle())).toContain('Source'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC ticks
+// ---------------------------------------------------------------------------
+import { NPC_TICKS, getRandomTick, formatNpcTick } from '../../src/data/randomNpcTick';
+
+describe('NPC ticks', () => {
+  it('has at least 12 ticks', () => { expect(NPC_TICKS.length).toBeGreaterThanOrEqual(12); });
+  it('getRandomTick returns text', () => { expect(getRandomTick().length).toBeGreaterThan(10); });
+  it('formatNpcTick shows label', () => { expect(formatNpcTick()).toContain('Habit'); });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter twists
+// ---------------------------------------------------------------------------
+import { getRandomEncounterTwist, formatEncounterTwist } from '../../src/data/randomEncounterTwist';
+
+describe('encounter twists', () => {
+  it('generates valid twist', () => { const t = getRandomEncounterTwist(); expect(t.twist.length).toBeGreaterThan(0); expect(['before', 'during', 'after']).toContain(t.timing); expect(['minor', 'major']).toContain(t.impact); });
+  it('formatEncounterTwist shows timing', () => { expect(formatEncounterTwist(getRandomEncounterTwist())).toMatch(/⏮️|⏯️|⏭️/); });
+});
+
+// ---------------------------------------------------------------------------
+// Legends
+// ---------------------------------------------------------------------------
+import { getRandomLegend, formatLegend as fmtLegend } from '../../src/data/randomLegend';
+
+describe('legends', () => {
+  it('generates with truth level', () => { const l = getRandomLegend(); expect(l.title.length).toBeGreaterThan(0); expect(l.story.length).toBeGreaterThan(0); expect(['completely true', 'mostly true', 'half-true', 'embellished', 'completely false']).toContain(l.truthLevel); });
+  it('formatLegend shows location', () => { expect(fmtLegend(getRandomLegend())).toContain('Related to'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat victory
+// ---------------------------------------------------------------------------
+import { getVictoryNarration, formatVictoryNarration } from '../../src/data/randomCombatVictory';
+
+describe('combat victory', () => {
+  it('generates valid narration', () => { const v = getVictoryNarration(); expect(v.narration.length).toBeGreaterThan(10); expect(['decisive', 'pyrrhic', 'narrow', 'merciful', 'intimidating']).toContain(v.type); });
+  it('filters by type', () => { const n = getVictoryNarration('merciful'); expect(n.type).toBe('merciful'); });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter setup
+// ---------------------------------------------------------------------------
+import { getRandomSetup, formatEncounterSetup } from '../../src/data/randomEncounterSetup';
+
+describe('encounter setup', () => {
+  it('generates with position and advantage', () => { const s = getRandomSetup(); expect(s.enemyPosition.length).toBeGreaterThan(0); expect(s.advantage.length).toBeGreaterThan(0); expect(s.environment.length).toBeGreaterThan(0); });
+  it('some have special conditions', () => { const all = Array.from({ length: 20 }, () => getRandomSetup()); expect(all.some((s) => s.specialCondition !== null)).toBe(true); });
+  it('formatEncounterSetup shows environment', () => { expect(formatEncounterSetup(getRandomSetup())).toContain('Environment'); });
+});
