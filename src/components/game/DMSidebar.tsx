@@ -2751,6 +2751,37 @@ export default function DMSidebar({
               ✨ Magic Effect
             </button>
 
+            {/* Tavern name */}
+            <button onClick={async () => { const { formatTavernNames } = await import('../../data/randomTavernName'); onAddDmMessage(formatTavernNames()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Random tavern names">
+              🍺 Tavern Names
+            </button>
+            {/* Scar */}
+            <button onClick={async () => { const { getRandomScar, formatScar } = await import('../../data/randomScar'); onAddDmMessage(formatScar(getRandomScar())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Random battle scar with backstory">
+              🩹 Random Scar
+            </button>
+            {/* World detail */}
+            <button onClick={async () => { const { getRandomWorldDetail, formatWorldDetail } = await import('../../data/randomWorldDetail'); onAddDmMessage(formatWorldDetail(getRandomWorldDetail())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Small lore detail for world-building">
+              🌍 World Detail
+            </button>
+            {/* Heirloom */}
+            <button onClick={async () => { const { getRandomHeirloom, formatHeirloom } = await import('../../data/randomHeirloom'); onAddDmMessage(formatHeirloom(getRandomHeirloom())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Meaningful personal item with backstory">
+              🏺 Heirloom
+            </button>
+            {/* Character weakness */}
+            <button onClick={async () => { const { getRandomWeakness, formatWeakness } = await import('../../data/randomWeakness'); onAddDmMessage(formatWeakness(getRandomWeakness())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Character flaw with mechanical trigger">
+              💔 Character Weakness
+            </button>
+            {/* Dungeon feature */}
+            <button onClick={async () => { const { getRandomDungeonFeature, formatDungeonFeature } = await import('../../data/randomDungeonFeature'); onAddDmMessage(formatDungeonFeature(getRandomDungeonFeature())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all" title="Interesting detail for dungeon exploration">
+              🏰 Dungeon Feature
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

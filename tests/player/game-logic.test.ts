@@ -7782,3 +7782,66 @@ describe('magic effects', () => {
   it('some have mechanical effects', () => { const all = Array.from({ length: 20 }, () => getRandomMagicEffect()); expect(all.some((e) => e.mechanical !== null)).toBe(true); });
   it('formatMagicEffect shows visual', () => { expect(formatMagicEffect(getRandomMagicEffect())).toContain('👁️'); });
 });
+
+// ---------------------------------------------------------------------------
+// Tavern names
+// ---------------------------------------------------------------------------
+import { generateTavernName, generateMultipleTavernNames, formatTavernNames as fmtTavNames } from '../../src/data/randomTavernName';
+
+describe('tavern names', () => {
+  it('generates name with The prefix', () => { expect(generateTavernName()).toMatch(/^The /); });
+  it('generates unique names', () => { const names = generateMultipleTavernNames(10); expect(new Set(names).size).toBeGreaterThanOrEqual(5); });
+  it('formatTavernNames shows list', () => { expect(fmtTavNames()).toContain('Tavern Names'); });
+});
+
+// ---------------------------------------------------------------------------
+// Scars
+// ---------------------------------------------------------------------------
+import { getRandomScar, formatScar as fmtScar } from '../../src/data/randomScar';
+
+describe('scars', () => {
+  it('generates with story', () => { const s = getRandomScar(); expect(s.location.length).toBeGreaterThan(0); expect(s.story.length).toBeGreaterThan(0); });
+  it('formatScar shows origin', () => { expect(fmtScar(getRandomScar())).toContain('Origin'); });
+});
+
+// ---------------------------------------------------------------------------
+// World details
+// ---------------------------------------------------------------------------
+import { getRandomWorldDetail, formatWorldDetail } from '../../src/data/randomWorldDetail';
+
+describe('world details', () => {
+  it('generates valid detail', () => { const d = getRandomWorldDetail(); expect(d.detail.length).toBeGreaterThan(0); expect(['custom', 'history', 'culture', 'nature', 'magic']).toContain(d.category); });
+  it('formatWorldDetail shows category', () => { expect(formatWorldDetail(getRandomWorldDetail())).toContain('World Detail'); });
+});
+
+// ---------------------------------------------------------------------------
+// Heirlooms
+// ---------------------------------------------------------------------------
+import { getRandomHeirloom, formatHeirloom } from '../../src/data/randomHeirloom';
+
+describe('heirlooms', () => {
+  it('generates with significance', () => { const h = getRandomHeirloom(); expect(h.item.length).toBeGreaterThan(0); expect(h.significance.length).toBeGreaterThan(0); });
+  it('some have mechanical uses', () => { const all = Array.from({ length: 20 }, () => getRandomHeirloom()); expect(all.some((h) => h.mechanicalUse !== null)).toBe(true); });
+  it('formatHeirloom shows origin', () => { expect(formatHeirloom(getRandomHeirloom())).toContain('Origin'); });
+});
+
+// ---------------------------------------------------------------------------
+// Character weaknesses
+// ---------------------------------------------------------------------------
+import { getRandomWeakness, formatWeakness } from '../../src/data/randomWeakness';
+
+describe('character weaknesses', () => {
+  it('generates with trigger and effect', () => { const w = getRandomWeakness(); expect(w.weakness.length).toBeGreaterThan(0); expect(w.trigger.length).toBeGreaterThan(0); expect(w.mechanicalEffect.length).toBeGreaterThan(0); });
+  it('formatWeakness shows RP note', () => { expect(formatWeakness(getRandomWeakness())).toContain('RP Note'); });
+});
+
+// ---------------------------------------------------------------------------
+// Dungeon features
+// ---------------------------------------------------------------------------
+import { getRandomDungeonFeature, formatDungeonFeature } from '../../src/data/randomDungeonFeature';
+
+describe('dungeon features', () => {
+  it('generates valid feature', () => { const f = getRandomDungeonFeature(); expect(f.feature.length).toBeGreaterThan(0); expect(typeof f.interactive).toBe('boolean'); });
+  it('interactive features have checks', () => { const all = Array.from({ length: 30 }, () => getRandomDungeonFeature()); const interactive = all.filter((f) => f.interactive); for (const f of interactive) expect(f.check).toBeTruthy(); });
+  it('formatDungeonFeature shows feature text', () => { expect(formatDungeonFeature(getRandomDungeonFeature())).toContain('Dungeon Feature'); });
+});
