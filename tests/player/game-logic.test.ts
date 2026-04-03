@@ -5876,3 +5876,135 @@ describe('combat round summary', () => {
     expect(summary.totalDamageDealt).toBe(10);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Passive skills
+// ---------------------------------------------------------------------------
+import { calculatePassive, computePassiveSkills, formatPartyPassives } from '../../src/lib/passiveSkills';
+
+describe('passive skills', () => {
+  it('calculatePassive = 10 + mod + prof', () => {
+    expect(calculatePassive(16, 5, true)).toBe(16); // 10 + 3 + 3
+    expect(calculatePassive(10, 1, false)).toBe(10); // 10 + 0
+  });
+  it('advantage adds 5', () => { expect(calculatePassive(10, 1, false, false, true)).toBe(15); });
+  it('computePassiveSkills returns all three', () => {
+    const p = computePassiveSkills('c1', { WIS: 16, INT: 12, STR: 10, DEX: 14, CON: 14, CHA: 10 }, 5, ['Perception']);
+    expect(p.perception.value).toBe(16); // 10 + 3(WIS) + 3(prof)
+    expect(p.investigation.value).toBe(11); // 10 + 1(INT) + 0
+    expect(p.insight.value).toBe(13); // 10 + 3(WIS) + 0
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Grapple/shove resolver
+// ---------------------------------------------------------------------------
+import { canGrapple, resolveGrapple } from '../../src/lib/grappleShove';
+
+describe('grapple/shove', () => {
+  it('canGrapple allows one size larger', () => {
+    expect(canGrapple('Medium', 'Large')).toBe(true);
+    expect(canGrapple('Medium', 'Huge')).toBe(false);
+    expect(canGrapple('Large', 'Huge')).toBe(true);
+  });
+  it('resolveGrapple blocks oversized targets', () => {
+    const result = resolveGrapple('grapple', 'Fighter', 5, 'Medium', 'Giant', 5, 0, 'Huge');
+    expect(result.success).toBe(false);
+    expect(result.sizeBlocked).toBe(true);
+  });
+  it('resolveGrapple produces contested result', () => {
+    const result = resolveGrapple('shove_prone', 'Fighter', 5, 'Medium', 'Goblin', -1, 2, 'Small');
+    expect(typeof result.success).toBe('boolean');
+    expect(result.narration.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dungeon name generator
+// ---------------------------------------------------------------------------
+import { generateDungeonName, generateMultipleDungeonNames, formatDungeonNames } from '../../src/data/dungeonNameGenerator';
+
+describe('dungeon name generator', () => {
+  it('generates names of all styles', () => {
+    expect(generateDungeonName('simple').split(' ').length).toBeGreaterThanOrEqual(2);
+    expect(generateDungeonName('epic').split(' ').length).toBeGreaterThanOrEqual(4);
+  });
+  it('generateMultipleDungeonNames returns correct count', () => {
+    expect(generateMultipleDungeonNames(5).length).toBe(5);
+  });
+  it('formatDungeonNames shows all styles', () => {
+    const text = formatDungeonNames();
+    expect(text).toContain('Epic');
+    expect(text).toContain('Simple');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Party HP dashboard
+// ---------------------------------------------------------------------------
+import { getHpStatus as getHpStatusNew, computeHpBars as computeHpBarsNew, getPartyHealthSummary as getPartySummaryNew, formatPartyHpDashboard } from '../../src/lib/partyHpDashboard';
+
+describe('party HP dashboard (new)', () => {
+  it('getHpStatus classifies correctly', () => {
+    expect(getHpStatusNew(40, 40)).toBe('healthy');
+    expect(getHpStatusNew(10, 40)).toBe('critical'); // 25% = critical
+    expect(getHpStatusNew(0, 40)).toBe('unconscious');
+  });
+  it('computeHpBars returns correct data', () => {
+    const bars = computeHpBarsNew([{ id: 'c1', name: 'A', hp: 20, maxHp: 40 }]);
+    expect(bars[0].percentage).toBe(50);
+    expect(bars[0].status).toBe('bloodied'); // exactly 50% = bloodied (26-50%)
+  });
+  it('getPartyHealthSummary aggregates', () => {
+    const bars = computeHpBarsNew([{ id: 'c1', name: 'A', hp: 30, maxHp: 40 }, { id: 'c2', name: 'B', hp: 0, maxHp: 30 }]);
+    const summary = getPartySummaryNew(bars);
+    expect(summary.downed).toBe(1);
+    expect(summary.percentage).toBeLessThan(50);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Damage log analytics
+// ---------------------------------------------------------------------------
+import { analyzeDamageLog, formatDamageAnalytics } from '../../src/lib/damageLogAnalytics';
+
+describe('damage log analytics', () => {
+  it('counts damage and rounds', () => {
+    const log = ['--- Round 1 ---', 'Thorin attacks for 12 damage', '--- Round 2 ---', 'Thorin attacks for 8 damage'];
+    const analytics = analyzeDamageLog(log, ['Thorin']);
+    expect(analytics.totalDealt).toBe(20);
+    expect(analytics.roundCount).toBe(2);
+    expect(analytics.dpr).toBe(10);
+  });
+  it('tracks per-character damage', () => {
+    const log = ['Thorin attacks for 15 damage', 'Elara heals for 10'];
+    const analytics = analyzeDamageLog(log, ['Thorin', 'Elara']);
+    expect(analytics.perCharacter['Thorin'].dealt).toBe(15);
+    expect(analytics.perCharacter['Elara'].healed).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Travel speed calculator
+// ---------------------------------------------------------------------------
+import { calculateTravelTime as calcTravel, TRAVEL_PACES as TRAVEL_PACES_NEW, formatTravelPaces } from '../../src/lib/travelSpeed';
+
+describe('travel speed calculator (new)', () => {
+  it('normal pace = 3 mph on road', () => {
+    const result = calcTravel(24, 'normal', 'road');
+    expect(result.milesPerHour).toBe(3);
+    expect(result.hours).toBe(8);
+    expect(result.days).toBe(1);
+  });
+  it('difficult terrain halves speed', () => {
+    const result = calcTravel(24, 'normal', 'forest');
+    expect(result.milesPerHour).toBe(1.5);
+    expect(result.days).toBe(2);
+  });
+  it('has 3 travel paces', () => { expect(TRAVEL_PACES_NEW.length).toBe(3); });
+  it('formatTravelPaces shows all paces', () => {
+    const text = formatTravelPaces();
+    expect(text).toContain('fast');
+    expect(text).toContain('slow');
+  });
+});

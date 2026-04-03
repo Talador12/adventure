@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.5.0
+## Current Version: v11.6.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 18 tests (765 total) — passive skills, grapple/shove, dungeon names, party HP, damage analytics, travel speed:
+  - **Passive skill display** — `passiveSkills.ts` computes passive Perception/Investigation/Insight (10 + mod + prof). Advantage adds +5, disadvantage -5. `formatPartyPassives()` shows all three for every character. "Passive Skills" button in DMSidebar.
+  - **Grapple/shove resolver** — `grappleShove.ts` with size comparison (can only grapple one size larger). Contested Athletics vs Athletics/Acrobatics. Three actions: grapple, shove prone, shove away. Size-blocked narration. Integrates with existing combat.
+  - **Random dungeon name generator** — `dungeonNameGenerator.ts` with 15 prefixes × 15 descriptors × 20 nouns × 15 suffixes. Three styles: simple (2 words), descriptive (3 words), epic (4+ words). "Dungeon Names" button generates 8 names.
+  - **Party HP dashboard** — `partyHpDashboard.ts` with visual HP bars (10-segment) and 5 status tiers (healthy/wounded/bloodied/critical/unconscious). `getPartyHealthSummary()` aggregates total HP%, downed count. "Party HP" button in DMSidebar.
+  - **Damage log analytics** — `damageLogAnalytics.ts` calculates DPR (damage per round), HPR (healing per round), peak damage round, per-character breakdown. `formatDamageAnalytics()` with sorted character list. "Damage Analytics" button in DMSidebar.
+  - **Travel speed calculator** — `travelSpeed.ts` with 3 paces (fast 4mph/normal 3mph/slow 2mph), 7 terrain types, mount bonus (×1.5 cap 6mph), encumbrance penalty (×0.66). `calculateTravelTime()` returns hours, days, effective speed. "Travel Calculator" button in DMSidebar.
+- 18 new tests (765 total) covering 6 systems:
+  - **Passive skills** (3 tests): base calculation, advantage +5, all three skills computed.
+  - **Grapple/shove** (3 tests): size rules, oversize blocking, contested resolution.
+  - **Dungeon names** (3 tests): style word counts, batch generation, formatted output.
+  - **Party HP** (3 tests): status classification, HP bar data, party aggregation.
+  - **Damage analytics** (2 tests): round/damage counting, per-character tracking.
+  - **Travel speed** (4 tests): normal pace, difficult terrain, pace count, formatted output.
+
 - 6 new systems + 19 tests (747 total) — resistance aggregator, action economy, encumbrance, proficiency, tavern gen, round summary:
   - **Damage resistance aggregator** — `resistanceAggregator.ts` combines all resistance/immunity/vulnerability sources. Immunity overrides resistance (5e rule). Source tracking per type. "Resistances" button in DMSidebar.
   - **Action economy tracker** — `actionEconomy.ts` visualizes action/bonus/reaction/movement per turn. `useAction()`/`useBonusAction()`/`useMovement()` with movement bar. `resetTurn()` for new turn. Visual bars with remaining movement.
@@ -590,12 +605,12 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Passive skill display — auto-compute and show passive Perception, Investigation, Insight
-- Grapple/shove resolver — contested Athletics check with size modifiers
-- Random dungeon name generator — procedural dungeon names from word parts
-- Party HP dashboard — visual overview of all character HP bars at a glance
-- Damage log analytics — per-session graphs of damage dealt/taken over time
-- Travel speed calculator — compute travel time by terrain, pace, and encumbrance
+- ~~Passive skill display~~ **DONE** — `passiveSkills.ts` with adv/disadv modifiers
+- ~~Grapple/shove resolver~~ **DONE** — `grappleShove.ts` with size + contested checks
+- ~~Random dungeon name generator~~ **DONE** — `dungeonNameGenerator.ts` with 3 styles
+- ~~Party HP dashboard~~ **DONE** — `partyHpDashboard.ts` with 5-tier status + visual bars
+- ~~Damage log analytics~~ **DONE** — `damageLogAnalytics.ts` with DPR/HPR/per-character
+- ~~Travel speed calculator~~ **DONE** — `travelSpeed.ts` with 3 paces × 7 terrain × mounts
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

@@ -1904,6 +1904,69 @@ export default function DMSidebar({
               📊 Combat Summary
             </button>
 
+            {/* Passive skills */}
+            <button
+              onClick={async () => {
+                const { formatPartyPassives } = await import('../../lib/passiveSkills');
+                onAddDmMessage(formatPartyPassives(characters.map((c) => ({ id: c.id, name: c.name, stats: c.stats, level: c.level }))));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all disabled:opacity-30"
+              title="Show passive Perception, Investigation, and Insight for all characters"
+            >
+              👁️ Passive Skills
+            </button>
+
+            {/* Party HP dashboard */}
+            <button
+              onClick={async () => {
+                const { formatPartyHpDashboard } = await import('../../lib/partyHpDashboard');
+                onAddDmMessage(formatPartyHpDashboard(characters.map((c) => ({ id: c.id, name: c.name, hp: c.hp, maxHp: c.maxHp }))));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all disabled:opacity-30"
+              title="Visual HP bars for all party members"
+            >
+              ❤️ Party HP
+            </button>
+
+            {/* Dungeon names */}
+            <button
+              onClick={async () => {
+                const { formatDungeonNames } = await import('../../data/dungeonNameGenerator');
+                onAddDmMessage(formatDungeonNames());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all"
+              title="Generate random dungeon names in three styles"
+            >
+              🏰 Dungeon Names
+            </button>
+
+            {/* Damage analytics */}
+            <button
+              onClick={async () => {
+                const { analyzeDamageLog, formatDamageAnalytics } = await import('../../lib/damageLogAnalytics');
+                const analytics = analyzeDamageLog(combatLog || [], characters.map((c) => c.name));
+                onAddDmMessage(formatDamageAnalytics(analytics));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all"
+              title="Damage/healing analytics — DPR, peak round, per-character breakdown"
+            >
+              📈 Damage Analytics
+            </button>
+
+            {/* Travel calculator */}
+            <button
+              onClick={async () => {
+                const { formatTravelPaces } = await import('../../lib/travelSpeed');
+                onAddDmMessage(formatTravelPaces());
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all"
+              title="Travel pace reference and speed calculator"
+            >
+              🗺️ Travel Calculator
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
