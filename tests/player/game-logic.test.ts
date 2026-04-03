@@ -9867,3 +9867,92 @@ describe('trap corridor designer', () => {
   it('all have final rewards', () => { TRAP_CORRIDORS.forEach((c) => expect(c.finalReward.length).toBeGreaterThan(10)); });
   it('formats corridor', () => { expect(formatCorridor(TRAP_CORRIDORS[0])).toContain('Reward'); });
 });
+
+// ---------------------------------------------------------------------------
+// Bardic inspiration table
+// ---------------------------------------------------------------------------
+import { BARDIC_INSPIRATIONS, getInspirationForMoment, getAllEffectsForMoment, getAllMoments as getAllBardicMoments, getEffectCount, formatInspiration as formatBardicInspiration } from '../../src/data/bardicInspiration';
+
+describe('bardic inspiration table', () => {
+  it('has at least 10 effects', () => { expect(BARDIC_INSPIRATIONS.length).toBeGreaterThanOrEqual(10); expect(getEffectCount()).toBeGreaterThanOrEqual(10); });
+  it('covers 6 moments', () => { expect(getAllBardicMoments().length).toBe(6); });
+  it('generates for each moment', () => { getAllBardicMoments().forEach((m) => { const e = getInspirationForMoment(m); expect(e.narration.length).toBeGreaterThan(10); }); });
+  it('each moment has at least 2 variants', () => { getAllBardicMoments().forEach((m) => expect(getAllEffectsForMoment(m).length).toBeGreaterThanOrEqual(1)); });
+  it('all have bard actions', () => { BARDIC_INSPIRATIONS.forEach((e) => expect(e.bardAction.length).toBeGreaterThan(5)); });
+  it('formats inspiration', () => { expect(formatBardicInspiration(BARDIC_INSPIRATIONS[0])).toContain('Bard'); });
+});
+
+// ---------------------------------------------------------------------------
+// Enchanted forest generator
+// ---------------------------------------------------------------------------
+import { ENCHANTED_FORESTS, getRandomEnchantedForest, getForestsByMagic, getForestsByDanger as getForestDanger, getAllForestTypes, formatEnchantedForest } from '../../src/data/enchantedForest';
+
+describe('enchanted forest generator', () => {
+  it('has at least 4 forests', () => { expect(ENCHANTED_FORESTS.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 magic types', () => { expect(getAllForestTypes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random forest', () => { const f = getRandomEnchantedForest(); expect(f.name.length).toBeGreaterThan(3); expect(f.rules.length).toBeGreaterThanOrEqual(3); });
+  it('filters by magic type', () => { const corrupted = getForestsByMagic('corrupted'); expect(corrupted.length).toBeGreaterThanOrEqual(1); });
+  it('all have quest hooks', () => { ENCHANTED_FORESTS.forEach((f) => expect(f.questHook.length).toBeGreaterThan(20)); });
+  it('all have central features', () => { ENCHANTED_FORESTS.forEach((f) => expect(f.centralFeature.length).toBeGreaterThan(20)); });
+  it('formats forest', () => { expect(formatEnchantedForest(ENCHANTED_FORESTS[0])).toContain('Rules'); });
+});
+
+// ---------------------------------------------------------------------------
+// Noble scandal generator
+// ---------------------------------------------------------------------------
+import { NOBLE_SCANDALS, getRandomScandal as getRandomNobleSc, getScandalsByType as getScByType, getScandalsByHouse, getHighValueScandals, getAllScandalTypes, formatScandal as formatNobleSc } from '../../src/data/nobleScandalGen';
+
+describe('noble scandal generator', () => {
+  it('has at least 5 scandals', () => { expect(NOBLE_SCANDALS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 5 types', () => { expect(getAllScandalTypes().length).toBeGreaterThanOrEqual(5); });
+  it('generates random scandal', () => { const s = getRandomNobleSc(); expect(s.title.length).toBeGreaterThan(3); expect(s.involvedParties.length).toBeGreaterThanOrEqual(2); });
+  it('filters by type', () => { const affairs = getScByType('affair'); expect(affairs.length).toBeGreaterThanOrEqual(1); });
+  it('filters by house', () => { const ashford = getScandalsByHouse('Ashford'); expect(ashford.length).toBeGreaterThanOrEqual(1); });
+  it('filters high value', () => { const big = getHighValueScandals(3000); expect(big.length).toBeGreaterThanOrEqual(2); big.forEach((s) => expect(s.blackmailValue).toBeGreaterThanOrEqual(3000)); });
+  it('formats with evidence toggle', () => { const s = getRandomNobleSc(); expect(formatNobleSc(s)).not.toContain('Evidence'); expect(formatNobleSc(s, true)).toContain('Evidence'); });
+});
+
+// ---------------------------------------------------------------------------
+// Merchant haggling mini-game
+// ---------------------------------------------------------------------------
+import { MERCHANT_PERSONALITIES, getMerchantPersonality, getRandomMood, resolveHaggle, getAllMoods as getAllMerchantMoods, getAllTactics as getAllHaggleTactics, formatHaggleResult as formatHaggleMiniGame } from '../../src/data/merchantHaggling';
+
+describe('merchant haggling mini-game', () => {
+  it('has 5 personality types', () => { expect(MERCHANT_PERSONALITIES.length).toBe(5); expect(getAllMerchantMoods().length).toBe(5); });
+  it('has 6 tactics', () => { expect(getAllHaggleTactics().length).toBe(6); });
+  it('looks up personality', () => { const p = getMerchantPersonality('greedy'); expect(p).toBeDefined(); expect(p!.baseMarkup).toBeGreaterThan(1); });
+  it('random mood returns valid', () => { expect(getAllMerchantMoods()).toContain(getRandomMood()); });
+  it('success reduces price', () => { const result = resolveHaggle('fair', 'bulk_deal', 20); expect(result.priceMultiplier).toBeLessThanOrEqual(1.0); });
+  it('immune tactic fails', () => { const result = resolveHaggle('firm', 'flattery', 20); expect(result.relationshipChange).toBe(-1); });
+  it('formats result', () => { expect(formatHaggleMiniGame({ priceMultiplier: 0.8, merchantReaction: 'Fine.', relationshipChange: 1 }, 100)).toContain('80gp'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical pet peeve system
+// ---------------------------------------------------------------------------
+import { MAGICAL_PET_PEEVES, getRandomPetPeeve, getPetPeevesByItemType, getPetPeeveCount, formatPetPeeve } from '../../src/data/magicalPetPeeve';
+
+describe('magical pet peeve system', () => {
+  it('has at least 7 items', () => { expect(MAGICAL_PET_PEEVES.length).toBeGreaterThanOrEqual(7); expect(getPetPeeveCount()).toBeGreaterThanOrEqual(7); });
+  it('generates random peeve', () => { const p = getRandomPetPeeve(); expect(p.petPeeve.length).toBeGreaterThan(10); expect(p.appeasement.length).toBeGreaterThan(10); });
+  it('filters by item type', () => { const swords = getPetPeevesByItemType('sword'); expect(swords.length).toBeGreaterThanOrEqual(1); });
+  it('all have mechanical consequences', () => { MAGICAL_PET_PEEVES.forEach((p) => expect(p.mechanicalConsequence.length).toBeGreaterThan(10)); });
+  it('all have appeasement methods', () => { MAGICAL_PET_PEEVES.forEach((p) => expect(p.appeasement.length).toBeGreaterThan(10)); });
+  it('formats peeve', () => { expect(formatPetPeeve(MAGICAL_PET_PEEVES[0])).toContain('Pet Peeve'); });
+});
+
+// ---------------------------------------------------------------------------
+// War room briefing generator
+// ---------------------------------------------------------------------------
+import { WAR_ROOM_BRIEFINGS, getRandomBriefing, getBriefingsByObjective, getReliableIntel, getUnreliableIntel, getAllObjectives, formatBriefing } from '../../src/data/warRoomBriefing';
+
+describe('war room briefing generator', () => {
+  it('has at least 3 briefings', () => { expect(WAR_ROOM_BRIEFINGS.length).toBeGreaterThanOrEqual(3); });
+  it('has 6 objective types', () => { expect(getAllObjectives().length).toBe(6); });
+  it('generates random briefing', () => { const b = getRandomBriefing(); expect(b.operationName.length).toBeGreaterThan(3); expect(b.intel.length).toBeGreaterThanOrEqual(2); });
+  it('filters by objective', () => { const defend = getBriefingsByObjective('defend'); expect(defend.length).toBeGreaterThanOrEqual(1); });
+  it('separates reliable and unreliable intel', () => { const b = WAR_ROOM_BRIEFINGS[0]; const reliable = getReliableIntel(b); const unreliable = getUnreliableIntel(b); expect(reliable.length + unreliable.length).toBe(b.intel.length); });
+  it('all have complications', () => { WAR_ROOM_BRIEFINGS.forEach((b) => expect(b.complication.length).toBeGreaterThan(20)); });
+  it('all have strategy suggestions', () => { WAR_ROOM_BRIEFINGS.forEach((b) => expect(b.suggestedStrategy.length).toBeGreaterThan(20)); });
+  it('formats briefing', () => { expect(formatBriefing(WAR_ROOM_BRIEFINGS[0])).toContain('Strategy'); });
+});

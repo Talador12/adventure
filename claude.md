@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v15.4.0
+## Current Version: v15.4.0 — 🎉 2,000 TEST MILESTONE (2,014 tests)
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 🎉 **2,000 TEST MILESTONE** — 6 new systems + 41 tests (2014 total, +1 pre-existing fix) — bardic inspiration, enchanted forests, noble scandals, merchant haggling, magical pet peeves, war room briefings:
+  - **Bardic inspiration table** — `bardicInspiration.ts` with 10 effects across 6 moments (attack/save/check/damage/death/social), narrations, bard actions, crowd reactions.
+  - **Enchanted forest generator** — `enchantedForest.ts` with 4 forests (sentient/corrupted/fey_touched/time_lost), unique rules per forest, inhabitants, central features, quest hooks.
+  - **Noble scandal generator** — `nobleScandalGen.ts` with 6 scandals across 6 types, evidence with find DCs, blackmail values, exposure consequences, involved parties.
+  - **Merchant haggling mini-game** — `merchantHaggling.ts` with 5 moods, 6 tactics, weakness/immunity system, price resolution with personality modifiers.
+  - **Magical pet peeve system** — `magicalPetPeeve.ts` with 8 items that have opinions (The Vegan Dagger, Grumpstaff the Reluctant, Chatterbow...), mechanical consequences, appeasement methods.
+  - **War room briefing generator** — `warRoomBriefing.ts` with 3 operations (assault/ambush/defend), intel with reliability ratings, suggested strategies, complications.
+
 - 6 new systems + 47 tests (1973 total, +1 pre-existing fix) — alchemy recipes, exile scenarios, familiar evolution, wanted posters, planar weather, trap corridors:
   - **Alchemy recipe book** — `alchemyRecipeBook.ts` with 8 recipes across 6 categories, ingredient requirements, crafting DCs, failure results.
   - **Exile/banishment scenario** — `exileScenario.ts` with 5 scenarios across 6 reasons, multiple redemption paths, severity tiers, twists, allies.
@@ -1024,17 +1032,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Planar weather~~ **DONE** — `planarWeather.ts` with 6 events × 6 sources + plot hooks
 - ~~Trap corridor designer~~ **DONE** — `trapCorridor.ts` with 3 corridors + sequential traps
 
-**Wave 48 Roadmap:**
+**Wave 48 — 🎉 2,000 TEST MILESTONE (2,014 tests, fixed 1 pre-existing):**
+- ~~Bardic inspiration table~~ **DONE** — `bardicInspiration.ts` with 10 effects × 6 moments
+- ~~Enchanted forest generator~~ **DONE** — `enchantedForest.ts` with 4 forests × unique rules
+- ~~Noble scandal generator~~ **DONE** — `nobleScandalGen.ts` with 6 scandals × 6 types + blackmail
+- ~~Merchant haggling mini-game~~ **DONE** — `merchantHaggling.ts` with 5 moods × 6 tactics
+- ~~Magical pet peeve system~~ **DONE** — `magicalPetPeeve.ts` with 8 opinionated items
+- ~~War room briefing generator~~ **DONE** — `warRoomBriefing.ts` with 3 operations + intel reliability
+
+**Wave 49 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Bardic inspiration table — dramatic effects beyond the mechanical +1d6
-- Random war room briefing — military intel, terrain maps, and battle strategy suggestions
-- Enchanted forest generator — magical woodlands with unique rules and inhabitants
-- Random noble scandal — political gossip with blackmail potential and social consequences
-- Merchant haggling mini-game — price negotiation with NPC personality modifiers
-- Magical pet peeve system — magic items that have strong opinions about how they're used
+- Random encounter difficulty tuner — auto-adjust CR based on party composition and resources
+- Arcane research breakthrough system — long-term magical research with eureka moments
+- Random NPC backstory generator — complete backstories with hooks for DMs
+- Weather-based terrain modifier — how weather changes combat terrain bonuses
+- Ancient ruin floor plan generator — procedural dungeon layouts with room connections
+- Magical communication system — sending stones, message spells, and crystal ball networks
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
