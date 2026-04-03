@@ -2596,6 +2596,37 @@ export default function DMSidebar({
               🕊️ Last Words
             </button>
 
+            {/* Prison */}
+            <button onClick={async () => { const { generatePrison, formatPrison } = await import('../../data/randomPrison'); onAddDmMessage(formatPrison(generatePrison())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-slate-700/30 border border-slate-500/30 text-slate-300 font-semibold hover:bg-slate-600/30 transition-all" title="Random prison with guards and escape routes">
+              🔒 Random Prison
+            </button>
+            {/* Artifact */}
+            <button onClick={async () => { const { generateArtifact, formatArtifact } = await import('../../data/randomArtifact'); onAddDmMessage(formatArtifact(generateArtifact())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Generate a legendary artifact with history and drawbacks">
+              ⭐ Random Artifact
+            </button>
+            {/* Side mission */}
+            <button onClick={async () => { const { getRandomMission, formatMission } = await import('../../data/randomMission'); onAddDmMessage(formatMission(getRandomMission())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Random one-session side mission with twist">
+              📋 Side Mission
+            </button>
+            {/* Treasure hoard */}
+            <button onClick={async () => { const { generateHoard, formatHoard } = await import('../../data/randomTreasureHoard'); onAddDmMessage(formatHoard(generateHoard('medium'))); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all" title="DMG-style treasure hoard">
+              💎 Treasure Hoard
+            </button>
+            {/* Omen */}
+            <button onClick={async () => { const { getRandomOmen, formatOmen } = await import('../../data/randomOmen'); onAddDmMessage(formatOmen(getRandomOmen())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Random omen or portent">
+              🔮 Omen
+            </button>
+            {/* Campfire story */}
+            <button onClick={async () => { const { getRandomStory, formatCampfireStory } = await import('../../data/randomCampfireStory'); onAddDmMessage(formatCampfireStory(getRandomStory())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Campfire tale for long rest flavor">
+              🔥 Campfire Story
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

@@ -7469,3 +7469,66 @@ describe('last words', () => {
   it('some reveal info', () => { const all = Array.from({ length: 20 }, () => getRandomLastWords()); expect(all.some((lw) => lw.revealsInfo)).toBe(true); });
   it('formatLastWords includes NPC name', () => { expect(formatLastWords(getRandomLastWords(), 'Goblin King')).toContain('Goblin King'); });
 });
+
+// ---------------------------------------------------------------------------
+// Random prison
+// ---------------------------------------------------------------------------
+import { generatePrison, formatPrison } from '../../src/data/randomPrison';
+
+describe('random prison', () => {
+  it('generates with all fields', () => { const p = generatePrison(); expect(p.name.length).toBeGreaterThan(0); expect(['low', 'medium', 'high', 'maximum']).toContain(p.security); expect(p.features.length).toBe(3); });
+  it('higher security = higher escape DC', () => { for (let i = 0; i < 30; i++) { const p = generatePrison(); if (p.security === 'maximum') expect(p.escapeDC).toBe(22); } });
+  it('formatPrison shows features', () => { expect(formatPrison(generatePrison())).toContain('Notable inmate'); });
+});
+
+// ---------------------------------------------------------------------------
+// Random artifact
+// ---------------------------------------------------------------------------
+import { generateArtifact, formatArtifact } from '../../src/data/randomArtifact';
+
+describe('random artifact', () => {
+  it('generates with power and drawback', () => { const a = generateArtifact(); expect(a.name.length).toBeGreaterThan(0); expect(a.power.length).toBeGreaterThan(0); expect(a.drawback.length).toBeGreaterThan(0); expect(a.attunement).toBe(true); });
+  it('formatArtifact shows history', () => { expect(formatArtifact(generateArtifact())).toContain('Power'); expect(formatArtifact(generateArtifact())).toContain('Drawback'); });
+});
+
+// ---------------------------------------------------------------------------
+// Random mission
+// ---------------------------------------------------------------------------
+import { getRandomMission, formatMission as formatSideMission } from '../../src/data/randomMission';
+
+describe('random mission', () => {
+  it('generates with twist', () => { const m = getRandomMission(); expect(m.title.length).toBeGreaterThan(0); expect(m.twist.length).toBeGreaterThan(0); expect(m.timeLimit.length).toBeGreaterThan(0); });
+  it('formatMission shows objective and twist', () => { const text = formatSideMission(getRandomMission()); expect(text).toContain('Objective'); expect(text).toContain('Twist'); });
+});
+
+// ---------------------------------------------------------------------------
+// Treasure hoard
+// ---------------------------------------------------------------------------
+import { generateHoard, formatHoard } from '../../src/data/randomTreasureHoard';
+
+describe('treasure hoard', () => {
+  it('generates with coins and items', () => { const h = generateHoard('medium'); expect(h.coins.length).toBeGreaterThan(0); expect(h.gems.length).toBeGreaterThanOrEqual(2); expect(h.magicItems.length).toBeGreaterThanOrEqual(1); });
+  it('high tier has more items', () => { const h = generateHoard('high'); expect(h.magicItems.length).toBe(3); expect(h.gems.length).toBe(5); });
+  it('formatHoard shows estimate', () => { expect(formatHoard(generateHoard('low'))).toContain('Estimated'); });
+});
+
+// ---------------------------------------------------------------------------
+// Random omen
+// ---------------------------------------------------------------------------
+import { getRandomOmen, getOmensByType, formatOmen } from '../../src/data/randomOmen';
+
+describe('random omen', () => {
+  it('generates valid omen', () => { const o = getRandomOmen(); expect(o.description.length).toBeGreaterThan(0); expect(['good', 'bad', 'neutral', 'ambiguous']).toContain(o.type); });
+  it('filters by type', () => { const bad = getOmensByType('bad'); for (const o of bad) expect(o.type).toBe('bad'); });
+  it('formatOmen shows significance', () => { expect(formatOmen(getRandomOmen())).toMatch(/minor|major/); });
+});
+
+// ---------------------------------------------------------------------------
+// Campfire story
+// ---------------------------------------------------------------------------
+import { getRandomStory, formatCampfireStory } from '../../src/data/randomCampfireStory';
+
+describe('campfire story', () => {
+  it('generates with moral', () => { const s = getRandomStory(); expect(s.title.length).toBeGreaterThan(0); expect(s.moral.length).toBeGreaterThan(0); expect(['horror', 'comedy', 'legend', 'tragedy', 'mystery']).toContain(s.genre); });
+  it('formatCampfireStory shows twist', () => { expect(formatCampfireStory(getRandomStory())).toContain('Twist'); expect(formatCampfireStory(getRandomStory())).toContain('Moral'); });
+});
