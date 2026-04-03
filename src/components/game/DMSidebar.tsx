@@ -2436,6 +2436,42 @@ export default function DMSidebar({
               📈 Level-Up Checklist
             </button>
 
+            {/* Insult generator */}
+            <button onClick={async () => { const { generateInsultBattle } = await import('../../data/fantasyInsults'); onAddDmMessage(generateInsultBattle()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Fantasy insults for NPC banter">
+              🗣️ Insult Generator
+            </button>
+
+            {/* Encounter difficulty */}
+            <button onClick={async () => { const { formatDifficultyLabel } = await import('../../lib/encounterDifficultyLabel'); const levels = characters.map((c) => c.level); const xps = units.filter((u) => u.type === 'enemy' && u.hp > 0).map((u) => (u.xpValue || 0)); onAddDmMessage(formatDifficultyLabel(levels.length > 0 ? levels : [5,5,5,5], xps)); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Rate current encounter difficulty">
+              ⚔️ Difficulty Rating
+            </button>
+
+            {/* Loot container */}
+            <button onClick={async () => { const { generateLootContainer, formatLootContainer } = await import('../../data/lootContainers'); onAddDmMessage(formatLootContainer(generateLootContainer())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Generate a random loot container">
+              📦 Loot Container
+            </button>
+
+            {/* Planar reference */}
+            <button onClick={async () => { const { formatPlanarReference } = await import('../../data/planarReference'); onAddDmMessage(formatPlanarReference()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all" title="Quick reference for D&D planes of existence">
+              🌌 Planes Reference
+            </button>
+
+            {/* Trinkets */}
+            <button onClick={async () => { const { formatTrinkets } = await import('../../data/trinketGenerator'); onAddDmMessage(formatTrinkets()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all" title="Random trinkets for flavor loot">
+              🎲 Random Trinkets
+            </button>
+
+            {/* Turn checklist */}
+            <button onClick={async () => { const { formatTurnChecklist } = await import('../../data/combatTurnChecklist'); onAddDmMessage(formatTurnChecklist()); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-slate-700/30 border border-slate-500/30 text-slate-300 font-semibold hover:bg-slate-600/30 transition-all" title="What can I do on my turn?">
+              📋 Turn Checklist
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

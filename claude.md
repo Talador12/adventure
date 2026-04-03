@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v12.4.0
+## Current Version: v12.5.0
 
 ### v0.1.0 — Initial Release
 
@@ -711,6 +711,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~Saving throw reference~~ **DONE** — `savingThrowRef.ts` with all 6 saves + common DCs
 - ~~Guild generator~~ **DONE** — `guildGenerator.ts` with name/purpose/leader/HQ/secret agenda
 - ~~Level-up checklist~~ **DONE** — `levelUpChecklist.ts` with class-aware step-by-step guide
+
+**Wave 29 Roadmap (completed):**
+- ~~Fantasy insults~~ **DONE** — `fantasyInsults.ts` with 16 insults × 4 tones + insult battles
+- ~~Encounter difficulty label~~ **DONE** — `encounterDifficultyLabel.ts` with Trivial→TPK Risk
+- ~~Loot containers~~ **DONE** — `lootContainers.ts` with themed chests/corpses/caches + traps
+- ~~Planar reference~~ **DONE** — `planarReference.ts` with 12 D&D planes by category
+- ~~Trinket generator~~ **DONE** — `trinketGenerator.ts` with 30 PHB-style trinkets
+- ~~Combat turn checklist~~ **DONE** — `combatTurnChecklist.ts` with 16 actions by type
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

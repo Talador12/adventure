@@ -7034,3 +7034,101 @@ describe('level-up checklist', () => {
     expect(text).toContain('Level 5');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Fantasy insults
+// ---------------------------------------------------------------------------
+import { getRandomInsult, generateInsultBattle, formatInsult } from '../../src/data/fantasyInsults';
+
+describe('fantasy insults', () => {
+  it('getRandomInsult returns valid insult', () => {
+    const insult = getRandomInsult();
+    expect(insult.insult.length).toBeGreaterThan(0);
+    expect(['playful', 'aggressive', 'sophisticated', 'crude']).toContain(insult.tone);
+  });
+  it('filters by tone', () => { expect(getRandomInsult('sophisticated').tone).toBe('sophisticated'); });
+  it('generateInsultBattle returns multiple', () => { expect(generateInsultBattle(3).split('\n').length).toBeGreaterThanOrEqual(3); });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter difficulty label
+// ---------------------------------------------------------------------------
+import { labelEncounterDifficulty, formatDifficultyLabel } from '../../src/lib/encounterDifficultyLabel';
+
+describe('encounter difficulty label', () => {
+  it('labels trivial for no enemies', () => { expect(labelEncounterDifficulty([5,5,5,5], []).label).toBe('Trivial'); });
+  it('labels appropriately for scaled encounters', () => {
+    const result = labelEncounterDifficulty([5,5,5,5], [1800, 1800]); // 3600 raw × 1.5 = 5400 adjusted
+    expect(['Hard', 'Deadly', 'TPK Risk']).toContain(result.label);
+  });
+  it('formatDifficultyLabel shows budget', () => { expect(formatDifficultyLabel([5], [50])).toContain('Budget'); });
+});
+
+// ---------------------------------------------------------------------------
+// Loot containers
+// ---------------------------------------------------------------------------
+import { generateLootContainer, formatLootContainer } from '../../src/data/lootContainers';
+
+describe('loot containers', () => {
+  it('generates with contents', () => {
+    const container = generateLootContainer();
+    expect(container.contents.length).toBeGreaterThanOrEqual(2);
+    expect(container.type.length).toBeGreaterThan(0);
+  });
+  it('high tier has more loot', () => {
+    const high = generateLootContainer('high');
+    expect(high.totalValue).toBeGreaterThanOrEqual(100);
+  });
+  it('formatLootContainer shows contents', () => { expect(formatLootContainer(generateLootContainer())).toContain('Contents'); });
+});
+
+// ---------------------------------------------------------------------------
+// Planar reference
+// ---------------------------------------------------------------------------
+import { PLANES, getPlane, getPlanesByCategory, formatPlanarReference } from '../../src/data/planarReference';
+
+describe('planar reference', () => {
+  it('has at least 10 planes', () => { expect(PLANES.length).toBeGreaterThanOrEqual(10); });
+  it('getPlane finds by name', () => { expect(getPlane('feywild')?.emoji).toBe('🧚'); });
+  it('getPlanesByCategory filters', () => {
+    const outer = getPlanesByCategory('outer');
+    for (const p of outer) expect(p.category).toBe('outer');
+  });
+  it('formatPlanarReference lists all categories', () => {
+    const text = formatPlanarReference();
+    expect(text).toContain('Material');
+    expect(text).toContain('Outer');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Trinket generator
+// ---------------------------------------------------------------------------
+import { TRINKETS, getRandomTrinket, getMultipleTrinkets, formatTrinkets } from '../../src/data/trinketGenerator';
+
+describe('trinket generator', () => {
+  it('has at least 25 trinkets', () => { expect(TRINKETS.length).toBeGreaterThanOrEqual(25); });
+  it('getMultipleTrinkets returns correct count', () => { expect(getMultipleTrinkets(5).length).toBe(5); });
+  it('formatTrinkets shows flavor text', () => { expect(formatTrinkets()).toContain('No monetary value'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat turn checklist
+// ---------------------------------------------------------------------------
+import { TURN_ACTIONS, getActionsByType, formatTurnChecklist } from '../../src/data/combatTurnChecklist';
+
+describe('combat turn checklist', () => {
+  it('has at least 14 actions', () => { expect(TURN_ACTIONS.length).toBeGreaterThanOrEqual(14); });
+  it('getActionsByType filters correctly', () => {
+    const actions = getActionsByType('action');
+    for (const a of actions) expect(a.type).toBe('action');
+    expect(actions.length).toBeGreaterThanOrEqual(8);
+  });
+  it('formatTurnChecklist shows all sections', () => {
+    const text = formatTurnChecklist();
+    expect(text).toContain('Actions');
+    expect(text).toContain('Movement');
+    expect(text).toContain('Bonus');
+    expect(text).toContain('Reaction');
+  });
+});
