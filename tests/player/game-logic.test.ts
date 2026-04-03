@@ -4612,3 +4612,225 @@ describe('treasure maps', () => {
     expect(text).toContain('❓'); // unfound fragments
   });
 });
+
+// ---------------------------------------------------------------------------
+// Reaction tracker
+// ---------------------------------------------------------------------------
+import { createReactionState, initializeUnits as initReactionUnits, useReaction, refreshReaction, hasReaction, formatReactionStatus } from '../../src/lib/reactionTracker';
+
+describe('reaction tracker', () => {
+  it('initializes units with reactions available', () => {
+    let state = createReactionState();
+    state = initReactionUnits(state, ['u1', 'u2']);
+    expect(hasReaction(state, 'u1')).toBe(true);
+    expect(hasReaction(state, 'u2')).toBe(true);
+  });
+
+  it('useReaction marks as used', () => {
+    let state = initReactionUnits(createReactionState(), ['u1']);
+    const result = useReaction(state, 'u1', 'Opportunity Attack');
+    expect(result.success).toBe(true);
+    expect(hasReaction(result.state, 'u1')).toBe(false);
+  });
+
+  it('useReaction fails if already used', () => {
+    let state = initReactionUnits(createReactionState(), ['u1']);
+    state = useReaction(state, 'u1', 'OA').state;
+    const result = useReaction(state, 'u1', 'Shield');
+    expect(result.success).toBe(false);
+  });
+
+  it('refreshReaction restores availability', () => {
+    let state = initReactionUnits(createReactionState(), ['u1']);
+    state = useReaction(state, 'u1', 'OA').state;
+    state = refreshReaction(state, 'u1');
+    expect(hasReaction(state, 'u1')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Ready action queue
+// ---------------------------------------------------------------------------
+import { createReadyState, readyAction, resolveReadiedAction, getActiveReadiedActions, expireReadiedActions, formatReadyStatus } from '../../src/lib/readyAction';
+
+describe('ready action queue', () => {
+  it('readyAction adds to queue', () => {
+    let state = readyAction(createReadyState(), 'u1', 'Fighter', 'Attack', 'When goblin moves', 3);
+    expect(getActiveReadiedActions(state).length).toBe(1);
+  });
+
+  it('resolveReadiedAction marks resolved', () => {
+    let state = readyAction(createReadyState(), 'u1', 'Fighter', 'Attack', 'trigger', 3);
+    const actionId = state.actions[0].id;
+    const result = resolveReadiedAction(state, actionId);
+    expect(result.action).toBeTruthy();
+    expect(result.narration).toContain('fires');
+    expect(getActiveReadiedActions(result.state).length).toBe(0);
+  });
+
+  it('expireReadiedActions expires old actions', () => {
+    let state = readyAction(createReadyState(), 'u1', 'F', 'A', 'T', 2);
+    const result = expireReadiedActions(state, 4); // round 4, action from round 2
+    expect(result.expired.length).toBe(1);
+  });
+
+  it('formatReadyStatus shows active actions', () => {
+    let state = readyAction(createReadyState(), 'u1', 'Wizard', 'Counterspell', 'Enemy casts spell', 5);
+    expect(formatReadyStatus(state)).toContain('Wizard');
+    expect(formatReadyStatus(state)).toContain('Counterspell');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spell save DC calculator
+// ---------------------------------------------------------------------------
+import { getCastingAbility, calculateSpellSaveDC, calculateProficiencyBonus, formatPartySpellDCs } from '../../src/lib/spellSaveDC';
+
+describe('spell save DC calculator', () => {
+  it('getCastingAbility returns correct stat', () => {
+    expect(getCastingAbility('Wizard')).toBe('INT');
+    expect(getCastingAbility('Cleric')).toBe('WIS');
+    expect(getCastingAbility('Bard')).toBe('CHA');
+  });
+
+  it('calculateProficiencyBonus scales with level', () => {
+    expect(calculateProficiencyBonus(1)).toBe(2);
+    expect(calculateProficiencyBonus(5)).toBe(3);
+    expect(calculateProficiencyBonus(9)).toBe(4);
+    expect(calculateProficiencyBonus(17)).toBe(6);
+  });
+
+  it('calculateSpellSaveDC computes correctly', () => {
+    const result = calculateSpellSaveDC('Wizard', 5, { INT: 18, WIS: 12, CHA: 10, STR: 8, DEX: 14, CON: 14 });
+    expect(result.saveDC).toBe(15); // 8 + 3 (prof) + 4 (INT mod)
+    expect(result.spellAttackBonus).toBe(7); // 3 + 4
+    expect(result.castingAbility).toBe('INT');
+  });
+
+  it('formatPartySpellDCs shows casters only', () => {
+    const chars = [
+      { name: 'Gandalf', class: 'Wizard', level: 5, stats: { INT: 18, WIS: 12, CHA: 10, STR: 8, DEX: 14, CON: 14 } },
+      { name: 'Conan', class: 'Fighter', level: 5, stats: { STR: 18, DEX: 14, CON: 16, INT: 8, WIS: 10, CHA: 12 } },
+    ];
+    const text = formatPartySpellDCs(chars);
+    expect(text).toContain('Gandalf');
+    expect(text).not.toContain('Conan'); // Fighter isn't a caster
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Opportunity attack detector
+// ---------------------------------------------------------------------------
+import { checkOpportunityAttacks, formatOAWarnings, countProvokedOAs } from '../../src/lib/opportunityAttack';
+
+describe('opportunity attack detector', () => {
+  it('detects OA when leaving reach', () => {
+    const enemies = [{ id: 'e1', name: 'Goblin', col: 5, row: 5, reach: 1, hasReaction: true, disengaged: false }];
+    const checks = checkOpportunityAttacks('p1', 'Fighter', 5, 6, 5, 8, enemies); // moving away
+    expect(checks.length).toBe(1);
+    expect(checks[0].provoked).toBe(true);
+  });
+
+  it('no OA when staying in reach', () => {
+    const enemies = [{ id: 'e1', name: 'Goblin', col: 5, row: 5, reach: 1, hasReaction: true, disengaged: false }];
+    const checks = checkOpportunityAttacks('p1', 'Fighter', 5, 6, 4, 5, enemies); // staying adjacent
+    expect(checks.length).toBe(0);
+  });
+
+  it('no OA when disengaged', () => {
+    const enemies = [{ id: 'e1', name: 'Goblin', col: 5, row: 5, reach: 1, hasReaction: true, disengaged: true }];
+    const checks = checkOpportunityAttacks('p1', 'Fighter', 5, 6, 5, 8, enemies);
+    expect(checks[0].provoked).toBe(false);
+  });
+
+  it('no OA when reaction used', () => {
+    const enemies = [{ id: 'e1', name: 'Goblin', col: 5, row: 5, reach: 1, hasReaction: false, disengaged: false }];
+    const checks = checkOpportunityAttacks('p1', 'Fighter', 5, 6, 5, 8, enemies);
+    expect(checks[0].provoked).toBe(false);
+  });
+
+  it('countProvokedOAs counts correctly', () => {
+    const checks = [
+      { movingUnitId: 'p1', movingUnitName: 'F', threateningUnitId: 'e1', threateningUnitName: 'G', threateningUnitHasReaction: true, provoked: true, reason: '' },
+      { movingUnitId: 'p1', movingUnitName: 'F', threateningUnitId: 'e2', threateningUnitName: 'O', threateningUnitHasReaction: false, provoked: false, reason: '' },
+    ];
+    expect(countProvokedOAs(checks)).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cover detector
+// ---------------------------------------------------------------------------
+import { analyzeCover, COVER_AC_BONUSES, formatCoverResult } from '../../src/lib/coverDetector';
+
+describe('cover detector', () => {
+  it('no cover with clear line of sight', () => {
+    const terrain = Array.from({ length: 10 }, () => Array(10).fill('floor'));
+    const result = analyzeCover(1, 1, 5, 5, terrain as any);
+    expect(result.level).toBe('none');
+    expect(result.acBonus).toBe(0);
+  });
+
+  it('detects cover through walls', () => {
+    const terrain = Array.from({ length: 10 }, () => Array(10).fill('floor'));
+    (terrain as any)[3][3] = 'wall'; // wall between attacker and target
+    const result = analyzeCover(1, 1, 5, 5, terrain as any);
+    expect(result.obstructions).toBeGreaterThan(0);
+  });
+
+  it('COVER_AC_BONUSES has correct values', () => {
+    expect(COVER_AC_BONUSES.none).toBe(0);
+    expect(COVER_AC_BONUSES.half).toBe(2);
+    expect(COVER_AC_BONUSES.three_quarters).toBe(5);
+  });
+
+  it('formatCoverResult includes level description', () => {
+    const result = analyzeCover(0, 0, 5, 5, Array.from({ length: 10 }, () => Array(10).fill('floor')) as any);
+    const text = formatCoverResult('Archer', 'Goblin', result);
+    expect(text).toContain('Goblin');
+    expect(text).toContain('Archer');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Initiative re-roll
+// ---------------------------------------------------------------------------
+import { rerollInitiative, rerollSingleUnit, applyRerollResults, formatRerollResults } from '../../src/lib/initiativeReroll';
+
+describe('initiative re-roll', () => {
+  it('rerollInitiative produces results for all units', () => {
+    const units = [
+      { id: 'p1', name: 'Fighter', initiative: 15, dexMod: 2 },
+      { id: 'e-1', name: 'Goblin', initiative: 10, dexMod: 2 },
+    ];
+    const results = rerollInitiative(units);
+    expect(results.length).toBe(2);
+    for (const r of results) expect(r.newInitiative).toBeGreaterThanOrEqual(1);
+  });
+
+  it('rerollSingleUnit produces valid result', () => {
+    const result = rerollSingleUnit('p1', 'Fighter', 15, 3);
+    expect(result.newInitiative).toBeGreaterThanOrEqual(4); // min d20(1) + 3
+    expect(result.unitName).toBe('Fighter');
+  });
+
+  it('applyRerollResults filters to changed only', () => {
+    const results = [
+      { unitId: 'p1', unitName: 'A', oldInitiative: 15, newInitiative: 15, modifier: 2, changed: false },
+      { unitId: 'p2', unitName: 'B', oldInitiative: 10, newInitiative: 18, modifier: 3, changed: true },
+    ];
+    const applied = applyRerollResults(results);
+    expect(applied.length).toBe(1);
+    expect(applied[0].id).toBe('p2');
+  });
+
+  it('formatRerollResults shows changes', () => {
+    const results = [
+      { unitId: 'p1', unitName: 'Fighter', oldInitiative: 15, newInitiative: 8, modifier: 2, changed: true },
+    ];
+    const text = formatRerollResults(results, 'Boss phase 2');
+    expect(text).toContain('Re-Rolled');
+    expect(text).toContain('Boss phase 2');
+    expect(text).toContain('15 → 8');
+  });
+});

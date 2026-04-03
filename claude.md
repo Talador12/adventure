@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.8.0
+## Current Version: v10.9.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 25 tests (596 total) — reactions, ready actions, spell DCs, OA detection, cover, initiative re-roll:
+  - **Reaction tracker** — `reactionTracker.ts` tracks per-unit reaction availability. `useReaction()` marks used + reason. `refreshReaction()` on turn start. `refreshAllReactions()` for new round. "Reactions" button in DMSidebar.
+  - **Ready action queue** — `readyAction.ts` manages held actions with trigger conditions. `readyAction()` stores action/trigger/round. `resolveReadiedAction()` fires when triggered. `expireReadiedActions()` cleans up old entries. "Ready Actions" button in DMSidebar.
+  - **Spell save DC calculator** — `spellSaveDC.ts` with casting ability mapping for 9 caster classes. `calculateSpellSaveDC()` computes DC = 8 + prof + ability mod. `formatPartySpellDCs()` shows all casters. "Spell Save DCs" button in DMSidebar (non-casters filtered out).
+  - **Opportunity attack detector** — `opportunityAttack.ts` checks Chebyshev distance before/after movement against enemy reach. Respects reaction availability and Disengage. `countProvokedOAs()` for summary. Warns when movement provokes OAs.
+  - **Cover calculator** — `coverDetector.ts` with Bresenham line-walk counting wall (2) and door/difficult (1) obstructions. Maps to none/half/three-quarter/full with AC and DEX save bonuses. "Cover Rules" button in DMSidebar.
+  - **Initiative re-roll** — `initiativeReroll.ts` for dramatic mid-combat re-rolls. `rerollInitiative()` for all units (optional enemies-only). `rerollSingleUnit()` for targeted re-rolls. Shows old→new with arrows + new turn order. "Re-Roll Initiative" button in DMSidebar.
+- 25 new tests (596 total) covering 6 systems:
+  - **Reaction tracker** (4 tests): initialization, use, double-use fail, refresh.
+  - **Ready actions** (4 tests): queue add, resolve+fire, expiration, formatted display.
+  - **Spell save DC** (4 tests): ability mapping, proficiency scaling, DC computation, caster-only format.
+  - **Opportunity attacks** (5 tests): leave-reach detection, stay-in-reach safe, disengage bypass, reaction-used bypass, count.
+  - **Cover** (4 tests): clear LOS, wall obstruction, AC bonus values, formatted output.
+  - **Initiative re-roll** (4 tests): all-unit re-roll, single unit, changed-only filter, formatted results.
+
 - 6 new systems + 29 tests (571 total) — lair effects, minions, bloodied, flanking, death saves, treasure maps:
   - **Lair effect generator** — `lairEffects.ts` with 6 lair themes (Dragon/Undead/Elemental/Fey/Aberrant/Demonic) each with 3 effects. Save DCs, damage, conditions, and area descriptions. `rollLairEffect()` picks random effect per theme. Expandable lair browser in DMSidebar.
   - **Minion rules** — `minionRules.ts` with 8 minion templates (Goblin/Skeleton/Zombie/Bandit/Cultist/Kobold/Imp/Orc). 1 HP, static damage, die on any hit, saves for half = no damage. `createMinions()` for bulk spawning. `calculateMinionXP()` for encounter budget. Expandable spawner in DMSidebar.
@@ -401,12 +416,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Reaction tracker — track which units have used their reaction this round
-- Ready action queue — hold actions with trigger conditions, resolve when triggered
-- Cover calculator improvements — auto-detect half/three-quarter/full cover from position
-- Opportunity attack detector — warn when units provoke OAs by moving out of reach
-- Spell save DC calculator — auto-compute save DCs from caster stats + proficiency
-- Initiative re-roll system — allow DM to re-roll initiative mid-combat for dramatic shifts
+- ~~Reaction tracker~~ **DONE** — `reactionTracker.ts` with per-unit availability
+- ~~Ready action queue~~ **DONE** — `readyAction.ts` with trigger conditions + expiry
+- ~~Cover calculator~~ **DONE** — `coverDetector.ts` with Bresenham line-walk
+- ~~Opportunity attack detector~~ **DONE** — `opportunityAttack.ts` with reach + reaction checks
+- ~~Spell save DC calculator~~ **DONE** — `spellSaveDC.ts` for 9 caster classes
+- ~~Initiative re-roll~~ **DONE** — `initiativeReroll.ts` with old→new display
+
+**Wave 14 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Prepared spell management — track prepared vs known spells with daily preparation
+- Wild magic surge table — auto-roll on sorcerer spell casts with 50-entry surge table
+- Healing surge system — 4e-inspired bonus healing option for recovery-poor parties
+- Terrain hazard escalation — environmental dangers that worsen each round (spreading fire, rising water)
+- Combat stance system — aggressive/defensive/balanced stances with trade-offs
+- Ability score improvement planner — show ASI options and feat recommendations at level-up
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

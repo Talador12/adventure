@@ -1353,6 +1353,77 @@ export default function DMSidebar({
               🗺️ Treasure Maps
             </button>
 
+            {/* Reaction tracker */}
+            <button
+              onClick={async () => {
+                const { createReactionState, initializeUnits, formatReactionStatus } = await import('../../lib/reactionTracker');
+                let state = createReactionState();
+                state = initializeUnits(state, units.map((u) => u.id));
+                const names: Record<string, string> = {};
+                for (const u of units) names[u.id] = u.name;
+                onAddDmMessage(formatReactionStatus(state, names));
+              }}
+              disabled={!inCombat}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 font-semibold hover:bg-violet-800/30 transition-all disabled:opacity-30"
+              title="Show which units have used their reaction this round"
+            >
+              ⚡ Reactions
+            </button>
+
+            {/* Ready actions */}
+            <button
+              onClick={async () => {
+                const { createReadyState, formatReadyStatus } = await import('../../lib/readyAction');
+                const raw = localStorage.getItem(`adventure:ready:${roomId}`);
+                const state = raw ? JSON.parse(raw) : createReadyState();
+                onAddDmMessage(formatReadyStatus(state));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all"
+              title="View readied actions waiting for their trigger"
+            >
+              ⏳ Ready Actions
+            </button>
+
+            {/* Spell save DCs */}
+            <button
+              onClick={async () => {
+                const { formatPartySpellDCs } = await import('../../lib/spellSaveDC');
+                onAddDmMessage(formatPartySpellDCs(characters.map((c) => ({ name: c.name, class: c.class, level: c.level, stats: c.stats }))));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all disabled:opacity-30"
+              title="Show spell save DCs and attack bonuses for all casters"
+            >
+              🎯 Spell Save DCs
+            </button>
+
+            {/* Cover check */}
+            <button
+              onClick={async () => {
+                const { COVER_AC_BONUSES } = await import('../../lib/coverDetector');
+                onAddDmMessage(`🛡️ **Cover Rules:**\n• **None**: +0 AC\n• **Half**: +2 AC, +2 DEX saves\n• **Three-quarters**: +5 AC, +5 DEX saves\n• **Full**: Can't be targeted directly\n\n*Cover is determined by line-of-sight obstructions between attacker and target.*`);
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-stone-700/30 border border-stone-500/30 text-stone-300 font-semibold hover:bg-stone-600/30 transition-all"
+              title="Show cover rules and AC bonuses"
+            >
+              🛡️ Cover Rules
+            </button>
+
+            {/* Initiative re-roll */}
+            <button
+              onClick={async () => {
+                const { rerollInitiative, formatRerollResults } = await import('../../lib/initiativeReroll');
+                const results = rerollInitiative(units.map((u) => ({ id: u.id, name: u.name, initiative: u.initiative, dexMod: u.dexMod || 0 })));
+                const reason = window.prompt('Reason for re-roll:', 'Phase change') || 'DM decision';
+                onAddDmMessage(formatRerollResults(results, reason));
+              }}
+              disabled={!inCombat}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all disabled:opacity-30"
+              title="Re-roll initiative for all units — use for dramatic phase changes"
+            >
+              🎲 Re-Roll Initiative
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
