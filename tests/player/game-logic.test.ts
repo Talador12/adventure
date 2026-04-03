@@ -9285,3 +9285,100 @@ describe('magical disease system', () => {
   it('covers multiple transmission types', () => { expect(getAllTransmissionTypes().length).toBeGreaterThanOrEqual(4); });
   it('formats disease', () => { expect(formatMagicalDisease(MAGICAL_DISEASES[0], 3)).toContain('Active Symptoms'); });
 });
+
+// ---------------------------------------------------------------------------
+// Airship encounter table
+// ---------------------------------------------------------------------------
+import { AIRSHIP_ENCOUNTERS, ALTITUDE_HAZARDS, getRandomAirEncounter, getEncountersByAltitude, getHazardsForAltitude, getHostileEncounters as getHostileAir, getAllAltitudes, formatAirEncounter } from '../../src/data/airshipEncounter';
+
+describe('airship encounter table', () => {
+  it('has at least 6 encounters', () => { expect(AIRSHIP_ENCOUNTERS.length).toBeGreaterThanOrEqual(6); });
+  it('has 4 altitude zones', () => { expect(ALTITUDE_HAZARDS.length).toBe(4); expect(getAllAltitudes().length).toBe(4); });
+  it('generates random encounter', () => { const e = getRandomAirEncounter(); expect(e.name.length).toBeGreaterThan(3); expect(e.cr.length).toBeGreaterThan(0); });
+  it('filters by altitude', () => { const cruising = getEncountersByAltitude('cruising'); expect(cruising.length).toBeGreaterThanOrEqual(1); cruising.forEach((e) => expect(e.altitude).toBe('cruising')); });
+  it('has hostile encounters', () => { expect(getHostileAir().length).toBeGreaterThanOrEqual(3); });
+  it('altitude hazards have DCs', () => { ALTITUDE_HAZARDS.forEach((h) => h.hazards.forEach((hz) => expect(hz.dc).toBeGreaterThanOrEqual(12))); });
+  it('some encounters have loot', () => { expect(AIRSHIP_ENCOUNTERS.filter((e) => e.loot !== null).length).toBeGreaterThanOrEqual(4); });
+  it('formats encounter', () => { expect(formatAirEncounter(AIRSHIP_ENCOUNTERS[0])).toContain('altitude'); });
+});
+
+// ---------------------------------------------------------------------------
+// Detective case generator
+// ---------------------------------------------------------------------------
+import { DETECTIVE_CASES, getRandomCase, getCasesByCrime, getGuiltyParty, getRealClues, getRedHerrings, formatCase as formatDetectiveCase } from '../../src/data/detectiveCase';
+
+describe('detective case generator', () => {
+  it('has at least 3 cases', () => { expect(DETECTIVE_CASES.length).toBeGreaterThanOrEqual(3); });
+  it('generates random case', () => { const c = getRandomCase(); expect(c.title.length).toBeGreaterThan(3); expect(c.suspects.length).toBeGreaterThanOrEqual(3); });
+  it('each case has exactly one guilty party', () => { DETECTIVE_CASES.forEach((c) => { const guilty = c.suspects.filter((s) => s.isGuilty); expect(guilty.length).toBe(1); }); });
+  it('each case has red herrings', () => { DETECTIVE_CASES.forEach((c) => expect(getRedHerrings(c).length).toBeGreaterThanOrEqual(1)); });
+  it('each case has real clues', () => { DETECTIVE_CASES.forEach((c) => expect(getRealClues(c).length).toBeGreaterThanOrEqual(2)); });
+  it('each case has a twist', () => { DETECTIVE_CASES.forEach((c) => expect(c.twist.length).toBeGreaterThan(20)); });
+  it('guilty party has motive', () => { DETECTIVE_CASES.forEach((c) => expect(getGuiltyParty(c).motive.length).toBeGreaterThan(10)); });
+  it('formats without solution by default', () => { const c = getRandomCase(); expect(formatDetectiveCase(c)).not.toContain('Guilty'); expect(formatDetectiveCase(c, true)).toContain('Guilty'); });
+});
+
+// ---------------------------------------------------------------------------
+// Elemental weapon infusion
+// ---------------------------------------------------------------------------
+import { ELEMENTAL_INFUSIONS, getInfusion, getInfusionsByMaxCost, getInfusionsByMaxDC, getAllElements, formatInfusion } from '../../src/data/elementalInfusion';
+
+describe('elemental weapon infusion', () => {
+  it('has 8 elements', () => { expect(ELEMENTAL_INFUSIONS.length).toBe(8); expect(getAllElements().length).toBe(8); });
+  it('looks up by element', () => { const fire = getInfusion('fire'); expect(fire).toBeDefined(); expect(fire!.name).toBe('Emberbrand'); });
+  it('filters by cost', () => { const cheap = getInfusionsByMaxCost(25); expect(cheap.length).toBeGreaterThanOrEqual(3); cheap.forEach((i) => expect(i.materialCost).toBeLessThanOrEqual(25)); });
+  it('filters by DC', () => { const easy = getInfusionsByMaxDC(13); expect(easy.length).toBeGreaterThanOrEqual(3); easy.forEach((i) => expect(i.applicationDC).toBeLessThanOrEqual(13)); });
+  it('all have visual descriptions', () => { ELEMENTAL_INFUSIONS.forEach((i) => expect(i.visualDescription.length).toBeGreaterThan(15)); });
+  it('all have on-hit effects', () => { ELEMENTAL_INFUSIONS.forEach((i) => expect(i.onHitEffect.length).toBeGreaterThan(10)); });
+  it('formats infusion', () => { expect(formatInfusion(ELEMENTAL_INFUSIONS[0])).toContain('Damage'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC schedule system
+// ---------------------------------------------------------------------------
+import { NPC_SCHEDULES, getNpcSchedule, getActivityAt, getAloneWindows, getEasiestInterrupt, getAllNpcNames, formatNpcSchedule } from '../../src/data/npcSchedule';
+
+describe('NPC schedule system', () => {
+  it('has at least 4 NPCs', () => { expect(NPC_SCHEDULES.length).toBeGreaterThanOrEqual(4); });
+  it('looks up NPC schedule', () => { const s = getNpcSchedule('Mayor Aldwin'); expect(s).toBeDefined(); expect(s!.schedule.length).toBeGreaterThanOrEqual(5); });
+  it('gets activity at time', () => { const s = getNpcSchedule('Mayor Aldwin')!; const noon = getActivityAt(s, 'midday'); expect(noon).toBeDefined(); expect(noon!.location.length).toBeGreaterThan(0); });
+  it('finds alone windows', () => { const s = getNpcSchedule('Sage Thandril')!; const alone = getAloneWindows(s); expect(alone.length).toBeGreaterThanOrEqual(4); alone.forEach((e) => expect(e.alone).toBe(true)); });
+  it('finds easiest interrupt', () => { const s = getNpcSchedule('Sage Thandril')!; const easiest = getEasiestInterrupt(s); expect(easiest.interruptDC).toBeLessThanOrEqual(10); });
+  it('some NPCs have secret activities', () => { const withSecrets = NPC_SCHEDULES.filter((s) => s.secretActivity !== null); expect(withSecrets.length).toBeGreaterThanOrEqual(2); });
+  it('all have vulnerable windows', () => { NPC_SCHEDULES.forEach((s) => expect(s.vulnerableWindow.length).toBeGreaterThan(10)); });
+  it('formats schedule', () => { expect(formatNpcSchedule(NPC_SCHEDULES[0])).toContain('Vulnerable'); });
+});
+
+// ---------------------------------------------------------------------------
+// Planar travel side effects
+// ---------------------------------------------------------------------------
+import { PLANAR_SIDE_EFFECTS, getRandomSideEffect, getEffectsByDestination, getEffectsRequiringSave, getAllDestinations as getAllPlaneDestinations, formatSideEffect } from '../../src/data/planarSideEffects';
+
+describe('planar travel side effects', () => {
+  it('has at least 8 effects', () => { expect(PLANAR_SIDE_EFFECTS.length).toBeGreaterThanOrEqual(8); });
+  it('covers at least 6 destinations', () => { expect(getAllPlaneDestinations().length).toBeGreaterThanOrEqual(6); });
+  it('generates random effect', () => { const e = getRandomSideEffect(); expect(e.name.length).toBeGreaterThan(3); expect(e.mechanicalEffect.length).toBeGreaterThan(10); });
+  it('filters by destination', () => { const fey = getEffectsByDestination('feywild'); expect(fey.length).toBeGreaterThanOrEqual(1); fey.forEach((e) => expect(e.destination).toBe('feywild')); });
+  it('generates for specific destination', () => { const e = getRandomSideEffect('shadowfell'); expect(e.destination).toBe('shadowfell'); });
+  it('some require saves', () => { const withSave = getEffectsRequiringSave(); expect(withSave.length).toBeGreaterThanOrEqual(3); withSave.forEach((e) => expect(e.saveDC).not.toBeNull()); });
+  it('all have durations', () => { PLANAR_SIDE_EFFECTS.forEach((e) => expect(e.duration.length).toBeGreaterThan(0)); });
+  it('formats effect', () => { expect(formatSideEffect(PLANAR_SIDE_EFFECTS[0])).toContain('Duration'); });
+});
+
+// ---------------------------------------------------------------------------
+// Gladiator arena progression
+// ---------------------------------------------------------------------------
+import { ARENA_FIGHTERS, ARENA_SPONSORS, ARENA_RULES, createArenaState, generateMatch, recordWin, recordLoss, getAllRanks as getAllArenaRanks, formatArenaState } from '../../src/data/gladiatorArena';
+
+describe('gladiator arena progression', () => {
+  it('has at least 6 fighters', () => { expect(ARENA_FIGHTERS.length).toBeGreaterThanOrEqual(6); });
+  it('has at least 3 sponsors', () => { expect(ARENA_SPONSORS.length).toBeGreaterThanOrEqual(3); });
+  it('has special rules', () => { expect(ARENA_RULES.length).toBeGreaterThanOrEqual(5); });
+  it('starts as pit fighter', () => { const s = createArenaState(); expect(s.rank).toBe('pit_fighter'); expect(s.wins).toBe(0); });
+  it('generates match for rank', () => { const s = createArenaState(); const m = generateMatch(s); expect(m.opponent.name.length).toBeGreaterThan(0); expect(m.stakes.length).toBeGreaterThan(0); });
+  it('winning increases favor and eventually promotes', () => { let s = createArenaState(); for (let i = 0; i < 6; i++) s = recordWin(s); expect(s.rank).toBe('contender'); expect(s.crowdFavor).toBeGreaterThan(0); });
+  it('losing decreases favor', () => { let s = createArenaState(); s = recordWin(s); s = recordWin(s); s = recordLoss(s); expect(s.crowdFavor).toBeLessThan(2); });
+  it('has 5 ranks', () => { expect(getAllArenaRanks().length).toBe(5); });
+  it('sponsors have betrayal conditions', () => { ARENA_SPONSORS.forEach((sp) => expect(sp.betrayalCondition.length).toBeGreaterThan(10)); });
+  it('formats state', () => { expect(formatArenaState(createArenaState())).toContain('PIT FIGHTER'); });
+});

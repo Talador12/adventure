@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 49 tests (1728 total) — airship encounters, detective cases, elemental infusions, NPC schedules, planar side effects, gladiator arena:
+  - **Airship encounters** — `airshipEncounter.ts` with 8 encounters across 4 altitude zones, altitude-specific hazards with DCs, hostile/neutral/friendly reactions, loot tables.
+  - **Detective case generator** — `detectiveCase.ts` with 3 cases (murder/theft/arson), 3 suspects per case (exactly 1 guilty), clues with find DCs pointing to suspects, red herrings, twists, solution-toggle formatting.
+  - **Elemental weapon infusion** — `elementalInfusion.ts` with 8 elements, bonus damage dice, on-hit effects (burning/slow/stun/AC reduction/push/lifesteal/poison), visual descriptions, application DCs and material costs.
+  - **NPC schedule system** — `npcSchedule.ts` with 4 NPCs (Mayor/Guard Captain/Merchant/Sage), 6-7 daily time slots each, alone flags, interrupt DCs, secret midnight activities with discovery DCs, vulnerable window analysis.
+  - **Planar travel side effects** — `planarSideEffects.ts` with 10 effects across 8 plane destinations, save DCs, mechanical effects with durations, destination-specific generation.
+  - **Gladiator arena progression** — `gladiatorArena.ts` with 8 ranked fighters (pit_fighter→legend), 3 sponsors with perks/betrayal conditions, 8 special arena rules, win/loss tracking, crowd favor, rank-up thresholds, match generation.
+
 - 6 new systems + 49 tests (1679 total) — warlock patrons, wild magic, haunted locations, diplomacy, guild perks, magical diseases:
   - **Warlock patron tracker** — `warlockPatron.ts` with 4 patrons (Archfey/Fiend/Great Old One/Celestial), demands with deadlines/rewards/punishments, gifts with hidden costs, displeasure effects, favor thresholds.
   - **Expanded wild magic** — `wildMagicExpanded.ts` with 30 surges across 4 categories (beneficial/neutral/harmful/chaotic), mechanical effects, durations.
@@ -928,17 +936,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Guild membership perks~~ **DONE** — `guildMembership.ts` with 3 guilds × 5 ranks + progressive perks
 - ~~Magical disease system~~ **DONE** — `magicalDisease.ts` with 5 diseases × 6 transmissions + progressive symptoms
 
-**Wave 42 Roadmap:**
+**Wave 42 (1,728 tests):**
+- ~~Airship encounters~~ **DONE** — `airshipEncounter.ts` with 8 encounters × 4 altitudes
+- ~~Detective case generator~~ **DONE** — `detectiveCase.ts` with 3 cases + suspects + clues + red herrings
+- ~~Elemental weapon infusion~~ **DONE** — `elementalInfusion.ts` with 8 elements + on-hit effects
+- ~~NPC schedule system~~ **DONE** — `npcSchedule.ts` with 4 NPCs + daily routines + secret activities
+- ~~Planar travel side effects~~ **DONE** — `planarSideEffects.ts` with 10 effects × 8 destinations
+- ~~Gladiator arena progression~~ **DONE** — `gladiatorArena.ts` with 8 fighters + sponsors + rank-up
+
+**Wave 43 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Airship encounter table — sky-based encounters with altitude hazards and aerial combat
-- Random detective case generator — crime scenes with clues, suspects, motives, and red herrings
-- Elemental weapon infusion — temporary weapon enchantments with elemental damage and effects
-- NPC schedule system — daily routines for NPCs that create windows for interaction or ambush
-- Random planar travel side effects — what happens to travelers between planes
-- Gladiator arena progression — ranked arena fights with crowd favor and sponsor mechanics
+- Vampire bloodline system — vampiric powers that scale with age and feeding
+- Random caravan ambush generator — attack scenarios on traveling groups with terrain and tactics
+- Sentient item personality generator — items with goals, fears, alignment conflicts, and relationship mechanics
+- Ship cargo manifest generator — trade goods with regional value differences and smuggling risk
+- Downtime activity tracker — crafting, training, carousing, and research between adventures
+- Random natural disaster generator — earthquakes, floods, volcanic eruptions with mechanical impact
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
