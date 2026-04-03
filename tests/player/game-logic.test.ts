@@ -6573,3 +6573,124 @@ describe('location name generator', () => {
     expect(text).toContain('mountain');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Chase sequence
+// ---------------------------------------------------------------------------
+import { createChase, advanceChaseRound, recordDash, adjustDistance, formatChaseStatus } from '../../src/lib/chaseSequence';
+
+describe('chase sequence', () => {
+  it('creates at starting distance', () => { expect(createChase(8).pursuerDistance).toBe(8); });
+  it('advanceChaseRound increments round', () => {
+    const result = advanceChaseRound(createChase());
+    expect(result.state.round).toBe(1);
+    expect(result.complication.length).toBeGreaterThan(0);
+  });
+  it('adjustDistance modifies gap', () => {
+    const state = adjustDistance(createChase(6), -2);
+    expect(state.pursuerDistance).toBe(4);
+  });
+  it('recordDash triggers exhaustion after 3', () => {
+    let state = createChase();
+    for (let i = 0; i < 3; i++) state = recordDash(state, 'p1').state;
+    const result = recordDash(state, 'p1');
+    expect(result.exhaustionCheck).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Random trap generator
+// ---------------------------------------------------------------------------
+import { generateRandomTrap, formatGeneratedTrap } from '../../src/data/randomTrapGenerator';
+
+describe('random trap generator', () => {
+  it('generates valid trap', () => {
+    const trap = generateRandomTrap();
+    expect(trap.trigger.length).toBeGreaterThan(0);
+    expect(trap.effect.length).toBeGreaterThan(0);
+    expect(trap.detectionDC).toBeGreaterThanOrEqual(9);
+  });
+  it('difficulty scales DCs', () => {
+    const easy = generateRandomTrap('easy');
+    const hard = generateRandomTrap('hard');
+    // Hard DCs should generally be higher (with some variance)
+    expect(hard.detectionDC).toBeGreaterThanOrEqual(easy.detectionDC - 3);
+  });
+  it('formatGeneratedTrap shows DCs', () => {
+    expect(formatGeneratedTrap(generateRandomTrap())).toContain('DC');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spell range visualizer
+// ---------------------------------------------------------------------------
+import { parseSpellRange, calculateCellsInRadius, analyzeSpellRange, formatSpellRange } from '../../src/lib/spellRangeVisualizer';
+
+describe('spell range visualizer', () => {
+  it('parseSpellRange extracts feet', () => {
+    expect(parseSpellRange('120 feet')).toBe(120);
+    expect(parseSpellRange('Touch')).toBe(5);
+    expect(parseSpellRange('Self')).toBe(0);
+  });
+  it('calculateCellsInRadius approximates area', () => {
+    const cells = calculateCellsInRadius(20); // 4 cell radius
+    expect(cells).toBeGreaterThan(10);
+  });
+  it('analyzeSpellRange handles sphere', () => {
+    const result = analyzeSpellRange(150, 'sphere', 20);
+    expect(result.cellsInArea).toBeGreaterThan(0);
+    expect(result.description).toContain('sphere');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Curse generator
+// ---------------------------------------------------------------------------
+import { generateCurse, getCursesBySeverity, formatCurse } from '../../src/data/curseGenerator';
+
+describe('curse generator', () => {
+  it('generates valid curse', () => {
+    const curse = generateCurse();
+    expect(curse.name.length).toBeGreaterThan(0);
+    expect(['minor', 'moderate', 'major']).toContain(curse.severity);
+  });
+  it('getCursesBySeverity filters', () => {
+    const minor = getCursesBySeverity('minor');
+    for (const c of minor) expect(c.severity).toBe('minor');
+  });
+  it('formatCurse includes removal', () => { expect(formatCurse(generateCurse())).toContain('Removal'); });
+});
+
+// ---------------------------------------------------------------------------
+// Loot log
+// ---------------------------------------------------------------------------
+import { createLootLog, addLoot, markDistributed, getUndistributed, formatLootLog } from '../../src/lib/lootLog';
+
+describe('loot log', () => {
+  it('starts empty', () => { expect(createLootLog().entries.length).toBe(0); });
+  it('addLoot tracks items', () => {
+    let log = addLoot(createLootLog(), 'Sword', 1, 50, 'Fighter', 'Dungeon');
+    expect(log.entries.length).toBe(1);
+    expect(log.totalValue).toBe(50);
+  });
+  it('markDistributed updates entry', () => {
+    let log = addLoot(createLootLog(), 'Gem', 3, 100, 'Rogue', 'Cave');
+    log = markDistributed(log, log.entries[0].id);
+    expect(getUndistributed(log).length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Time narrator
+// ---------------------------------------------------------------------------
+import { narrateTimePassage, narrateShortRest, narrateLongRest } from '../../src/lib/timeNarrator';
+
+describe('time narrator', () => {
+  it('narrates different durations', () => {
+    expect(narrateTimePassage(1, 'forest', 'rain')).toContain('hour');
+    expect(narrateTimePassage(8, 'road', 'clear')).toContain('day');
+    expect(narrateTimePassage(48, 'mountain', 'snow')).toContain('2 days');
+  });
+  it('short rest has narration', () => { expect(narrateShortRest().length).toBeGreaterThan(10); });
+  it('long rest has narration', () => { expect(narrateLongRest().length).toBeGreaterThan(10); });
+});

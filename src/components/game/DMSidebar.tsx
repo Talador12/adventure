@@ -2275,6 +2275,71 @@ export default function DMSidebar({
               🗺️ Location Names
             </button>
 
+            {/* Chase sequence */}
+            <button
+              onClick={async () => {
+                const { createChase, advanceChaseRound, formatChaseStatus } = await import('../../lib/chaseSequence');
+                const chase = createChase();
+                const result = advanceChaseRound(chase);
+                onAddDmMessage(formatChaseStatus(result.state) + `\n⚠️ Complication: ${result.complication}`);
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all"
+              title="Start a chase sequence with complications each round"
+            >
+              🏃 Chase Sequence
+            </button>
+
+            {/* Random trap */}
+            <button
+              onClick={async () => {
+                const { generateRandomTrap, formatGeneratedTrap } = await import('../../data/randomTrapGenerator');
+                onAddDmMessage(formatGeneratedTrap(generateRandomTrap()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all"
+              title="Generate a random trap from procedural parts"
+            >
+              🪤 Random Trap
+            </button>
+
+            {/* Random curse */}
+            <button
+              onClick={async () => {
+                const { generateCurse, formatCurse } = await import('../../data/curseGenerator');
+                onAddDmMessage(formatCurse(generateCurse()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all"
+              title="Generate a random curse for items or locations"
+            >
+              😈 Random Curse
+            </button>
+
+            {/* Loot log */}
+            <button
+              onClick={async () => {
+                const { createLootLog, formatLootLog } = await import('../../lib/lootLog');
+                const raw = localStorage.getItem(`adventure:lootlog:${roomId}`);
+                const log = raw ? JSON.parse(raw) : createLootLog();
+                onAddDmMessage(formatLootLog(log));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="View all items found this session"
+            >
+              💎 Loot Log
+            </button>
+
+            {/* Time narrator */}
+            <button
+              onClick={async () => {
+                const { formatTimeNarration } = await import('../../lib/timeNarrator');
+                const hours = parseInt(window.prompt('Hours passing:', '4') || '0', 10);
+                if (hours > 0) onAddDmMessage(formatTimeNarration(hours, 'wilderness', weather));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all"
+              title="Narrate the passage of time with terrain and weather flavor"
+            >
+              ⏳ Time Narrator
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

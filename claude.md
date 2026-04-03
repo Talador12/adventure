@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v12.0.0
+## Current Version: v12.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -680,6 +680,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~Book/scroll generator~~ **DONE** — `bookGenerator.ts` with titles, authors, lore snippets
 - ~~Falling damage calculator~~ **DONE** — `fallingDamage.ts` with d6/10ft + feather fall
 - ~~Location name generator~~ **DONE** — `locationNameGenerator.ts` with 8 location types
+
+**Wave 25 Roadmap (completed):**
+- ~~Chase sequence~~ **DONE** — `chaseSequence.ts` with complications + dash exhaustion
+- ~~Random trap generator~~ **DONE** — `randomTrapGenerator.ts` with procedural parts
+- ~~Spell range visualizer~~ **DONE** — `spellRangeVisualizer.ts` with area calculations
+- ~~Curse generator~~ **DONE** — `curseGenerator.ts` with 10 curses × 3 severities
+- ~~Loot log~~ **DONE** — `lootLog.ts` with item tracking + distribution status
+- ~~Time narrator~~ **DONE** — `timeNarrator.ts` with terrain/weather flavor text
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
