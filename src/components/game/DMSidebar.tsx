@@ -2513,6 +2513,27 @@ export default function DMSidebar({
               🎭 Check Narrator
             </button>
 
+            {/* Scene starters */}
+            <button onClick={async () => { const { formatEncounterHooks } = await import('../../data/randomEncounterHook'); onAddDmMessage(formatEncounterHooks()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Random scene starters for the DM">
+              📣 Scene Starters
+            </button>
+            {/* Rumors */}
+            <button onClick={async () => { const { formatRumors } = await import('../../data/rumorsGenerator'); onAddDmMessage(formatRumors()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Tavern rumors with truth ratings">
+              🤫 Rumors
+            </button>
+            {/* Shopkeeper */}
+            <button onClick={async () => { const { generateShopkeeper, formatShopkeeper } = await import('../../data/shopkeeperPersonality'); onAddDmMessage(formatShopkeeper(generateShopkeeper())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Generate a shopkeeper personality">
+              🏪 Shopkeeper
+            </button>
+            {/* NPC motivation */}
+            <button onClick={async () => { const { getRandomMotivation, formatMotivation } = await import('../../data/randomMotivation'); onAddDmMessage(formatMotivation(getRandomMotivation())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all" title="Random NPC motivation">
+              🧠 NPC Motivation
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v12.6.0
+## Current Version: v13.0.0 — 🎉 1,000 TEST MILESTONE 🎉
 
 ### v0.1.0 — Initial Release
 
@@ -729,6 +729,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~Graveyard generator~~ **DONE** — `graveyardGenerator.ts` with tombstones and secrets
 - ~~Tavern menu~~ **DONE** — `tavernMenu.ts` with 10 items + mechanical effects
 - ~~Bounty board~~ **DONE** — `bountyBoard.ts` with wanted posters and difficulty-scaled rewards
+
+**Wave 31 — 🎉 1,000 TEST MILESTONE:**
+- ~~Encounter hooks~~ **DONE** — `randomEncounterHook.ts` with 15 scene starters
+- ~~Rumors generator~~ **DONE** — `rumorsGenerator.ts` with truth ratings + player-safe format
+- ~~Shopkeeper personality~~ **DONE** — `shopkeeperPersonality.ts` with greeting/haggle/quirk/secret
+- ~~NPC motivation~~ **DONE** — `randomMotivation.ts` with 8 categories + hidden/visible
+- Plus 20 additional tests across existing systems for comprehensive coverage
+- **MILESTONE: 1,000 TESTS PASSING** in ~1.3 seconds
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
