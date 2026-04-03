@@ -2214,6 +2214,67 @@ export default function DMSidebar({
               🏕️ Camp Planner
             </button>
 
+            {/* Mystery potion */}
+            <button
+              onClick={async () => {
+                const { generateMysteryPotion, formatMysteryPotion } = await import('../../data/mysteryPotions');
+                onAddDmMessage(formatMysteryPotion(generateMysteryPotion(), false));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all"
+              title="Generate a mystery potion — players must drink or identify"
+            >
+              🧪 Mystery Potion
+            </button>
+
+            {/* Initiative display */}
+            <button
+              onClick={async () => {
+                const { buildInitiativeCards, formatInitiativeCards } = await import('../../lib/initiativeDisplay');
+                onAddDmMessage(formatInitiativeCards(buildInitiativeCards(units)));
+              }}
+              disabled={!inCombat}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all disabled:opacity-30"
+              title="Display formatted initiative order with HP and conditions"
+            >
+              📋 Initiative Cards
+            </button>
+
+            {/* Book generator */}
+            <button
+              onClick={async () => {
+                const { generateLibrary, formatLibrary } = await import('../../data/bookGenerator');
+                onAddDmMessage(formatLibrary(generateLibrary(3)));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Generate random books for library loot"
+            >
+              📚 Random Books
+            </button>
+
+            {/* Falling damage */}
+            <button
+              onClick={async () => {
+                const { formatFallingDamageTable } = await import('../../lib/fallingDamage');
+                onAddDmMessage(formatFallingDamageTable());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all"
+              title="Falling damage reference — height to d6 damage"
+            >
+              💥 Falling Damage
+            </button>
+
+            {/* Location names */}
+            <button
+              onClick={async () => {
+                const { formatLocationNames } = await import('../../data/locationNameGenerator');
+                onAddDmMessage(formatLocationNames());
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all"
+              title="Generate random location names for towns, rivers, mountains, etc."
+            >
+              🗺️ Location Names
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

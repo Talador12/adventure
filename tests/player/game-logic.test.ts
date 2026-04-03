@@ -6450,3 +6450,126 @@ describe('camp planner', () => {
     expect(text).toContain('Stealth');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mystery potions
+// ---------------------------------------------------------------------------
+import { generateMysteryPotion, formatMysteryPotion } from '../../src/data/mysteryPotions';
+
+describe('mystery potions', () => {
+  it('generates with all fields', () => {
+    const p = generateMysteryPotion();
+    expect(p.appearance.length).toBeGreaterThan(0);
+    expect(p.taste.length).toBeGreaterThan(0);
+    expect(p.effect.length).toBeGreaterThan(0);
+    expect(typeof p.isPositive).toBe('boolean');
+  });
+  it('unidentified format hides effect', () => {
+    const text = formatMysteryPotion(generateMysteryPotion(), false);
+    expect(text).toContain('???');
+  });
+  it('identified format shows effect', () => {
+    const text = formatMysteryPotion(generateMysteryPotion(), true);
+    expect(text).not.toContain('???');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Trap detection
+// ---------------------------------------------------------------------------
+import { checkTrapPassive, checkTrapActive, checkPartyPassive as checkPartyTrap } from '../../src/lib/trapDetection';
+
+describe('trap detection', () => {
+  it('passive detects when perception >= DC', () => {
+    expect(checkTrapPassive('Scout', 15, 12).detected).toBe(true);
+    expect(checkTrapPassive('Noob', 8, 12).detected).toBe(false);
+  });
+  it('active check returns roll-based result', () => {
+    const result = checkTrapActive('Rogue', 7, 12);
+    expect(typeof result.detected).toBe('boolean');
+    expect(result.activeRoll).toBeGreaterThanOrEqual(1);
+  });
+  it('party check finds best passive', () => {
+    const result = checkPartyTrap([{ name: 'A', passivePerception: 8 }, { name: 'B', passivePerception: 16 }], 14);
+    expect(result.detected).toBe(true);
+    expect(result.detectedBy).toContain('B');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Initiative display
+// ---------------------------------------------------------------------------
+import { buildInitiativeCards, formatInitiativeCards, getNextInInitiative } from '../../src/lib/initiativeDisplay';
+
+describe('initiative display', () => {
+  it('sorts by initiative descending', () => {
+    const cards = buildInitiativeCards([
+      { name: 'A', initiative: 5, hp: 10, maxHp: 10, ac: 12, type: 'player' },
+      { name: 'B', initiative: 20, hp: 10, maxHp: 10, ac: 14, type: 'enemy' },
+    ]);
+    expect(cards[0].name).toBe('B');
+  });
+  it('formatInitiativeCards shows all units', () => {
+    const cards = buildInitiativeCards([{ name: 'Fighter', initiative: 15, hp: 40, maxHp: 40, ac: 18, type: 'player' }]);
+    const text = formatInitiativeCards(cards);
+    expect(text).toContain('Fighter');
+    expect(text).toContain('18');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Book generator
+// ---------------------------------------------------------------------------
+import { generateBook, generateLibrary, formatBook as fmtBook } from '../../src/data/bookGenerator';
+
+describe('book generator', () => {
+  it('generates book with all fields', () => {
+    const book = generateBook();
+    expect(book.title.length).toBeGreaterThan(0);
+    expect(book.author.length).toBeGreaterThan(0);
+    expect(book.loreSnippet.length).toBeGreaterThan(0);
+  });
+  it('generateLibrary returns correct count', () => { expect(generateLibrary(5).length).toBe(5); });
+  it('formatBook includes title and author', () => {
+    const text = fmtBook(generateBook());
+    expect(text).toContain('by');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Falling damage
+// ---------------------------------------------------------------------------
+import { calculateFallingDamage, rollFallingDamage } from '../../src/lib/fallingDamage';
+
+describe('falling damage', () => {
+  it('1d6 per 10ft', () => {
+    expect(calculateFallingDamage(30).damageDice).toBe(3);
+    expect(calculateFallingDamage(100).damageDice).toBe(10);
+  });
+  it('caps at 20d6', () => { expect(calculateFallingDamage(500).damageDice).toBe(20); });
+  it('feather fall negates', () => { expect(calculateFallingDamage(100, true).damageDice).toBe(0); });
+  it('rollFallingDamage returns total', () => {
+    const result = rollFallingDamage(50);
+    expect(result.total).toBeGreaterThanOrEqual(5);
+    expect(result.dice.length).toBe(5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Location name generator
+// ---------------------------------------------------------------------------
+import { generateLocationName, generateLocationNames, formatLocationNames } from '../../src/data/locationNameGenerator';
+
+describe('location name generator', () => {
+  it('generates names for all types', () => {
+    for (const type of ['town', 'city', 'river', 'mountain', 'forest', 'lake', 'island', 'fortress'] as const) {
+      expect(generateLocationName(type).length).toBeGreaterThan(0);
+    }
+  });
+  it('generateLocationNames returns correct count', () => { expect(generateLocationNames(5).length).toBe(5); });
+  it('formatLocationNames shows all types', () => {
+    const text = formatLocationNames();
+    expect(text).toContain('town');
+    expect(text).toContain('mountain');
+  });
+});
