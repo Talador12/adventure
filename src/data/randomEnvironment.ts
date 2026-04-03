@@ -1,0 +1,12 @@
+// Random environment description — set the scene for any location.
+export interface EnvironmentScene { location: string; sights: string; smells: string; sounds: string; feeling: string; }
+const SCENES: EnvironmentScene[] = [
+  { location: 'Ancient Library', sights: 'Towering shelves disappear into darkness above. Dust motes dance in shafts of light.', smells: 'Old paper, leather, and a hint of something chemical.', sounds: 'Pages rustling despite no breeze. A distant clock ticking.', feeling: 'The weight of accumulated knowledge presses down on you.' },
+  { location: 'Underground Cavern', sights: 'Stalactites drip into crystal-clear pools. Bioluminescent fungi provide dim, blue light.', smells: 'Damp stone and mineral-rich water.', sounds: 'Dripping echoes. The distant roar of an underground river.', feeling: 'Claustrophobic yet awe-inspiring. You\'re deep beneath the world.' },
+  { location: 'Abandoned Battlefield', sights: 'Rusted weapons jutting from the earth. Tattered banners snap in the wind.', smells: 'Turned earth, old metal, and wildflowers reclaiming the graves.', sounds: 'Wind whistling through hollow armor. Crows calling.', feeling: 'Melancholy. The ghosts of a thousand soldiers watch you pass.' },
+  { location: 'Fey Glade', sights: 'Colors are too vivid. Flowers bloom in impossible patterns. Light has no clear source.', smells: 'Honey, wildflowers, and something intoxicating you can\'t name.', sounds: 'Giggling from behind every tree. Music with no musician.', feeling: 'Euphoric but unsettling. Time feels slippery here.' },
+  { location: 'Volcanic Vent', sights: 'Red-orange lava bubbles in cracks. Heat distortion makes everything shimmer.', smells: 'Sulfur and ash. Breathing hurts.', sounds: 'The earth groans beneath you. Hissing steam vents.', feeling: 'Primal fear. The world here is actively trying to kill you.' },
+  { location: 'Frozen Throne Room', sights: 'A throne of solid ice sits on a dais. The walls are covered in frost patterns that look like screaming faces.', smells: 'Nothing. The cold kills all scent.', sounds: 'Cracking ice. Your own shivering.', feeling: 'The cold isn\'t just physical. It reaches into your bones and your mind.' },
+];
+export function getRandomScene(): EnvironmentScene { return SCENES[Math.floor(Math.random() * SCENES.length)]; }
+export function formatEnvironmentScene(s: EnvironmentScene): string { return `🌍 **${s.location}:**\n👁️ *${s.sights}*\n👃 *${s.smells}*\n👂 *${s.sounds}*\n💭 *${s.feeling}*`; }

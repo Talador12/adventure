@@ -7720,3 +7720,65 @@ describe('sound effects', () => {
   it('generates valid sound', () => { const s = getRandomSound(); expect(s.sound.length).toBeGreaterThan(0); expect(['nearby', 'distant', 'overhead', 'underground', 'all_around']).toContain(s.distance); expect(typeof s.ominous).toBe('boolean'); });
   it('formatSoundEffect shows source', () => { expect(formatSoundEffect(getRandomSound())).toContain('Source'); });
 });
+
+// ---------------------------------------------------------------------------
+// Catchphrases
+// ---------------------------------------------------------------------------
+import { CATCHPHRASES, getRandomCatchphrase, formatCatchphrase } from '../../src/data/randomCatchphrase';
+
+describe('catchphrases', () => {
+  it('has at least 14 catchphrases', () => { expect(CATCHPHRASES.length).toBeGreaterThanOrEqual(14); });
+  it('getRandomCatchphrase returns text', () => { expect(getRandomCatchphrase().length).toBeGreaterThan(5); });
+  it('formatCatchphrase shows label', () => { expect(formatCatchphrase()).toContain('Catchphrase'); });
+});
+
+// ---------------------------------------------------------------------------
+// Environment scenes
+// ---------------------------------------------------------------------------
+import { getRandomScene, formatEnvironmentScene } from '../../src/data/randomEnvironment';
+
+describe('environment scenes', () => {
+  it('generates full sensory scene', () => { const s = getRandomScene(); expect(s.sights.length).toBeGreaterThan(0); expect(s.smells.length).toBeGreaterThan(0); expect(s.sounds.length).toBeGreaterThan(0); expect(s.feeling.length).toBeGreaterThan(0); });
+  it('formatEnvironmentScene shows all senses', () => { const text = formatEnvironmentScene(getRandomScene()); expect(text).toContain('👁️'); expect(text).toContain('👃'); expect(text).toContain('👂'); });
+});
+
+// ---------------------------------------------------------------------------
+// Chase obstacles
+// ---------------------------------------------------------------------------
+import { getRandomChaseObstacle, formatChaseObstacle } from '../../src/data/randomChaseComplication2';
+
+describe('chase obstacles', () => {
+  it('generates with check and results', () => { const o = getRandomChaseObstacle(); expect(o.obstacle.length).toBeGreaterThan(0); expect(o.check.length).toBeGreaterThan(0); expect(o.successResult.length).toBeGreaterThan(0); });
+  it('formatChaseObstacle shows outcomes', () => { const text = formatChaseObstacle(getRandomChaseObstacle()); expect(text).toContain('✅'); expect(text).toContain('❌'); });
+});
+
+// ---------------------------------------------------------------------------
+// Villain traits
+// ---------------------------------------------------------------------------
+import { getRandomVillainTrait, formatVillainTrait } from '../../src/data/randomVillainTrait';
+
+describe('villain traits', () => {
+  it('generates with DM note', () => { const t = getRandomVillainTrait(); expect(t.trait.length).toBeGreaterThan(0); expect(t.dmNote.length).toBeGreaterThan(0); expect(['motivation', 'method', 'weakness', 'quirk']).toContain(t.category); });
+  it('formatVillainTrait shows note', () => { expect(formatVillainTrait(getRandomVillainTrait())).toContain('DM Note'); });
+});
+
+// ---------------------------------------------------------------------------
+// Session enders
+// ---------------------------------------------------------------------------
+import { getRandomEnder, formatSessionEnder } from '../../src/data/randomSessionEnder';
+
+describe('session enders', () => {
+  it('generates valid ender', () => { const e = getRandomEnder(); expect(e.hook.length).toBeGreaterThan(10); expect(['cliffhanger', 'revelation', 'arrival', 'threat', 'mystery']).toContain(e.type); });
+  it('formatSessionEnder shows wrap-up line', () => { expect(formatSessionEnder(getRandomEnder())).toContain('next time'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magic effects
+// ---------------------------------------------------------------------------
+import { getRandomMagicEffect, formatMagicEffect } from '../../src/data/randomMagicEffect';
+
+describe('magic effects', () => {
+  it('generates with visual and duration', () => { const e = getRandomMagicEffect(); expect(e.effect.length).toBeGreaterThan(0); expect(e.visual.length).toBeGreaterThan(0); expect(e.duration.length).toBeGreaterThan(0); });
+  it('some have mechanical effects', () => { const all = Array.from({ length: 20 }, () => getRandomMagicEffect()); expect(all.some((e) => e.mechanical !== null)).toBe(true); });
+  it('formatMagicEffect shows visual', () => { expect(formatMagicEffect(getRandomMagicEffect())).toContain('👁️'); });
+});

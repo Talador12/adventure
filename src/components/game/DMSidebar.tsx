@@ -2720,6 +2720,37 @@ export default function DMSidebar({
               👂 Sound Effect
             </button>
 
+            {/* Catchphrase */}
+            <button onClick={async () => { const { formatCatchphrase } = await import('../../data/randomCatchphrase'); onAddDmMessage(formatCatchphrase()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Random NPC catchphrase">
+              💬 Catchphrase
+            </button>
+            {/* Environment */}
+            <button onClick={async () => { const { getRandomScene, formatEnvironmentScene } = await import('../../data/randomEnvironment'); onAddDmMessage(formatEnvironmentScene(getRandomScene())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all" title="Full sensory environment description">
+              🌍 Environment
+            </button>
+            {/* Chase obstacle */}
+            <button onClick={async () => { const m = await import('../../data/randomChaseComplication2'); onAddDmMessage(m.formatChaseObstacle(m.getRandomChaseObstacle())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Random chase obstacle">
+              🏃 Chase Obstacle
+            </button>
+            {/* Villain trait */}
+            <button onClick={async () => { const { getRandomVillainTrait, formatVillainTrait } = await import('../../data/randomVillainTrait'); onAddDmMessage(formatVillainTrait(getRandomVillainTrait())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Personality trait for a villain">
+              😈 Villain Trait
+            </button>
+            {/* Session ender */}
+            <button onClick={async () => { const { getRandomEnder, formatSessionEnder } = await import('../../data/randomSessionEnder'); onAddDmMessage(formatSessionEnder(getRandomEnder())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Cliffhanger hook to end the session">
+              🎬 Session Ender
+            </button>
+            {/* Magic effect */}
+            <button onClick={async () => { const { getRandomMagicEffect, formatMagicEffect } = await import('../../data/randomMagicEffect'); onAddDmMessage(formatMagicEffect(getRandomMagicEffect())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all" title="Ambient magical phenomenon">
+              ✨ Magic Effect
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
