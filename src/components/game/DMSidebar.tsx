@@ -2060,6 +2060,85 @@ export default function DMSidebar({
               ⚰️ Death Log
             </button>
 
+            {/* Coin converter */}
+            <button
+              onClick={async () => {
+                const { simplify, formatCoinPurse } = await import('../../lib/coinConverter');
+                const cp = parseInt(window.prompt('Total copper to convert:', '1500') || '0', 10);
+                if (cp > 0) onAddDmMessage(formatCoinPurse(simplify(cp), 'Converted'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all"
+              title="Convert copper pieces to simplified coinage (pp/gp/sp/cp)"
+            >
+              💰 Coin Converter
+            </button>
+
+            {/* Random quest */}
+            <button
+              onClick={async () => {
+                const { generateQuest, formatQuest } = await import('../../data/questGenerator');
+                onAddDmMessage(formatQuest(generateQuest()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all"
+              title="Generate a random quest with objective, reward, and complication"
+            >
+              📜 Random Quest
+            </button>
+
+            {/* Light sources */}
+            <button
+              onClick={async () => {
+                const { LIGHT_SOURCE_CONFIG } = await import('../../lib/lightSourceTracker');
+                const lines = ['🔦 **Light Source Reference:**'];
+                for (const [, config] of Object.entries(LIGHT_SOURCE_CONFIG)) {
+                  lines.push(`  💡 **${config.name}**: ${config.bright}ft bright, ${config.dim}ft dim, ${config.duration < 0 ? '∞' : config.duration + 'min'} (${config.cost})`);
+                }
+                onAddDmMessage(lines.join('\n'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-300 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Light source reference — torch, lantern, spell durations and radii"
+            >
+              🔦 Light Sources
+            </button>
+
+            {/* DC reference */}
+            <button
+              onClick={async () => {
+                const { formatDCReference } = await import('../../data/dcReference');
+                onAddDmMessage(formatDCReference());
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all"
+              title="Quick DC reference — difficulty levels with examples"
+            >
+              📋 DC Reference
+            </button>
+
+            {/* Random magic item */}
+            <button
+              onClick={async () => {
+                const { generateMagicItem, formatMagicItem } = await import('../../data/magicItemGenerator');
+                onAddDmMessage(formatMagicItem(generateMagicItem()));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-fuchsia-900/20 border border-fuchsia-600/30 text-fuchsia-400 font-semibold hover:bg-fuchsia-800/30 transition-all"
+              title="Generate a random minor magic item with effect and quirk"
+            >
+              ✨ Random Magic Item
+            </button>
+
+            {/* Watch scheduler */}
+            <button
+              onClick={async () => {
+                const { generateWatchSchedule, formatWatchSchedule } = await import('../../lib/watchScheduler');
+                const schedule = generateWatchSchedule(characters.map((c) => ({ id: c.id, name: c.name, perceptionMod: Math.floor((c.stats.WIS - 10) / 2) })));
+                onAddDmMessage(formatWatchSchedule(schedule));
+              }}
+              disabled={characters.length === 0}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all disabled:opacity-30"
+              title="Auto-assign watch shifts for long rests based on Perception"
+            >
+              🌙 Watch Schedule
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

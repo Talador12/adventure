@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v11.7.0
+## Current Version: v11.8.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,13 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 20 tests (807 total) — coins, quest gen, light sources, DC ref, magic items, watch scheduler:
+  - **Coin converter** — `coinConverter.ts` with cp/sp/ep/gp/pp + auto-simplify + split.
+  - **Random quest generator** — `questGenerator.ts` with 7 types + complications.
+  - **Light source tracker** — `lightSourceTracker.ts` with 7 sources + duration.
+  - **DC reference** — `dcReference.ts` with 6 tiers + examples.
+  - **Random magic item generator** — `magicItemGenerator.ts` with effects + quirks.
+  - **Party watch scheduler** — `watchScheduler.ts` with Perception-priority shifts.
 - 6 new systems + 22 tests (787 total) — encounter tables, point buy, hit dice, ammunition, map descriptor, death log:
   - **Encounter table builder** — `encounterTableBuilder.ts` with 2 preset d100 tables (Forest Road, Dungeon Hallway). Each with 7-8 entries covering combat/social/hazard/discovery/nothing. `rollOnTable()` with d100. `validateTable()` ensures 1-100 coverage. Expandable roller in DMSidebar.
   - **Point buy calculator** — `pointBuyCalculator.ts` with 27-point system, cost table (8=0 to 15=9). `setScore()` validates budget. `getModifier()` for display. "Point Buy" button in DMSidebar.
@@ -634,6 +641,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~Ammunition tracker~~ **DONE** — `ammunitionTracker.ts` with 6 ammo types + recovery
 - ~~Map terrain descriptor~~ **DONE** — `mapDescriptor.ts` with tactical analysis
 - ~~Character death log~~ **DONE** — `deathLog.ts` memorial wall with deadliest enemy tracking
+
+**Wave 22 Roadmap (completed):**
+- ~~Coin converter~~ **DONE** — `coinConverter.ts` with cp/sp/ep/gp/pp + auto-simplify + split
+- ~~Random quest generator~~ **DONE** — `questGenerator.ts` with 7 types + complications
+- ~~Light source tracker~~ **DONE** — `lightSourceTracker.ts` with 7 source types + duration
+- ~~DC reference~~ **DONE** — `dcReference.ts` with 6 difficulty tiers + examples
+- ~~Random magic item generator~~ **DONE** — `magicItemGenerator.ts` with effects + quirks
+- ~~Watch scheduler~~ **DONE** — `watchScheduler.ts` with Perception-priority assignment
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

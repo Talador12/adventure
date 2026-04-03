@@ -6165,3 +6165,156 @@ describe('death log', () => {
     expect(formatDeathLog({ records: [] })).toContain('No deaths');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Coin converter
+// ---------------------------------------------------------------------------
+import { totalInCopper, totalInGold, simplify, addCoins, subtractCoins, splitEvenly, formatCoinPurse } from '../../src/lib/coinConverter';
+
+describe('coin converter', () => {
+  it('totalInCopper sums all denominations', () => {
+    expect(totalInCopper({ cp: 5, sp: 3, ep: 1, gp: 2, pp: 1 })).toBe(5 + 30 + 50 + 200 + 1000);
+  });
+  it('simplify converts to largest denominations', () => {
+    const result = simplify(1234);
+    expect(result.pp).toBe(1);
+    expect(result.gp).toBe(2);
+    expect(result.sp).toBe(3);
+    expect(result.cp).toBe(4);
+  });
+  it('subtractCoins fails when insufficient', () => {
+    const purse = { cp: 0, sp: 0, ep: 0, gp: 5, pp: 0 };
+    const cost = { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 };
+    expect(subtractCoins(purse, cost).success).toBe(false);
+  });
+  it('splitEvenly divides correctly', () => {
+    const purse = { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 };
+    const result = splitEvenly(purse, 3);
+    expect(totalInCopper(result.each)).toBe(333); // floor(1000/3)
+    expect(totalInCopper(result.remainder)).toBe(1); // 1cp leftover
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Quest generator
+// ---------------------------------------------------------------------------
+import { generateQuest, formatQuest } from '../../src/data/questGenerator';
+
+describe('quest generator', () => {
+  it('generates quest with all fields', () => {
+    const quest = generateQuest();
+    expect(quest.name.length).toBeGreaterThan(0);
+    expect(quest.objective.length).toBeGreaterThan(0);
+    expect(quest.complication.length).toBeGreaterThan(0);
+    expect(['fetch', 'kill', 'escort', 'rescue', 'explore', 'negotiate', 'defend']).toContain(quest.type);
+  });
+  it('formatQuest includes key info', () => {
+    const text = formatQuest(generateQuest());
+    expect(text).toContain('Objective');
+    expect(text).toContain('Complication');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Light source tracker
+// ---------------------------------------------------------------------------
+import { LIGHT_SOURCE_CONFIG, createLightSource, advanceTime as advanceLightTime, getTotalLightRadius } from '../../src/lib/lightSourceTracker';
+
+describe('light source tracker', () => {
+  it('has at least 6 light source types', () => { expect(Object.keys(LIGHT_SOURCE_CONFIG).length).toBeGreaterThanOrEqual(6); });
+  it('createLightSource sets duration', () => {
+    const torch = createLightSource('torch', 'c1');
+    expect(torch.remainingMinutes).toBe(60);
+    expect(torch.brightRadius).toBe(20);
+  });
+  it('advanceTime expires torches', () => {
+    const sources = [createLightSource('torch', 'c1')];
+    const result = advanceLightTime(sources, 61);
+    expect(result.expired.length).toBe(1);
+    expect(result.sources.length).toBe(0);
+  });
+  it('continual flame never expires', () => {
+    const sources = [createLightSource('continual_flame', 'c1')];
+    const result = advanceLightTime(sources, 9999);
+    expect(result.sources.length).toBe(1);
+  });
+  it('getTotalLightRadius takes max', () => {
+    const sources = [createLightSource('torch', 'c1'), createLightSource('lantern', 'c2')];
+    const { bright } = getTotalLightRadius(sources);
+    expect(bright).toBe(30); // lantern is brighter
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DC reference
+// ---------------------------------------------------------------------------
+import { DC_TABLE, getDCForDifficulty, suggestDC, formatDCReference } from '../../src/data/dcReference';
+
+describe('DC reference', () => {
+  it('has 6 difficulty tiers', () => { expect(DC_TABLE.length).toBe(6); });
+  it('getDCForDifficulty returns correct DC', () => {
+    expect(getDCForDifficulty('Easy')).toBe(10);
+    expect(getDCForDifficulty('Hard')).toBe(20);
+  });
+  it('suggestDC interprets keywords', () => {
+    expect(suggestDC('easy task')).toBe(10);
+    expect(suggestDC('hard challenge')).toBe(20);
+    expect(suggestDC('normal thing')).toBe(15);
+  });
+  it('formatDCReference lists all tiers', () => {
+    const text = formatDCReference();
+    expect(text).toContain('DC 5');
+    expect(text).toContain('DC 30');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Magic item generator
+// ---------------------------------------------------------------------------
+import { generateMagicItem, formatMagicItem } from '../../src/data/magicItemGenerator';
+
+describe('magic item generator', () => {
+  it('generates item with all fields', () => {
+    const item = generateMagicItem();
+    expect(item.name.length).toBeGreaterThan(0);
+    expect(item.effect.length).toBeGreaterThan(0);
+    expect(item.quirk.length).toBeGreaterThan(0);
+    expect(['common', 'uncommon']).toContain(item.rarity);
+  });
+  it('formatMagicItem includes effect and quirk', () => {
+    const text = formatMagicItem(generateMagicItem());
+    expect(text).toContain('Quirk');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Watch scheduler
+// ---------------------------------------------------------------------------
+import { generateWatchSchedule, formatWatchSchedule } from '../../src/lib/watchScheduler';
+
+describe('watch scheduler', () => {
+  it('generates shifts for all characters', () => {
+    const schedule = generateWatchSchedule([
+      { id: 'c1', name: 'Fighter', perceptionMod: 1 },
+      { id: 'c2', name: 'Rogue', perceptionMod: 5 },
+      { id: 'c3', name: 'Wizard', perceptionMod: 0 },
+    ]);
+    expect(schedule.shifts.length).toBe(3);
+    const totalHours = schedule.shifts.reduce((s, sh) => s + sh.durationHours, 0);
+    expect(totalHours).toBe(8);
+  });
+  it('best perception gets midnight shift', () => {
+    const schedule = generateWatchSchedule([
+      { id: 'c1', name: 'Low', perceptionMod: -1 },
+      { id: 'c2', name: 'High', perceptionMod: 5 },
+    ]);
+    // Sorted by perception desc, so High gets first (most dangerous) shift
+    expect(schedule.shifts[0].characterName).toBe('High');
+  });
+  it('formatWatchSchedule shows times', () => {
+    const schedule = generateWatchSchedule([{ id: 'c1', name: 'Guard', perceptionMod: 2 }]);
+    const text = formatWatchSchedule(schedule);
+    expect(text).toContain('Guard');
+    expect(text).toContain(':00');
+  });
+});
