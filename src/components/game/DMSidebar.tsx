@@ -2689,6 +2689,37 @@ export default function DMSidebar({
               🏛️ Political Intrigue
             </button>
 
+            {/* Travel moment */}
+            <button onClick={async () => { const { getRandomTravelMoment, formatTravelMoment } = await import('../../data/randomTravel'); onAddDmMessage(formatTravelMoment(getRandomTravelMoment())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="Random thing that happens on the road">
+              🛤️ Travel Moment
+            </button>
+            {/* Creature feature */}
+            <button onClick={async () => { const { getRandomCreatureFeature, formatCreatureFeature } = await import('../../data/randomCreatureFeature'); onAddDmMessage(formatCreatureFeature(getRandomCreatureFeature())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Add a unique twist to a monster">
+              🐲 Creature Feature
+            </button>
+            {/* Quick background */}
+            <button onClick={async () => { const { getRandomBackground, formatBackground } = await import('../../data/randomBackground'); onAddDmMessage(formatBackground(getRandomBackground())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Quick character background with traits">
+              📋 Quick Background
+            </button>
+            {/* Combat objective */}
+            <button onClick={async () => { const { getRandomObjective, formatCombatObjective } = await import('../../data/randomCombatObjective'); onAddDmMessage(formatCombatObjective(getRandomObjective())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Combat objective beyond kill everything">
+              🎯 Combat Objective
+            </button>
+            {/* Moral dilemma */}
+            <button onClick={async () => { const { getRandomDilemma, formatDilemma } = await import('../../data/randomMoralDilemma'); onAddDmMessage(formatDilemma(getRandomDilemma())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Ethical choice that tests alignment">
+              ⚖️ Moral Dilemma
+            </button>
+            {/* Sound effect */}
+            <button onClick={async () => { const { getRandomSound, formatSoundEffect } = await import('../../data/randomSoundEffect'); onAddDmMessage(formatSoundEffect(getRandomSound())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-gray-700/30 border border-gray-500/30 text-gray-300 font-semibold hover:bg-gray-600/30 transition-all" title="What does the party hear?">
+              👂 Sound Effect
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

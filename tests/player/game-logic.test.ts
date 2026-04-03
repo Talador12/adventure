@@ -7659,3 +7659,64 @@ describe('political intrigue', () => {
   it('generates with factions', () => { const pi = getRandomIntrigue(); expect(pi.factions.length).toBeGreaterThanOrEqual(2); expect(pi.stakes.length).toBeGreaterThan(0); });
   it('formatIntrigue shows opportunity and danger', () => { const text = fmtIntrigue(getRandomIntrigue()); expect(text).toContain('Opportunity'); expect(text).toContain('Danger'); });
 });
+
+// ---------------------------------------------------------------------------
+// Travel moments
+// ---------------------------------------------------------------------------
+import { getRandomTravelMoment, formatTravelMoment } from '../../src/data/randomTravel';
+
+describe('travel moments', () => {
+  it('generates valid moment', () => { const m = getRandomTravelMoment(); expect(m.description.length).toBeGreaterThan(0); expect(['scenic', 'ominous', 'practical', 'humorous', 'mysterious']).toContain(m.type); });
+  it('some have interactions', () => { const all = Array.from({ length: 20 }, () => getRandomTravelMoment()); expect(all.some((m) => m.interaction !== null)).toBe(true); });
+  it('formatTravelMoment shows type', () => { expect(formatTravelMoment(getRandomTravelMoment())).toMatch(/🌅|⚠️|🛤️|😄|❓/); });
+});
+
+// ---------------------------------------------------------------------------
+// Creature features
+// ---------------------------------------------------------------------------
+import { getRandomCreatureFeature, formatCreatureFeature } from '../../src/data/randomCreatureFeature';
+
+describe('creature features', () => {
+  it('generates valid feature', () => { const f = getRandomCreatureFeature(); expect(f.feature.length).toBeGreaterThan(0); expect(['appearance', 'behavior', 'ability', 'weakness']).toContain(f.category); });
+  it('formatCreatureFeature shows mechanical note', () => { expect(formatCreatureFeature(getRandomCreatureFeature())).toContain('⚙️'); });
+});
+
+// ---------------------------------------------------------------------------
+// Quick backgrounds
+// ---------------------------------------------------------------------------
+import { getRandomBackground as getRandBG, formatBackground as fmtBG } from '../../src/data/randomBackground';
+
+describe('quick backgrounds', () => {
+  it('generates with all personality fields', () => { const bg = getRandBG(); expect(bg.trait.length).toBeGreaterThan(0); expect(bg.ideal.length).toBeGreaterThan(0); expect(bg.bond.length).toBeGreaterThan(0); expect(bg.flaw.length).toBeGreaterThan(0); });
+  it('formatBackground shows all sections', () => { const text = fmtBG(getRandBG()); expect(text).toContain('Trait'); expect(text).toContain('Flaw'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat objectives
+// ---------------------------------------------------------------------------
+import { getRandomObjective, formatCombatObjective } from '../../src/data/randomCombatObjective';
+
+describe('combat objectives', () => {
+  it('generates with win and fail conditions', () => { const o = getRandomObjective(); expect(o.winCondition.length).toBeGreaterThan(0); expect(o.failCondition.length).toBeGreaterThan(0); expect(['protect', 'retrieve', 'survive', 'escape', 'control', 'prevent']).toContain(o.type); });
+  it('formatCombatObjective shows conditions', () => { const text = formatCombatObjective(getRandomObjective()); expect(text).toContain('Win'); expect(text).toContain('Fail'); });
+});
+
+// ---------------------------------------------------------------------------
+// Moral dilemmas
+// ---------------------------------------------------------------------------
+import { getRandomDilemma, formatDilemma } from '../../src/data/randomMoralDilemma';
+
+describe('moral dilemmas', () => {
+  it('generates with 3 options', () => { const d = getRandomDilemma(); expect(d.optionA.length).toBeGreaterThan(0); expect(d.optionB.length).toBeGreaterThan(0); expect(d.optionC.length).toBeGreaterThan(0); });
+  it('formatDilemma shows alignment test', () => { expect(formatDilemma(getRandomDilemma())).toContain('A)'); });
+});
+
+// ---------------------------------------------------------------------------
+// Sound effects
+// ---------------------------------------------------------------------------
+import { getRandomSound, formatSoundEffect } from '../../src/data/randomSoundEffect';
+
+describe('sound effects', () => {
+  it('generates valid sound', () => { const s = getRandomSound(); expect(s.sound.length).toBeGreaterThan(0); expect(['nearby', 'distant', 'overhead', 'underground', 'all_around']).toContain(s.distance); expect(typeof s.ominous).toBe('boolean'); });
+  it('formatSoundEffect shows source', () => { expect(formatSoundEffect(getRandomSound())).toContain('Source'); });
+});
