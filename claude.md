@@ -55,6 +55,22 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 45 tests (1327 total, +4 pre-existing fixes) — NPC loyalty, artifact gen, puzzle locks, combat fatigue, regional reputation, weather encounters:
+  - **NPC loyalty tracker** — `npcLoyalty.ts` with 7 loyalty levels (devoted→enemy), score-based tracking (-10 to +10), preset positive/negative actions, faction association. `recordLoyaltyEvent()` shifts score. `getLoyalNpcs()`/`getHostileNpcs()` filters. "NPC Loyalty" button in DMSidebar.
+  - **Random artifact generator** — `artifactGenerator.ts` with 6 artifact types (weapon/armor/jewelry/tome/staff/relic), 10 name prefixes × type-specific suffixes, 8 origins, type-specific powers (3 per type), 5 curses + 40% no-curse chance, 8 history entries. `generateArtifact()` procedural creation. "Generate Artifact" button in DMSidebar.
+  - **Puzzle lock system** — `puzzleLock.ts` with 8 puzzles across 5 types (combination/rune/lever/pressure_plate/riddle_lock). Each has solution, 3 hints (unlocked by Investigation DC), max attempts, failure consequence, and reward. `getHint()` sequential reveal. `formatPuzzle()` with DM-only solution toggle. "Puzzle Lock" button in DMSidebar.
+  - **Combat fatigue system** — `combatFatigue.ts` with 5 fatigue levels (fresh→spent). Tracks rounds in combat + combats since rest. `advanceRound()`/`endCombat()`/`restReset()` lifecycle. Mechanical penalties: attack/AC/save/speed scale with fatigue. "Combat Fatigue" button in DMSidebar.
+  - **Regional reputation tracker** — `regionalReputation.ts` with 7 reputation tiers (revered→exiled) per named region. Score-based (-10 to +10) with events. Effects: price modifier (0.7×→2.0×), quest/inn access, guard/NPC reactions. "Regional Reputation" button in DMSidebar.
+  - **Weather encounter interaction** — `weatherEncounterInteraction.ts` with 8 weather types. Each has encounter modifiers (difficulty/surprise/escape/visibility/damage), special weather-only encounters, avoided encounters, and flavor text. `getTotalModifier()` for modifier lookup. "Weather Encounters" button in DMSidebar.
+  - **Test fixes** — resolved 4 pre-existing import shadowing bugs (generateArtifact, getPuzzlesByType, getReputationTier, getReputationEffects).
+- 45 new tests (1327 total) covering 6 systems:
+  - **NPC loyalty** (10 tests): empty start, add, duplicate prevention, event recording, score clamping, level mapping, loyal/hostile filters, preset actions, formatted NPC, formatted tracker.
+  - **Artifact generator** (5 tests): type count, all fields, type parameter, curse null/string, formatted icon.
+  - **Puzzle locks** (6 tests): count, id generation, type filter, hint order, required fields, solution toggle.
+  - **Combat fatigue** (8 tests): fresh start, round advance, tired after rounds, combat increment, rest reset, effects worsen, level count, formatted state.
+  - **Regional reputation** (8 tests): empty start, add, duplicate prevention, score change, tier mapping, effect scaling, formatted region, formatted tracker.
+  - **Weather encounters** (8 tests): type count, valid lookup, unknown undefined, special encounters, clear visibility, storm stealth, flavor text, formatted icon.
+
 - 6 new systems + 32 tests (1282 total, +1 pre-existing fix) — prophecy tracker, NPC farewells, battle cries, terrain advantage, backstory complications, party morale:
   - **Prophecy fulfillment tracker** — `prophecyFulfillment.ts` with 15 prophecy templates across 6 categories (doom/glory/betrayal/love/discovery/transformation), 10 cryptic sources. `addProphecy()`/`fulfillProphecy()` lifecycle. `getUnfulfilled()`/`getFulfilled()` filters. `getRandomProphecy()` generates with source. Formatted tracker with ☐/☑ status. "Prophecies" button in DMSidebar.
   - **NPC farewell generator** — `randomNpcFarewell.ts` with 12 farewell lines. `getRandomFarewell()` + `formatNpcFarewell()` with NPC name. Wired existing untracked file + added tests.
@@ -762,17 +778,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Backstory complication generator~~ **DONE** — `backstoryComplication.ts` with 16 complications × 6 categories × 3 severities
 - ~~Party morale tracker~~ **DONE** — `partyMoraleTracker.ts` with 12 event types + 6 morale levels + mechanical effects
 
-**Wave 34 Roadmap:**
+**Wave 34 (1,327 tests — fixed 4 pre-existing broken tests):**
+- ~~NPC loyalty tracker~~ **DONE** — `npcLoyalty.ts` with 7 levels + faction association
+- ~~Random artifact generator~~ **DONE** — `artifactGenerator.ts` with 6 types + procedural names/powers/curses
+- ~~Puzzle lock system~~ **DONE** — `puzzleLock.ts` with 8 puzzles × 5 types + hint reveals
+- ~~Combat fatigue system~~ **DONE** — `combatFatigue.ts` with 5 levels + mechanical penalties
+- ~~Regional reputation tracker~~ **DONE** — `regionalReputation.ts` with 7 tiers + per-region effects
+- ~~Weather encounter interaction~~ **DONE** — `weatherEncounterInteraction.ts` with 8 weather types × encounter modifiers
+
+**Wave 35 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Random encounter weather interaction — weather affects encounter types and difficulty
-- NPC loyalty tracker — track NPC allegiance shifts based on party actions
-- Random artifact generator — procedural legendary items with history and powers
-- Puzzle lock system — combination/rune/lever puzzles for doors and chests
-- Party reputation by region — different towns react differently based on party actions there
-- Combat fatigue system — extended combat without rest degrades performance
+- Random NPC relationship web — NPCs have relationships with each other that affect party interactions
+- Siege warfare rules — siege engines, wall HP, battering rams, boiling oil
+- Planar rift generator — random portals to other planes with environmental effects
+- Random political event — coups, elections, assassinations that change the campaign world
+- Crafting specialization tree — upgrade paths for crafted items with mastery bonuses
+- Monster ecology system — predator/prey chains that affect encounter probability by region
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

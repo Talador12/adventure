@@ -8504,3 +8504,96 @@ describe('party morale tracker', () => {
   it('effects scale with level', () => { let m = createPartyMorale(); for (let i = 0; i < 5; i++) m = addMoraleEvent(m, 'boss_kill', 'boss'); const effects = getMoraleEffects(m); expect(effects.attackMod).toBeGreaterThan(0); });
   it('formats with icon', () => { const m = createPartyMorale(); expect(formatPartyMorale(m)).toContain('STEADY'); });
 });
+
+// ---------------------------------------------------------------------------
+// NPC loyalty tracker
+// ---------------------------------------------------------------------------
+import { createLoyaltyTracker, addNpc, recordLoyaltyEvent, getLoyaltyLevel, getNpcLoyalty, getLoyalNpcs, getHostileNpcs, LOYALTY_ACTIONS, formatNpcLoyalty, formatLoyaltyTracker } from '../../src/data/npcLoyalty';
+
+describe('NPC loyalty tracker', () => {
+  it('starts empty', () => { const t = createLoyaltyTracker(); expect(t.npcs.length).toBe(0); });
+  it('adds NPCs', () => { let t = createLoyaltyTracker(); t = addNpc(t, 'Barkeep', 'Merchants Guild'); expect(t.npcs.length).toBe(1); expect(t.npcs[0].faction).toBe('Merchants Guild'); });
+  it('prevents duplicate NPCs', () => { let t = createLoyaltyTracker(); t = addNpc(t, 'Barkeep'); t = addNpc(t, 'Barkeep'); expect(t.npcs.length).toBe(1); });
+  it('records events and shifts score', () => { let t = createLoyaltyTracker(); t = addNpc(t, 'Guard'); t = recordLoyaltyEvent(t, 'Guard', 'Saved their life', 3); expect(getNpcLoyalty(t, 'Guard')!.score).toBe(3); });
+  it('clamps score', () => { let t = createLoyaltyTracker(); t = addNpc(t, 'NPC'); for (let i = 0; i < 10; i++) t = recordLoyaltyEvent(t, 'NPC', 'Good deed', 3); expect(getNpcLoyalty(t, 'NPC')!.score).toBeLessThanOrEqual(10); });
+  it('loyalty levels map correctly', () => { expect(getLoyaltyLevel(9)).toBe('devoted'); expect(getLoyaltyLevel(0)).toBe('neutral'); expect(getLoyaltyLevel(-8)).toBe('enemy'); });
+  it('filters loyal/hostile', () => { let t = createLoyaltyTracker(); t = addNpc(t, 'Friend', undefined, 7); t = addNpc(t, 'Foe', undefined, -6); expect(getLoyalNpcs(t).length).toBe(1); expect(getHostileNpcs(t).length).toBe(1); });
+  it('has preset actions', () => { expect(LOYALTY_ACTIONS.positive.length).toBeGreaterThanOrEqual(5); expect(LOYALTY_ACTIONS.negative.length).toBeGreaterThanOrEqual(5); });
+  it('formats individual NPC', () => { let t = createLoyaltyTracker(); t = addNpc(t, 'Bob', 'Thieves'); expect(formatNpcLoyalty(t.npcs[0])).toContain('Bob'); });
+  it('formats empty tracker', () => { expect(formatLoyaltyTracker(createLoyaltyTracker())).toContain('No NPCs tracked'); });
+});
+
+// ---------------------------------------------------------------------------
+// Artifact generator
+// ---------------------------------------------------------------------------
+import { generateArtifact as genLegendaryArtifact, getArtifactTypes, formatArtifact as fmtLegendaryArtifact } from '../../src/data/artifactGenerator';
+
+describe('legendary artifact generator', () => {
+  it('has 6 artifact types', () => { expect(getArtifactTypes().length).toBe(6); });
+  it('generates with all fields', () => { const a = genLegendaryArtifact(); expect(a.name.length).toBeGreaterThan(3); expect(a.origin.length).toBeGreaterThan(10); expect(a.power.length).toBeGreaterThan(10); expect(a.history.length).toBeGreaterThan(10); expect(a.attunement).toBe(true); });
+  it('respects type parameter', () => { const a = genLegendaryArtifact('weapon'); expect(a.type).toBe('weapon'); });
+  it('curse can be null or string', () => { const artifacts = Array.from({ length: 20 }, () => genLegendaryArtifact()); const hasCurse = artifacts.some((a) => a.curse !== null); const noCurse = artifacts.some((a) => a.curse === null); expect(hasCurse || noCurse).toBe(true); });
+  it('formats with icon', () => { const a = genLegendaryArtifact('tome'); expect(fmtLegendaryArtifact(a)).toContain('📖'); expect(fmtLegendaryArtifact(a)).toContain('Origin'); });
+});
+
+// ---------------------------------------------------------------------------
+// Puzzle lock system
+// ---------------------------------------------------------------------------
+import { PUZZLE_TEMPLATES as PUZZLES_LOCK_DATA, getRandomPuzzle as getRandomPuzzleLock, getPuzzlesByType as getPuzzleLocksByType, getHint as getPuzzleLockHint, formatPuzzle as formatPuzzleLock } from '../../src/data/puzzleLock';
+
+describe('puzzle lock system', () => {
+  it('has at least 6 puzzles', () => { expect(PUZZLES_LOCK_DATA.length).toBeGreaterThanOrEqual(6); });
+  it('generates with id', () => { const p = getRandomPuzzleLock(); expect(p.id).toBeDefined(); expect(p.id.length).toBeGreaterThan(5); });
+  it('filters by type', () => { const combos = getPuzzleLocksByType('combination'); expect(combos.length).toBeGreaterThanOrEqual(1); combos.forEach((p) => expect(p.type).toBe('combination')); });
+  it('returns hints in order', () => { const p = getRandomPuzzleLock(); expect(getPuzzleLockHint(p, 0)).toBeDefined(); expect(getPuzzleLockHint(p, 99)).toBeNull(); });
+  it('all puzzles have required fields', () => { PUZZLES_LOCK_DATA.forEach((p) => { expect(p.solution.length).toBeGreaterThan(0); expect(p.hints.length).toBeGreaterThanOrEqual(2); expect(p.attempts).toBeGreaterThanOrEqual(1); }); });
+  it('formats without solution by default', () => { const p = getRandomPuzzleLock(); expect(formatPuzzleLock(p)).not.toContain('Solution'); expect(formatPuzzleLock(p, true)).toContain('Solution'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat fatigue system
+// ---------------------------------------------------------------------------
+import { createFatigueState, advanceRound as advanceFatigueRound, endCombat as endFatigueCombat, restReset, getFatigueEffects, getAllFatigueLevels, formatFatigueState } from '../../src/data/combatFatigue';
+
+describe('combat fatigue system', () => {
+  it('starts fresh', () => { const s = createFatigueState(); expect(s.fatigueLevel).toBe('fresh'); expect(s.roundsInCombat).toBe(0); });
+  it('advances rounds', () => { let s = createFatigueState(); s = advanceFatigueRound(s); expect(s.roundsInCombat).toBe(1); });
+  it('becomes tired after many rounds', () => { let s = createFatigueState(); for (let i = 0; i < 7; i++) s = advanceFatigueRound(s); expect(['tired', 'exhausted', 'spent']).toContain(s.fatigueLevel); });
+  it('endCombat increments combats', () => { let s = createFatigueState(); s = endFatigueCombat(s); expect(s.combatsSinceRest).toBe(1); });
+  it('rest resets to fresh', () => { const s = restReset(true); expect(s.fatigueLevel).toBe('fresh'); expect(s.roundsInCombat).toBe(0); });
+  it('effects worsen with fatigue', () => { const fresh = getFatigueEffects(createFatigueState()); expect(fresh.attackPenalty).toBe(0); let s = createFatigueState(); for (let i = 0; i < 16; i++) s = advanceFatigueRound(s); const tired = getFatigueEffects(s); expect(tired.attackPenalty).toBeLessThan(0); });
+  it('has 5 fatigue levels', () => { expect(getAllFatigueLevels().length).toBe(5); });
+  it('formats state', () => { expect(formatFatigueState(createFatigueState())).toContain('FRESH'); });
+});
+
+// ---------------------------------------------------------------------------
+// Regional reputation tracker
+// ---------------------------------------------------------------------------
+import { createRegionalTracker, addRegion, changeRegionReputation, getReputationTier as getRegionalTier, getReputationEffects as getRegionalEffects, getRegionReputation, formatRegionReputation, formatRegionalTracker } from '../../src/data/regionalReputation';
+
+describe('regional reputation tracker', () => {
+  it('starts empty', () => { expect(createRegionalTracker().regions.length).toBe(0); });
+  it('adds regions', () => { let t = createRegionalTracker(); t = addRegion(t, 'Waterdeep'); expect(t.regions.length).toBe(1); });
+  it('prevents duplicate regions', () => { let t = createRegionalTracker(); t = addRegion(t, 'Waterdeep'); t = addRegion(t, 'Waterdeep'); expect(t.regions.length).toBe(1); });
+  it('changes reputation', () => { let t = createRegionalTracker(); t = addRegion(t, 'Neverwinter'); t = changeRegionReputation(t, 'Neverwinter', 'Saved the city', 3); expect(getRegionReputation(t, 'Neverwinter')!.score).toBe(3); });
+  it('tiers map correctly', () => { expect(getRegionalTier(9)).toBe('revered'); expect(getRegionalTier(0)).toBe('neutral'); expect(getRegionalTier(-8)).toBe('exiled'); });
+  it('effects scale with tier', () => { const revered = getRegionalEffects(9); const exiled = getRegionalEffects(-9); expect(revered.priceModifier).toBeLessThan(exiled.priceModifier); expect(revered.innAccess).toBe(true); expect(exiled.innAccess).toBe(false); });
+  it('formats region', () => { let t = createRegionalTracker(); t = addRegion(t, 'Baldur\'s Gate', 5); expect(formatRegionReputation(t.regions[0])).toContain('Baldur\'s Gate'); });
+  it('formats empty tracker', () => { expect(formatRegionalTracker(createRegionalTracker())).toContain('No regions tracked'); });
+});
+
+// ---------------------------------------------------------------------------
+// Weather encounter interaction
+// ---------------------------------------------------------------------------
+import { getWeatherEncounterEffect, getAllWeatherTypes, getSpecialEncountersForWeather, getTotalModifier, formatWeatherEncounterEffect } from '../../src/data/weatherEncounterInteraction';
+
+describe('weather encounter interaction', () => {
+  it('has 8 weather types', () => { expect(getAllWeatherTypes().length).toBe(8); });
+  it('returns effect for valid weather', () => { const e = getWeatherEncounterEffect('fog'); expect(e).toBeDefined(); expect(e!.flavorText.length).toBeGreaterThan(10); });
+  it('returns undefined for unknown weather', () => { expect(getWeatherEncounterEffect('tornado' as any)).toBeUndefined(); });
+  it('fog has special encounters', () => { const specials = getSpecialEncountersForWeather('fog'); expect(specials.length).toBeGreaterThanOrEqual(2); });
+  it('clear has no visibility penalty', () => { expect(getTotalModifier('clear', 'visibility')).toBe(0); });
+  it('storm has high stealth bonus', () => { expect(getTotalModifier('storm', 'surprise')).toBeGreaterThanOrEqual(3); });
+  it('each weather has flavor text', () => { getAllWeatherTypes().forEach((w) => { const e = getWeatherEncounterEffect(w); expect(e!.flavorText.length).toBeGreaterThan(20); }); });
+  it('formats with icon', () => { const e = getWeatherEncounterEffect('blizzard')!; expect(formatWeatherEncounterEffect(e)).toContain('🌨️'); });
+});
