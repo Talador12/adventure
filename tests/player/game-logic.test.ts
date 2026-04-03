@@ -7336,3 +7336,69 @@ describe('milestone: 1000 tests', () => {
     expect(1000).toBeGreaterThanOrEqual(1000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Random secrets
+// ---------------------------------------------------------------------------
+import { getRandomSecret, getSecretsByCategory, formatSecret } from '../../src/data/randomSecret';
+
+describe('random secrets', () => {
+  it('generates valid secret', () => { const s = getRandomSecret(); expect(s.text.length).toBeGreaterThan(0); expect(['personal', 'political', 'supernatural', 'criminal', 'romantic']).toContain(s.category); });
+  it('filters by category', () => { const crim = getSecretsByCategory('criminal'); for (const s of crim) expect(s.category).toBe('criminal'); expect(crim.length).toBeGreaterThanOrEqual(2); });
+  it('formatSecret shows danger level', () => { expect(formatSecret(getRandomSecret())).toMatch(/🔴|🟡|🟢/); });
+});
+
+// ---------------------------------------------------------------------------
+// Weapon quirks
+// ---------------------------------------------------------------------------
+import { getRandomQuirk, getQuirksByCategory, formatWeaponQuirk } from '../../src/data/randomWeaponQuirk';
+
+describe('weapon quirks', () => {
+  it('generates valid quirk', () => { const q = getRandomQuirk(); expect(q.quirk.length).toBeGreaterThan(0); expect(['cosmetic', 'personality', 'mechanical', 'curse']).toContain(q.category); });
+  it('filters by category', () => { const curses = getQuirksByCategory('curse'); for (const q of curses) expect(q.category).toBe('curse'); expect(curses.length).toBeGreaterThanOrEqual(2); });
+  it('formatWeaponQuirk includes icon', () => { expect(formatWeaponQuirk(getRandomQuirk())).toMatch(/⚙️|🗣️|✨|💀/); });
+});
+
+// ---------------------------------------------------------------------------
+// Random disguise
+// ---------------------------------------------------------------------------
+import { generateDisguise, formatDisguise } from '../../src/data/randomDisguise';
+
+describe('random disguise', () => {
+  it('generates with all fields', () => { const d = generateDisguise(); expect(d.outfit.length).toBeGreaterThan(0); expect(d.persona.length).toBeGreaterThan(0); expect(d.props.length).toBe(2); expect(d.deceptionDC).toBeGreaterThanOrEqual(10); });
+  it('difficulty scales DC', () => { for (let i = 0; i < 50; i++) { const d = generateDisguise(); if (d.difficulty === 'hard') expect(d.deceptionDC).toBe(18); } });
+  it('formatDisguise shows DC', () => { expect(formatDisguise(generateDisguise())).toContain('DC'); });
+});
+
+// ---------------------------------------------------------------------------
+// Plot twists
+// ---------------------------------------------------------------------------
+import { getRandomTwist, getTwistsByImpact, formatPlotTwist } from '../../src/data/randomPlotTwist';
+
+describe('plot twists', () => {
+  it('generates valid twist', () => { const t = getRandomTwist(); expect(t.twist.length).toBeGreaterThan(0); expect(['minor', 'major', 'campaign_changing']).toContain(t.impact); });
+  it('filters by impact', () => { const major = getTwistsByImpact('major'); for (const t of major) expect(t.impact).toBe('major'); });
+  it('formatPlotTwist shows impact', () => { expect(formatPlotTwist(getRandomTwist())).toMatch(/🌋|💥|🔀/); });
+});
+
+// ---------------------------------------------------------------------------
+// Bar fights
+// ---------------------------------------------------------------------------
+import { generateBarFight, formatBarFight } from '../../src/data/randomBarFight';
+
+describe('bar fights', () => {
+  it('generates with stages', () => { const bf = generateBarFight(); expect(bf.stages.length).toBe(4); expect(bf.participants.length).toBe(2); expect(bf.trigger.length).toBeGreaterThan(0); });
+  it('formatBarFight shows escalation', () => { const text = formatBarFight(generateBarFight()); expect(text).toContain('Escalation'); expect(text).toContain('Aftermath'); });
+});
+
+// ---------------------------------------------------------------------------
+// Random dreams
+// ---------------------------------------------------------------------------
+import { getRandomDream, getDreamsByType, formatDream } from '../../src/data/randomDream';
+
+describe('random dreams', () => {
+  it('generates valid dream', () => { const d = getRandomDream(); expect(d.description.length).toBeGreaterThan(0); expect(['prophetic', 'nightmare', 'peaceful', 'surreal', 'memory']).toContain(d.type); });
+  it('some dreams have mechanical effects', () => { const all = Array.from({ length: 30 }, () => getRandomDream()); expect(all.some((d) => d.mechanicalEffect)).toBe(true); });
+  it('filters by type', () => { const prophetic = getDreamsByType('prophetic'); for (const d of prophetic) expect(d.type).toBe('prophetic'); expect(prophetic.length).toBeGreaterThanOrEqual(3); });
+  it('formatDream includes character name', () => { expect(formatDream(getRandomDream(), 'Thorin')).toContain('Thorin'); });
+});

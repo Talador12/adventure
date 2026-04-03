@@ -1,0 +1,10 @@
+// Random bar fight generator — tavern brawl with escalation stages.
+export interface BarFight { trigger: string; stages: string[]; participants: string[]; consequence: string; }
+const TRIGGERS = ['Someone spills a drink on a half-orc.', 'A bard plays a song insulting someone\'s mother.', 'Two drunks argue over a card game.', 'A pickpocket is caught red-handed.', 'Someone claims the last serving of roast boar.', 'A stranger insults the local ale.', 'A bar bet goes wrong.', 'Old rivals meet by chance.'];
+const STAGE_POOL = ['Shouting and threats', 'Tables are overturned', 'Mugs fly through the air (improvised weapons, 1d4)', 'Someone pulls a knife', 'The bar dog starts biting ankles', 'A chandelier swings dangerously', 'The bartender pulls out a crossbow', 'Someone gets thrown through a window', 'Guards arrive at the door', 'The bard starts playing fight music'];
+const PARTICIPANTS_POOL = ['2d4 drunk locals', 'A visiting mercenary company', 'The cook wielding a frying pan', 'An off-duty guard trying to stop it', 'A tiefling warlock who finds it amusing', 'A halfling hiding under a table'];
+const CONSEQUENCES = ['The tavern is trashed. 50gp damages.', 'Someone important saw the party fighting — reputation affected.', 'A new ally is made in the chaos.', 'The party is banned from this tavern.', 'A pickpocket stole something during the confusion.', 'A hidden passage is revealed behind the broken wall.'];
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function pickN<T>(arr: T[], n: number): T[] { return [...arr].sort(() => Math.random() - 0.5).slice(0, n); }
+export function generateBarFight(): BarFight { return { trigger: pick(TRIGGERS), stages: pickN(STAGE_POOL, 4), participants: pickN(PARTICIPANTS_POOL, 2), consequence: pick(CONSEQUENCES) }; }
+export function formatBarFight(bf: BarFight): string { const lines = ['🍺💥 **Bar Fight!**', `Trigger: *${bf.trigger}*`, '**Escalation:**']; bf.stages.forEach((s, i) => lines.push(`  ${i + 1}. ${s}`)); lines.push(`**Participants:** ${bf.participants.join(', ')}`); lines.push(`**Aftermath:** ${bf.consequence}`); return lines.join('\n'); }

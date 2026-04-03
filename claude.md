@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v13.0.0 — 🎉 1,000 TEST MILESTONE 🎉
+## Current Version: v13.1.0
 
 ### v0.1.0 — Initial Release
 
@@ -737,6 +737,14 @@ The complete feature set built from project inception through 46 development ite
 - ~~NPC motivation~~ **DONE** — `randomMotivation.ts` with 8 categories + hidden/visible
 - Plus 20 additional tests across existing systems for comprehensive coverage
 - **MILESTONE: 1,000 TESTS PASSING** in ~1.3 seconds
+
+**Wave 32 (1,018 tests):**
+- ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
+- ~~Weapon quirks~~ **DONE** — `randomWeaponQuirk.ts` with 15 quirks × 4 categories
+- ~~Disguise generator~~ **DONE** — `randomDisguise.ts` with outfits, personas, props, DCs
+- ~~Plot twists~~ **DONE** — `randomPlotTwist.ts` with 12 twists × 3 impact levels
+- ~~Bar fight generator~~ **DONE** — `randomBarFight.ts` with triggers, escalation, consequences
+- ~~Dream generator~~ **DONE** — `randomDream.ts` with 12 dreams × 5 types + mechanical effects
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.

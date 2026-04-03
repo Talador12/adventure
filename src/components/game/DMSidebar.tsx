@@ -2534,6 +2534,37 @@ export default function DMSidebar({
               🧠 NPC Motivation
             </button>
 
+            {/* Secret */}
+            <button onClick={async () => { const { getRandomSecret, formatSecret } = await import('../../data/randomSecret'); onAddDmMessage(formatSecret(getRandomSecret())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Random NPC/location secret">
+              🤫 Random Secret
+            </button>
+            {/* Weapon quirk */}
+            <button onClick={async () => { const { getRandomQuirk, formatWeaponQuirk } = await import('../../data/randomWeaponQuirk'); onAddDmMessage(formatWeaponQuirk(getRandomQuirk())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Random weapon personality quirk">
+              ⚔️ Weapon Quirk
+            </button>
+            {/* Disguise */}
+            <button onClick={async () => { const { generateDisguise, formatDisguise } = await import('../../data/randomDisguise'); onAddDmMessage(formatDisguise(generateDisguise())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Random disguise plan for infiltration">
+              🎭 Disguise Plan
+            </button>
+            {/* Plot twist */}
+            <button onClick={async () => { const { getRandomTwist, formatPlotTwist } = await import('../../data/randomPlotTwist'); onAddDmMessage(formatPlotTwist(getRandomTwist())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-fuchsia-900/20 border border-fuchsia-600/30 text-fuchsia-400 font-semibold hover:bg-fuchsia-800/30 transition-all" title="Random plot twist for narrative surprise">
+              🌋 Plot Twist
+            </button>
+            {/* Bar fight */}
+            <button onClick={async () => { const { generateBarFight, formatBarFight } = await import('../../data/randomBarFight'); onAddDmMessage(formatBarFight(generateBarFight())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Random bar fight with escalation stages">
+              🍺💥 Bar Fight
+            </button>
+            {/* Dream */}
+            <button onClick={async () => { const { getRandomDream, formatDream } = await import('../../data/randomDream'); const name = characters.length > 0 ? characters[Math.floor(Math.random() * characters.length)].name : 'Adventurer'; onAddDmMessage(formatDream(getRandomDream(), name)); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all" title="Random dream for long rest flavor">
+              💤 Dream
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
