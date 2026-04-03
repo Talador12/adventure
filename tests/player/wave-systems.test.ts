@@ -2190,3 +2190,92 @@ describe('magical weather forecast', () => {
   it('all have mechanical impact', () => { MAGICAL_FORECASTS.forEach((f) => expect(f.mechanicalImpact.length).toBeGreaterThan(15)); });
   it('formats forecast', () => { expect(formatForecast(MAGICAL_FORECASTS[0])).toContain('Signs'); });
 });
+
+// ---------------------------------------------------------------------------
+// Villain lair designer
+// ---------------------------------------------------------------------------
+import { VILLAIN_LAIRS, getRandomLair, getLairsByType, getAllLairTypes, formatLair } from '../../src/data/villainLair';
+
+describe('villain lair designer', () => {
+  it('has at least 3 lairs', () => { expect(VILLAIN_LAIRS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 types', () => { expect(getAllLairTypes().length).toBeGreaterThanOrEqual(3); });
+  it('generates random lair', () => { const l = getRandomLair(); expect(l.features.length).toBeGreaterThanOrEqual(3); });
+  it('all have environmental storytelling', () => { VILLAIN_LAIRS.forEach((l) => expect(l.environmentalStorytelling.length).toBeGreaterThanOrEqual(3)); });
+  it('all have boss advantages and party opportunities', () => { VILLAIN_LAIRS.forEach((l) => { expect(l.bossAdvantage.length).toBeGreaterThan(15); expect(l.partyOpportunity.length).toBeGreaterThan(15); }); });
+  it('formats lair', () => { expect(formatLair(VILLAIN_LAIRS[0])).toContain('Boss advantage'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical bond system
+// ---------------------------------------------------------------------------
+import { MAGICAL_BONDS, getBond, getAllBondTypes, getBondsWithinDistance, formatBond } from '../../src/data/magicalBond';
+
+describe('magical bond system', () => {
+  it('has at least 4 bonds', () => { expect(MAGICAL_BONDS.length).toBeGreaterThanOrEqual(4); });
+  it('looks up by type', () => { const b = getBond('life_link'); expect(b).toBeDefined(); expect(b!.benefits.length).toBeGreaterThanOrEqual(2); });
+  it('all have drawbacks', () => { MAGICAL_BONDS.forEach((b) => expect(b.drawbacks.length).toBeGreaterThanOrEqual(2)); });
+  it('all have break conditions', () => { MAGICAL_BONDS.forEach((b) => expect(b.breakCondition.length).toBeGreaterThan(10)); });
+  it('distance filter works', () => { const close = getBondsWithinDistance(60); expect(close.length).toBeGreaterThanOrEqual(2); });
+  it('formats bond', () => { expect(formatBond(MAGICAL_BONDS[0])).toContain('Ritual'); });
+});
+
+// ---------------------------------------------------------------------------
+// Quest reward negotiation
+// ---------------------------------------------------------------------------
+import { QUEST_REWARD_NEGOTIATIONS, getRandomNegotiation, getNegotiationsByAttitude, getMaxRewardValue, getNegotiationsWithHiddenRewards, getAllAttitudes, formatNegotiation } from '../../src/data/questRewardNegotiation';
+
+describe('quest reward negotiation', () => {
+  it('has at least 4 negotiations', () => { expect(QUEST_REWARD_NEGOTIATIONS.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 attitudes', () => { expect(getAllAttitudes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random negotiation', () => { const n = getRandomNegotiation(); expect(n.levers.length).toBeGreaterThanOrEqual(2); });
+  it('best deal > worst deal', () => { QUEST_REWARD_NEGOTIATIONS.forEach((n) => expect(n.bestPossibleDeal.value).toBeGreaterThanOrEqual(n.worstDeal.value)); });
+  it('some have hidden rewards', () => { expect(getNegotiationsWithHiddenRewards().length).toBeGreaterThanOrEqual(2); });
+  it('all have walk-away consequences', () => { QUEST_REWARD_NEGOTIATIONS.forEach((n) => expect(n.walkAwayConsequence.length).toBeGreaterThan(15)); });
+  it('formats negotiation', () => { expect(formatNegotiation(QUEST_REWARD_NEGOTIATIONS[0])).toContain('Original'); });
+});
+
+// ---------------------------------------------------------------------------
+// Artifact history generator
+// ---------------------------------------------------------------------------
+import { ARTIFACT_HISTORIES, getRandomHistory, getChapterCount, getChapterByEra, getArtifactsWithProphecies, getArtifactsWithCurses, formatHistory } from '../../src/data/artifactHistory';
+
+describe('artifact history generator', () => {
+  it('has at least 2 histories', () => { expect(ARTIFACT_HISTORIES.length).toBeGreaterThanOrEqual(2); });
+  it('each has 5 chapters', () => { ARTIFACT_HISTORIES.forEach((h) => expect(getChapterCount(h)).toBe(5)); });
+  it('chapters cover all eras', () => { ARTIFACT_HISTORIES.forEach((h) => { expect(getChapterByEra(h, 'creation')).toBeDefined(); expect(getChapterByEra(h, 'rediscovery')).toBeDefined(); }); });
+  it('some have prophecies', () => { expect(getArtifactsWithProphecies().length).toBeGreaterThanOrEqual(1); });
+  it('some have curse origins', () => { expect(getArtifactsWithCurses().length).toBeGreaterThanOrEqual(1); });
+  it('all have current status', () => { ARTIFACT_HISTORIES.forEach((h) => expect(h.currentStatus.length).toBeGreaterThan(15)); });
+  it('formats history', () => { expect(formatHistory(ARTIFACT_HISTORIES[0])).toContain('Status'); });
+});
+
+// ---------------------------------------------------------------------------
+// Tavern entertainment
+// ---------------------------------------------------------------------------
+import { TAVERN_ENTERTAINMENT, getRandomEntertainment, getEntertainmentByType, getEventsWithSecrets, getAllEntertainmentTypes, formatEntertainment } from '../../src/data/tavernEntertainment';
+
+describe('tavern entertainment', () => {
+  it('has at least 5 events', () => { expect(TAVERN_ENTERTAINMENT.length).toBeGreaterThanOrEqual(5); });
+  it('covers 5 types', () => { expect(getAllEntertainmentTypes().length).toBe(5); });
+  it('generates random event', () => { const e = getRandomEntertainment(); expect(e.winReward.length).toBeGreaterThan(10); });
+  it('most have secret opportunities', () => { expect(getEventsWithSecrets().length).toBeGreaterThanOrEqual(3); });
+  it('all have audience reactions', () => { TAVERN_ENTERTAINMENT.forEach((e) => expect(e.audienceReaction.length).toBeGreaterThan(10)); });
+  it('all have lose consequences', () => { TAVERN_ENTERTAINMENT.forEach((e) => expect(e.loseConsequence.length).toBeGreaterThan(10)); });
+  it('formats entertainment', () => { expect(formatEntertainment(TAVERN_ENTERTAINMENT[0])).toContain('Win'); });
+});
+
+// ---------------------------------------------------------------------------
+// Creature domestication
+// ---------------------------------------------------------------------------
+import { DOMESTICABLE_CREATURES, getRandomCreature, getCreaturesByDifficulty, getCreaturesByTemperament, getTamingStageCount, getAllTemperaments, formatCreature } from '../../src/data/creatureDomestication';
+
+describe('creature domestication', () => {
+  it('has at least 4 creatures', () => { expect(DOMESTICABLE_CREATURES.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 temperaments', () => { expect(getAllTemperaments().length).toBeGreaterThanOrEqual(4); });
+  it('generates random creature', () => { const c = getRandomCreature(); expect(c.stages.length).toBeGreaterThanOrEqual(3); });
+  it('filters by difficulty', () => { const easy = getCreaturesByDifficulty('easy'); expect(easy.length).toBeGreaterThanOrEqual(1); });
+  it('all have deal breakers', () => { DOMESTICABLE_CREATURES.forEach((c) => expect(c.dealBreaker.length).toBeGreaterThan(10)); });
+  it('all have favorite foods', () => { DOMESTICABLE_CREATURES.forEach((c) => expect(c.favoriteFood.length).toBeGreaterThan(5)); });
+  it('all stages have reasonable DCs', () => { DOMESTICABLE_CREATURES.forEach((c) => c.stages.forEach((s) => expect(s.dc).toBeGreaterThanOrEqual(10))); });
+  it('formats creature', () => { expect(formatCreature(DOMESTICABLE_CREATURES[0])).toContain('Favorite food'); });
+});

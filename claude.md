@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 41 tests (2377 total) — villain lairs, magical bonds, quest negotiation, artifact histories, tavern entertainment, creature domestication:
+  - **Villain lair designer** — `villainLair.ts` with 3 lairs (Obsidian Throne/Flesh Workshop/Inverted Spire), environmental storytelling, boss advantages, party opportunities.
+  - **Magical bond system** — `magicalBond.ts` with 4 bond types (life link/battle sync/empathic link/power share), formation rituals, benefits, drawbacks, break consequences.
+  - **Quest reward negotiation** — `questRewardNegotiation.ts` with 4 NPCs, negotiation levers with DCs, hidden rewards, walk-away consequences.
+  - **Artifact history generator** — `artifactHistory.ts` with 2 artifacts spanning 5 eras each, wielder histories, prophecies, curse origins.
+  - **Tavern entertainment** — `tavernEntertainment.ts` with 5 events (open mic/liar's dice/iron stomach/fight club/tallest tale), secret opportunities.
+  - **Creature domestication** — `creatureDomestication.ts` with 4 creatures (Blink Dog/Owlbear Cub/Pseudodragon/Displacer Beast), multi-stage taming, deal breakers, favorite foods.
+
 - 6 new systems + 44 tests (2336 total) + TEST FILE SPLIT — arcane addiction, cursed auctions, NPC pets, ancient language, battlefield aftermath, magical forecasts:
   - **Test infrastructure: split `game-logic.test.ts`** into `game-logic.test.ts` (1250 original tests) + `wave-systems.test.ts` (1086 session tests). Clean separation, zero import collisions.
   - **Arcane addiction** — `arcaneAddiction.ts` with 3 profiles (potion abuse/wild magic/leyline siphoning), 5 escalating stages, withdrawal DCs, cure methods, relapse triggers.
@@ -1154,17 +1162,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Battlefield aftermath~~ **DONE** — `battlefieldAftermath.ts` with 3 scales + narrative moments
 - ~~Magical weather forecast~~ **DONE** — `magicalForecast.ts` with 6 forecasts + false alarm rates
 
-**Wave 56 Roadmap:**
+**Wave 56 (2,377 tests):**
+- ~~Villain lair designer~~ **DONE** — `villainLair.ts` with 3 lairs + environmental storytelling
+- ~~Magical bond system~~ **DONE** — `magicalBond.ts` with 4 bond types + benefits/drawbacks
+- ~~Quest reward negotiation~~ **DONE** — `questRewardNegotiation.ts` with 4 NPCs + hidden rewards
+- ~~Artifact history generator~~ **DONE** — `artifactHistory.ts` with 2 artifacts × 5 eras
+- ~~Tavern entertainment~~ **DONE** — `tavernEntertainment.ts` with 5 events + secret opportunities
+- ~~Creature domestication~~ **DONE** — `creatureDomestication.ts` with 4 creatures + taming stages
+
+**Wave 57 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
-- Random villain lair designer — themed boss rooms with environmental storytelling
-- Magical bond system — shared HP or abilities between bonded party members
-- Random quest reward negotiation — NPCs who haggle over payment for completed quests
-- Artifact history generator — procedural backstories for legendary items spanning millennia
-- Random tavern entertainment — live acts, gambling games, and underground fight clubs
-- Magical creature domestication — taming wild magical beasts with patience and skill checks
 - Cross-campaign timeline — track world events across multiple play sessions
+- Magical prison break scenario — escaping from an anti-magic dungeon with no gear
+- Random oracle consultation — cryptic answers to player questions with interpretation DCs
+- Enchanted armor quirks — armor that has personality traits and opinions about combat
+- Planar invasion response protocol — emergency plans when another plane attacks
+- Random political marriage — arranged unions with diplomatic consequences and escape options
+- Monster evolution tracker — creatures that grow stronger after surviving encounters with the party
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
