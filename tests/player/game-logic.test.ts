@@ -8302,3 +8302,64 @@ describe('exit lines', () => {
   it('has at least 12', () => { expect(EXIT_LINES.length).toBeGreaterThanOrEqual(12); });
   it('formatExitLine shows character name', () => { expect(formatExitLine('Thorin')).toContain('Thorin'); });
 });
+
+// ---------------------------------------------------------------------------
+// NPC lies
+// ---------------------------------------------------------------------------
+import { getRandomLie, formatNpcLie } from '../../src/data/randomNpcLie';
+
+describe('NPC lies', () => {
+  it('generates with truth and DC', () => { const l = getRandomLie(); expect(l.lie.length).toBeGreaterThan(0); expect(l.truth.length).toBeGreaterThan(0); expect(l.insightDC).toBeGreaterThanOrEqual(10); });
+  it('hides truth when showTruth=false', () => { expect(formatNpcLie(getRandomLie(), false)).not.toContain('Truth:'); });
+  it('shows truth when showTruth=true', () => { expect(formatNpcLie(getRandomLie(), true)).toContain('Truth'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat momentum
+// ---------------------------------------------------------------------------
+import { getRandomShift, formatMomentumShift } from '../../src/data/randomCombatMomentum';
+
+describe('combat momentum', () => {
+  it('generates with benefits', () => { const s = getRandomShift(); expect(s.trigger.length).toBeGreaterThan(0); expect(s.benefits.length).toBeGreaterThan(0); });
+  it('formatMomentumShift shows trigger', () => { expect(formatMomentumShift(getRandomShift())).toContain('Trigger'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magic item quirks (list)
+// ---------------------------------------------------------------------------
+import { MAGIC_ITEM_QUIRKS, getRandomMagicItemQuirk } from '../../src/data/randomMagicItemQuirk';
+
+describe('magic item quirks', () => {
+  it('has at least 10', () => { expect(MAGIC_ITEM_QUIRKS.length).toBeGreaterThanOrEqual(10); });
+  it('returns text', () => { expect(getRandomMagicItemQuirk().length).toBeGreaterThan(10); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC offers
+// ---------------------------------------------------------------------------
+import { getRandomOffer, formatNpcOffer } from '../../src/data/randomNpcOffer';
+
+describe('NPC offers', () => {
+  it('generates with trust level', () => { const o = getRandomOffer(); expect(o.offer.length).toBeGreaterThan(0); expect(['trustworthy', 'suspicious', 'definitely_a_trap']).toContain(o.trustLevel); });
+  it('formatNpcOffer shows hidden motivation', () => { expect(formatNpcOffer(getRandomOffer())).toContain('Hidden'); });
+});
+
+// ---------------------------------------------------------------------------
+// Player prompts
+// ---------------------------------------------------------------------------
+import { PLAYER_PROMPTS, getRandomPrompt as getRandPrompt } from '../../src/data/randomPlayerPrompt';
+
+describe('player prompts', () => {
+  it('has at least 10', () => { expect(PLAYER_PROMPTS.length).toBeGreaterThanOrEqual(10); });
+  it('returns a question', () => { expect(getRandPrompt().length).toBeGreaterThan(15); });
+});
+
+// ---------------------------------------------------------------------------
+// Scene transitions
+// ---------------------------------------------------------------------------
+import { TRANSITIONS, getRandomTransition } from '../../src/data/randomTransition';
+
+describe('scene transitions', () => {
+  it('has at least 10', () => { expect(TRANSITIONS.length).toBeGreaterThanOrEqual(10); });
+  it('returns narrative text', () => { expect(getRandomTransition().length).toBeGreaterThan(15); });
+});

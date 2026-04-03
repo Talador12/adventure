@@ -3009,6 +3009,37 @@ export default function DMSidebar({
               🚪 Exit Line
             </button>
 
+            {/* NPC lie */}
+            <button onClick={async () => { const { getRandomLie, formatNpcLie } = await import('../../data/randomNpcLie'); onAddDmMessage(formatNpcLie(getRandomLie())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="NPC lie with Insight DC">
+              🤥 NPC Lie
+            </button>
+            {/* Momentum shift */}
+            <button onClick={async () => { const { getRandomShift, formatMomentumShift } = await import('../../data/randomCombatMomentum'); onAddDmMessage(formatMomentumShift(getRandomShift())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="The tide of battle turns">
+              🔄 Momentum Shift
+            </button>
+            {/* Magic item quirk */}
+            <button onClick={async () => { const { formatMagicItemQuirk } = await import('../../data/randomMagicItemQuirk'); onAddDmMessage(formatMagicItemQuirk()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Quirk for a magic item">
+              ✨ Item Quirk
+            </button>
+            {/* NPC offer */}
+            <button onClick={async () => { const { getRandomOffer, formatNpcOffer } = await import('../../data/randomNpcOffer'); onAddDmMessage(formatNpcOffer(getRandomOffer())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="NPC proposes a deal">
+              🤝 NPC Offer
+            </button>
+            {/* Player prompt */}
+            <button onClick={async () => { const { formatPlayerPrompt } = await import('../../data/randomPlayerPrompt'); onAddDmMessage(formatPlayerPrompt()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Roleplay question for players">
+              🎭 RP Prompt
+            </button>
+            {/* Scene transition */}
+            <button onClick={async () => { const { formatTransition } = await import('../../data/randomTransition'); onAddDmMessage(formatTransition()); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all" title="Narrative bridge between scenes">
+              🎬 Scene Transition
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
