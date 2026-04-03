@@ -35,6 +35,8 @@ import { WAVE_TEMPLATES as WAVE_TEMPLATES_DATA } from '../../lib/encounterWaves'
 import { PATRONS as PATRON_DATA, formatPatron as formatPatronFn } from '../../data/deityPatrons';
 import { LEGENDARY_TEMPLATES as LEGENDARY_DATA } from '../../lib/legendaryActions';
 import { DIALOGUE_TEMPLATES as DIALOGUE_DATA } from '../../data/dialogueTrees';
+import { LAIR_THEMES as LAIR_DATA } from '../../data/lairEffects';
+import { MINION_TEMPLATES as MINION_DATA } from '../../lib/minionRules';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -1240,6 +1242,115 @@ export default function DMSidebar({
               title="Roll for rest interruption — random encounter during long rest with partial recovery"
             >
               🏕️ Rest Interruption Check
+            </button>
+
+            {/* Lair effects */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all cursor-pointer px-2">
+                🏰 Lair Effects
+              </summary>
+              <div className="mt-1 space-y-1">
+                {LAIR_DATA.map((l) => (
+                  <button
+                    key={l.theme}
+                    onClick={async () => {
+                      const { rollLairEffect, formatLairEffect } = await import('../../data/lairEffects');
+                      onAddDmMessage(formatLairEffect(l.theme, rollLairEffect(l.theme)));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-red-600/40 transition-all text-[9px] text-slate-300"
+                  >
+                    {l.emoji} {l.name}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Minion spawner */}
+            <details className="mb-2">
+              <summary className="w-full text-[10px] py-1.5 rounded bg-gray-700/30 border border-gray-500/30 text-gray-300 font-semibold hover:bg-gray-600/30 transition-all cursor-pointer px-2">
+                💀 Minion Spawner
+              </summary>
+              <div className="mt-1 space-y-1">
+                {MINION_DATA.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={async () => {
+                      const { formatMinionGroup } = await import('../../lib/minionRules');
+                      const count = parseInt(window.prompt(`How many ${m.name}?`, '4') || '0', 10);
+                      if (count > 0) onAddDmMessage(formatMinionGroup(m.id, count, count));
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-slate-800/40 border border-slate-700/30 hover:border-gray-500/40 transition-all flex items-center justify-between text-[9px] text-slate-300"
+                  >
+                    <span>{m.name}</span>
+                    <span className="text-slate-500">AC {m.ac} / {m.staticDamage}dmg</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            {/* Bloodied status */}
+            <button
+              onClick={async () => {
+                const { formatBloodiedStatus } = await import('../../lib/bloodiedCondition');
+                onAddDmMessage(formatBloodiedStatus(units.map((u) => ({ id: u.id, name: u.name, hp: u.hp, maxHp: u.maxHp, type: u.type }))));
+              }}
+              disabled={!inCombat}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all disabled:opacity-30"
+              title="Show which units are bloodied (<50% HP)"
+            >
+              🩸 Bloodied Status
+            </button>
+
+            {/* Flanking check */}
+            <button
+              onClick={async () => {
+                const { FLANKING_RULES } = await import('../../lib/flankingCalculator');
+                const lines = ['⚔️ **Flanking Rules:**'];
+                for (const r of FLANKING_RULES) lines.push(`• **${r.name}**: ${r.description}`);
+                onAddDmMessage(lines.join('\n'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all"
+              title="Show flanking rule options"
+            >
+              ⚔️ Flanking Rules
+            </button>
+
+            {/* Death saves */}
+            <button
+              onClick={async () => {
+                const { createDeathSaveState, rollDeathSave, formatDeathSaveStatus } = await import('../../lib/deathSaveTracker');
+                const dying = units.filter((u) => u.type === 'player' && u.hp <= 0);
+                if (dying.length === 0) { onAddDmMessage('No characters are making death saves.'); return; }
+                const lines: string[] = [];
+                for (const u of dying) {
+                  const raw = localStorage.getItem(`adventure:deathsave:${u.id}`);
+                  const state = raw ? JSON.parse(raw) : createDeathSaveState(u.id, u.name);
+                  const result = rollDeathSave(state);
+                  localStorage.setItem(`adventure:deathsave:${u.id}`, JSON.stringify(result.state));
+                  lines.push(result.narration);
+                }
+                onAddDmMessage(lines.join('\n\n'));
+              }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-slate-700/30 border border-slate-500/30 text-slate-300 font-semibold hover:bg-slate-600/30 transition-all"
+              title="Roll death saves for downed characters"
+            >
+              ⚰️ Death Saves
+            </button>
+
+            {/* Treasure maps */}
+            <button
+              onClick={async () => {
+                const { TREASURE_MAP_TEMPLATES } = await import('../../data/treasureMaps');
+                const lines = ['🗺️ **Treasure Map Templates:**'];
+                for (const t of TREASURE_MAP_TEMPLATES) {
+                  lines.push(`• **${t.name}** (${t.difficulty}) — ${t.totalFragments} fragments, Reward: ${t.reward}`);
+                }
+                onAddDmMessage(lines.join('\n'));
+              }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all"
+              title="Browse treasure map templates — collectible fragments that reveal locations"
+            >
+              🗺️ Treasure Maps
             </button>
 
             {/* Save/Load Encounter Templates */}

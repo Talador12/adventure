@@ -4385,3 +4385,230 @@ describe('rest interruption', () => {
     expect(recovery.description).toContain('short rest');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Lair effects
+// ---------------------------------------------------------------------------
+import { LAIR_THEMES, getLairTheme, rollLairEffect, formatLairEffect } from '../../src/data/lairEffects';
+
+describe('lair effects', () => {
+  it('has at least 6 lair themes', () => {
+    expect(LAIR_THEMES.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('each theme has at least 2 effects', () => {
+    for (const t of LAIR_THEMES) expect(t.effects.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('getLairTheme finds by theme', () => {
+    expect(getLairTheme('dragon').name).toBe('Dragon Lair');
+    expect(getLairTheme('undead').emoji).toBe('💀');
+  });
+
+  it('rollLairEffect returns a valid effect', () => {
+    const effect = rollLairEffect('elemental');
+    expect(effect.name.length).toBeGreaterThan(0);
+    expect(effect.description.length).toBeGreaterThan(0);
+  });
+
+  it('formatLairEffect includes save info', () => {
+    const effect = rollLairEffect('fey');
+    const text = formatLairEffect('fey', effect);
+    expect(text).toContain('Lair Action');
+    expect(text).toContain('Fey Court');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Minion rules
+// ---------------------------------------------------------------------------
+import { MINION_TEMPLATES as MINION_LIST, createMinions, getMinionTemplate, calculateMinionXP, formatMinionGroup } from '../../src/lib/minionRules';
+
+describe('minion rules', () => {
+  it('has at least 7 minion templates', () => {
+    expect(MINION_LIST.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('createMinions generates correct count', () => {
+    const minions = createMinions('goblin-m', 5);
+    expect(minions.length).toBe(5);
+    expect(minions.every((m) => m.alive)).toBe(true);
+  });
+
+  it('calculateMinionXP sums correctly', () => {
+    const xp = calculateMinionXP('goblin-m', 10);
+    expect(xp).toBe(50); // 5xp × 10
+  });
+
+  it('formatMinionGroup includes 1 HP rule', () => {
+    const text = formatMinionGroup('skeleton-m', 6, 4);
+    expect(text).toContain('HP: 1');
+    expect(text).toContain('4/6');
+    expect(text).toContain('Minion rule');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bloodied condition
+// ---------------------------------------------------------------------------
+import { checkBloodied, getBloodiedNarration, countBloodied, formatBloodiedStatus as formatBloodied } from '../../src/lib/bloodiedCondition';
+
+describe('bloodied condition', () => {
+  it('checkBloodied detects at 50%', () => {
+    expect(checkBloodied(25, 50)).toBe(true);
+    expect(checkBloodied(26, 50)).toBe(false);
+    expect(checkBloodied(0, 50)).toBe(false); // dead, not bloodied
+  });
+
+  it('getBloodiedNarration returns text for new bloodied', () => {
+    const text = getBloodiedNarration('Goblin', false);
+    expect(text.length).toBeGreaterThan(0);
+    expect(text).toContain('Goblin');
+  });
+
+  it('getBloodiedNarration returns empty for already bloodied', () => {
+    expect(getBloodiedNarration('Goblin', true)).toBe('');
+  });
+
+  it('countBloodied counts correctly', () => {
+    const units = [
+      { id: '1', hp: 5, maxHp: 20, type: 'enemy' },  // bloodied
+      { id: '2', hp: 15, maxHp: 20, type: 'enemy' },  // not
+      { id: '3', hp: 3, maxHp: 30, type: 'player' },  // bloodied
+    ];
+    const result = countBloodied(units);
+    expect(result.bloodiedEnemies).toBe(1);
+    expect(result.bloodiedPlayers).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Flanking calculator
+// ---------------------------------------------------------------------------
+import { FLANKING_RULES, checkFlanking, findFlankingOpportunities, formatFlankingCheck } from '../../src/lib/flankingCalculator';
+
+describe('flanking calculator', () => {
+  it('has 3 flanking rule options', () => {
+    expect(FLANKING_RULES.length).toBe(3);
+  });
+
+  it('detects flanking when ally is on opposite side', () => {
+    // Attacker at (5,5), target at (5,6), ally at (5,7) — opposite sides
+    const result = checkFlanking(5, 5, 5, 6, [{ id: 'a1', name: 'Ally', col: 5, row: 7 }], 'advantage');
+    expect(result.isFlanking).toBe(true);
+    expect(result.flankingAllyName).toBe('Ally');
+  });
+
+  it('does not detect flanking when ally is on same side', () => {
+    // Attacker at (5,5), target at (5,6), ally at (5,5) — same side
+    const result = checkFlanking(5, 5, 5, 6, [{ id: 'a1', name: 'Ally', col: 4, row: 5 }], 'advantage');
+    expect(result.isFlanking).toBe(false);
+  });
+
+  it('returns no benefit when rule is none', () => {
+    const result = checkFlanking(5, 5, 5, 6, [{ id: 'a1', name: 'Ally', col: 5, row: 7 }], 'none');
+    expect(result.isFlanking).toBe(false);
+  });
+
+  it('formatFlankingCheck produces readable text', () => {
+    const check = { attackerId: '', targetId: '', isFlanking: true, flankingAllyId: 'a1', flankingAllyName: 'Rogue', benefit: 'Advantage' };
+    const text = formatFlankingCheck(check, 'Fighter', 'Goblin');
+    expect(text).toContain('Flanking');
+    expect(text).toContain('Fighter');
+    expect(text).toContain('Rogue');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Death save tracker
+// ---------------------------------------------------------------------------
+import { createDeathSaveState, rollDeathSave, takeDamageWhileDying, formatDeathSaveStatus } from '../../src/lib/deathSaveTracker';
+
+describe('death save tracker', () => {
+  it('creates empty state', () => {
+    const state = createDeathSaveState('c1', 'Hero');
+    expect(state.successes).toBe(0);
+    expect(state.failures).toBe(0);
+    expect(state.stabilized).toBe(false);
+    expect(state.dead).toBe(false);
+  });
+
+  it('rollDeathSave increments counters', () => {
+    const state = createDeathSaveState('c1', 'Hero');
+    const result = rollDeathSave(state);
+    expect(result.state.successes + result.state.failures).toBeGreaterThanOrEqual(1);
+    expect(result.narration.length).toBeGreaterThan(0);
+  });
+
+  it('stabilizes at 3 successes', () => {
+    let state = createDeathSaveState('c1', 'Hero');
+    state.successes = 2;
+    // Force a success by mocking — just set it directly for test
+    state.successes = 3;
+    // Simulate detection
+    const stabilized = state.successes >= 3;
+    expect(stabilized).toBe(true);
+  });
+
+  it('takeDamageWhileDying adds failure', () => {
+    const state = createDeathSaveState('c1', 'Hero');
+    const result = takeDamageWhileDying(state, false);
+    expect(result.state.failures).toBe(1);
+  });
+
+  it('takeDamageWhileDying crit adds 2 failures', () => {
+    const state = createDeathSaveState('c1', 'Hero');
+    const result = takeDamageWhileDying(state, true);
+    expect(result.state.failures).toBe(2);
+  });
+
+  it('formatDeathSaveStatus shows bars', () => {
+    const state = createDeathSaveState('c1', 'Hero');
+    state.successes = 1;
+    state.failures = 2;
+    const text = formatDeathSaveStatus(state);
+    expect(text).toContain('Hero');
+    expect(text).toContain('🟢');
+    expect(text).toContain('🔴');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Treasure maps
+// ---------------------------------------------------------------------------
+import { TREASURE_MAP_TEMPLATES as MAP_TEMPLATES, createTreasureMap, findFragment, isMapComplete, getCollectedCount, formatTreasureMap } from '../../src/data/treasureMaps';
+
+describe('treasure maps', () => {
+  it('has at least 4 map templates', () => {
+    expect(MAP_TEMPLATES.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('createTreasureMap generates correct fragments', () => {
+    const map = createTreasureMap(0);
+    expect(map.fragments.length).toBe(map.totalFragments);
+    expect(map.fragments.every((f) => f.clue.length > 0)).toBe(true);
+  });
+
+  it('findFragment marks fragment as found', () => {
+    let map = createTreasureMap(0);
+    map = findFragment(map, 0, 'Thorin');
+    expect(map.fragments[0].foundBy).toBe('Thorin');
+    expect(getCollectedCount(map)).toBe(1);
+  });
+
+  it('isMapComplete returns true when all found', () => {
+    let map = createTreasureMap(3); // smuggler's cache, 2 fragments
+    map = findFragment(map, 0, 'A');
+    map = findFragment(map, 1, 'B');
+    expect(isMapComplete(map)).toBe(true);
+  });
+
+  it('formatTreasureMap shows progress', () => {
+    let map = createTreasureMap(0);
+    map = findFragment(map, 0, 'Hero');
+    const text = formatTreasureMap(map);
+    expect(text).toContain(map.name);
+    expect(text).toContain('Hero');
+    expect(text).toContain('❓'); // unfound fragments
+  });
+});

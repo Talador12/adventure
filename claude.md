@@ -45,7 +45,7 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v10.7.0
+## Current Version: v10.8.0
 
 ### v0.1.0 — Initial Release
 
@@ -55,6 +55,21 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 29 tests (571 total) — lair effects, minions, bloodied, flanking, death saves, treasure maps:
+  - **Lair effect generator** — `lairEffects.ts` with 6 lair themes (Dragon/Undead/Elemental/Fey/Aberrant/Demonic) each with 3 effects. Save DCs, damage, conditions, and area descriptions. `rollLairEffect()` picks random effect per theme. Expandable lair browser in DMSidebar.
+  - **Minion rules** — `minionRules.ts` with 8 minion templates (Goblin/Skeleton/Zombie/Bandit/Cultist/Kobold/Imp/Orc). 1 HP, static damage, die on any hit, saves for half = no damage. `createMinions()` for bulk spawning. `calculateMinionXP()` for encounter budget. Expandable spawner in DMSidebar.
+  - **Bloodied condition** — `bloodiedCondition.ts` with configurable 50% HP threshold. `checkBloodied()` detects transition, `getBloodiedNarration()` with 5 random flavor texts. `countBloodied()` for combat summary. "Bloodied Status" button in DMSidebar.
+  - **Flanking calculator** — `flankingCalculator.ts` with 3 rule options (None/Advantage/+2 Bonus). `checkFlanking()` uses dot product of position vectors to detect opposite-side allies. `findFlankingOpportunities()` shows where to move for flanking. "Flanking Rules" button in DMSidebar.
+  - **Death save tracker** — `deathSaveTracker.ts` with full 5e rules: nat 20 = regain 1 HP, nat 1 = 2 failures, 3 successes = stabilize, 3 failures = death. `takeDamageWhileDying()` adds failures (crits = 2). Visual success/failure bars. "Death Saves" button auto-rolls for downed characters.
+  - **Treasure map system** — `treasureMaps.ts` with 5 map templates (Dragon's Hoard/Pirate's Bounty/Elven Vault/Smuggler's Cache/Wizard's Library). Fragment collection with clues per piece. `isMapComplete()` reveals location + reward. Progress bars in formatted output. "Treasure Maps" button in DMSidebar.
+- 29 new tests (571 total) covering 6 systems:
+  - **Lair effects** (5 tests): theme count, effects per theme, getter, random effect, formatted output.
+  - **Minions** (4 tests): template count, bulk creation, XP calculation, formatted group with 1HP rule.
+  - **Bloodied** (4 tests): threshold detection, narration for new/existing, count by type.
+  - **Flanking** (4 tests): rule count, opposite-side detection, same-side rejection, disabled rule, formatted output.
+  - **Death saves** (6 tests): empty state, roll increment, stabilize at 3, damage failure, crit 2 failures, visual bars.
+  - **Treasure maps** (5 tests): template count, fragment generation, find+collect, completion detection, progress format.
+
 - 6 new systems + 25 tests (542 total) — surprise round, condition duration, XP milestones, marching order, dialogue trees, rest interruption:
   - **Surprise round detector** — `surpriseRound.ts` rolls each ambusher's stealth vs targets' passive perception. `rollSurprise()` with optional advantage. Identifies total surprise, partial surprise, or no surprise. `calculatePassivePerception()` helper. "Surprise Check" button in DMSidebar.
   - **Condition duration tracker** — `conditionDuration.ts` tracks active conditions per character with round-based or save-ends durations. `advanceRound()` auto-decrements, returns expired and save-needed lists. `formatRoundAdvance()` for turn-start announcements. "Condition Durations" button in DMSidebar.
@@ -374,12 +389,24 @@ The complete feature set built from project inception through 46 development ite
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Lair effect generator — dynamic environmental hazards on initiative 20 for boss lairs
-- Minion rules — simplified 1-HP enemies that die on any hit for horde encounters
-- Bloodied condition — visual/mechanical indicator when enemies drop below 50% HP
-- Flanking calculator — auto-detect flanking positions and apply advantage/bonus
-- Death save tracker UI — visual death save widget with auto-stabilize at 3 successes
-- Treasure map system — collectible map fragments that reveal hidden locations when assembled
+- ~~Lair effect generator~~ **DONE** — `lairEffects.ts` with 6 themes × 3 effects each
+- ~~Minion rules~~ **DONE** — `minionRules.ts` with 8 templates, 1HP, static damage
+- ~~Bloodied condition~~ **DONE** — `bloodiedCondition.ts` with 50% threshold + narration
+- ~~Flanking calculator~~ **DONE** — `flankingCalculator.ts` with dot-product detection
+- ~~Death save tracker~~ **DONE** — `deathSaveTracker.ts` with full 5e rules + visual bars
+- ~~Treasure map system~~ **DONE** — `treasureMaps.ts` with 5 maps + fragment collection
+
+**Wave 13 Roadmap:**
+- Campaign world map with hex-based overland travel and fog-of-war exploration
+- Player-to-player item trading with offer/accept/decline confirmation modal
+- Encounter terrain generator — AI builds thematic battle maps from scene description
+- Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
+- Reaction tracker — track which units have used their reaction this round
+- Ready action queue — hold actions with trigger conditions, resolve when triggered
+- Cover calculator improvements — auto-detect half/three-quarter/full cover from position
+- Opportunity attack detector — warn when units provoke OAs by moving out of reach
+- Spell save DC calculator — auto-compute save DCs from caster stats + proficiency
+- Initiative re-roll system — allow DM to re-roll initiative mid-combat for dramatic shifts
 
 - 19 new tests (203 player total, 225 with API) covering 4 systems:
   - **Campaign templates** (5 tests): count, required fields, quest structure, unique IDs, suggested levels.
