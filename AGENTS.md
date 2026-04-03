@@ -121,6 +121,9 @@ Server broadcasts:
 - Add new roadmap ideas to `claude.md` after completing existing ones to keep the pipeline full.
 - When user says "continue work on github/adventure", pick the next batch of unfinished roadmap items and build them with tests.
 - Always run tests before committing. Fix any failures, including pre-existing ones encountered along the way.
+- **Import alias discipline:** The test file (`tests/player/game-logic.test.ts`) has 10,500+ lines. Many data modules export similar function names (`getRandomX`, `formatX`, `getAllTypes`). ALWAYS alias imports to avoid shadowing earlier imports. Check `grep -n "import.*functionName"` before adding new imports.
+- **Test file splitting recommended:** At 2,292 tests in a single file, the next session should split tests into multiple files (e.g., `tests/data/wave-33-40.test.ts`, `tests/data/wave-41-50.test.ts`) to improve maintainability and reduce import collision risk.
+- **Session record (Waves 33-54):** 22 waves, 132 systems, +1,042 tests, 15 pre-existing bug fixes, 323 data files, 2,292 total tests. All pushed to `origin/staging`.
 
 ## AI Working Context
 
