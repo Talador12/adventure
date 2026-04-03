@@ -2947,6 +2947,37 @@ export default function DMSidebar({
               💎 Loot Found
             </button>
 
+            {/* Party banter */}
+            <button onClick={async () => { const { getRandomBanter, formatBanter } = await import('../../data/randomPartyBanter'); onAddDmMessage(formatBanter(getRandomBanter())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 font-semibold hover:bg-pink-800/30 transition-all" title="Suggested party dialogue">
+              💬 Party Banter
+            </button>
+            {/* Combat environment */}
+            <button onClick={async () => { const { getRandomCombatEnvironment, formatCombatEnvironment } = await import('../../data/randomCombatEnvironment'); onAddDmMessage(formatCombatEnvironment(getRandomCombatEnvironment())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Where the fight takes place">
+              ⚔️ Combat Location
+            </button>
+            {/* Deep secret */}
+            <button onClick={async () => { const { getRandomDeepSecret, formatDeepSecret } = await import('../../data/randomNpcSecret2'); onAddDmMessage(formatDeepSecret(getRandomDeepSecret())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Complex NPC secret with discovery methods">
+              🤫 Deep Secret
+            </button>
+            {/* Session theme */}
+            <button onClick={async () => { const { getRandomTheme, formatSessionTheme } = await import('../../data/randomSessionTheme'); onAddDmMessage(formatSessionTheme(getRandomTheme())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 font-semibold hover:bg-indigo-800/30 transition-all" title="Thematic focus for tonight's game">
+              🎭 Session Theme
+            </button>
+            {/* NPC greeting */}
+            <button onClick={async () => { const { formatNpcGreeting } = await import('../../data/randomNpcGreeting'); onAddDmMessage(formatNpcGreeting()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all" title="First words from a new NPC">
+              💬 NPC Greeting
+            </button>
+            {/* Enemy tactic */}
+            <button onClick={async () => { const { getRandomTactic, formatCombatTactic } = await import('../../data/randomCombatTactic'); onAddDmMessage(formatCombatTactic(getRandomTactic())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Smart enemy combat tactics">
+              🧠 Enemy Tactic
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

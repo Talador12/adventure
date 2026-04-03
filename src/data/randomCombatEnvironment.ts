@@ -1,0 +1,12 @@
+// Random combat environment — where does the fight take place?
+export interface CombatEnvironment { name: string; description: string; advantages: string; hazards: string; coverAvailable: string; }
+const ENVIRONMENTS: CombatEnvironment[] = [
+  { name: 'Narrow Bridge', description: 'A stone bridge 5ft wide spanning a deep chasm.', advantages: 'Defender advantage — only 1-2 enemies can engage.', hazards: 'Falling: 10d6 bludgeoning. STR DC 14 to avoid being pushed off.', coverAvailable: 'None on the bridge. Pillars at each end.' },
+  { name: 'Burning Building', description: 'Flames lick the walls. Smoke fills the upper half of the room.', advantages: 'Fire creates barriers. Enemies must path around.', hazards: '1d6 fire per round in open flame. CON DC 12 for smoke or suffocate.', coverAvailable: 'Furniture (half cover). Walls between rooms.' },
+  { name: 'Frozen Lake', description: 'A vast expanse of ice. Every step is uncertain.', advantages: 'Ranged attackers excel — melee has trouble closing distance.', hazards: 'DEX DC 10 or prone when moving more than half speed. Ice breaks on 200+ lbs (DEX DC 14).', coverAvailable: 'Ice formations along the shore.' },
+  { name: 'Market Square', description: 'Stalls, carts, civilians running everywhere.', advantages: 'Lots of improvised weapons and cover options.', hazards: 'Innocent bystanders. Area spells risk civilian casualties.', coverAvailable: 'Abundant half and three-quarters cover from stalls.' },
+  { name: 'Ship Deck', description: 'A rocking vessel in rough seas. Ropes and masts everywhere.', advantages: 'Acrobatics-focused characters shine. Climbing = advantage.', hazards: 'DEX DC 10 each round or slide 5ft from the rocking. Overboard = swimming.', coverAvailable: 'Mast (half), cabin wall (three-quarters).' },
+  { name: 'Underground Arena', description: 'A circular pit with spectators above. No exit until it\'s over.', advantages: 'Nowhere to run — decisive fights.', hazards: 'Crowd throws objects (random 1d4 damage to a combatant).', coverAvailable: 'Pillars (half cover). A single large rock in the center.' },
+];
+export function getRandomCombatEnvironment(): CombatEnvironment { return ENVIRONMENTS[Math.floor(Math.random() * ENVIRONMENTS.length)]; }
+export function formatCombatEnvironment(e: CombatEnvironment): string { return `⚔️ **Combat Environment: ${e.name}**\n*${e.description}*\n💪 Advantages: ${e.advantages}\n⚠️ Hazards: ${e.hazards}\n🛡️ Cover: ${e.coverAvailable}`; }

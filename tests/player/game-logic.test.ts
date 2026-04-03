@@ -8182,3 +8182,63 @@ describe('milestone 1200 — bonus tests', () => {
   it('defeat narrations cover all types', () => { expect(getDefeatNarration('retreat').type).toBe('retreat'); expect(getDefeatNarration('tpk').type).toBe('tpk'); });
   it('NPC fears include exploitable ones', () => { const fears = Array.from({ length: 20 }, () => getRandomNpcFear()); expect(fears.some((f) => f.canBeExploited)).toBe(true); });
 });
+
+// ---------------------------------------------------------------------------
+// Party banter
+// ---------------------------------------------------------------------------
+import { getRandomBanter, formatBanter } from '../../src/data/randomPartyBanter';
+
+describe('party banter', () => {
+  it('generates with punchline', () => { const b = getRandomBanter(); expect(b.setup.length).toBeGreaterThan(0); expect(b.punchline.length).toBeGreaterThan(0); expect(['humor', 'bonding', 'tension', 'philosophical']).toContain(b.type); });
+  it('formatBanter shows both parts', () => { expect(formatBanter(getRandomBanter())).toContain('Party Banter'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat environments
+// ---------------------------------------------------------------------------
+import { getRandomCombatEnvironment, formatCombatEnvironment } from '../../src/data/randomCombatEnvironment';
+
+describe('combat environments', () => {
+  it('generates with hazards and cover', () => { const e = getRandomCombatEnvironment(); expect(e.name.length).toBeGreaterThan(0); expect(e.hazards.length).toBeGreaterThan(0); expect(e.coverAvailable.length).toBeGreaterThan(0); });
+  it('formatCombatEnvironment shows all sections', () => { const text = formatCombatEnvironment(getRandomCombatEnvironment()); expect(text).toContain('Hazards'); expect(text).toContain('Cover'); });
+});
+
+// ---------------------------------------------------------------------------
+// Deep NPC secrets
+// ---------------------------------------------------------------------------
+import { getRandomDeepSecret, formatDeepSecret } from '../../src/data/randomNpcSecret2';
+
+describe('deep NPC secrets', () => {
+  it('generates with discovery method', () => { const s = getRandomDeepSecret(); expect(s.secret.length).toBeGreaterThan(0); expect(s.howToDiscover.length).toBeGreaterThan(0); expect(s.whoKnows.length).toBeGreaterThan(0); });
+  it('formatDeepSecret shows who knows', () => { expect(formatDeepSecret(getRandomDeepSecret())).toContain('Who knows'); });
+});
+
+// ---------------------------------------------------------------------------
+// Session themes
+// ---------------------------------------------------------------------------
+import { getRandomTheme as getRandTheme, formatSessionTheme } from '../../src/data/randomSessionTheme';
+
+describe('session themes', () => {
+  it('generates with suggestions', () => { const t = getRandTheme(); expect(t.theme.length).toBeGreaterThan(0); expect(t.suggestions.length).toBeGreaterThanOrEqual(2); });
+  it('formatSessionTheme shows tone guide', () => { expect(formatSessionTheme(getRandTheme())).toContain('Tone'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC greetings
+// ---------------------------------------------------------------------------
+import { NPC_GREETINGS, getRandomGreeting, formatNpcGreeting } from '../../src/data/randomNpcGreeting';
+
+describe('NPC greetings', () => {
+  it('has at least 10', () => { expect(NPC_GREETINGS.length).toBeGreaterThanOrEqual(10); });
+  it('formatNpcGreeting shows NPC name', () => { expect(formatNpcGreeting('Barkeep')).toContain('Barkeep'); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat tactics
+// ---------------------------------------------------------------------------
+import { getRandomTactic, formatCombatTactic } from '../../src/data/randomCombatTactic';
+
+describe('combat tactics', () => {
+  it('generates with counterplay', () => { const t = getRandomTactic(); expect(t.tactic.length).toBeGreaterThan(0); expect(t.counterplay.length).toBeGreaterThan(0); expect(['low', 'medium', 'high', 'genius']).toContain(t.intelligence); });
+  it('formatCombatTactic shows intelligence', () => { expect(formatCombatTactic(getRandomTactic())).toContain('INT'); });
+});
