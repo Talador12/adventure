@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 52 tests (1780 total) — vampire bloodlines, sentient items, downtime, natural disasters, caravan ambushes, ship cargo:
+  - **Vampire bloodline system** — `vampireBloodline.ts` with 2 bloodlines, 5 age stages, blood pool scaling, 5 powers per bloodline with age requirements and blood costs, humanity score, feeding mechanics.
+  - **Sentient item personality** — `sentientItem.ts` with 6 items, 6 personality types, goals/fears/quirks/conflict triggers, relationship levels, communication styles, INT/WIS/CHA scores.
+  - **Downtime activity tracker** — `downtimeActivity.ts` with 11 activities across 8 types, skill DCs, costs, durations, success/failure results, complications.
+  - **Natural disaster generator** — `naturalDisaster.ts` with 6 disasters (earthquake/flood/wildfire/tornado/volcano/blizzard), warning DCs, mechanical effects, aftermath, opportunities.
+  - **Caravan ambush generator** — `caravanAmbush.ts` with 5 ambushes across 5 terrains, enemy forces with tactics, warning/surprise DCs, escape options, negotiation possibilities, twists.
+  - **Ship cargo manifest** — `shipCargo.ts` with 10 trade goods across 6 regions, regional price multipliers, legality tiers, spoilage timers, manifest generation with smuggling detection, best trade route calculation.
+
 - 6 new systems + 49 tests (1728 total) — airship encounters, detective cases, elemental infusions, NPC schedules, planar side effects, gladiator arena:
   - **Airship encounters** — `airshipEncounter.ts` with 8 encounters across 4 altitude zones, altitude-specific hazards with DCs, hostile/neutral/friendly reactions, loot tables.
   - **Detective case generator** — `detectiveCase.ts` with 3 cases (murder/theft/arson), 3 suspects per case (exactly 1 guilty), clues with find DCs pointing to suspects, red herrings, twists, solution-toggle formatting.
@@ -944,17 +952,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Planar travel side effects~~ **DONE** — `planarSideEffects.ts` with 10 effects × 8 destinations
 - ~~Gladiator arena progression~~ **DONE** — `gladiatorArena.ts` with 8 fighters + sponsors + rank-up
 
-**Wave 43 Roadmap:**
+**Wave 43 (1,780 tests):**
+- ~~Vampire bloodline system~~ **DONE** — `vampireBloodline.ts` with 2 bloodlines × 5 ages + powers
+- ~~Sentient item personality~~ **DONE** — `sentientItem.ts` with 6 items × 6 personalities + relationship
+- ~~Downtime activity tracker~~ **DONE** — `downtimeActivity.ts` with 11 activities × 8 types
+- ~~Natural disaster generator~~ **DONE** — `naturalDisaster.ts` with 6 disasters + mechanical effects
+- ~~Caravan ambush generator~~ **DONE** — `caravanAmbush.ts` with 5 ambushes × 5 terrains + tactics
+- ~~Ship cargo manifest~~ **DONE** — `shipCargo.ts` with 10 goods × 6 regions + smuggling detection
+
+**Wave 44 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Encounter terrain generator — AI builds thematic battle maps from scene description
 - Multi-target spell resolution — AoE spells resolve against all units in area simultaneously
-- Vampire bloodline system — vampiric powers that scale with age and feeding
-- Random caravan ambush generator — attack scenarios on traveling groups with terrain and tactics
-- Sentient item personality generator — items with goals, fears, alignment conflicts, and relationship mechanics
-- Ship cargo manifest generator — trade goods with regional value differences and smuggling risk
-- Downtime activity tracker — crafting, training, carousing, and research between adventures
-- Random natural disaster generator — earthquakes, floods, volcanic eruptions with mechanical impact
+- Underground faction generator — competing criminal/political organizations with influence maps
+- Random mirror dimension generator — alternate reality encounters with twisted versions of familiar places
+- Battlefield scavenger loot table — post-battle equipment salvage with condition and value
+- Random magical anomaly generator — zones where magic behaves differently
+- Ship crew management — hiring, loyalty, mutiny risk, and crew skill checks
+- Ancient prophecy generator — cryptic multi-part prophecies with fulfillment triggers
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

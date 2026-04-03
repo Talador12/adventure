@@ -9382,3 +9382,103 @@ describe('gladiator arena progression', () => {
   it('sponsors have betrayal conditions', () => { ARENA_SPONSORS.forEach((sp) => expect(sp.betrayalCondition.length).toBeGreaterThan(10)); });
   it('formats state', () => { expect(formatArenaState(createArenaState())).toContain('PIT FIGHTER'); });
 });
+
+// ---------------------------------------------------------------------------
+// Vampire bloodline system
+// ---------------------------------------------------------------------------
+import { BLOODLINES, AGE_ORDER, createVampireState, feed, spendBlood, ageUp, getAvailablePowers, getBloodline, getAllBloodlines, formatVampireState } from '../../src/data/vampireBloodline';
+
+describe('vampire bloodline system', () => {
+  it('has at least 2 bloodlines', () => { expect(BLOODLINES.length).toBeGreaterThanOrEqual(2); expect(getAllBloodlines().length).toBeGreaterThanOrEqual(2); });
+  it('has 5 age stages', () => { expect(AGE_ORDER.length).toBe(5); });
+  it('creates fledgling state', () => { const s = createVampireState('House Sanguine'); expect(s.age).toBe('fledgling'); expect(s.humanityScore).toBe(7); });
+  it('feeding increases blood pool', () => { let s = createVampireState('House Sanguine'); s = feed(s, true); expect(s.bloodPool).toBeGreaterThan(0); });
+  it('unwilling feeding costs humanity', () => { let s = createVampireState('House Sanguine'); const before = s.humanityScore; s = feed(s, false); expect(s.humanityScore).toBeLessThan(before); });
+  it('spending blood works', () => { let s = createVampireState('House Sanguine'); s = feed(s, true); const result = spendBlood(s, 1); expect(result).not.toBeNull(); expect(result!.bloodPool).toBeLessThan(s.bloodPool); });
+  it('cannot overspend', () => { const s = createVampireState('House Sanguine'); expect(spendBlood(s, 999)).toBeNull(); });
+  it('aging unlocks more powers', () => { let s = createVampireState('House Sanguine'); const fledglingPowers = getAvailablePowers(s).length; s = ageUp(s); const neonatePowers = getAvailablePowers(s).length; expect(neonatePowers).toBeGreaterThan(fledglingPowers); });
+  it('bloodlines have weaknesses', () => { BLOODLINES.forEach((b) => expect(b.weakness.length).toBeGreaterThan(20)); });
+  it('formats state', () => { expect(formatVampireState(createVampireState('The Hollow'))).toContain('🧛'); });
+});
+
+// ---------------------------------------------------------------------------
+// Sentient item personality
+// ---------------------------------------------------------------------------
+import { SENTIENT_ITEMS, getRandomSentientItem, getItemsByPersonality, getItemsByAlignment, getRelationshipLevel, getAllPersonalities, formatSentientItem } from '../../src/data/sentientItem';
+
+describe('sentient item personality', () => {
+  it('has at least 5 items', () => { expect(SENTIENT_ITEMS.length).toBeGreaterThanOrEqual(5); });
+  it('has 6 personalities', () => { expect(getAllPersonalities().length).toBe(6); });
+  it('generates random item', () => { const i = getRandomSentientItem(); expect(i.name.length).toBeGreaterThan(3); expect(i.goal.length).toBeGreaterThan(10); });
+  it('filters by personality', () => { const noble = getItemsByPersonality('noble'); expect(noble.length).toBeGreaterThanOrEqual(1); noble.forEach((i) => expect(i.personality).toBe('noble')); });
+  it('filters by alignment', () => { const evil = getItemsByAlignment('evil'); expect(evil.length).toBeGreaterThanOrEqual(1); });
+  it('relationship levels scale', () => { expect(getRelationshipLevel(9)).toBe('devoted'); expect(getRelationshipLevel(0)).toBe('reluctant'); expect(getRelationshipLevel(-1)).toBe('hostile'); });
+  it('all items have conflict triggers', () => { SENTIENT_ITEMS.forEach((i) => expect(i.conflictTrigger.length).toBeGreaterThan(10)); });
+  it('all items have communication styles', () => { SENTIENT_ITEMS.forEach((i) => expect(i.communicationStyle.length).toBeGreaterThan(10)); });
+  it('formats item', () => { expect(formatSentientItem(SENTIENT_ITEMS[0])).toContain('Goal'); });
+});
+
+// ---------------------------------------------------------------------------
+// Downtime activity tracker
+// ---------------------------------------------------------------------------
+import { DOWNTIME_ACTIVITIES as DT_ACTIVITIES, getRandomActivity as getRandomDowntime, getActivitiesByType as getDTByType, getFreeActivities, getActivitiesByMaxDuration, getAllActivityTypes as getAllDTTypes, formatActivity as formatDTActivity } from '../../src/data/downtimeActivity';
+
+describe('downtime activity tracker', () => {
+  it('has at least 8 activities', () => { expect(DT_ACTIVITIES.length).toBeGreaterThanOrEqual(8); });
+  it('covers at least 6 types', () => { expect(getAllDTTypes().length).toBeGreaterThanOrEqual(6); });
+  it('generates random activity', () => { const a = getRandomDowntime(); expect(a.name.length).toBeGreaterThan(3); expect(a.successResult.length).toBeGreaterThan(10); });
+  it('filters by type', () => { const crafting = getDTByType('crafting'); expect(crafting.length).toBeGreaterThanOrEqual(1); crafting.forEach((a) => expect(a.type).toBe('crafting')); });
+  it('finds free activities', () => { const free = getFreeActivities(); expect(free.length).toBeGreaterThanOrEqual(2); free.forEach((a) => expect(a.cost).toBe(0)); });
+  it('filters by duration', () => { const short = getActivitiesByMaxDuration(1); expect(short.length).toBeGreaterThanOrEqual(3); });
+  it('all have complications', () => { DT_ACTIVITIES.forEach((a) => expect(a.complication.length).toBeGreaterThan(10)); });
+  it('formats activity', () => { expect(formatDTActivity(DT_ACTIVITIES[0])).toContain('Duration'); });
+});
+
+// ---------------------------------------------------------------------------
+// Natural disaster generator
+// ---------------------------------------------------------------------------
+import { NATURAL_DISASTERS, getRandomDisaster as getRandomNatDisaster, getDisastersByType, getDisastersByScale, getAllDisasterTypes, formatDisaster as formatNatDisaster } from '../../src/data/naturalDisaster';
+
+describe('natural disaster generator', () => {
+  it('has at least 5 disasters', () => { expect(NATURAL_DISASTERS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 types', () => { expect(getAllDisasterTypes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random disaster', () => { const d = getRandomNatDisaster(); expect(d.name.length).toBeGreaterThan(3); expect(d.mechanicalEffects.length).toBeGreaterThanOrEqual(2); });
+  it('filters by type', () => { const quakes = getDisastersByType('earthquake'); expect(quakes.length).toBeGreaterThanOrEqual(1); });
+  it('filters by scale', () => { const major = getDisastersByScale('major'); expect(major.length).toBeGreaterThanOrEqual(1); });
+  it('all have warning signs DC', () => { NATURAL_DISASTERS.forEach((d) => expect(d.warningSignsDC).toBeGreaterThanOrEqual(10)); });
+  it('all have aftermath', () => { NATURAL_DISASTERS.forEach((d) => expect(d.aftermath.length).toBeGreaterThan(20)); });
+  it('all have opportunities', () => { NATURAL_DISASTERS.forEach((d) => expect(d.opportunities.length).toBeGreaterThanOrEqual(2)); });
+  it('formats disaster', () => { expect(formatNatDisaster(NATURAL_DISASTERS[0])).toContain('Effects'); });
+});
+
+// ---------------------------------------------------------------------------
+// Caravan ambush generator
+// ---------------------------------------------------------------------------
+import { CARAVAN_AMBUSHES, getRandomAmbush as getRandomCaravanAmbush, getAmbushesByTerrain, getNegotiableAmbushes, getAllTerrainTypes as getAllAmbushTerrains, formatAmbush as formatCaravanAmbush } from '../../src/data/caravanAmbush';
+
+describe('caravan ambush generator', () => {
+  it('has at least 5 ambushes', () => { expect(CARAVAN_AMBUSHES.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 terrains', () => { expect(getAllAmbushTerrains().length).toBeGreaterThanOrEqual(4); });
+  it('generates random ambush', () => { const a = getRandomCaravanAmbush(); expect(a.name.length).toBeGreaterThan(3); expect(a.force.name.length).toBeGreaterThan(3); });
+  it('filters by terrain', () => { const forest = getAmbushesByTerrain('forest_road'); expect(forest.length).toBeGreaterThanOrEqual(1); });
+  it('some are negotiable', () => { const negotiable = getNegotiableAmbushes(); expect(negotiable.length).toBeGreaterThanOrEqual(2); negotiable.forEach((a) => expect(a.negotiationPossible).toBe(true)); });
+  it('all have twists', () => { CARAVAN_AMBUSHES.forEach((a) => expect(a.twist.length).toBeGreaterThan(15)); });
+  it('all have escape options', () => { CARAVAN_AMBUSHES.forEach((a) => expect(a.escapeOption.length).toBeGreaterThan(10)); });
+  it('formats ambush', () => { expect(formatCaravanAmbush(CARAVAN_AMBUSHES[0])).toContain('Warning DC'); });
+});
+
+// ---------------------------------------------------------------------------
+// Ship cargo manifest generator
+// ---------------------------------------------------------------------------
+import { CARGO_ITEMS, generateManifest, getCargoByLegality, getPerishableCargo, getBestTradeRoute, getAllCargoRegions, formatManifest } from '../../src/data/shipCargo';
+
+describe('ship cargo manifest generator', () => {
+  it('has at least 8 cargo items', () => { expect(CARGO_ITEMS.length).toBeGreaterThanOrEqual(8); });
+  it('has 6 regions', () => { expect(getAllCargoRegions().length).toBe(6); });
+  it('generates manifest', () => { const m = generateManifest('northern_kingdom', 'island_chain'); expect(m.shipName.length).toBeGreaterThan(3); expect(m.cargo.length).toBeGreaterThanOrEqual(1); expect(m.totalValue).toBeGreaterThan(0); });
+  it('filters by legality', () => { const legal = getCargoByLegality('legal'); expect(legal.length).toBeGreaterThanOrEqual(5); const contraband = getCargoByLegality('contraband'); expect(contraband.length).toBeGreaterThanOrEqual(1); });
+  it('finds perishable cargo', () => { const perishable = getPerishableCargo(); expect(perishable.length).toBeGreaterThanOrEqual(2); perishable.forEach((c) => expect(c.spoilage).not.toBeNull()); });
+  it('finds best trade route', () => { const silk = CARGO_ITEMS.find((c) => c.name === 'Silk Bolts')!; const route = getBestTradeRoute(silk); expect(route).not.toBeNull(); expect(route!.multiplier).toBeGreaterThan(1); });
+  it('manifest detects smuggling risk', () => { const manifests = Array.from({ length: 20 }, () => generateManifest('northern_kingdom', 'southern_empire', 6)); expect(manifests.some((m) => m.smugglingRisk)).toBe(true); });
+  it('formats manifest', () => { expect(formatManifest(generateManifest('elven_ports', 'dwarven_holds'))).toContain('Total Value'); });
+});
