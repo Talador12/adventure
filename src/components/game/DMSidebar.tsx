@@ -3040,6 +3040,37 @@ export default function DMSidebar({
               🎬 Scene Transition
             </button>
 
+            {/* NPC compliment */}
+            <button onClick={async () => { const { formatNpcCompliment } = await import('../../data/randomNpcCompliment'); onAddDmMessage(formatNpcCompliment()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-green-900/20 border border-green-600/30 text-green-400 font-semibold hover:bg-green-800/30 transition-all" title="NPC flattery">
+              😊 NPC Compliment
+            </button>
+            {/* Post-combat */}
+            <button onClick={async () => { const { getRandomPostCombat, formatPostCombat } = await import('../../data/randomCombatEnd'); onAddDmMessage(formatPostCombat(getRandomPostCombat())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Moment after the fight ends">
+              🕊️ Post-Combat
+            </button>
+            {/* Unusual shop item */}
+            <button onClick={async () => { const { getRandomShopItem, formatShopItem } = await import('../../data/randomShopItem'); onAddDmMessage(formatShopItem(getRandomShopItem())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 font-semibold hover:bg-amber-800/30 transition-all" title="Peculiar item in a shop">
+              🏪 Unusual Item
+            </button>
+            {/* NPC threat */}
+            <button onClick={async () => { const { formatNpcThreat } = await import('../../data/randomNpcThreat'); onAddDmMessage(formatNpcThreat()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Hostile NPC intimidation">
+              😠 NPC Threat
+            </button>
+            {/* Round 1 description */}
+            <button onClick={async () => { const { formatCombatOpener } = await import('../../data/randomCombatOpener'); onAddDmMessage(formatCombatOpener()); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Dramatic round 1 description">
+              ⚔️ Round 1
+            </button>
+            {/* Camp event */}
+            <button onClick={async () => { const { getRandomCampEvent, formatCampEvent } = await import('../../data/randomCampEvent'); onAddDmMessage(formatCampEvent(getRandomCampEvent())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-teal-900/20 border border-teal-600/30 text-teal-400 font-semibold hover:bg-teal-800/30 transition-all" title="Something happens during camp">
+              🏕️ Camp Event
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

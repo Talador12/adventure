@@ -8363,3 +8363,64 @@ describe('scene transitions', () => {
   it('has at least 10', () => { expect(TRANSITIONS.length).toBeGreaterThanOrEqual(10); });
   it('returns narrative text', () => { expect(getRandomTransition().length).toBeGreaterThan(15); });
 });
+
+// ---------------------------------------------------------------------------
+// NPC compliments
+// ---------------------------------------------------------------------------
+import { NPC_COMPLIMENTS, getRandomCompliment } from '../../src/data/randomNpcCompliment';
+
+describe('NPC compliments', () => {
+  it('has at least 8', () => { expect(NPC_COMPLIMENTS.length).toBeGreaterThanOrEqual(8); });
+  it('returns text', () => { expect(getRandomCompliment().length).toBeGreaterThan(10); });
+});
+
+// ---------------------------------------------------------------------------
+// Post-combat moments
+// ---------------------------------------------------------------------------
+import { getRandomPostCombat, formatPostCombat } from '../../src/data/randomCombatEnd';
+
+describe('post-combat', () => {
+  it('generates with type', () => { const m = getRandomPostCombat(); expect(m.moment.length).toBeGreaterThan(0); expect(['emotional', 'practical', 'ominous', 'humorous']).toContain(m.type); });
+  it('formatPostCombat shows type', () => { expect(formatPostCombat(getRandomPostCombat())).toContain('After the Fight'); });
+});
+
+// ---------------------------------------------------------------------------
+// Unusual shop items
+// ---------------------------------------------------------------------------
+import { getRandomShopItem, formatShopItem } from '../../src/data/randomShopItem';
+
+describe('unusual shop items', () => {
+  it('generates with price', () => { const i = getRandomShopItem(); expect(i.name.length).toBeGreaterThan(0); expect(i.price.length).toBeGreaterThan(0); expect(typeof i.actuallyUseful).toBe('boolean'); });
+  it('some are useful', () => { const all = Array.from({ length: 20 }, () => getRandomShopItem()); expect(all.some((i) => i.actuallyUseful)).toBe(true); expect(all.some((i) => !i.actuallyUseful)).toBe(true); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC threats
+// ---------------------------------------------------------------------------
+import { NPC_THREATS, getRandomThreat as getRandThreat } from '../../src/data/randomNpcThreat';
+
+describe('NPC threats', () => {
+  it('has at least 10', () => { expect(NPC_THREATS.length).toBeGreaterThanOrEqual(10); });
+  it('returns text', () => { expect(getRandThreat().length).toBeGreaterThan(10); });
+});
+
+// ---------------------------------------------------------------------------
+// Combat round 1
+// ---------------------------------------------------------------------------
+import { ROUND_ONE_DESCRIPTIONS, getRandomCombatOpener as getCombatR1 } from '../../src/data/randomCombatOpener';
+
+describe('combat round 1', () => {
+  it('has at least 8', () => { expect(ROUND_ONE_DESCRIPTIONS.length).toBeGreaterThanOrEqual(8); });
+  it('returns dramatic text', () => { expect(getCombatR1().length).toBeGreaterThan(15); });
+});
+
+// ---------------------------------------------------------------------------
+// Camp events
+// ---------------------------------------------------------------------------
+import { getRandomCampEvent, formatCampEvent } from '../../src/data/randomCampEvent';
+
+describe('camp events', () => {
+  it('generates valid event', () => { const e = getRandomCampEvent(); expect(e.event.length).toBeGreaterThan(0); expect(['peaceful', 'interruption', 'discovery', 'roleplay']).toContain(e.type); });
+  it('some have mechanical effects', () => { const all = Array.from({ length: 20 }, () => getRandomCampEvent()); expect(all.some((e) => e.mechanicalEffect !== null)).toBe(true); });
+  it('formatCampEvent shows type', () => { expect(formatCampEvent(getRandomCampEvent())).toContain('Camp Event'); });
+});
