@@ -2627,6 +2627,37 @@ export default function DMSidebar({
               🔥 Campfire Story
             </button>
 
+            {/* Cursed item */}
+            <button onClick={async () => { const { getRandomCursedItem, formatCursedItem } = await import('../../data/randomCurseItem'); onAddDmMessage(formatCursedItem(getRandomCursedItem(), true)); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-red-900/20 border border-red-600/30 text-red-400 font-semibold hover:bg-red-800/30 transition-all" title="Random cursed item with hidden drawback">
+              😈 Cursed Item
+            </button>
+            {/* D&D joke */}
+            <button onClick={async () => { const { getRandomJoke, formatJoke } = await import('../../data/randomJoke'); onAddDmMessage(formatJoke(getRandomJoke())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 font-semibold hover:bg-yellow-800/30 transition-all" title="D&D joke for bard performances">
+              😂 D&D Joke
+            </button>
+            {/* Wanted person */}
+            <button onClick={async () => { const { generateWantedPerson, formatWantedPerson } = await import('../../data/randomWantedPerson'); onAddDmMessage(formatWantedPerson(generateWantedPerson())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-orange-900/20 border border-orange-600/30 text-orange-400 font-semibold hover:bg-orange-800/30 transition-all" title="Detailed wanted poster NPC">
+              🔍 Wanted Person
+            </button>
+            {/* Hirelings */}
+            <button onClick={async () => { const { generateHirelingRoster, formatHirelings } = await import('../../data/randomHirelings'); onAddDmMessage(formatHirelings(generateHirelingRoster())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 font-semibold hover:bg-blue-800/30 transition-all" title="Hirelings available for hire">
+              👥 Hirelings
+            </button>
+            {/* Magic shop */}
+            <button onClick={async () => { const { generateMagicShop, formatMagicShop } = await import('../../data/randomMagicShop'); onAddDmMessage(formatMagicShop(generateMagicShop())); }}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all" title="Random magic shop with stock">
+              ✨ Magic Shop
+            </button>
+            {/* Combat complication */}
+            <button onClick={async () => { const { getRandomComplication, formatComplication } = await import('../../data/randomEncounterComplication'); onAddDmMessage(formatComplication(getRandomComplication())); }}
+              className="w-full mb-3 text-[10px] py-1.5 rounded bg-fuchsia-900/20 border border-fuchsia-600/30 text-fuchsia-400 font-semibold hover:bg-fuchsia-800/30 transition-all" title="Mid-combat twist that changes the battle">
+              🌋 Combat Twist
+            </button>
+
             {/* Save/Load Encounter Templates */}
             <div className="mb-3 space-y-1">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>

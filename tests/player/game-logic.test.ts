@@ -7532,3 +7532,67 @@ describe('campfire story', () => {
   it('generates with moral', () => { const s = getRandomStory(); expect(s.title.length).toBeGreaterThan(0); expect(s.moral.length).toBeGreaterThan(0); expect(['horror', 'comedy', 'legend', 'tragedy', 'mystery']).toContain(s.genre); });
   it('formatCampfireStory shows twist', () => { expect(formatCampfireStory(getRandomStory())).toContain('Twist'); expect(formatCampfireStory(getRandomStory())).toContain('Moral'); });
 });
+
+// ---------------------------------------------------------------------------
+// Cursed items
+// ---------------------------------------------------------------------------
+import { getRandomCursedItem, formatCursedItem } from '../../src/data/randomCurseItem';
+
+describe('cursed items', () => {
+  it('generates with appearance and true effect', () => { const i = getRandomCursedItem(); expect(i.name.length).toBeGreaterThan(0); expect(i.appearanceEffect.length).toBeGreaterThan(0); expect(i.trueEffect.length).toBeGreaterThan(0); });
+  it('unidentified hides true effect', () => { expect(formatCursedItem(getRandomCursedItem(), false)).not.toContain('True effect'); });
+  it('identified reveals everything', () => { const text = formatCursedItem(getRandomCursedItem(), true); expect(text).toContain('True effect'); expect(text).toContain('Remove'); });
+});
+
+// ---------------------------------------------------------------------------
+// D&D jokes
+// ---------------------------------------------------------------------------
+import { getRandomJoke, formatJoke } from '../../src/data/randomJoke';
+
+describe('D&D jokes', () => {
+  it('generates with setup and punchline', () => { const j = getRandomJoke(); expect(j.setup.length).toBeGreaterThan(0); expect(j.punchline.length).toBeGreaterThan(0); expect(['pun', 'one-liner', 'situational']).toContain(j.type); });
+  it('formatJoke shows both parts', () => { const text = formatJoke(getRandomJoke()); expect(text.split('\n').length).toBeGreaterThanOrEqual(2); });
+});
+
+// ---------------------------------------------------------------------------
+// Wanted person
+// ---------------------------------------------------------------------------
+import { generateWantedPerson, formatWantedPerson } from '../../src/data/randomWantedPerson';
+
+describe('wanted person', () => {
+  it('generates with all fields', () => { const wp = generateWantedPerson(); expect(wp.name.length).toBeGreaterThan(0); expect(wp.alias.length).toBeGreaterThan(0); expect(wp.reward).toBeGreaterThanOrEqual(100); expect(['low', 'medium', 'high', 'extreme']).toContain(wp.dangerRating); });
+  it('extreme danger = highest reward', () => { for (let i = 0; i < 30; i++) { const wp = generateWantedPerson(); if (wp.dangerRating === 'extreme') expect(wp.reward).toBe(10000); } });
+  it('formatWantedPerson shows WANTED', () => { expect(formatWantedPerson(generateWantedPerson())).toContain('WANTED'); });
+});
+
+// ---------------------------------------------------------------------------
+// Hirelings
+// ---------------------------------------------------------------------------
+import { generateHireling, generateHirelingRoster, formatHirelings } from '../../src/data/randomHirelings';
+
+describe('hirelings', () => {
+  it('generates with role and quirk', () => { const h = generateHireling(); expect(h.name.length).toBeGreaterThan(0); expect(h.role.length).toBeGreaterThan(0); expect(h.dailyWage).toBeGreaterThanOrEqual(1); expect(['reliable', 'fair-weather', 'untrustworthy']).toContain(h.loyalty); });
+  it('roster returns correct count', () => { expect(generateHirelingRoster(5).length).toBe(5); });
+  it('formatHirelings shows loyalty', () => { expect(formatHirelings(generateHirelingRoster())).toMatch(/🟢|🟡|🔴/); });
+});
+
+// ---------------------------------------------------------------------------
+// Magic shop
+// ---------------------------------------------------------------------------
+import { generateMagicShop, formatMagicShop } from '../../src/data/randomMagicShop';
+
+describe('magic shop', () => {
+  it('generates with stock', () => { const s = generateMagicShop(); expect(s.shopName.length).toBeGreaterThan(0); expect(s.stock.length).toBeGreaterThanOrEqual(2); expect(s.owner.length).toBeGreaterThan(0); });
+  it('formatMagicShop shows stock', () => { expect(formatMagicShop(generateMagicShop())).toContain('Stock'); });
+});
+
+// ---------------------------------------------------------------------------
+// Encounter complications
+// ---------------------------------------------------------------------------
+import { getRandomComplication, getComplicationsBySeverity, formatComplication as fmtComplication } from '../../src/data/randomEncounterComplication';
+
+describe('encounter complications', () => {
+  it('generates valid complication', () => { const c = getRandomComplication(); expect(c.description.length).toBeGreaterThan(0); expect(['minor', 'major', 'dramatic']).toContain(c.severity); });
+  it('filters by severity', () => { const dramatic = getComplicationsBySeverity('dramatic'); for (const c of dramatic) expect(c.severity).toBe('dramatic'); expect(dramatic.length).toBeGreaterThanOrEqual(3); });
+  it('formatComplication shows mechanical effect', () => { expect(fmtComplication(getRandomComplication())).toContain('⚙️'); });
+});
