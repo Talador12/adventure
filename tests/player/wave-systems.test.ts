@@ -2279,3 +2279,93 @@ describe('creature domestication', () => {
   it('all stages have reasonable DCs', () => { DOMESTICABLE_CREATURES.forEach((c) => c.stages.forEach((s) => expect(s.dc).toBeGreaterThanOrEqual(10))); });
   it('formats creature', () => { expect(formatCreature(DOMESTICABLE_CREATURES[0])).toContain('Favorite food'); });
 });
+
+// ---------------------------------------------------------------------------
+// Oracle consultation
+// ---------------------------------------------------------------------------
+import { ORACLES, getRandomOracle, getOracleByType, getTrustworthy, getOraclesWithAgendas, getAllOracleTypes, formatOracle } from '../../src/data/oracleConsultation';
+
+describe('oracle consultation', () => {
+  it('has at least 4 oracles', () => { expect(ORACLES.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 types', () => { expect(getAllOracleTypes().length).toBeGreaterThanOrEqual(4); });
+  it('generates random oracle', () => { const o = getRandomOracle(); expect(o.answers.length).toBeGreaterThanOrEqual(2); });
+  it('trustworthy filter works', () => { const trusted = getTrustworthy(7); expect(trusted.length).toBeGreaterThanOrEqual(2); trusted.forEach((o) => expect(o.trustworthiness).toBeGreaterThanOrEqual(7)); });
+  it('some have hidden agendas', () => { expect(getOraclesWithAgendas().length).toBeGreaterThanOrEqual(1); });
+  it('all answers have interpretation DCs', () => { ORACLES.forEach((o) => o.answers.forEach((a) => expect(a.interpretationDC).toBeGreaterThanOrEqual(10))); });
+  it('formats oracle', () => { expect(formatOracle(ORACLES[0])).toContain('trust'); });
+});
+
+// ---------------------------------------------------------------------------
+// Enchanted armor quirks
+// ---------------------------------------------------------------------------
+import { ARMOR_QUIRKS, getRandomArmorQuirk, getQuirkCount, formatArmorQuirk } from '../../src/data/enchantedArmorQuirk';
+
+describe('enchanted armor quirks', () => {
+  it('has at least 5 quirks', () => { expect(ARMOR_QUIRKS.length).toBeGreaterThanOrEqual(5); expect(getQuirkCount()).toBeGreaterThanOrEqual(5); });
+  it('generates random quirk', () => { const q = getRandomArmorQuirk(); expect(q.quirk.length).toBeGreaterThan(10); expect(q.opinion.length).toBeGreaterThan(10); });
+  it('all have mechanical consequences', () => { ARMOR_QUIRKS.forEach((q) => expect(q.mechanicalConsequence.length).toBeGreaterThan(10)); });
+  it('all have appeasement methods', () => { ARMOR_QUIRKS.forEach((q) => expect(q.appeasement.length).toBeGreaterThan(10)); });
+  it('all have AC bonuses', () => { ARMOR_QUIRKS.forEach((q) => expect(q.acBonus).toBeGreaterThanOrEqual(1)); });
+  it('formats quirk', () => { expect(formatArmorQuirk(ARMOR_QUIRKS[0])).toContain('Consequence'); });
+});
+
+// ---------------------------------------------------------------------------
+// Planar invasion protocol
+// ---------------------------------------------------------------------------
+import { INVASION_PROTOCOLS, getRandomProtocol, getProtocolByPlane, getAllInvadingPlanes, getPhaseCount as getInvasionPhases, formatProtocol } from '../../src/data/planarInvasion';
+
+describe('planar invasion protocol', () => {
+  it('has at least 3 protocols', () => { expect(INVASION_PROTOCOLS.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by plane', () => { const abyss = getProtocolByPlane('abyss'); expect(abyss).toBeDefined(); expect(abyss!.threatLevel.length).toBeGreaterThan(3); });
+  it('all have at least 4 response phases', () => { INVASION_PROTOCOLS.forEach((p) => expect(getInvasionPhases(p)).toBeGreaterThanOrEqual(4)); });
+  it('all have party roles', () => { INVASION_PROTOCOLS.forEach((p) => expect(p.partyRole.length).toBeGreaterThan(15)); });
+  it('all have failure consequences', () => { INVASION_PROTOCOLS.forEach((p) => expect(p.failureConsequence.length).toBeGreaterThan(15)); });
+  it('all have early warnings', () => { INVASION_PROTOCOLS.forEach((p) => expect(p.earlyWarning.length).toBeGreaterThan(15)); });
+  it('formats protocol', () => { expect(formatProtocol(INVASION_PROTOCOLS[0])).toContain('INVASION'); });
+});
+
+// ---------------------------------------------------------------------------
+// Political marriage
+// ---------------------------------------------------------------------------
+import { POLITICAL_MARRIAGES, getRandomMarriage, getMarriagesByMotivation, getEscapeOptionCount, getAllMotivations as getAllMarriageMotivations, formatMarriage } from '../../src/data/politicalMarriage';
+
+describe('political marriage', () => {
+  it('has at least 3 marriages', () => { expect(POLITICAL_MARRIAGES.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 motivations', () => { expect(getAllMarriageMotivations().length).toBeGreaterThanOrEqual(3); });
+  it('generates random marriage', () => { const m = getRandomMarriage(); expect(m.parties.length).toBeGreaterThanOrEqual(2); expect(m.complications.length).toBeGreaterThanOrEqual(2); });
+  it('all have escape options', () => { POLITICAL_MARRIAGES.forEach((m) => expect(getEscapeOptionCount(m)).toBeGreaterThanOrEqual(2)); });
+  it('all have ceremony threats', () => { POLITICAL_MARRIAGES.forEach((m) => expect(m.ceremonyThreat.length).toBeGreaterThan(15)); });
+  it('all have success/failure outcomes', () => { POLITICAL_MARRIAGES.forEach((m) => { expect(m.ifSuccessful.length).toBeGreaterThan(15); expect(m.ifFailed.length).toBeGreaterThan(15); }); });
+  it('formats marriage', () => { expect(formatMarriage(POLITICAL_MARRIAGES[0])).toContain('Stakes'); });
+});
+
+// ---------------------------------------------------------------------------
+// Monster evolution tracker
+// ---------------------------------------------------------------------------
+import { EVOLVING_MONSTERS, getRandomEvolvingMonster, getMonstersByTrigger, getCRAtStage, getAllEvolutionTriggers, formatEvolvingMonster } from '../../src/data/monsterEvolution';
+
+describe('monster evolution tracker', () => {
+  it('has at least 3 monsters', () => { expect(EVOLVING_MONSTERS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 triggers', () => { expect(getAllEvolutionTriggers().length).toBeGreaterThanOrEqual(3); });
+  it('generates random monster', () => { const m = getRandomEvolvingMonster(); expect(m.stages.length).toBeGreaterThanOrEqual(2); });
+  it('CR increases with stage', () => { EVOLVING_MONSTERS.forEach((m) => { expect(getCRAtStage(m, m.maxEvolutions)).toBeGreaterThan(m.baseCR); }); });
+  it('all have weaknesses gained', () => { EVOLVING_MONSTERS.forEach((m) => expect(m.weaknessGained.length).toBeGreaterThan(15)); });
+  it('all have recognition DCs', () => { EVOLVING_MONSTERS.forEach((m) => expect(m.partyRecognitionDC).toBeGreaterThanOrEqual(10)); });
+  it('formats monster', () => { expect(formatEvolvingMonster(EVOLVING_MONSTERS[0], 1)).toContain('Stage 1'); });
+});
+
+// ---------------------------------------------------------------------------
+// Prison break scenario
+// ---------------------------------------------------------------------------
+import { PRISON_BREAK_SCENARIOS, getRandomPrisonBreak, getPrisonByType, getChallengeCount as getPrisonChallenges, getEscapeRouteCount, getAllPrisonTypes, formatPrisonBreak } from '../../src/data/prisonBreak';
+
+describe('prison break scenario', () => {
+  it('has at least 2 scenarios', () => { expect(PRISON_BREAK_SCENARIOS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 types', () => { expect(getAllPrisonTypes().length).toBeGreaterThanOrEqual(2); });
+  it('generates random scenario', () => { const s = getRandomPrisonBreak(); expect(s.challenges.length).toBeGreaterThanOrEqual(3); });
+  it('all have escape routes', () => { PRISON_BREAK_SCENARIOS.forEach((s) => expect(getEscapeRouteCount(s)).toBeGreaterThanOrEqual(3)); });
+  it('all have twists', () => { PRISON_BREAK_SCENARIOS.forEach((s) => expect(s.twist.length).toBeGreaterThan(20)); });
+  it('challenges have alternative skills', () => { PRISON_BREAK_SCENARIOS.forEach((s) => s.challenges.forEach((c) => expect(c.alternativeSkill.length).toBeGreaterThan(3))); });
+  it('all describe gear and magic status', () => { PRISON_BREAK_SCENARIOS.forEach((s) => { expect(s.gearStatus.length).toBeGreaterThan(10); expect(s.magicStatus.length).toBeGreaterThan(10); }); });
+  it('formats scenario', () => { expect(formatPrisonBreak(PRISON_BREAK_SCENARIOS[0])).toContain('Twist'); });
+});

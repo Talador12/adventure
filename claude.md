@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 42 tests (2419 total) — oracle consultation, enchanted armor, planar invasion, political marriage, monster evolution, prison break:
+  - **Oracle consultation** — `oracleConsultation.ts` with 4 oracles (blind seer/card reader/spirit medium/star gazer), cryptic answers with interpretation DCs, hidden agendas.
+  - **Enchanted armor quirks** — `enchantedArmorQuirk.ts` with 6 armors with personalities (Sir Reginald the chainmail knight, The Pacifist Robe, The Coward's Shield).
+  - **Planar invasion protocol** — `planarInvasion.ts` with 3 protocols (Abyss/Feywild/Far Realm), 4-5 response phases, civilian protocols, counter-measures.
+  - **Political marriage** — `politicalMarriage.ts` with 3 scenarios, willing/reluctant/opposed parties, escape options, ceremony threats, success/failure outcomes.
+  - **Monster evolution tracker** — `monsterEvolution.ts` with 3 evolving monsters (Recurring Goblin/Adaptive Ooze/Undying Wolf), CR scaling, weakness gained.
+  - **Prison break** — `prisonBreak.ts` with 2 scenarios (antimagic dungeon/living prison), no-gear challenges, escape routes, twists.
+
 - 6 new systems + 41 tests (2377 total) — villain lairs, magical bonds, quest negotiation, artifact histories, tavern entertainment, creature domestication:
   - **Villain lair designer** — `villainLair.ts` with 3 lairs (Obsidian Throne/Flesh Workshop/Inverted Spire), environmental storytelling, boss advantages, party opportunities.
   - **Magical bond system** — `magicalBond.ts` with 4 bond types (life link/battle sync/empathic link/power share), formation rituals, benefits, drawbacks, break consequences.
@@ -1170,17 +1178,25 @@ The complete feature set built from project inception through 46 development ite
 - ~~Tavern entertainment~~ **DONE** — `tavernEntertainment.ts` with 5 events + secret opportunities
 - ~~Creature domestication~~ **DONE** — `creatureDomestication.ts` with 4 creatures + taming stages
 
-**Wave 57 Roadmap:**
+**Wave 57 (2,419 tests):**
+- ~~Oracle consultation~~ **DONE** — `oracleConsultation.ts` with 4 oracles + cryptic answers
+- ~~Enchanted armor quirks~~ **DONE** — `enchantedArmorQuirk.ts` with 6 armors with personalities
+- ~~Planar invasion protocol~~ **DONE** — `planarInvasion.ts` with 3 protocols + response phases
+- ~~Political marriage~~ **DONE** — `politicalMarriage.ts` with 3 scenarios + escape options
+- ~~Monster evolution tracker~~ **DONE** — `monsterEvolution.ts` with 3 evolving monsters
+- ~~Prison break~~ **DONE** — `prisonBreak.ts` with 2 scenarios + no-gear challenges
+
+**Wave 58 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
-- Encounter terrain generator — AI builds thematic battle maps from scene description
 - Cross-campaign timeline — track world events across multiple play sessions
-- Magical prison break scenario — escaping from an anti-magic dungeon with no gear
-- Random oracle consultation — cryptic answers to player questions with interpretation DCs
-- Enchanted armor quirks — armor that has personality traits and opinions about combat
-- Planar invasion response protocol — emergency plans when another plane attacks
-- Random political marriage — arranged unions with diplomatic consequences and escape options
-- Monster evolution tracker — creatures that grow stronger after surviving encounters with the party
+- Random magical inheritance — what happens when a wizard dies and their stuff becomes your problem
+- Enchanted weapon rivalry system — two sentient weapons that hate each other
+- Random underground railroad — secret network helping escaped prisoners and refugees
+- Magical duel etiquette — formal arcane combat with rules, seconds, and consequences
+- Random apocalypse survivor camp — post-disaster settlements with resource management
+- Enchanted map that lies — a sentient map with its own agenda and unreliable directions
+- Random familiar rebellion — when familiars organize and demand better working conditions
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
