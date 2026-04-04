@@ -45,12 +45,44 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v15.4.0 — 2,645 tests across 385 data files, 194 systems, 61 UI buttons
+## Current Version: v15.5.0 — 2,796 tests across 385 data files + 22 campaign files, 194 systems, 61 UI buttons
+
+## Campaign Starter Kit Library — Phase 1 COMPLETE (20/200)
+
+Infrastructure built at `src/campaigns/` with shared types, catalog index, search/filter, and the first batch of 20 genuinely playable campaigns:
+
+**10 Full Campaigns (multi-session, 3-5 acts each):**
+1. **The Shattered Crown** — political succession thriller, court intrigue, faction war (Lv 1-12, ~20 sessions)
+2. **The Village That Forgot** — horror/mystery, amnesia village, dying god feeds on memories (Lv 3-10, ~15 sessions)
+3. **The Vault of the Dead God** — planar heist, rob a deity's treasury across 3 planes (Lv 5-15, ~18 sessions)
+4. **The Recurring Goblin** — comedy, a CR 0.25 goblin who keeps failing upward to BBEG (Lv 1-10, ~14 sessions)
+5. **The Last Lighthouse** — nautical survival horror, relight beacons before aboleths rise (Lv 3-11, ~16 sessions)
+6. **Blood in the Water** — epic pirate saga, dead pirate queen's enchanted fleet (Lv 4-13, ~18 sessions)
+7. **The Clockwork Conspiracy** — urban mystery, sentient engine converting citizens to clockwork (Lv 2-9, ~14 sessions)
+8. **The Wild Hunt** — fey survival, party is prey in a century-old hunt (Lv 3-10, ~12 sessions)
+9. **Ashes of the Old Empire** — epic war, three rising powers, hidden dragon manipulator (Lv 1-15, ~24 sessions)
+10. **The Starfall Prophecy** — cosmic epic, stars are waking gods, reality at stake (Lv 5-18, ~22 sessions)
+
+**10 One-Shot Campaigns (single-session, 3-4 scenes each):**
+1. **Familiar Strike** — comedy, players ARE familiars forming a union (Lv 5, ~4h)
+2. **The Great Cheese Heist** — comedy, sentient mice stealing magic cheese from a knight-cat (Lv 3, ~3h)
+3. **The Poisoned Patron** — mystery, locked-room whodunit at a noble banquet (Lv 4, ~4h)
+4. **Dinner with a Lich** — comedy/horror, lonely lich just wants dinner company (Lv 7, ~3h)
+5. **Raft Colony** — survival, flooded world, 30 survivors on a raft, something below (Lv 5, ~4h)
+6. **The Trial of Echoes** — serious/planar, party is dead, appeal process in afterlife court (Lv 8, ~4h)
+7. **Graveyard Shift** — comedy, night-shift cemetery security, undead class-action haunting (Lv 2, ~3h)
+8. **The Dragon's Dentist** — comedy, dragon has a toothache, mimic inside the tooth (Lv 6, ~3h)
+9. **The Infinite Inn** — mystery/horror, building-sized elder mimic traps travelers (Lv 5, ~4h)
+10. **Court of the Fey Queen** — social intrigue, fey ball that's been going for 300 years (Lv 6, ~4h)
+
+**Infrastructure:** `types.ts` (CampaignStarterKit types), `index.ts` (catalog with search/filter by tone/theme/level/playerCount/searchTerm), 151 tests validating structure, content quality, and catalog functions.
+
+**Next:** Batch-produce remaining 180 campaigns (90 full + 90 one-shots) in future sessions.
 
 ## 🎯 NEXT SESSION — Ambitious Ideas for Fresh Context
 
-### 1. Campaign Starter Kit Library (THE BIG ONE)
-**100 full campaigns + 100 one-shots.** Infrastructure at `src/campaigns/` with shared types, then batch-produce campaigns that reference our 194 data systems. Range from classic fantasy to wild (Familiar Strike where players ARE the familiars, The Great Cheese Heist where players are sentient mice). Each campaign: title, tagline, tone, 3-5 acts, key NPCs, locations, hooks, twists, climax, and which data systems it uses. See the full spec in the Major Roadmap section below.
+### 1. Campaign Starter Kit Library — Phase 2
+Batch-produce the next 30 campaigns (15 full + 15 one-shots) to reach 50/200. Focus on underrepresented tones: more horror, more survival, more social intrigue one-shots.
 
 ### 2. Wire Remaining Systems into UI
 61 of our 194 systems are wired as DMSidebar buttons. The remaining ~133 (mostly Waves 33-65 that didn't get explicit buttons, plus all the lib/ systems) need UI integration. The pattern is established: `async import()` + `onAddDmMessage(format(...))`.
