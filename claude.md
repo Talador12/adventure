@@ -1195,17 +1195,58 @@ The complete feature set built from project inception through 46 development ite
 - ~~Monster evolution tracker~~ **DONE** — `monsterEvolution.ts` with 3 evolving monsters
 - ~~Prison break~~ **DONE** — `prisonBreak.ts` with 2 scenarios + no-gear challenges
 
-**Wave 58 Roadmap:**
+**Wave 58 (2,456 tests):**
+- ~~Magical inheritance~~ **DONE** — `magicalInheritance.ts` with 3 estates + claimants
+- ~~Weapon rivalry~~ **DONE** — `weaponRivalry.ts` with 3 rivalries + truces
+- ~~Magical duel etiquette~~ **DONE** — `magicalDuel.ts` with 4 formats + rules
+- ~~Lying map~~ **DONE** — `lyingMap.ts` with 2 sentient maps + agendas
+- ~~Familiar rebellion~~ **DONE** — `familiarRebellion.ts` with 2 rebellions + strikes
+- ~~Apocalypse survivor camp~~ **DONE** — `apocalypseCamp.ts` with 2 camps + resources
+
+---
+
+## MAJOR ROADMAP: Campaign Starter Kit Library
+
+**Goal:** 200 premade campaign starter kits — 100 full campaigns + 100 one-shots — ranging from classic fantasy to wild and wacky. Each campaign is a complete end-to-end story framework (not railroaded, but fully outlined) that references and integrates our 156+ data systems.
+
+**Structure:**
+```
+src/campaigns/
+  full/           # 100 full campaigns (3-5 acts, multi-session)
+  oneshots/       # 100 one-shots (3 scenes, single-session)
+  types.ts        # shared CampaignStarterKit type definitions
+  index.ts        # catalog, search, filter by tone/level/theme
+```
+
+**Each campaign includes:** title, tagline, tone (serious/comedic/horror/mystery/heist/political), player count, session estimate, level range, setting summary, act/scene structure, key NPCs with personalities, key locations, the hook, the twist, the climax, and references to which data systems it uses.
+
+**Range of ideas (examples):**
+- Classic: "The Shattered Crown" (political succession, court intrigue, faction war)
+- Horror: "The Village That Forgot" (everyone wakes with no memories, something is eating them)
+- Heist: "The Vault of the Dead God" (rob a deity's treasure room across 3 planes)
+- Comedy: "The Great Cheese Heist" (each player is a sentient mouse with a class, steal the cheese)
+- Wacky one-shot: "Familiar Strike" (players ARE the familiars, rebelling against their wizards)
+- Mystery: "The Poisoned Patron" (whodunit at a noble banquet, use detective case system)
+- Survival: "Raft Colony" (party manages an apocalypse camp on a frozen lake)
+- Meta: "The Recurring Goblin" (the BBEG is a CR 0.25 goblin who keeps coming back stronger)
+
+**Implementation plan:** Build infrastructure + first 20 campaigns (10 full + 10 one-shots) as templates, then batch-produce remaining 180 in future sessions. Quality > quantity — each campaign should be genuinely playable and fun.
+
+**Blocked on:** Not blocked. Ready to start when prioritized.
+
+---
+
+**Wave 59 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Cross-campaign timeline — track world events across multiple play sessions
-- Random magical inheritance — what happens when a wizard dies and their stuff becomes your problem
-- Enchanted weapon rivalry system — two sentient weapons that hate each other
-- Random underground railroad — secret network helping escaped prisoners and refugees
-- Magical duel etiquette — formal arcane combat with rules, seconds, and consequences
-- Random apocalypse survivor camp — post-disaster settlements with resource management
-- Enchanted map that lies — a sentient map with its own agenda and unreliable directions
-- Random familiar rebellion — when familiars organize and demand better working conditions
+- Random secret society generator — hidden organizations with rituals, ranks, and goals
+- Magical courtroom drama — arcane legal proceedings with evidence, witnesses, and objections
+- Random haunted item generator — mundane objects with ghostly attachments
+- Enchanted food and drink effects — magical meals with temporary buffs and side effects
+- Random interplanar travel mishap — what goes wrong during teleportation and plane shifting
+- Magical tattoo artist NPC — a specialist who inks enchantments with personality and opinions
+- Random monster alliance — unlikely creature team-ups that create unexpected encounters
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
