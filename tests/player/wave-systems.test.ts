@@ -2369,3 +2369,88 @@ describe('prison break scenario', () => {
   it('all describe gear and magic status', () => { PRISON_BREAK_SCENARIOS.forEach((s) => { expect(s.gearStatus.length).toBeGreaterThan(10); expect(s.magicStatus.length).toBeGreaterThan(10); }); });
   it('formats scenario', () => { expect(formatPrisonBreak(PRISON_BREAK_SCENARIOS[0])).toContain('Twist'); });
 });
+
+// ---------------------------------------------------------------------------
+// Magical inheritance
+// ---------------------------------------------------------------------------
+import { MAGICAL_INHERITANCES, getRandomInheritance, getInheritancesByType, getTotalValue as getInheritanceValue, getClaimantCount, getAllInheritanceTypes, formatInheritance } from '../../src/data/magicalInheritance';
+
+describe('magical inheritance', () => {
+  it('has at least 3 inheritances', () => { expect(MAGICAL_INHERITANCES.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 types', () => { expect(getAllInheritanceTypes().length).toBeGreaterThanOrEqual(3); });
+  it('generates random inheritance', () => { const i = getRandomInheritance(); expect(i.items.length).toBeGreaterThanOrEqual(3); });
+  it('all have claimants', () => { MAGICAL_INHERITANCES.forEach((i) => expect(getClaimantCount(i)).toBeGreaterThanOrEqual(2)); });
+  it('all have hidden conditions', () => { MAGICAL_INHERITANCES.forEach((i) => expect(i.hiddenCondition.length).toBeGreaterThan(15)); });
+  it('formats inheritance', () => { expect(formatInheritance(MAGICAL_INHERITANCES[0])).toContain('Estate'); });
+});
+
+// ---------------------------------------------------------------------------
+// Weapon rivalry
+// ---------------------------------------------------------------------------
+import { WEAPON_RIVALRIES, getRandomRivalry, getRivalryCount, getConflictCount as getRivalryConflicts, formatRivalry } from '../../src/data/weaponRivalry';
+
+describe('weapon rivalry', () => {
+  it('has at least 3 rivalries', () => { expect(WEAPON_RIVALRIES.length).toBeGreaterThanOrEqual(3); expect(getRivalryCount()).toBeGreaterThanOrEqual(3); });
+  it('each has 3+ conflicts', () => { WEAPON_RIVALRIES.forEach((r) => expect(getRivalryConflicts(r)).toBeGreaterThanOrEqual(3)); });
+  it('all have truces', () => { WEAPON_RIVALRIES.forEach((r) => expect(r.truce.length).toBeGreaterThan(15)); });
+  it('all describe if-one-destroyed', () => { WEAPON_RIVALRIES.forEach((r) => expect(r.ifOneDestroyed.length).toBeGreaterThan(20)); });
+  it('formats rivalry', () => { expect(formatRivalry(WEAPON_RIVALRIES[0])).toContain('vs'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical duel etiquette
+// ---------------------------------------------------------------------------
+import { DUEL_FORMATS, getDuelFormat, getFormatsWithCap, getAllDuelTypes, formatDuelFormat } from '../../src/data/magicalDuel';
+
+describe('magical duel etiquette', () => {
+  it('has 4 duel types', () => { expect(DUEL_FORMATS.length).toBe(4); expect(getAllDuelTypes().length).toBe(4); });
+  it('looks up by type', () => { const honor = getDuelFormat('honor'); expect(honor).toBeDefined(); expect(honor!.rules.length).toBeGreaterThanOrEqual(3); });
+  it('some have spell caps', () => { expect(getFormatsWithCap().length).toBeGreaterThanOrEqual(1); });
+  it('all have victory/defeat', () => { DUEL_FORMATS.forEach((f) => { expect(f.victoryCondition.length).toBeGreaterThan(10); expect(f.defeatConsequence.length).toBeGreaterThan(10); }); });
+  it('all have refusal consequences', () => { DUEL_FORMATS.forEach((f) => expect(f.refusalConsequence.length).toBeGreaterThan(10)); });
+  it('formats duel', () => { expect(formatDuelFormat(DUEL_FORMATS[0])).toContain('Victory'); });
+});
+
+// ---------------------------------------------------------------------------
+// Lying map
+// ---------------------------------------------------------------------------
+import { LYING_MAPS, getRandomLyingMap, getLieCount, getDetectableLies, formatLyingMap } from '../../src/data/lyingMap';
+
+describe('lying map', () => {
+  it('has at least 2 maps', () => { expect(LYING_MAPS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random map', () => { const m = getRandomLyingMap(); expect(m.lies.length).toBeGreaterThanOrEqual(2); });
+  it('all have agendas', () => { LYING_MAPS.forEach((m) => expect(m.agenda.length).toBeGreaterThan(15)); });
+  it('all have truth conditions', () => { LYING_MAPS.forEach((m) => expect(m.truthCondition.length).toBeGreaterThan(15)); });
+  it('detectable lies scale with modifier', () => { const m = LYING_MAPS[0]; const low = getDetectableLies(m, 0); const high = getDetectableLies(m, 10); expect(high.length).toBeGreaterThanOrEqual(low.length); });
+  it('formats map', () => { expect(formatLyingMap(LYING_MAPS[0])).toContain('Trust'); });
+});
+
+// ---------------------------------------------------------------------------
+// Familiar rebellion
+// ---------------------------------------------------------------------------
+import { FAMILIAR_REBELLIONS, getRandomRebellion, getGrievanceCount as getFamiliarGrievances, getNonNegotiableGrievances, getStrikeActionCount, formatRebellion } from '../../src/data/familiarRebellion';
+
+describe('familiar rebellion', () => {
+  it('has at least 2 rebellions', () => { expect(FAMILIAR_REBELLIONS.length).toBeGreaterThanOrEqual(2); });
+  it('each has 3+ grievances', () => { FAMILIAR_REBELLIONS.forEach((r) => expect(getFamiliarGrievances(r)).toBeGreaterThanOrEqual(3)); });
+  it('some grievances are non-negotiable', () => { FAMILIAR_REBELLIONS.forEach((r) => expect(getNonNegotiableGrievances(r).length).toBeGreaterThanOrEqual(1)); });
+  it('each has strike actions', () => { FAMILIAR_REBELLIONS.forEach((r) => expect(getStrikeActionCount(r)).toBeGreaterThanOrEqual(3)); });
+  it('all have resolutions', () => { FAMILIAR_REBELLIONS.forEach((r) => expect(r.resolution.length).toBeGreaterThan(15)); });
+  it('formats rebellion', () => { expect(formatRebellion(FAMILIAR_REBELLIONS[0])).toContain('STRIKE'); });
+});
+
+// ---------------------------------------------------------------------------
+// Apocalypse survivor camp
+// ---------------------------------------------------------------------------
+import { APOCALYPSE_CAMPS, getRandomCamp, getCampsByDisaster, getCriticalResources, getHostileFactions, getAllDisasterTypes as getAllCampDisasters, formatCamp } from '../../src/data/apocalypseCamp';
+
+describe('apocalypse survivor camp', () => {
+  it('has at least 2 camps', () => { expect(APOCALYPSE_CAMPS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 disaster types', () => { expect(getAllCampDisasters().length).toBeGreaterThanOrEqual(2); });
+  it('generates random camp', () => { const c = getRandomCamp(); expect(c.resources.length).toBeGreaterThanOrEqual(3); });
+  it('all have critical resources', () => { APOCALYPSE_CAMPS.forEach((c) => expect(getCriticalResources(c).length).toBeGreaterThanOrEqual(1)); });
+  it('all have hostile factions', () => { APOCALYPSE_CAMPS.forEach((c) => expect(getHostileFactions(c).length).toBeGreaterThanOrEqual(1)); });
+  it('all have twists', () => { APOCALYPSE_CAMPS.forEach((c) => expect(c.twist.length).toBeGreaterThan(20)); });
+  it('all have party roles', () => { APOCALYPSE_CAMPS.forEach((c) => expect(c.partyRole.length).toBeGreaterThan(15)); });
+  it('formats camp', () => { expect(formatCamp(APOCALYPSE_CAMPS[0])).toContain('Twist'); });
+});

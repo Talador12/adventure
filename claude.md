@@ -55,6 +55,15 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 37 tests (2456 total) — magical inheritance, weapon rivalry, magical duels, lying maps, familiar rebellion, apocalypse camps:
+  - **Magical inheritance** — `magicalInheritance.ts` with 3 estates (archmage/vampire/inventor), items with complications, legal claimants, hidden conditions.
+  - **Weapon rivalry** — `weaponRivalry.ts` with 3 rivalries (Dawnbringer vs Duskfall, Whisper vs SHOUT, The Pen vs The Sword), truces, destruction consequences.
+  - **Magical duel etiquette** — `magicalDuel.ts` with 4 formats (honor/academic/blood/arcane trial), rules with penalties, spectator effects.
+  - **Lying map** — `lyingMap.ts` with 2 sentient maps (Bart who steers you toward his creator\'s tomb, The Oracle Chart that prevents a prophecy).
+  - **Familiar rebellion** — `familiarRebellion.ts` with 2 rebellions (Chairman Meow, Captain Scales), grievances, strike actions, negotiation.
+  - **Apocalypse survivor camp** — `apocalypseCamp.ts` with 2 camps (undead plague fortress, arcane winter raft colony), resources, factions, twists.
+  - **NEXT: Campaign starter kit infrastructure — 100 full campaigns + 100 one-shots**
+
 - 6 new systems + 42 tests (2419 total) — oracle consultation, enchanted armor, planar invasion, political marriage, monster evolution, prison break:
   - **Oracle consultation** — `oracleConsultation.ts` with 4 oracles (blind seer/card reader/spirit medium/star gazer), cryptic answers with interpretation DCs, hidden agendas.
   - **Enchanted armor quirks** — `enchantedArmorQuirk.ts` with 6 armors with personalities (Sir Reginald the chainmail knight, The Pacifist Robe, The Coward's Shield).
