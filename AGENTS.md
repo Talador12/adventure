@@ -123,8 +123,9 @@ Server broadcasts:
 - Always run tests before committing. Fix any failures, including pre-existing ones encountered along the way.
 - **Import alias discipline:** The test file (`tests/player/game-logic.test.ts`) has 10,500+ lines. Many data modules export similar function names (`getRandomX`, `formatX`, `getAllTypes`). ALWAYS alias imports to avoid shadowing earlier imports. Check `grep -n "import.*functionName"` before adding new imports.
 - **Test file splitting recommended:** At 2,292 tests in a single file, the next session should split tests into multiple files (e.g., `tests/data/wave-33-40.test.ts`, `tests/data/wave-41-50.test.ts`) to improve maintainability and reduce import collision risk.
-- **Session record (Waves 33-60):** 28 waves, 168 systems, +1,286 tests, 15 pre-existing bug fixes, 359 data files, 2,536 total tests. All pushed to `origin/staging`.
-- **Next session priorities:** (1) Campaign Starter Kit Library (100 full + 100 one-shots, see claude.md roadmap), (2) Wire data systems into the UI (DMSidebar buttons), (3) Continue Wave 61+ data systems if desired. The data system pattern is well-established — types, const array, CRUD functions, format function, tests in `wave-systems.test.ts`.
+- **Session record (Waves 33-61):** 29 waves, 174 systems, +1,323 tests, 15 pre-existing bug fixes, 365 data files, 2,573 total tests, 54 DMSidebar UI buttons wired. All pushed to `origin/staging`.
+- **UI integration done:** 54 Wave 33-61 data systems wired into DMSidebar via `async import()` + `onAddDmMessage(format(...))`. Organized in 6 labeled sections: Combat, World Building, NPCs & Social, Story & Plot, Items & Treasure, Misc Generators.
+- **Next session priorities:** (1) Campaign Starter Kit Library (100 full + 100 one-shots, see claude.md roadmap), (2) Continue Wave 62+ data systems if desired. The data system pattern is well-established — types, const array, CRUD functions, format function, tests in `wave-systems.test.ts`, button in DMSidebar.
 
 ## AI Working Context
 
