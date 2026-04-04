@@ -45,13 +45,13 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v15.5.0 — 2,796 tests across 385 data files + 22 campaign files, 194 systems, 61 UI buttons
+## Current Version: v15.6.0 — 2,906 tests across 385 data files + 44 campaign files, 194 systems, 61 UI buttons
 
-## Campaign Starter Kit Library — Phase 1 COMPLETE (20/200)
+## Campaign Starter Kit Library — Phase 2 COMPLETE (42/200)
 
-Infrastructure built at `src/campaigns/` with shared types, catalog index, search/filter, and the first batch of 20 genuinely playable campaigns:
+Infrastructure at `src/campaigns/` with shared types, catalog index, search/filter by tone/theme/level/playerCount/searchTerm. 261 campaign-specific tests.
 
-**10 Full Campaigns (multi-session, 3-5 acts each):**
+**20 Full Campaigns (multi-session, 3-5 acts each):**
 1. **The Shattered Crown** — political succession thriller, court intrigue, faction war (Lv 1-12, ~20 sessions)
 2. **The Village That Forgot** — horror/mystery, amnesia village, dying god feeds on memories (Lv 3-10, ~15 sessions)
 3. **The Vault of the Dead God** — planar heist, rob a deity's treasury across 3 planes (Lv 5-15, ~18 sessions)
@@ -62,8 +62,18 @@ Infrastructure built at `src/campaigns/` with shared types, catalog index, searc
 8. **The Wild Hunt** — fey survival, party is prey in a century-old hunt (Lv 3-10, ~12 sessions)
 9. **Ashes of the Old Empire** — epic war, three rising powers, hidden dragon manipulator (Lv 1-15, ~24 sessions)
 10. **The Starfall Prophecy** — cosmic epic, stars are waking gods, reality at stake (Lv 5-18, ~22 sessions)
+11. **The Drowning World** — survival, endless magical rain, lead refugees west, imprisoned elemental child (Lv 1-10, ~16 sessions)
+12. **The College of Unfinished Things** — comedy, wizard school is alive (it IS the dean), sentient cafeteria (Lv 1-8, ~14 sessions)
+13. **The Underdark Express** — exploration, arcane train through Underdark, engine eats memories (Lv 3-12, ~16 sessions)
+14. **The God Tournament** — epic, divine competition, mortal champions, rigged by a forgotten god (Lv 5-16, ~20 sessions)
+15. **The Hollow King** — mystery, king replaced by shadar-kai, soul trapped in Shadowfell mirror (Lv 3-11, ~15 sessions)
+16. **The Last Feast** — social, 7-day diplomatic feast, changeling saboteur, toast is the boss fight (Lv 3-10, ~14 sessions)
+17. **The Graveyard of Gods** — epic, dead god corpses in Astral Sea, primordial hunger predator (Lv 8-18, ~20 sessions)
+18. **The War Beneath** — serious, 3-faction Underdark war, aboleth puppeteer, surface party drops in (Lv 5-14, ~18 sessions)
+19. **The Price of Immortality** — horror, 13 immortal wizards dying, 2600 stolen lifespans, ethical reckoning (Lv 4-12, ~15 sessions)
+20. **The Caravan at the End of the World** — exploration, apocalypse wave, lead 200 refugees west, rewrite reality (Lv 3-12, ~18 sessions)
 
-**10 One-Shot Campaigns (single-session, 3-4 scenes each):**
+**22 One-Shot Campaigns (single-session, 3-4 scenes each):**
 1. **Familiar Strike** — comedy, players ARE familiars forming a union (Lv 5, ~4h)
 2. **The Great Cheese Heist** — comedy, sentient mice stealing magic cheese from a knight-cat (Lv 3, ~3h)
 3. **The Poisoned Patron** — mystery, locked-room whodunit at a noble banquet (Lv 4, ~4h)
@@ -74,15 +84,27 @@ Infrastructure built at `src/campaigns/` with shared types, catalog index, searc
 8. **The Dragon's Dentist** — comedy, dragon has a toothache, mimic inside the tooth (Lv 6, ~3h)
 9. **The Infinite Inn** — mystery/horror, building-sized elder mimic traps travelers (Lv 5, ~4h)
 10. **Court of the Fey Queen** — social intrigue, fey ball that's been going for 300 years (Lv 6, ~4h)
+11. **The Weapon Speaks** — comedy, sentient weapons with personalities, pacifist sword (Lv 5, ~3h)
+12. **The Last Bar in the Underdark** — social, neutral bar, stolen sentient keg, 5 factions (Lv 6, ~4h)
+13. **The Mimic Ship** — horror, colony mimic IS the ship, pregnant mother protecting eggs (Lv 6, ~4h)
+14. **The Job Interview** — comedy, adventurer guild interview, beholder HR manager named Gerald (Lv 1, ~3h)
+15. **The Wedding Crasher** — comedy/social, bride is a dragon, groom doesn't know, mother-in-law tests (Lv 5, ~4h)
+16. **The Last Defenders** — serious/war, village siege, 3 orc waves, hold until dawn (Lv 7, ~4h)
+17. **The Brewmaster's Trial** — comedy, dwarven magical beer competition, ale elementals (Lv 4, ~3h)
+18. **The Silent Village** — horror, stolen voices, Sound Eater in the mine, fight in silence (Lv 4, ~4h)
+19. **The Gods Play Poker** — comedy/planar, divine poker tournament, bluff a god (Lv 10, ~3h)
+20. **The Dungeon Has WiFi** — comedy/meta, time-rift dungeon, password doors, loading screens (Lv 5, ~3h)
+21. **The Map That Lied** — exploration/comedy, sentient lying treasure map, earn its trust (Lv 3, ~3h)
+22. **The Arena's Champion** — epic, 5-round gladiatorial tournament, crowd favor, sacrifice for a wish (Lv 8, ~4h)
 
-**Infrastructure:** `types.ts` (CampaignStarterKit types), `index.ts` (catalog with search/filter by tone/theme/level/playerCount/searchTerm), 151 tests validating structure, content quality, and catalog functions.
+**Infrastructure:** `types.ts` (CampaignStarterKit types), `index.ts` (catalog with search/filter by tone/theme/level/playerCount/searchTerm), 261 tests validating structure, content quality, and catalog functions.
 
-**Next:** Batch-produce remaining 180 campaigns (90 full + 90 one-shots) in future sessions.
+**Next:** Batch-produce remaining 158 campaigns (80 full + 78 one-shots) in future sessions.
 
 ## 🎯 NEXT SESSION — Ambitious Ideas for Fresh Context
 
-### 1. Campaign Starter Kit Library — Phase 2
-Batch-produce the next 30 campaigns (15 full + 15 one-shots) to reach 50/200. Focus on underrepresented tones: more horror, more survival, more social intrigue one-shots.
+### 1. Campaign Starter Kit Library — Phase 3
+Batch-produce the next 30 campaigns (15 full + 15 one-shots) to reach 72/200. Themes needed: more wilderness exploration, more underdark, nautical one-shots, political one-shots.
 
 ### 2. Wire Remaining Systems into UI
 61 of our 194 systems are wired as DMSidebar buttons. The remaining ~133 (mostly Waves 33-65 that didn't get explicit buttons, plus all the lib/ systems) need UI integration. The pattern is established: `async import()` + `onAddDmMessage(format(...))`.

@@ -24,16 +24,16 @@ import type {
 // Catalog integrity
 // ---------------------------------------------------------------------------
 describe('campaign catalog — integrity', () => {
-  it('has 10 full campaigns', () => {
-    expect(FULL_CAMPAIGNS.length).toBe(10);
+  it('has 20 full campaigns', () => {
+    expect(FULL_CAMPAIGNS.length).toBe(20);
   });
 
-  it('has 10 one-shot campaigns', () => {
-    expect(ONESHOT_CAMPAIGNS.length).toBe(10);
+  it('has 22 one-shot campaigns', () => {
+    expect(ONESHOT_CAMPAIGNS.length).toBe(22);
   });
 
-  it('ALL_CAMPAIGNS contains all 20', () => {
-    expect(ALL_CAMPAIGNS.length).toBe(20);
+  it('ALL_CAMPAIGNS contains all 42', () => {
+    expect(ALL_CAMPAIGNS.length).toBe(42);
   });
 
   it('all campaigns have unique IDs', () => {
@@ -250,13 +250,13 @@ describe('campaign catalog — lookup', () => {
 describe('campaign catalog — filtering', () => {
   it('filter by type=full returns only full campaigns', () => {
     const results = filterCampaigns({ type: 'full' });
-    expect(results.length).toBe(10);
+    expect(results.length).toBe(20);
     results.forEach((c) => expect(c.type).toBe('full'));
   });
 
   it('filter by type=oneshot returns only one-shots', () => {
     const results = filterCampaigns({ type: 'oneshot' });
-    expect(results.length).toBe(10);
+    expect(results.length).toBe(22);
     results.forEach((c) => expect(c.type).toBe('oneshot'));
   });
 
@@ -316,7 +316,7 @@ describe('campaign catalog — filtering', () => {
 
   it('empty filter returns all campaigns', () => {
     const results = filterCampaigns({});
-    expect(results.length).toBe(20);
+    expect(results.length).toBe(42);
   });
 });
 
@@ -357,7 +357,7 @@ describe('campaign catalog — aggregation', () => {
   it('every campaign appears in at least one tone group', () => {
     const grouped = getCampaignsByTone();
     const allGrouped = Object.values(grouped).flat();
-    expect(allGrouped.length).toBe(20);
+    expect(allGrouped.length).toBe(42);
   });
 });
 

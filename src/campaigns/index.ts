@@ -19,6 +19,17 @@ import { theClockworkConspiracy } from './full/theClockworkConspiracy';
 import { theWildHunt } from './full/theWildHunt';
 import { ashesOfTheOldEmpire } from './full/ashesOfTheOldEmpire';
 import { theStarfallProphecy } from './full/theStarfallProphecy';
+// Phase 2 full campaign imports
+import { theDrowningWorld } from './full/theDrowningWorld';
+import { theCollegeOfUnfinishedThings } from './full/theCollegeOfUnfinishedThings';
+import { theUnderdarkExpress } from './full/theUnderdarkExpress';
+import { theGodTournament } from './full/theGodTournament';
+import { theHollowKing } from './full/theHollowKing';
+import { theLastFeast } from './full/theLastFeast';
+import { theGraveyardOfGods } from './full/theGraveyardOfGods';
+import { theWarBeneath } from './full/theWarBeneath';
+import { thePriceOfImmortality } from './full/thePriceOfImmortality';
+import { theCaravanAtTheEndOfTheWorld } from './full/theCaravanAtTheEndOfTheWorld';
 
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
@@ -31,6 +42,19 @@ import { graveyardShift } from './oneshots/graveyardShift';
 import { theDragonsDentist } from './oneshots/theDragonsDentist';
 import { theInfiniteInn } from './oneshots/theInfiniteInn';
 import { courtOfTheFeyQueen } from './oneshots/courtOfTheFeyQueen';
+// Phase 2 one-shot imports
+import { theWeaponSpeaks } from './oneshots/theWeaponSpeaks';
+import { theLastBarInTheUnderdark } from './oneshots/theLastBarInTheUnderdark';
+import { theMimicShip } from './oneshots/theMimicShip';
+import { theJobInterview } from './oneshots/theJobInterview';
+import { theWeddingCrasher } from './oneshots/theWeddingCrasher';
+import { theLastDefenders } from './oneshots/theLastDefenders';
+import { theBrewmastersTrial } from './oneshots/theBrewmastersTrial';
+import { theSilentVillage } from './oneshots/theSilentVillage';
+import { theGodsPlayPoker } from './oneshots/theGodsPlayPoker';
+import { theDungeonHasWiFi } from './oneshots/theDungeonHasWiFi';
+import { theMapThatLied } from './oneshots/theMapThatLied';
+import { theArenasChampion } from './oneshots/theArenasChampion';
 
 export const FULL_CAMPAIGNS: FullCampaign[] = [
   theShatteredCrown,
@@ -43,6 +67,17 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theWildHunt,
   ashesOfTheOldEmpire,
   theStarfallProphecy,
+  // Phase 2
+  theDrowningWorld,
+  theCollegeOfUnfinishedThings,
+  theUnderdarkExpress,
+  theGodTournament,
+  theHollowKing,
+  theLastFeast,
+  theGraveyardOfGods,
+  theWarBeneath,
+  thePriceOfImmortality,
+  theCaravanAtTheEndOfTheWorld,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
@@ -56,6 +91,19 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   theDragonsDentist,
   theInfiniteInn,
   courtOfTheFeyQueen,
+  // Phase 2
+  theWeaponSpeaks,
+  theLastBarInTheUnderdark,
+  theMimicShip,
+  theJobInterview,
+  theWeddingCrasher,
+  theLastDefenders,
+  theBrewmastersTrial,
+  theSilentVillage,
+  theGodsPlayPoker,
+  theDungeonHasWiFi,
+  theMapThatLied,
+  theArenasChampion,
 ];
 
 export const ALL_CAMPAIGNS: CampaignStarterKit[] = [
