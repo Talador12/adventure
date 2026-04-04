@@ -45,7 +45,41 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v15.4.0 — 🎉 2,000 TEST MILESTONE (2,014 tests)
+## Current Version: v15.4.0 — 2,645 tests across 385 data files, 194 systems, 61 UI buttons
+
+## 🎯 NEXT SESSION — Ambitious Ideas for Fresh Context
+
+### 1. Campaign Starter Kit Library (THE BIG ONE)
+**100 full campaigns + 100 one-shots.** Infrastructure at `src/campaigns/` with shared types, then batch-produce campaigns that reference our 194 data systems. Range from classic fantasy to wild (Familiar Strike where players ARE the familiars, The Great Cheese Heist where players are sentient mice). Each campaign: title, tagline, tone, 3-5 acts, key NPCs, locations, hooks, twists, climax, and which data systems it uses. See the full spec in the Major Roadmap section below.
+
+### 2. Wire Remaining Systems into UI
+61 of our 194 systems are wired as DMSidebar buttons. The remaining ~133 (mostly Waves 33-65 that didn't get explicit buttons, plus all the lib/ systems) need UI integration. The pattern is established: `async import()` + `onAddDmMessage(format(...))`.
+
+### 3. DM Toolbox Overhaul — Categorized Generator Panel
+The DMSidebar has 61+ generator buttons in a scrolling list. Transform this into a searchable, categorized panel with tabs (Combat, World, NPCs, Story, Items, Misc) and a search bar. Each button shows a preview tooltip. This makes 194 systems discoverable instead of buried.
+
+### 4. Campaign World Map with Hex Travel
+The #1 feature on the roadmap since Wave 33. Hex-based overland map with fog of war, travel encounters from our data systems, weather integration, random events per hex. This is a React component + canvas rendering project, not a data system.
+
+### 5. Interactive Encounter Builder
+Combine our encounter difficulty tuner, monster ecology, terrain advantage, weather-terrain modifier, and lair action systems into a single interactive encounter design tool. DM selects terrain + weather + monster type and gets a fully staged encounter with environmental effects, lair actions, and difficulty rating.
+
+### 6. NPC Relationship Graph Visualizer
+Take our NPC relationship web data and render it as an interactive force-directed graph. Click nodes to see NPC details, click edges to see relationship type. Secret relationships shown as dashed lines (DM only). This makes political campaigns playable.
+
+### 7. Session Prep Wizard
+A guided workflow that uses our data systems to prep an entire session: pick a setting → generate weather → create an encounter → populate NPCs with voices/backstories → add a plot twist → end with a cliffhanger. Outputs a formatted session plan the DM can reference during play.
+
+### Session Stats for Handoff
+- **Branch:** `staging` (all work pushed)
+- **Tests:** 2,645 passing across 2 test files (`game-logic.test.ts` 1250 + `wave-systems.test.ts` 1395)
+- **Data files:** 385 in `src/data/`
+- **Systems built:** 194 (Waves 33-65)
+- **UI buttons wired:** 61 in DMSidebar
+- **Pre-existing bugs fixed:** 15 import shadowing issues
+- **Test infrastructure:** Split into 2 files for sustainability
+- **Build:** Compiles clean. Vite dev server pattern established.
+- **Data system pattern:** types → const array → CRUD/random functions → format function → tests in `wave-systems.test.ts` → button in DMSidebar
 
 ### v0.1.0 — Initial Release
 

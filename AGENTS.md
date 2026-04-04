@@ -123,9 +123,18 @@ Server broadcasts:
 - Always run tests before committing. Fix any failures, including pre-existing ones encountered along the way.
 - **Import alias discipline:** The test file (`tests/player/game-logic.test.ts`) has 10,500+ lines. Many data modules export similar function names (`getRandomX`, `formatX`, `getAllTypes`). ALWAYS alias imports to avoid shadowing earlier imports. Check `grep -n "import.*functionName"` before adding new imports.
 - **Test file splitting recommended:** At 2,292 tests in a single file, the next session should split tests into multiple files (e.g., `tests/data/wave-33-40.test.ts`, `tests/data/wave-41-50.test.ts`) to improve maintainability and reduce import collision risk.
-- **Session record (Waves 33-61):** 29 waves, 174 systems, +1,323 tests, 15 pre-existing bug fixes, 365 data files, 2,573 total tests, 54 DMSidebar UI buttons wired. All pushed to `origin/staging`.
-- **UI integration done:** 54 Wave 33-61 data systems wired into DMSidebar via `async import()` + `onAddDmMessage(format(...))`. Organized in 6 labeled sections: Combat, World Building, NPCs & Social, Story & Plot, Items & Treasure, Misc Generators.
-- **Next session priorities:** (1) Campaign Starter Kit Library (100 full + 100 one-shots, see claude.md roadmap), (2) Continue Wave 62+ data systems if desired. The data system pattern is well-established — types, const array, CRUD functions, format function, tests in `wave-systems.test.ts`, button in DMSidebar.
+- **Session record (Waves 33-65):** 33 waves, 194 systems, +1,395 tests, 15 pre-existing bug fixes, 385 data files, 2,645 total tests, 61 DMSidebar UI buttons wired. All pushed to `origin/staging`.
+- **UI integration:** 61 Wave 33-65 data systems wired into DMSidebar via `async import()` + `onAddDmMessage(format(...))`. Organized in 6 labeled sections: Combat, World Building, NPCs & Social, Story & Plot, Items & Treasure, Misc Generators.
+- **Test infrastructure:** Tests split into `game-logic.test.ts` (1250 original) + `wave-systems.test.ts` (1395 session). Import aliasing required — always check for collisions before adding imports.
+- **Data system pattern:** types → const array → CRUD/random functions → format function → tests in `wave-systems.test.ts` → button in DMSidebar.
+- **Next session priorities (see claude.md for full specs):**
+  1. Campaign Starter Kit Library (100 full + 100 one-shots) — the product-defining feature
+  2. DM Toolbox Overhaul — searchable categorized generator panel (replaces scrolling button list)
+  3. Campaign World Map with Hex Travel — hex grid, fog of war, travel encounters
+  4. Interactive Encounter Builder — combine terrain/weather/monster/lair systems
+  5. NPC Relationship Graph Visualizer — force-directed graph of political relationships
+  6. Session Prep Wizard — guided session planning using all data systems
+  7. Continue Wave 66+ data systems if desired
 
 ## AI Working Context
 
