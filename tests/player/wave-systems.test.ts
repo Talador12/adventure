@@ -2630,3 +2630,88 @@ describe('tattoo artist NPC', () => {
   it('all have refusal lists', () => { TATTOO_ARTISTS.forEach((a) => expect(a.refusesTo.length).toBeGreaterThanOrEqual(1)); });
   it('formats artist', () => { expect(formatArtist(TATTOO_ARTISTS[0])).toContain('Signature'); });
 });
+
+// ---------------------------------------------------------------------------
+// Prison warden NPC
+// ---------------------------------------------------------------------------
+import { PRISON_WARDENS, getRandomWarden, getPrisonerCount, getHighRiskPrisoners, formatWarden } from '../../src/data/prisonWarden';
+
+describe('prison warden NPC', () => {
+  it('has at least 2 wardens', () => { expect(PRISON_WARDENS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random warden', () => { const w = getRandomWarden(); expect(w.notablePrisoners.length).toBeGreaterThanOrEqual(2); });
+  it('all have quest hooks', () => { PRISON_WARDENS.forEach((w) => expect(w.questHook.length).toBeGreaterThan(15)); });
+  it('all have weaknesses', () => { PRISON_WARDENS.forEach((w) => expect(w.weakness.length).toBeGreaterThan(15)); });
+  it('some prisoners are high risk', () => { PRISON_WARDENS.forEach((w) => expect(getHighRiskPrisoners(w).length).toBeGreaterThanOrEqual(0)); });
+  it('formats warden', () => { expect(formatWarden(PRISON_WARDENS[0])).toContain('Facility'); });
+});
+
+// ---------------------------------------------------------------------------
+// Deity aspect manifestation
+// ---------------------------------------------------------------------------
+import { DEITY_ASPECTS, getRandomAspect, getAspectsByDeity, getAspectsByContext, getConflictingAspects, getAllAspectContexts, formatAspect } from '../../src/data/deityAspect';
+
+describe('deity aspect manifestation', () => {
+  it('has at least 6 aspects', () => { expect(DEITY_ASPECTS.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 4 contexts', () => { expect(getAllAspectContexts().length).toBeGreaterThanOrEqual(4); });
+  it('generates random aspect', () => { const a = getRandomAspect(); expect(a.grantedBoon.length).toBeGreaterThan(10); });
+  it('finds conflicting aspects', () => { const mercy = DEITY_ASPECTS.find((a) => a.aspect === 'mercy')!; const conflicts = getConflictingAspects(mercy); expect(conflicts.length).toBeGreaterThanOrEqual(0); });
+  it('all have demanded tributes', () => { DEITY_ASPECTS.forEach((a) => expect(a.demandedTribute.length).toBeGreaterThan(10)); });
+  it('formats aspect', () => { expect(formatAspect(DEITY_ASPECTS[0])).toContain('Boon'); });
+});
+
+// ---------------------------------------------------------------------------
+// Artifact resonance
+// ---------------------------------------------------------------------------
+import { RESONANCE_PAIRS, getRandomResonance, getResonancesByType, getResonancesForItem, getAllResonanceTypes, formatResonance } from '../../src/data/artifactResonance';
+
+describe('artifact resonance', () => {
+  it('has at least 5 pairs', () => { expect(RESONANCE_PAIRS.length).toBeGreaterThanOrEqual(5); });
+  it('has 4 resonance types', () => { expect(getAllResonanceTypes().length).toBe(4); });
+  it('generates random resonance', () => { const r = getRandomResonance(); expect(r.effect.length).toBeGreaterThan(15); });
+  it('searches by item name', () => { const dawn = getResonancesForItem('Dawn'); expect(dawn.length).toBeGreaterThanOrEqual(1); });
+  it('all have lore', () => { RESONANCE_PAIRS.forEach((p) => expect(p.lore.length).toBeGreaterThan(15)); });
+  it('formats resonance', () => { expect(formatResonance(RESONANCE_PAIRS[0])).toContain('↔'); });
+});
+
+// ---------------------------------------------------------------------------
+// Need compass
+// ---------------------------------------------------------------------------
+import { COMPASS_READINGS, getRandomReading, getReadingsByCategory, getAllNeedCategories, formatReading } from '../../src/data/needCompass';
+
+describe('need compass', () => {
+  it('has at least 7 readings', () => { expect(COMPASS_READINGS.length).toBeGreaterThanOrEqual(7); });
+  it('covers at least 5 categories', () => { expect(getAllNeedCategories().length).toBeGreaterThanOrEqual(5); });
+  it('generates random reading', () => { const r = getRandomReading(); expect(r.compassBehavior.length).toBeGreaterThan(15); });
+  it('all have party reactions', () => { COMPASS_READINGS.forEach((r) => expect(r.reaction.length).toBeGreaterThan(10)); });
+  it('all explain why they need it', () => { COMPASS_READINGS.forEach((r) => expect(r.whyTheyNeedIt.length).toBeGreaterThan(10)); });
+  it('formats reading', () => { expect(formatReading(COMPASS_READINGS[0])).toContain('Points to'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical accident investigation
+// ---------------------------------------------------------------------------
+import { MAGICAL_ACCIDENTS, getRandomAccident, getAccidentsByType, getClueCount as getAccidentClues, getAllAccidentTypes, formatAccident } from '../../src/data/magicalAccident';
+
+describe('magical accident investigation', () => {
+  it('has at least 3 accidents', () => { expect(MAGICAL_ACCIDENTS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 types', () => { expect(getAllAccidentTypes().length).toBeGreaterThanOrEqual(3); });
+  it('generates random accident', () => { const a = getRandomAccident(); expect(a.clues.length).toBeGreaterThanOrEqual(3); });
+  it('all have true explanations', () => { MAGICAL_ACCIDENTS.forEach((a) => expect(a.trueExplanation.length).toBeGreaterThan(20)); });
+  it('all have red herrings', () => { MAGICAL_ACCIDENTS.forEach((a) => expect(a.redHerring.length).toBeGreaterThan(10)); });
+  it('formats with solution toggle', () => { const a = getRandomAccident(); expect(formatAccident(a)).not.toContain('Truth'); expect(formatAccident(a, true)).toContain('Truth'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC relationship web
+// ---------------------------------------------------------------------------
+import { RELATIONSHIP_WEBS, getRandomWeb, getSecretRelations as getWebSecrets, getKnownRelations as getWebKnown, getNPCCount as getWebNPCs, formatWeb } from '../../src/data/npcRelationWeb';
+
+describe('NPC relationship web', () => {
+  it('has at least 2 webs', () => { expect(RELATIONSHIP_WEBS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random web', () => { const w = getRandomWeb(); expect(w.npcs.length).toBeGreaterThanOrEqual(4); expect(w.relations.length).toBeGreaterThanOrEqual(4); });
+  it('has secret relations', () => { RELATIONSHIP_WEBS.forEach((w) => expect(getWebSecrets(w).length).toBeGreaterThanOrEqual(1)); });
+  it('has known relations', () => { RELATIONSHIP_WEBS.forEach((w) => expect(getWebKnown(w).length).toBeGreaterThanOrEqual(1)); });
+  it('all have central conflicts', () => { RELATIONSHIP_WEBS.forEach((w) => expect(w.centralConflict.length).toBeGreaterThan(15)); });
+  it('all have party leverage', () => { RELATIONSHIP_WEBS.forEach((w) => expect(w.partyLeverage.length).toBeGreaterThan(15)); });
+  it('formats with secret toggle', () => { const w = getRandomWeb(); const open = formatWeb(w, true); const closed = formatWeb(w, false); expect(open.length).toBeGreaterThan(closed.length); });
+});

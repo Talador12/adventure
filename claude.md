@@ -1269,17 +1269,26 @@ src/campaigns/
 - ~~Teleport mishap~~ **DONE** — `teleportMishap.ts` with 8 mishaps + fun ratings
 - ~~Monster alliance~~ **DONE** — `monsterAlliance.ts` with 5 alliances + tactics
 
-**Wave 60 Roadmap:**
+**Wave 60 (2,536 tests + 48 UI buttons wired):**
+- ~~Cursed treasure hoard~~ **DONE** — `cursedTreasure.ts` + UI button
+- ~~NPC rival party~~ **DONE** — `rivalParty.ts` + UI button
+- ~~Beast mount catalog~~ **DONE** — `beastMount.ts` + UI button
+- ~~Divine quest giver~~ **DONE** — `divineQuestGiver.ts` + UI button
+- ~~Elemental storm~~ **DONE** — `elementalStorm.ts` + UI button
+- ~~Tattoo artist NPC~~ **DONE** — `tattooArtist.ts` + UI button
+- ~~UI INTEGRATION~~ **DONE** — 48 buttons wired into DMSidebar across 6 categories
+
+**Wave 61 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Cross-campaign timeline — track world events across multiple play sessions
-- Magical tattoo artist NPC — specialist who inks enchantments with personality
-- Random cursed treasure hoard — treasure that fights back when you take it
-- Elemental storm encounter — combat during magical storms with environmental hazards
-- Random NPC rival party — a competing adventuring group with their own goals
-- Magical beast mount catalog — exotic rideable creatures with stats and temperaments
-- Random divine quest giver — gods who show up personally with assignments
 - Enchanted prison warden NPC — a jailer for magical criminals with unique containment
+- Random deity aspect manifestation — different faces of the same god for different situations
+- Magical artifact resonance system — items that power up when near compatible artifacts
+- Random planar rift consequence — long-term effects on regions near dimensional tears
+- Enchanted compass that points to what you need most — not what you want
+- Random magical accident investigation — CSI but for spell mishaps and alchemical explosions
+- NPC relationship web visualizer — how NPCs feel about each other and the party
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels
