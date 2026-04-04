@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 🏆 **WAVE 60** — 6 new systems + 40 tests (2536 total) — cursed treasure, rival parties, beast mounts, divine quests, elemental storms, tattoo artists:
+  - **Cursed treasure** — `cursedTreasure.ts` with 2 hoards, greed-scaled curses, warning signs, greed traps (taking the dragon's heart resurrects it).
+  - **Rival parties** — `rivalParty.ts` with 3 parties (Silver Daggers/Hollow Men/The Understudies who have fan art of you).
+  - **Beast mounts** — `beastMount.ts` with 6 exotic mounts (Giant Owl that judges you, redeemed Nightmare that eats campfires).
+  - **Divine quest givers** — `divineQuestGiver.ts` with 4 gods (Solara apologizes for the inconvenience, Vex speaks like a surfer bro).
+  - **Elemental storms** — `elementalStorm.ts` with 3 storms (lightning/fire/necrotic), 3-phase escalation, eye of the storm.
+  - **Tattoo artists** — `tattooArtist.ts` with 4 NPCs (Scratch the goblin, Old Moss the firbolg, The Archivist warforged with reviews).
+
 - 6 new systems + 40 tests (2496 total) — secret societies, courtroom drama, haunted items, enchanted food, teleport mishaps, monster alliances:
   - **Secret society** — `secretSociety.ts` with 3 societies (The Unwritten/Hollow Court/Verdant Oath), ranks, rituals, signal phrases, weaknesses.
   - **Magical courtroom** — `magicalCourtroom.ts` with 2 cases (talking dog trial, infernal contract breach), evidence, witnesses, verdict options.
@@ -1244,17 +1252,25 @@ src/campaigns/
 
 ---
 
-**Wave 59 Roadmap:**
+**Wave 59 (2,496 tests):**
+- ~~Secret society generator~~ **DONE** — `secretSociety.ts` with 3 societies + rituals
+- ~~Magical courtroom drama~~ **DONE** — `magicalCourtroom.ts` with 2 cases + verdicts
+- ~~Haunted item generator~~ **DONE** — `hauntedItem.ts` with 5 items + ghost resolutions
+- ~~Enchanted food/drink~~ **DONE** — `enchantedFoodDrink.ts` with 7 foods + side effects
+- ~~Teleport mishap~~ **DONE** — `teleportMishap.ts` with 8 mishaps + fun ratings
+- ~~Monster alliance~~ **DONE** — `monsterAlliance.ts` with 5 alliances + tactics
+
+**Wave 60 Roadmap:**
 - Campaign world map with hex-based overland travel and fog-of-war exploration
 - Player-to-player item trading with offer/accept/decline confirmation modal
 - Cross-campaign timeline — track world events across multiple play sessions
-- Random secret society generator — hidden organizations with rituals, ranks, and goals
-- Magical courtroom drama — arcane legal proceedings with evidence, witnesses, and objections
-- Random haunted item generator — mundane objects with ghostly attachments
-- Enchanted food and drink effects — magical meals with temporary buffs and side effects
-- Random interplanar travel mishap — what goes wrong during teleportation and plane shifting
-- Magical tattoo artist NPC — a specialist who inks enchantments with personality and opinions
-- Random monster alliance — unlikely creature team-ups that create unexpected encounters
+- Magical tattoo artist NPC — specialist who inks enchantments with personality
+- Random cursed treasure hoard — treasure that fights back when you take it
+- Elemental storm encounter — combat during magical storms with environmental hazards
+- Random NPC rival party — a competing adventuring group with their own goals
+- Magical beast mount catalog — exotic rideable creatures with stats and temperaments
+- Random divine quest giver — gods who show up personally with assignments
+- Enchanted prison warden NPC — a jailer for magical criminals with unique containment
 
 **Wave 32 (1,018 tests):**
 - ~~Random secrets~~ **DONE** — `randomSecret.ts` with 15 secrets × 5 categories × 3 danger levels

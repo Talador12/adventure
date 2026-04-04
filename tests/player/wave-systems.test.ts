@@ -2542,3 +2542,91 @@ describe('monster alliance', () => {
   it('all have plot hooks', () => { MONSTER_ALLIANCES.forEach((a) => expect(a.plotHook.length).toBeGreaterThan(15)); });
   it('formats alliance', () => { expect(formatAlliance(MONSTER_ALLIANCES[0])).toContain('Weakness'); });
 });
+
+// ---------------------------------------------------------------------------
+// Cursed treasure hoard
+// ---------------------------------------------------------------------------
+import { CURSED_TREASURE_HOARDS, getRandomHoard, getItemCount as getHoardItemCount, formatHoard } from '../../src/data/cursedTreasure';
+
+describe('cursed treasure hoard', () => {
+  it('has at least 2 hoards', () => { expect(CURSED_TREASURE_HOARDS.length).toBeGreaterThanOrEqual(2); });
+  it('generates random hoard', () => { const h = getRandomHoard(); expect(h.items.length).toBeGreaterThanOrEqual(3); });
+  it('all have warning signs', () => { CURSED_TREASURE_HOARDS.forEach((h) => expect(h.warningSign.length).toBeGreaterThan(10)); });
+  it('all have greed traps', () => { CURSED_TREASURE_HOARDS.forEach((h) => expect(h.greedTrap.length).toBeGreaterThan(20)); });
+  it('all items have curse break methods', () => { CURSED_TREASURE_HOARDS.forEach((h) => h.items.forEach((i) => expect(i.breakCurse.length).toBeGreaterThan(10))); });
+  it('formats hoard', () => { expect(formatHoard(CURSED_TREASURE_HOARDS[0])).toContain('Greed trap'); });
+});
+
+// ---------------------------------------------------------------------------
+// NPC rival party
+// ---------------------------------------------------------------------------
+import { RIVAL_PARTIES, getRandomRivalParty, getPartiesByDisposition, getMemberCount as getRivalMembers, getAllDispositions as getRivalDispositions, formatRivalParty } from '../../src/data/rivalParty';
+
+describe('NPC rival party', () => {
+  it('has at least 3 parties', () => { expect(RIVAL_PARTIES.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 dispositions', () => { expect(getRivalDispositions().length).toBeGreaterThanOrEqual(3); });
+  it('generates random party', () => { const p = getRandomRivalParty(); expect(p.members.length).toBeGreaterThanOrEqual(3); });
+  it('all members have weaknesses', () => { RIVAL_PARTIES.forEach((p) => p.members.forEach((m) => expect(m.weakness.length).toBeGreaterThan(10))); });
+  it('all have betrayal risk assessments', () => { RIVAL_PARTIES.forEach((p) => expect(p.betrayalRisk.length).toBeGreaterThan(5)); });
+  it('formats party', () => { expect(formatRivalParty(RIVAL_PARTIES[0])).toContain('Betrayal risk'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical beast mounts
+// ---------------------------------------------------------------------------
+import { BEAST_MOUNTS, getRandomMount, getMountsByCategory, getMountsByMaxPrice, getAllMountCategories, formatMount } from '../../src/data/beastMount';
+
+describe('magical beast mounts', () => {
+  it('has at least 5 mounts', () => { expect(BEAST_MOUNTS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 categories', () => { expect(getAllMountCategories().length).toBeGreaterThanOrEqual(4); });
+  it('generates random mount', () => { const m = getRandomMount(); expect(m.specialAbility.length).toBeGreaterThan(10); });
+  it('price filter works', () => { const cheap = getMountsByMaxPrice(300); expect(cheap.length).toBeGreaterThanOrEqual(2); cheap.forEach((m) => expect(m.price).toBeLessThanOrEqual(300)); });
+  it('all have quirks', () => { BEAST_MOUNTS.forEach((m) => expect(m.quirk.length).toBeGreaterThan(10)); });
+  it('all have feeding requirements', () => { BEAST_MOUNTS.forEach((m) => expect(m.feedingRequirements.length).toBeGreaterThan(10)); });
+  it('formats mount', () => { expect(formatMount(BEAST_MOUNTS[0])).toContain('Quirk'); });
+});
+
+// ---------------------------------------------------------------------------
+// Divine quest giver
+// ---------------------------------------------------------------------------
+import { DIVINE_QUESTS, getRandomDivineQuest, getQuestsByManner, getAllDeityManners, formatDivineQuest } from '../../src/data/divineQuestGiver';
+
+describe('divine quest giver', () => {
+  it('has at least 4 quests', () => { expect(DIVINE_QUESTS.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 3 manners', () => { expect(getAllDeityManners().length).toBeGreaterThanOrEqual(3); });
+  it('generates random quest', () => { const q = getRandomDivineQuest(); expect(q.quest.length).toBeGreaterThan(20); });
+  it('all have refusal consequences', () => { DIVINE_QUESTS.forEach((q) => expect(q.refusalConsequence.length).toBeGreaterThan(15)); });
+  it('all have deity quirks', () => { DIVINE_QUESTS.forEach((q) => expect(q.deityQuirk.length).toBeGreaterThan(15)); });
+  it('all have complications', () => { DIVINE_QUESTS.forEach((q) => expect(q.complication.length).toBeGreaterThan(15)); });
+  it('formats quest', () => { expect(formatDivineQuest(DIVINE_QUESTS[0])).toContain('Reward'); });
+});
+
+// ---------------------------------------------------------------------------
+// Elemental storm encounter
+// ---------------------------------------------------------------------------
+import { ELEMENTAL_STORMS, getRandomStorm, getStormByElement, getPhaseCount as getStormPhases, getAllStormElements, formatStorm } from '../../src/data/elementalStorm';
+
+describe('elemental storm encounter', () => {
+  it('has at least 3 storms', () => { expect(ELEMENTAL_STORMS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 elements', () => { expect(getAllStormElements().length).toBeGreaterThanOrEqual(3); });
+  it('generates random storm', () => { const s = getRandomStorm(); expect(s.phases.length).toBeGreaterThanOrEqual(3); });
+  it('looks up by element', () => { const fire = getStormByElement('fire'); expect(fire).toBeDefined(); });
+  it('all have eye of storm', () => { ELEMENTAL_STORMS.forEach((s) => expect(s.eyeOfTheStorm.length).toBeGreaterThan(15)); });
+  it('all have aftermath', () => { ELEMENTAL_STORMS.forEach((s) => expect(s.aftermath.length).toBeGreaterThan(10)); });
+  it('formats storm', () => { expect(formatStorm(ELEMENTAL_STORMS[0])).toContain('Eye'); });
+});
+
+// ---------------------------------------------------------------------------
+// Tattoo artist NPC
+// ---------------------------------------------------------------------------
+import { TATTOO_ARTISTS, getRandomArtist, getArtistsBySpecialty, getCheapestArtist, getAllSpecialties as getAllArtistSpecialties, formatArtist } from '../../src/data/tattooArtist';
+
+describe('tattoo artist NPC', () => {
+  it('has at least 4 artists', () => { expect(TATTOO_ARTISTS.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 3 specialties', () => { expect(getAllArtistSpecialties().length).toBeGreaterThanOrEqual(3); });
+  it('generates random artist', () => { const a = getRandomArtist(); expect(a.signature.length).toBeGreaterThan(10); expect(a.reviews.length).toBeGreaterThanOrEqual(2); });
+  it('cheapest has lowest multiplier', () => { const cheapest = getCheapestArtist(); TATTOO_ARTISTS.forEach((a) => expect(a.priceMultiplier).toBeGreaterThanOrEqual(cheapest.priceMultiplier)); });
+  it('all have quest hooks', () => { TATTOO_ARTISTS.forEach((a) => expect(a.questHook.length).toBeGreaterThan(15)); });
+  it('all have refusal lists', () => { TATTOO_ARTISTS.forEach((a) => expect(a.refusesTo.length).toBeGreaterThanOrEqual(1)); });
+  it('formats artist', () => { expect(formatArtist(TATTOO_ARTISTS[0])).toContain('Signature'); });
+});
