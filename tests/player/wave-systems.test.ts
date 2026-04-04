@@ -2715,3 +2715,53 @@ describe('NPC relationship web', () => {
   it('all have party leverage', () => { RELATIONSHIP_WEBS.forEach((w) => expect(w.partyLeverage.length).toBeGreaterThan(15)); });
   it('formats with secret toggle', () => { const w = getRandomWeb(); const open = formatWeb(w, true); const closed = formatWeb(w, false); expect(open.length).toBeGreaterThan(closed.length); });
 });
+
+// Wave 62 tests
+import { CONTAMINATION_ZONES, getRandomZone, getHarvestableZones, getAllContaminationTypes, formatZone } from '../../src/data/magicalContamination';
+import { LAST_STAND_SCENARIOS, getRandomLastStand, getScenarioCount as getLastStandCount, formatLastStand } from '../../src/data/legendaryLastStand';
+import { EMOTIONAL_MOMENTS, getRandomMoment, getMomentsByType, getAllEmotionTypes, formatMoment } from '../../src/data/emotionalMoment';
+import { MAGICAL_MISUNDERSTANDINGS, getRandomMisunderstanding, getByComedyLevel, formatMisunderstanding } from '../../src/data/magicalMisunderstanding';
+import { CAMPFIRE_STORIES, getRandomStory as getRandomCampfireStory, getStoriesWithTruth, getAllStoryMoods, formatStory as formatCampfireStory } from '../../src/data/campfireStory';
+import { PARTY_DYNAMICS, getRandomDynamic, getDynamicsByType, getAllDynamicTypes, formatDynamic } from '../../src/data/partyDynamic';
+
+describe('magical contamination', () => {
+  it('has at least 3 zones', () => { expect(CONTAMINATION_ZONES.length).toBeGreaterThanOrEqual(3); });
+  it('has harvestable zones', () => { expect(getHarvestableZones().length).toBeGreaterThanOrEqual(2); });
+  it('all have cleanup methods', () => { CONTAMINATION_ZONES.forEach((z) => expect(z.cleanupMethod.length).toBeGreaterThan(15)); });
+  it('formats zone', () => { expect(formatZone(getRandomZone())).toContain('Cleanup'); });
+});
+
+describe('legendary last stand', () => {
+  it('has at least 3 scenarios', () => { expect(LAST_STAND_SCENARIOS.length).toBeGreaterThanOrEqual(3); });
+  it('all have narrative beats', () => { LAST_STAND_SCENARIOS.forEach((s) => expect(s.narrativeBeat.length).toBeGreaterThan(15)); });
+  it('all have if-they-fall', () => { LAST_STAND_SCENARIOS.forEach((s) => expect(s.ifTheyFall.length).toBeGreaterThan(15)); });
+  it('formats scenario', () => { expect(formatLastStand(getRandomLastStand())).toContain('Stakes'); });
+});
+
+describe('emotional moments', () => {
+  it('has at least 7 moments', () => { expect(EMOTIONAL_MOMENTS.length).toBeGreaterThanOrEqual(7); });
+  it('covers at least 5 types', () => { expect(getAllEmotionTypes().length).toBeGreaterThanOrEqual(5); });
+  it('all have DM tips', () => { EMOTIONAL_MOMENTS.forEach((m) => expect(m.dmTip.length).toBeGreaterThan(10)); });
+  it('formats moment', () => { expect(formatMoment(getRandomMoment())).toContain('DM tip'); });
+});
+
+describe('magical misunderstandings', () => {
+  it('has at least 5', () => { expect(MAGICAL_MISUNDERSTANDINGS.length).toBeGreaterThanOrEqual(5); });
+  it('comedy filter works', () => { expect(getByComedyLevel(9).length).toBeGreaterThanOrEqual(2); });
+  it('all have resolutions', () => { MAGICAL_MISUNDERSTANDINGS.forEach((m) => expect(m.resolution.length).toBeGreaterThan(10)); });
+  it('formats misunderstanding', () => { expect(formatMisunderstanding(getRandomMisunderstanding())).toContain('comedy'); });
+});
+
+describe('campfire stories', () => {
+  it('has at least 5 stories', () => { expect(CAMPFIRE_STORIES.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 moods', () => { expect(getAllStoryMoods().length).toBeGreaterThanOrEqual(4); });
+  it('some have truth behind them', () => { expect(getStoriesWithTruth().length).toBeGreaterThanOrEqual(2); });
+  it('formats story', () => { expect(formatCampfireStory(getRandomCampfireStory())).toContain('Told by'); });
+});
+
+describe('party dynamics', () => {
+  it('has at least 6 dynamics', () => { expect(PARTY_DYNAMICS.length).toBeGreaterThanOrEqual(6); });
+  it('covers 6 types', () => { expect(getAllDynamicTypes().length).toBe(6); });
+  it('all have resolution paths', () => { PARTY_DYNAMICS.forEach((d) => expect(d.resolutionPath.length).toBeGreaterThan(10)); });
+  it('formats dynamic', () => { expect(formatDynamic(getRandomDynamic())).toContain('Trigger'); });
+});
