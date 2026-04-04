@@ -55,6 +55,15 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 🔌 **UI INTEGRATION** — 48 Wave 33-60 data systems wired into DMSidebar with categorized button sections:
+  - **Combat & Encounter (7 buttons):** Battle Cry, Lair Action, Elemental Storm, Battlefield Aftermath, Caravan Ambush, Monster Alliance, Evolving Monster.
+  - **World Building (8 buttons):** Enchanted Forest, Haunted Location, Ancient Ruin, Pocket Dimension, Mirror Dimension, Clockwork Dungeon, Time Loop Dungeon, Trap Corridor.
+  - **NPCs & Social (9 buttons):** Dragon Personality, NPC Voice, NPC Backstory, Rival Party, NPC Pet, Death Scene, Villain Monologue, Oracle, Tattoo Artist.
+  - **Story & Plot (8 buttons):** Cataclysm, Ancient Prophecy, Dark Bargain, Divine Quest, Faction Quest, Political Marriage, Exile Scenario, Prison Break.
+  - **Items & Treasure (7 buttons):** Cursed Treasure, Haunted Item, Sentient Item, Item Pet Peeve, Armor Quirk, Weapon Rivalry, Enchanted Food.
+  - **Misc Generators (14 buttons):** Secret Society, Court Case, Teleport Mishap, Planar Weather, Magic Forecast, Tavern Event, Beast Mount, Inheritance, Black Market, Familiar Rebellion, Survivor Camp, Villain Lair, Artifact History, Noble Scandal, Ancient Inscription.
+  - All use established `async import()` + `onAddDmMessage(format(...))` pattern for code-splitting.
+
 - 🏆 **WAVE 60** — 6 new systems + 40 tests (2536 total) — cursed treasure, rival parties, beast mounts, divine quests, elemental storms, tattoo artists:
   - **Cursed treasure** — `cursedTreasure.ts` with 2 hoards, greed-scaled curses, warning signs, greed traps (taking the dragon's heart resurrects it).
   - **Rival parties** — `rivalParty.ts` with 3 parties (Silver Daggers/Hollow Men/The Understudies who have fan art of you).
