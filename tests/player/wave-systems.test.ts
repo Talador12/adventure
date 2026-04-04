@@ -2765,3 +2765,18 @@ describe('party dynamics', () => {
   it('all have resolution paths', () => { PARTY_DYNAMICS.forEach((d) => expect(d.resolutionPath.length).toBeGreaterThan(10)); });
   it('formats dynamic', () => { expect(formatDynamic(getRandomDynamic())).toContain('Trigger'); });
 });
+
+// Wave 63
+import { RUMORS, getRandomRumor, getRumorsWithHooks, formatRumor } from '../../src/data/rumor';
+import { MORAL_DILEMMAS, getRandomDilemma, getDilemmaCount, formatDilemma } from '../../src/data/moralDilemma';
+import { EPIC_ENTRANCES, getRandomEntrance, getEntranceCount, formatEntrance } from '../../src/data/epicEntrance';
+import { SESSION_ZERO_QUESTIONS, getRandomQuestion, getQuestionsByCategory, formatQuestion } from '../../src/data/sessionZero';
+import { PLOT_TWISTS, getRandomTwist, getTwistsByImpact, formatTwist } from '../../src/data/plotTwistEngine';
+import { SESSION_ENDERS, getRandomEnder, getEndersByType, getAllCliffhangerTypes, formatEnder } from '../../src/data/sessionEnder';
+
+describe('rumors', () => { it('has 6+', () => { expect(RUMORS.length).toBeGreaterThanOrEqual(6); }); it('most have hooks', () => { expect(getRumorsWithHooks().length).toBeGreaterThanOrEqual(3); }); it('formats', () => { expect(formatRumor(getRandomRumor(), true)).toContain('Reliability'); }); });
+describe('moral dilemmas', () => { it('has 4+', () => { expect(MORAL_DILEMMAS.length).toBeGreaterThanOrEqual(4); }); it('all have hidden C', () => { MORAL_DILEMMAS.forEach((d) => expect(d.hiddenOptionC.length).toBeGreaterThan(10)); }); it('formats', () => { expect(formatDilemma(getRandomDilemma(), true)).toContain('hidden'); }); });
+describe('epic entrances', () => { it('has 5+', () => { expect(EPIC_ENTRANCES.length).toBeGreaterThanOrEqual(5); }); it('some have effects', () => { expect(EPIC_ENTRANCES.filter((e) => e.mechanicalEffect !== null).length).toBeGreaterThanOrEqual(3); }); it('formats', () => { expect(formatEntrance(getRandomEntrance())).toContain('🎬'); }); });
+describe('session zero', () => { it('has 7+', () => { expect(SESSION_ZERO_QUESTIONS.length).toBeGreaterThanOrEqual(7); }); it('all have follow-ups', () => { SESSION_ZERO_QUESTIONS.forEach((q) => expect(q.followUp.length).toBeGreaterThan(10)); }); it('formats', () => { expect(formatQuestion(getRandomQuestion())).toContain('Why'); }); });
+describe('plot twists', () => { it('has 4+', () => { expect(PLOT_TWISTS.length).toBeGreaterThanOrEqual(4); }); it('all have foreshadowing', () => { PLOT_TWISTS.forEach((t) => expect(t.foreshadowingHints.length).toBeGreaterThanOrEqual(3)); }); it('formats with hints', () => { expect(formatTwist(getRandomTwist(), true)).toContain('Foreshadowing'); }); });
+describe('session enders', () => { it('has 6+', () => { expect(SESSION_ENDERS.length).toBeGreaterThanOrEqual(6); }); it('covers 6 types', () => { expect(getAllCliffhangerTypes().length).toBe(6); }); it('all have DM instructions', () => { SESSION_ENDERS.forEach((e) => expect(e.dmInstruction.length).toBeGreaterThan(10)); }); it('formats', () => { expect(formatEnder(getRandomEnder())).toContain('DM'); }); });
