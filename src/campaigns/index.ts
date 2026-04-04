@@ -30,6 +30,22 @@ import { theGraveyardOfGods } from './full/theGraveyardOfGods';
 import { theWarBeneath } from './full/theWarBeneath';
 import { thePriceOfImmortality } from './full/thePriceOfImmortality';
 import { theCaravanAtTheEndOfTheWorld } from './full/theCaravanAtTheEndOfTheWorld';
+// Phase 3 full campaign imports
+import { theInheritance } from './full/theInheritance';
+import { theForgottenRoad } from './full/theForgottenRoad';
+import { theSilverMask } from './full/theSilverMask';
+import { theBeastmarket } from './full/theBeastmarket';
+import { theThousandYearHeist } from './full/theThousandYearHeist';
+import { theGodIsAChild } from './full/theGodIsAChild';
+import { thePlagueOfDreams } from './full/thePlagueOfDreams';
+import { theRevolutionWillBeNarrated } from './full/theRevolutionWillBeNarrated';
+import { theDeadMansTournament } from './full/theDeadMansTournament';
+import { theSongOfTheDeep } from './full/theSongOfTheDeep';
+import { theArchivistsDilemma } from './full/theArchivistsDilemma';
+import { theSummerCourt } from './full/theSummerCourt';
+import { theTaxCollector } from './full/theTaxCollector';
+import { theSiegeOfHope } from './full/theSiegeOfHope';
+import { theMerchantPrinces } from './full/theMerchantPrinces';
 
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
@@ -55,6 +71,22 @@ import { theGodsPlayPoker } from './oneshots/theGodsPlayPoker';
 import { theDungeonHasWiFi } from './oneshots/theDungeonHasWiFi';
 import { theMapThatLied } from './oneshots/theMapThatLied';
 import { theArenasChampion } from './oneshots/theArenasChampion';
+// Phase 3 one-shot imports
+import { theMuseumHeist } from './oneshots/theMuseumHeist';
+import { theBabysittingQuest } from './oneshots/theBabysittingQuest';
+import { theIslandOfMisfitMonsters } from './oneshots/theIslandOfMisfitMonsters';
+import { theGhostShip } from './oneshots/theGhostShip';
+import { theOracleIsDrunk } from './oneshots/theOracleIsDrunk';
+import { theOldFolksHome } from './oneshots/theOldFolksHome';
+import { theTimeLoop } from './oneshots/theTimeLoop';
+import { thePetitionOfMonsters } from './oneshots/thePetitionOfMonsters';
+import { theMountainGod } from './oneshots/theMountainGod';
+import { thePotluckOfDoom } from './oneshots/thePotluckOfDoom';
+import { theLibraryAfterDark } from './oneshots/theLibraryAfterDark';
+import { theCouncilOfVillains } from './oneshots/theCouncilOfVillains';
+import { theAnchorFalls } from './oneshots/theAnchorFalls';
+import { theLastSong } from './oneshots/theLastSong';
+import { theTaxDungeon } from './oneshots/theTaxDungeon';
 
 export const FULL_CAMPAIGNS: FullCampaign[] = [
   theShatteredCrown,
@@ -78,6 +110,22 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theWarBeneath,
   thePriceOfImmortality,
   theCaravanAtTheEndOfTheWorld,
+  // Phase 3
+  theInheritance,
+  theForgottenRoad,
+  theSilverMask,
+  theBeastmarket,
+  theThousandYearHeist,
+  theGodIsAChild,
+  thePlagueOfDreams,
+  theRevolutionWillBeNarrated,
+  theDeadMansTournament,
+  theSongOfTheDeep,
+  theArchivistsDilemma,
+  theSummerCourt,
+  theTaxCollector,
+  theSiegeOfHope,
+  theMerchantPrinces,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
@@ -104,6 +152,22 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   theDungeonHasWiFi,
   theMapThatLied,
   theArenasChampion,
+  // Phase 3
+  theMuseumHeist,
+  theBabysittingQuest,
+  theIslandOfMisfitMonsters,
+  theGhostShip,
+  theOracleIsDrunk,
+  theOldFolksHome,
+  theTimeLoop,
+  thePetitionOfMonsters,
+  theMountainGod,
+  thePotluckOfDoom,
+  theLibraryAfterDark,
+  theCouncilOfVillains,
+  theAnchorFalls,
+  theLastSong,
+  theTaxDungeon,
 ];
 
 export const ALL_CAMPAIGNS: CampaignStarterKit[] = [

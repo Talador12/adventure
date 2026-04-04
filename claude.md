@@ -45,11 +45,11 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v15.6.0 — 2,906 tests across 385 data files + 44 campaign files, 194 systems, 61 UI buttons
+## Current Version: v15.7.0 — 3,056 tests across 385 data files + 74 campaign files, 194 systems, 61 UI buttons
 
-## Campaign Starter Kit Library — Phase 2 COMPLETE (42/200)
+## Campaign Starter Kit Library — Phase 3 COMPLETE (72/200)
 
-Infrastructure at `src/campaigns/` with shared types, catalog index, search/filter by tone/theme/level/playerCount/searchTerm. 261 campaign-specific tests.
+Infrastructure at `src/campaigns/` with shared types, catalog index, search/filter by tone/theme/level/playerCount/searchTerm. 411 campaign-specific tests.
 
 **20 Full Campaigns (multi-session, 3-5 acts each):**
 1. **The Shattered Crown** — political succession thriller, court intrigue, faction war (Lv 1-12, ~20 sessions)
@@ -99,12 +99,46 @@ Infrastructure at `src/campaigns/` with shared types, catalog index, search/filt
 
 **Infrastructure:** `types.ts` (CampaignStarterKit types), `index.ts` (catalog with search/filter by tone/theme/level/playerCount/searchTerm), 261 tests validating structure, content quality, and catalog functions.
 
-**Next:** Batch-produce remaining 158 campaigns (80 full + 78 one-shots) in future sessions.
+**Phase 3 Full Campaigns (#21-35):**
+21. **The Inheritance** — comedy, inherit a dungeon, manage monster tenants, reverse dungeon crawl (Lv 1-8, ~14 sessions)
+22. **The Forgotten Road** — exploration, road between realities, crossroads city of Nexus (Lv 3-11, ~16 sessions)
+23. **The Silver Mask** — mystery, city where everyone wears masks, founder's consciousness is surveillance (Lv 2-10, ~14 sessions)
+24. **The Beastmarket** — exploration, illegal monster bazaar, lich draining creature essence (Lv 3-11, ~15 sessions)
+25. **The Thousand-Year Heist** — heist, 10 generations of thieves, each century adds a piece (Lv 5-13, ~16 sessions)
+26. **The God Is a Child** — epic, newborn deity with toddler mind, three factions compete to claim it (Lv 5-15, ~18 sessions)
+27. **The Plague of Dreams** — horror, citywide insomnia, dreams escaped and roam streets (Lv 3-10, ~14 sessions)
+28. **The Revolution Will Be Narrated** — political, bard sparks revolution, fey lord amplifies conflict (Lv 3-12, ~16 sessions)
+29. **The Dead Man's Tournament** — serious, dead warriors fight for resurrection, killer is in the bracket (Lv 5-13, ~16 sessions)
+30. **The Song of the Deep** — exploration, primordial singer at ocean floor rewriting reality (Lv 4-12, ~16 sessions)
+31. **The Archivist's Dilemma** — mystery, sentient unfinished story consuming a library (Lv 2-9, ~12 sessions)
+32. **The Summer Court** — social, eternal summer in Feywild, Autumn Prince assassinated (Lv 4-11, ~15 sessions)
+33. **The Tax Collector** — comedy, dragon owes back taxes, accountant escort mission (Lv 3-10, ~14 sessions)
+34. **The Siege of Hope** — serious, 30-day countdown to defend last free city (Lv 5-14, ~18 sessions)
+35. **The Merchant Princes** — political, 5 trade monopolies are fragments of one god (Lv 2-10, ~16 sessions)
+
+**Phase 3 One-Shots (#23-37):**
+23. **The Museum Heist** — heist, living exhibits, painting that runs away (Lv 6, ~4h)
+24. **The Babysitting Quest** — comedy, wizard's kids have wild magic, fey entity in the basement (Lv 4, ~3h)
+25. **The Island of Misfit Monsters** — comedy, defective monsters need protection (Lv 5, ~3h)
+26. **The Ghost Ship** — horror, 200-year time loop, crew doesn't know they're dead (Lv 6, ~4h)
+27. **The Oracle Is Drunk** — comedy, drunk prophecy is actually correct via absurd logic (Lv 4, ~3h)
+28. **The Old Folks' Home** — comedy, retired level-20 adventurers, one last job with creaky knees (Lv 20, ~4h)
+29. **The Time Loop** — mystery, Groundhog Day, wizard grieving his daughter (Lv 5, ~4h)
+30. **The Petition of Monsters** — comedy, monsters suing for peace, party are their lawyers (Lv 5, ~4h)
+31. **The Mountain God** — exploration, walking mountain heading for the capital, its child was mined away (Lv 8, ~4h)
+32. **The Potluck of Doom** — comedy, wizard potluck, every dish is enchanted, wish-pie goes wrong (Lv 4, ~3h)
+33. **The Library After Dark** — horror, sentient index system consuming knowledge and readers (Lv 5, ~4h)
+34. **The Council of Villains** — comedy, play as "villains" exposing corrupt Hero's Guild (Lv 10, ~4h)
+35. **The Anchor Falls** — survival, floating city lost its anchor, rising toward the sun (Lv 8, ~4h)
+36. **The Last Song** — serious, dying bard's spirit escorted to afterlife's Hall of Echoes for her daughter (Lv 7, ~3h)
+37. **The Tax Dungeon** — comedy, bureaucratic dungeon, forms are traps, final boss is an auditor (Lv 5, ~3h)
+
+**Next:** Batch-produce remaining 128 campaigns (65 full + 63 one-shots) in future sessions.
 
 ## 🎯 NEXT SESSION — Ambitious Ideas for Fresh Context
 
-### 1. Campaign Starter Kit Library — Phase 3
-Batch-produce the next 30 campaigns (15 full + 15 one-shots) to reach 72/200. Themes needed: more wilderness exploration, more underdark, nautical one-shots, political one-shots.
+### 1. Campaign Starter Kit Library — Phase 4
+Batch-produce the next 30 campaigns (15 full + 15 one-shots) to reach 102/200. We're past the halfway mark.
 
 ### 2. Wire Remaining Systems into UI
 61 of our 194 systems are wired as DMSidebar buttons. The remaining ~133 (mostly Waves 33-65 that didn't get explicit buttons, plus all the lib/ systems) need UI integration. The pattern is established: `async import()` + `onAddDmMessage(format(...))`.
