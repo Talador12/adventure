@@ -2454,3 +2454,91 @@ describe('apocalypse survivor camp', () => {
   it('all have party roles', () => { APOCALYPSE_CAMPS.forEach((c) => expect(c.partyRole.length).toBeGreaterThan(15)); });
   it('formats camp', () => { expect(formatCamp(APOCALYPSE_CAMPS[0])).toContain('Twist'); });
 });
+
+// ---------------------------------------------------------------------------
+// Secret society generator
+// ---------------------------------------------------------------------------
+import { SECRET_SOCIETIES, getRandomSociety, getSocietiesByAlignment, getRankCount as getSocietyRanks, getAllAlignments as getSocietyAlignments, formatSociety } from '../../src/data/secretSociety';
+
+describe('secret society generator', () => {
+  it('has at least 3 societies', () => { expect(SECRET_SOCIETIES.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 alignments', () => { expect(getSocietyAlignments().length).toBeGreaterThanOrEqual(3); });
+  it('generates random society', () => { const s = getRandomSociety(); expect(s.ranks.length).toBeGreaterThanOrEqual(3); expect(s.rituals.length).toBeGreaterThanOrEqual(1); });
+  it('all have signal phrases', () => { SECRET_SOCIETIES.forEach((s) => expect(s.signalPhrase.length).toBeGreaterThan(10)); });
+  it('all have weaknesses', () => { SECRET_SOCIETIES.forEach((s) => expect(s.weakness.length).toBeGreaterThan(10)); });
+  it('all have plot hooks', () => { SECRET_SOCIETIES.forEach((s) => expect(s.plotHook.length).toBeGreaterThan(20)); });
+  it('formats society', () => { expect(formatSociety(SECRET_SOCIETIES[0])).toContain('Signal'); });
+});
+
+// ---------------------------------------------------------------------------
+// Magical courtroom drama
+// ---------------------------------------------------------------------------
+import { COURT_CASES, getRandomCase as getRandomCourtCase, getCasesByType as getCourtCasesByType, getEvidenceCount, getWitnessCount, getAllCaseTypes as getAllCourtTypes, formatCase as formatCourtCase } from '../../src/data/magicalCourtroom';
+
+describe('magical courtroom drama', () => {
+  it('has at least 2 cases', () => { expect(COURT_CASES.length).toBeGreaterThanOrEqual(2); });
+  it('generates random case', () => { const c = getRandomCourtCase(); expect(c.evidence.length).toBeGreaterThanOrEqual(3); expect(c.witnesses.length).toBeGreaterThanOrEqual(2); });
+  it('all have twists', () => { COURT_CASES.forEach((c) => expect(c.twist.length).toBeGreaterThan(20)); });
+  it('all have multiple verdict options', () => { COURT_CASES.forEach((c) => expect(c.verdictOptions.length).toBeGreaterThanOrEqual(3)); });
+  it('all have party roles', () => { COURT_CASES.forEach((c) => expect(c.partyRole.length).toBeGreaterThan(10)); });
+  it('formats case', () => { expect(formatCourtCase(COURT_CASES[0])).toContain('Charge'); });
+});
+
+// ---------------------------------------------------------------------------
+// Haunted item generator
+// ---------------------------------------------------------------------------
+import { HAUNTED_ITEMS, getRandomHauntedItem, getItemsByReason as getHauntedByReason, getAllHauntReasons, formatHauntedItem } from '../../src/data/hauntedItem';
+
+describe('haunted item generator', () => {
+  it('has at least 5 items', () => { expect(HAUNTED_ITEMS.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 haunt reasons', () => { expect(getAllHauntReasons().length).toBeGreaterThanOrEqual(4); });
+  it('generates random item', () => { const i = getRandomHauntedItem(); expect(i.manifestation.length).toBeGreaterThan(15); });
+  it('all have resolution methods', () => { HAUNTED_ITEMS.forEach((i) => expect(i.resolutionMethod.length).toBeGreaterThan(15)); });
+  it('all have ghost personalities', () => { HAUNTED_ITEMS.forEach((i) => expect(i.ghostPersonality.length).toBeGreaterThan(10)); });
+  it('all have both appease and ignore effects', () => { HAUNTED_ITEMS.forEach((i) => { expect(i.benefitIfAppeased.length).toBeGreaterThan(10); expect(i.consequenceIfIgnored.length).toBeGreaterThan(10); }); });
+  it('formats item', () => { expect(formatHauntedItem(HAUNTED_ITEMS[0])).toContain('Resolution'); });
+});
+
+// ---------------------------------------------------------------------------
+// Enchanted food and drink
+// ---------------------------------------------------------------------------
+import { ENCHANTED_FOODS, getRandomFood, getFoodsByType as getEnchantedFoodByType, getAllFoodTypes, formatFood } from '../../src/data/enchantedFoodDrink';
+
+describe('enchanted food and drink', () => {
+  it('has at least 6 foods', () => { expect(ENCHANTED_FOODS.length).toBeGreaterThanOrEqual(6); });
+  it('covers at least 3 types', () => { expect(getAllFoodTypes().length).toBeGreaterThanOrEqual(3); });
+  it('generates random food', () => { const f = getRandomFood(); expect(f.buff.length).toBeGreaterThan(10); });
+  it('most have side effects', () => { const withEffects = ENCHANTED_FOODS.filter((f) => f.sideEffect !== null); expect(withEffects.length).toBeGreaterThanOrEqual(5); });
+  it('all have preparation DCs', () => { ENCHANTED_FOODS.forEach((f) => expect(f.preparationDC).toBeGreaterThanOrEqual(10)); });
+  it('all have ingredients', () => { ENCHANTED_FOODS.forEach((f) => expect(f.ingredients.length).toBeGreaterThan(10)); });
+  it('formats food', () => { expect(formatFood(ENCHANTED_FOODS[0])).toContain('Buff'); });
+});
+
+// ---------------------------------------------------------------------------
+// Teleport mishap
+// ---------------------------------------------------------------------------
+import { TELEPORT_MISHAPS, getRandomMishap as getRandomTeleportMishap, getMishapsBySeverity as getTeleportBySeverity, getFunMishaps, getAllTeleportSeverities, formatMishap as formatTeleportMishap } from '../../src/data/teleportMishap';
+
+describe('teleport mishap', () => {
+  it('has at least 7 mishaps', () => { expect(TELEPORT_MISHAPS.length).toBeGreaterThanOrEqual(7); });
+  it('has 4 severity levels', () => { expect(getAllTeleportSeverities().length).toBe(4); });
+  it('generates random mishap', () => { const m = getRandomTeleportMishap(); expect(m.description.length).toBeGreaterThan(20); });
+  it('fun filter works', () => { const fun = getFunMishaps(8); expect(fun.length).toBeGreaterThanOrEqual(2); fun.forEach((m) => expect(m.funFactor).toBeGreaterThanOrEqual(8)); });
+  it('all have resolutions', () => { TELEPORT_MISHAPS.forEach((m) => expect(m.resolution.length).toBeGreaterThan(10)); });
+  it('formats mishap', () => { expect(formatTeleportMishap(TELEPORT_MISHAPS[0])).toContain('Resolution'); });
+});
+
+// ---------------------------------------------------------------------------
+// Monster alliance
+// ---------------------------------------------------------------------------
+import { MONSTER_ALLIANCES, getRandomAlliance, getAlliancesByReason, getAllAllianceReasons, formatAlliance } from '../../src/data/monsterAlliance';
+
+describe('monster alliance', () => {
+  it('has at least 5 alliances', () => { expect(MONSTER_ALLIANCES.length).toBeGreaterThanOrEqual(5); });
+  it('covers at least 4 reasons', () => { expect(getAllAllianceReasons().length).toBeGreaterThanOrEqual(4); });
+  it('generates random alliance', () => { const a = getRandomAlliance(); expect(a.combinedTactic.length).toBeGreaterThan(15); });
+  it('all have weaknesses', () => { MONSTER_ALLIANCES.forEach((a) => expect(a.weakness.length).toBeGreaterThan(10)); });
+  it('all have party approaches', () => { MONSTER_ALLIANCES.forEach((a) => expect(a.partyApproach.length).toBeGreaterThan(10)); });
+  it('all have plot hooks', () => { MONSTER_ALLIANCES.forEach((a) => expect(a.plotHook.length).toBeGreaterThan(15)); });
+  it('formats alliance', () => { expect(formatAlliance(MONSTER_ALLIANCES[0])).toContain('Weakness'); });
+});

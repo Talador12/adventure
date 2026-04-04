@@ -55,6 +55,14 @@ The complete feature set built from project inception through 46 development ite
 - Race/class portrait assets — need new full-body character art (evaluating leonardo.ai). Current assets too tightly cropped. Buttons are sized and styled (88px tall, object-cover bleed), just need better source images.
 
 **Recent highlights (latest work):**
+- 6 new systems + 40 tests (2496 total) — secret societies, courtroom drama, haunted items, enchanted food, teleport mishaps, monster alliances:
+  - **Secret society** — `secretSociety.ts` with 3 societies (The Unwritten/Hollow Court/Verdant Oath), ranks, rituals, signal phrases, weaknesses.
+  - **Magical courtroom** — `magicalCourtroom.ts` with 2 cases (talking dog trial, infernal contract breach), evidence, witnesses, verdict options.
+  - **Haunted items** — `hauntedItem.ts` with 5 items (Grandmother's Teapot, General's Compass, Child's Wooden Soldier), ghost personalities, resolution.
+  - **Enchanted food** — `enchantedFoodDrink.ts` with 7 foods (Dragon Pepper Stew, Feywild Macarons, Shadow Espresso), buffs, side effects.
+  - **Teleport mishaps** — `teleportMishap.ts` with 8 mishaps (Personality Swap, Partial Arrival, Mirror Universe Bleed), fun factor ratings.
+  - **Monster alliances** — `monsterAlliance.ts` with 5 alliances (Troll+Pixies, Beholder+Necromancer, Kobolds+Spiders, Mimic+Goblins, Dragon+Treant).
+
 - 6 new systems + 37 tests (2456 total) — magical inheritance, weapon rivalry, magical duels, lying maps, familiar rebellion, apocalypse camps:
   - **Magical inheritance** — `magicalInheritance.ts` with 3 estates (archmage/vampire/inventor), items with complications, legal claimants, hidden conditions.
   - **Weapon rivalry** — `weaponRivalry.ts` with 3 rivalries (Dawnbringer vs Duskfall, Whisper vs SHOUT, The Pen vs The Sword), truces, destruction consequences.
