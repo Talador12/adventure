@@ -1,0 +1,24 @@
+import type { OneShotCampaign } from '../types';
+export const theReturnPolicy: OneShotCampaign = {
+  id: 'oneshot-return-policy', type: 'oneshot', title: 'The Return Policy', tagline: 'The magic item doesn\'t work. The shop won\'t refund. It\'s dungeon crawl to customer service.', tone: 'comedic', themes: ['comedy', 'dungeon_crawl', 'urban'], playerCount: { min: 3, max: 6 }, level: 4, estimatedHours: 3,
+  settingSummary: 'The party bought a magic sword that doesn\'t work. The shop — Grimbald\'s Enchanted Emporium — has a no-refund policy. To return an item, customers must navigate the "Returns Department" — a dungeon in the shop\'s basement designed to discourage returns. Most customers give up. The party will not.',
+  hook: 'The sword was supposed to be a +2 Flaming Longsword. It\'s a +0 Slightly Warm Butter Knife. The shopkeeper shrugs: "All sales final. Unless..." He points to a door marked "RETURNS DEPT." with scratch marks on the frame. "You can try the return process. It\'s... thorough."',
+  twist: 'The Returns Department was designed by Grimbald\'s ex-wife — a dungeon architect who left him and took half the inventory. She designed the return dungeon as revenge: anyone who completes it gets a FULL refund of everything they\'ve ever bought at the shop. Grimbald has been trying to shut it down for years but can\'t because it\'s magically bound by their divorce settlement.',
+  climax: 'The final room: the Customer Service Golem, a construct designed to deny all returns. It argues, redirects, puts you on hold (literally — a stasis spell), and requires a receipt the party may or may not have. Defeating it requires either winning the argument (Persuasion DC 25), finding the receipt in the dungeon, or just hitting it until it says "your return has been processed."',
+  scenes: [
+    { title: 'Scene 1: The Complaint', summary: 'The sword doesn\'t work. The shopkeeper won\'t refund. The Returns Department door looms.', challenge: 'social', keyEvents: ['The defective sword: flames come out as lukewarm steam', 'Grimbald\'s defense: "It says FLAMING. Warm steam is technically a flame state."', 'The door: "RETURNS DEPARTMENT — ABANDON HOPE, KEEP RECEIPT"', 'Entry: the first room has a sign — "TAKE A NUMBER. YOUR WAIT TIME IS: FOREVER."'] },
+    { title: 'Scene 2: The Department', summary: 'A dungeon designed by a vindictive ex-wife to punish a cheap shopkeeper. Traps are themed around customer service nightmares.', challenge: 'exploration', keyEvents: ['Room 1: "Please Hold" — a room where time moves slower until you solve a puzzle', 'Room 2: "Redirect" — every door leads back to the entrance unless you find the right combination', 'Room 3: "Fine Print" — a room of contracts where the walls are literally the terms of service', 'The receipt: hidden in the dungeon, it\'s the key to the easy victory'] },
+    { title: 'Scene 3: Customer Service', summary: 'The Customer Service Golem. It has been trained to say no. The party must get a yes.', challenge: 'combat', keyEvents: ['The Golem: "How may I DENY your return today?"', 'The argument: Persuasion, Intimidation, or Deception — it has resistance to all three', 'The receipt: if found, the Golem processes the return instantly (it\'s contractually obligated)', 'Without receipt: combat — the Golem has 100 HP and regenerates when it says "have you tried turning it off and on again?"'] },
+  ],
+  keyNPCs: [
+    { name: 'Grimbald', role: 'shopkeeper / obstacle', personality: 'A dwarf who sells mediocre enchantments at premium prices. Not evil — just cheap. "The enchantment is VALID. It produces HEAT. What more do you WANT?"' },
+    { name: 'The Customer Service Golem', role: 'final boss', personality: 'A construct programmed with every customer service deflection technique known to mortal or construct. "I understand your frustration. Have you considered that the product is working as intended?"' },
+    { name: 'Grimbald\'s Ex-Wife (through dungeon design)', role: 'absent ally', personality: 'Known through the dungeon\'s design: each room has a plaque with messages like "This room brought to you by Grimbald\'s refusal to share profits." She is thorough and petty.' },
+  ],
+  keyLocations: [
+    { name: 'Grimbald\'s Enchanted Emporium', description: 'A magic shop that looks impressive from the front and has a dungeon in the basement.', significance: 'Where the problem and solution both live.' },
+    { name: 'The Returns Department', description: 'A 5-room dungeon designed to discourage returns. Each room is themed around a customer service nightmare.', significance: 'The dungeon crawl.' },
+    { name: 'The Customer Service Desk', description: 'A reinforced desk behind which sits the Customer Service Golem. There\'s a "TAKE A NUMBER" dispenser. The numbers start at 1 million.', significance: 'The final boss arena.' },
+  ],
+  dataSystems: ['trapDisarm', 'puzzleLock', 'combatNarration', 'merchantHaggling', 'fantasyInsults'],
+};

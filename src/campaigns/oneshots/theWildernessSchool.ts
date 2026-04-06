@@ -1,0 +1,24 @@
+import type { OneShotCampaign } from '../types';
+export const theWildernessSchool: OneShotCampaign = {
+  id: 'oneshot-wilderness-school', type: 'oneshot', title: 'The Wilderness School', tagline: 'Summer camp for adventurers\' kids. You\'re the counselors. The kids have swords.', tone: 'comedic', themes: ['comedy', 'wilderness'], playerCount: { min: 3, max: 6 }, level: 3, estimatedHours: 3,
+  settingSummary: 'Camp Dragonfly — a summer camp for the children of adventurers. The kids have inherited their parents\' gear, abilities, and terrible judgment. The party has been hired as counselors. Activities include: supervised swordfighting (barely supervised), nature survival (no one is surviving), and the overnight camping trip (where everything will go wrong).',
+  hook: 'The camp director hands the party a clipboard: "You\'re responsible for Cabin 7. They\'re ages 8-12. The barbarian\'s kid has an axe. The wizard\'s kid keeps setting things on fire. The rogue\'s kid has already stolen your wallet. Orientation is in 10 minutes."',
+  twist: 'The overnight camping trip stumbles into a REAL dungeon. The kids are thrilled. The party is terrified. The dungeon is low-level enough that the kids can actually handle it (barely, chaotically), but the party must keep them alive, organized, and from touching everything.',
+  climax: 'The dungeon\'s "boss" is a bugbear who is MORE afraid of the children than they are of it. The kids charge. The party must manage a combat encounter where their primary concern isn\'t defeating the enemy — it\'s preventing the children from getting hurt while also not crushing their enthusiasm.',
+  scenes: [
+    { title: 'Scene 1: Orientation', summary: 'Meeting the campers, surviving the first activities, and establishing that these children are unmanageable.', challenge: 'social', keyEvents: ['Meet Cabin 7: the barbarian\'s kid (strong, loud), the wizard\'s kid (fire, always fire), the rogue\'s kid (stealth, theft), the paladin\'s kid (righteous, judgy), the bard\'s kid (performs at all times)', 'Swordfighting class: the barbarian\'s kid challenges the party member teaching the class', 'Nature survival: the wizard\'s kid sets the survival shelter on fire. The rogue\'s kid stole the map.', 'The overnight trip announced: "Through the Forest of Mild Inconvenience. Totally safe."'] },
+    { title: 'Scene 2: The Overnight', summary: 'Camping in the woods with 5 adventurer children who have no impulse control. Something howls. The kids want to investigate.', challenge: 'exploration', keyEvents: ['Setting camp: the barbarian\'s kid builds a fort, the wizard\'s kid makes a campfire (too large), the bard\'s kid serenades a raccoon', 'Something howls: the kids want to find it. ALL of them. Immediately.', 'The dungeon found: a cave entrance with a "KEEP OUT" sign that the rogue\'s kid has already walked past', 'The party must follow — they can\'t leave the kids alone in a dungeon'] },
+    { title: 'Scene 3: The Dungeon Field Trip', summary: 'Clearing a dungeon with 5 enthusiastic children. The traps are for them. The monsters are afraid of them. The party is exhausted.', challenge: 'combat', keyEvents: ['The kids love it: "THIS IS JUST LIKE MOM\'S STORIES!"', 'The traps: designed for adults, avoided by children who are too short to trigger them', 'The bugbear boss: sees five screaming children and considers surrender', 'The aftermath: every kid has a trophy, a story, and zero injuries (the party has several)'] },
+  ],
+  keyNPCs: [
+    { name: 'Tiny Grok (barbarian\'s kid)', role: 'camper / chaos engine', personality: 'Age 9. Has a wooden axe (the real one was confiscated). Challenges everything to a fight. "MY DAD KILLED A DRAGON. I CAN KILL A BUSH."' },
+    { name: 'Sparks (wizard\'s kid)', role: 'camper / fire hazard', personality: 'Age 8. Knows one spell: Fire Bolt. Uses it on everything. "That\'s not on fire? It should be."' },
+    { name: 'Director Oakhart', role: 'camp director', personality: 'A retired ranger who runs the camp. Cheerfully oblivious to danger. "Builds character! When I was their age, I fought wolves. These kids are FINE."' },
+  ],
+  keyLocations: [
+    { name: 'Camp Dragonfly', description: 'A summer camp with cabins, a lake, an archery range, and a suspiciously close forest that definitely has dungeons in it.', significance: 'The opening setting.' },
+    { name: 'The Forest of Mild Inconvenience', description: 'A forest the camp claims is safe. It is not. There are at least three dungeons.', significance: 'Where the overnight trip goes sideways.' },
+    { name: 'The Cave Dungeon', description: 'A beginner dungeon with cobwebs, a few traps, and one very nervous bugbear who was NOT expecting visitors.', significance: 'The climactic "field trip."' },
+  ],
+  dataSystems: ['socialEncounter', 'combatNarration', 'wildMagicSurge', 'trapDisarm', 'wildernessSurvival'],
+};

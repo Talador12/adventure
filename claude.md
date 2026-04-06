@@ -45,11 +45,11 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v15.7.0 — 3,056 tests across 385 data files + 74 campaign files, 194 systems, 61 UI buttons
+## Current Version: v15.8.0 — 3,226 tests across 385 data files + 108 campaign files, 194 systems, 61 UI buttons
 
-## Campaign Starter Kit Library — Phase 3 COMPLETE (72/200)
+## Campaign Starter Kit Library — Phase 4 COMPLETE (106/200) — PAST THE HALFWAY MARK
 
-Infrastructure at `src/campaigns/` with shared types, catalog index, search/filter by tone/theme/level/playerCount/searchTerm. 411 campaign-specific tests.
+Infrastructure at `src/campaigns/` with shared types, catalog index, search/filter by tone/theme/level/playerCount/searchTerm. 581 campaign-specific tests.
 
 **20 Full Campaigns (multi-session, 3-5 acts each):**
 1. **The Shattered Crown** — political succession thriller, court intrigue, faction war (Lv 1-12, ~20 sessions)
@@ -133,12 +133,65 @@ Infrastructure at `src/campaigns/` with shared types, catalog index, search/filt
 36. **The Last Song** — serious, dying bard's spirit escorted to afterlife's Hall of Echoes for her daughter (Lv 7, ~3h)
 37. **The Tax Dungeon** — comedy, bureaucratic dungeon, forms are traps, final boss is an auditor (Lv 5, ~3h)
 
-**Next:** Batch-produce remaining 128 campaigns (65 full + 63 one-shots) in future sessions.
+**Phase 4 Full Campaigns (#36-50):**
+36. **The Underdark Olympics** — comedy, inter-race athletic competition, drow cheating (Lv 5-12, ~14 sessions)
+37. **The Empty Throne** — political, 30-day heir search, all claimants are false (Lv 3-10, ~15 sessions)
+38. **The Prison of Stars** — mystery, divine prison review, wrongly imprisoned hero (Lv 6-14, ~16 sessions)
+39. **The World Eater** — epic, continent-sized creature, united defense, enter its body (Lv 8-20, ~22 sessions)
+40. **The Blind City** — mystery, psychic parasite makes city unable to see problems (Lv 3-10, ~14 sessions)
+41. **The First Dungeon** — exploration, the original dungeon all others were copied from (Lv 5-14, ~16 sessions)
+42. **The Harvest Festival** — horror, perfect village with a fey pact, one soul per year (Lv 1-7, ~12 sessions)
+43. **The Guilds' War** — political, four-guild city, stolen Keystone, sentient ley line (Lv 3-11, ~16 sessions)
+44. **The Nameless** — horror, true name demon stealing identities from reality (Lv 3-11, ~15 sessions)
+45. **The Cartographer's Gambit** — exploration, sentient map rewriting geography (Lv 4-12, ~16 sessions)
+46. **The Diplomat's Nightmare** — social, five-kingdom peace conference, organizer is the villain (Lv 3-9, ~14 sessions)
+47. **The Library of Babel** — exploration, infinite library of every possible book, mad god inside (Lv 5-13, ~16 sessions)
+48. **The Colosseum of Souls** — serious, arena that judges mortal worth, eternal warriors need ending (Lv 6-14, ~16 sessions)
+49. **The Garden at World's End** — exploration, dying Gardener, source of all plant life (Lv 5-13, ~16 sessions)
+50. **The Player's Guide** — meta/exploration, book that predicts the adventure, closed time loop (Lv 3-12, ~16 sessions)
+
+**Phase 4 One-Shots (#38-56):**
+38. **The Museum Heist** — heist, living exhibits, painting that runs away (Lv 6, ~4h)
+39. **The Babysitting Quest** — comedy, wizard's kids with wild magic, fey in the basement (Lv 4, ~3h)
+40. **The Island of Misfit Monsters** — comedy, defective monsters need protection from collectors (Lv 5, ~3h)
+41. **The Ghost Ship** — horror, 200-year time loop, lich phylactery aboard (Lv 6, ~4h)
+42. **The Oracle Is Drunk** — comedy, drunk prophecy is correct via absurd logic (Lv 4, ~3h)
+43. **The Old Folks' Home** — comedy, retired level-20 adventurers, one last job (Lv 20, ~4h)
+44. **The Time Loop** — mystery, Groundhog Day, wizard grieving his daughter (Lv 5, ~4h)
+45. **The Petition of Monsters** — comedy, monsters suing for peace, party are lawyers (Lv 5, ~4h)
+46. **The Mountain God** — exploration, walking mountain, its child was mined away (Lv 8, ~4h)
+47. **The Potluck of Doom** — comedy, wizard potluck, wish-pie goes wrong (Lv 4, ~3h)
+48. **The Library After Dark** — horror, sentient index consuming knowledge and readers (Lv 5, ~4h)
+49. **The Council of Villains** — comedy, play as "villains" exposing corrupt Hero's Guild (Lv 10, ~4h)
+50. **The Anchor Falls** — survival, floating city rising toward the sun (Lv 8, ~4h)
+51. **The Last Song** — serious, dying bard's spirit escorted to afterlife's Hall of Echoes (Lv 7, ~3h)
+52. **The Tax Dungeon** — comedy, bureaucratic dungeon, final boss is an auditor (Lv 5, ~3h)
+53. **The Pirate's Court** — social, pirate trial, parrot lawyer, long-con heist reveal (Lv 5, ~4h)
+54. **The Exit Interview** — comedy, quit the Dark Lord's org, HR lich wants out too (Lv 8, ~4h)
+55. **The Storm Chasers** — exploration, negotiate with a sentient hurricane (Lv 7, ~4h)
+56. **The Soup Kitchen** — comedy, reformed pit fiend runs a shelter, Abyss wants her back (Lv 5, ~3h)
+57. **The Dungeon Review** — comedy, dungeon has 2-star rating, hire consultants to improve it (Lv 5, ~3h)
+58. **The Wizard's Mistake** — comedy, wizard sneezed and turned town into animals, mayor is a cat (Lv 3, ~3h)
+59. **The Dead Party** — comedy, TPK but you're ghosts, carry your bodies to the resurrection altar (Lv 6, ~3h)
+60. **The Wrong Dungeon** — comedy, went into the level-15 dungeon by mistake (Lv 5, ~3h)
+61. **The Haunted Ship** — horror, luxury cruise with ghosts who don't know they're dead, sea hag trap (Lv 5, ~4h)
+62. **The Roast** — comedy, dragon demands entertainment, party does stand-up (Lv 6, ~3h)
+63. **The Floodgates** — survival, dam breaking, 200 villagers, druid conflict (Lv 4, ~4h)
+64. **The Train Job** — heist, rob the Lightning Rail, prisoner is the real cargo (Lv 6, ~4h)
+65. **The Wilderness School** — comedy, summer camp for adventurers' kids with swords (Lv 3, ~3h)
+66. **The Masked Ball** — mystery, 100 masked guests, shapeshifter among them (Lv 6, ~4h)
+67. **The Sunken Temple** — exploration, surfaces once per century, 6-hour window (Lv 7, ~4h)
+68. **The Invisible War** — serious, phased battle from 500 years ago bleeds through (Lv 7, ~4h)
+69. **The Cursed Wedding** — horror, bride is undead, transformation during ceremony (Lv 5, ~4h)
+70. **The Return Policy** — comedy, magic item doesn't work, return dungeon to customer service (Lv 4, ~3h)
+71. **The Kraken Wakes** — epic, kraken asks for help, underwater chain-cutting race (Lv 10, ~4h)
+
+**Next:** Batch-produce remaining 94 campaigns (50 full + 44 one-shots) in future sessions.
 
 ## 🎯 NEXT SESSION — Ambitious Ideas for Fresh Context
 
-### 1. Campaign Starter Kit Library — Phase 4
-Batch-produce the next 30 campaigns (15 full + 15 one-shots) to reach 102/200. We're past the halfway mark.
+### 1. Campaign Starter Kit Library — Phase 5
+Batch-produce the next 30 campaigns to reach 136/200. Past 2/3 mark.
 
 ### 2. Wire Remaining Systems into UI
 61 of our 194 systems are wired as DMSidebar buttons. The remaining ~133 (mostly Waves 33-65 that didn't get explicit buttons, plus all the lib/ systems) need UI integration. The pattern is established: `async import()` + `onAddDmMessage(format(...))`.

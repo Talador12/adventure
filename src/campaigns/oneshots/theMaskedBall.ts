@@ -1,0 +1,24 @@
+import type { OneShotCampaign } from '../types';
+export const theMaskedBall: OneShotCampaign = {
+  id: 'oneshot-masked-ball', type: 'oneshot', title: 'The Masked Ball', tagline: 'Everyone\'s wearing a mask. Someone\'s wearing a face.', tone: 'mystery', themes: ['mystery', 'intrigue', 'urban'], playerCount: { min: 3, max: 5 }, level: 6, estimatedHours: 4,
+  settingSummary: 'A grand masquerade ball at the Countess\'s estate. 100 guests, all masked, all anonymous by tradition. The party is hired to find a shapeshifter among the guests who plans to replace the Countess and steal her fortune. The catch: at a masked ball, everyone looks suspicious, and the shapeshifter could be anyone — including one of the party.',
+  hook: 'The Countess pulls the party aside before the ball: "There is a doppelganger among the guests. It intends to replace me tonight. Find it before midnight when masks come off. Here is the complication: I cannot tell you what I look like without my mask. That is the tradition. If you unmask me to check, the ball ends and the shapeshifter escapes."',
+  twist: 'There isn\'t one shapeshifter — there are three. They\'re a family of changelings who have been replacing nobles at masked balls for decades. Two are decoys. One is the real threat. And the Countess herself is a changeling too — she founded the ball tradition specifically so she could live as nobility without ever being unmasked.',
+  climax: 'Midnight. Masks come off. The party must identify which of the 100 guests are changelings — including the Countess — using evidence gathered throughout the evening. Getting it wrong means accusing an innocent noble. Getting it right means exposing the Countess\'s own secret.',
+  scenes: [
+    { title: 'Scene 1: The Ball Opens', summary: 'Arrival, introductions (difficult when everyone\'s masked), and the first clues. The shapeshifter\'s tells are subtle.', challenge: 'social', keyEvents: ['100 masked guests: any of them could be the target, the threat, or irrelevant', 'The party mingles: gathering information through conversation and observation', 'First clue: a guest whose drink preference changes between encounters', 'Second clue: two guests who claim the same identity at different times'] },
+    { title: 'Scene 2: The Investigation', summary: 'Deeper investigation during the ball. Dancing, socializing, and testing guests for shapeshifter tells.', challenge: 'exploration', keyEvents: ['The dance: a waltz where the party can observe guests up close', 'Testing: a mirror that shows true forms (if you can get someone to look)', 'Discovery: there\'s more than one shapeshifter — the decoys are spotted', 'The Countess\'s behavior: she avoids mirrors too — suspicious or cautious?'] },
+    { title: 'Scene 3: The Unmasking', summary: 'Midnight. Every mask comes off. The party must make their accusation. The truth is more complicated than expected.', challenge: 'social', keyEvents: ['The countdown to midnight: masks off in sequence, by seniority', 'The party\'s accusation: point to the changeling — but which one?', 'The reveal: three changelings, including the Countess herself', 'The aftermath: justice, mercy, or a deal — the Countess offers silence for silence'] },
+  ],
+  keyNPCs: [
+    { name: 'The Countess', role: 'client / secret changeling', personality: 'Elegant, sharp, and hiding in plain sight. She hired the party to protect herself from other changelings — the irony isn\'t lost on her. "I am exactly what I appear to be. Which is the problem, isn\'t it?"', secret: 'She\'s been the Countess for 30 years. The real Countess died decades ago. She took over to give her changeling family a safe home.' },
+    { name: 'The Lead Changeling', role: 'antagonist', personality: 'A changeling who wants to replace the Countess — not for the money, but because they know she\'s one of them and they want the "safe house" she\'s built.' },
+    { name: 'Lord Ashworth', role: 'red herring / gossip', personality: 'A paranoid noble who is convinced EVERYONE is a shapeshifter. He\'s wrong about everyone except the ones he hasn\'t suspected.' },
+  ],
+  keyLocations: [
+    { name: 'The Countess\'s Ballroom', description: 'A grand ballroom with 100 masked guests, crystal chandeliers, and a clock counting down to midnight.', significance: 'Where the ball and investigation take place.' },
+    { name: 'The Mirror Gallery', description: 'A hallway of mirrors between the ballroom and the gardens. Useful for checking if someone has a consistent reflection.', significance: 'A key investigation tool.' },
+    { name: 'The Countess\'s Study', description: 'A private room with documents that hint at the Countess\'s true nature — if the party looks closely enough.', significance: 'Where the Countess\'s secret is discovered.' },
+  ],
+  dataSystems: ['detectiveCase', 'socialEncounter', 'npcRelationshipWeb', 'courtIntrigue', 'npcSchedule', 'shapeshifterDetector'],
+};

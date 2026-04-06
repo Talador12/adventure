@@ -47,6 +47,23 @@ import { theTaxCollector } from './full/theTaxCollector';
 import { theSiegeOfHope } from './full/theSiegeOfHope';
 import { theMerchantPrinces } from './full/theMerchantPrinces';
 
+// Phase 4 full campaign imports
+import { theUnderdarkOlympics } from './full/theUnderdarkOlympics';
+import { theEmptyThrone } from './full/theEmptyThrone';
+import { thePrisonOfStars } from './full/thePrisonOfStars';
+import { theWorldEater } from './full/theWorldEater';
+import { theBlindCity } from './full/theBlindCity';
+import { theFirstDungeon } from './full/theFirstDungeon';
+import { theHarvestFestival } from './full/theHarvestFestival';
+import { theGuildsWar } from './full/theGuildsWar';
+import { theNameless } from './full/theNameless';
+import { theCartographersGambit } from './full/theCartographersGambit';
+import { theDiplomatsNightmare } from './full/theDiplomatsNightmare';
+import { theLibraryOfBabel } from './full/theLibraryOfBabel';
+import { theColosseumOfSouls } from './full/theColosseumOfSouls';
+import { theGardenAtWorldsEnd } from './full/theGardenAtWorldsEnd';
+import { thePlayersGuide } from './full/thePlayersGuide';
+
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
 import { theGreatCheeseHeist } from './oneshots/theGreatCheeseHeist';
@@ -88,6 +105,27 @@ import { theAnchorFalls } from './oneshots/theAnchorFalls';
 import { theLastSong } from './oneshots/theLastSong';
 import { theTaxDungeon } from './oneshots/theTaxDungeon';
 
+// Phase 4 one-shot imports
+import { thePiratesCourt } from './oneshots/thePiratesCourt';
+import { theExitInterview } from './oneshots/theExitInterview';
+import { theStormChasers } from './oneshots/theStormChasers';
+import { theSoupKitchen } from './oneshots/theSoupKitchen';
+import { theDungeonReview } from './oneshots/theDungeonReview';
+import { theWizardsMistake } from './oneshots/theWizardsMistake';
+import { theDeadParty } from './oneshots/theDeadParty';
+import { theWrongDungeon } from './oneshots/theWrongDungeon';
+import { theHauntedShip } from './oneshots/theHauntedShip';
+import { theRoast } from './oneshots/theRoast';
+import { theFloodgates } from './oneshots/theFloodgates';
+import { theTrainJob } from './oneshots/theTrainJob';
+import { theWildernessSchool } from './oneshots/theWildernessSchool';
+import { theMaskedBall } from './oneshots/theMaskedBall';
+import { theSunkenTemple } from './oneshots/theSunkenTemple';
+import { theInvisibleWar } from './oneshots/theInvisibleWar';
+import { theCursedWedding } from './oneshots/theCursedWedding';
+import { theReturnPolicy } from './oneshots/theReturnPolicy';
+import { theKrakenWakes } from './oneshots/theKrakenWakes';
+
 export const FULL_CAMPAIGNS: FullCampaign[] = [
   theShatteredCrown,
   theVillageThatForgot,
@@ -126,6 +164,22 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theTaxCollector,
   theSiegeOfHope,
   theMerchantPrinces,
+  // Phase 4
+  theUnderdarkOlympics,
+  theEmptyThrone,
+  thePrisonOfStars,
+  theWorldEater,
+  theBlindCity,
+  theFirstDungeon,
+  theHarvestFestival,
+  theGuildsWar,
+  theNameless,
+  theCartographersGambit,
+  theDiplomatsNightmare,
+  theLibraryOfBabel,
+  theColosseumOfSouls,
+  theGardenAtWorldsEnd,
+  thePlayersGuide,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
@@ -152,7 +206,7 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   theDungeonHasWiFi,
   theMapThatLied,
   theArenasChampion,
-  // Phase 3
+  // Phase 3 one-shots
   theMuseumHeist,
   theBabysittingQuest,
   theIslandOfMisfitMonsters,
@@ -168,6 +222,26 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   theAnchorFalls,
   theLastSong,
   theTaxDungeon,
+  // Phase 4
+  thePiratesCourt,
+  theExitInterview,
+  theStormChasers,
+  theSoupKitchen,
+  theDungeonReview,
+  theWizardsMistake,
+  theDeadParty,
+  theWrongDungeon,
+  theHauntedShip,
+  theRoast,
+  theFloodgates,
+  theTrainJob,
+  theWildernessSchool,
+  theMaskedBall,
+  theSunkenTemple,
+  theInvisibleWar,
+  theCursedWedding,
+  theReturnPolicy,
+  theKrakenWakes,
 ];
 
 export const ALL_CAMPAIGNS: CampaignStarterKit[] = [
