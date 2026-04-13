@@ -24,16 +24,16 @@ import type {
 // Catalog integrity
 // ---------------------------------------------------------------------------
 describe('campaign catalog — integrity', () => {
-  it('has 50 full campaigns', () => {
-    expect(FULL_CAMPAIGNS.length).toBe(50);
+  it('has 69 full campaigns', () => {
+    expect(FULL_CAMPAIGNS.length).toBe(69);
   });
 
   it('has 56 one-shot campaigns', () => {
     expect(ONESHOT_CAMPAIGNS.length).toBe(56);
   });
 
-  it('ALL_CAMPAIGNS contains all 106', () => {
-    expect(ALL_CAMPAIGNS.length).toBe(106);
+  it('ALL_CAMPAIGNS contains all 125', () => {
+    expect(ALL_CAMPAIGNS.length).toBe(125);
   });
 
   it('all campaigns have unique IDs', () => {
@@ -250,7 +250,7 @@ describe('campaign catalog — lookup', () => {
 describe('campaign catalog — filtering', () => {
   it('filter by type=full returns only full campaigns', () => {
     const results = filterCampaigns({ type: 'full' });
-    expect(results.length).toBe(50);
+    expect(results.length).toBe(69);
     results.forEach((c) => expect(c.type).toBe('full'));
   });
 
@@ -316,7 +316,7 @@ describe('campaign catalog — filtering', () => {
 
   it('empty filter returns all campaigns', () => {
     const results = filterCampaigns({});
-    expect(results.length).toBe(106);
+    expect(results.length).toBe(125);
   });
 });
 
@@ -357,7 +357,7 @@ describe('campaign catalog — aggregation', () => {
   it('every campaign appears in at least one tone group', () => {
     const grouped = getCampaignsByTone();
     const allGrouped = Object.values(grouped).flat();
-    expect(allGrouped.length).toBe(106);
+    expect(allGrouped.length).toBe(125);
   });
 });
 

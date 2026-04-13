@@ -13,6 +13,7 @@ import { rollTreasureHoard, HOARD_TIER_LABELS, type TreasureHoardResult } from '
 import FormationPresets from './FormationPresets';
 import DowntimeActivities from './DowntimeActivities';
 import CustomMonsterCreator from './CustomMonsterCreator';
+import GeneratorPanel from './GeneratorPanel';
 import QuickCombatResolver from './QuickCombatResolver';
 import SessionScheduler from './SessionScheduler';
 import PluginManager from './PluginManager';
@@ -39,6 +40,7 @@ import { LAIR_THEMES as LAIR_DATA } from '../../data/lairEffects';
 import { BULK_PRESETS as BULK_PRESETS_DATA } from '../../lib/bulkNpcGenerator';
 import { PRESET_TABLES as ENCOUNTER_TABLE_DATA } from '../../data/encounterTableBuilder';
 import { MINION_TEMPLATES as MINION_DATA } from '../../lib/minionRules';
+import GeneratorPanel from './GeneratorPanel';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -243,7 +245,7 @@ export default function DMSidebar({
   onTriggerQuestBranch,
 }: DMSidebarProps) {
   const { units, setUnits, characters, inCombat, updateCharacter, grantXP, damageUnit, mapPositions, setMapPositions } = useGame();
-  const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes'>('encounter');
+  const [dmSidebarTab, setDmSidebarTab] = useState<'encounter' | 'npc' | 'notes' | 'generators'>('encounter');
   const [biome, setBiome] = useState<Biome>('forest');
   const [lastBiomeRoll, setLastBiomeRoll] = useState<{ encounter: BiomeEncounter; roll: number } | null>(null);
   const [hoardTier, setHoardTier] = useState(0);
@@ -252,6 +254,7 @@ export default function DMSidebar({
   const [sessionNotes, setSessionNotes] = useState('');
   const [bardicPool, setBardicPool] = useState(0);
   const [sessionNotesStatus, setSessionNotesStatus] = useState('');
+  const [generatorPanelMode, setGeneratorPanelMode] = useState(false);
   const sessionNotesSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load DM session notes from cloud on mount
@@ -269,7 +272,7 @@ export default function DMSidebar({
       </div>
       {/* Sidebar tabs */}
       <div className="flex border-b border-slate-800">
-        {(['encounter', 'npc', 'notes'] as const).map((tab) => (
+        {(['encounter', 'npc', 'notes', 'generators'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setDmSidebarTab(tab)}
@@ -277,7 +280,7 @@ export default function DMSidebar({
               dmSidebarTab === tab ? 'text-[#F38020] border-b-2 border-[#F38020] bg-[#F38020]/5' : 'text-slate-500 hover:text-slate-300'
             }`}
           >
-            {tab}
+            {tab === 'generators' ? '🎲 Tools' : tab}
           </button>
         ))}
       </div>
@@ -3072,9 +3075,26 @@ export default function DMSidebar({
             </button>
 
              {/* ═══════════════════════════════════════════════════ */}
-             {/* Wave 33-60 Advanced DM Systems                    */}
+             {/* Wave 33-66 Advanced DM Systems                    */}
              {/* ═══════════════════════════════════════════════════ */}
-             <label className="text-[9px] text-purple-400 font-bold uppercase mt-2 mb-1 block border-t border-purple-900/30 pt-2">⚡ Advanced Generators</label>
+             <div className="flex items-center justify-between mt-2 mb-1 border-t border-purple-900/30 pt-2">
+               <label className="text-[9px] text-purple-400 font-bold uppercase">⚡ Advanced Generators</label>
+               <button
+                 onClick={() => setGeneratorPanelMode((m) => !m)}
+                 className={`text-[8px] px-2 py-0.5 rounded font-semibold transition-all ${generatorPanelMode ? 'bg-[#F38020]/20 text-[#F38020]' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}
+               >
+                 {generatorPanelMode ? 'Classic View' : 'Grid View'}
+               </button>
+             </div>
+
+             {generatorPanelMode && (
+               <div className="h-[500px] -mx-3 border-y border-slate-700">
+                 <GeneratorPanel onAddDmMessage={onAddDmMessage} />
+               </div>
+             )}
+
+             {!generatorPanelMode && (<>
+             {/* Classic button list */}
 
              {/* Combat & Encounter */}
              <button onClick={async () => { const { getBattleCry } = await import('../../data/battleCryGenerator'); onAddDmMessage(`⚔️ **Battle Cry:** *${getBattleCry()}*`); }} className="w-full mb-1 text-[10px] py-1 rounded bg-red-900/20 border border-red-600/30 text-red-400 hover:bg-red-800/30 transition-all">⚔️ Battle Cry</button>
@@ -3157,9 +3177,18 @@ export default function DMSidebar({
              <button onClick={async () => { const { getRandomMoment, formatMoment } = await import('../../data/emotionalMoment'); onAddDmMessage(formatMoment(getRandomMoment())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 hover:bg-pink-800/30 transition-all">💛 Emotional Moment</button>
              <button onClick={async () => { const { getRandomMisunderstanding, formatMisunderstanding } = await import('../../data/magicalMisunderstanding'); onAddDmMessage(formatMisunderstanding(getRandomMisunderstanding())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 hover:bg-yellow-800/30 transition-all">😂 Magic Mishap</button>
              <button onClick={async () => { const { getRandomStory, formatStory } = await import('../../data/campfireStory'); onAddDmMessage(formatStory(getRandomStory())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 hover:bg-amber-800/30 transition-all">🔥 Campfire Story</button>
-             <button onClick={async () => { const { getRandomDynamic, formatDynamic } = await import('../../data/partyDynamic'); onAddDmMessage(formatDynamic(getRandomDynamic())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 hover:bg-purple-800/30 transition-all">❤️ Party Dynamic</button>
+              <button onClick={async () => { const { getRandomDynamic, formatDynamic } = await import('../../data/partyDynamic'); onAddDmMessage(formatDynamic(getRandomDynamic())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 hover:bg-purple-800/30 transition-all">❤️ Party Dynamic</button>
 
-             {/* Save/Load Encounter Templates */}
+              {/* Wave 66 generators */}
+              <button onClick={async () => { const { getRandomTavern, formatTavern } = await import('../../data/planarBarCrawl'); onAddDmMessage(formatTavern(getRandomTavern())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 hover:bg-purple-800/30 transition-all">🍺 Planar Tavern</button>
+              <button onClick={async () => { const { getRandomScenario, formatScenario } = await import('../../data/undeadUprising'); onAddDmMessage(formatScenario(getRandomScenario())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-red-900/20 border border-red-600/30 text-red-400 hover:bg-red-800/30 transition-all">💀 Undead Uprising</button>
+              <button onClick={async () => { const { getRandomComplication, formatComplication } = await import('../../data/magicalHeistComplication'); onAddDmMessage(formatComplication(getRandomComplication())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 hover:bg-amber-800/30 transition-all">🔓 Heist Complication</button>
+              <button onClick={async () => { const { getRandomCourt, formatCourt } = await import('../../data/monsterCourtEtiquette'); onAddDmMessage(formatCourt(getRandomCourt())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-yellow-900/20 border border-yellow-600/30 text-yellow-400 hover:bg-yellow-800/30 transition-all">👑 Monster Court</button>
+              <button onClick={async () => { const { buildExpeditionLoadout, formatLoadout } = await import('../../data/expeditionSupply'); onAddDmMessage(formatLoadout(buildExpeditionLoadout(4, 7))); }} className="w-full mb-1 text-[10px] py-1 rounded bg-green-900/20 border border-green-600/30 text-green-400 hover:bg-green-800/30 transition-all">🎒 Expedition Supply</button>
+              <button onClick={async () => { const { getRandomVillage, formatVillage } = await import('../../data/cursedVillage'); onAddDmMessage(formatVillage(getRandomVillage())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-violet-900/20 border border-violet-600/30 text-violet-400 hover:bg-violet-800/30 transition-all">🏘️ Cursed Village</button>
+
+             </>)}
+              {/* Save/Load Encounter Templates */}
              <div className="mb-3 space-y-1">
                <label className="text-[10px] text-slate-500 font-semibold uppercase">Encounter Templates</label>
               <div className="flex gap-1">
@@ -4271,6 +4300,11 @@ export default function DMSidebar({
             />
             <div className="text-[9px] text-slate-600 text-right">{dmNotes.length} chars</div>
           </>
+        )}
+
+        {/* Generators tab — categorized tool panel */}
+        {dmSidebarTab === 'generators' && (
+          <GeneratorPanel onAddDmMessage={onAddDmMessage} />
         )}
 
         {/* Ambiance — always visible at bottom of sidebar */}

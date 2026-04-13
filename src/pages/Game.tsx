@@ -83,6 +83,7 @@ import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 const CampaignTimeline = lazy(() => import('../components/game/CampaignTimeline'));
 const RelationshipGraph = lazy(() => import('../components/game/RelationshipGraph'));
 const QuestMap = lazy(() => import('../components/game/QuestMap'));
+const WorldMap = lazy(() => import('../components/game/WorldMap'));
 import { useVoiceChat } from '../hooks/useVoiceChat';
 const CombatReplay = lazy(() => import('../components/game/CombatReplay'));
 import { type WikiPage } from '../components/game/WorldWiki';
@@ -300,7 +301,7 @@ export default function Game() {
   const [rulesRemindersEnabled, setRulesRemindersEnabled] = useState(() => {
     try { return localStorage.getItem('adventure:rulesReminders') !== 'off'; } catch { return true; }
   });
-  const [activeView, setActiveView] = useState<'narration' | 'map' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships' | 'wiki' | 'calendar'>('narration');
+  const [activeView, setActiveView] = useState<'narration' | 'map' | 'world' | 'shop' | 'journal' | 'loot' | 'encounters' | 'npcs' | 'dicestats' | 'timeline' | 'achievements' | 'relationships' | 'wiki' | 'calendar'>('narration');
   // Mobile layout: bottom tab bar controls which panel is visible
   const [mobilePanel, setMobilePanel] = useState<'game' | 'chat' | 'sheet'>('game');
 
@@ -2819,6 +2820,9 @@ export default function Game() {
                   <button onClick={() => setActiveView('map')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'map' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                     Battle Map
                   </button>
+                  <button onClick={() => setActiveView('world')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'world' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                    World
+                  </button>
                   {!inCombat && (
                     <button onClick={() => setActiveView('shop')} className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 ${activeView === 'shop' ? 'border-yellow-500 text-yellow-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
                       Shop
@@ -3140,6 +3144,10 @@ export default function Game() {
                       setShopMessage={setShopMessage}
                     />
                   </div>
+                ) : activeView === 'world' ? (
+                  <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-500 text-xs">Loading world map...</div>}>
+                    <WorldMap isDM={canUseDMTools} />
+                  </Suspense>
                 ) : activeView === 'journal' ? (
                   <div className="flex flex-col h-full overflow-hidden">
                     <QuestMap

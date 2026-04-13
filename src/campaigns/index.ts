@@ -64,6 +64,27 @@ import { theColosseumOfSouls } from './full/theColosseumOfSouls';
 import { theGardenAtWorldsEnd } from './full/theGardenAtWorldsEnd';
 import { thePlayersGuide } from './full/thePlayersGuide';
 
+// Phase 5 full campaign imports
+import { theObsidianArchive } from './full/theObsidianArchive';
+import { theLastOrchard } from './full/theLastOrchard';
+import { theGlassCipher } from './full/theGlassCipher';
+import { theCrimsonCovenant } from './full/theCrimsonCovenant';
+import { theSongsteelSaga } from './full/theSongsteelSaga';
+import { theCircusOfNightmares } from './full/theCircusOfNightmares';
+import { theCelestialAuction } from './full/theCelestialAuction';
+import { theSunkenKingdom } from './full/theSunkenKingdom';
+import { theGolemWars } from './full/theGolemWars';
+import { thePactOfAshes } from './full/thePactOfAshes';
+import { theChimeraSyndicate } from './full/theChimeraSyndicate';
+import { theStarforged } from './full/theStarforged';
+import { theChronomancersDilemma } from './full/theChronomancersDilemma';
+import { theEclipseCourt } from './full/theEclipseCourt';
+import { theCovenantOfBloodAndBone } from './full/theCovenantOfBloodAndBone';
+import { theSanctumOfSorrows } from './full/theSanctumOfSorrows';
+import { theTitanomachyReborn } from './full/theTitanomachyReborn';
+import { theMourningMarches } from './full/theMourningMarches';
+import { theWeaversOfFate } from './full/theWeaversOfFate';
+
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
 import { theGreatCheeseHeist } from './oneshots/theGreatCheeseHeist';
@@ -180,6 +201,26 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theColosseumOfSouls,
   theGardenAtWorldsEnd,
   thePlayersGuide,
+  // Phase 5 (new campaigns)
+  theObsidianArchive,
+  theLastOrchard,
+  theGlassCipher,
+  theCrimsonCovenant,
+  theSongsteelSaga,
+  theCircusOfNightmares,
+  theCelestialAuction,
+  theSunkenKingdom,
+  theGolemWars,
+  thePactOfAshes,
+  theChimeraSyndicate,
+  theStarforged,
+  theChronomancersDilemma,
+  theEclipseCourt,
+  theCovenantOfBloodAndBone,
+  theSanctumOfSorrows,
+  theTitanomachyReborn,
+  theMourningMarches,
+  theWeaversOfFate,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [

@@ -29,7 +29,11 @@ export type CampaignTheme =
   | 'mystery'
   | 'heist'
   | 'survival'
-  | 'meta';
+  | 'meta'
+  | 'exploration'
+  | 'social'
+  | 'epic'
+  | 'political';
 
 export type CampaignType = 'full' | 'oneshot';
 

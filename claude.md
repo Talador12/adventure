@@ -188,39 +188,48 @@ Infrastructure at `src/campaigns/` with shared types, catalog index, search/filt
 
 **Next:** Batch-produce remaining 94 campaigns (50 full + 44 one-shots) in future sessions.
 
-## 🎯 NEXT SESSION — Ambitious Ideas for Fresh Context
+## Recent: Phase 5 Campaigns + Wave 66 + Generator Panel + WorldMap
 
-### 1. Campaign Starter Kit Library — Phase 5
-Batch-produce the next 30 campaigns to reach 136/200. Past 2/3 mark.
+**Completed this session:**
+- Campaign Starter Kit Phase 5: 19 new full campaigns imported and wired (69 full + 56 one-shots = 125 total)
+- CampaignTheme type: added exploration, social, epic, political values (fixed ~30 type errors)
+- NPC secrets: added to 6 Phase 5 campaigns that were missing them
+- Wave 66 data systems: 6 new systems + 52 tests + 6 DMSidebar buttons
+  - Planar Bar Crawl (4 taverns across Feywild/Nine Hells/Mechanus/Shadowfell)
+  - Undead Uprising (2 scenarios, 4 escalating phases each, infection mechanics)
+  - Magical Heist Complication (8 complications, counterplay, makes-it-worse)
+  - Monster Court Etiquette (dragon/vampire/lich courts, customs, taboos)
+  - Expedition Supply (12 items, 7 biome forage tables, auto-loadout builder)
+  - Cursed Village (3 scenarios, investigation clues, moral dilemmas)
+- Generator Panel: searchable categorized grid view (6 tabs, 55+ generators) wired into DMSidebar with toggle
+- WorldMap: canvas hex grid with pan/zoom, terrain rendering, fog of war, party movement (already built, now committed)
 
-### 2. Wire Remaining Systems into UI
-61 of our 194 systems are wired as DMSidebar buttons. The remaining ~133 (mostly Waves 33-65 that didn't get explicit buttons, plus all the lib/ systems) need UI integration. The pattern is established: `async import()` + `onAddDmMessage(format(...))`.
+### Session Stats
+- **Tests:** 3,373 passing across 3 test files
+- **Data files:** 391 in src/data/
+- **Systems built:** 200 (Waves 33-66)
+- **Campaigns:** 125 (69 full + 56 one-shot)
+- **UI:** 67 DMSidebar buttons + Generator Panel grid view (55+ generators)
 
-### 3. DM Toolbox Overhaul — Categorized Generator Panel
-The DMSidebar has 61+ generator buttons in a scrolling list. Transform this into a searchable, categorized panel with tabs (Combat, World, NPCs, Story, Items, Misc) and a search bar. Each button shows a preview tooltip. This makes 194 systems discoverable instead of buried.
+## Next Session - Priorities
 
-### 4. Campaign World Map with Hex Travel
-The #1 feature on the roadmap since Wave 33. Hex-based overland map with fog of war, travel encounters from our data systems, weather integration, random events per hex. This is a React component + canvas rendering project, not a data system.
+### 1. Campaign Starter Kit Library - Phase 6
+Need 11 more full campaigns to hit the original Phase 5 target of 30 new (got 19). Also missing theWardensOfAether and theHollowMountain files.
 
-### 5. Interactive Encounter Builder
-Combine our encounter difficulty tuner, monster ecology, terrain advantage, weather-terrain modifier, and lair action systems into a single interactive encounter design tool. DM selects terrain + weather + monster type and gets a fully staged encounter with environmental effects, lair actions, and difficulty rating.
+### 2. Interactive Encounter Builder
+Combine encounter difficulty tuner, monster ecology, terrain advantage, weather-terrain modifier, and lair action systems into a single interactive encounter design tool.
 
-### 6. NPC Relationship Graph Visualizer
-Take our NPC relationship web data and render it as an interactive force-directed graph. Click nodes to see NPC details, click edges to see relationship type. Secret relationships shown as dashed lines (DM only). This makes political campaigns playable.
+### 3. NPC Relationship Graph Visualizer
+Force-directed graph of NPC relationships from npcRelationWeb data. Click nodes for details, dashed lines for secret connections.
 
-### 7. Session Prep Wizard
-A guided workflow that uses our data systems to prep an entire session: pick a setting → generate weather → create an encounter → populate NPCs with voices/backstories → add a plot twist → end with a cliffhanger. Outputs a formatted session plan the DM can reference during play.
+### 4. Session Prep Wizard
+Guided workflow: pick setting -> generate weather -> create encounter -> populate NPCs -> add plot twist -> output session plan.
 
-### Session Stats for Handoff
-- **Branch:** `staging` (all work pushed)
-- **Tests:** 2,645 passing across 2 test files (`game-logic.test.ts` 1250 + `wave-systems.test.ts` 1395)
-- **Data files:** 385 in `src/data/`
-- **Systems built:** 194 (Waves 33-65)
-- **UI buttons wired:** 61 in DMSidebar
-- **Pre-existing bugs fixed:** 15 import shadowing issues
-- **Test infrastructure:** Split into 2 files for sustainability
-- **Build:** Compiles clean. Vite dev server pattern established.
-- **Data system pattern:** types → const array → CRUD/random functions → format function → tests in `wave-systems.test.ts` → button in DMSidebar
+### 5. Wire Remaining Systems into UI
+67 of 200 systems wired. The GeneratorPanel helps but the classic DMSidebar still has the original 67 buttons. Many systems still have no UI entry point.
+
+### 6. Continue Wave 67+ data systems
+Pattern is established. Keep shipping 6 per wave.
 
 ### v0.1.0 — Initial Release
 

@@ -2802,3 +2802,88 @@ import { VILLAIN_MOTIVATIONS, getRandomMotivation as getVillainMot, getRedeemabl
 
 describe('last resort abilities', () => { it('has 5+', () => { expect(LAST_RESORTS.length).toBeGreaterThanOrEqual(5); }); it('all have costs', () => { LAST_RESORTS.forEach((r) => expect(r.cost.length).toBeGreaterThan(15)); }); it('all have narrative beats', () => { LAST_RESORTS.forEach((r) => expect(r.narrativeBeat.length).toBeGreaterThan(20)); }); it('formats', () => { expect(formatLastResort(getRandomLastResort())).toContain('Cost'); }); });
 describe('villain motivations', () => { it('has 5+', () => { expect(VILLAIN_MOTIVATIONS.length).toBeGreaterThanOrEqual(5); }); it('covers 5+ cores', () => { expect(getAllCores().length).toBeGreaterThanOrEqual(5); }); it('some redeemable', () => { expect(getRedeemable().length).toBeGreaterThanOrEqual(3); }); it('all have perspective', () => { VILLAIN_MOTIVATIONS.forEach((m) => expect(m.theirPerspective.length).toBeGreaterThan(20)); }); it('formats', () => { expect(formatVillainMot(getVillainMot())).toContain('⚠️'); }); });
+
+// ---------------------------------------------------------------------------
+// Wave 66 — planar bar crawl, undead uprising, magical heist, monster court, expedition supply, cursed village
+// ---------------------------------------------------------------------------
+import { PLANAR_TAVERNS, getRandomTavern, getTavernByPlane, getAllPlanes as getAllTavernPlanes, getMostDangerousDrink, formatTavern } from '../../src/data/planarBarCrawl';
+
+describe('planar bar crawl', () => {
+  it('has at least 4 taverns', () => { expect(PLANAR_TAVERNS.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 planes', () => { expect(getAllTavernPlanes().length).toBeGreaterThanOrEqual(4); });
+  it('each tavern has 3+ drinks', () => { PLANAR_TAVERNS.forEach((t) => expect(t.drinks.length).toBeGreaterThanOrEqual(3)); });
+  it('each tavern has regular patrons', () => { PLANAR_TAVERNS.forEach((t) => expect(t.regularPatrons.length).toBeGreaterThanOrEqual(2)); });
+  it('all have quest hooks', () => { PLANAR_TAVERNS.forEach((t) => expect(t.questHook.length).toBeGreaterThan(20)); });
+  it('all have house rules', () => { PLANAR_TAVERNS.forEach((t) => expect(t.houseRule.length).toBeGreaterThan(15)); });
+  it('finds most dangerous drink', () => { const d = getMostDangerousDrink(); expect(d.dangerLevel).toBeGreaterThanOrEqual(4); expect(d.tavern.length).toBeGreaterThan(0); });
+  it('looks up by plane', () => { const t = getTavernByPlane('feywild'); expect(t).toBeDefined(); expect(t!.name).toContain('Blooming'); });
+  it('formats tavern', () => { expect(formatTavern(PLANAR_TAVERNS[0])).toContain('Drinks'); });
+});
+
+import { UNDEAD_UPRISING_SCENARIOS, getRandomScenario as getRandomUprising, getPhaseByNumber, getActiveUndeadTypes, getAllOrigins as getAllUprisingOrigins, formatScenario as formatUprising } from '../../src/data/undeadUprising';
+
+describe('undead uprising', () => {
+  it('has at least 2 scenarios', () => { expect(UNDEAD_UPRISING_SCENARIOS.length).toBeGreaterThanOrEqual(2); });
+  it('each has 4 phases', () => { UNDEAD_UPRISING_SCENARIOS.forEach((s) => expect(s.phases.length).toBe(4)); });
+  it('each has infection vector', () => { UNDEAD_UPRISING_SCENARIOS.forEach((s) => { expect(s.infectionVector.saveDC).toBeGreaterThan(10); expect(s.infectionVector.symptoms.length).toBeGreaterThanOrEqual(3); }); });
+  it('undead escalate per phase', () => { UNDEAD_UPRISING_SCENARIOS.forEach((s) => { const phase1 = getActiveUndeadTypes(s, 1); const phase4 = getActiveUndeadTypes(s, 4); expect(phase4.length).toBeGreaterThan(phase1.length); }); });
+  it('all have final boss', () => { UNDEAD_UPRISING_SCENARIOS.forEach((s) => expect(s.finalBoss.length).toBeGreaterThan(20)); });
+  it('all have boss weakness', () => { UNDEAD_UPRISING_SCENARIOS.forEach((s) => expect(s.finalBossWeakness.length).toBeGreaterThan(15)); });
+  it('phase lookup works', () => { const p = getPhaseByNumber(UNDEAD_UPRISING_SCENARIOS[0], 3); expect(p).toBeDefined(); expect(p!.phase).toBe('outbreak'); });
+  it('formats scenario', () => { expect(formatUprising(getRandomUprising())).toContain('Phases'); });
+});
+
+import { HEIST_COMPLICATIONS, getRandomComplication, getComplicationsByType, getComplicationsBySeverity, getMostFun, getAllTypes as getAllHeistTypes, formatComplication } from '../../src/data/magicalHeistComplication';
+
+describe('magical heist complications', () => {
+  it('has at least 8 complications', () => { expect(HEIST_COMPLICATIONS.length).toBeGreaterThanOrEqual(8); });
+  it('covers at least 4 types', () => { expect(getAllHeistTypes().length).toBeGreaterThanOrEqual(4); });
+  it('each has counterplay', () => { HEIST_COMPLICATIONS.forEach((c) => expect(c.counterplay.length).toBeGreaterThanOrEqual(2)); });
+  it('each has makes-it-worse', () => { HEIST_COMPLICATIONS.forEach((c) => expect(c.makesItWorse.length).toBeGreaterThan(15)); });
+  it('filters by severity', () => { const minor = getComplicationsBySeverity('minor'); expect(minor.length).toBeGreaterThanOrEqual(1); minor.forEach((c) => expect(c.severity).toBe('minor')); });
+  it('filters by type', () => { const arcane = getComplicationsByType('arcane'); expect(arcane.length).toBeGreaterThanOrEqual(1); });
+  it('most fun has high rating', () => { expect(getMostFun().funFactor).toBeGreaterThanOrEqual(4); });
+  it('formats complication', () => { expect(formatComplication(getRandomComplication())).toContain('Counterplay'); });
+});
+
+import { MONSTER_COURTS, getRandomCourt, getCourtByType, getAllCourtTypes, getTabooCount, formatCourt } from '../../src/data/monsterCourtEtiquette';
+
+describe('monster court etiquette', () => {
+  it('has at least 3 courts', () => { expect(MONSTER_COURTS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 court types', () => { expect(getAllCourtTypes().length).toBeGreaterThanOrEqual(3); });
+  it('each has 4+ customs', () => { MONSTER_COURTS.forEach((c) => expect(c.customs.length).toBeGreaterThanOrEqual(4)); });
+  it('each has offerings', () => { MONSTER_COURTS.forEach((c) => expect(c.offerings.length).toBeGreaterThanOrEqual(3)); });
+  it('each has taboos', () => { MONSTER_COURTS.forEach((c) => expect(c.taboos.length).toBeGreaterThanOrEqual(3)); });
+  it('each has quest hook', () => { MONSTER_COURTS.forEach((c) => expect(c.questHook.length).toBeGreaterThan(20)); });
+  it('looks up by type', () => { const dragon = getCourtByType('dragon'); expect(dragon).toBeDefined(); expect(dragon!.title).toContain('Korvathax'); });
+  it('counts taboos', () => { const court = MONSTER_COURTS[0]; expect(getTabooCount(court)).toBeGreaterThanOrEqual(6); });
+  it('formats court', () => { expect(formatCourt(getRandomCourt())).toContain('Customs'); });
+});
+
+import { SUPPLY_ITEMS, FORAGE_TABLE, getSupplyByCategory, getForageInfo, getAllBiomes, getAllCategories as getAllSupplyCategories, buildExpeditionLoadout, formatLoadout, formatForage } from '../../src/data/expeditionSupply';
+
+describe('expedition supply management', () => {
+  it('has at least 10 supply items', () => { expect(SUPPLY_ITEMS.length).toBeGreaterThanOrEqual(10); });
+  it('covers at least 5 categories', () => { expect(getAllSupplyCategories().length).toBeGreaterThanOrEqual(5); });
+  it('has forage data for 7 biomes', () => { expect(FORAGE_TABLE.length).toBe(7); expect(getAllBiomes().length).toBe(7); });
+  it('filters by category', () => { const food = getSupplyByCategory('food'); expect(food.length).toBeGreaterThanOrEqual(2); food.forEach((s) => expect(s.category).toBe('food')); });
+  it('gets forage info', () => { const desert = getForageInfo('desert'); expect(desert).toBeDefined(); expect(desert!.dcSurvival).toBeGreaterThanOrEqual(15); });
+  it('builds standard loadout', () => { const l = buildExpeditionLoadout(4, 7); expect(l.totalWeight).toBeGreaterThan(0); expect(l.totalCost).toBeGreaterThan(0); expect(l.items.length).toBeGreaterThanOrEqual(4); });
+  it('warns on heavy loadouts', () => { const heavy = buildExpeditionLoadout(2, 30); expect(heavy.warnings.length).toBeGreaterThanOrEqual(1); });
+  it('formats loadout', () => { expect(formatLoadout(buildExpeditionLoadout(4, 5))).toContain('Items'); });
+  it('formats forage', () => { expect(formatForage(FORAGE_TABLE[0])).toContain('Foraging'); });
+});
+
+import { CURSED_VILLAGE_SCENARIOS, getRandomVillage, getVillageByOrigin, getAllOrigins as getAllCurseOrigins, getClueCount, formatVillage } from '../../src/data/cursedVillage';
+
+describe('cursed village', () => {
+  it('has at least 3 scenarios', () => { expect(CURSED_VILLAGE_SCENARIOS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 curse origins', () => { expect(getAllCurseOrigins().length).toBeGreaterThanOrEqual(3); });
+  it('each has 3+ symptoms', () => { CURSED_VILLAGE_SCENARIOS.forEach((s) => expect(s.symptoms.length).toBeGreaterThanOrEqual(3)); });
+  it('each has 4+ clues', () => { CURSED_VILLAGE_SCENARIOS.forEach((s) => expect(s.clues.length).toBeGreaterThanOrEqual(4)); });
+  it('each has multiple cures', () => { CURSED_VILLAGE_SCENARIOS.forEach((s) => expect(s.cureMethods.length).toBeGreaterThanOrEqual(3)); });
+  it('each has moral dilemma', () => { CURSED_VILLAGE_SCENARIOS.forEach((s) => expect(s.moralDilemma.length).toBeGreaterThan(20)); });
+  it('filters by origin', () => { const hag = getVillageByOrigin('hag'); expect(hag.length).toBeGreaterThanOrEqual(1); });
+  it('counts clues', () => { expect(getClueCount(CURSED_VILLAGE_SCENARIOS[0])).toBeGreaterThanOrEqual(4); });
+  it('formats village', () => { expect(formatVillage(getRandomVillage())).toContain('Symptoms'); });
+});
