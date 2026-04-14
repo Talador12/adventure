@@ -2887,3 +2887,93 @@ describe('cursed village', () => {
   it('counts clues', () => { expect(getClueCount(CURSED_VILLAGE_SCENARIOS[0])).toBeGreaterThanOrEqual(4); });
   it('formats village', () => { expect(formatVillage(getRandomVillage())).toContain('Symptoms'); });
 });
+
+// ---------------------------------------------------------------------------
+// Wave 67 — magical school exam, haunted carnival, bounty hunter, diplomatic incident, dream realm, magical trial
+// ---------------------------------------------------------------------------
+import { MAGICAL_EXAMS, getRandomExam, getExamBySubject, getAllSubjects as getAllExamSubjects, getExamDifficulty, formatExam } from '../../src/data/magicalSchoolExam';
+
+describe('magical school exam', () => {
+  it('has at least 3 exams', () => { expect(MAGICAL_EXAMS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 subjects', () => { expect(getAllExamSubjects().length).toBeGreaterThanOrEqual(3); });
+  it('each has 3+ questions', () => { MAGICAL_EXAMS.forEach((e) => expect(e.questions.length).toBeGreaterThanOrEqual(3)); });
+  it('each has proctor with weakness', () => { MAGICAL_EXAMS.forEach((e) => expect(e.proctor.weakness.length).toBeGreaterThan(10)); });
+  it('each has cheating opportunity', () => { MAGICAL_EXAMS.forEach((e) => expect(e.cheatingOpportunity.length).toBeGreaterThan(20)); });
+  it('each has cheating consequence', () => { MAGICAL_EXAMS.forEach((e) => expect(e.cheatingConsequence.length).toBeGreaterThan(15)); });
+  it('looks up by subject', () => { const evo = getExamBySubject('evocation'); expect(evo).toBeDefined(); expect(evo!.name).toContain('Inferno'); });
+  it('calculates difficulty', () => { expect(getExamDifficulty(MAGICAL_EXAMS[0])).toBeGreaterThan(10); });
+  it('formats exam', () => { expect(formatExam(getRandomExam())).toContain('Questions'); });
+});
+
+import { HAUNTED_CARNIVALS, getRandomCarnival, getAttractionCount, getCursedPrizes, formatCarnival } from '../../src/data/hauntedCarnival';
+
+describe('haunted carnival', () => {
+  it('has at least 2 carnivals', () => { expect(HAUNTED_CARNIVALS.length).toBeGreaterThanOrEqual(2); });
+  it('each has 4+ attractions', () => { HAUNTED_CARNIVALS.forEach((c) => expect(c.attractions.length).toBeGreaterThanOrEqual(4)); });
+  it('each has owner secret', () => { HAUNTED_CARNIVALS.forEach((c) => expect(c.ownerSecret.length).toBeGreaterThan(20)); });
+  it('each has dark secret', () => { HAUNTED_CARNIVALS.forEach((c) => expect(c.darkSecret.length).toBeGreaterThan(20)); });
+  it('each has escape condition', () => { HAUNTED_CARNIVALS.forEach((c) => expect(c.escapeCondition.length).toBeGreaterThan(15)); });
+  it('each has time limit', () => { HAUNTED_CARNIVALS.forEach((c) => expect(c.timeLimit.length).toBeGreaterThan(10)); });
+  it('counts attractions', () => { expect(getAttractionCount(HAUNTED_CARNIVALS[0])).toBeGreaterThanOrEqual(4); });
+  it('finds cursed prizes', () => { const cursed = getCursedPrizes(HAUNTED_CARNIVALS[0]); expect(cursed.length).toBeGreaterThanOrEqual(0); });
+  it('formats carnival', () => { expect(formatCarnival(getRandomCarnival())).toContain('Attractions'); });
+});
+
+import { BOUNTY_CONTRACTS, getRandomContract as getRandomBounty, getContractsByDifficulty, getAllDifficulties as getAllBountyDiffs, getRewardValue, formatContract as formatBounty } from '../../src/data/bountyHunterContract';
+
+describe('bounty hunter contract', () => {
+  it('has at least 3 contracts', () => { expect(BOUNTY_CONTRACTS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 difficulties', () => { expect(getAllBountyDiffs().length).toBeGreaterThanOrEqual(3); });
+  it('each has 2+ complications', () => { BOUNTY_CONTRACTS.forEach((c) => expect(c.complications.length).toBeGreaterThanOrEqual(2)); });
+  it('each has distinguishing features', () => { BOUNTY_CONTRACTS.forEach((c) => expect(c.distinguishingFeatures.length).toBeGreaterThanOrEqual(2)); });
+  it('each has moral twist', () => { BOUNTY_CONTRACTS.forEach((c) => expect(c.moralTwist.length).toBeGreaterThan(20)); });
+  it('each has false lead', () => { BOUNTY_CONTRACTS.forEach((c) => expect(c.falseLead.length).toBeGreaterThan(15)); });
+  it('filters by difficulty', () => { const hard = getContractsByDifficulty('hard'); expect(hard.length).toBeGreaterThanOrEqual(1); });
+  it('parses reward value', () => { expect(getRewardValue(BOUNTY_CONTRACTS[0])).toBeGreaterThan(0); });
+  it('formats contract', () => { expect(formatBounty(getRandomBounty())).toContain('BOUNTY'); });
+});
+
+import { DIPLOMATIC_INCIDENTS, getRandomIncident, getIncidentsBySeverity, getAllIncidentTypes, getFactionCount as getDiploFactionCount, formatIncident } from '../../src/data/diplomaticIncident';
+
+describe('diplomatic incident', () => {
+  it('has at least 3 incidents', () => { expect(DIPLOMATIC_INCIDENTS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 types', () => { expect(getAllIncidentTypes().length).toBeGreaterThanOrEqual(3); });
+  it('each has 3 factions', () => { DIPLOMATIC_INCIDENTS.forEach((i) => expect(i.factions.length).toBe(3)); });
+  it('each has 2+ resolutions', () => { DIPLOMATIC_INCIDENTS.forEach((i) => expect(i.resolutions.length).toBeGreaterThanOrEqual(2)); });
+  it('each faction has secret goal', () => { DIPLOMATIC_INCIDENTS.forEach((i) => i.factions.forEach((f) => expect(f.secretGoal.length).toBeGreaterThan(15))); });
+  it('each has worst case', () => { DIPLOMATIC_INCIDENTS.forEach((i) => expect(i.worstCase.length).toBeGreaterThan(20)); });
+  it('each has time limit', () => { DIPLOMATIC_INCIDENTS.forEach((i) => expect(i.timeLimit.length).toBeGreaterThan(10)); });
+  it('filters by severity', () => { const major = getIncidentsBySeverity('major'); expect(major.length).toBeGreaterThanOrEqual(1); });
+  it('counts factions', () => { expect(getDiploFactionCount(DIPLOMATIC_INCIDENTS[0])).toBe(3); });
+  it('formats incident', () => { expect(formatIncident(getRandomIncident())).toContain('Factions'); });
+});
+
+import { DREAM_REALM_SCENARIOS, getRandomDream, getDreamByType, getAllDreamTypes, getRuleCount, formatDream } from '../../src/data/dreamRealmAdventure';
+
+describe('dream realm adventure', () => {
+  it('has at least 2 scenarios', () => { expect(DREAM_REALM_SCENARIOS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 dream types', () => { expect(getAllDreamTypes().length).toBeGreaterThanOrEqual(2); });
+  it('each has 3+ dream rules', () => { DREAM_REALM_SCENARIOS.forEach((s) => expect(s.dreamRules.length).toBeGreaterThanOrEqual(3)); });
+  it('each has 2+ encounters', () => { DREAM_REALM_SCENARIOS.forEach((s) => expect(s.encounters.length).toBeGreaterThanOrEqual(2)); });
+  it('each has dream boss', () => { DREAM_REALM_SCENARIOS.forEach((s) => expect(s.dreamBoss.length).toBeGreaterThan(20)); });
+  it('each has wake condition', () => { DREAM_REALM_SCENARIOS.forEach((s) => expect(s.wakeCondition.length).toBeGreaterThan(15)); });
+  it('each has real-world consequence', () => { DREAM_REALM_SCENARIOS.forEach((s) => expect(s.realWorldConsequence.length).toBeGreaterThan(15)); });
+  it('looks up by type', () => { const fever = getDreamByType('fever'); expect(fever).toBeDefined(); expect(fever!.name).toContain('Karthax'); });
+  it('counts rules', () => { expect(getRuleCount(DREAM_REALM_SCENARIOS[0])).toBe(3); });
+  it('formats dream', () => { expect(formatDream(getRandomDream())).toContain('Dream Rules'); });
+});
+
+import { MAGICAL_TRIALS, getRandomTrial, getTrialByType, getAllOrdealTypes, getLyingWitnesses, formatTrial } from '../../src/data/magicalTrialByOrdeal';
+
+describe('magical trial by ordeal', () => {
+  it('has at least 2 trials', () => { expect(MAGICAL_TRIALS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 ordeal types', () => { expect(getAllOrdealTypes().length).toBeGreaterThanOrEqual(2); });
+  it('each has 3 phases', () => { MAGICAL_TRIALS.forEach((t) => expect(t.phases.length).toBe(3)); });
+  it('each has 3 witnesses', () => { MAGICAL_TRIALS.forEach((t) => expect(t.witnesses.length).toBe(3)); });
+  it('each has innocent twist', () => { MAGICAL_TRIALS.forEach((t) => expect(t.innocentTwist.length).toBeGreaterThan(20)); });
+  it('each has guilty twist', () => { MAGICAL_TRIALS.forEach((t) => expect(t.guiltyTwist.length).toBeGreaterThan(15)); });
+  it('each has divine intervention', () => { MAGICAL_TRIALS.forEach((t) => expect(t.divineIntervention.length).toBeGreaterThan(20)); });
+  it('finds lying witnesses', () => { const liars = getLyingWitnesses(MAGICAL_TRIALS[0]); expect(liars.length).toBeGreaterThanOrEqual(1); });
+  it('looks up by type', () => { const fire = getTrialByType('fire'); expect(fire).toBeDefined(); expect(fire!.name).toContain('Burning'); });
+  it('formats trial', () => { expect(formatTrial(getRandomTrial())).toContain('Phases'); });
+});

@@ -98,6 +98,14 @@ const GENERATORS: GeneratorDef[] = [
   { id: 'monster-court', name: 'Monster Court', emoji: '👑', description: 'Dragon/vampire/lich courts', category: 'npcs', importPath: '../../data/monsterCourtEtiquette', importName: 'getRandomCourt', formatName: 'formatCourt', isRandom: true },
   { id: 'expedition-supply', name: 'Expedition Supply', emoji: '🎒', description: 'Travel supply loadouts', category: 'misc', importPath: '../../data/expeditionSupply', importName: 'buildExpeditionLoadout', formatName: 'formatLoadout' },
   { id: 'cursed-village', name: 'Cursed Village', emoji: '🏘️', description: 'Cursed settlement mysteries', category: 'story', importPath: '../../data/cursedVillage', importName: 'getRandomVillage', formatName: 'formatVillage', isRandom: true },
+
+  // Wave 67
+  { id: 'wizard-exam', name: 'Wizard Exam', emoji: '🎓', description: 'Magic school encounters', category: 'npcs', importPath: '../../data/magicalSchoolExam', importName: 'getRandomExam', formatName: 'formatExam', isRandom: true },
+  { id: 'haunted-carnival', name: 'Haunted Carnival', emoji: '🎪', description: 'Creepy carnival adventures', category: 'world', importPath: '../../data/hauntedCarnival', importName: 'getRandomCarnival', formatName: 'formatCarnival', isRandom: true },
+  { id: 'bounty-contract', name: 'Bounty Contract', emoji: '🎯', description: 'Target dossiers', category: 'story', importPath: '../../data/bountyHunterContract', importName: 'getRandomContract', formatName: 'formatContract', isRandom: true },
+  { id: 'diplomatic-crisis', name: 'Diplomatic Crisis', emoji: '🏛️', description: 'International incidents', category: 'story', importPath: '../../data/diplomaticIncident', importName: 'getRandomIncident', formatName: 'formatIncident', isRandom: true },
+  { id: 'dream-realm', name: 'Dream Realm', emoji: '💭', description: 'Dreamscape adventures', category: 'world', importPath: '../../data/dreamRealmAdventure', importName: 'getRandomDream', formatName: 'formatDream', isRandom: true },
+  { id: 'trial-ordeal', name: 'Trial by Ordeal', emoji: '⚖️', description: 'Divine judgment encounters', category: 'story', importPath: '../../data/magicalTrialByOrdeal', importName: 'getRandomTrial', formatName: 'formatTrial', isRandom: true },
 ];
 
 interface GeneratorPanelProps {
