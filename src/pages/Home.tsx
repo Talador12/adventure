@@ -745,17 +745,17 @@ export default function Home() {
           {/* Feature highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-center w-full max-w-4xl stagger-children">
             {[
-              { icon: '👥', label: 'Any Party Size', desc: 'Solo, co-op, full table, or spectate — humans and AI in any seat' },
-              { icon: '⚔️', label: 'Full 5e Combat', desc: 'Initiative, AoE spells, saving throws, death saves, opportunity attacks' },
-              { icon: '🗺️', label: 'Tactical Maps', desc: 'Fog of war, terrain, pathfinding, traps, animated tokens' },
-              { icon: '🎲', label: 'Live Dice', desc: 'Server-authoritative rolls synced across all players in real-time' },
-              { icon: '✨', label: 'Just Works', desc: 'No plugins, no install, no PDF imports — open a browser and play in minutes' },
-              { icon: '🎭', label: 'Every Seat, Your Call', desc: 'Human or AI for any seat — DM, players, spectators. Or no AI at all' },
+              { icon: '🌱', label: 'Never Played? Perfect.', desc: 'The game teaches you as you go. Build a character, roll dice, fight monsters. No rulebook required.' },
+              { icon: '🎲', label: 'Real Dice, Real Drama', desc: 'Crits glow gold. Fumbles shake the screen. Every roll matters and it feels like it.' },
+              { icon: '👥', label: 'Bring Everyone', desc: 'Solo, duo, full table. Human, AI, or no AI at all. Works on any device with a browser.' },
+              { icon: '⚔️', label: 'Fight Stuff Together', desc: 'Cast fireballs, flank enemies, save your friends from dying. Combat that actually feels like combat.' },
+              { icon: '🗺️', label: 'Explore Real Maps', desc: 'Uncover fog of war, dodge traps, find treasure. Move your token and see what happens.' },
+              { icon: '🏰', label: 'Play in 60 Seconds', desc: 'No downloads. No accounts. No 400-page rulebook. Click a campaign and you are in.' },
             ].map((f) => (
               <div key={f.label} className="feature-card card-glow p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 backdrop-blur-sm animate-card-reveal">
                 <div className="text-2xl mb-1 animate-float" style={{ animationDelay: `${Math.random() * 2}s` }}>{f.icon}</div>
                 <div className="text-sm font-semibold text-white">{f.label}</div>
-                <div className="text-[11px] text-slate-400">{f.desc}</div>
+                <div className="text-[11px] text-slate-300 leading-relaxed">{f.desc}</div>
               </div>
             ))}
           </div>
@@ -775,7 +775,7 @@ export default function Home() {
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-[#F38020] flex items-center justify-center text-xs font-black text-white shadow-lg">{s.step}</div>
               <div className="text-3xl mt-2 mb-2">{s.icon}</div>
               <h3 className="text-sm font-bold text-white mb-1">{s.title}</h3>
-              <p className="text-[11px] text-slate-400 leading-relaxed">{s.desc}</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed">{s.desc}</p>
             </div>
           ))}
         </div>

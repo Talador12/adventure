@@ -13,8 +13,8 @@ export interface ThemeDef {
 
 export const THEMES: ThemeDef[] = [
   { id: 'dark', name: 'Dark', description: 'Default dark fantasy', isDark: true },
-  { id: 'light', name: 'Light', description: 'Clean and bright', isDark: false },
-  { id: 'parchment', name: 'Parchment', description: 'Warm aged paper', isDark: false },
+  { id: 'light', name: 'Light', description: 'Warm and bright', isDark: false },
+  { id: 'parchment', name: 'Parchment', description: 'Ye olde character sheet', isDark: false },
   { id: 'high-contrast', name: 'High Contrast', description: 'Maximum readability', isDark: true },
 ];
 

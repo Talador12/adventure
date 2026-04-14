@@ -26,31 +26,156 @@
    Theme overrides via data-theme attribute
    ============================================================ */
 
-/* Parchment — warm aged-paper tones */
-[data-theme="parchment"] {
+/* Light — warm tones, clean readability */
+[data-theme="light"] {
   --color-accent: #b45309;
   --color-ember: #b45309;
   --color-ember-dark: #92400e;
   --color-gold: #d97706;
 }
-html[data-theme="parchment"] {
+html[data-theme="light"] {
   background-color: #fef3c7 !important;
   color: #451a03;
 }
-html[data-theme="parchment"] .bg-slate-900,
-html[data-theme="parchment"] .bg-\[\#0c0f1a\] {
+html[data-theme="light"] .bg-slate-900,
+html[data-theme="light"] .bg-\[\#0c0f1a\] {
   background-color: #fde68a !important;
 }
-html[data-theme="parchment"] .bg-slate-800 {
+html[data-theme="light"] .bg-slate-800 {
   background-color: #fef3c7 !important;
 }
-html[data-theme="parchment"] .text-slate-300,
-html[data-theme="parchment"] .text-slate-400 {
+html[data-theme="light"] .text-slate-300,
+html[data-theme="light"] .text-slate-400 {
   color: #78350f !important;
 }
+html[data-theme="light"] .border-slate-700,
+html[data-theme="light"] .border-slate-800 {
+  border-color: #d97706 !important;
+}
+
+/* Parchment — pencil on a tabletop scroll, real D&D session feel */
+[data-theme="parchment"] {
+  --color-accent: #7c2d12;
+  --color-ember: #7c2d12;
+  --color-ember-dark: #5c1d0e;
+  --color-gold: #a16207;
+}
+html[data-theme="parchment"] {
+  /* base: warm tan like a real scroll unrolled on a wood table */
+  background-color: #d9c9a5 !important;
+  background-image:
+    /* pencil rule lines - light, sketchy, slightly uneven spacing */
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 23px,
+      rgba(80, 60, 35, 0.08) 23px,
+      rgba(80, 60, 35, 0.05) 24px,
+      transparent 24.5px
+    ),
+    /* left margin line like notebook paper */
+    linear-gradient(
+      to right,
+      transparent 39px,
+      rgba(140, 80, 60, 0.12) 39px,
+      rgba(140, 80, 60, 0.12) 40px,
+      transparent 40.5px
+    ),
+    /* scroll edge darkening - burnt/rolled edges */
+    linear-gradient(to right, rgba(100, 70, 30, 0.15) 0%, transparent 3%, transparent 97%, rgba(100, 70, 30, 0.15) 100%),
+    linear-gradient(to bottom, rgba(100, 70, 30, 0.1) 0%, transparent 2%, transparent 98%, rgba(100, 70, 30, 0.12) 100%),
+    /* coffee ring stains */
+    radial-gradient(circle at 75% 25%, rgba(120, 80, 30, 0.08) 0%, rgba(120, 80, 30, 0.03) 30%, transparent 50%),
+    radial-gradient(circle at 20% 70%, rgba(100, 60, 25, 0.06) 0%, transparent 40%),
+    /* paper fiber grain */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23p)' opacity='0.06'/%3E%3C/svg%3E");
+  color: #2a1a0e;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, 'Times New Roman', serif;
+}
+/* cards: like a note card laid on the scroll */
+html[data-theme="parchment"] .bg-slate-900,
+html[data-theme="parchment"] .bg-\[\#0c0f1a\] {
+  background-color: #e4d4b2 !important;
+  background-image:
+    /* subtle fiber on cards too */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23c)' opacity='0.04'/%3E%3C/svg%3E");
+}
+html[data-theme="parchment"] .bg-slate-800 {
+  background-color: #dccca8 !important;
+}
+/* charcoal pencil text - high contrast but soft, not harsh black */
+html[data-theme="parchment"] .text-white {
+  color: #1e1008 !important;
+}
+html[data-theme="parchment"] .text-slate-100,
+html[data-theme="parchment"] .text-slate-200 {
+  color: #221410 !important;
+}
+html[data-theme="parchment"] .text-slate-300 {
+  color: #3a2818 !important;
+}
+html[data-theme="parchment"] .text-slate-400 {
+  color: #50381e !important;
+}
+html[data-theme="parchment"] .text-slate-500 {
+  color: #6d5535 !important;
+}
+/* pencil-line borders */
 html[data-theme="parchment"] .border-slate-700,
 html[data-theme="parchment"] .border-slate-800 {
-  border-color: #d97706 !important;
+  border-color: #b09878 !important;
+}
+html[data-theme="parchment"] .border-slate-600 {
+  border-color: #9a8565 !important;
+}
+/* serif everywhere - quill feel */
+html[data-theme="parchment"] button,
+html[data-theme="parchment"] input,
+html[data-theme="parchment"] select,
+html[data-theme="parchment"] textarea {
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+}
+html[data-theme="parchment"] h1,
+html[data-theme="parchment"] h2,
+html[data-theme="parchment"] h3,
+html[data-theme="parchment"] h4 {
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  letter-spacing: 0.03em;
+}
+/* cards: worn paper laid on table - soft shadow like curled edges */
+html[data-theme="parchment"] .rounded-xl,
+html[data-theme="parchment"] .rounded-2xl,
+html[data-theme="parchment"] .rounded-lg {
+  box-shadow:
+    2px 3px 8px rgba(60, 40, 15, 0.18),
+    -1px -1px 0 rgba(255, 248, 230, 0.5),
+    inset 0 0 20px rgba(100, 70, 30, 0.04);
+  border-color: #b09878 !important;
+}
+/* accent buttons: dark ink on parchment, like a stamped seal */
+html[data-theme="parchment"] .bg-\[\#F38020\] {
+  background-color: #7a3015 !important;
+  background-image: linear-gradient(135deg, #8b3a1a 0%, #6b2510 100%) !important;
+}
+html[data-theme="parchment"] .hover\:bg-\[\#e06a10\]:hover {
+  background-color: #943d1c !important;
+}
+html[data-theme="parchment"] .text-\[\#F38020\] {
+  color: #7c2d12 !important;
+}
+/* inputs: like writing areas on a form, slightly recessed */
+html[data-theme="parchment"] input,
+html[data-theme="parchment"] select,
+html[data-theme="parchment"] textarea {
+  background-color: #ecdcc0 !important;
+  color: #2a1a0e !important;
+  border-color: #b09878 !important;
+  box-shadow: inset 1px 1px 3px rgba(80, 50, 20, 0.08);
+}
+html[data-theme="parchment"] input::placeholder,
+html[data-theme="parchment"] textarea::placeholder {
+  color: #9a8060 !important;
+  font-style: italic;
 }
 
 /* High Contrast — maximum readability, large color differences */

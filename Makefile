@@ -158,6 +158,13 @@ dev-frontend-bg: makeinfo kill-frontend ## [Dev] Start frontend only (background
 	@sleep 2
 	@echo "Frontend running at http://localhost:$(PORT_FRONTEND) (log: /tmp/adventure-frontend.log)"
 
+db-migrate: makeinfo ## [Dev] Apply all D1 migrations to local database
+	@for f in migrations/*.sql; do \
+		echo "Applying $$f..."; \
+		$(WRANGLER) d1 execute adventure-db-dev --env development --local --file=$$f 2>&1 | tail -1; \
+	done
+	@echo "All migrations applied."
+
 dev-worker: makeinfo ## [Dev] Start worker only (foreground)
 	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) --local
 
@@ -187,17 +194,19 @@ dev-local-ai: makeinfo ## [Dev] Start with local AI (Ollama, LM Studio, etc)
 	@echo ""
 	@$(MAKE) dev
 
-start: makeinfo ## [Dev] Quick start: kill, build, dev
+start: makeinfo ## [Dev] Quick start: kill, build, migrate, dev
 	$(MAKE) kill
 	$(MAKE) build
+	$(MAKE) db-migrate
 	$(MAKE) dev
 
-fresh: makeinfo ## [Dev] Full reset: clean, install, format, build, dev
+fresh: makeinfo ## [Dev] Full reset: clean, install, format, build, migrate, dev
 	$(MAKE) kill
 	$(MAKE) clean
 	$(MAKE) install
 	$(MAKE) format
 	$(MAKE) build
+	$(MAKE) db-migrate
 	$(MAKE) dev
 
 open: makeinfo ## [Dev] Open frontend in browser

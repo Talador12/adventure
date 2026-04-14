@@ -623,10 +623,10 @@ export interface ExportFormat {
 }
 
 export const EXPORT_FORMATS: ExportFormat[] = [
+  { id: 'pdf', label: 'Printable Sheet (PDF)', desc: 'Opens a styled character sheet — print or save as PDF', method: 'window', available: true },
   { id: 'json', label: 'Adventure JSON', desc: 'Native format — reimportable into Adventure', method: 'download', ext: '.json', available: true },
   { id: 'markdown', label: 'Markdown', desc: 'Universal text format — works everywhere', method: 'download', ext: '.md', available: true },
   { id: 'clipboard', label: 'Copy to Clipboard', desc: 'Markdown format copied to clipboard', method: 'clipboard', available: true },
-  { id: 'pdf', label: 'Printable Sheet', desc: 'Opens a styled character sheet — print or save as PDF', method: 'window', available: true },
   { id: 'foundry', label: 'Foundry VTT', desc: 'Import directly into Foundry VTT (dnd5e system)', method: 'download', ext: '.json', available: true },
   { id: 'fantasygrounds', label: 'Fantasy Grounds', desc: 'XML character file for Fantasy Grounds', method: 'download', ext: '.xml', available: true },
   { id: 'dndbeyond', label: 'D&D Beyond', desc: 'Formatted text for manual entry (no import API exists)', method: 'clipboard', available: true, systemNote: 'Copy & paste into D&D Beyond fields' },

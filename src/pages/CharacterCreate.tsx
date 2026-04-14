@@ -620,14 +620,30 @@ export default function CharacterCreate() {
 
   const handleExport = useCallback(async (format: ExportFormat) => {
     const char = buildPreviewCharacter();
-    if (!char) return;
-    setExportStatus(null);
-    const result = await runExport(format.id, char);
-    setExportStatus(result);
-    if (result.success) {
-      setTimeout(() => setExportStatus(null), 3000);
+    if (!char) {
+      setExportStatus({ success: false, message: 'Roll your stats first before exporting.' });
+      toast('Roll your stats first before exporting.', 'warning');
+      return;
     }
-  }, [buildPreviewCharacter]);
+    if (!char.name || char.name === 'Unnamed Hero') {
+      setExportStatus({ success: false, message: 'Give your character a name first.' });
+      toast('Give your character a name first.', 'warning');
+      return;
+    }
+    setExportStatus(null);
+    try {
+      const result = await runExport(format.id, char as Parameters<typeof runExport>[1]);
+      setExportStatus(result);
+      if (result.success) {
+        toast(result.message, 'success');
+        setTimeout(() => setExportStatus(null), 3000);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Export failed unexpectedly.';
+      setExportStatus({ success: false, message: msg });
+      toast(msg, 'error');
+    }
+  }, [buildPreviewCharacter, toast]);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -1342,14 +1358,52 @@ export default function CharacterCreate() {
             {isEditMode ? 'Save Changes' : 'Create Character'}
           </button>
 
-          {/* Export button */}
-          <button
-            onClick={() => setShowExportModal(true)}
-            disabled={!finalStats}
-            className="mt-2 w-full py-2 bg-transparent border border-amber-900/40 hover:border-amber-700/60 hover:bg-amber-900/10 disabled:opacity-30 disabled:cursor-not-allowed text-amber-400/70 hover:text-amber-300 text-sm rounded-xl transition-all"
-          >
-            Export Character Sheet
-          </button>
+          {/* Export + Import buttons */}
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => setShowExportModal(true)}
+              disabled={!finalStats}
+              className="flex-1 py-2 bg-transparent border border-amber-900/40 hover:border-amber-700/60 hover:bg-amber-900/10 disabled:opacity-30 disabled:cursor-not-allowed text-amber-400/70 hover:text-amber-300 text-sm rounded-xl transition-all"
+            >
+              Export
+            </button>
+            <button
+              onClick={async () => {
+                const { importJSONFile } = await import('../lib/export');
+                const result = await importJSONFile();
+                if (result.errors.length > 0) {
+                  toast(result.errors[0], 'error');
+                  return;
+                }
+                if (result.character) {
+                  const c = result.character;
+                  setName(c.name);
+                  if (c.race) setRace(c.race);
+                  if (c.class) setCharClass(c.class);
+                  if (c.stats) {
+                    const rolls: Record<string, { rolls: number[]; dropped: number; total: number; animating: boolean }> = {};
+                    for (const s of STAT_NAMES) {
+                      rolls[s] = { rolls: [c.stats[s], 0, 0, 0], dropped: 0, total: c.stats[s], animating: false };
+                    }
+                    setStatRolls(rolls as typeof statRolls);
+                  }
+                  if (c.background) setBackground(c.background);
+                  if (c.alignment) setAlignment(c.alignment);
+                  if (c.personalityTraits) setPersonalityTraits(c.personalityTraits);
+                  if (c.ideals) setIdeals(c.ideals);
+                  if (c.bonds) setBonds(c.bonds);
+                  if (c.flaws) setFlaws(c.flaws);
+                  if (c.backstory) setBackstory(c.backstory);
+                  if (c.portrait) setPortrait(c.portrait);
+                  if (c.appearance) setAppearance(c.appearance);
+                  toast(`Imported ${c.name}!${result.warnings?.length ? ` (${result.warnings.join(', ')})` : ''}`, 'success');
+                }
+              }}
+              className="flex-1 py-2 bg-transparent border border-cyan-900/40 hover:border-cyan-700/60 hover:bg-cyan-900/10 text-cyan-400/70 hover:text-cyan-300 text-sm rounded-xl transition-all"
+            >
+              Import
+            </button>
+          </div>
         </div>
 
           {/* Review: full character summary */}
