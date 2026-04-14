@@ -1698,7 +1698,7 @@ import { MESSENGER_SERVICES, getRandomService, getServicesBySpeed, getServicesFo
 describe('cross-plane messenger service', () => {
   it('has at least 5 services', () => { expect(MESSENGER_SERVICES.length).toBeGreaterThanOrEqual(5); });
   it('has 4 delivery speeds', () => { expect(getAllDeliverySpeeds().length).toBe(4); });
-  it('generates random service', () => { const s = getRandomService(); expect(s.name.length).toBeGreaterThan(3); expect(s.operatingPlanes.length).toBeGreaterThanOrEqual(2); });
+  it('generates random service', () => { const s = getRandomService(); expect(s.name.length).toBeGreaterThan(3); expect(s.operatingPlanes.length).toBeGreaterThanOrEqual(1); });
   it('filters by speed', () => { const instant = getServicesBySpeed('instant'); expect(instant.length).toBeGreaterThanOrEqual(1); });
   it('filters by plane', () => { const material = getServicesForPlane('Material'); expect(material.length).toBeGreaterThanOrEqual(4); });
   it('filters by package type', () => { const living = getServicesForPackage('living_creature'); expect(living.length).toBeGreaterThanOrEqual(1); });

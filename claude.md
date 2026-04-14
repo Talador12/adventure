@@ -188,47 +188,51 @@ Infrastructure at `src/campaigns/` with shared types, catalog index, search/filt
 
 **Next:** Batch-produce remaining 94 campaigns (50 full + 44 one-shots) in future sessions.
 
-## Recent: Phase 5 Campaigns + Wave 66 + Generator Panel + WorldMap
+## Recent: Encounter Builder + Wave 67 + Phase 5 + Wave 66 + Generator Panel + WorldMap
 
-**Completed this session:**
-- Campaign Starter Kit Phase 5: 19 new full campaigns imported and wired (69 full + 56 one-shots = 125 total)
-- CampaignTheme type: added exploration, social, epic, political values (fixed ~30 type errors)
-- NPC secrets: added to 6 Phase 5 campaigns that were missing them
-- Wave 66 data systems: 6 new systems + 52 tests + 6 DMSidebar buttons
-  - Planar Bar Crawl (4 taverns across Feywild/Nine Hells/Mechanus/Shadowfell)
-  - Undead Uprising (2 scenarios, 4 escalating phases each, infection mechanics)
-  - Magical Heist Complication (8 complications, counterplay, makes-it-worse)
-  - Monster Court Etiquette (dragon/vampire/lich courts, customs, taboos)
-  - Expedition Supply (12 items, 7 biome forage tables, auto-loadout builder)
-  - Cursed Village (3 scenarios, investigation clues, moral dilemmas)
-- Generator Panel: searchable categorized grid view (6 tabs, 55+ generators) wired into DMSidebar with toggle
-- WorldMap: canvas hex grid with pan/zoom, terrain rendering, fog of war, party movement (already built, now committed)
+**Latest:**
+- Interactive Encounter Builder: full React component that combines terrain, weather,
+  difficulty tuner, monster ecology, terrain advantage, weather-terrain modifier, and
+  lair action systems into one tool. DM picks parameters, clicks Build, gets a
+  complete staged encounter. Wired into DMSidebar encounter tab.
+- Wave 67: 6 systems + 57 tests (wizard exam, haunted carnival, bounty hunter,
+  diplomatic incident, dream realm, magical trial by ordeal)
+- Fix: flaky cross-plane messenger test (operatingPlanes assertion)
+- Fix: duplicate GeneratorPanel import in DMSidebar
+
+**Earlier:**
+- Campaign Phase 5: 19 new full campaigns (125 total)
+- Wave 66: 6 systems (planar bar crawl, undead uprising, heist, monster court,
+  expedition supply, cursed village)
+- Generator Panel: searchable grid view (6 tabs, 61+ generators)
+- WorldMap: canvas hex grid with pan/zoom, fog of war
 
 ### Session Stats
-- **Tests:** 3,373 passing across 3 test files
-- **Data files:** 391 in src/data/
-- **Systems built:** 200 (Waves 33-66)
+- **Tests:** 3,430 passing across 3 test files
+- **Data files:** 397 in src/data/
+- **Systems built:** 206 (Waves 33-67)
 - **Campaigns:** 125 (69 full + 56 one-shot)
-- **UI:** 67 DMSidebar buttons + Generator Panel grid view (55+ generators)
+- **UI:** 79 DMSidebar buttons + Generator Panel (61+ entries) + Encounter Builder
 
 ## Next Session - Priorities
 
-### 1. Campaign Starter Kit Library - Phase 6
-Need 11 more full campaigns to hit the original Phase 5 target of 30 new (got 19). Also missing theWardensOfAether and theHollowMountain files.
+### 1. NPC Relationship Graph Visualizer
+Force-directed graph of NPC relationships from npcRelationWeb data. Click nodes
+for details, dashed lines for secret connections.
 
-### 2. Interactive Encounter Builder
-Combine encounter difficulty tuner, monster ecology, terrain advantage, weather-terrain modifier, and lair action systems into a single interactive encounter design tool.
+### 2. Session Prep Wizard
+Guided workflow: pick setting -> generate weather -> create encounter -> populate
+NPCs -> add plot twist -> output session plan.
 
-### 3. NPC Relationship Graph Visualizer
-Force-directed graph of NPC relationships from npcRelationWeb data. Click nodes for details, dashed lines for secret connections.
+### 3. Campaign Starter Kit Library - Phase 6
+Need 11 more full campaigns to hit 136/200 target. Missing theWardensOfAether
+and theHollowMountain files.
 
-### 4. Session Prep Wizard
-Guided workflow: pick setting -> generate weather -> create encounter -> populate NPCs -> add plot twist -> output session plan.
+### 4. Wire Remaining Systems into UI
+79 of 206 systems wired via DMSidebar buttons. GeneratorPanel covers 61. Many
+data systems still have no UI entry point.
 
-### 5. Wire Remaining Systems into UI
-67 of 200 systems wired. The GeneratorPanel helps but the classic DMSidebar still has the original 67 buttons. Many systems still have no UI entry point.
-
-### 6. Continue Wave 67+ data systems
+### 5. Continue Wave 68+ data systems
 Pattern is established. Keep shipping 6 per wave.
 
 ### v0.1.0 — Initial Release

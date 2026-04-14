@@ -40,7 +40,7 @@ import { LAIR_THEMES as LAIR_DATA } from '../../data/lairEffects';
 import { BULK_PRESETS as BULK_PRESETS_DATA } from '../../lib/bulkNpcGenerator';
 import { PRESET_TABLES as ENCOUNTER_TABLE_DATA } from '../../data/encounterTableBuilder';
 import { MINION_TEMPLATES as MINION_DATA } from '../../lib/minionRules';
-import GeneratorPanel from './GeneratorPanel';
+import EncounterBuilder from './EncounterBuilder';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -255,6 +255,7 @@ export default function DMSidebar({
   const [bardicPool, setBardicPool] = useState(0);
   const [sessionNotesStatus, setSessionNotesStatus] = useState('');
   const [generatorPanelMode, setGeneratorPanelMode] = useState(false);
+  const [showEncounterBuilder, setShowEncounterBuilder] = useState(false);
   const sessionNotesSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load DM session notes from cloud on mount
@@ -297,6 +298,18 @@ export default function DMSidebar({
                 <CampaignAnalytics combatLog={combatLog || []} characters={characters} dmHistory={dmHistory || []} />
               </div>
             </details>
+
+            {/* Interactive Encounter Builder */}
+            {showEncounterBuilder ? (
+              <div className="h-[500px] -mx-3 -mt-3 border-b border-slate-700">
+                <EncounterBuilder onAddDmMessage={onAddDmMessage} onClose={() => setShowEncounterBuilder(false)} />
+              </div>
+            ) : (
+              <button onClick={() => setShowEncounterBuilder(true)}
+                className="w-full mb-2 text-[10px] py-1.5 rounded bg-[#F38020]/10 border border-[#F38020]/30 text-[#F38020] font-semibold hover:bg-[#F38020]/20 transition-all">
+                🎯 Interactive Encounter Builder
+              </button>
+            )}
 
             {/* Quest branching */}
             {(activeQuestChoice || (questChoices && questChoices.length > 0)) && (
