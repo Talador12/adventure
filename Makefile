@@ -126,7 +126,7 @@ test-watch: makeinfo ## [Test] All tests in watch mode
 #                           Development Commands                               #
 ################################################################################
 
-dev: makeinfo kill ## [Dev] Start frontend + worker dev servers
+dev: makeinfo kill ## [Dev] Start frontend + worker dev servers (foreground)
 	@echo "Starting dev servers..."
 	@$(VITE) --port $(PORT_FRONTEND) & \
 	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) --local & \
@@ -135,13 +135,44 @@ dev: makeinfo kill ## [Dev] Start frontend + worker dev servers
 	echo "  Frontend: http://localhost:$(PORT_FRONTEND)" && \
 	echo "  Backend:  http://localhost:$(PORT_BACKEND)" && \
 	echo "  Debugger: http://localhost:$(PORT_INSPECTOR)" && \
-	echo ""
+	echo "" && \
+	wait
 
-dev-frontend: makeinfo kill-frontend ## [Dev] Start frontend only (no worker)
+dev-bg: makeinfo kill ## [Dev] Start frontend + worker dev servers (background)
+	@echo "Starting dev servers in background..."
+	@nohup $(VITE) --port $(PORT_FRONTEND) > /tmp/adventure-frontend.log 2>&1 &
+	@nohup $(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) --local > /tmp/adventure-worker.log 2>&1 &
+	@sleep 3
+	@echo ""
+	@echo "  Frontend: http://localhost:$(PORT_FRONTEND)"
+	@echo "  Backend:  http://localhost:$(PORT_BACKEND)"
+	@echo "  Logs:     tail -f /tmp/adventure-frontend.log /tmp/adventure-worker.log"
+	@echo "  Stop:     make kill"
+	@echo ""
+
+dev-frontend: makeinfo kill-frontend ## [Dev] Start frontend only (foreground)
 	$(VITE) --port $(PORT_FRONTEND)
 
-dev-worker: makeinfo ## [Dev] Start worker only (no frontend)
+dev-frontend-bg: makeinfo kill-frontend ## [Dev] Start frontend only (background)
+	@nohup $(VITE) --port $(PORT_FRONTEND) > /tmp/adventure-frontend.log 2>&1 &
+	@sleep 2
+	@echo "Frontend running at http://localhost:$(PORT_FRONTEND) (log: /tmp/adventure-frontend.log)"
+
+dev-worker: makeinfo ## [Dev] Start worker only (foreground)
 	$(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) --local
+
+dev-worker-bg: makeinfo ## [Dev] Start worker only (background)
+	@nohup $(WRANGLER) dev --env development --port=$(PORT_BACKEND) --inspector-port=$(PORT_INSPECTOR) --local > /tmp/adventure-worker.log 2>&1 &
+	@sleep 3
+	@echo "Worker running at http://localhost:$(PORT_BACKEND) (log: /tmp/adventure-worker.log)"
+
+dev-logs: ## [Dev] Tail background server logs
+	@tail -f /tmp/adventure-frontend.log /tmp/adventure-worker.log 2>/dev/null || echo "No background logs found. Run 'make dev-bg' first."
+
+dev-status: ## [Dev] Check which dev servers are running
+	@echo "Port $(PORT_FRONTEND) (frontend): $$(lsof -ti :$(PORT_FRONTEND) 2>/dev/null | head -1 || echo 'not running')"
+	@echo "Port $(PORT_BACKEND) (backend):  $$(lsof -ti :$(PORT_BACKEND) 2>/dev/null | head -1 || echo 'not running')"
+	@echo "Port $(PORT_INSPECTOR) (debug):    $$(lsof -ti :$(PORT_INSPECTOR) 2>/dev/null | head -1 || echo 'not running')"
 
 dev-local-ai: makeinfo ## [Dev] Start with local AI (Ollama, LM Studio, etc)
 	@echo "  Local AI Mode"
@@ -355,16 +386,18 @@ status: makeinfo ## [Monitor] Show deploy status and port usage
 #                            Cleanup Commands                                  #
 ################################################################################
 
-clean: makeinfo ## [Cleanup] Remove all generated files and dependencies
+clean: makeinfo kill ## [Cleanup] Kill servers + remove all generated files and dependencies
 	rm -rf node_modules package-lock.json .wrangler dist/ .tree-output.txt public .vite
 
-kill: makeinfo ## [Cleanup] Kill all dev server ports
-	@pids_5173=$$(lsof -ti :$(PORT_FRONTEND)); if [ -n "$$pids_5173" ]; then echo "Killing port $(PORT_FRONTEND)"; kill -9 $$pids_5173; fi
-	@pids_8787=$$(lsof -ti :$(PORT_BACKEND)); if [ -n "$$pids_8787" ]; then echo "Killing port $(PORT_BACKEND)"; kill -9 $$pids_8787; fi
-	@pids_9229=$$(lsof -ti :$(PORT_INSPECTOR)); if [ -n "$$pids_9229" ]; then echo "Killing port $(PORT_INSPECTOR)"; kill -9 $$pids_9229; fi
+kill: makeinfo ## [Cleanup] Kill all dev server ports (foreground + background)
+	@pids_5173=$$(lsof -ti :$(PORT_FRONTEND) 2>/dev/null); if [ -n "$$pids_5173" ]; then echo "Killing port $(PORT_FRONTEND) (pids: $$pids_5173)"; echo $$pids_5173 | xargs kill -9 2>/dev/null; fi
+	@pids_8787=$$(lsof -ti :$(PORT_BACKEND) 2>/dev/null); if [ -n "$$pids_8787" ]; then echo "Killing port $(PORT_BACKEND) (pids: $$pids_8787)"; echo $$pids_8787 | xargs kill -9 2>/dev/null; fi
+	@pids_9229=$$(lsof -ti :$(PORT_INSPECTOR) 2>/dev/null); if [ -n "$$pids_9229" ]; then echo "Killing port $(PORT_INSPECTOR) (pids: $$pids_9229)"; echo $$pids_9229 | xargs kill -9 2>/dev/null; fi
+	@rm -f /tmp/adventure-dev.log /tmp/adventure-frontend.log /tmp/adventure-worker.log
+	@echo "All dev servers stopped."
 
-kill-frontend: makeinfo # Kill frontend port only
-	@pid=$$(lsof -ti :$(PORT_FRONTEND)); if [ -n "$$pid" ]; then echo "Killing port $(PORT_FRONTEND)"; kill -9 $$pid; fi
+kill-frontend: makeinfo ## [Cleanup] Kill frontend port only
+	@pid=$$(lsof -ti :$(PORT_FRONTEND) 2>/dev/null); if [ -n "$$pid" ]; then echo "Killing port $(PORT_FRONTEND)"; echo $$pid | xargs kill -9 2>/dev/null; fi
 
 ################################################################################
 #                            Utility Commands                                  #
