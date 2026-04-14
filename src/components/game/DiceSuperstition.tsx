@@ -15,18 +15,32 @@ const LOW_STREAK_QUIPS = [
   'The dice sense your fear.',
   'Your d20 has chosen violence. Against you.',
   'At this point it might be a cursed artifact.',
+  'The d20 is gaslighting you. It knows what it is doing.',
+  'This d20 has a personal vendetta and a long memory.',
+  'Somewhere, a statistician is writing a paper about you.',
+  'The dice are not random. They are spiteful.',
+  'Your d20 is rolling a nat 20. For the other team.',
+  'Petition to reclassify this d20 as a weapon. Against its owner.',
 ];
 
 const HIGH_STREAK_QUIPS = [
   'The dice favor the bold.',
-  'Don\'t look directly at the dice. You\'ll spook them.',
+  'Do not look directly at the dice. You will spook them.',
   'Mathematically improbable. Dramatically perfect.',
   'Someone at this table made a deal with Tymora.',
+  'The DM is starting to sweat. Good.',
+  'This is the dice equivalent of a mic drop.',
+  'The d20 has entered its main character arc.',
+  'You could stop now. You will not. But you could.',
+  'The dice are showing off and honestly they have earned it.',
 ];
 
 const AVERAGE_QUIPS = [
   'The dice are... aggressively average.',
   'Rolling exactly what the math predicted. How unsatisfying.',
+  'Competent. Not exciting. Like beige.',
+  'The dice have chosen mediocrity. Consistently.',
+  'Peak "technically sufficient" energy.',
 ];
 
 function getQuip(rolls: number[]): { text: string; type: 'cold' | 'hot' | 'mid' | null } | null {
