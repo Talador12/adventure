@@ -396,6 +396,8 @@ kill: makeinfo ## [Cleanup] Kill all dev server ports (foreground + background)
 	@rm -f /tmp/adventure-dev.log /tmp/adventure-frontend.log /tmp/adventure-worker.log
 	@echo "All dev servers stopped."
 
+tpk: kill ## [Cleanup] Total Party Kill - alias for 'make kill'
+
 kill-frontend: makeinfo ## [Cleanup] Kill frontend port only
 	@pid=$$(lsof -ti :$(PORT_FRONTEND) 2>/dev/null); if [ -n "$$pid" ]; then echo "Killing port $(PORT_FRONTEND)"; echo $$pid | xargs kill -9 2>/dev/null; fi
 
