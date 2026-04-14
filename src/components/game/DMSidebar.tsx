@@ -41,6 +41,8 @@ import { BULK_PRESETS as BULK_PRESETS_DATA } from '../../lib/bulkNpcGenerator';
 import { PRESET_TABLES as ENCOUNTER_TABLE_DATA } from '../../data/encounterTableBuilder';
 import { MINION_TEMPLATES as MINION_DATA } from '../../lib/minionRules';
 import EncounterBuilder from './EncounterBuilder';
+import NPCRelationGraph from './NPCRelationGraph';
+import SessionPrepWizard from './SessionPrepWizard';
 
 interface DMSidebarProps {
   onClose: () => void;
@@ -256,6 +258,9 @@ export default function DMSidebar({
   const [sessionNotesStatus, setSessionNotesStatus] = useState('');
   const [generatorPanelMode, setGeneratorPanelMode] = useState(false);
   const [showEncounterBuilder, setShowEncounterBuilder] = useState(false);
+  const [showRelationGraph, setShowRelationGraph] = useState(false);
+  const [relationWeb, setRelationWeb] = useState<import('../../data/npcRelationWeb').RelationshipWeb | null>(null);
+  const [showSessionWizard, setShowSessionWizard] = useState(false);
   const sessionNotesSaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load DM session notes from cloud on mount
@@ -304,11 +309,21 @@ export default function DMSidebar({
               <div className="h-[500px] -mx-3 -mt-3 border-b border-slate-700">
                 <EncounterBuilder onAddDmMessage={onAddDmMessage} onClose={() => setShowEncounterBuilder(false)} />
               </div>
+            ) : showSessionWizard ? (
+              <div className="h-[550px] -mx-3 -mt-3 border-b border-slate-700">
+                <SessionPrepWizard onAddDmMessage={onAddDmMessage} onClose={() => setShowSessionWizard(false)} />
+              </div>
             ) : (
-              <button onClick={() => setShowEncounterBuilder(true)}
-                className="w-full mb-2 text-[10px] py-1.5 rounded bg-[#F38020]/10 border border-[#F38020]/30 text-[#F38020] font-semibold hover:bg-[#F38020]/20 transition-all">
-                🎯 Interactive Encounter Builder
-              </button>
+              <div className="flex gap-1.5 mb-2">
+                <button onClick={() => setShowEncounterBuilder(true)}
+                  className="flex-1 text-[10px] py-1.5 rounded bg-[#F38020]/10 border border-[#F38020]/30 text-[#F38020] font-semibold hover:bg-[#F38020]/20 transition-all">
+                  🎯 Encounter Builder
+                </button>
+                <button onClick={() => setShowSessionWizard(true)}
+                  className="flex-1 text-[10px] py-1.5 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 font-semibold hover:bg-purple-800/30 transition-all">
+                  📋 Session Prep
+                </button>
+              </div>
             )}
 
             {/* Quest branching */}
@@ -3202,6 +3217,14 @@ export default function DMSidebar({
 
               {/* Wave 67 generators */}
               <button onClick={async () => { const { getRandomExam, formatExam } = await import('../../data/magicalSchoolExam'); onAddDmMessage(formatExam(getRandomExam())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 hover:bg-cyan-800/30 transition-all">🎓 Wizard Exam</button>
+
+              {/* Wave 68 generators */}
+              <button onClick={async () => { const { getRandomMine, formatMine } = await import('../../data/abandonedMine'); onAddDmMessage(formatMine(getRandomMine())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 hover:bg-amber-800/30 transition-all">⛏️ Abandoned Mine</button>
+              <button onClick={async () => { const { getRandomBazaar, formatBazaar } = await import('../../data/magicalBazaar'); onAddDmMessage(formatBazaar(getRandomBazaar())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-purple-900/20 border border-purple-600/30 text-purple-400 hover:bg-purple-800/30 transition-all">🏪 Magical Bazaar</button>
+              <button onClick={async () => { const { getRandomParasite, formatParasite } = await import('../../data/magicalParasite'); onAddDmMessage(formatParasite(getRandomParasite())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-green-900/20 border border-green-600/30 text-green-400 hover:bg-green-800/30 transition-all">🦠 Magical Parasite</button>
+              <button onClick={async () => { const { getRandomCult, formatCult } = await import('../../data/cultRecruitment'); onAddDmMessage(formatCult(getRandomCult())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-red-900/20 border border-red-600/30 text-red-400 hover:bg-red-800/30 transition-all">🕯️ Cult Recruitment</button>
+              <button onClick={async () => { const { getRandomProfessor, formatProfessor } = await import('../../data/magicalAcademyFaculty'); onAddDmMessage(formatProfessor(getRandomProfessor())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 hover:bg-cyan-800/30 transition-all">🎓 Academy Professor</button>
+              <button onClick={async () => { const { getRandomGuardian, formatGuardian } = await import('../../data/ancientLibraryGuardian'); onAddDmMessage(formatGuardian(getRandomGuardian())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-indigo-900/20 border border-indigo-600/30 text-indigo-400 hover:bg-indigo-800/30 transition-all">📚 Library Guardian</button>
               <button onClick={async () => { const { getRandomCarnival, formatCarnival } = await import('../../data/hauntedCarnival'); onAddDmMessage(formatCarnival(getRandomCarnival())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-pink-900/20 border border-pink-600/30 text-pink-400 hover:bg-pink-800/30 transition-all">🎪 Haunted Carnival</button>
               <button onClick={async () => { const { getRandomContract, formatContract } = await import('../../data/bountyHunterContract'); onAddDmMessage(formatContract(getRandomContract())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-amber-900/20 border border-amber-600/30 text-amber-400 hover:bg-amber-800/30 transition-all">🎯 Bounty Contract</button>
               <button onClick={async () => { const { getRandomIncident, formatIncident } = await import('../../data/diplomaticIncident'); onAddDmMessage(formatIncident(getRandomIncident())); }} className="w-full mb-1 text-[10px] py-1 rounded bg-blue-900/20 border border-blue-600/30 text-blue-400 hover:bg-blue-800/30 transition-all">🏛️ Diplomatic Crisis</button>
@@ -3849,6 +3872,22 @@ export default function DMSidebar({
         {/* NPC tab */}
         {dmSidebarTab === 'npc' && (
           <>
+            {/* NPC Relationship Graph */}
+            {showRelationGraph && relationWeb ? (
+              <div className="h-[600px] -mx-3 -mt-3 border-b border-slate-700">
+                <NPCRelationGraph web={relationWeb} showSecrets={true} onClose={() => setShowRelationGraph(false)} />
+              </div>
+            ) : (
+              <button onClick={async () => {
+                const { getRandomWeb } = await import('../../data/npcRelationWeb');
+                setRelationWeb(getRandomWeb());
+                setShowRelationGraph(true);
+              }}
+                className="w-full mb-2 text-[10px] py-1.5 rounded bg-cyan-900/20 border border-cyan-600/30 text-cyan-400 font-semibold hover:bg-cyan-800/30 transition-all">
+                🕸️ NPC Relationship Graph
+              </button>
+            )}
+
             {/* Quick NPC Generator */}
             <div className="space-y-2">
               <label className="text-[10px] text-slate-500 font-semibold uppercase">Quick NPC Generator</label>

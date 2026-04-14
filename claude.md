@@ -188,52 +188,46 @@ Infrastructure at `src/campaigns/` with shared types, catalog index, search/filt
 
 **Next:** Batch-produce remaining 94 campaigns (50 full + 44 one-shots) in future sessions.
 
-## Recent: Encounter Builder + Wave 67 + Phase 5 + Wave 66 + Generator Panel + WorldMap
+## Recent: NPC Graph + Session Wizard + Wave 68 + Encounter Builder + Wave 67
 
 **Latest:**
-- Interactive Encounter Builder: full React component that combines terrain, weather,
-  difficulty tuner, monster ecology, terrain advantage, weather-terrain modifier, and
-  lair action systems into one tool. DM picks parameters, clicks Build, gets a
-  complete staged encounter. Wired into DMSidebar encounter tab.
-- Wave 67: 6 systems + 57 tests (wizard exam, haunted carnival, bounty hunter,
+- NPC Relationship Graph: canvas force-directed graph with draggable nodes, color-coded
+  edges by relationship type, dashed lines for secrets, click-to-inspect, legend. Wired
+  into DMSidebar NPC tab.
+- Session Prep Wizard: 6-step guided workflow (setting -> weather -> encounter -> NPCs ->
+  plot twist -> review). Each step generates content from existing data systems. Outputs
+  a formatted session plan to DM chat. Wired into DMSidebar encounter tab.
+- Wave 68: 6 systems + 53 tests (abandoned mine, magical bazaar, magical parasite,
+  cult recruitment, academy faculty, library guardian)
+- Interactive Encounter Builder (shipped earlier this session)
+- Wave 67: 6 systems + 57 tests (wizard exam, haunted carnival, bounty contracts,
   diplomatic incident, dream realm, magical trial by ordeal)
-- Fix: flaky cross-plane messenger test (operatingPlanes assertion)
-- Fix: duplicate GeneratorPanel import in DMSidebar
-
-**Earlier:**
-- Campaign Phase 5: 19 new full campaigns (125 total)
-- Wave 66: 6 systems (planar bar crawl, undead uprising, heist, monster court,
-  expedition supply, cursed village)
-- Generator Panel: searchable grid view (6 tabs, 61+ generators)
-- WorldMap: canvas hex grid with pan/zoom, fog of war
 
 ### Session Stats
-- **Tests:** 3,430 passing across 3 test files
-- **Data files:** 397 in src/data/
-- **Systems built:** 206 (Waves 33-67)
+- **Tests:** 3,483 passing across 3 test files
+- **Data files:** 403 in src/data/
+- **Systems built:** 212 (Waves 33-68)
 - **Campaigns:** 125 (69 full + 56 one-shot)
-- **UI:** 79 DMSidebar buttons + Generator Panel (61+ entries) + Encounter Builder
+- **UI:** 91 DMSidebar buttons + Generator Panel (73+ entries) + Encounter Builder +
+  Session Prep Wizard + NPC Relationship Graph
 
 ## Next Session - Priorities
 
-### 1. NPC Relationship Graph Visualizer
-Force-directed graph of NPC relationships from npcRelationWeb data. Click nodes
-for details, dashed lines for secret connections.
-
-### 2. Session Prep Wizard
-Guided workflow: pick setting -> generate weather -> create encounter -> populate
-NPCs -> add plot twist -> output session plan.
-
-### 3. Campaign Starter Kit Library - Phase 6
+### 1. Campaign Starter Kit Library - Phase 6
 Need 11 more full campaigns to hit 136/200 target. Missing theWardensOfAether
 and theHollowMountain files.
 
-### 4. Wire Remaining Systems into UI
-79 of 206 systems wired via DMSidebar buttons. GeneratorPanel covers 61. Many
+### 2. Wire Remaining Systems into UI
+91 of 212 systems wired via DMSidebar buttons. GeneratorPanel covers 73. Many
 data systems still have no UI entry point.
 
-### 5. Continue Wave 68+ data systems
+### 3. Continue Wave 69+ data systems
 Pattern is established. Keep shipping 6 per wave.
+
+### 4. Polish and ship v0.2.0
+All major roadmap features are now built: Encounter Builder, Session Prep Wizard,
+NPC Relationship Graph, Generator Panel, WorldMap. Focus on polish, UX refinement,
+and wiring remaining systems before tagging a release.
 
 ### v0.1.0 — Initial Release
 

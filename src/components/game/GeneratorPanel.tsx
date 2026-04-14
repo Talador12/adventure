@@ -106,6 +106,14 @@ const GENERATORS: GeneratorDef[] = [
   { id: 'diplomatic-crisis', name: 'Diplomatic Crisis', emoji: '🏛️', description: 'International incidents', category: 'story', importPath: '../../data/diplomaticIncident', importName: 'getRandomIncident', formatName: 'formatIncident', isRandom: true },
   { id: 'dream-realm', name: 'Dream Realm', emoji: '💭', description: 'Dreamscape adventures', category: 'world', importPath: '../../data/dreamRealmAdventure', importName: 'getRandomDream', formatName: 'formatDream', isRandom: true },
   { id: 'trial-ordeal', name: 'Trial by Ordeal', emoji: '⚖️', description: 'Divine judgment encounters', category: 'story', importPath: '../../data/magicalTrialByOrdeal', importName: 'getRandomTrial', formatName: 'formatTrial', isRandom: true },
+
+  // Wave 68
+  { id: 'abandoned-mine', name: 'Abandoned Mine', emoji: '⛏️', description: 'Mine dungeon crawls', category: 'world', importPath: '../../data/abandonedMine', importName: 'getRandomMine', formatName: 'formatMine', isRandom: true },
+  { id: 'magical-bazaar', name: 'Magical Bazaar', emoji: '🏪', description: 'Planar marketplace', category: 'world', importPath: '../../data/magicalBazaar', importName: 'getRandomBazaar', formatName: 'formatBazaar', isRandom: true },
+  { id: 'magical-parasite', name: 'Magical Parasite', emoji: '🦠', description: 'Symbiotic creatures', category: 'items', importPath: '../../data/magicalParasite', importName: 'getRandomParasite', formatName: 'formatParasite', isRandom: true },
+  { id: 'cult-recruitment', name: 'Cult Recruitment', emoji: '🕯️', description: 'Cult lure tactics', category: 'story', importPath: '../../data/cultRecruitment', importName: 'getRandomCult', formatName: 'formatCult', isRandom: true },
+  { id: 'academy-professor', name: 'Academy Professor', emoji: '🎓', description: 'Magic school faculty', category: 'npcs', importPath: '../../data/magicalAcademyFaculty', importName: 'getRandomProfessor', formatName: 'formatProfessor', isRandom: true },
+  { id: 'library-guardian', name: 'Library Guardian', emoji: '📚', description: 'Knowledge protectors', category: 'world', importPath: '../../data/ancientLibraryGuardian', importName: 'getRandomGuardian', formatName: 'formatGuardian', isRandom: true },
 ];
 
 interface GeneratorPanelProps {

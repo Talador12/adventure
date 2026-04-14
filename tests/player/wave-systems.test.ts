@@ -2977,3 +2977,89 @@ describe('magical trial by ordeal', () => {
   it('looks up by type', () => { const fire = getTrialByType('fire'); expect(fire).toBeDefined(); expect(fire!.name).toContain('Burning'); });
   it('formats trial', () => { expect(formatTrial(getRandomTrial())).toContain('Phases'); });
 });
+
+// ---------------------------------------------------------------------------
+// Wave 68 — abandoned mine, magical bazaar, magical parasite, cult recruitment, academy faculty, library guardian
+// ---------------------------------------------------------------------------
+import { ABANDONED_MINES, getRandomMine, getMineByType, getAllMineTypes, getLevelCount as getMineLevels, formatMine } from '../../src/data/abandonedMine';
+
+describe('abandoned mine', () => {
+  it('has at least 2 mines', () => { expect(ABANDONED_MINES.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 types', () => { expect(getAllMineTypes().length).toBeGreaterThanOrEqual(2); });
+  it('each has 3 levels', () => { ABANDONED_MINES.forEach((m) => expect(m.levels.length).toBe(3)); });
+  it('each level has hazard + creature', () => { ABANDONED_MINES.forEach((m) => m.levels.forEach((l) => { expect(l.hazardDC).toBeGreaterThan(10); expect(l.creature.length).toBeGreaterThan(5); })); });
+  it('each has boss creature', () => { ABANDONED_MINES.forEach((m) => expect(m.bossCreature.length).toBeGreaterThan(20)); });
+  it('each has legendary treasure', () => { ABANDONED_MINES.forEach((m) => expect(m.legendaryTreasure.length).toBeGreaterThan(20)); });
+  it('looks up by type', () => { const m = getMineByType('mithral'); expect(m).toBeDefined(); expect(m!.name).toContain('Khel'); });
+  it('counts levels', () => { expect(getMineLevels(ABANDONED_MINES[0])).toBe(3); });
+  it('formats mine', () => { expect(formatMine(getRandomMine())).toContain('Levels'); });
+});
+
+import { MAGICAL_BAZAARS, getRandomBazaar, getMerchantByOrigin, getAllSecretItems, getMerchantCount as getBazaarMerchants, formatBazaar } from '../../src/data/magicalBazaar';
+
+describe('magical bazaar', () => {
+  it('has at least 1 bazaar', () => { expect(MAGICAL_BAZAARS.length).toBeGreaterThanOrEqual(1); });
+  it('has 2+ merchants', () => { MAGICAL_BAZAARS.forEach((b) => expect(b.merchants.length).toBeGreaterThanOrEqual(2)); });
+  it('each merchant has inventory', () => { MAGICAL_BAZAARS.forEach((b) => b.merchants.forEach((m) => expect(m.inventory.length).toBeGreaterThanOrEqual(2))); });
+  it('each merchant has secret item', () => { MAGICAL_BAZAARS.forEach((b) => b.merchants.forEach((m) => expect(m.secretItem.name.length).toBeGreaterThan(3))); });
+  it('finds secret items', () => { expect(getAllSecretItems(MAGICAL_BAZAARS[0]).length).toBeGreaterThanOrEqual(2); });
+  it('filters by origin', () => { const fey = getMerchantByOrigin(MAGICAL_BAZAARS[0], 'feywild'); expect(fey.length).toBeGreaterThanOrEqual(1); });
+  it('counts merchants', () => { expect(getBazaarMerchants(MAGICAL_BAZAARS[0])).toBeGreaterThanOrEqual(2); });
+  it('formats bazaar', () => { expect(formatBazaar(getRandomBazaar())).toContain('Merchants'); });
+});
+
+import { MAGICAL_PARASITES, getRandomParasite, getParasiteByType, getAllParasiteTypes, getStageCount as getParasiteStages, formatParasite } from '../../src/data/magicalParasite';
+
+describe('magical parasite', () => {
+  it('has at least 3 parasites', () => { expect(MAGICAL_PARASITES.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 types', () => { expect(getAllParasiteTypes().length).toBeGreaterThanOrEqual(3); });
+  it('each has 3 stages', () => { MAGICAL_PARASITES.forEach((p) => expect(p.stages.length).toBe(3)); });
+  it('stages have escalating benefits and drawbacks', () => { MAGICAL_PARASITES.forEach((p) => { expect(p.stages[0].benefit.length).toBeGreaterThan(10); expect(p.stages[2].drawback.length).toBeGreaterThan(10); }); });
+  it('each has removal method', () => { MAGICAL_PARASITES.forEach((p) => expect(p.removalMethod.length).toBeGreaterThan(20)); });
+  it('each has final form', () => { MAGICAL_PARASITES.forEach((p) => expect(p.finalFormBenefit.length).toBeGreaterThan(15)); });
+  it('looks up by type', () => { const p = getParasiteByType('psychic'); expect(p).toBeDefined(); expect(p!.name).toContain('Whisper'); });
+  it('counts stages', () => { expect(getParasiteStages(MAGICAL_PARASITES[0])).toBe(3); });
+  it('formats parasite', () => { expect(formatParasite(getRandomParasite())).toContain('Stages'); });
+});
+
+import { CULT_PROFILES, getRandomCult, getCultByMethod, getAllCultMethods, getPhaseCount as getCultPhases, formatCult } from '../../src/data/cultRecruitment';
+
+describe('cult recruitment', () => {
+  it('has at least 2 cults', () => { expect(CULT_PROFILES.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 methods', () => { expect(getAllCultMethods().length).toBeGreaterThanOrEqual(2); });
+  it('each has 4 phases', () => { CULT_PROFILES.forEach((c) => expect(c.recruitmentPhases.length).toBe(4)); });
+  it('phases have escalating DCs', () => { CULT_PROFILES.forEach((c) => { const dcs = c.recruitmentPhases.map((p) => p.resistDC); for (let i = 1; i < dcs.length; i++) expect(dcs[i]).toBeGreaterThanOrEqual(dcs[i - 1]); }); });
+  it('each has dark secret', () => { CULT_PROFILES.forEach((c) => expect(c.darkSecret.length).toBeGreaterThan(20)); });
+  it('each has escape method', () => { CULT_PROFILES.forEach((c) => expect(c.escapeMethod.length).toBeGreaterThan(15)); });
+  it('looks up by method', () => { const c = getCultByMethod('promise'); expect(c).toBeDefined(); expect(c!.name).toContain('Kindled'); });
+  it('counts phases', () => { expect(getCultPhases(CULT_PROFILES[0])).toBe(4); });
+  it('formats cult', () => { expect(formatCult(getRandomCult())).toContain('Recruitment Phases'); });
+});
+
+import { ACADEMY_FACULTY, getRandomProfessor, getProfessorByDepartment, getAllDepartments, getDangerousResearch, formatProfessor } from '../../src/data/magicalAcademyFaculty';
+
+describe('magical academy faculty', () => {
+  it('has at least 4 professors', () => { expect(ACADEMY_FACULTY.length).toBeGreaterThanOrEqual(4); });
+  it('covers at least 4 departments', () => { expect(getAllDepartments().length).toBeGreaterThanOrEqual(4); });
+  it('each has research project', () => { ACADEMY_FACULTY.forEach((f) => expect(f.researchProject.name.length).toBeGreaterThan(5)); });
+  it('each has student complaint', () => { ACADEMY_FACULTY.forEach((f) => expect(f.studentComplaint.length).toBeGreaterThan(15)); });
+  it('each has quest hook', () => { ACADEMY_FACULTY.forEach((f) => expect(f.questHook.length).toBeGreaterThan(15)); });
+  it('each has rivalry', () => { ACADEMY_FACULTY.forEach((f) => expect(f.rivalry.length).toBeGreaterThan(15)); });
+  it('finds dangerous research', () => { expect(getDangerousResearch().length).toBeGreaterThanOrEqual(1); });
+  it('looks up by department', () => { const evo = getProfessorByDepartment('evocation'); expect(evo).toBeDefined(); expect(evo!.name).toContain('Scorch'); });
+  it('formats professor', () => { expect(formatProfessor(getRandomProfessor())).toContain('Department'); });
+});
+
+import { LIBRARY_GUARDIANS, getRandomGuardian, getGuardianByType, getAllGuardianTypes, getTestCount as getGuardianTests, formatGuardian } from '../../src/data/ancientLibraryGuardian';
+
+describe('ancient library guardian', () => {
+  it('has at least 2 guardians', () => { expect(LIBRARY_GUARDIANS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 types', () => { expect(getAllGuardianTypes().length).toBeGreaterThanOrEqual(2); });
+  it('each has 3 tests', () => { LIBRARY_GUARDIANS.forEach((g) => expect(g.tests.length).toBe(3)); });
+  it('tests have DCs and skill checks', () => { LIBRARY_GUARDIANS.forEach((g) => g.tests.forEach((t) => { expect(t.dc).toBeGreaterThan(10); expect(t.skillCheck.length).toBeGreaterThan(3); })); });
+  it('each has forbidden section', () => { LIBRARY_GUARDIANS.forEach((g) => expect(g.forbiddenSection.length).toBeGreaterThan(20)); });
+  it('each has weakness', () => { LIBRARY_GUARDIANS.forEach((g) => expect(g.weakness.length).toBeGreaterThan(15)); });
+  it('looks up by type', () => { const c = getGuardianByType('construct'); expect(c).toBeDefined(); expect(c!.name).toContain('Index'); });
+  it('counts tests', () => { expect(getGuardianTests(LIBRARY_GUARDIANS[0])).toBe(3); });
+  it('formats guardian', () => { expect(formatGuardian(getRandomGuardian())).toContain('Tests'); });
+});
