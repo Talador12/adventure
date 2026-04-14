@@ -188,46 +188,41 @@ Infrastructure at `src/campaigns/` with shared types, catalog index, search/filt
 
 **Next:** Batch-produce remaining 94 campaigns (50 full + 44 one-shots) in future sessions.
 
-## Recent: NPC Graph + Session Wizard + Wave 68 + Encounter Builder + Wave 67
+## Recent: Wave 69 + Campaign Phase 6 + NPC Graph + Session Wizard + Wave 68
 
 **Latest:**
-- NPC Relationship Graph: canvas force-directed graph with draggable nodes, color-coded
-  edges by relationship type, dashed lines for secrets, click-to-inspect, legend. Wired
-  into DMSidebar NPC tab.
-- Session Prep Wizard: 6-step guided workflow (setting -> weather -> encounter -> NPCs ->
-  plot twist -> review). Each step generates content from existing data systems. Outputs
-  a formatted session plan to DM chat. Wired into DMSidebar encounter tab.
-- Wave 68: 6 systems + 53 tests (abandoned mine, magical bazaar, magical parasite,
-  cult recruitment, academy faculty, library guardian)
-- Interactive Encounter Builder (shipped earlier this session)
-- Wave 67: 6 systems + 57 tests (wizard exam, haunted carnival, bounty contracts,
-  diplomatic incident, dream realm, magical trial by ordeal)
+- Wave 69: 5 data systems + 43 tests (trickster spirit, living labyrinth, ghost ship,
+  forgotten god, failed prophecy). All wired into DMSidebar + GeneratorPanel.
+- Campaign Phase 6: created 2 missing campaigns (theWardensOfAether, theHollowMountain).
+  Now 127 total (71 full + 56 one-shot).
+- NPC Relationship Graph: canvas force-directed graph, draggable, color-coded, secrets
+- Session Prep Wizard: 6-step guided workflow using existing data systems
+- Wave 68: 6 systems (abandoned mine, magical bazaar, parasite, cult, academy, guardian)
+- Wave 67: 6 systems (wizard exam, haunted carnival, bounty, diplomacy, dream, trial)
+- Encounter Builder: terrain + weather + difficulty + ecology + lair actions
 
 ### Session Stats
-- **Tests:** 3,483 passing across 3 test files
-- **Data files:** 403 in src/data/
-- **Systems built:** 212 (Waves 33-68)
-- **Campaigns:** 125 (69 full + 56 one-shot)
-- **UI:** 91 DMSidebar buttons + Generator Panel (73+ entries) + Encounter Builder +
+- **Tests:** 3,535 passing across 3 test files
+- **Data files:** 408 in src/data/
+- **Systems built:** 217 (Waves 33-69)
+- **Campaigns:** 127 (71 full + 56 one-shot)
+- **UI:** 96 DMSidebar buttons + Generator Panel (78+ entries) + Encounter Builder +
   Session Prep Wizard + NPC Relationship Graph
 
 ## Next Session - Priorities
 
-### 1. Campaign Starter Kit Library - Phase 6
-Need 11 more full campaigns to hit 136/200 target. Missing theWardensOfAether
-and theHollowMountain files.
-
-### 2. Wire Remaining Systems into UI
-91 of 212 systems wired via DMSidebar buttons. GeneratorPanel covers 73. Many
-data systems still have no UI entry point.
-
-### 3. Continue Wave 69+ data systems
+### 1. Continue Wave 70+ data systems
 Pattern is established. Keep shipping 6 per wave.
 
+### 2. Wire Remaining Systems into UI
+96 of 217 systems wired via DMSidebar buttons. GeneratorPanel covers 78.
+
+### 3. Campaign Starter Kit Library - Phase 7
+9 more full campaigns to hit 80/200 target (currently 71 full + 56 one-shot).
+
 ### 4. Polish and ship v0.2.0
-All major roadmap features are now built: Encounter Builder, Session Prep Wizard,
-NPC Relationship Graph, Generator Panel, WorldMap. Focus on polish, UX refinement,
-and wiring remaining systems before tagging a release.
+All major roadmap features built. Focus on polish, UX refinement, and wiring
+remaining systems before tagging a release.
 
 ### v0.1.0 — Initial Release
 

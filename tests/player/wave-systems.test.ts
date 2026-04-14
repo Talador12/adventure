@@ -3063,3 +3063,73 @@ describe('ancient library guardian', () => {
   it('counts tests', () => { expect(getGuardianTests(LIBRARY_GUARDIANS[0])).toBe(3); });
   it('formats guardian', () => { expect(formatGuardian(getRandomGuardian())).toContain('Tests'); });
 });
+
+// ---------------------------------------------------------------------------
+// Wave 69 — trickster spirit, living labyrinth, ghost ship, forgotten god, failed prophecy
+// ---------------------------------------------------------------------------
+import { TRICKSTER_SPIRITS, getRandomSpirit as getRandomTrickster, getSpiritByMotive, getAllMotives as getAllTricksterMotives, getPrankCount, formatSpirit as formatTrickster } from '../../src/data/tricksterSpirit';
+
+describe('trickster spirit', () => {
+  it('has at least 2 spirits', () => { expect(TRICKSTER_SPIRITS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 motives', () => { expect(getAllTricksterMotives().length).toBeGreaterThanOrEqual(2); });
+  it('each has 3+ pranks', () => { TRICKSTER_SPIRITS.forEach((s) => expect(s.pranks.length).toBeGreaterThanOrEqual(3)); });
+  it('each has befriend method', () => { TRICKSTER_SPIRITS.forEach((s) => expect(s.befriendMethod.length).toBeGreaterThan(15)); });
+  it('each has banish method', () => { TRICKSTER_SPIRITS.forEach((s) => expect(s.banishMethod.length).toBeGreaterThan(15)); });
+  it('looks up by motive', () => { const s = getSpiritByMotive('boredom'); expect(s).toBeDefined(); expect(s!.name).toContain('Jinx'); });
+  it('counts pranks', () => { expect(getPrankCount(TRICKSTER_SPIRITS[0])).toBeGreaterThanOrEqual(3); });
+  it('formats spirit', () => { expect(formatTrickster(getRandomTrickster())).toContain('Pranks'); });
+});
+
+import { LIVING_LABYRINTHS, getRandomLabyrinth, getLabyrinthByPersonality, getAllPersonalities as getAllLabPersonalities, getTraitCount as getLabTraits, formatLabyrinth } from '../../src/data/livingLabyrinth';
+
+describe('living labyrinth', () => {
+  it('has at least 2 labyrinths', () => { expect(LIVING_LABYRINTHS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 personalities', () => { expect(getAllLabPersonalities().length).toBeGreaterThanOrEqual(2); });
+  it('each has 3 traits', () => { LIVING_LABYRINTHS.forEach((l) => expect(l.traits.length).toBe(3)); });
+  it('each has 3 rooms', () => { LIVING_LABYRINTHS.forEach((l) => expect(l.rooms.length).toBe(3)); });
+  it('each has escape condition', () => { LIVING_LABYRINTHS.forEach((l) => expect(l.escapeCondition.length).toBeGreaterThan(15)); });
+  it('looks up by personality', () => { const l = getLabyrinthByPersonality('hungry'); expect(l).toBeDefined(); expect(l!.name).toContain('Gullet'); });
+  it('counts traits', () => { expect(getLabTraits(LIVING_LABYRINTHS[0])).toBe(3); });
+  it('formats labyrinth', () => { expect(formatLabyrinth(getRandomLabyrinth())).toContain('Traits'); });
+});
+
+import { GHOST_SHIPS, getRandomShip as getRandomGhostShip, getShipByFate, getAllFates, getCrewCount as getGhostCrew, formatShip } from '../../src/data/ghostShip';
+
+describe('ghost ship', () => {
+  it('has at least 2 ships', () => { expect(GHOST_SHIPS.length).toBeGreaterThanOrEqual(2); });
+  it('covers at least 2 fates', () => { expect(getAllFates().length).toBeGreaterThanOrEqual(2); });
+  it('each has 3 crew', () => { GHOST_SHIPS.forEach((s) => expect(s.crew.length).toBe(3)); });
+  it('each crew has unfinished business', () => { GHOST_SHIPS.forEach((s) => s.crew.forEach((c) => expect(c.unfinishedBusiness.length).toBeGreaterThan(15))); });
+  it('each has haunted cargo', () => { GHOST_SHIPS.forEach((s) => expect(s.hauntedCargo.length).toBeGreaterThan(20)); });
+  it('each has resolution', () => { GHOST_SHIPS.forEach((s) => expect(s.resolutionMethod.length).toBeGreaterThan(15)); });
+  it('looks up by fate', () => { const s = getShipByFate('mutiny'); expect(s).toBeDefined(); expect(s!.name).toContain('Weeping'); });
+  it('counts crew', () => { expect(getGhostCrew(GHOST_SHIPS[0])).toBe(3); });
+  it('formats ship', () => { expect(formatShip(getRandomGhostShip())).toContain('Crew'); });
+});
+
+import { FORGOTTEN_GODS, getRandomGod, getGodByDomain, getAllDomains as getAllGodDomains, getGodsByFadeStage, formatGod } from '../../src/data/forgottenGod';
+
+describe('forgotten god', () => {
+  it('has at least 3 gods', () => { expect(FORGOTTEN_GODS.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 domains', () => { expect(getAllGodDomains().length).toBeGreaterThanOrEqual(3); });
+  it('each has moral complication', () => { FORGOTTEN_GODS.forEach((g) => expect(g.moralComplication.length).toBeGreaterThan(20)); });
+  it('each has last worshipper', () => { FORGOTTEN_GODS.forEach((g) => expect(g.lastWorshipper.length).toBeGreaterThan(15)); });
+  it('each has desperate request', () => { FORGOTTEN_GODS.forEach((g) => expect(g.desperateRequest.length).toBeGreaterThan(15)); });
+  it('filters by fade stage', () => { const fading = getGodsByFadeStage('fading'); expect(fading.length).toBeGreaterThanOrEqual(1); });
+  it('looks up by domain', () => { const g = getGodByDomain('light'); expect(g).toBeDefined(); expect(g!.name).toContain('Solmara'); });
+  it('formats god', () => { expect(formatGod(getRandomGod())).toContain('Former glory'); });
+});
+
+import { FAILED_PROPHECIES, getRandomProphecy as getRandomFailedProphecy, getProphecyByType, getAllFailureTypes, getAftershockCount, formatProphecy as formatFailedProphecy } from '../../src/data/failedProphecy';
+
+describe('failed prophecy', () => {
+  it('has at least 3 prophecies', () => { expect(FAILED_PROPHECIES.length).toBeGreaterThanOrEqual(3); });
+  it('covers at least 3 failure types', () => { expect(getAllFailureTypes().length).toBeGreaterThanOrEqual(3); });
+  it('each has 3 aftershocks', () => { FAILED_PROPHECIES.forEach((p) => expect(p.aftermath.length).toBe(3)); });
+  it('each has original prophecy', () => { FAILED_PROPHECIES.forEach((p) => expect(p.originalProphecy.length).toBeGreaterThan(20)); });
+  it('each has fix method', () => { FAILED_PROPHECIES.forEach((p) => expect(p.fixMethod.length).toBeGreaterThan(20)); });
+  it('each has who blames', () => { FAILED_PROPHECIES.forEach((p) => expect(p.whoBlames.length).toBeGreaterThan(15)); });
+  it('looks up by type', () => { const p = getProphecyByType('wrong_hero'); expect(p).toBeDefined(); expect(p!.name).toContain('Chosen'); });
+  it('counts aftershocks', () => { expect(getAftershockCount(FAILED_PROPHECIES[0])).toBe(3); });
+  it('formats prophecy', () => { expect(formatFailedProphecy(getRandomFailedProphecy())).toContain('Aftermath'); });
+});

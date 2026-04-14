@@ -114,6 +114,13 @@ const GENERATORS: GeneratorDef[] = [
   { id: 'cult-recruitment', name: 'Cult Recruitment', emoji: '🕯️', description: 'Cult lure tactics', category: 'story', importPath: '../../data/cultRecruitment', importName: 'getRandomCult', formatName: 'formatCult', isRandom: true },
   { id: 'academy-professor', name: 'Academy Professor', emoji: '🎓', description: 'Magic school faculty', category: 'npcs', importPath: '../../data/magicalAcademyFaculty', importName: 'getRandomProfessor', formatName: 'formatProfessor', isRandom: true },
   { id: 'library-guardian', name: 'Library Guardian', emoji: '📚', description: 'Knowledge protectors', category: 'world', importPath: '../../data/ancientLibraryGuardian', importName: 'getRandomGuardian', formatName: 'formatGuardian', isRandom: true },
+
+  // Wave 69
+  { id: 'trickster-spirit', name: 'Trickster Spirit', emoji: '🦊', description: 'Mischievous fey pranks', category: 'npcs', importPath: '../../data/tricksterSpirit', importName: 'getRandomSpirit', formatName: 'formatSpirit', isRandom: true },
+  { id: 'living-labyrinth', name: 'Living Labyrinth', emoji: '🏰', description: 'Sentient dungeons', category: 'world', importPath: '../../data/livingLabyrinth', importName: 'getRandomLabyrinth', formatName: 'formatLabyrinth', isRandom: true },
+  { id: 'ghost-ship', name: 'Ghost Ship', emoji: '⚓', description: 'Haunted vessels', category: 'world', importPath: '../../data/ghostShip', importName: 'getRandomShip', formatName: 'formatShip', isRandom: true },
+  { id: 'forgotten-god', name: 'Forgotten God', emoji: '✨', description: 'Fading deities', category: 'npcs', importPath: '../../data/forgottenGod', importName: 'getRandomGod', formatName: 'formatGod', isRandom: true },
+  { id: 'failed-prophecy', name: 'Failed Prophecy', emoji: '🔮', description: 'Prophecies gone wrong', category: 'story', importPath: '../../data/failedProphecy', importName: 'getRandomProphecy', formatName: 'formatProphecy', isRandom: true },
 ];
 
 interface GeneratorPanelProps {

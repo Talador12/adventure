@@ -84,6 +84,8 @@ import { theSanctumOfSorrows } from './full/theSanctumOfSorrows';
 import { theTitanomachyReborn } from './full/theTitanomachyReborn';
 import { theMourningMarches } from './full/theMourningMarches';
 import { theWeaversOfFate } from './full/theWeaversOfFate';
+import { theWardensOfAether } from './full/theWardensOfAether';
+import { theHollowMountain } from './full/theHollowMountain';
 
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
@@ -221,6 +223,8 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theTitanomachyReborn,
   theMourningMarches,
   theWeaversOfFate,
+  theWardensOfAether,
+  theHollowMountain,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
