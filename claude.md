@@ -49,16 +49,40 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 
 ## Campaign Starter Kit Library — Phase 14 IN PROGRESS (430+ campaigns — 200 full + 230 one-shots)
 
-## RESUME HERE — Current Session Progress
+## RESUME HERE — v0.2.0 Roadmap
 
-**505 campaigns** (225 full + 280 one-shots). All tones balanced. Full editorial pass done.
-**388 DMSidebar buttons** (was 265). 123 new data systems wired this session.
-**Export system expanded**: campaign state backup/restore, batch character export/import, homebrew export, in-game Export/Sheet buttons on CharacterSheet, improved error handling.
-**i18n**: all 8 locales at 104 keys. Portuguese accents fixed. en-gb is bloke parody.
-**Campaign wizard**: modal with custom vs catalog browse (search/filter/expand).
-**Quick Start**: 8 random full + 8 random one-shots per page load.
+### Done This Session
+- **505 campaigns** (225 full + 280 one-shots). All tones balanced. Full editorial pass.
+- **388 DMSidebar buttons** (was 265). 123 new data systems wired.
+- **Export system**: campaign backup/restore, batch character export/import, homebrew, in-game Export/Sheet.
+- **i18n**: all 8 locales at 104 keys. Portuguese accents fixed. en-gb is bloke parody.
+- **Campaign wizard**: modal with custom vs catalog browse (search/filter/expand).
+- **Quick Start**: 8 random full + 8 random one-shots per page load.
+- **Hex travel system**: travel engine, encounters, survival, day/night, persistence.
+- **Bug fixes**: WebSocket hung connection recovery, Game page auto-selects Lobby character.
 
-**One-shot tone distribution (all at 20+ each):** comedic 50, survival 20, social 20, serious 20, political 20, mystery 20, horror 20, heist 20, exploration 20, epic 20, shenanigans 0 (pending)
+### v0.2.0 Roadmap (in order)
+
+**Gameplay:**
+1. [ ] Spell casting UI - spell slot tracker on character sheet, cast-on-target flow in combat, concentration tracking
+2. [ ] Level up wizard - guided flow: HP roll (or average), ASI/feat choice, new spell selection, class feature unlock
+3. [ ] Rest mechanics - short rest: hit dice spending + HP recovery. Long rest: full HP + spell slot reset. Wired to buttons.
+4. [ ] Encounter balance indicator - party level/size vs total CR, difficulty rating (easy/medium/hard/deadly), XP budget
+
+**Social/Multiplayer:**
+5. [ ] Public game browser - browse/search/filter public campaigns on homepage, join with one click
+6. [ ] Player invite flow - "Copy Invite Link" that deep-links to lobby with room code pre-filled
+7. [ ] Spectator mode polish - read-only view, no dice/chat, can see map and combat
+
+**Content/Polish:**
+8. [ ] Onboarding tutorial - first-time user gets a guided walkthrough: create character, join/create campaign, basic controls
+9. [ ] Mobile responsiveness - touch-friendly combat, responsive layouts, bottom nav on small screens
+10. [ ] Sound effects - dice roll sounds, combat hit/miss, ambient music per scene, volume controls
+11. [ ] Campaign progress tracking - XP/milestone tracker, auto-generated session summaries, campaign timeline
+
+**Infrastructure:**
+12. [ ] Fix 7 Dependabot vulnerabilities
+13. [ ] Doodle pad persistence - D1 archival + R2 snapshots so strokes survive DO eviction
 
 ### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul
 

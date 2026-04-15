@@ -3,19 +3,60 @@
 
 import type { CharacterClass, Spell, ClassAbility, Feat } from '../types/game';
 
-// --- Spell slots ---
+// --- Spell slots (full PHB table, levels 1-20) ---
 export const FULL_CASTER_SLOTS: Record<number, Record<number, number>> = {
-  1: { 1: 2 }, 2: { 1: 3 }, 3: { 1: 4, 2: 2 }, 4: { 1: 4, 2: 3 }, 5: { 1: 4, 2: 3, 3: 2 },
+  1:  { 1: 2 },
+  2:  { 1: 3 },
+  3:  { 1: 4, 2: 2 },
+  4:  { 1: 4, 2: 3 },
+  5:  { 1: 4, 2: 3, 3: 2 },
+  6:  { 1: 4, 2: 3, 3: 3 },
+  7:  { 1: 4, 2: 3, 3: 3, 4: 1 },
+  8:  { 1: 4, 2: 3, 3: 3, 4: 2 },
+  9:  { 1: 4, 2: 3, 3: 3, 4: 3, 5: 1 },
+  10: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2 },
+  11: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1 },
+  12: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1 },
+  13: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1 },
+  14: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1 },
+  15: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1, 8: 1 },
+  16: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1, 8: 1 },
+  17: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1 },
+  18: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1 },
+  19: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 7: 1, 8: 1, 9: 1 },
+  20: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 7: 2, 8: 1, 9: 1 },
 };
 export const HALF_CASTER_SLOTS: Record<number, Record<number, number>> = {
   1: {}, 2: { 1: 2 }, 3: { 1: 3 }, 4: { 1: 3 }, 5: { 1: 4, 2: 2 },
+  6: { 1: 4, 2: 2 }, 7: { 1: 4, 2: 3 }, 8: { 1: 4, 2: 3 }, 9: { 1: 4, 2: 3, 3: 2 },
+  10: { 1: 4, 2: 3, 3: 2 }, 11: { 1: 4, 2: 3, 3: 3 }, 12: { 1: 4, 2: 3, 3: 3 },
+  13: { 1: 4, 2: 3, 3: 3, 4: 1 }, 14: { 1: 4, 2: 3, 3: 3, 4: 1 },
+  15: { 1: 4, 2: 3, 3: 3, 4: 2 }, 16: { 1: 4, 2: 3, 3: 3, 4: 2 },
+  17: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 1 }, 18: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 1 },
+  19: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2 }, 20: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2 },
+};
+// Warlock pact slots are unique: few slots, all at highest level, recover on short rest
+export const WARLOCK_PACT_SLOTS: Record<number, { slots: number; level: number }> = {
+  1: { slots: 1, level: 1 }, 2: { slots: 2, level: 1 }, 3: { slots: 2, level: 2 },
+  4: { slots: 2, level: 2 }, 5: { slots: 2, level: 3 }, 6: { slots: 2, level: 3 },
+  7: { slots: 2, level: 4 }, 8: { slots: 2, level: 4 }, 9: { slots: 2, level: 5 },
+  10: { slots: 2, level: 5 }, 11: { slots: 3, level: 5 }, 12: { slots: 3, level: 5 },
+  13: { slots: 3, level: 5 }, 14: { slots: 3, level: 5 }, 15: { slots: 3, level: 5 },
+  16: { slots: 3, level: 5 }, 17: { slots: 4, level: 5 }, 18: { slots: 4, level: 5 },
+  19: { slots: 4, level: 5 }, 20: { slots: 4, level: 5 },
 };
 
-export const FULL_CASTERS: CharacterClass[] = ['Wizard', 'Sorcerer', 'Cleric', 'Druid', 'Bard', 'Warlock'];
+export const FULL_CASTERS: CharacterClass[] = ['Wizard', 'Sorcerer', 'Cleric', 'Druid', 'Bard'];
 export const HALF_CASTERS: CharacterClass[] = ['Paladin', 'Ranger'];
 
 export function getSpellSlots(charClass: CharacterClass, level: number): Record<number, number> {
-  const clampedLevel = Math.min(level, 5);
+  const clampedLevel = Math.min(Math.max(level, 1), 20);
+  // Warlock uses pact magic (unique slot system)
+  if (charClass === 'Warlock') {
+    const pact = WARLOCK_PACT_SLOTS[clampedLevel];
+    if (!pact) return {};
+    return { [pact.level]: pact.slots };
+  }
   if (FULL_CASTERS.includes(charClass)) return FULL_CASTER_SLOTS[clampedLevel] || {};
   if (HALF_CASTERS.includes(charClass)) return HALF_CASTER_SLOTS[clampedLevel] || {};
   return {};
@@ -56,6 +97,38 @@ export const SPELL_LIST: Spell[] = [
   { id: 'daylight', name: 'Daylight', level: 3, school: 'evocation', description: '60ft bright light, 100ft dim. Dispels magical darkness.', range: 'Self', duration: '1 hour', isConcentration: false, classes: ['Cleric', 'Druid', 'Sorcerer', 'Paladin', 'Ranger'], appliesCondition: 'daylight', conditionDuration: 10 },
   { id: 'darkvision-spell', name: 'Darkvision', level: 2, school: 'transmutation', description: 'Touch a willing creature. 60ft darkvision for 8 hours.', range: 'Touch', duration: '8 hours', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Druid', 'Ranger'], appliesCondition: 'darkvision', conditionDuration: 10 },
   { id: 'dispel-magic', name: 'Dispel Magic', level: 3, school: 'abjuration', description: 'End magical conditions on a target. Removes buffs, debuffs, and light spells.', range: '120ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Cleric', 'Bard', 'Warlock', 'Druid', 'Paladin'] },
+  // Level 4
+  { id: 'dimension-door', name: 'Dimension Door', level: 4, school: 'conjuration', description: 'Teleport yourself and one willing creature up to 500ft to a spot you can see or describe.', range: '500ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard', 'Warlock'] },
+  { id: 'polymorph', name: 'Polymorph', level: 4, school: 'transmutation', description: 'WIS save. Transform a creature into a beast of CR equal to its level. New HP pool.', range: '60ft', duration: 'Concentration, 1 hour', saveStat: 'WIS', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Bard', 'Druid'] },
+  { id: 'greater-invisibility', name: 'Greater Invisibility', level: 4, school: 'illusion', description: 'Target is invisible for the duration, even while attacking or casting.', range: 'Touch', duration: 'Concentration, 1 minute', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Bard'] },
+  { id: 'banishment', name: 'Banishment', level: 4, school: 'abjuration', description: 'CHA save. Banish a creature to a harmless demiplane for the duration.', range: '60ft', duration: 'Concentration, 1 minute', saveStat: 'CHA', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Cleric', 'Warlock', 'Paladin'] },
+  { id: 'ice-storm', name: 'Ice Storm', level: 4, school: 'evocation', description: '20ft radius hail. DEX save or 2d8 bludgeoning + 4d6 cold. Difficult terrain.', damage: '6d6', range: '300ft', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Druid'], aoe: { shape: 'circle', radiusCells: 4, color: 'rgba(147,197,253,0.25)' } },
+  { id: 'wall-of-fire', name: 'Wall of Fire', level: 4, school: 'evocation', description: 'Create a wall of fire. Creatures within 10ft of one side take 5d8 fire on failed DEX save.', damage: '5d8', range: '120ft', duration: 'Concentration, 1 minute', saveStat: 'DEX', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Druid'], aoe: { shape: 'line', radiusCells: 12, color: 'rgba(239,68,68,0.25)' } },
+  { id: 'death-ward', name: 'Death Ward', level: 4, school: 'abjuration', description: 'Touch a creature. The first time it would drop to 0 HP, it drops to 1 HP instead.', range: 'Touch', duration: '8 hours', isConcentration: false, classes: ['Cleric', 'Paladin'] },
+  // Level 5
+  { id: 'cone-of-cold', name: 'Cone of Cold', level: 5, school: 'evocation', description: '60ft cone of cold. CON save or 8d8 cold damage.', damage: '8d8', range: 'Self (60ft cone)', duration: 'Instantaneous', saveStat: 'CON', isConcentration: false, classes: ['Wizard', 'Sorcerer'], aoe: { shape: 'cone', radiusCells: 12, color: 'rgba(147,197,253,0.25)' } },
+  { id: 'mass-cure-wounds', name: 'Mass Cure Wounds', level: 5, school: 'evocation', description: 'Heal up to 6 creatures within 30ft for 3d8+mod HP each.', healAmount: 14, range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Bard', 'Druid'], aoe: { shape: 'circle', radiusCells: 6, color: 'rgba(52,211,153,0.25)' } },
+  { id: 'destructive-wave', name: 'Destructive Wave', level: 5, school: 'evocation', description: 'Ground slams. 30ft radius. CON save or 5d6 thunder + 5d6 radiant and prone.', damage: '10d6', range: 'Self (30ft radius)', duration: 'Instantaneous', saveStat: 'CON', isConcentration: false, classes: ['Paladin'], aoe: { shape: 'circle', radiusCells: 6, color: 'rgba(251,191,36,0.25)' } },
+  { id: 'raise-dead', name: 'Raise Dead', level: 5, school: 'necromancy', description: 'Return a creature dead for up to 10 days to life with 1 HP. Requires 500gp diamond.', healAmount: 1, range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Bard', 'Paladin'], components: ['V', 'S', 'M'], material: 'Diamond worth 500gp' },
+  { id: 'hold-monster', name: 'Hold Monster', level: 5, school: 'enchantment', description: 'WIS save or paralyzed. Works on any creature, not just humanoids.', range: '90ft', duration: 'Concentration, 1 minute', saveStat: 'WIS', isConcentration: true, classes: ['Wizard', 'Sorcerer', 'Bard', 'Warlock'], appliesCondition: 'stunned', conditionDuration: 3 },
+  { id: 'telekinesis', name: 'Telekinesis', level: 5, school: 'transmutation', description: 'Move a creature or object up to 30ft. Contested check. Concentration.', range: '60ft', duration: 'Concentration, 10 minutes', isConcentration: true, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'greater-restoration', name: 'Greater Restoration', level: 5, school: 'abjuration', description: 'End one effect: charm, petrify, curse, ability reduction, or max HP reduction.', range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Bard', 'Druid'], components: ['V', 'S', 'M'], material: 'Diamond dust worth 100gp' },
+  // Level 6
+  { id: 'heal', name: 'Heal', level: 6, school: 'evocation', description: 'A surge of positive energy. Restore 70 HP and end blindness, deafness, and diseases.', healAmount: 70, range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Druid'] },
+  { id: 'chain-lightning', name: 'Chain Lightning', level: 6, school: 'evocation', description: 'Lightning arcs to 4 targets. DEX save or 10d8 lightning each.', damage: '10d8', range: '150ft', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'disintegrate', name: 'Disintegrate', level: 6, school: 'transmutation', description: 'Green ray. DEX save or 10d6+40 force damage. 0 HP = dust.', damage: '10d6+40', range: '60ft', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  // Level 7
+  { id: 'teleport', name: 'Teleport', level: 7, school: 'conjuration', description: 'Teleport yourself and up to 8 creatures to a destination you know.', range: '10ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard'] },
+  { id: 'resurrection', name: 'Resurrection', level: 7, school: 'necromancy', description: 'Touch a dead creature (up to 100 years). It returns with full HP.', healAmount: 999, range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Bard'], components: ['V', 'S', 'M'], material: 'Diamond worth 1,000gp' },
+  { id: 'finger-of-death', name: 'Finger of Death', level: 7, school: 'necromancy', description: 'Point at a creature. CON save or 7d8+30 necrotic. 0 HP = zombie.', damage: '7d8+30', range: '60ft', duration: 'Instantaneous', saveStat: 'CON', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Warlock'] },
+  // Level 8
+  { id: 'sunburst', name: 'Sunburst', level: 8, school: 'evocation', description: '60ft radius. CON save or 12d6 radiant + blinded for 1 minute.', damage: '12d6', range: '150ft', duration: 'Instantaneous', saveStat: 'CON', isConcentration: false, classes: ['Cleric', 'Druid', 'Sorcerer'], aoe: { shape: 'circle', radiusCells: 12, color: 'rgba(253,224,71,0.25)' } },
+  { id: 'power-word-stun', name: 'Power Word Stun', level: 8, school: 'enchantment', description: 'Stun a creature with 150 HP or fewer. No save. CON save each turn to end.', range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard', 'Warlock'], appliesCondition: 'stunned', conditionDuration: 3 },
+  // Level 9
+  { id: 'wish', name: 'Wish', level: 9, school: 'conjuration', description: 'The mightiest spell. Duplicate any 8th-level or lower spell, or reshape reality at DM discretion.', range: 'Self', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer'] },
+  { id: 'power-word-kill', name: 'Power Word Kill', level: 9, school: 'enchantment', description: 'Kill a creature with 100 HP or fewer. No save. One word.', range: '60ft', duration: 'Instantaneous', isConcentration: false, classes: ['Wizard', 'Sorcerer', 'Bard', 'Warlock'] },
+  { id: 'meteor-swarm', name: 'Meteor Swarm', level: 9, school: 'evocation', description: 'Four 40ft-radius spheres. DEX save or 20d6 fire + 20d6 bludgeoning.', damage: '40d6', range: '1 mile', duration: 'Instantaneous', saveStat: 'DEX', isConcentration: false, classes: ['Wizard', 'Sorcerer'], aoe: { shape: 'circle', radiusCells: 8, color: 'rgba(239,68,68,0.35)' } },
+  { id: 'true-resurrection', name: 'True Resurrection', level: 9, school: 'necromancy', description: 'Restore a creature dead for up to 200 years. Full HP. Even works without a body.', healAmount: 999, range: 'Touch', duration: 'Instantaneous', isConcentration: false, classes: ['Cleric', 'Druid'], components: ['V', 'S', 'M'], material: 'Diamonds worth 25,000gp' },
 ];
 
 export function getClassSpells(charClass: CharacterClass, level: number): Spell[] {
