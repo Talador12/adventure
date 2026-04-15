@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGame, type StatName, type Character, hasPendingASI, FEATS, HIT_DIE_SIDES, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility } from '../../contexts/GameContext';
 import { getFeaturesForLevel } from '../../data/classFeatures';
+import { SUBCLASS_LEVEL, getSubclassOptions, type SubclassOption } from '../../data/subclasses';
 
 interface LevelUpModalProps {
   character: Character;
@@ -11,7 +12,7 @@ interface LevelUpModalProps {
 
 export default function LevelUpModal({ character, onClose, onMessage, onCombatLog }: LevelUpModalProps) {
   const { applyASI, selectFeat, updateCharacter, characters } = useGame();
-  const [levelUpTab, setLevelUpTab] = useState<'summary' | 'asi' | 'feat'>('summary');
+  const [levelUpTab, setLevelUpTab] = useState<'summary' | 'asi' | 'feat' | 'subclass'>('summary');
   const [asiMode, setAsiMode] = useState<'single' | 'split'>('single');
   const [asiStat1, setAsiStat1] = useState<StatName>('STR');
   const [asiStat2, setAsiStat2] = useState<StatName | null>(null);
@@ -25,6 +26,16 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
   const isCaster = FULL_CASTERS.includes(character.class) || HALF_CASTERS.includes(character.class);
   const classAbility = getClassAbility(character.class);
   const hasASI = hasPendingASI(character);
+
+  // Subclass selection - show tab when reaching subclass level without one chosen
+  const subclassLevel = SUBCLASS_LEVEL[character.class] || 3;
+  const needsSubclass = character.level >= subclassLevel && !character.subclass;
+  const subclassOptions = getSubclassOptions(character.class);
+
+  // Auto-switch to subclass tab if they need to pick one
+  useEffect(() => {
+    if (needsSubclass && subclassOptions.length > 0) setLevelUpTab('subclass');
+  }, [needsSubclass, subclassOptions.length]);
 
   // Close on Escape
   useEffect(() => {
@@ -69,6 +80,11 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
           <button onClick={() => setLevelUpTab('summary')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'summary' ? 'border-emerald-500 text-emerald-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
             Summary
           </button>
+          {needsSubclass && subclassOptions.length > 0 && (
+            <button onClick={() => setLevelUpTab('subclass')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'subclass' ? 'border-cyan-500 text-cyan-300' : 'border-transparent text-cyan-500/60 hover:text-cyan-300 animate-pulse'}`}>
+              Subclass
+            </button>
+          )}
           <button onClick={() => setLevelUpTab('asi')} className={`flex-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all ${levelUpTab === 'asi' ? 'border-amber-500 text-amber-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
             Ability Scores
           </button>
@@ -78,8 +94,39 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
         </div>
 
         <div className="p-6">
-          {levelUpTab === 'summary' ? (
+          {levelUpTab === 'subclass' && needsSubclass ? (
             <div className="space-y-3">
+              <div className="text-center mb-2">
+                <div className="text-sm font-bold text-cyan-300">Choose Your Subclass</div>
+                <div className="text-[10px] text-slate-400 mt-1">This choice defines your {character.class} for the rest of the campaign.</div>
+              </div>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {subclassOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      updateCharacter(character.id, { subclass: opt.id } as Partial<typeof character>);
+                      onMessage(`${character.name} chose ${opt.name}!`);
+                      onCombatLog(`${character.name} chose the ${opt.name} subclass.`);
+                      setLevelUpTab('summary');
+                    }}
+                    className="w-full text-left px-4 py-3 bg-slate-800 hover:bg-cyan-900/30 border border-slate-700 hover:border-cyan-600/50 rounded-xl transition-all group"
+                  >
+                    <div className="text-sm font-bold text-cyan-300 group-hover:text-cyan-200">{opt.name}</div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{opt.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : levelUpTab === 'summary' ? (
+            <div className="space-y-3">
+              {/* Subclass reminder if still needed */}
+              {needsSubclass && subclassOptions.length > 0 && (
+                <div className="px-3 py-2 rounded-lg border border-cyan-700/40 bg-cyan-900/20 text-center">
+                  <span className="text-xs font-bold text-cyan-300 animate-pulse">Choose your subclass in the Subclass tab!</span>
+                </div>
+              )}
+
               {/* HP increase */}
               <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/50">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Hit Points</div>
@@ -98,7 +145,7 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
                       }}
                       className="flex-1 px-3 py-2 rounded-lg bg-emerald-900/30 border border-emerald-700/40 text-emerald-300 text-xs font-semibold hover:bg-emerald-900/50"
                     >
-                      🎲 Roll d{hitDie}+{conMod}
+                      Roll d{hitDie}+{conMod}
                     </button>
                     <button
                       onClick={() => {
@@ -119,11 +166,11 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
               <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/50">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Level {character.level} Gains</div>
                 <ul className="text-xs text-slate-300 space-y-1">
-                  <li>• +1 Hit Die (d{hitDie})</li>
-                  <li>• Proficiency Bonus: +{Math.ceil(character.level / 4) + 1}</li>
-                  {hasASI && <li className="text-amber-400">• Ability Score Improvement or Feat available!</li>}
-                  {isCaster && <li className="text-violet-400">• New spell slots unlocked</li>}
-                  {classAbility && <li className="text-sky-400">• {classAbility.name}: {classAbility.description.slice(0, 80)}...</li>}
+                  <li>{'\u2022'} +1 Hit Die (d{hitDie})</li>
+                  <li>{'\u2022'} Proficiency Bonus: +{Math.ceil(character.level / 4) + 1}</li>
+                  {hasASI && <li className="text-amber-400">{'\u2022'} Ability Score Improvement or Feat available!</li>}
+                  {isCaster && <li className="text-violet-400">{'\u2022'} New spell slots unlocked</li>}
+                  {classAbility && <li className="text-sky-400">{'\u2022'} {classAbility.name}: {classAbility.description.slice(0, 80)}...</li>}
                 </ul>
               </div>
 

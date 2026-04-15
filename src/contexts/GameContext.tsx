@@ -21,6 +21,7 @@ export {
   getSpellSlots, SPELL_LIST, getClassSpells,
   CLASS_ABILITIES, getClassAbility,
   FEATS,
+  CASTING_STAT, PREPARED_CASTERS, getSpellPrepType, getMaxPreparedSpells, getMaxKnownSpells, getSpellLimit,
 } from '../data/spells';
 
 // Import types we need for the provider implementation

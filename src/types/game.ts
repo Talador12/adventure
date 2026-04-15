@@ -573,6 +573,7 @@ export interface Character {
   class: CharacterClass;
   level: number;
   classLevels?: Partial<Record<CharacterClass, number>>; // multiclass: levels per class (total = level)
+  subclass?: string; // chosen subclass id (e.g. 'champion', 'life', 'evocation')
   xp: number;
   stats: Stats;
   hp: number;
@@ -613,6 +614,7 @@ export interface Character {
   arcaneRecoveryUsed?: boolean;    // Wizard: used Arcane Recovery this rest
   spellSlots?: Record<number, number>; // precomputed spell slots by level
   attunedItemIds?: string[];         // max 3 attuned magic item IDs
+  notes?: string;                    // freeform character notes (shown on character sheet)
   createdAt: number;
 }
 

@@ -1,7 +1,8 @@
 // CharacterSheet — side panel showing selected character's full stats, HP, conditions, equipment, and inventory.
-import { type Character, type CharacterClass, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell, type SpellSchool } from '../../contexts/GameContext';
+import { type Character, type CharacterClass, STAT_NAMES, type StatName, XP_THRESHOLDS, useGame, type EquipSlot, type Item, RARITY_COLORS, RARITY_BG, EMPTY_EQUIPMENT, getClassSpells, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility, FEATS, hasPendingASI, HIT_DIE_SIDES, CONDITION_EFFECTS, type ConditionType, type Spell, type SpellSchool, getSpellLimit } from '../../contexts/GameContext';
 import { CONDITION_TOOLTIPS, EXHAUSTION_LEVELS } from '../../data/rules';
 import { STARTING_EQUIPMENT } from '../../data/items';
+import { getSubclassOptions } from '../../data/subclasses';
 import CharacterCard from '../game/CharacterCard';
 import TradePanel from '../game/TradePanel';
 import SpellSlotRecovery from '../game/SpellSlotRecovery';
@@ -131,9 +132,11 @@ interface SpellbookSectionProps {
   onAddCustomSpell?: (spell: Spell) => void;
   customSpellIds?: Set<string>;
   characterClass?: CharacterClass;
+  spellLimitMax?: number;
+  spellLimitLabel?: string;
 }
 
-function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, spellAttack, prof, castMod, onToggleSlot, preparedIds, onTogglePrepared, onRemoveCustomSpell, onAddCustomSpell, customSpellIds, characterClass }: SpellbookSectionProps) {
+function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, spellAttack, prof, castMod, onToggleSlot, preparedIds, onTogglePrepared, onRemoveCustomSpell, onAddCustomSpell, customSpellIds, characterClass, spellLimitMax, spellLimitLabel }: SpellbookSectionProps) {
   const [spellSearch, setSpellSearch] = useState('');
   const [showPreparedOnly, setShowPreparedOnly] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -167,10 +170,26 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
   const filteredLeveled = filteredSpells.filter((s) => s.level > 0);
   const hasFilters = spellSearch || schoolFilter || levelFilter !== null || showPreparedOnly;
 
+  // Count prepared leveled spells (cantrips do not count against the limit)
+  const preparedLeveledCount = preparedIds ? [...preparedIds].filter((id) => {
+    const spell = spells.find((s) => s.id === id);
+    return spell && spell.level > 0;
+  }).length : 0;
+  const atPrepLimit = spellLimitMax !== undefined && spellLimitMax > 0 && preparedLeveledCount >= spellLimitMax;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Spellbook</div>
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Spellbook</div>
+          {spellLimitMax !== undefined && spellLimitMax > 0 && (
+            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full border ${
+              atPrepLimit ? 'text-amber-300 bg-amber-900/30 border-amber-700/50' : 'text-emerald-400 bg-emerald-900/20 border-emerald-700/40'
+            }`} title={`${spellLimitLabel}: ${preparedLeveledCount} of ${spellLimitMax} (cantrips free)`}>
+              {spellLimitLabel}: {preparedLeveledCount}/{spellLimitMax}
+            </span>
+          )}
+        </div>
         {castingStat && (
           <div className="flex gap-2">
             <span className="text-[9px] font-mono text-purple-400" title={`Spell Save DC = 8 + ${prof} (prof) + ${castMod} (${castingStat})`}>DC {spellDC}</span>
@@ -276,10 +295,10 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
         </div>
       )}
 
-      {/* Cantrips */}
+      {/* Cantrips - never count against prep limit */}
       {filteredCantrips.length > 0 && (
         <div className="mb-1.5">
-          <div className="text-[9px] text-slate-600 mb-1">Cantrips</div>
+          <div className="text-[9px] text-slate-600 mb-1">Cantrips <span className="text-slate-700">(always prepared)</span></div>
           <div className="space-y-0.5">
             {filteredCantrips.map((s) => (
               <div key={s.id} className="flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30">
@@ -310,13 +329,24 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
           <div className="space-y-0.5">
             {filteredLeveled.map((s) => {
               const slotsAvail = (slots[s.level] || 0) - (used[s.level] || 0);
+              const isPrepared = preparedIds?.has(s.id) ?? false;
+              const prepDisabled = !isPrepared && atPrepLimit;
               return (
                 <div key={s.id} className={`flex items-center justify-between text-[10px] px-2 py-0.5 rounded bg-slate-800/30 ${slotsAvail <= 0 ? 'opacity-40' : ''}`}>
                   <div className="flex items-center gap-1.5">
                     {onTogglePrepared && (
-                      <button onClick={() => onTogglePrepared(s.id)} className={`w-2.5 h-2.5 rounded-full border ${preparedIds?.has(s.id) ? 'bg-emerald-500 border-emerald-400' : 'border-slate-600 hover:border-slate-400'}`} title={preparedIds?.has(s.id) ? 'Unprepare' : 'Prepare'} />
+                      <button
+                        onClick={() => { if (!prepDisabled) onTogglePrepared(s.id); }}
+                        disabled={prepDisabled}
+                        className={`w-2.5 h-2.5 rounded-full border transition-all ${
+                          isPrepared ? 'bg-emerald-500 border-emerald-400' :
+                          prepDisabled ? 'border-slate-700 bg-slate-800 opacity-40 cursor-not-allowed' :
+                          'border-slate-600 hover:border-slate-400'
+                        }`}
+                        title={prepDisabled ? `Max ${spellLimitLabel?.toLowerCase() || 'prepared'} spells reached` : isPrepared ? 'Unprepare' : 'Prepare'}
+                      />
                     )}
-                    <span className="text-purple-300 font-medium">{s.name}</span>
+                    <span className={`font-medium ${prepDisabled && !isPrepared ? 'text-slate-600' : 'text-purple-300'}`}>{s.name}</span>
                     {customSpellIds?.has(s.id) && <span className="text-[7px] text-violet-400">custom</span>}
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -435,6 +465,7 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
   const [showInventory, setShowInventory] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [showCharNotes, setShowCharNotes] = useState(false);
   const [tradeTarget, setTradeTarget] = useState<string | null>(null); // itemId being traded
   // Other characters available for trading (other player characters)
   const tradeTargets = characters.filter((c) => c.id !== character.id);
@@ -514,6 +545,10 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             {character.classLevels && Object.keys(character.classLevels).length > 1
               ? Object.entries(character.classLevels).map(([cls, lvl]) => `${cls} ${lvl}`).join(' / ')
               : character.class}
+            {character.subclass && (() => {
+              const opt = getSubclassOptions(character.class).find((o) => o.id === character.subclass);
+              return opt ? <span className="text-cyan-400"> ({opt.name})</span> : null;
+            })()}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">Proficiency Bonus: +{prof}</span>
@@ -1159,6 +1194,7 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
 
         const preparedIds = new Set(character.preparedSpellIds || []);
         const customSpellIds = new Set((character.customSpells || []).map((s) => s.id));
+        const spellLimitInfo = getSpellLimit(character.class, character.level, character.stats);
 
         return (<>
           <SpellbookSection
@@ -1174,6 +1210,8 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
             onToggleSlot={toggleSpellSlot}
             preparedIds={preparedIds}
             customSpellIds={customSpellIds}
+            spellLimitMax={spellLimitInfo.max}
+            spellLimitLabel={spellLimitInfo.label}
             onTogglePrepared={(spellId) => {
               updateCharacter(character.id, {
                 preparedSpellIds: preparedIds.has(spellId)
@@ -1233,6 +1271,25 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           onMessage={() => {}}
         />
       )}
+
+      {/* Character Notes — freeform per-character notes */}
+      <div className="border-t border-slate-700/50 pt-3 mt-3">
+        <button
+          onClick={() => setShowCharNotes((s) => !s)}
+          className="flex items-center justify-between w-full mb-2 group"
+        >
+          <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider group-hover:text-slate-300 transition-colors">Notes</span>
+          <span className="text-[9px] text-slate-600">{showCharNotes ? '\u25B2' : '\u25BC'}</span>
+        </button>
+        {showCharNotes && (
+          <textarea
+            value={character.notes || ''}
+            onChange={(e) => updateCharacter(character.id, { notes: e.target.value } as Partial<typeof character>)}
+            placeholder="Character notes, reminders, goals..."
+            className="w-full h-20 px-2 py-1.5 bg-slate-800/60 border border-slate-700/50 rounded-lg text-[10px] text-slate-200 placeholder-slate-600 resize-y focus:ring-1 focus:ring-violet-500/50 focus:border-violet-500/50 outline-none leading-relaxed"
+          />
+        )}
+      </div>
 
       {/* Character Journal — private diary entries */}
       <div className="border-t border-slate-700/50 pt-3 mt-3">

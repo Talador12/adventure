@@ -1,7 +1,7 @@
 // Spell data, spell slot tables, class abilities, and feats.
 // Extracted from GameContext.tsx for maintainability.
 
-import type { CharacterClass, Spell, ClassAbility, Feat } from '../types/game';
+import type { CharacterClass, Spell, ClassAbility, Feat, StatName, Stats } from '../types/game';
 
 // --- Spell slots (full PHB table, levels 1-20) ---
 export const FULL_CASTER_SLOTS: Record<number, Record<number, number>> = {
@@ -135,6 +135,68 @@ export function getClassSpells(charClass: CharacterClass, level: number): Spell[
   const slots = getSpellSlots(charClass, level);
   const maxSpellLevel = Object.keys(slots).map(Number).sort((a, b) => b - a)[0] || 0;
   return SPELL_LIST.filter((s) => s.classes.includes(charClass) && s.level <= Math.max(maxSpellLevel, 0));
+}
+
+// --- Spell preparation limits (D&D 5e PHB) ---
+// Casting stat per class - determines spell save DC and preparation limits
+export const CASTING_STAT: Record<string, StatName> = {
+  Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS',
+  Bard: 'CHA', Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS',
+};
+
+// Prepared casters choose from their full class list each long rest
+export const PREPARED_CASTERS: CharacterClass[] = ['Cleric', 'Druid', 'Paladin'];
+
+// Known casters learn a fixed number of spells (PHB tables, levels 1-20)
+export const KNOWN_CASTER_SPELLS: Record<string, number[]> = {
+  Bard:     [0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22],
+  Ranger:   [0, 0, 2, 3, 3, 4, 4, 5,  5,  6,  6,  7,  7,  8,  8,  9,  9,  10, 10, 11, 11],
+  Sorcerer: [0, 2, 3, 4, 5, 6, 7, 8,  9,  10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15],
+  Warlock:  [0, 2, 3, 4, 5, 6, 7, 8,  9,  10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15],
+  Wizard:   [0, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44],
+};
+
+// Wizard is a special case: learns spells into a spellbook (known count above)
+// but prepares a subset each day = INT mod + wizard level.
+export const WIZARD_PREPARES = true;
+
+export type SpellPrepType = 'prepared' | 'known' | 'none';
+
+// Determine how a class handles spell preparation
+export function getSpellPrepType(charClass: CharacterClass): SpellPrepType {
+  if (PREPARED_CASTERS.includes(charClass) || charClass === 'Wizard') return 'prepared';
+  if (charClass in KNOWN_CASTER_SPELLS) return 'known';
+  return 'none';
+}
+
+// Max prepared spells for prepared casters (Cleric, Druid, Paladin, Wizard)
+// Formula: class level + ability modifier (minimum 1)
+export function getMaxPreparedSpells(charClass: CharacterClass, level: number, stats: Stats): number {
+  const castStat = CASTING_STAT[charClass];
+  if (!castStat) return 0;
+  const mod = Math.floor((stats[castStat] - 10) / 2);
+  // Paladin/Ranger are half-casters: use half level (rounded down, min 1)
+  const effectiveLevel = charClass === 'Paladin' ? Math.max(1, Math.floor(level / 2)) : level;
+  return Math.max(1, effectiveLevel + mod);
+}
+
+// Max known spells for known casters (Bard, Ranger, Sorcerer, Warlock)
+export function getMaxKnownSpells(charClass: CharacterClass, level: number): number {
+  const table = KNOWN_CASTER_SPELLS[charClass];
+  if (!table) return 0;
+  return table[Math.min(Math.max(level, 1), 20)] || 0;
+}
+
+// Unified: get the max spell count for any caster class
+export function getSpellLimit(charClass: CharacterClass, level: number, stats: Stats): { type: SpellPrepType; max: number; label: string } {
+  const prepType = getSpellPrepType(charClass);
+  if (prepType === 'prepared') {
+    return { type: 'prepared', max: getMaxPreparedSpells(charClass, level, stats), label: 'Prepared' };
+  }
+  if (prepType === 'known') {
+    return { type: 'known', max: getMaxKnownSpells(charClass, level), label: 'Known' };
+  }
+  return { type: 'none', max: 0, label: '' };
 }
 
 // --- Class abilities ---

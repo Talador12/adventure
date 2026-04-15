@@ -337,6 +337,22 @@ export default function Game() {
     }, 1000);
     return () => clearTimeout(timer);
   }, [playerNotes, room]);
+
+  // Player journal - per-player, per-room, persisted to localStorage with debounced auto-save
+  const journalKey = `adventure:journal:${room}:${currentPlayer.id}`;
+  const [playerJournalText, setPlayerJournalText] = useState(() => {
+    try { return localStorage.getItem(journalKey) || ''; } catch { return ''; }
+  });
+  const [playerJournalLastSaved, setPlayerJournalLastSaved] = useState<number | null>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(journalKey, playerJournalText);
+        setPlayerJournalLastSaved(Date.now());
+      } catch { /* ok */ }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [playerJournalText, journalKey]);
   const [encounterDifficulty, setEncounterDifficulty] = useState<'easy' | 'medium' | 'hard' | 'deadly'>('medium');
 
   // Floating combat text (damage numbers, miss, heal)
@@ -3298,12 +3314,57 @@ export default function Game() {
                   </Suspense>
                 ) : activeView === 'journal' ? (
                   <div className="flex flex-col h-full overflow-hidden">
-                    <QuestMap
-                      quests={quests}
-                      onAddQuest={canUseDMTools ? (q) => setQuests((prev) => [...prev, q]) : undefined}
-                      onToggleComplete={(id) => setQuests((prev) => prev.map((q) => q.id === id ? { ...q, completed: !q.completed } : q))}
-                      onRemoveQuest={canUseDMTools ? (id) => setQuests((prev) => prev.filter((q) => q.id !== id)) : undefined}
-                    />
+                    {/* Player journal - personal notes textarea */}
+                    <div className="px-3 pt-3 pb-2 border-b border-slate-800/50 shrink-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Player Journal</div>
+                        <div className="flex items-center gap-2">
+                          {playerJournalLastSaved && (
+                            <span className="text-[8px] text-slate-600">Saved {new Date(playerJournalLastSaved).toLocaleTimeString()}</span>
+                          )}
+                          <button
+                            onClick={() => {
+                              const md = `# Session Notes - ${new Date().toLocaleDateString()}\n\n${playerJournalText}`;
+                              const blob = new Blob([md], { type: 'text/markdown' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url; a.download = `journal-${room}-${new Date().toISOString().slice(0, 10)}.md`;
+                              a.click(); URL.revokeObjectURL(url);
+                            }}
+                            className="text-[8px] text-emerald-400 hover:text-emerald-300 font-semibold"
+                            title="Export journal as .md file"
+                          >
+                            Export
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!confirm('Clear all journal notes? This cannot be undone.')) return;
+                              setPlayerJournalText('');
+                              setPlayerJournalLastSaved(Date.now());
+                            }}
+                            className="text-[8px] text-red-400 hover:text-red-300 font-semibold"
+                            title="Clear journal"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <textarea
+                        value={playerJournalText}
+                        onChange={(e) => setPlayerJournalText(e.target.value)}
+                        placeholder="Write your session notes here... Auto-saves as you type."
+                        className="w-full h-28 px-2.5 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-[11px] text-slate-200 placeholder-slate-600 resize-y focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none leading-relaxed"
+                      />
+                    </div>
+                    {/* Quest map */}
+                    <div className="flex-1 overflow-auto">
+                      <QuestMap
+                        quests={quests}
+                        onAddQuest={canUseDMTools ? (q) => setQuests((prev) => [...prev, q]) : undefined}
+                        onToggleComplete={(id) => setQuests((prev) => prev.map((q) => q.id === id ? { ...q, completed: !q.completed } : q))}
+                        onRemoveQuest={canUseDMTools ? (id) => setQuests((prev) => prev.filter((q) => q.id !== id)) : undefined}
+                      />
+                    </div>
                   </div>
                 ) : activeView === 'loot' ? (
                   <>
