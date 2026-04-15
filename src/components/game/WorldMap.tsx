@@ -4,6 +4,7 @@
 
 import { useRef, useEffect, useState, useCallback, type WheelEvent as ReactWheelEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { type WorldMapData, type WorldHex, type OverlandTerrain, OVERLAND_TERRAIN_CONFIG, generateWorldMap } from '../../lib/worldMapGen';
+import { type TravelPace, type TravelDayState, createTravelDay, enterHex, endTravelDay, formatTravelDay, maxHexesForPace } from '../../lib/hexTravel';
 
 // Hex geometry - flat-top hexagons
 const HEX_RADIUS = 28;
@@ -277,24 +278,63 @@ export default function WorldMap({
   const [internalPartyPos, setInternalPartyPos] = useState<{ col: number; row: number } | null>(null);
   const effectivePartyPos = partyPosition ?? internalPartyPos;
 
+  // Persist party position and map data changes
+  useEffect(() => {
+    if (internalPartyPos) {
+      try { localStorage.setItem('adventure:worldmap:partyPos', JSON.stringify(internalPartyPos)); } catch { /* ok */ }
+    }
+  }, [internalPartyPos]);
+  useEffect(() => {
+    if (internalMapData) {
+      try { localStorage.setItem('adventure:worldmap', JSON.stringify(internalMapData)); } catch { /* ok */ }
+    }
+  }, [internalMapData]);
+
   // Map generation controls
   const [seedInput, setSeedInput] = useState('');
   const [mapName, setMapName] = useState('The Realm');
   const [mapWidth, setMapWidth] = useState(30);
   const [mapHeight, setMapHeight] = useState(20);
   const [showControls, setShowControls] = useState(false);
+
+  // Travel mode state
+  const [travelMode, setTravelMode] = useState(false);
+  const [travelPace, setTravelPace] = useState<TravelPace>('normal');
+  const [travelDay, setTravelDay] = useState<TravelDayState | null>(null);
+  const [travelLog, setTravelLog] = useState<string[]>([]);
+  const [partySupplies, setPartySupplies] = useState({ water: 10, food: 10 });
+  const [partySize, setPartySize] = useState(4);
   const [showFog, setShowFog] = useState(true);
 
-  // Generate initial map
+  // Load or generate initial map (persisted to localStorage)
   useEffect(() => {
     if (externalMapData || internalMapData) return;
+    // Try to load from localStorage first
+    const saved = localStorage.getItem('adventure:worldmap');
+    const savedPos = localStorage.getItem('adventure:worldmap:partyPos');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved) as WorldMapData;
+        setInternalMapData(data);
+        onMapGenerate?.(data);
+        if (savedPos) {
+          const pos = JSON.parse(savedPos);
+          setInternalPartyPos(pos);
+          const { x: cx, y: cy } = hexToPixel(pos.col, pos.row);
+          const container = containerRef.current;
+          if (container) setPanOffset({ x: container.clientWidth / 2 - cx, y: container.clientHeight / 2 - cy });
+          return;
+        }
+      } catch { /* corrupt, regenerate */ }
+    }
     const data = generateWorldMap(30, 20);
     setInternalMapData(data);
     onMapGenerate?.(data);
-    // Place party at center
+    try { localStorage.setItem('adventure:worldmap', JSON.stringify(data)); } catch { /* quota */ }
     const centerCol = Math.floor(data.width / 2);
     const centerRow = Math.floor(data.height / 2);
     setInternalPartyPos({ col: centerCol, row: centerRow });
+    try { localStorage.setItem('adventure:worldmap:partyPos', JSON.stringify({ col: centerCol, row: centerRow })); } catch { /* quota */ }
     // Center the view on the party
     const { x: cx, y: cy } = hexToPixel(centerCol, centerRow);
     const container = containerRef.current;
@@ -426,12 +466,22 @@ export default function WorldMap({
     if (col >= 0 && col < mapData.width && row >= 0 && row < mapData.height) {
       const hex = mapData.hexes[row]?.[col];
       if (!hex) return;
-      // Cannot move to impassable terrain
       const config = OVERLAND_TERRAIN_CONFIG[hex.terrain];
       if (!isFinite(config.travelCost)) return;
       if (!hex.discovered && showFog && !isDM) return;
 
-      // Move party
+      // Travel mode: hex-by-hex with encounters and resource tracking
+      if (travelMode && travelDay) {
+        if (travelDay.hexesTraveled >= travelDay.maxHexesPerDay) return; // day is over
+        const newState = enterHex(travelDay, hex, travelPace);
+        setTravelDay(newState);
+        // Log any events
+        for (const ev of newState.events.slice(travelDay.events.length)) {
+          setTravelLog(prev => [...prev, `**${ev.title}** — ${ev.description}`]);
+        }
+      }
+
+      // Move party token
       if (onPartyMove) {
         onPartyMove(col, row);
       } else {
@@ -451,7 +501,7 @@ export default function WorldMap({
         }
       }
     }
-  }, [mapData, screenToHex, onPartyMove, onHexDiscover, isDM, showFog]);
+  }, [mapData, screenToHex, onPartyMove, onHexDiscover, isDM, showFog, travelMode, travelDay, travelPace]);
 
   // Prevent context menu on right click
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -956,6 +1006,89 @@ export default function WorldMap({
               >
                 Move Party Here
               </button>
+            )}
+          </div>
+        )}
+
+        {/* Travel Mode Panel */}
+        {isDM && (
+          <div className="absolute bottom-3 left-3 z-20">
+            {!travelMode ? (
+              <button
+                onClick={() => {
+                  setTravelMode(true);
+                  const pos = effectivePartyPos || { col: 0, row: 0 };
+                  setTravelDay(createTravelDay(1, pos, travelPace, partySupplies.water, partySupplies.food));
+                  setTravelLog([]);
+                }}
+                className="px-3 py-2 rounded-lg bg-emerald-900/80 border border-emerald-700/50 text-emerald-300 text-xs font-semibold hover:bg-emerald-900 transition-colors backdrop-blur-sm"
+              >
+                Start Travel
+              </button>
+            ) : (
+              <div className="bg-slate-900/95 border border-slate-700/50 rounded-xl p-3 backdrop-blur-sm w-64 max-h-[50vh] flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-emerald-400">Travel Mode</span>
+                  <button onClick={() => { setTravelMode(false); setTravelDay(null); }} className="text-[9px] text-slate-500 hover:text-red-400">End Travel</button>
+                </div>
+
+                {travelDay && (
+                  <>
+                    <div className="text-[10px] text-slate-300 space-y-1 mb-2">
+                      <div className="flex justify-between"><span>Day {travelDay.day}</span><span className="text-amber-400">{travelDay.weather}</span></div>
+                      <div className="flex justify-between"><span>Time</span><span className="capitalize text-sky-400">{travelDay.timeOfDay}</span></div>
+                      <div className="flex justify-between"><span>Hexes</span><span>{travelDay.hexesTraveled.toFixed(1)} / {travelDay.maxHexesPerDay}</span></div>
+                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${Math.min(100, (travelDay.hexesTraveled / travelDay.maxHexesPerDay) * 100)}%` }} />
+                      </div>
+                      <div className="flex justify-between"><span>Water</span><span className={travelDay.waterRemaining <= 2 ? 'text-red-400' : ''}>{travelDay.waterRemaining.toFixed(1)}</span></div>
+                      <div className="flex justify-between"><span>Food</span><span className={travelDay.foodRemaining <= 2 ? 'text-red-400' : ''}>{travelDay.foodRemaining.toFixed(1)}</span></div>
+                      {travelDay.fatigueLevel > 0 && <div className="text-red-400">Exhaustion: {travelDay.fatigueLevel}</div>}
+                      {travelDay.isLost && <div className="text-amber-400">The party is lost!</div>}
+                    </div>
+
+                    {/* Pace selector */}
+                    <div className="flex gap-1 mb-2">
+                      {(['fast', 'normal', 'slow', 'cautious'] as TravelPace[]).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setTravelPace(p)}
+                          className={`flex-1 text-[8px] py-1 rounded capitalize transition-colors ${travelPace === p ? 'bg-emerald-700 text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* End Day / New Day */}
+                    {travelDay.hexesTraveled >= travelDay.maxHexesPerDay ? (
+                      <button
+                        onClick={() => {
+                          const ended = endTravelDay(travelDay, partySize);
+                          setTravelLog(prev => [...prev, `--- End of Day ${ended.day} ---`, formatTravelDay(ended)]);
+                          setPartySupplies({ water: ended.waterRemaining, food: ended.foodRemaining });
+                          const pos = effectivePartyPos || ended.currentHex;
+                          setTravelDay(createTravelDay(ended.day + 1, pos, travelPace, ended.waterRemaining, ended.foodRemaining));
+                        }}
+                        className="w-full text-[10px] py-1.5 rounded bg-amber-900/40 text-amber-300 hover:bg-amber-900/60 font-semibold transition-colors mb-2"
+                      >
+                        Make Camp & Start New Day
+                      </button>
+                    ) : (
+                      <div className="text-[9px] text-slate-500 mb-2 text-center">Double-click a hex to travel there</div>
+                    )}
+                  </>
+                )}
+
+                {/* Travel Log */}
+                {travelLog.length > 0 && (
+                  <div className="flex-1 overflow-y-auto max-h-32 space-y-1 border-t border-slate-800 pt-2">
+                    {travelLog.slice(-10).map((msg, i) => (
+                      <div key={i} className="text-[9px] text-slate-400 leading-relaxed">{msg}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

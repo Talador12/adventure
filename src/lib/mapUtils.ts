@@ -298,3 +298,82 @@ export function findOpportunityAttackers(
   }
   return candidates;
 }
+
+// Hex distance using cube coordinate conversion (offset -> cube -> manhattan / 2)
+export function hexDistance(col1: number, row1: number, col2: number, row2: number): number {
+  // Offset (odd-r) to cube coordinates
+  const toCube = (col: number, row: number) => {
+    const x = col - Math.floor(row / 2);
+    const z = row;
+    const y = -x - z;
+    return { x, y, z };
+  };
+  const a = toCube(col1, row1);
+  const b = toCube(col2, row2);
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
+}
+
+// Hex-aware AI pathfinding: find the reachable cell closest to a target
+export function findBestMoveTowardHex(
+  terrain: TerrainType[][],
+  startCol: number,
+  startRow: number,
+  targetCol: number,
+  targetRow: number,
+  maxMovement: number,
+  rows: number,
+  cols: number,
+): { col: number; row: number; cost: number } | null {
+  const reachable = computeReachableCells(terrain, startCol, startRow, maxMovement, rows, cols, 'hex');
+  let bestCell: { col: number; row: number; cost: number } | null = null;
+  let bestDist = Infinity;
+
+  reachable.forEach((cost, key) => {
+    const [cStr, rStr] = key.split(',');
+    const c = parseInt(cStr, 10);
+    const r = parseInt(rStr, 10);
+    const dist = hexDistance(c, r, targetCol, targetRow);
+    if (dist < bestDist || (dist === bestDist && cost < (bestCell?.cost ?? Infinity))) {
+      bestDist = dist;
+      bestCell = { col: c, row: r, cost };
+    }
+  });
+
+  return bestCell;
+}
+
+// Hex line of sight using cube coordinate lerp
+export function hasHexLineOfSight(
+  terrain: TerrainType[][],
+  col1: number, row1: number,
+  col2: number, row2: number,
+  rows: number, cols: number,
+): boolean {
+  const toCube = (col: number, row: number) => {
+    const x = col - Math.floor(row / 2);
+    const z = row;
+    const y = -x - z;
+    return { x, y, z };
+  };
+  const toOffset = (x: number, z: number) => {
+    const col = x + Math.floor(z / 2);
+    const row = z;
+    return { col, row };
+  };
+
+  const a = toCube(col1, row1);
+  const b = toCube(col2, row2);
+  const dist = hexDistance(col1, row1, col2, row2);
+  if (dist === 0) return true;
+
+  for (let i = 1; i < dist; i++) {
+    const t = i / dist;
+    const cx = Math.round(a.x + (b.x - a.x) * t);
+    const cz = Math.round(a.z + (b.z - a.z) * t);
+    const { col, row } = toOffset(cx, cz);
+    if (col < 0 || col >= cols || row < 0 || row >= rows) return false;
+    const cell = terrain[row]?.[col];
+    if (cell === 'wall' || cell === 'void') return false;
+  }
+  return true;
+}
