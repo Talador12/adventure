@@ -61,28 +61,57 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 - **Hex travel system**: travel engine, encounters, survival, day/night, persistence.
 - **Bug fixes**: WebSocket hung connection recovery, Game page auto-selects Lobby character.
 
-### v0.2.0 Roadmap (in order)
+### v0.2.0 Roadmap — COMPLETE
 
-**Gameplay:**
-1. [ ] Spell casting UI - spell slot tracker on character sheet, cast-on-target flow in combat, concentration tracking
-2. [ ] Level up wizard - guided flow: HP roll (or average), ASI/feat choice, new spell selection, class feature unlock
-3. [ ] Rest mechanics - short rest: hit dice spending + HP recovery. Long rest: full HP + spell slot reset. Wired to buttons.
-4. [ ] Encounter balance indicator - party level/size vs total CR, difficulty rating (easy/medium/hard/deadly), XP budget
+**Gameplay:** All done.
+1. [x] Spell system: full PHB slots (1-20), 55 spells, upcasting, spell attack rolls
+2. [x] Level up wizard (existed, fixed Fighter/Rogue ASI, added class features display)
+3. [x] Rest mechanics (existed, verified working)
+4. [x] Encounter balance indicator (PHB RAW, DM sidebar button)
+5. [x] Shield reaction system (pause damage, prompt, +5 AC check)
+6. [x] Persistent SpellZones (Spirit Guardians, Wall of Fire on map)
+7. [x] Spell preparation limits enforced (prepared: N/max counter)
+8. [x] Subclass selection system (PHB subclasses, all 12 classes)
+9. [x] Class features display on level-up (all 12 classes, levels 1-20)
+10. [x] Warlock pact magic separated from full casters
 
-**Social/Multiplayer:**
-5. [ ] Public game browser - browse/search/filter public campaigns on homepage, join with one click
-6. [ ] Player invite flow - "Copy Invite Link" that deep-links to lobby with room code pre-filled
-7. [ ] Spectator mode polish - read-only view, no dice/chat, can see map and combat
+**Social/Multiplayer:** All done.
+11. [x] Public game browser on homepage
+12. [x] Invite deep links (Lobby header + Game toolbar)
+13. [x] Spectator mode polish (read-only chat, badge, leave button)
 
-**Content/Polish:**
-8. [ ] Onboarding tutorial - first-time user gets a guided walkthrough: create character, join/create campaign, basic controls
-9. [ ] Mobile responsiveness - touch-friendly combat, responsive layouts, bottom nav on small screens
-10. [ ] Sound effects - dice roll sounds, combat hit/miss, ambient music per scene, volume controls
-11. [ ] Campaign progress tracking - XP/milestone tracker, auto-generated session summaries, campaign timeline
+**Content/Polish:** All done.
+14. [x] Onboarding tutorial (welcome modal + CharacterCreate hints)
+15. [x] Mobile responsiveness pass (Home, Game, Lobby, CharacterCreate)
+16. [x] Sound effects (notification chime, damage thud, wired to WebSocket + AI)
+17. [x] Campaign progress tracking (session summaries, milestones, timeline)
+18. [x] Player journal + per-character notes
 
 **Infrastructure:**
-12. [ ] Fix 7 Dependabot vulnerabilities
-13. [ ] Doodle pad persistence - D1 archival + R2 snapshots so strokes survive DO eviction
+19. [x] WebSocket hung connection recovery (10s timeout, stuck CONNECTING fix)
+20. [x] Game page auto-selects Lobby character (seatCharId bridge)
+21. [ ] Dependabot vulns — blocked on Node 21 incompatibility, needs Node upgrade
+22. [ ] Doodle pad persistence — D1 archival + R2 snapshots
+
+### v0.3.0 Roadmap (next)
+
+**Gameplay depth:**
+1. [ ] Counterspell reaction (enemy spell prompt, ability check for higher-level spells)
+2. [ ] Ritual casting (cast without slot, 10 min extra, Wizard/Cleric/Druid)
+3. [ ] Multiclass support (class dip, combined spell slots, prerequisite checks)
+4. [ ] Conditions system overhaul (prone, grappled, restrained, frightened with mechanical effects)
+5. [ ] Initiative variants (side initiative, popcorn initiative, DEX-based with tiebreakers)
+
+**World building:**
+6. [ ] Campaign wiki (DM-editable pages for lore, NPCs, locations, searchable)
+7. [ ] Random dungeon generator improvements (themed rooms, puzzle placement, loot scaling)
+8. [ ] NPC conversation memory (AI remembers past interactions per NPC)
+
+**Quality of life:**
+9. [ ] Keyboard shortcuts reference panel (? key opens overlay)
+10. [ ] Undo/redo for character edits
+11. [ ] Dice roller standalone mode (no game, just dice with presets)
+12. [ ] Chat commands expansion (/whisper, /roll inline, /emote improvements)
 
 ### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul
 
