@@ -93,25 +93,47 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 21. [ ] Dependabot vulns — blocked on Node 21 incompatibility, needs Node upgrade
 22. [ ] Doodle pad persistence — D1 archival + R2 snapshots
 
-### v0.3.0 Roadmap (in progress)
+### v0.3.0 Roadmap — COMPLETE
 
 **Gameplay depth:**
 1. [x] Counterspell reaction (enemy spell prompt, ability check for higher-level spells)
 2. [x] Ritual casting (6 ritual spells, no-slot cast for Wizard/Cleric/Druid, CombatToolbar toggle)
-3. [ ] Multiclass support (class dip, combined spell slots, prerequisite checks)
+3. [x] Multiclass spell slots (PHB p165 combined caster table, classLevels tracking)
 4. [x] Conditions system overhaul (12 conditions with mechanical effects, advantage/disadvantage, auto-crit)
 5. [x] Initiative variants (standard, side, popcorn, speed factor with tooltips)
 
 **World building:**
 6. [x] Campaign wiki (DM-editable, category filters, search, wiki links, WebSocket sync)
-7. [ ] Random dungeon generator improvements (themed rooms, puzzle placement, loot scaling)
+7. [x] Random dungeon generator improvements (7 themes, room types, loot/enemies/traps per theme)
 8. [x] NPC conversation memory (AI remembers past interactions, sentiment, WebSocket sync)
 
 **Quality of life:**
 9. [x] Keyboard shortcuts reference panel (? key, W for wiki)
-10. [ ] Undo/redo for character edits
+10. [x] Undo/redo for character edits (50-state stack, Ctrl+Z/Shift+Z, greyed buttons)
 11. [x] Dice roller standalone mode (/dice, no auth, presets, custom notation, 10.3KB code-split)
 12. [x] Chat commands expansion (/r, /emote, /init, /hp, /conditions)
+
+### v0.4.0 Roadmap (next)
+
+**Combat depth:**
+1. [ ] Opportunity attacks with reaction prompts
+2. [ ] Grapple/shove contest system (STR athletics vs STR/DEX)
+3. [ ] Cover system wired to combat (half/three-quarter/full cover AC bonuses)
+4. [ ] Lair actions on round 20 (DM configurable per encounter)
+5. [ ] Legendary actions for boss monsters (1-3 per round between turns)
+
+**Player experience:**
+6. [ ] Character backstory integration (AI weaves backstory into narration)
+7. [ ] Achievement system (first crit, first level up, 100 monsters slain, etc)
+8. [ ] Party composition advisor (missing roles, synergy suggestions)
+9. [ ] Crafting system (use harvested monster parts + gold to make items)
+10. [ ] Downtime activities expanded (training, research, carousing, pit fighting)
+
+**DM tools:**
+11. [ ] Encounter templates (save/load encounter setups with terrain + monsters)
+12. [ ] Session scheduler (calendar integration, availability polling)
+13. [ ] DM screen customizable panels (pick which references to show)
+14. [ ] Random NPC generator with voice/personality/secret
 
 ### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul
 
