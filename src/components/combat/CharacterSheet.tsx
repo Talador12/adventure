@@ -876,6 +876,24 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           )}
           <button
             onClick={() => {
+              import('../../lib/export').then(({ exportJSON }) => exportJSON(character));
+            }}
+            className="text-[8px] text-emerald-400 hover:text-emerald-300 transition-colors font-semibold"
+            title="Download character as JSON file"
+          >
+            Export
+          </button>
+          <button
+            onClick={() => {
+              import('../../lib/export').then(({ exportPrintableHTML }) => exportPrintableHTML(character));
+            }}
+            className="text-[8px] text-amber-400 hover:text-amber-300 transition-colors font-semibold"
+            title="Open printable character sheet"
+          >
+            Sheet
+          </button>
+          <button
+            onClick={() => {
               const pw = prompt('Encryption password (remember this!):');
               if (!pw) return;
               import('../../lib/backup').then(({ exportBackup }) => exportBackup(character, pw));

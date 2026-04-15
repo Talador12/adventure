@@ -30,10 +30,14 @@ function downloadFile(filename: string, content: string, mime: string) {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Delay revocation so the browser has time to start the download
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 // -- Clipboard helper --
@@ -459,7 +463,7 @@ export function exportSavageWorlds(char: Character) {
 // ============================================================================
 //  Printable HTML character sheet — opens in new tab, user prints to PDF
 // ============================================================================
-export function exportPrintableHTML(char: Character) {
+export function exportPrintableHTML(char: Character): boolean {
   const hitDie = CLASS_HIT_DIE[char.class];
   const pb = profBonus(char.level);
 
@@ -569,7 +573,9 @@ ${char.backstory ? `<section><h2>Backstory</h2><div class="backstory">${char.bac
   if (w) {
     w.document.write(html);
     w.document.close();
+    return true;
   }
+  return false;
 }
 
 // ============================================================================
@@ -636,41 +642,51 @@ export const EXPORT_FORMATS: ExportFormat[] = [
 ];
 
 export async function runExport(formatId: string, char: Character): Promise<{ success: boolean; message: string }> {
-  switch (formatId) {
-    case 'json':
-      exportJSON(char);
-      return { success: true, message: `Saved ${char.name}.adventure.json` };
-    case 'markdown':
-      downloadMarkdown(char);
-      return { success: true, message: `Saved ${char.name}.md` };
-    case 'clipboard': {
-      const ok = await copyMarkdown(char);
-      return ok ? { success: true, message: 'Copied to clipboard' } : { success: false, message: 'Clipboard access denied' };
+  if (!char || !char.name || !char.stats) {
+    return { success: false, message: 'Character data is incomplete. Roll stats and name your character first.' };
+  }
+  try {
+    switch (formatId) {
+      case 'json':
+        exportJSON(char);
+        return { success: true, message: `Saved ${char.name}.adventure.json` };
+      case 'markdown':
+        downloadMarkdown(char);
+        return { success: true, message: `Saved ${char.name}.md` };
+      case 'clipboard': {
+        const ok = await copyMarkdown(char);
+        return ok ? { success: true, message: 'Copied to clipboard' } : { success: false, message: 'Clipboard access denied - try the download option instead' };
+      }
+      case 'pdf': {
+        const w = exportPrintableHTML(char);
+        return w ? { success: true, message: 'Opened printable sheet in new tab' } : { success: false, message: 'Pop-up blocked - allow pop-ups for this site and try again' };
+      }
+      case 'foundry':
+        exportFoundryVTT(char);
+        return { success: true, message: `Saved ${char.name}.foundry.json` };
+      case 'fantasygrounds':
+        exportFantasyGrounds(char);
+        return { success: true, message: `Saved ${char.name}.fantasy_grounds.xml` };
+      case 'dndbeyond': {
+        const ok2 = await copyDndBeyondText(char);
+        return ok2 ? { success: true, message: 'D&D Beyond text copied to clipboard' } : { success: false, message: 'Clipboard access denied - try the download option instead' };
+      }
+      case 'pathfinder2e':
+        exportPathfinder2e(char);
+        return { success: true, message: `Saved ${char.name}.pf2e.json` };
+      case 'forbiddenlands':
+        exportForbiddenLands(char);
+        return { success: true, message: `Saved ${char.name}.forbidden_lands.json` };
+      case 'savageworlds':
+        exportSavageWorlds(char);
+        return { success: true, message: `Saved ${char.name}.savage_worlds.json` };
+      default:
+        return { success: false, message: 'Format not yet available' };
     }
-    case 'pdf':
-      exportPrintableHTML(char);
-      return { success: true, message: 'Opened printable sheet' };
-    case 'foundry':
-      exportFoundryVTT(char);
-      return { success: true, message: `Saved ${char.name}.foundry.json` };
-    case 'fantasygrounds':
-      exportFantasyGrounds(char);
-      return { success: true, message: `Saved ${char.name}.fantasy_grounds.xml` };
-    case 'dndbeyond': {
-      const ok2 = await copyDndBeyondText(char);
-      return ok2 ? { success: true, message: 'D&D Beyond text copied to clipboard' } : { success: false, message: 'Clipboard access denied' };
-    }
-    case 'pathfinder2e':
-      exportPathfinder2e(char);
-      return { success: true, message: `Saved ${char.name}.pf2e.json` };
-    case 'forbiddenlands':
-      exportForbiddenLands(char);
-      return { success: true, message: `Saved ${char.name}.forbidden_lands.json` };
-    case 'savageworlds':
-      exportSavageWorlds(char);
-      return { success: true, message: `Saved ${char.name}.savage_worlds.json` };
-    default:
-      return { success: false, message: 'Format not yet available' };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown export error';
+    console.error(`[Adventure] Export failed (${formatId}):`, err);
+    return { success: false, message: `Export failed: ${msg}` };
   }
 }
 
