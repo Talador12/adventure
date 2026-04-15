@@ -49,17 +49,14 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 
 ## Campaign Starter Kit Library — Phase 14 IN PROGRESS (430+ campaigns — 200 full + 230 one-shots)
 
-## RESUME HERE — Shenanigans + Comedy Expansion COMPLETE
+## RESUME HERE — Current Session Progress
 
-**All targets hit:**
-- Full comedic: 25/25
-- Full shenanigans: 25/25
-- Oneshot comedic: 50/50
-- Oneshot shenanigans: 50/50
-- All campaigns registered in index.ts (zero missing)
-- Total: 225 full + 280 one-shots = 505 campaigns
-
-**Needs commit + push to staging, then merge staging into main.**
+**505 campaigns** (225 full + 280 one-shots). All tones balanced. Full editorial pass done.
+**388 DMSidebar buttons** (was 265). 123 new data systems wired this session.
+**Export system expanded**: campaign state backup/restore, batch character export/import, homebrew export, in-game Export/Sheet buttons on CharacterSheet, improved error handling.
+**i18n**: all 8 locales at 104 keys. Portuguese accents fixed. en-gb is bloke parody.
+**Campaign wizard**: modal with custom vs catalog browse (search/filter/expand).
+**Quick Start**: 8 random full + 8 random one-shots per page load.
 
 **One-shot tone distribution (all at 20+ each):** comedic 50, survival 20, social 20, serious 20, political 20, mystery 20, horror 20, heist 20, exploration 20, epic 20, shenanigans 0 (pending)
 
