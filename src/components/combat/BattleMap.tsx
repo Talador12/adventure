@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo, type MouseEve
 import { useGame, type Unit, type ConditionType, type AoEShape, type AoETemplate, CONDITION_EFFECTS, CONDITION_VISION_OVERRIDE, LIGHT_SOURCE_RADII, rollD20WithProne, effectiveAC, type ActiveCondition } from '../../contexts/GameContext';
 import { MAP_PRESETS } from '../../data/mapPresets';
 import { generateDungeon } from '../../lib/dungeonGen';
+import { DUNGEON_THEMES, DUNGEON_THEME_LIST, generateThemedDungeonSummary, type DungeonTheme } from '../../data/dungeonThemes';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, TERRAIN_COST, HAZARD_DAMAGE, computeReachableCells, findOpportunityAttackers, checkCover } from '../../lib/mapUtils';
 import type { MapPin } from '../../types/game';
 import { drawAttackIndicators } from '../../hooks/useAttackIndicators';
@@ -624,6 +625,8 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
   const [dmMode, setDmMode] = useState(false); // DM sees through fog
   const [viewAsUnitId, setViewAsUnitId] = useState<string | null>(null); // DM previews a player's fog
   const [painting, setPainting] = useState(false); // mouse held for terrain painting
+  const [dungeonTheme, setDungeonTheme] = useState<DungeonTheme | ''>(''); // themed dungeon gen
+  const [themeSummary, setThemeSummary] = useState<string | null>(null); // DM-facing room descriptions
 
   // Minimap
   const [showMinimap, setShowMinimap] = useState(true);
@@ -2362,16 +2365,23 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
   // --- Generate new dungeon ---
   const regenerate = useCallback(() => {
-    const newTerrain = generateDungeon(gridCols, gridRows);
+    const seed = Math.floor(Math.random() * 2147483647);
+    const newTerrain = generateDungeon(gridCols, gridRows, seed);
     setTerrain(newTerrain);
     setExplored(Array.from({ length: gridRows }, () => Array(gridCols).fill(false)));
-    // Reset token positions so they re-spawn in the new dungeon
     setPositions([]);
     setTraps([]);
     setTrapMessages([]);
-    // Notify parent for multiplayer sync
+    setLastDungeonSeed(seed);
+    // Generate themed room descriptions if a theme is selected
+    if (dungeonTheme) {
+      const roomCount = 5 + Math.floor(Math.random() * 4);
+      setThemeSummary(generateThemedDungeonSummary(dungeonTheme, roomCount));
+    } else {
+      setThemeSummary(null);
+    }
     onTerrainChange?.(newTerrain);
-  }, [gridCols, gridRows, onTerrainChange]);
+  }, [gridCols, gridRows, onTerrainChange, dungeonTheme]);
 
   // Search for traps: d20 Perception check (DC 13) reveals nearby hidden traps
   const searchForTraps = useCallback(() => {
@@ -2435,11 +2445,22 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-800 shrink-0 flex-wrap">
         <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mr-1">Map</span>
 
-        {/* Generate button */}
+        {/* Theme + Generate */}
+        <select
+          value={dungeonTheme}
+          onChange={(e) => setDungeonTheme(e.target.value as DungeonTheme | '')}
+          className="text-[9px] px-1 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-semibold"
+          title="Select a dungeon theme for room names, enemies, and loot"
+        >
+          <option value="">No Theme</option>
+          {DUNGEON_THEME_LIST.map((t) => (
+            <option key={t} value={t}>{DUNGEON_THEMES[t].name}</option>
+          ))}
+        </select>
         <button
           onClick={regenerate}
           className="text-[10px] px-2 py-1 rounded bg-amber-900/40 hover:bg-amber-900/60 border border-amber-800/50 text-amber-300 font-semibold transition-all"
-          title="Generate a new random dungeon"
+          title={dungeonTheme ? `Generate ${DUNGEON_THEMES[dungeonTheme].name} dungeon` : 'Generate a random dungeon'}
         >
           Generate
         </button>
@@ -2945,6 +2966,17 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
 
         <span className="text-[9px] text-slate-600">{gridCols}x{gridRows} ({gridCols * 5}x{gridRows * 5}ft)</span>
       </div>
+
+      {/* Theme summary panel (DM-facing room descriptions) */}
+      {themeSummary && canUseDMTools && dmMode && (
+        <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/80 max-h-32 overflow-y-auto">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] text-amber-400 font-semibold uppercase tracking-wider">Dungeon Theme: {dungeonTheme ? DUNGEON_THEMES[dungeonTheme].name : ''}</span>
+            <button onClick={() => setThemeSummary(null)} className="text-[8px] text-slate-500 hover:text-slate-300">Dismiss</button>
+          </div>
+          <pre className="text-[8px] text-slate-400 whitespace-pre-wrap font-mono leading-relaxed">{themeSummary}</pre>
+        </div>
+      )}
 
       {/* Canvas with zoom/pan */}
       <div

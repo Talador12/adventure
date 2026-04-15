@@ -2,6 +2,7 @@
 // Extracted from GameContext.tsx for maintainability.
 
 import type { CharacterClass, Spell, ClassAbility, Feat, StatName, Stats } from '../types/game';
+import { getMulticlassSpellSlots, isMulticlassCaster } from './multiclassSpellSlots';
 
 // --- Spell slots (full PHB table, levels 1-20) ---
 export const FULL_CASTER_SLOTS: Record<number, Record<number, number>> = {
@@ -49,7 +50,12 @@ export const WARLOCK_PACT_SLOTS: Record<number, { slots: number; level: number }
 export const FULL_CASTERS: CharacterClass[] = ['Wizard', 'Sorcerer', 'Cleric', 'Druid', 'Bard'];
 export const HALF_CASTERS: CharacterClass[] = ['Paladin', 'Ranger'];
 
-export function getSpellSlots(charClass: CharacterClass, level: number): Record<number, number> {
+// Single-class spell slot lookup. For multiclass characters, use getSpellSlotsMulticlass instead.
+export function getSpellSlots(charClass: CharacterClass, level: number, classLevels?: Partial<Record<CharacterClass, number>>): Record<number, number> {
+  // Multiclass path: if classLevels has 2+ caster classes, use the combined table
+  if (classLevels && Object.keys(classLevels).length > 1 && isMulticlassCaster(classLevels)) {
+    return getMulticlassSpellSlots(classLevels);
+  }
   const clampedLevel = Math.min(Math.max(level, 1), 20);
   // Warlock uses pact magic (unique slot system)
   if (charClass === 'Warlock') {

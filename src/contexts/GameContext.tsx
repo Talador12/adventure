@@ -9,7 +9,8 @@
 //
 // Everything is re-exported here for backward compatibility.
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import { type UndoStack, createUndoStack, pushState as undoPush, undo as undoOp, redo as redoOp, canUndo as undoCanUndo, canRedo as undoCanRedo } from '../lib/undoRedo';
 import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, HAZARD_DAMAGE } from '../lib/mapUtils';
 
 // Re-export all types and constants so existing imports from GameContext keep working
@@ -24,6 +25,7 @@ export {
   FEATS,
   CASTING_STAT, PREPARED_CASTERS, getSpellPrepType, getMaxPreparedSpells, getMaxKnownSpells, getSpellLimit,
 } from '../data/spells';
+export { getMulticlassSpellSlots, getMulticlassCasterLevel, isMulticlassCaster } from '../data/multiclassSpellSlots';
 
 // Import types we need for the provider implementation
 import type {
@@ -71,6 +73,12 @@ interface GameContextValue {
   // Shop
   buyItem: (charId: string, shopItem: Omit<Item, 'id'>) => { success: boolean; message: string };
   sellItem: (charId: string, itemId: string) => { success: boolean; message: string };
+
+  // Undo/redo for character edits
+  undoCharacter: (charId: string) => void;
+  redoCharacter: (charId: string) => void;
+  canUndoCharacter: (charId: string) => boolean;
+  canRedoCharacter: (charId: string) => boolean;
 
   // Spells
   castSpell: (charId: string, spellId: string, targetUnitId?: string, slotLevel?: number, asRitual?: boolean) => { success: boolean; message: string };
@@ -149,6 +157,10 @@ const GameContext = createContext<GameContextValue>({
   buyItem: () => ({ success: false, message: '' }),
   sellItem: () => ({ success: false, message: '' }),
   tradeItem: () => ({ success: false, message: '' }),
+  undoCharacter: () => {},
+  redoCharacter: () => {},
+  canUndoCharacter: () => false,
+  canRedoCharacter: () => false,
   castSpell: () => ({ success: false, message: '' }),
   restoreSpellSlots: () => {},
   useClassAbility: () => ({ success: false, message: '' }),
@@ -200,6 +212,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return [];
     }
   });
+  // Undo/redo stacks per character (keyed by charId)
+  const charUndoStacks = useRef<Map<string, UndoStack<Character>>>(new Map());
+
   const [rolls, setRolls] = useState<DiceRoll[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [inCombat, setInCombat] = useState(false);
@@ -427,10 +442,46 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateCharacter = useCallback((id: string, updates: Partial<Character>) => {
-    setCharacters((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
+    setCharacters((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      // Push old state to undo stack before applying
+      const existing = charUndoStacks.current.get(id) || createUndoStack(c);
+      charUndoStacks.current.set(id, undoPush(existing, c));
+      return { ...c, ...updates };
+    }));
   }, []);
 
-  // Grant XP to a character, auto-level if threshold reached
+  // Undo the last character edit
+  const undoCharacter = useCallback((charId: string) => {
+    const stack = charUndoStacks.current.get(charId);
+    if (!stack || !undoCanUndo(stack)) return;
+    const newStack = undoOp(stack);
+    charUndoStacks.current.set(charId, newStack);
+    setCharacters((prev) => prev.map((c) => (c.id === charId ? newStack.present : c)));
+  }, []);
+
+  // Redo a previously undone character edit
+  const redoCharacter = useCallback((charId: string) => {
+    const stack = charUndoStacks.current.get(charId);
+    if (!stack || !undoCanRedo(stack)) return;
+    const newStack = redoOp(stack);
+    charUndoStacks.current.set(charId, newStack);
+    setCharacters((prev) => prev.map((c) => (c.id === charId ? newStack.present : c)));
+  }, []);
+
+  const canUndoCharacter = useCallback((charId: string): boolean => {
+    const stack = charUndoStacks.current.get(charId);
+    return stack ? undoCanUndo(stack) : false;
+  }, []);
+
+  const canRedoCharacter = useCallback((charId: string): boolean => {
+    const stack = charUndoStacks.current.get(charId);
+    return stack ? undoCanRedo(stack) : false;
+  }, []);
+
+  // Grant XP to a character, auto-level if threshold reached.
+  // For multiclass characters, the total level is the sum of all class levels.
+  // XP thresholds use the total level. On level-up, the primary class advances by default.
   const grantXP = useCallback((id: string, xp: number): { leveledUp: boolean; newLevel: number } => {
     let leveledUp = false;
     let newLevel = 1;
@@ -439,32 +490,35 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (c.id !== id) return c;
         const totalXP = c.xp + xp;
         let level = c.level;
-        // Check for level up
+        // Check for level up using total character level
         while (level < 20 && totalXP >= XP_THRESHOLDS[level]) {
           level++;
         }
         leveledUp = level > c.level;
         newLevel = level;
         if (leveledUp) {
-          // Recalculate maxHp on level up (add hit die average + CON mod)
           const conMod = Math.floor((c.stats.CON - 10) / 2);
-          // Feat HP bonuses: Tough (+2/level), Durable (+1/level)
           const featHpPerLevel = (c.feats || []).reduce((sum, fid) => {
             const f = FEATS.find((ft) => ft.id === fid);
             return sum + (f?.maxHpPerLevel || 0);
           }, 0);
           const levelsGained = level - c.level;
-          // HP on level up: roll or average (configurable via localStorage)
           const rollHpOnLevelUp = (() => { try { return localStorage.getItem('adventure:rollHpOnLevelUp') === '1'; } catch { return false; } })();
+          // Determine which class gets the new level(s) - default to primary class
+          const advancingClass = c.class;
           let hpGain = 0;
           for (let i = 0; i < levelsGained; i++) {
-            const sides = HIT_DIE_SIDES[c.class] || 8;
-            const hitDieRoll = rollHpOnLevelUp ? Math.max(1, Math.floor(Math.random() * sides) + 1) : (HIT_DIE_AVG[c.class] || 5);
+            const sides = HIT_DIE_SIDES[advancingClass] || 8;
+            const hitDieRoll = rollHpOnLevelUp ? Math.max(1, Math.floor(Math.random() * sides) + 1) : (HIT_DIE_AVG[advancingClass] || 5);
             hpGain += hitDieRoll + conMod + featHpPerLevel;
           }
           const newMaxHp = c.maxHp + hpGain;
-          const hdRemaining = (c.hitDiceRemaining ?? c.level) + levelsGained; // gain hit dice on level up
-          return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp, hitDiceRemaining: hdRemaining }; // full heal on level up
+          const hdRemaining = (c.hitDiceRemaining ?? c.level) + levelsGained;
+          // Update classLevels if multiclass is active
+          const updatedClassLevels = c.classLevels
+            ? { ...c.classLevels, [advancingClass]: (c.classLevels[advancingClass] || 0) + levelsGained }
+            : undefined;
+          return { ...c, xp: totalXP, level, maxHp: newMaxHp, hp: newMaxHp, hitDiceRemaining: hdRemaining, classLevels: updatedClassLevels };
         }
         return { ...c, xp: totalXP };
       })
@@ -1937,6 +1991,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         addCharacter,
         removeCharacter,
         updateCharacter,
+        undoCharacter,
+        redoCharacter,
+        canUndoCharacter,
+        canRedoCharacter,
         grantXP,
         restCharacter,
         addItem,

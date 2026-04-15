@@ -461,7 +461,7 @@ function SpellbookSection({ spells, slots, used, schools, castingStat, spellDC, 
 }
 
 export default function CharacterSheet({ character }: CharacterSheetProps) {
-  const { restCharacter, equipItem, unequipItem, useItem, removeItem, tradeItem, units, updateCharacter, addRoll, currentPlayer, characters } = useGame();
+  const { restCharacter, equipItem, unequipItem, useItem, removeItem, tradeItem, units, updateCharacter, addRoll, currentPlayer, characters, undoCharacter, redoCharacter, canUndoCharacter, canRedoCharacter } = useGame();
   const [showInventory, setShowInventory] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
@@ -519,7 +519,11 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
   const xpPct = xpNeeded > 0 ? Math.min(100, (xpInLevel / xpNeeded) * 100) : 100;
 
   return (
-    <div className="space-y-4 text-sm">
+    <div className="space-y-4 text-sm" onKeyDown={(e) => {
+      // Ctrl+Z / Ctrl+Shift+Z for undo/redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoCharacter(character.id); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redoCharacter(character.id); }
+    }} tabIndex={0}>
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="relative group">
@@ -539,7 +543,26 @@ export default function CharacterSheet({ character }: CharacterSheetProps) {
           )}
         </div>
         <div>
-          <div className="font-bold text-white text-lg">{character.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white text-lg">{character.name}</span>
+            {/* Undo/Redo buttons */}
+            <button
+              onClick={() => undoCharacter(character.id)}
+              disabled={!canUndoCharacter(character.id)}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              title="Undo (Ctrl+Z)"
+            >
+              Undo
+            </button>
+            <button
+              onClick={() => redoCharacter(character.id)}
+              disabled={!canRedoCharacter(character.id)}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              Redo
+            </button>
+          </div>
           <div className="text-slate-400 text-xs">
             Level {character.level} {character.race}{' '}
             {character.classLevels && Object.keys(character.classLevels).length > 1

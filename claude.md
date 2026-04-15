@@ -105,13 +105,13 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 **World building:**
 6. [x] Campaign wiki (DM-editable, category filters, search, wiki links, WebSocket sync)
 7. [ ] Random dungeon generator improvements (themed rooms, puzzle placement, loot scaling)
-8. [ ] NPC conversation memory (AI remembers past interactions per NPC)
+8. [x] NPC conversation memory (AI remembers past interactions, sentiment, WebSocket sync)
 
 **Quality of life:**
 9. [x] Keyboard shortcuts reference panel (? key, W for wiki)
 10. [ ] Undo/redo for character edits
-11. [ ] Dice roller standalone mode (no game, just dice with presets)
-12. [ ] Chat commands expansion (/whisper, /roll inline, /emote improvements)
+11. [x] Dice roller standalone mode (/dice, no auth, presets, custom notation, 10.3KB code-split)
+12. [x] Chat commands expansion (/r, /emote, /init, /hp, /conditions)
 
 ### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul
 
