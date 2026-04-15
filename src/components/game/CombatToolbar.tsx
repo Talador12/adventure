@@ -560,8 +560,12 @@ export default function CombatToolbar({
                                   const canCast = spell.level === 0 ? true : availableSlotLevels.length > 0;
                                   const disabled = !canCast || outOfRange || noLos;
 
+                                  // Ritual eligibility: Wizard, Cleric, Druid can ritual cast
+                                  const canRitual = spell.isRitual && spell.level > 0 && selectedCharacter &&
+                                    ['Wizard', 'Cleric', 'Druid'].includes(selectedCharacter.class);
+
                                   // Shared cast handler for both base and upcast
-                                  const doCast = (castAtLevel?: number) => {
+                                  const doCast = (castAtLevel?: number, ritual?: boolean) => {
                                     if (spell.aoe && selectedCharacter) {
                                       const casterUnit2 = units.find((u) => u.characterId === selectedCharacter.id);
                                       const casterMapPos = casterUnit2 ? mapPositions.find((p) => p.unitId === casterUnit2.id) : undefined;
@@ -577,7 +581,7 @@ export default function CombatToolbar({
                                       setActiveView('map');
                                       return;
                                     }
-                                    const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id, castAtLevel);
+                                    const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id, castAtLevel, ritual);
                                     if (result.success) {
                                       playMagicSpell();
                                       setCombatLog((prev) => [...prev, result.message]);
@@ -613,6 +617,7 @@ export default function CombatToolbar({
                                           </span>
                                           <span className="flex items-center gap-1">
                                             {spell.components && <span className="text-[7px] text-slate-600 font-mono">{spell.components.join('')}</span>}
+                                            {spell.isRitual && <span className="text-[8px] px-1 py-0 rounded bg-teal-900/50 text-teal-300 font-bold uppercase">R</span>}
                                             {spell.aoe && <span className="text-[8px] px-1 py-0 rounded bg-orange-900/50 text-orange-300 font-bold uppercase">AoE</span>}
                                             <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
                                           </span>
@@ -621,24 +626,37 @@ export default function CombatToolbar({
                                           {spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.aoe ? `${spell.aoe.shape} ${spell.aoe.radiusCells * 5}ft` : spell.range}</span>
                                         </div>
                                       </button>
-                                      {/* Upcast slot selector: row of buttons for higher-level slots */}
-                                      {spell.level > 0 && availableSlotLevels.length > 1 && !disabled && (
+                                      {/* Upcast slot selector + Ritual button */}
+                                      {spell.level > 0 && (availableSlotLevels.length > 1 || canRitual) && !disabled && (
                                         <div className="flex items-center gap-1 px-3 pb-1.5 pt-0.5">
-                                          <span className="text-[8px] text-slate-600 mr-1">Slot:</span>
-                                          {availableSlotLevels.map((lvl) => (
+                                          {availableSlotLevels.length > 1 && (
+                                            <>
+                                              <span className="text-[8px] text-slate-600 mr-1">Slot:</span>
+                                              {availableSlotLevels.map((lvl) => (
+                                                <button
+                                                  key={lvl}
+                                                  onClick={(e) => { e.stopPropagation(); doCast(lvl); }}
+                                                  className={`text-[9px] px-1.5 py-0.5 rounded border font-semibold transition-all ${
+                                                    lvl === spell.level
+                                                      ? 'bg-purple-900/50 border-purple-600/50 text-purple-300'
+                                                      : 'bg-amber-900/30 border-amber-600/40 text-amber-300 hover:bg-amber-800/50'
+                                                  }`}
+                                                  title={lvl > spell.level ? `Upcast at level ${lvl} (+${lvl - spell.level} bonus dice)` : `Base level ${lvl}`}
+                                                >
+                                                  {lvl}{lvl > spell.level ? '\u2191' : ''}
+                                                </button>
+                                              ))}
+                                            </>
+                                          )}
+                                          {canRitual && (
                                             <button
-                                              key={lvl}
-                                              onClick={(e) => { e.stopPropagation(); doCast(lvl); }}
-                                              className={`text-[9px] px-1.5 py-0.5 rounded border font-semibold transition-all ${
-                                                lvl === spell.level
-                                                  ? 'bg-purple-900/50 border-purple-600/50 text-purple-300'
-                                                  : 'bg-amber-900/30 border-amber-600/40 text-amber-300 hover:bg-amber-800/50'
-                                              }`}
-                                              title={lvl > spell.level ? `Upcast at level ${lvl} (+${lvl - spell.level} bonus dice)` : `Base level ${lvl}`}
+                                              onClick={(e) => { e.stopPropagation(); doCast(undefined, true); }}
+                                              className="text-[9px] px-1.5 py-0.5 rounded border font-semibold transition-all bg-teal-900/40 border-teal-600/40 text-teal-300 hover:bg-teal-800/50 ml-auto"
+                                              title="Cast as ritual (no slot, +10 min casting time)"
                                             >
-                                              {lvl}{lvl > spell.level ? '\u2191' : ''}
+                                              Ritual
                                             </button>
-                                          ))}
+                                          )}
                                         </div>
                                       )}
                                     </div>

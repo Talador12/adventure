@@ -14,7 +14,7 @@ export interface Player {
 }
 
 // --- Conditions ---
-export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'grappled' | 'smiteArmed' | 'hunterMarked' | 'surprised' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight';
+export type ConditionType = 'poisoned' | 'stunned' | 'frightened' | 'blessed' | 'hexed' | 'burning' | 'prone' | 'dodging' | 'raging' | 'inspired' | 'helping' | 'hidden' | 'grappled' | 'smiteArmed' | 'hunterMarked' | 'surprised' | 'torchlit' | 'darkvision' | 'candlelit' | 'lantern' | 'daylight' | 'blinded' | 'charmed' | 'deafened' | 'incapacitated' | 'paralyzed' | 'restrained' | 'unconscious';
 export interface ActiveCondition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 = until cured
@@ -43,6 +43,13 @@ export const CONDITION_EFFECTS: Record<ConditionType, { attackMod: number; acMod
   candlelit: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Carrying a candle — 10ft bright, 20ft dim', color: 'text-orange-200' },
   lantern: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Hooded lantern — 30ft bright, 50ft dim', color: 'text-yellow-400' },
   daylight: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Daylight spell — 60ft bright, 100ft dim (dispels darkness)', color: 'text-white' },
+  blinded: { attackMod: -2, acMod: -2, saveMod: 0, description: 'Blinded — disadvantage on attacks, attacks against have advantage', color: 'text-gray-500' },
+  charmed: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Charmed — cannot attack charmer, charmer has advantage on social checks', color: 'text-pink-300' },
+  deafened: { attackMod: 0, acMod: 0, saveMod: 0, description: 'Deafened — auto-fail hearing-based checks', color: 'text-gray-400' },
+  incapacitated: { attackMod: -99, acMod: 0, saveMod: 0, description: 'Incapacitated — no actions or reactions', color: 'text-slate-500' },
+  paralyzed: { attackMod: -99, acMod: -2, saveMod: -99, description: 'Paralyzed — incapacitated, auto-fail STR/DEX saves, attacks have advantage, melee crits', color: 'text-yellow-200' },
+  restrained: { attackMod: -2, acMod: 0, saveMod: -2, description: 'Restrained — speed 0, disadvantage on DEX saves, attacks against have advantage', color: 'text-orange-300' },
+  unconscious: { attackMod: -99, acMod: -2, saveMod: -99, description: 'Unconscious — incapacitated, prone, auto-fail STR/DEX, attacks have advantage, melee crits', color: 'text-gray-600' },
 };
 
 // Vision range overrides from conditions (cells). Higher value wins.
@@ -183,6 +190,11 @@ export interface PendingReaction {
   damageType?: string;
   attackRoll?: number;     // the attack total that hit (for Shield AC comparison)
   spellName?: string;      // for Counterspell: the spell being cast
+  spellLevel?: number;     // for Counterspell: level of the spell being countered
+  casterId?: string;       // for Counterspell: characterId of the caster being countered
+  spellId?: string;        // for Counterspell: id of the spell being cast (to replay on failure)
+  targetOfSpell?: string;  // for Counterspell: the unitId target of the original spell
+  slotLevel?: number;      // for Counterspell: slot level the spell was cast at
 }
 
 // Persistent spell effect zones on the battle map
@@ -527,6 +539,8 @@ export interface Spell {
   isReaction?: boolean;
   /** Whether this spell uses a spell attack roll instead of a saving throw */
   attackRoll?: boolean;
+  /** Whether this spell can be cast as a ritual (no slot, +10 minutes casting time) */
+  isRitual?: boolean;
 }
 
 // --- Class abilities ---

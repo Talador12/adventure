@@ -56,6 +56,45 @@ export default function ReactionPrompt({ reaction, targetName, onResolve }: Reac
     );
   }
 
-  // Counterspell (future)
+  if (reaction.type === 'counterspell') {
+    return (
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] animate-pop-in">
+        <div className="bg-slate-900/95 border-2 border-purple-500/60 rounded-2xl shadow-2xl shadow-purple-900/40 px-6 py-4 max-w-sm">
+          <div className="text-xs text-purple-400 font-bold uppercase tracking-wider mb-1">Reaction - Counterspell</div>
+          <p className="text-sm text-slate-200 mb-3">
+            An enemy is casting{' '}
+            <span className="font-bold text-purple-300">{reaction.spellName || 'a spell'}</span>
+            {reaction.spellLevel !== undefined && (
+              <span className="text-slate-400"> (level {reaction.spellLevel})</span>
+            )}
+            !
+          </p>
+          <p className="text-xs text-slate-400 mb-3">
+            Counterspell this? Negate{' '}
+            <span className="text-purple-300 font-semibold">{reaction.spellName || 'the spell'}</span>.
+            {reaction.spellLevel !== undefined && reaction.spellLevel <= 3
+              ? ' Auto-succeeds at level 3.'
+              : ` Requires ability check DC ${10 + (reaction.spellLevel || 0)}.`}
+            {' '}Spends a level 3+ spell slot.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { if (timerRef.current) clearTimeout(timerRef.current); onResolve(true); }}
+              className="flex-1 px-4 py-2 rounded-xl bg-purple-700/60 hover:bg-purple-600/70 border border-purple-500/50 text-purple-200 text-sm font-bold transition-all"
+            >
+              Counterspell
+            </button>
+            <button
+              onClick={() => { if (timerRef.current) clearTimeout(timerRef.current); onResolve(false); }}
+              className="flex-1 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-400 text-sm font-semibold transition-all"
+            >
+              No ({remaining}s)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 }

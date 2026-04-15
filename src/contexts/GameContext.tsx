@@ -15,6 +15,7 @@ import { type TerrainType, type TokenPosition, DEFAULT_COLS, DEFAULT_ROWS, HAZAR
 // Re-export all types and constants so existing imports from GameContext keep working
 export * from '../types/game';
 export { ENEMY_TEMPLATES, ENCOUNTER_THEMES, randomEncounterTheme, generateEnemies } from '../data/enemies';
+export { getConditionEffects, type ConditionMechanics } from '../data/conditions';
 export { rollLoot, SHOP_ITEMS, SHOP_CATEGORIES } from '../data/items';
 export {
   FULL_CASTER_SLOTS, HALF_CASTER_SLOTS, FULL_CASTERS, HALF_CASTERS,
@@ -36,6 +37,7 @@ import {
 } from '../types/game';
 import { rollLoot } from '../data/items';
 import { getSpellSlots, SPELL_LIST, getClassAbility, FEATS, FULL_CASTERS, HALF_CASTERS } from '../data/spells';
+import { getConditionEffects } from '../data/conditions';
 
 const CHARACTERS_STORAGE_KEY = 'adventure_characters';
 
@@ -71,7 +73,7 @@ interface GameContextValue {
   sellItem: (charId: string, itemId: string) => { success: boolean; message: string };
 
   // Spells
-  castSpell: (charId: string, spellId: string, targetUnitId?: string, slotLevel?: number) => { success: boolean; message: string };
+  castSpell: (charId: string, spellId: string, targetUnitId?: string, slotLevel?: number, asRitual?: boolean) => { success: boolean; message: string };
   restoreSpellSlots: (charId: string) => void;
 
   // Class abilities
@@ -247,6 +249,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Concentration save messages — collected during damageUnit state updates, consumed by Game.tsx
   const concentrationBreakMessages = useRef<string[]>([]);
+
+  // castSpell ref — needed because resolveReaction (defined first) must call castSpell (defined later)
+  const castSpellRef = useRef<(charId: string, spellId: string, targetUnitId?: string, slotLevel?: number, asRitual?: boolean, _skipCounterspell?: boolean) => { success: boolean; message: string }>(() => ({ success: false, message: '' }));
 
   // Reaction system — hold damage while player decides whether to use Shield
   const [pendingReaction, setPendingReaction] = useState<PendingReaction | null>(null);
@@ -839,12 +844,63 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [characters, units, pendingReaction]
   );
 
-  // Reaction resolver: player decided whether to use Shield (or declined / timed out)
+  // Reaction resolver: player decided whether to use Shield/Counterspell (or declined / timed out)
   const resolveReaction = useCallback((useReaction: boolean): Unit[] => {
     if (!pendingReaction) return [];
     const { type, targetUnitId, damage, damageType, attackRoll } = pendingReaction;
+    const savedReaction = { ...pendingReaction };
     setPendingReaction(null);
 
+    // --- Counterspell resolution ---
+    if (type === 'counterspell') {
+      const counterCaster = units.find((u) => u.id === savedReaction.targetUnitId);
+      const counterChar = counterCaster?.characterId ? characters.find((c) => c.id === counterCaster.characterId) : null;
+      const enemyCasterName = units.find((u) => u.id === savedReaction.sourceUnitId)?.name || 'Enemy';
+
+      if (useReaction && counterChar && counterCaster) {
+        // Spend lowest available level 3+ slot for Counterspell
+        const slots = getSpellSlots(counterChar.class, counterChar.level);
+        const used = counterChar.spellSlotsUsed || {};
+        let spentLevel = 0;
+        for (const lvl of Object.keys(slots).map(Number).sort()) {
+          if (lvl >= 3 && (slots[lvl] || 0) - (used[lvl] || 0) > 0) { spentLevel = lvl; break; }
+        }
+        if (spentLevel > 0) {
+          setCharacters((prev) => prev.map((c) => c.id !== counterChar.id ? c : { ...c, spellSlotsUsed: { ...c.spellSlotsUsed, [spentLevel]: (c.spellSlotsUsed[spentLevel] || 0) + 1 } }));
+        }
+        setUnits((prev) => prev.map((u) => u.id === counterCaster.id ? { ...u, reactionUsed: true } : u));
+
+        const spellLvl = savedReaction.spellLevel || 0;
+        if (spentLevel >= spellLvl) {
+          // Auto-succeed: counterspell slot >= spell level
+          concentrationBreakMessages.current.push(`${counterChar.name} casts Counterspell (level ${spentLevel})! ${savedReaction.spellName} is negated!`);
+          return units; // spell negated
+        }
+        // Higher level spell: ability check DC 10 + spell level
+        const dc = 10 + spellLvl;
+        const castStatMap: Record<string, string> = { Wizard: 'INT', Sorcerer: 'CHA', Warlock: 'CHA', Cleric: 'WIS', Druid: 'WIS', Bard: 'CHA', Paladin: 'CHA', Ranger: 'WIS' };
+        const castStat = castStatMap[counterChar.class] || 'INT';
+        const castMod = Math.floor(((counterChar.stats as Record<string, number>)[castStat] || 10) - 10) / 2;
+        const profBonus = Math.ceil(counterChar.level / 4) + 1;
+        const checkRoll = Math.floor(Math.random() * 20) + 1;
+        const total = checkRoll + Math.floor(castMod) + profBonus;
+        if (total >= dc) {
+          concentrationBreakMessages.current.push(`${counterChar.name} casts Counterspell! Ability check ${checkRoll}+${Math.floor(castMod)}+${profBonus}=${total} vs DC ${dc} - SUCCESS! ${savedReaction.spellName} negated!`);
+          return units; // spell negated
+        }
+        // Counterspell failed - spell goes through
+        concentrationBreakMessages.current.push(`${counterChar.name} casts Counterspell! Ability check ${checkRoll}+${Math.floor(castMod)}+${profBonus}=${total} vs DC ${dc} - FAILED! ${savedReaction.spellName} goes through!`);
+      }
+
+      // Counterspell declined or failed: re-execute the original spell with _skipCounterspell
+      if (savedReaction.casterId && savedReaction.spellId) {
+        const replayResult = castSpellRef.current(savedReaction.casterId, savedReaction.spellId, savedReaction.targetOfSpell, savedReaction.slotLevel, false, true);
+        if (replayResult.message) concentrationBreakMessages.current.push(replayResult.message);
+      }
+      return units;
+    }
+
+    // --- Shield resolution ---
     if (type === 'shield' && useReaction) {
       // Spend a level-1 slot, mark reaction used, add +5 AC for this check
       const target = units.find((u) => u.id === targetUnitId);
@@ -1031,7 +1087,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Spells: cast a spell (check slots, apply damage/healing, consume slot)
   // slotLevel allows upcasting: spend a higher-level slot for extra effect
   const castSpell = useCallback(
-    (charId: string, spellId: string, targetUnitId?: string, slotLevel?: number): { success: boolean; message: string } => {
+    (charId: string, spellId: string, targetUnitId?: string, slotLevel?: number, asRitual?: boolean, _skipCounterspell?: boolean): { success: boolean; message: string } => {
       let result = { success: false, message: '' };
       // Search both the global spell list and the caster's custom spellbook
       const casterChar = characters.find((c) => c.id === charId);
@@ -1040,33 +1096,121 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return { success: false, message: 'Unknown spell.' };
       }
 
+      // Ritual casting: no slot consumed, only for ritual-tagged spells and eligible classes
+      if (asRitual) {
+        if (!spell.isRitual) return { success: false, message: `${spell.name} cannot be cast as a ritual.` };
+        if (casterChar) {
+          const cls = casterChar.class;
+          // Wizard: any ritual in spellbook. Cleric/Druid: any prepared ritual. Others: no ritual casting.
+          const canRitual = cls === 'Wizard' || cls === 'Cleric' || cls === 'Druid';
+          if (!canRitual) return { success: false, message: `${cls} cannot cast rituals.` };
+        }
+        result = { success: true, message: '' };
+        // Skip slot consumption entirely - fall through to spell effects
+      }
+
       // Determine the slot level to consume (default to spell's base level)
       const castLevel = spell.level === 0 ? 0 : Math.max(spell.level, slotLevel || spell.level);
 
-      setCharacters((prev) =>
-        prev.map((c) => {
-          if (c.id !== charId) return c;
-          if (castLevel > 0) {
-            const maxSlots = getSpellSlots(c.class, c.level);
-            const used = c.spellSlotsUsed || {};
-            const slotsAvail = (maxSlots[castLevel] || 0) - (used[castLevel] || 0);
-            if (slotsAvail <= 0) {
-              result = { success: false, message: `No level ${castLevel} spell slots remaining!` };
-              return c;
+      if (!asRitual) {
+        setCharacters((prev) =>
+          prev.map((c) => {
+            if (c.id !== charId) return c;
+            if (castLevel > 0) {
+              const maxSlots = getSpellSlots(c.class, c.level);
+              const used = c.spellSlotsUsed || {};
+              const slotsAvail = (maxSlots[castLevel] || 0) - (used[castLevel] || 0);
+              if (slotsAvail <= 0) {
+                result = { success: false, message: `No level ${castLevel} spell slots remaining!` };
+                return c;
+              }
+              const newUsed = { ...used, [castLevel]: (used[castLevel] || 0) + 1 };
+              result = { success: true, message: '' };
+              return { ...c, spellSlotsUsed: newUsed };
             }
-            const newUsed = { ...used, [castLevel]: (used[castLevel] || 0) + 1 };
             result = { success: true, message: '' };
-            return { ...c, spellSlotsUsed: newUsed };
-          }
-          result = { success: true, message: '' };
-          return c;
-        })
-      );
+            return c;
+          })
+        );
+      }
 
       if (result.success) {
         const char = characters.find((c) => c.id === charId);
         const casterName = char?.name || 'Caster';
         const upcastLevels = castLevel - spell.level; // 0 if not upcasting
+
+        // Counterspell check: before the spell takes effect, nearby enemies can attempt to counter.
+        // Skip for cantrips, Counterspell itself, rituals, and internal replays after counterspell fails.
+        if (spell.level > 0 && spell.id !== 'counterspell' && !asRitual && !pendingReaction && !_skipCounterspell) {
+          const casterUnit = units.find((u) => u.characterId === charId);
+          const casterPos = casterUnit ? mapPositions.find((p) => p.unitId === casterUnit.id) : null;
+
+          if (casterUnit?.type === 'player' && casterPos) {
+            // Player is casting - check if any enemy within 60ft (12 cells) can Counterspell
+            for (const enemy of units.filter((u) => u.type === 'enemy' && u.hp > 0 && !u.reactionUsed)) {
+              const ePos = mapPositions.find((p) => p.unitId === enemy.id);
+              if (!ePos) continue;
+              const dist = Math.max(Math.abs(ePos.col - casterPos.col), Math.abs(ePos.row - casterPos.row));
+              if (dist > 12) continue; // 60ft = 12 cells
+              // Check if enemy has Counterspell ability (enemy AI has a 50% chance to attempt)
+              const hasCounterspell = (enemy.abilities || []).some((a) => a.name.toLowerCase().includes('counterspell'));
+              if (!hasCounterspell) continue;
+              if (Math.random() < 0.5) continue; // 50% chance to attempt
+              // AI auto-resolves: Counterspell at level 3. Same level or lower = auto-succeed.
+              const counterLevel = 3;
+              if (spell.level <= counterLevel) {
+                // Auto-succeed: negate the spell
+                setUnits((prev) => prev.map((u) => u.id === enemy.id ? { ...u, reactionUsed: true } : u));
+                concentrationBreakMessages.current.push(`${enemy.name} casts Counterspell! ${spell.name} is negated!`);
+                return { success: true, message: `${casterName} casts ${spell.name}, but ${enemy.name} Counterspells it! The spell fizzles.` };
+              }
+              // Higher level: ability check DC 10 + spell level
+              const dc = 10 + spell.level;
+              const checkRoll = Math.floor(Math.random() * 20) + 1;
+              const checkMod = 3; // assume +3 spellcasting mod for enemies
+              setUnits((prev) => prev.map((u) => u.id === enemy.id ? { ...u, reactionUsed: true } : u));
+              if (checkRoll + checkMod >= dc) {
+                concentrationBreakMessages.current.push(`${enemy.name} casts Counterspell! Check ${checkRoll}+${checkMod}=${checkRoll + checkMod} vs DC ${dc} - SUCCESS! ${spell.name} negated!`);
+                return { success: true, message: `${casterName} casts ${spell.name}, but ${enemy.name} Counterspells it! (${checkRoll}+${checkMod} vs DC ${dc}) The spell fizzles.` };
+              }
+              concentrationBreakMessages.current.push(`${enemy.name} attempts Counterspell! Check ${checkRoll}+${checkMod}=${checkRoll + checkMod} vs DC ${dc} - FAILED! ${spell.name} goes through!`);
+              break; // only one counterspell attempt per spell
+            }
+          } else if (casterUnit?.type === 'enemy' && casterPos) {
+            // Enemy is casting - check if any player within 60ft can Counterspell
+            for (const player of units.filter((u) => u.type === 'player' && u.hp > 0 && !u.reactionUsed)) {
+              if (!player.characterId) continue;
+              const pChar = characters.find((c) => c.id === player.characterId);
+              if (!pChar) continue;
+              const pPos = mapPositions.find((p) => p.unitId === player.id);
+              if (!pPos) continue;
+              const dist = Math.max(Math.abs(pPos.col - casterPos.col), Math.abs(pPos.row - casterPos.row));
+              if (dist > 12) continue; // 60ft = 12 cells
+              // Check if player has Counterspell
+              const hasCS = SPELL_LIST.some((s) => s.id === 'counterspell' && s.classes.includes(pChar.class));
+              if (!hasCS) continue;
+              // Check if they have a level 3+ slot available
+              const slots = getSpellSlots(pChar.class, pChar.level);
+              const usedSlots = pChar.spellSlotsUsed || {};
+              const hasSlot = Object.entries(slots).some(([lvl, max]) => Number(lvl) >= 3 && (max as number) - (usedSlots[Number(lvl)] || 0) > 0);
+              if (!hasSlot) continue;
+              // Trigger player reaction prompt
+              setPendingReaction({
+                type: 'counterspell',
+                targetUnitId: player.id,
+                sourceUnitId: casterUnit.id,
+                damage: 0,
+                spellName: spell.name,
+                spellLevel: spell.level,
+                casterId: charId,
+                spellId: spell.id,
+                targetOfSpell: targetUnitId,
+                slotLevel: castLevel,
+              });
+              return { success: true, message: `${casterName} begins casting ${spell.name}... (awaiting Counterspell reaction)` };
+            }
+          }
+        }
 
         // Concentration: if this spell requires concentration, drop any existing concentration
         if (spell.isConcentration) {
@@ -1100,30 +1244,53 @@ export function GameProvider({ children }: { children: ReactNode }) {
         const spellDC = 8 + profBonus + castMod;
 
         // Saving throw: if spell has saveStat, target rolls to resist
+        // Auto-fail STR/DEX saves for paralyzed, stunned, unconscious targets
         let targetSaved = false;
         if (spell.saveStat && targetUnitId) {
           const target = units.find((u) => u.id === targetUnitId);
           if (target && char) {
-            const saveRoll = Math.floor(Math.random() * 20) + 1;
-            const targetSaveMod = spell.saveStat === 'DEX' ? target.dexMod || 0 : 0;
-            const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
-            const totalSave = saveRoll + targetSaveMod + condSaveMod;
-            targetSaved = totalSave >= spellDC;
+            const targetConds = (target.conditions || []).map((c) => c.type);
+            const targetFx = getConditionEffects(targetConds);
+            if (targetFx.autoFailStrDex && (spell.saveStat === 'STR' || spell.saveStat === 'DEX')) {
+              targetSaved = false; // auto-fail
+            } else {
+              const saveRoll = Math.floor(Math.random() * 20) + 1;
+              const targetSaveMod = spell.saveStat === 'DEX' ? target.dexMod || 0 : 0;
+              const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
+              const totalSave = saveRoll + targetSaveMod + condSaveMod;
+              targetSaved = totalSave >= spellDC;
+            }
           }
         }
 
         // Spell attack roll: d20 + spell attack bonus vs target AC
+        // Conditions grant advantage/disadvantage per D&D 5e rules
         let spellAttackHit = true;
         let spellAttackCrit = false;
         let spellAttackRollValue = 0;
+        let spellConditionNote = '';
         if (spell.attackRoll && targetUnitId) {
           const target = units.find((u) => u.id === targetUnitId);
           if (target) {
-            spellAttackRollValue = Math.floor(Math.random() * 20) + 1;
+            const casterUnit = units.find((u) => u.characterId === charId);
+            const atkConds = (casterUnit?.conditions || []).map((c) => c.type);
+            const defConds = (target.conditions || []).map((c) => c.type);
+            const atkFx = getConditionEffects(atkConds);
+            const defFx = getConditionEffects(defConds);
+            let advantage = atkFx.attackAdvantage || defFx.defenseAdvantage;
+            let disadvantage = atkFx.attackDisadvantage;
+            if (advantage && disadvantage) { advantage = false; disadvantage = false; }
+            const r1 = Math.floor(Math.random() * 20) + 1;
+            const r2 = Math.floor(Math.random() * 20) + 1;
+            spellAttackRollValue = advantage ? Math.max(r1, r2) : disadvantage ? Math.min(r1, r2) : r1;
             spellAttackCrit = spellAttackRollValue === 20;
+            // Melee crits from paralyzed/unconscious targets
+            if (defFx.meleeCrit && spell.range.toLowerCase() === 'touch') spellAttackCrit = true;
             const totalAttack = spellAttackRollValue + spellAttackBonus;
             const targetAC = target.ac + (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.acMod || 0), 0);
             spellAttackHit = spellAttackCrit || totalAttack >= targetAC;
+            if (advantage) spellConditionNote = ' [advantage]';
+            else if (disadvantage) spellConditionNote = ' [disadvantage]';
           }
         }
 
@@ -1167,13 +1334,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
             const targetAC = target ? target.ac + (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.acMod || 0), 0) : 10;
             const totalAtk = spellAttackRollValue + spellAttackBonus;
             if (!spellAttackHit) {
-              result.message += `${casterName} casts ${spell.name}: ${totalAtk} (${spellAttackRollValue}+${spellAttackBonus}) vs AC ${targetAC} - MISS!`;
+              result.message += `${casterName} casts ${spell.name}: ${totalAtk} (${spellAttackRollValue}+${spellAttackBonus}) vs AC ${targetAC} - MISS!${spellConditionNote}`;
             } else {
               let dmg = rollSpellDamage(effectiveDamage);
               if (spellAttackCrit) dmg = dmg * 2;
               damageUnit(targetUnitId, dmg);
               const critTag = spellAttackCrit ? 'CRITICAL HIT! ' : 'HIT! ';
-              result.message += `${casterName} casts ${spell.name}: ${totalAtk} (${spellAttackRollValue}+${spellAttackBonus}) vs AC ${targetAC} - ${critTag}${effectiveDamage} -> ${dmg} damage`;
+              result.message += `${casterName} casts ${spell.name}: ${totalAtk} (${spellAttackRollValue}+${spellAttackBonus}) vs AC ${targetAC} - ${critTag}${effectiveDamage} -> ${dmg} damage${spellConditionNote}`;
               if (spell.appliesCondition && !targetSaved) {
                 applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
                 result.message += ` ${targetName} is ${spell.appliesCondition}!`;
@@ -1261,7 +1428,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         } else {
           result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
         }
-        if (castLevel > 0) {
+        if (asRitual) {
+          result.message += ' (Cast as ritual - no slot used, 10 minutes)';
+        } else if (castLevel > 0) {
           const upcastTag = upcastLevels > 0 ? ` (Level ${castLevel} slot used, upcast from ${spell.level})` : ` (Level ${castLevel} slot used)`;
           result.message += upcastTag;
         }
@@ -1282,6 +1451,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     },
     [characters, damageUnit, applyCondition, units]
   );
+
+  // Keep castSpellRef in sync so resolveReaction can call castSpell without circular deps
+  castSpellRef.current = castSpell;
 
   // Spells: restore all spell slots (called on long rest)
   const restoreSpellSlots = useCallback((charId: string) => {
