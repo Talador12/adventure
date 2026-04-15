@@ -4,7 +4,7 @@ export const theEndlessBanquet: FullCampaign = {
   id: 'full-the-endless-banquet',
   type: 'full',
   title: 'The Endless Banquet',
-  tagline: 'The feast has been going for three months. The guests are starving.',
+  tagline: 'The guests have not blinked in weeks. Their jaws still work. The host watches and does not eat.',
   tone: 'horror',
   themes: ['horror', 'dark_fantasy', 'social'],
   playerCount: { min: 3, max: 5 },
@@ -25,7 +25,7 @@ export const theEndlessBanquet: FullCampaign = {
       keyEvents: [
         'The chateau doors open easily. Music, warmth, laughter. A steward offers the party seats at the table.',
         'The food: the best the party has ever tasted. A Wisdom save to not keep eating. It is genuinely difficult.',
-        'A guest engages the party in conversation. She is charming. She also has not blinked in twenty minutes.',
+        'A guest engages the party in conversation. She is charming. She smells faintly of lavender and decay. She also has not blinked in twenty minutes.',
         'Lord Castagnier at the head of the table: polite, pale, and the only person not eating.',
         'A guest drops a fork and does not pick it up. Her hand continues the motion of eating without it.',
       ],
@@ -63,14 +63,14 @@ export const theEndlessBanquet: FullCampaign = {
       name: 'Lord Castagnier',
       role: 'tragic figure / obstacle',
       personality:
-        'A nobleman who loved hosting. His parties were legendary - not for excess, but for warmth. He invited friends, not contacts. He cooked alongside his staff. He is not a glutton. He is a man who cannot bear to clear the table because clearing the table means admitting the guests are gone.',
-      secret: 'His wife Elara died first. She was the reason he threw parties. Without her, the table felt empty. He enchanted the feast to keep it full.',
+        'A nobleman who loved hosting. His parties were legendary - not for excess, but for warmth. He sits at the head of the table with his hands folded, watching the echoes eat. He has not touched food in weeks. His cheeks are hollow. He speaks in a quiet, measured voice that cracks only when someone suggests the guests might not be real. He is not a glutton. He is a man who cannot bear to clear the table because clearing the table means admitting the guests are gone.',
+      secret: 'His wife Elara died first. She was the reason he threw parties. Without her, the table felt empty. He enchanted the feast to keep it full. He talks to her echo every night. She never answers, but she smiles, and that is enough. It is not enough.',
     },
     {
       name: 'Elara (Echo)',
       role: 'emotional weight',
       personality:
-        'Lord Castagnier\'s wife. Her echo is the most complete - she almost seems alive. She eats, laughs, and occasionally looks at Castagnier with something that resembles recognition. It is not. It is a reflection.',
+        'Lord Castagnier\'s wife. Her echo is the most complete - she almost seems alive. She eats, laughs, and occasionally looks at Castagnier with something that resembles recognition. Her hand sometimes reaches toward his plate, as if to offer him food. It is not recognition. It is a reflection of a habit from when she was alive. That makes it worse.',
     },
     {
       name: 'Marta',

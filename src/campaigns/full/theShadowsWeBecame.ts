@@ -4,7 +4,7 @@ export const theShadowsWeBecame: FullCampaign = {
   id: 'full-the-shadows-we-became',
   type: 'full',
   title: 'The Shadows We Became',
-  tagline: 'Your shadow is kinder than you. Smarter too. Everyone has noticed.',
+  tagline: 'Her husband came home better. He remembers everything. He does the dishes. He is not her husband.',
   tone: 'horror',
   themes: ['horror', 'dark_fantasy', 'mystery'],
   playerCount: { min: 3, max: 5 },
@@ -23,7 +23,7 @@ export const theShadowsWeBecame: FullCampaign = {
       summary:
         'The party investigates Desta\'s husband and discovers the pattern: people across Mirathis are being replaced by better versions of themselves. The replacements are kind, competent, and indistinguishable to anyone who does not know the original intimately. The city is thriving. Nobody wants the investigation.',
       keyEvents: [
-        'Desta\'s husband: identical in every way except he is a better person. He does not know he is not real.',
+        'Desta\'s husband: identical in every way except he is a better person. He remembers their anniversary. He bought flowers - her favorite kind. The real Marek never remembered the kind. He does not know he is not real. His smile is Marek\'s smile, but it reaches his eyes in a way Marek\'s never did.',
         'The pattern: dozens of replacements across the city. Each one is an improvement on the original.',
         'A replaced baker: the bread is better. A replaced guard: crime is down. A replaced teacher: children are learning.',
         'Nobody in the city wants the party to investigate. Things are better. Why question it?',
@@ -63,8 +63,8 @@ export const theShadowsWeBecame: FullCampaign = {
       name: 'Desta',
       role: 'quest giver / emotional anchor',
       personality:
-        'A woman who loves her husband as he is - flawed, imperfect, real. She does not want the improved version. She wants the man who forgets her birthday and burns the toast and makes her laugh in the middle of an argument.',
-      secret: 'She is afraid she is wrong. The shadow husband IS better. What if she is choosing suffering over happiness out of sentimentality?',
+        'A woman who loves her husband as he is - flawed, imperfect, real. She speaks quickly, as if afraid of being interrupted, and wrings her hands when she describes the shadow version. She cooks for one now. She leaves the second plate in the cabinet. She does not want the improved version. She wants the man who forgets her birthday and burns the toast and makes her laugh in the middle of an argument.',
+      secret: 'She is afraid she is wrong. The shadow husband IS better. What if she is choosing suffering over happiness out of sentimentality? She caught herself almost calling the shadow-Marek by name. She bit her tongue until it bled.',
     },
     {
       name: 'Desta\'s Husband (Marek / Shadow-Marek)',

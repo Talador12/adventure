@@ -66,7 +66,7 @@ export const theCartographersCurse: FullCampaign = {
       name: 'Sera Voss',
       role: 'Verathi descendant',
       personality:
-        'A young woman from a remnant camp who has oral histories of Verath passed down for generations. Fierce, angry, and desperate to see her ancestors\' home restored. "You are not creating our world. You are giving it back."',
+        'Stands with her chin raised and fists clenched, as if daring the dust to take her too. Speaks the old Verathi words for landmarks the party restores — naming them before they fully appear. Angry in a way that has been distilled by generations into something pure and directed. "You are not creating our world. You are giving it back. Every line you draw is a debt being repaid. Draw faster."',
     },
     {
       name: 'Archon Malthus',

@@ -4,7 +4,7 @@ export const theThinPlaces: FullCampaign = {
   id: 'full-thin-places',
   type: 'full',
   title: 'The Thin Places',
-  tagline: 'The walls have too many corners. The reflections move on their own.',
+  tagline: 'You counted the windows from outside. There are more from inside.',
   tone: 'horror',
   themes: ['horror', 'mystery', 'planar'],
   playerCount: { min: 3, max: 5 },
@@ -35,7 +35,7 @@ export const theThinPlaces: FullCampaign = {
       summary:
         'The wrongness escalates. The town\'s facade breaks down. Residents glitch — freezing mid-sentence, walking into walls, saying things in languages that do not exist. The party discovers the real Briarwell\'s remains beneath the replica.',
       keyEvents: [
-        'A resident freezes for thirty seconds, then continues as if nothing happened',
+        'A resident freezes mid-sentence for thirty seconds. Her mouth stays open. Her eyes do not move. Then she finishes the sentence with different words than she started with.',
         'The basement discovery: beneath a house, the remains of the original Briarwell — consumed, dissolved, wrong',
         'The geometry collapses in a building: hallways that loop, stairs that descend upward, doors that open onto other doors',
         'A resident breaks character: "Please leave. It is already too late for us. It does not have to be too late for you."',
@@ -60,20 +60,20 @@ export const theThinPlaces: FullCampaign = {
       name: 'Mayor Aldric Thorne',
       role: 'the mask',
       personality:
-        'The most convincing of the echo-residents. Warm, attentive, helpful. His smile is perfect. His eyes track the party with too much precision. He is the entity\'s primary interface with visitors.',
-      secret: 'He is not a person. He is a performance. When the mask slips, his face does not have the right number of features.',
+        'The most convincing of the echo-residents. Warm, attentive, helpful. His smile is perfect. His eyes track the party with too much precision - he never blinks at the wrong time, never glances away during conversation, never fidgets. He is too present. His handshake is the exact right pressure. His laugh comes at exactly the right moment. He is the entity\'s primary interface with visitors.',
+      secret: 'He is not a person. He is a performance. When the mask slips, his face does not have the right number of features. Once, briefly, a party member sees him from behind and his head is smooth where a face should be.',
     },
     {
       name: 'Elsa',
       role: 'the glitch',
       personality:
-        'A young woman who is the worst copy. She stutters, repeats phrases, walks into furniture. The entity did not replicate her well. She is the closest thing to an ally because her broken programming makes her honest.',
+        'A young woman who is the worst copy. She stutters, repeats phrases, walks into furniture, and occasionally says things that belong to other conversations. She grabs the party\'s hands too hard, as if afraid they will dissolve. The entity did not replicate her well. She is the closest thing to an ally because her broken programming makes her honest. She is the only echo-resident who seems afraid.',
     },
     {
       name: 'The Hollow',
       role: 'the entity',
       personality:
-        'A Far Realm intelligence that experiences the material plane as a buffet. It does not hate or enjoy — it consumes. It built Briarwell the way a spider builds a web. Patient, alien, and utterly without malice, which makes it worse.',
+        'A Far Realm intelligence that experiences the material plane as a buffet. It does not hate or enjoy - it consumes. It communicates through wrongness: a door that opens to the wrong room, a sentence that ends with someone else\'s words, a smell of seawater in a landlocked town. Patient, alien, and utterly without malice, which makes it worse.',
     },
   ],
   keyLocations: [

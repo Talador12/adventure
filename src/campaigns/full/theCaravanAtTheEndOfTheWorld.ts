@@ -60,7 +60,7 @@ export const theCaravanAtTheEndOfTheWorld: FullCampaign = {
       name: 'Wagonmaster Della',
       role: 'caravan logistics / emotional core',
       personality:
-        'A no-nonsense teamster who organizes the caravan like a military operation. She lost her family to the wave and channels her grief into keeping everyone else alive. Tough love incarnate.',
+        'Built like an ox and twice as stubborn. Counts wagons every morning like a mother counting children. Speaks in commands softened by a voice that cracks when she thinks nobody is listening. Lost her family to the wave and channels grief into logistics. "Wagon twelve, tighten that axle. Wagon seven, your wheel is listing. Everyone eats at the next stop. Nobody argues with me about eating."',
     },
     {
       name: 'Scholar Fennis',

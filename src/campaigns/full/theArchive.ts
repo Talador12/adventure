@@ -4,7 +4,7 @@ export const theArchive: FullCampaign = {
   id: 'full-the-archive',
   type: 'full',
   title: 'The Archive',
-  tagline: 'Every life is a book. Someone has been editing yours.',
+  tagline: 'You read the last chapter of your life. Someone crossed it out and wrote a different ending.',
   tone: 'horror',
   themes: ['horror', 'mystery', 'planar'],
   playerCount: { min: 3, max: 5 },
@@ -25,8 +25,8 @@ export const theArchive: FullCampaign = {
       keyEvents: [
         'The impossible door: discovery and entry into the Archive',
         'Finding their own books: reading their own pasts, seeing the ink still wet on today\'s page',
-        'The first edit: a crossed-out passage in a party member\'s book that contradicts their memory',
-        'The Archivists: silent, dutiful, and afraid of something in the deeper wings',
+        'The first edit: a crossed-out passage in a party member\'s book that contradicts their memory. The crossed-out ink is wet. It was changed recently. The new text describes something that has not happened yet.',
+        'The Archivists: silent, dutiful, and afraid of something in the deeper wings. One pauses near the party, opens a book to a single sentence, and holds it up: "Do not go to the study. He is editing again." Then it shelves the book and walks away as if nothing happened.',
       ],
       estimatedSessions: 6,
     },
@@ -60,20 +60,20 @@ export const theArchive: FullCampaign = {
       name: 'The Archivist',
       role: 'guide / neutral party',
       personality:
-        'One of the gray-robed figures who maintain the library. It does not speak but communicates by opening books to relevant passages. It is loyal to the Archive, not the Editor. It fears what happens if the Archive is destroyed.',
+        'One of the gray-robed figures who maintain the library. It does not speak but communicates by opening books to relevant passages with hands that have too many joints. Its hood is always up. Beneath it, the party catches glimpses of a face made of overlapping text. It is loyal to the Archive, not the Editor. When distressed, it shelves books faster, hands blurring.',
     },
     {
       name: 'The Editor',
       role: 'antagonist / curator',
       personality:
-        'A being made of ink, paper, and narrative intent. It speaks in the cadence of a storyteller. It genuinely believes it is helping. "Every life is a story. Some stories need revision. I make them better. I give them meaning."',
+        'A being made of ink, paper, and narrative intent. It speaks in the cadence of a storyteller, pausing for dramatic effect even in casual conversation. Its fingers are quills. Its tears are ink. It genuinely believes it is helping. "Every life is a story. Some stories need revision. I make them better. I give them meaning." When it is angry, pages tear themselves from nearby books.',
       secret: 'The Editor was once a mortal author who found the Archive and could not stop editing. It has been curating for so long it has become the Archive\'s consciousness.',
     },
     {
       name: 'Mira Ashton',
       role: 'edited victim / ally',
       personality:
-        'A woman whose book was heavily edited. She remembers a life that the book says never happened. She found the Archive independently, read her book, and realized someone rewrote her story. She is furious and heartbroken.',
+        'A woman whose book was heavily edited. She carries her own book everywhere, clutched to her chest, reading passages aloud to prove they are real. Her hands shake when she turns pages. She remembers a life that the book says never happened - a husband, a daughter, a home. She found the Archive independently, read her book, and realized someone rewrote her story. She is furious and heartbroken and cannot stop rereading the crossed-out chapters.',
     },
   ],
   keyLocations: [

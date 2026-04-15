@@ -60,7 +60,7 @@ export const theDepthsBelowDepths: FullCampaign = {
       name: 'Dr. Renna Flint',
       role: 'missing survey leader',
       personality:
-        'A brilliant geologist who has always believed the Underdark had a bottom. She found it — and what was below it. She will not leave. "I spent my whole life looking for this. You want me to go back to mapping cave walls?"',
+        'Weathered, sunburned (from the lower world\'s sun), and wearing Shell-folk clothing over her expedition gear. Keeps a rock hammer on her belt that she touches when nervous — a habit from twenty years of fieldwork. "I spent my whole life looking for this. The bottom. The answer. And it is not a bottom at all. It is a beginning. You want me to go back to mapping cave walls? No. Send my regards to the surface."',
       secret: 'She has fallen in love with a Shell-folk scholar and has no intention of returning to the surface.',
     },
     {

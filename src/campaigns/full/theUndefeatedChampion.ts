@@ -27,6 +27,7 @@ export const theUndefeatedChampion: FullCampaign = {
         'Interviewing a former opponent who confirms he fought Kaelith legitimately and lost badly',
         'The payment records are real - but the payments were made AFTER the fights, not before',
         'A challenger who was supposed to fight Kaelith disappeared the night before. He was found dead.',
+        'Quiet moment: the party watches Kaelith train. She is extraordinary. She moves like water and hits like stone. Whatever else is true, this part is real.',
         'The party realizes the conspiracy is not fake fights. It is something worse.',
       ],
       estimatedSessions: 5,
@@ -63,7 +64,7 @@ export const theUndefeatedChampion: FullCampaign = {
       name: 'Kaelith Sundara',
       role: 'central figure / unwitting pawn',
       personality:
-        'Disciplined, humble despite her fame, and genuinely kind to her challengers. She respects combat as an art. She has spent her life being the best and has never needed to cheat.',
+        'Disciplined, humble despite her fame, and genuinely kind to her challengers. Bows to every opponent before and after the fight. Trains at dawn and sleeps at dusk. She respects combat as an art. She has spent her life being the best and has never needed to cheat. "I win because I prepare. Not because I am special." Arc: the revelation shatters her certainty. Every victory is real but every victory is also tainted. She must decide what her legacy means when it was built on a foundation of murder she did not order.',
       secret: 'She has suspected something is wrong for years. Challengers who talked big would vanish the night before. She told herself they lost their nerve. She did not want to look deeper.',
     },
     {

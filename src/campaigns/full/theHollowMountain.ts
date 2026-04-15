@@ -4,7 +4,7 @@ export const theHollowMountain: FullCampaign = {
   id: 'full-hollow-mountain',
   type: 'full',
   title: 'The Hollow Mountain',
-  tagline: 'The mountain is not empty. It is sleeping.',
+  tagline: 'The walls are warm. The floor is soft. The tunnel just contracted.',
   tone: 'horror',
   themes: ['dark_fantasy', 'dungeon_crawl', 'horror'],
   playerCount: { min: 3, max: 5 },
@@ -23,10 +23,11 @@ export const theHollowMountain: FullCampaign = {
       summary:
         'The party enters through the crumbling wards and explores the first three halls. Evidence of the dwarven civilization is everywhere: homes, forges, markets - all abandoned mid-action. Tools still on anvils. Meals still on tables. Dust over everything.',
       keyEvents: [
-        'The ward seal cracks open - something exhales from inside (warm, wet air)',
-        'Exploring the First Hall: a dwarven marketplace frozen in time',
-        'Finding the Chief Miner\'s journal: entries grow increasingly paranoid',
-        'The walls pulse. Not an earthquake. A heartbeat.',
+        'The ward seal cracks open - something exhales from inside. The air is warm and wet, like breath from a sleeping animal. It smells organic in a way stone should not.',
+        'Exploring the First Hall: a dwarven marketplace frozen in time. A half-eaten meal on a tavern table. A child\'s toy on the floor. 500 years of dust, undisturbed, as if time stopped and forgot to restart.',
+        'Finding the Chief Miner\'s journal: early entries are professional. Middle entries note "unusual warmth at depth." Final entries are written in handwriting that shakes: "It moved. The wall moved. We are inside something."',
+        'The walls pulse. Not an earthquake. A heartbeat. Once per minute. The party feels it in their teeth before they hear it.',
+        'Quiet dread: the party places a hand on the tunnel wall and feels warmth. The warmth pulses. When they pull their hand away, the wall is slightly damp, as if it sweated where they touched it.',
       ],
       estimatedSessions: 5,
     },
@@ -67,7 +68,7 @@ export const theHollowMountain: FullCampaign = {
       name: 'Foreman Durik',
       role: 'ghost guide',
       personality:
-        'The last Chief Miner, now a ghost bound to the extraction machinery. Practical, guilt-ridden, and exhausted from 500 years of watching his mistake.',
+        'The last Chief Miner, now a ghost bound to the extraction machinery. He speaks in the clipped, efficient language of a foreman giving orders, but his voice cracks on words related to digging. He wrings transparent hands. He checks gauges that have not changed in centuries. Practical, guilt-ridden, and exhausted from 500 years of watching his mistake.',
       secret: 'He was the one who ordered the deep dig that pierced the heart. He has been maintaining the sedation machinery as a ghost ever since. He cannot leave until someone takes over or ends it.',
     },
     {

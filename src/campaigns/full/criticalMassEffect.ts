@@ -23,7 +23,7 @@ export const criticalMassEffect: FullCampaign = {
       summary:
         'The party investigates Metagros\'s trail of impossible victories. Every battle site shows the same pattern: perfect positioning, perfect timing, zero wasted actions. They begin to learn the Rules themselves through fragments left behind.',
       keyEvents: [
-        'Briefing: the coalition explains Metagros\'s impossible feats',
+        'Briefing: the coalition explains Metagros\'s impossible feats (running gag begins: witnesses describe him saying "that is suboptimal" before every engagement)',
         'Investigation: battle sites where geometry was weaponized — scorch marks in perfect 20-foot spheres',
         'Finding a Rule Fragment: a stone tablet that describes how healing works (mechanically)',
         'First encounter: Metagros appears, defeats an ambush without taking damage, and leaves a note saying "you are almost interesting"',
@@ -50,7 +50,7 @@ export const criticalMassEffect: FullCampaign = {
         'The sanctum: every room is a tactical puzzle designed by someone who knows the answer key',
         'Metagros\'s confession: he found the Rules 20 years ago and has been alone ever since',
         'The final battle: Metagros fights at full optimization, the party fights with heart',
-        'The Rules crack — suboptimal choices produce optimal outcomes because meaning is not mechanical',
+        'The Rules crack — suboptimal choices produce optimal outcomes because meaning is not mechanical (callback: a party member says "that is suboptimal" to Metagros as they make the choice that saves him)',
       ],
       estimatedSessions: 5,
     },

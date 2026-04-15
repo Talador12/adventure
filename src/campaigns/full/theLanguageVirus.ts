@@ -4,7 +4,7 @@ export const theLanguageVirus: FullCampaign = {
   id: 'full-the-language-virus',
   type: 'full',
   title: 'The Language Virus',
-  tagline: '"Break a leg" breaks a leg. "I am dying" causes necrotic damage. Choose your words carefully.',
+  tagline: 'A mother said "I could eat you up" and her jaw unhinged.',
   tone: 'horror',
   themes: ['horror', 'urban', 'mystery'],
   playerCount: { min: 3, max: 5 },
@@ -64,26 +64,26 @@ export const theLanguageVirus: FullCampaign = {
       name: 'Archivist Senna Quill',
       role: 'guide / linguist',
       personality:
-        'Keeper of the Etymon Archive. Has spoken only in precise, literal language her entire life - not because of the virus, but because she always knew words were dangerous. Pedantic, careful, and deeply vindicated. "I have been telling people to say what they mean for forty years. Now they have to."',
+        'Keeper of the Etymon Archive. Has spoken only in precise, literal language her entire life - not because of the virus, but because she always knew words were dangerous. She pauses before every sentence. She counts syllables on her fingers. She corrects the party\'s speech mid-conversation with the intensity of someone defusing a bomb. Pedantic, careful, and deeply vindicated. "I have been telling people to say what they mean for forty years. Now they have to."',
     },
     {
       name: 'Warlord Thessa Ironvow',
       role: 'antagonist / weaponizer',
       personality:
-        'A military commander who immediately saw literal language as a weapon. Her soldiers chant "we are invincible" before battle and it works. She does not want the Veil restored. Literal language is the greatest military advantage in history. She is not insane - she is strategic.',
-      secret: 'She is terrified. One of her soldiers said "I wish I were dead" in a moment of despair. It worked. She cannot control this.',
+        'A military commander who immediately saw literal language as a weapon. She speaks in clipped, measured phrases - never more than six words at a time. Her soldiers chant "we are invincible" before battle and it works. She does not want the Veil restored. She is not insane - she is strategic.',
+      secret: 'She is terrified. One of her soldiers said "I wish I were dead" in a moment of despair. It worked. She now gags her troops before bed. She cannot control this and she knows it.',
     },
     {
       name: 'The Silent Monk',
       role: 'ally / alternate solution',
       personality:
-        'A monk from an ancient order that took vows of silence centuries ago - not for spiritual reasons, but because they remembered a time before the Veil. They communicate through a sign language that has no metaphors. They have been preparing for this day.',
+        'A monk from an ancient order that took vows of silence centuries ago - not for spiritual reasons, but because they remembered a time before the Veil. They communicate through a sign language that has no metaphors. Every gesture is precise, literal, unburdened. They are the calmest person the party has met since the virus began. They have been preparing for this day. They are not surprised.',
     },
     {
       name: 'Bard Colvin Merriweather',
       role: 'tragic figure / cautionary tale',
       personality:
-        'The bard from the opening tavern scene. His song launched people through walls. He has not spoken since. He communicates through written notes, carefully edited to remove any figurative language. He crosses out words constantly. He is terrified of his own voice.',
+        'The bard from the opening tavern scene. His song launched people through walls. He has not spoken since. He communicates through written notes, carefully edited - every note is covered in crossed-out words, each deletion a potential catastrophe avoided. He carries a quill and parchment at all times. His hands shake when he writes. He mouths words silently before committing them to paper. He is terrified of his own voice.',
     },
   ],
   keyLocations: [

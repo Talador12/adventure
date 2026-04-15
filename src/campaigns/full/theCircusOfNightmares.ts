@@ -4,7 +4,7 @@ export const theCircusOfNightmares: FullCampaign = {
   id: 'full-circus-of-nightmares',
   type: 'full',
   title: 'The Circus of Nightmares',
-  tagline: 'They came for the show. The show would not let them leave.',
+  tagline: 'The audience laughed for three hours. The show ended two hours ago.',
   tone: 'horror',
   themes: ['horror', 'mystery', 'comedy'],
   playerCount: { min: 2, max: 5 },
@@ -23,10 +23,11 @@ export const theCircusOfNightmares: FullCampaign = {
       summary:
         'The party explores the Carnival\'s impossible geography—tents bigger inside than out, performers who cannot die, attractions that show visitors their worst fears. They meet other trapped souls and learn the rules of survival.',
       keyEvents: [
-        'Entering the Carnival and the immediate disappearance of the exit',
-        'Meeting Pierrot, a clown who has been performing for 200 years',
-        'The Hall of Mirrors shows each party member a different way they could die',
-        'Discovering that performers who stop entertaining become part of the scenery',
+        'Entering the Carnival and the immediate disappearance of the exit. The party turns around and the entrance is a painted backdrop. It smells like wet canvas and something sweet that has turned.',
+        'Meeting Pierrot, a clown who has been performing for 200 years. His makeup is perfect. His eyes are not. They track the party with the focus of someone who has not seen a new face in decades.',
+        'The Hall of Mirrors shows each party member a different way they could die. The reflections are detailed. They include the date.',
+        'Discovering that performers who stop entertaining become part of the scenery - a juggler frozen mid-throw, incorporated into a tent pole, his painted smile wider than his face should allow',
+        'Quiet dread: the party hears applause from the Big Top. It is empty. The seats are full of impressions where people sat so long the cushions remember their shapes.',
       ],
       estimatedSessions: 4,
     },
@@ -60,26 +61,26 @@ export const theCircusOfNightmares: FullCampaign = {
       name: 'Pierrot the Sad Clown',
       role: 'ally / guide',
       personality:
-        'Eternal performer who remembers every audience. Kind, tired, helps newcomers navigate the Carnival\'s dangers.',
+        'Eternal performer who remembers every audience. He counts them. He is on audience 73,412. He tells you this immediately, then apologizes. He laughs at things that are not funny and goes silent when they are. Two hundred years of performing have made his smile automatic and his sadness genuine.',
       secret: 'He was the Ringmaster\'s brother and knows how the first contract was signed.',
     },
     {
       name: 'Ringmaster Silas',
       role: 'tragic figure',
       personality:
-        'A man who tried to save his dying carnival and accidentally bound it to an entity beyond comprehension. Desperate to be freed but also protective of his "performers."',
+        'A man who tried to save his dying carnival and accidentally bound it to something beyond comprehension. He speaks in a showman\'s cadence even in private conversation. He cannot stop performing. His hands gesture constantly, directing invisible acts. Desperate to be freed but protective of his "performers" in the way a warden is protective of prisoners he has come to love.',
     },
     {
       name: 'The Trapeze Twins',
       role: 'conflicted NPCs',
       personality:
-        'Elena wants to escape and help the party. Elara has gone mad and wants the party to become new attractions. Identical, synchronized, terrifying.',
+        'Elena wants to escape. Elara has gone mad and wants the party to stay forever. Identical, synchronized, terrifying. They finish each other\'s sentences but one sentence is a plea for help and the other is an invitation to join. Their hands are always reaching - Elena toward the exit, Elara toward you.',
     },
     {
       name: 'The Tent',
       role: 'true villain',
       personality:
-        'Not malevolent—just hungry. Wants to exist, wants to perform, wants to grow. Communicates through dreams and the rustling of canvas.',
+        'Not malevolent - just hungry. Communicates through dreams and the rustling of canvas. When it is pleased, the tent flaps sound like applause. When it is angry, the fabric tightens and the space inside shrinks. It does not hate. It performs.',
     },
   ],
   keyLocations: [

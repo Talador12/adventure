@@ -44,10 +44,11 @@ export const theWorldBelow: FullCampaign = {
       title: 'Act 3: The Garden',
       summary: 'The deepest level. A paradise carved by something that wanted peace. The party meets the digger, understands the shaft, and faces a choice with no right answer.',
       keyEvents: [
-        'The transition: the shaft opens into vast space. Bioluminescent crystal lights a garden the size of a city.',
-        'The Garden: thermal springs, crystal trees bearing actual fruit, creatures that have never seen the surface',
-        'The Digger: an elemental of stone and light, ancient beyond counting. It speaks slowly. It asks questions about the surface. It is not impressed.',
-        'The request: do not tell. The party decides. The elevator ride home is the longest four hours of their lives.',
+        'The transition: the shaft opens into vast space. The party steps out of darkness into soft light. Bioluminescent crystal illuminates a garden the size of a city. The air smells like rain.',
+        'The Garden: thermal springs that steam gently, crystal trees bearing fruit that glows from within, creatures that move without fear because nothing here has ever hunted them.',
+        'The Digger: Geode rises from the stone like a mountain waking up. Eyes of crystal. Voice of grinding tectonic plates. "You came from above. How is it up there?" Pause. "Still violent?" It is not impressed by the answer.',
+        'Quiet moment: the party sits in the Garden eating crystal fruit. It tastes like the best thing any of them have ever eaten. Geode sits nearby, watching, content. Nobody speaks. Nobody needs to.',
+        'The request: "Do not tell them about me. They will come with picks and ambition. They always do." The elevator ride home is the longest four hours of their lives.',
       ],
       estimatedSessions: 6,
     },
@@ -76,9 +77,21 @@ export const theWorldBelow: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Descent', description: 'A vertical shaft 200 miles deep. Carved by claws from the bottom up. Each level is a different world: crystal forests, magnetic caves, living stone, liquid time.', significance: 'The entire campaign is a journey down this shaft. Each level is a session.' },
-    { name: 'Camp Twelve', description: 'The deepest Guild outpost. A collection of tents and supply caches bolted to the shaft wall. The last place with reliable communication to the surface.', significance: 'The last safe point. Everything below is uncharted.' },
-    { name: 'The Garden', description: 'A vast bioluminescent cavern at the deepest point of the Descent. Crystal trees, thermal springs, and creatures that have never known the sun. Paradise, built by something that wanted to be left alone.', significance: 'The campaign\'s destination and the site of the final moral choice.' },
+    {
+      name: 'The Descent',
+      description: 'A vertical shaft 200 miles deep. Carved by claws from the bottom up — the claw marks point downward, meaning something dug upward toward the surface, then turned around and went home. Each level is a different world.',
+      significance: 'The entire campaign is a journey down this shaft. Each level is a session. Each level is stranger than the last.',
+    },
+    {
+      name: 'Camp Twelve',
+      description: 'The deepest Guild outpost. A collection of tents and supply caches bolted to the shaft wall with iron spikes. A message board holds notes from previous expeditions. The last note reads: "Beautiful down here. Do not follow us."',
+      significance: 'The last safe point. Everything below is uncharted. The last place where the party can turn back.',
+    },
+    {
+      name: 'The Garden',
+      description: 'A vast bioluminescent cavern at the deepest point. Crystal trees bearing actual fruit that tastes like sunlight. Thermal springs that steam gently. Creatures that have never known the sun and do not miss it. Paradise, built by something that wanted to be left alone.',
+      significance: 'The campaign\'s destination. The most beautiful place the party will ever see. The hardest secret they will ever keep.',
+    },
   ],
   dataSystems: ['wildernessSurvival', 'magicalAnomaly', 'terrainAdvantage', 'abandonedMine', 'naturalDisaster', 'travelMontage', 'companionAnimal', 'npcRelationshipWeb', 'partyMoraleTracker'],
 };

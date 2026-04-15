@@ -40,8 +40,9 @@ export const theFinalContract: FullCampaign = {
         'The first victim\'s hometown: a village that still remembers the boy who was killed. His name was Alder.',
         'Valen visits Alder\'s grave. He leaves flowers. He has been leaving flowers for 200 years. The groundskeeper knows him.',
         'The witch\'s trail: Sera was last seen decades ago at the edge of the Wastes. She is still alive. The curse sustains them both.',
-        'A group of Valen\'s former victims\' families confronts the party. Not with swords — with grief.',
+        'A group of Valen\'s former victims\' families confronts the party. Not with swords - with grief.',
         'Valen offers to let the families hurt him. His body heals instantly. Their anger does not.',
+        'Quiet moment: Valen and a party member sit on a hillside watching sunset. He says: "Three hundred names. I say them every morning. It takes eleven minutes. That is my prayer." If the party helped the families earlier, one of them left Valen a letter. He reads it by the fire and does not speak for an hour.',
         'The Wastes: a dead land at the edge of the world. Something lives at the center. Something old.',
       ],
       estimatedSessions: 5,
@@ -66,7 +67,7 @@ export const theFinalContract: FullCampaign = {
       name: 'Valen Corr',
       role: 'client / the world\'s greatest assassin',
       personality:
-        'Kind. Genuinely kind. Two hundred years of killing taught him the value of everything he took. Pets every dog. Tips every server. Remembers the name of every person he killed — all three hundred. Tells terrible jokes. Sleeps sitting up because the nightmares come faster lying down. The most dangerous man alive and all he wants is a good meal and a rest that lasts.',
+        'Kind. Genuinely kind. Two hundred years of killing taught him the value of everything he took. Pets every dog. Tips every server. Remembers the name of every person he killed - all three hundred. Tells terrible jokes that trail off when he remembers who taught him the punchline. Sleeps sitting up because the nightmares come faster lying down. Calls the party "kid" regardless of their age. The most dangerous man alive and all he wants is a good meal and a rest that lasts.',
       secret: 'He stopped taking contracts eighty years ago. Every reported "Valen Corr assassination" since then was someone else using his name. He let them. He does not care about his reputation. He cares about the dog at the inn that he has to abandon if this works.',
     },
     {

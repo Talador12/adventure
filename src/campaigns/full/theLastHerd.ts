@@ -71,7 +71,7 @@ export const theLastHerd: FullCampaign = {
       name: 'Wren Ashbrook',
       role: 'ranger / guide',
       personality:
-        'A weathered human ranger who has studied the Solemn Beasts her entire life. She was not chosen by the herd and it is the quiet heartbreak of her life. She helps the party from the margins.',
+        'A weathered human ranger with sun-cracked hands and eyes that go soft whenever the herd is in view. Speaks about the Solemn Beasts the way some people speak about gods — with reverence and a tremor in the voice. She was not chosen by the herd and it is the quiet heartbreak of her life. "I have watched them my whole life. They walked past me. They chose you. I am not bitter. That is a lie. I am a little bitter."',
     },
     {
       name: 'Skarr',

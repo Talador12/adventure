@@ -4,7 +4,7 @@ export const thePriceOfImmortality: FullCampaign = {
   id: 'full-price-immortality',
   type: 'full',
   title: 'The Price of Immortality',
-  tagline: 'The wizard found eternal life. Then he found out what it costs.',
+  tagline: 'He was immortal this morning. He has aged sixty years since lunch. His eleven colleagues are dust.',
   tone: 'horror',
   themes: ['horror', 'mystery', 'dark_fantasy'],
   playerCount: { min: 3, max: 5 },
@@ -60,14 +60,14 @@ export const thePriceOfImmortality: FullCampaign = {
       name: 'Archmage Vorenthal',
       role: 'client / morally complex figure',
       personality:
-        'A brilliant wizard who is watching his 200-year life evaporate. Alternates between terror, arrogance, and genuine remorse. He tells himself he didn\'t know the cost. He\'s almost telling the truth.',
-      secret: 'He suspected the ritual had a cost. He chose not to investigate. That willful ignorance is its own kind of guilt.',
+        'A brilliant wizard who is watching his 200-year life evaporate. His hands are aging visibly during conversation - liver spots appearing, skin thinning. He alternates between terror, arrogance, and genuine remorse, sometimes within the same sentence. He adjusts his robes constantly, as if they no longer fit. He tells himself he did not know the cost. His voice drops to a whisper when he says it, as if even he does not believe it.',
+      secret: 'He suspected the ritual had a cost. He chose not to investigate. That willful ignorance is its own kind of guilt. The research notes have a page he tore out. The torn edge is still in the binding.',
     },
     {
       name: 'Emissary of Kelemvor',
       role: 'divine enforcer',
       personality:
-        'A calm, implacable servant of the god of death. Not cruel — simply insistent that the natural order be restored. "Death is not a punishment. It is a right that was stolen from 2,600 people."',
+        'A calm, implacable servant of the god of death. He does not blink. He does not breathe unless he chooses to speak. The air around him smells like autumn leaves and fresh-turned earth. Not cruel - simply insistent that the natural order be restored. "Death is not a punishment. It is a right that was stolen from 2,600 people." His voice does not echo, even in rooms where it should.',
     },
     {
       name: 'Elara Whitfield',

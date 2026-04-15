@@ -60,7 +60,7 @@ export const theForgottenRoad: FullCampaign = {
       name: 'Mira Koss',
       role: 'cartographer / quest giver',
       personality:
-        'An obsessive cartographer who has dedicated her life to mapping the unmappable. Brilliant, stubborn, gets physically uncomfortable when lost. "A road that\'s not on a map is a personal insult."',
+        'Always holds a compass, even indoors. Turns to face north before speaking, a tic she does not notice. Gets physically uncomfortable when lost — scratches her arms, breathes faster, narrows her eyes. "A road that is not on a map is a personal insult. I have been insulted. I intend to correct the record."',
       secret: 'She\'s walked the road before — as a child. She remembers another world. She\'s been searching for the road for thirty years.',
     },
     {

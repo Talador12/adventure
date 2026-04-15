@@ -4,7 +4,7 @@ export const theSanctumOfSorrows: FullCampaign = {
   id: 'full-sanctum-of-sorrows',
   type: 'full',
   title: 'The Sanctum of Sorrows',
-  tagline: 'A monastery where grief is currency and pain is power.',
+  tagline: 'The monks say they cure sadness. The basement hums with it.',
   tone: 'horror',
   themes: ['dungeon_crawl', 'dark_fantasy', 'mystery'],
   playerCount: { min: 2, max: 4 },
@@ -23,10 +23,11 @@ export const theSanctumOfSorrows: FullCampaign = {
       summary:
         'The party investigates the Sanctum\'s public face—beautiful gardens, serene monks, genuine-seeming therapy. But small inconsistencies lead them to investigate deeper levels.',
       keyEvents: [
-        'Arrival at the Sanctum—impressed by the peaceful atmosphere',
-        'Interviewing the Abbot, who seems genuinely compassionate',
-        'Discovery of hidden passages behind meditation chambers',
-        'First glimpse of the lower levels—people in induced emotional states',
+        'Arrival at the Sanctum - the gardens are immaculate. The air smells like lavender and something underneath it, something metallic, that the lavender is trying to cover.',
+        'Interviewing the Abbot, who seems genuinely compassionate. He touches patients\' foreheads with tenderness. His other hand, beneath the desk, taps a rhythm that matches the hum from below the floor.',
+        'Discovery of hidden passages behind meditation chambers. The walls are warm. The stone sweats. Behind one wall, the party hears a sound like breathing through a tube.',
+        'First glimpse of the lower levels - people in induced emotional states, seated in rows, tears running down slack faces. The tears collect in grooves carved into the floor, flowing downward.',
+        'Quiet dread: a patient in the garden smiles at the party. Her eyes do not match the smile. She mouths the word "help" then returns to pruning roses, as if she never stopped.',
       ],
       estimatedSessions: 4,
     },
@@ -60,19 +61,19 @@ export const theSanctumOfSorrows: FullCampaign = {
       name: 'Abbot Serenity',
       role: 'villain',
       personality:
-        'Genuinely believes he has found a moral way to help the world—by efficiently harvesting suffering to fund healing. Cannot comprehend why the party sees this as wrong.',
+        'Genuinely believes he has found a moral way to help the world. He speaks softly, never raising his voice, choosing each word with the care of a surgeon choosing a scalpel. He smiles with his mouth but his eyes are calculating dosages. He touches his prayer beads when he talks about the patients. Each bead represents a life he has optimized. He cannot comprehend why the party sees this as wrong.',
     },
     {
       name: 'Brother Calm',
       role: 'ally',
       personality:
-        'Young monk who joined to help people but is disturbed by what he sees. Provides inside information and access.',
+        'Young monk who joined to help people but is disturbed by what he sees. He bites his lip when the Abbot speaks. He washes his hands constantly - they are raw and red. He provides inside information in whispers, always checking over his shoulder, flinching at the hum from below.',
     },
     {
       name: 'Elena',
       role: 'victim / survivor',
       personality:
-        'The missing person the party was hired to find. Partially recovered, angry, determined to help free the others.',
+        'The missing person the party was hired to find. Three months of harvesting have left her hollow-cheeked and furious. She does not cry anymore - they took that from her. She speaks in flat, precise sentences, as if emotion is a resource she can no longer afford to spend.',
     },
     {
       name: 'The Grief Merchant',

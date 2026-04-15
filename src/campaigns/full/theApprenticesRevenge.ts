@@ -23,7 +23,7 @@ export const theApprenticesRevenge: FullCampaign = {
       summary:
         'The party enters the trapped tower and begins climbing. Each floor is themed around a specific grievance from Pip\'s manifesto. The traps are clever, embarrassing, and increasingly sympathetic. Notes from Pip provide context.',
       keyEvents: [
-        'Floor 1: "The Component Fetching" - the party must fetch increasingly ridiculous spell components from trapped alcoves',
+        'Floor 1: "The Component Fetching" - the party must fetch increasingly ridiculous spell components from trapped alcoves. Running gag begins: each floor has a framed employee-of-the-month photo. It is always Vexillus. Pip\'s face is scratched out of every group photo.',
         'Floor 2: "The Cauldron" - a room that slowly fills with cleaning solution while the party scrubs actual cauldrons to unlock the exit',
         'Pip\'s notes are everywhere: "He made me do this for six hours every day. For twelve years."',
         'The party finds Pip\'s manifesto. Reading it is optional but changes the emotional context of every subsequent trap.',
@@ -51,6 +51,7 @@ export const theApprenticesRevenge: FullCampaign = {
         'Pip arrives through a hidden passage - he built this tower\'s traps, he knows every secret',
         'The tribunal: Vexillus deflects, minimizes, and charm-spells. Pip presents documented evidence.',
         'The verdict: the party decides Pip\'s fate, Vexillus\'s reputation, and who gets the tower',
+        'Callback: the final employee-of-the-month frame on floor 10 is empty. If the party rules for Pip, his face appears in it. He pretends not to care. He absolutely cares.',
       ],
       estimatedSessions: 4,
     },

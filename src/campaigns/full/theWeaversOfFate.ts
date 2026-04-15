@@ -60,7 +60,7 @@ export const theWeaversOfFate: FullCampaign = {
       name: 'Grand Weaver Ophelia',
       role: 'Weaver leader',
       personality:
-        'Master of the Loom who sees destiny manipulation as necessary social control. Genuinely believes she is protecting the city.',
+        'Runs her fingers along invisible threads in the air when speaking — she sees the Loom everywhere. Voice like silk over steel. Never blinks during important conversations. "Every person in this city has a thread. I see them all. I adjust the ones that fray. You would call that control. I call it maintenance."',
       secret: 'She has already seen her own death in the threads. Every action she takes is an attempt to rewrite it, and the Loom is fraying because of her constant self-serving edits.',
     },
     {

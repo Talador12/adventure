@@ -23,7 +23,7 @@ export const theWrongQuestionnaire: FullCampaign = {
       summary:
         'The party reluctantly begins wedding planning. Every task is mundane but goes catastrophically sideways in ways that are secretly useful. Finding a caterer, choosing flowers, booking a venue — each one is harder than slaying a goblin and funnier than it has any right to be.',
       keyEvents: [
-        'The bride is a perfectionist who changes her mind every hour',
+        'The bride is a perfectionist who changes her mind every hour. Running gag begins: the centerpiece height changes every scene. Three inches taller. Two inches shorter. Elara treats this like a matter of national security. She is never satisfied.',
         'The caterer (a polymorphed dragon) insists on an all-fire menu',
         'The flower vendor sells moonpetal lilies — beautiful and coincidentally dragon-bane',
         'The venue: a cliffside estate that happens to sit above the dragon\'s lair entrance',
@@ -50,7 +50,7 @@ export const theWrongQuestionnaire: FullCampaign = {
         'The dragon drops its disguise during the toast and attacks',
         'The flower arrangements detonate as dragon-bane bombs',
         'The dance floor activates as a binding circle, pinning the dragon',
-        'The bride catches the bouquet, draws the artifact sword, and the party finishes the fight',
+        'The bride catches the bouquet, draws the artifact sword, and the party finishes the fight. Callback: the centerpieces are exactly three inches tall when the dragon knocks them over. Elara was right all along. The height was critical because it matched the dragon-bane detonation radius.',
       ],
       estimatedSessions: 4,
     },

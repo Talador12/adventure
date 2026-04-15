@@ -56,24 +56,65 @@ export const theUnderdarkOlympics: FullCampaign = {
     {
       name: 'Coach Glimmerdust',
       role: 'deep gnome coach / ally',
-      personality: 'An enthusiastic deep gnome who has been training for this moment for a century. His coaching style is 90% encouragement, 10% useful advice. "You CAN see in the dark! You just need to BELIEVE!"',
-      secret: 'He competed in the last Games 100 years ago. His team was sabotaged too. He never got over it.',
+      personality:
+        'An enthusiastic deep gnome who has been training for this moment for a century. His coaching style is 90% encouragement, 10% useful advice. Carries a glowing whistle. His pre-game speeches are legendary and completely useless. "You CAN see in the dark! You just need to BELIEVE! Also maybe squint."',
+      secret: 'He competed in the last Games 100 years ago. His team was sabotaged too. He never got over it. His entire coaching career has been building toward this moment of vindication.',
     },
     {
       name: 'Matron Zaelith',
       role: 'drow delegation head / antagonist',
-      personality: 'The drow team leader who considers cheating a form of art. "Only the foolish play fair. The clever play to win."',
+      personality:
+        'The drow team leader who considers cheating a form of high art. Speaks in a tone that implies everyone else is too stupid to notice her schemes. They are not. She does not care. "Only the foolish play fair. The clever play to win. The brilliant play to win AND look graceful doing it."',
+      secret: 'She has never competed in anything fairly in her life. If forced to play fair, she genuinely does not know the rules.',
     },
     {
       name: 'Sporacle',
       role: 'myconid judge / neutral comic relief',
-      personality: 'A myconid who judges events through spore-cloud consensus. Slow to decide. Very fair. Impossible to bribe (it doesn\'t understand the concept of money).',
+      personality:
+        'A myconid who judges events through spore-cloud consensus. Deliberation takes approximately 45 minutes per decision because every spore must agree. Completely impartial. Impossible to bribe because it does not understand the concept of money. Someone once offered it gold. It tried to photosynthesize it.',
+    },
+    {
+      name: 'Glurp the Kuo-Toa',
+      role: 'kuo-toa team captain / chaos agent',
+      personality:
+        'The kuo-toa delegation captain who invented three new events during the opening ceremony that nobody approved, including "competitive drowning" and "who can believe something into existence fastest." His team worships a different god every morning. Their mascot changes hourly. Nobody knows their actual roster.',
+    },
+    {
+      name: 'Ironjaw Deepforge',
+      role: 'duergar team captain / straight man',
+      personality:
+        'A duergar who takes the Games with grim, humourless determination. Treats every event - including the mushroom growing speed trial - with the intensity of mortal combat. Has never smiled. Once almost smiled after a gold medal. Caught himself. "Joy is a weakness the surface dwellers can afford. We have mining quotas."',
     },
   ],
   keyLocations: [
-    { name: 'The Grand Arena of Deepholm', description: 'A vast underground colosseum carved from a single geode. The walls sparkle. The acoustics are terrible.', significance: 'Where events take place.' },
-    { name: 'The Athletes\' Village', description: 'A cavern complex with delegation quarters. The surface team\'s rooms are too small (designed for deep gnomes).', significance: 'Training, politics, and sabotage discovery.' },
-    { name: 'The All-Race Relay Course', description: 'A 5-mile course through five Underdark environments, each favoring a different race.', significance: 'The final event and climax.' },
+    {
+      name: 'The Grand Arena of Deepholm',
+      description:
+        'A vast underground colosseum carved from a single geode. The walls sparkle with natural crystal formations that double as terrible spotlights. The acoustics bounce every sound into a disorienting echo. The scoreboard is a colony of glow-worms trained to form numbers.',
+      significance: 'Where the main events take place. The crowd seating is tiered by race and everyone heckles.',
+    },
+    {
+      name: "The Athletes' Village",
+      description:
+        'A cavern complex with delegation quarters designed by deep gnomes, which means every room is four feet tall. The surface team sleeps on the floor with their feet in the hallway. The drow quarters have suspiciously thick walls and soundproofing.',
+      significance: 'Training, politics, and sabotage discovery. The cafeteria serves bioluminescent food that tastes like regret.',
+    },
+    {
+      name: 'The All-Race Relay Course',
+      description:
+        'A 5-mile course through five distinct Underdark environments: a flooded cavern (favors kuo-toa), a crystal maze (favors deep gnomes), a lava tube (favors duergar), a web-strung chasm (favors drow), and a mushroom forest (favors myconids). The surface section is a straight hallway with torches. It favors nobody.',
+      significance: 'The final event and climax. The drow have pre-staged shortcuts in their section and "accidentally" darkened the surface section.',
+    },
   ],
-  dataSystems: ['tournamentBracket', 'gladiatorArena', 'skillChallenge', 'socialEncounter', 'factionReputation', 'encounterWaves', 'fantasyInsults', 'combatNarration', 'partyMoraleTracker'],
+  dataSystems: [
+    'tournamentBracket',
+    'gladiatorArena',
+    'skillChallenge',
+    'socialEncounter',
+    'factionReputation',
+    'encounterWaves',
+    'fantasyInsults',
+    'combatNarration',
+    'partyMoraleTracker',
+  ],
 };

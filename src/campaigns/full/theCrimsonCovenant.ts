@@ -4,7 +4,7 @@ export const theCrimsonCovenant: FullCampaign = {
   id: 'full-crimson-covenant',
   type: 'full',
   title: 'The Crimson Covenant',
-  tagline: 'Seven vampires made a pact to rule the world. Six are still alive.',
+  tagline: 'The seventh vampire is not dead. She is the one who told you she was.',
   tone: 'horror',
   themes: ['dark_fantasy', 'intrigue', 'war'],
   playerCount: { min: 3, max: 6 },
@@ -60,27 +60,27 @@ export const theCrimsonCovenant: FullCampaign = {
       name: 'Lord Malachar',
       role: 'minor villain / first target',
       personality:
-        'Arrogant, impulsive, the youngest Covenant member. Overconfident from centuries of unchallenged dominance. Underestimates mortals.',
+        'Arrogant, impulsive, the youngest Covenant member. He speaks too loudly for a creature of the night, gestures too broadly, laughs with all his teeth showing. Overconfident from centuries of unchallenged dominance. He does not flinch from holy symbols. He should.',
     },
     {
       name: 'Lady Vesper',
       role: 'potential ally / manipulator',
       personality:
-        'Elegant, patient, the Covenant\'s diplomat. Offers the party a deal: help her take down the more monstrous members, and she will rule the rest more humanely.',
-      secret: 'She genuinely believes vampires can coexist with humanity—and she might be right.',
+        'Elegant, patient, the Covenant\'s diplomat. She speaks slowly, choosing words the way a sommelier chooses wine. She never shows her fangs. She crosses her hands in her lap when she lies. She offers the party a deal that sounds almost reasonable, which is the most dangerous thing about her.',
+      secret: 'She genuinely believes vampires can coexist with humanity - and she might be right.',
     },
     {
       name: 'The Butcher',
       role: 'villain',
       personality:
-        'A vampire who has abandoned all pretense of humanity. Hunts for sport, sees mortals as cattle. The other Covenant members fear him as much as they need him.',
+        'A vampire who has abandoned all pretense of humanity. He does not speak - he growls words. His clothes are always stained. The room smells like iron when he enters. The other Covenant members fear him as much as they need him. He watches the party the way a cat watches a bird through glass.',
     },
     {
       name: 'The Seventh',
       role: 'true antagonist',
       personality:
-        'Patient beyond measure. Faked their death to test loyalty. Willing to sacrifice thousands to maintain the Covenant\'s secrecy and power.',
-      secret: 'They created the other six vampires—they are the original, and the others are merely extensions of their will.',
+        'Patient beyond measure. Her voice never changes pitch. Her face never changes expression. She faked her death to test loyalty and waited, motionless, for years. She speaks about sacrifice the way an accountant speaks about depreciation.',
+      secret: 'She created the other six vampires - she is the original, and the others are merely extensions of her will that have forgotten their leash.',
     },
   ],
   keyLocations: [

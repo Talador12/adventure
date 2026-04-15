@@ -64,7 +64,7 @@ export const gravityOptional: FullCampaign = {
       name: 'Professor Tove Cairnwell',
       role: 'gravity scholar / guide',
       personality:
-        'A physicist who studies gravitational magic and is having the worst and best week of her life simultaneously. Her entire field of study just became relevant. She is terrified and thrilled. Communicates in diagrams and wild gesticulation.',
+        'Hair perpetually floating from residual zero-gravity exposure. Communicates in diagrams she draws in the air with a glowing chalk that stays suspended where she leaves it. Bounces between terror and ecstasy mid-sentence. "This is IMPOSSIBLE. This is BEAUTIFUL. This is going to kill us all. Look at this DIAGRAM!"',
     },
     {
       name: 'The Examiner',

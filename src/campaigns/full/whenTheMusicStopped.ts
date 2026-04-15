@@ -12,7 +12,7 @@ export const whenTheMusicStopped: FullCampaign = {
   estimatedSessions: 15,
   settingSummary:
     'For sixty years, the bard Isavel sang from a tower on the edge of the Bleaklands - a wound in the world where something old and hungry presses against reality. Her song was a ward, a wall of sound that kept the darkness from spreading. She was a hero. Statues in three cities. Songs about her songs. Then, two months ago, the music stopped. The darkness is creeping outward. Villages on the border are going silent. The realm assumes she died. She did not. She stopped. The party is sent to find out what happened to the greatest bard who ever lived and convince her to sing again.',
-  hook: 'The Guild of Resonance, keepers of Isavel\'s legacy, briefs the party in a room full of her portraits. "The ward is failing. The Bleaklands have advanced four miles in two months. At this rate, Thornfield falls in six weeks. Greyhollow in three months. The capital in a year." They hand you a map marked with her tower. "Find her. If she is alive, bring her back. If she is dead, bring back her instrument. The Song must continue."',
+  hook:         'The Guild of Resonance, keepers of Isavel\'s legacy, briefs the party in a room full of her portraits. "The ward is failing. The Bleaklands have advanced four miles in two months. At this rate, Thornfield falls in six weeks. Greyhollow in three months. The capital in a year." They hand you a map marked with her tower. "Find her. If she is alive, bring her back. If she is dead, bring back her instrument. The Song must continue." Resonant Kael, if he trusts the party, adds quietly: "She was my teacher. Please be kind to her."',
   twist:
     'Isavel stopped singing because she finally heard what was on the other side. The darkness is not mindless evil - it is grief. The Bleaklands were created when an entire civilization was annihilated in an ancient war. Their collective dying scream tore a hole in reality. For sixty years, Isavel sang over that scream. Then one night, she actually listened. She heard mothers calling for children. She heard people begging for help. She could not bring herself to drown them out anymore. She did not choose despair - she chose to stop silencing the dead.',
   climax:
@@ -64,7 +64,7 @@ export const whenTheMusicStopped: FullCampaign = {
       name: 'Isavel',
       role: 'the bard / the mission',
       personality:
-        'Sixty years of isolation left marks. She talks to herself, finishes sentences hours later, and has forgotten most social conventions. But her mind is sharp and her compassion is staggering. She is not depressed. She is awake to a suffering she can no longer ignore.',
+        'Sixty years of isolation left marks. She talks to herself, finishes sentences hours later, and has forgotten most social conventions. Hums constantly - fragments of the old song mixed with something new. But her mind is sharp and her compassion is staggering. She is not depressed. She is awake to a suffering she can no longer ignore. "I sang over their screams for sixty years. I called it heroism. It was a gag." Arc: begins in solitary conviction, opens to collaboration when the party offers to help compose the new song.',
       secret: 'She can hear the dead clearly now. She knows their names. She has promised them she will not silence them again.',
     },
     {

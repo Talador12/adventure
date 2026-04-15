@@ -23,7 +23,7 @@ export const everythingSpeaks: FullCampaign = {
       summary:
         'Everything speaks. The party navigates a world where every object is a conversation partner. Simple tasks become negotiations. Combat involves convincing your weapons to cooperate. Dungeon crawling means talking to every wall, floor, and trap.',
       keyEvents: [
-        'The bridge: it complains about weight. The party must negotiate crossing rights.',
+        'The bridge: it complains about weight. The party must negotiate crossing rights. Spiral begins: each session introduces a new category of sentient object with increasingly unreasonable demands. Bridges want lighter traffic. Doors want knocking. Swords want consent before being drawn.',
         'The treasure chest: it has abandonment issues. It refuses to be opened unless promised they will take it along.',
         'The dungeon: every trap announces itself because the tripwires feel guilty. "I am going to stab you. Sorry."',
         'The lava: a 10,000-year-old philosopher who finally gets an audience. "Existence is flow. Also, please do not step in me."',
@@ -50,7 +50,7 @@ export const everythingSpeaks: FullCampaign = {
         'Infrastructure collapse: bridges stop bridging, roads stop roading. Commerce halts.',
         'The druid confrontation: gentle, sad, and necessary. She has friends now. She does not need the spell.',
         'The Great Farewell: objects across the valley say goodbye. The lava quotes poetry. The chairs weep.',
-        'Silence: the enchantment ends. The world is quiet for the first time in three weeks. It is deafening.',
+        'Silence: the enchantment ends. The world is quiet for the first time in three weeks. It is deafening. Chaos callback: one object stays sentient. The bridge. The druid could not bring herself to silence the first friend she made. It does not mind being the only one. It has a lot to think about.',
       ],
       estimatedSessions: 3,
     },

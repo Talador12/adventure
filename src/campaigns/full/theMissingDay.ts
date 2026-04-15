@@ -60,7 +60,7 @@ export const theMissingDay: FullCampaign = {
       name: 'Councilor Maren Thatch',
       role: 'quest giver',
       personality:
-        'Head of the city council. Practical, frustrated, and scared. She does not want a mystery — she wants an explanation she can write in a report.',
+        'Head of the city council. Taps her signet ring on the table when thinking. Speaks in bullet points — three facts, one conclusion, move on. Her calm is performance. "I do not want a mystery. I want an explanation I can write in a report. I want dates and causes and signatures. I want someone to tell me that my city did not just... skip a day."',
     },
     {
       name: 'Ivor Strand',

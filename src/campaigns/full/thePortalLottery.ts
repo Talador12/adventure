@@ -23,7 +23,7 @@ export const thePortalLottery: FullCampaign = {
       summary:
         'Portals open randomly across Nexusburg. The party deals with the fallout - creatures from other dimensions, displaced citizens, geographical confusion. Each session features increasingly absurd portal destinations. The party is recruited by the Planar Transit Authority to investigate.',
       keyEvents: [
-        'The cheese dimension: a portal to a realm of sentient cheese. Delegates emerge. They want trade agreements.',
+        'The cheese dimension: a portal to a realm of sentient cheese. Delegates emerge. They want trade agreements. Spiral begins: each session introduces a more absurd portal destination. Cheese, time loops, gravity suggestions, and a dimension where everything is slightly to the left. The stack of unresolved portal crises grows faster than the party can address them.',
         'The mirror portal: opens into an identical room, creating an infinite regression. The party meets themselves.',
         'The temporal portal: five minutes ago keeps opening in government buildings. Nothing gets decided.',
         'The PTA hires the party to trace the malfunction to the Crossroads hub.',
@@ -50,7 +50,7 @@ export const thePortalLottery: FullCampaign = {
         'The Grand Shuffle begins: portals merge. Walking through a door leads to three places simultaneously.',
         'The Crossroads hub: a cathedral of portals where every dimension is visible through overlapping doorways.',
         'Confrontation: the party must solve the Shuffler by being more creative than random chance.',
-        'Resolution: the network resets. Portals close for 24 hours. The world holds its breath. Then they reopen. Correctly.',
+        'Resolution: the network resets. Portals close for 24 hours. The world holds its breath. Then they reopen. Correctly. Chaos callback: Ambassador Brie from the cheese dimension is the last portal to close. She demands one final thing: a trade agreement signed before the portal seals. The party signs it. Cheese imports begin next week.',
       ],
       estimatedSessions: 4,
     },

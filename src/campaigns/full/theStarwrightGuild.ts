@@ -22,10 +22,11 @@ export const theStarwrightGuild: FullCampaign = {
       title: 'Act 1: The Inner Spheres',
       summary: 'Training, first voyages, and establishing the crew. The party charts familiar spheres, trades with known civilizations, and learns the art of star-sailing.',
       keyEvents: [
-        'First launch: the Astrolabe catches solar wind. The party learns sail-and-elemental navigation.',
-        'The Beholder Librarians of Sphere Three: a vast orbital library. They trade knowledge for knowledge.',
-        'A pirate ambush in the aether between spheres: raiders using enslaved elementals as weapons',
-        'The mind flayer merchants of the Ink Sphere: deeply civilized, deeply unsettling trade partners',
+        'First launch: the Astrolabe catches solar wind and the deck tilts. The sails fill with light. Combustus roars in the engine room. The party leaves the world behind and enters the aether between spheres.',
+        'The Beholder Librarians of Sphere Three: Ix floats up to the party, eleven eyes reading eleven different documents simultaneously. "Welcome. Knowledge costs one secret. Lies cost two. Which will you pay?"',
+        'A pirate ambush in the aether: raiders on a ship of blackened bone, using enslaved fire elementals as cannons. Combustus feels their pain and begs the party to free them.',
+        'The mind flayer merchants of the Ink Sphere: deeply civilized, deeply unsettling. They serve tea. The cups are warm. The conversation is pleasant. The party cannot shake the feeling they are being appraised.',
+        'Quiet moment: the party stands on the Astrolabe\'s bow between spheres. The aether is silent. The stars are close enough to touch. Combustus hums a lullaby it learned from a previous crew, two hundred years ago.',
       ],
       estimatedSessions: 7,
     },
@@ -76,9 +77,21 @@ export const theStarwrightGuild: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Astrolabe', description: 'A Starwright survey vessel. Elemental-powered, star-sailed, equipped with cartographic instruments and a hold full of blank charts. Home for twenty sessions.', significance: 'The party\'s ship and mobile base. Every journey starts and ends here.' },
-    { name: 'The Orbital Library', description: 'A station in Sphere Three maintained by beholder scholars. Books from every world in every sphere. The catalog alone takes a year to read.', significance: 'The primary source of information about the outer reaches and the membrane.' },
-    { name: 'The Membrane', description: 'The wall at the edge of the cosmos. Translucent, warm, gently pulsing. On the other side, something vast moves in light that has never been starlight.', significance: 'The campaign\'s ultimate destination and the site of the final choice.' },
+    {
+      name: 'The Astrolabe',
+      description: 'A Starwright survey vessel with sails of woven starlight and an engine of bound fire. The deck creaks with solar wind. The hold is full of blank charts and the galley serves food that tastes different in every sphere.',
+      significance: 'The party\'s ship and mobile base. Home for twenty sessions. By Act 3, it is as much a character as any NPC.',
+    },
+    {
+      name: 'The Orbital Library',
+      description: 'A station in Sphere Three maintained by beholder scholars. Eleven-eyed librarians float between shelves that extend in all directions, including up. Books from every world in every sphere. The catalog alone takes a year to read.',
+      significance: 'The primary source of information about the outer reaches and the membrane. Ix charges one secret per answer and never lies.',
+    },
+    {
+      name: 'The Membrane',
+      description: 'The wall at the edge of the cosmos. Translucent, warm, gently pulsing like a heartbeat measured in centuries. Press your hand against it and you feel warmth from the other side. Something vast moves in light that has never been starlight.',
+      significance: 'The campaign\'s ultimate destination. The edge of everything, and the beginning of something else.',
+    },
   ],
   dataSystems: ['planarWeather', 'planarMarketplace', 'astralEncounter', 'astralWeatherHazard', 'crossPlaneMessenger', 'shipCargo', 'treasureMap', 'npcRelationshipWeb', 'magicalAnomaly'],
 };

@@ -25,7 +25,7 @@ export const theInheritance: FullCampaign = {
       keyEvents: [
         'The inspection: 7 floors, various states of disrepair, monsters everywhere',
         'Meet the tenants: goblins (floor 1), a troll (floor 3), kobolds (floor 4), a dragon (floor 6)',
-        'Tenant meeting: the monsters have complaints, demands, and a surprising union',
+        'Tenant meeting: the monsters have complaints, demands, and a surprising union. Running gag begins: Ember the dragon always has a new excuse for why rent is late. Each excuse is more elaborate and less believable than the last.',
         'First adventuring party arrives — they have a quest to "clear Deepstone Delve"',
       ],
       estimatedSessions: 4,
@@ -51,6 +51,7 @@ export const theInheritance: FullCampaign = {
         'Defense preparation: traps, monster alliances, bureaucratic paperwork',
         'The raid: a reverse dungeon crawl where the party IS the dungeon',
         'Floor 7: Uncle Aldric reveals himself and judges the party\'s work',
+        'Callback: Ember finally pays rent. In full. With interest. She was testing the party to see if they had the spine to run a dungeon. The check was in the hoard the entire time.',
       ],
       estimatedSessions: 5,
     },

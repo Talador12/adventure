@@ -24,7 +24,7 @@ export const theCollegeOfUnfinishedThings: FullCampaign = {
         'Enrollment, campus exploration, and increasingly absurd classes. The party discovers the school is stranger than advertised — and something is wrong with the architecture.',
       keyEvents: [
         'Enrollment — placement exam involves dodging a fireball (the test is whether you dodge)',
-        'First classes: "Applied Running Away," "Theoretical Explosions," "Ethics of Accidental Necromancy"',
+        'First classes: "Applied Running Away," "Theoretical Explosions," "Ethics of Accidental Necromancy." Running gag begins: every class assigns homework that is impossible to complete because the campus rearranges and the classroom is never in the same place twice.',
         'The campus rearranges — a student disappears and reappears three days younger',
         'The library has a restricted section that restricts YOU',
       ],
@@ -50,7 +50,7 @@ export const theCollegeOfUnfinishedThings: FullCampaign = {
         'The rival clique\'s experiment goes wrong — the demiplane starts folding',
         'The dean manifests fully — a face in the architecture, scared and confused',
         'The final exam: stabilize the demiplane using everything they\'ve learned',
-        'Graduation — the party gets actual diplomas (and they\'re magic)',
+        'Graduation — the party gets actual diplomas (and they are magic). Callback: the homework from Act 1 was graded by the dean-campus all along. They all passed. The grade was "Survived."',
       ],
       estimatedSessions: 5,
     },

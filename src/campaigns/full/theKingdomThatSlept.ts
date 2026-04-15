@@ -63,7 +63,7 @@ export const theKingdomThatSlept: FullCampaign = {
       name: 'Solace',
       role: 'god / well-meaning antagonist',
       personality:
-        'A minor god of rest and reprieve. Warm, gentle, speaks in the cadence of a lullaby. Genuinely does not understand why the party is upset. The kingdom asked. Solace answered. That is what gods do.',
+        'A minor god who manifests as a soft-spoken figure in pajamas, perpetually yawning, surrounded by the scent of chamomile. Speaks in the cadence of a lullaby — every sentence slopes downward, inviting sleep. Gestures are slow, languid, hypnotic. "They asked me. All of them. Every one. In their hearts, in their exhaustion, in the moments before sleep. What would you have me do? Say no?"',
       secret: 'This is the third kingdom Solace has granted this gift. The other two never woke up. The god is starting to wonder if mortals are capable of balance.',
     },
     {

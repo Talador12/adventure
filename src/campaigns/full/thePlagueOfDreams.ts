@@ -4,7 +4,7 @@ export const thePlagueOfDreams: FullCampaign = {
   id: 'full-plague-dreams',
   type: 'full',
   title: 'The Plague of Dreams',
-  tagline: 'Nobody has slept in three weeks. The dreams escaped.',
+  tagline: 'She has not slept in twenty-one days. She can see her nightmare standing at the foot of the bed. It is also exhausted.',
   tone: 'horror',
   themes: ['horror', 'urban', 'mystery'],
   playerCount: { min: 3, max: 5 },
@@ -23,8 +23,8 @@ export const thePlagueOfDreams: FullCampaign = {
       summary:
         'The party experiences the insomnia plague, encounters dream manifestations, and begins investigating while fighting exhaustion.',
       keyEvents: [
-        'The plague: three weeks without sleep, the city is breaking down',
-        'Dream manifestations: nightmares hunting, daydreams seducing, memories replaying',
+        'The plague: three weeks without sleep, the city is breaking down. Streetlights stay on because nobody turns them off. The smell of stale coffee is everywhere. A guard stands at his post, eyes open, swaying - not awake, not asleep, something between.',
+        'Dream manifestations: nightmares stalk the streets as shifting shapes that smell like childhood fears - wet basements, burning hair, the dark under the bed. Daydreams drift as golden motes that lure people into catatonic reverie.',
         'The doctor provides dream-essence: limited supply, ticking clock',
         'First clue: all manifestations are heading toward the same part of the city',
       ],
@@ -60,7 +60,7 @@ export const thePlagueOfDreams: FullCampaign = {
       name: 'Doctor Asha Venn',
       role: 'quest giver / supplier',
       personality:
-        'A brilliant physician who reverse-engineered dream-essence from captured manifestations. Exhausted, pragmatic, running out of both time and supply.',
+        'A brilliant physician who reverse-engineered dream-essence from captured manifestations. She speaks in a rapid, clipped cadence and touches her own face frequently, as if checking she is awake. Dark circles under her eyes have deepened to bruises. She measures dream-essence in fractions of a drop and her hands shake when the vial is low. Exhausted, pragmatic, running out of both time and supply.',
     },
     {
       name: 'Wren',

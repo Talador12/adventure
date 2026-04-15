@@ -60,7 +60,7 @@ export const theInheritanceOfLies: FullCampaign = {
       name: 'Fennwick Bramble',
       role: 'executor / quest giver',
       personality:
-        'A deeply stressed halfling solicitor who just wants this settled legally. Sweats constantly. "I am a contracts lawyer. I was not trained for family psychodrama."',
+        'A deeply stressed halfling solicitor who dabs his forehead with a handkerchief every thirty seconds and organizes his desk three times during a conversation. Speaks in legal clauses even when ordering lunch. "I am a contracts lawyer. I was not trained for family psychodrama. Clause 7b of the will says — no, actually, there is no Clause 7b. There is one sentence. One."',
     },
     {
       name: 'Helena Blackwood',

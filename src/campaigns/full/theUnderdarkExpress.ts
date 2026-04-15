@@ -60,7 +60,7 @@ export const theUnderdarkExpress: FullCampaign = {
       name: 'Conductor Rivvet',
       role: 'ally / in over his head',
       personality:
-        'A deep gnome who\'s been running the Express for 40 years. Professional, nervous, deeply loyal to the train. Doesn\'t know the engine\'s secret.',
+        'A deep gnome who polishes the brass fittings compulsively and refers to the train as "she." Checks his pocket watch every three minutes exactly. Professional and nervous in equal measure — adjusts his conductor\'s cap before every announcement. "She has been running for two hundred years. I have been running her for forty. She has never let me down. I will not let her down." He does not know the engine\'s secret.',
       secret: 'He\'s been having memory lapses for years. The engine has been feeding on him slowly — he just thought it was age.',
     },
     {

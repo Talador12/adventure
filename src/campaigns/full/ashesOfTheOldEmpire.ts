@@ -24,7 +24,8 @@ export const ashesOfTheOldEmpire: FullCampaign = {
         'The party arrives at Haven, a crossroads town that becomes the microcosm of the larger conflict. They build alliances, resolve disputes, and establish themselves as people who matter.',
       keyEvents: [
         'Refugee caravan arrives at Haven — the party earns their keep',
-        'Three factions send envoys — each wants Haven as a foothold',
+        'Three factions send envoys — each wants Haven as a foothold. The party breaks bread with all three.',
+        'Quiet moment: a Haven farmer invites the party to dinner. He does not care about empires. He cares about the harvest. The party remembers what they are fighting for.',
         'A warlord threatens Haven — the party helps defend it',
         'Discovery of an imperial artifact beneath Haven that all factions want',
       ],
@@ -38,7 +39,8 @@ export const ashesOfTheOldEmpire: FullCampaign = {
         'The Junta: disciplined but brutal — dissidents disappear',
         'The Theocracy: compassionate but fanatical — heresy is death',
         'The Republic: prosperous but corrupt — everything has a price',
-        'The dragon\'s agents are in all three capitals — breadcrumbs lead to the old capital',
+        'Quiet moment: a soldier from the Junta deserts and sits by the party\'s fire. She says she joined for order and found only obedience. She does not know where to go now.',
+        'The dragon\'s agents are in all three capitals — breadcrumbs lead to the old capital. If the party allied with a faction in Act 1, that faction provides intelligence.',
       ],
       estimatedSessions: 8,
     },
@@ -60,21 +62,21 @@ export const ashesOfTheOldEmpire: FullCampaign = {
       name: 'General Voss',
       role: 'faction leader (Junta)',
       personality:
-        'Iron-willed, pragmatic, haunted by the things she\'s done for order. She believes freedom is a luxury only the safe can afford.',
+        'Iron-willed, pragmatic, haunted by the things she has done for order. Speaks in clipped commands even at dinner. Stands when she could sit. She believes freedom is a luxury only the safe can afford. "Order first. Freedom is what happens inside the walls." Arc: begins as immovable authority, softens if the party shows her a vision of order that does not require a fist.',
       secret: 'She served the old emperor and knows about the dragon ritual. She\'s been preparing for the dragon\'s return.',
     },
     {
       name: 'High Sunkeeper Aravel',
       role: 'faction leader (Theocracy)',
       personality:
-        'Gentle, sincere, absolutely unwavering. He healed thousands during the collapse. He also burned heretics. He sees no contradiction.',
+        'Gentle, sincere, absolutely unwavering. Speaks in parables and always touches people on the shoulder when greeting them. He healed thousands during the collapse. He also burned heretics. He sees no contradiction. "The sun warms and the sun burns. It is still the sun." Arc: grows uncertain as the dragon\'s voice becomes harder to distinguish from his god\'s.',
       secret: 'He can hear the dragon\'s voice. He thinks it\'s his god speaking.',
     },
     {
       name: 'Consul Maren Greyvale',
       role: 'faction leader (Republic)',
       personality:
-        'Brilliant, charming, everything has a deal behind it. She built the Republic from nothing through sheer cunning. Loyalty is transactional.',
+        'Brilliant, charming, everything has a deal behind it. Counts on her fingers when negotiating. She built the Republic from nothing through sheer cunning. Loyalty is transactional. "Everyone has a price. The honest ones know theirs." Arc: genuinely shocked when she discovers the dragon manipulated her finances. For the first time, she was the mark.',
       secret: 'She\'s been unknowingly laundering the dragon\'s treasure through the Republic\'s banks.',
     },
     {

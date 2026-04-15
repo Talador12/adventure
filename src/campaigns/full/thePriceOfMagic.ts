@@ -26,6 +26,7 @@ export const thePriceOfMagic: FullCampaign = {
         'Village investigation: premature aging, withering, death without disease',
         'Professor Aldric\'s theory: magic draws from random mortal lifespans',
         'Verification: correlation between spell density and premature death rates across multiple regions',
+        'Quiet moment: Maren sits with the party and shows them a painting her daughter made. Stick figures. A sun. "She was going to be seven next month." The stakes become a face.',
         'The first pushback: the local wizard\'s college calls the theory "dangerous nonsense"',
       ],
       estimatedSessions: 7,
@@ -60,7 +61,7 @@ export const thePriceOfMagic: FullCampaign = {
       name: 'Professor Aldric Thorn',
       role: 'disgraced scholar / ally',
       personality:
-        'A former magical theorist expelled from the Arcane Academy for pursuing his research. Brilliant, obsessive, and lonely. He has been studying this for twenty years. He is right, and it ruined his life.',
+        'A former magical theorist expelled from the Arcane Academy for pursuing his research. Brilliant, obsessive, and lonely. Talks too fast and forgets to eat. His office is wallpapered with statistical charts. He has been studying this for twenty years. He is right, and it ruined his life. "I did not want to be right. Being right cost me everything." Arc: begins as desperate whistleblower, becomes the moral compass if the party gives him purpose.',
     },
     {
       name: 'Archmage Serenna Voss',

@@ -24,7 +24,7 @@ export const theQuestGiversUnion: FullCampaign = {
         'The strike begins. Adventurers have no direction. The economy stalls because monsters are not being cleared, treasures are not being retrieved, and princesses are not being rescued. The party encounters the absurd consequences of a world without quests.',
       keyEvents: [
         'Empty quest boards: adventurers milling around with nothing to do. Some take up hobbies.',
-        'The monster backlog: unslain monsters pile up. A troll starts a book club because no one comes to fight it.',
+        'The monster backlog: unslain monsters pile up. A troll starts a book club because no one comes to fight it. Spiral begins: every session, the consequences of "no quests" compound. Session 1: inconvenience. Session 2: economic collapse. Session 3: monsters develop hobbies. Session 4: the monsters are better adjusted than the adventurers.',
         'Economic collapse: the potion industry crashes (no injuries means no sales).',
         'The party is asked to mediate because they are the only adventurers not panicking.',
       ],
@@ -50,7 +50,7 @@ export const theQuestGiversUnion: FullCampaign = {
         'The dragon attacks: standard emergency. No quest is issued. The party is technically freelancing.',
         'The dragon is confused: "Where are the adventurers? I prepared a monologue."',
         'The party fights without a quest. No quest completion XP. No contractual loot. Just civic duty.',
-        'The aftermath: the new contract is signed. Quest givers can refuse. The system is better. The dragon gets its monologue.',
+        'The aftermath: the new contract is signed. Quest givers can refuse. The system is better. The dragon gets its monologue. Chaos callback: Barry the troll\'s book club survives the resolution. It becomes a permanent fixture. Adventurers and monsters attend together on Tuesdays. Barry is reading Sartre now.',
       ],
       estimatedSessions: 3,
     },

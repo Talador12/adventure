@@ -24,7 +24,7 @@ export const theGoblinSpaceProgram: FullCampaign = {
         'The party is recruited, briefed (badly), and launched in a series of catastrophic test flights. Each session is a new launch attempt. The rockets get progressively more ambitious and more dangerous. Safety is not a goblin concept.',
       keyEvents: [
         'Recruitment: a goblin pitch deck in crayon, a contract signed in mushroom ink.',
-        'Test Launch 1: the rocket goes sideways. Into a lake. The goblins call this "progress."',
+        'Test Launch 1: the rocket goes sideways. Into a lake. The goblins call this "progress." Spiral begins: each launch is more ambitious and more catastrophic than the last, but each one actually gets incrementally closer to working. The goblins are failing upward in the most literal sense.',
         'Test Launch 2: the rocket goes up, comes back down, and lands on the launch pad. A perfect circle. The goblins are baffled.',
         'Test Launch 3: the rocket achieves altitude. Then the fireworks run out. Then gravity remembers.',
       ],
@@ -50,7 +50,7 @@ export const theGoblinSpaceProgram: FullCampaign = {
         'Landing: the rocket crashes into the moon surface. It smells incredible.',
         'The moon speaks: "Oh good, you finally made it. I have been watching you for months. The sideways one was my favorite."',
         'Goblins begin mining. The moon giggles. Tremors begin.',
-        'Negotiation: the party brokers the Cheese Accords - a renewable dairy trade agreement with a celestial body.',
+        'Negotiation: the party brokers the Cheese Accords — a renewable dairy trade agreement with a celestial body. Chaos callback: Orbitz the orbital goblin finally comes home. He brings a gift from space: a chunk of moon cheese. Boomfizz declares the mission a success, reads her cookbook upside-down one final time, and promotes herself to Admiral.',
       ],
       estimatedSessions: 4,
     },

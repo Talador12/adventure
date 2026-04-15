@@ -23,7 +23,7 @@ export const theSpellThatWouldNotEnd: FullCampaign = {
       summary:
         'The party investigates the ever-expanding area of effect. The Sparkle Zone is absurdly pleasant. Everyone is clean. The air is fragrant. Property values are insane. But the spell keeps growing, and Aldwin is nowhere to be found. The party tracks him through a city where dirt does not exist.',
       keyEvents: [
-        'Entering the Sparkle Zone: the party\'s armor polishes itself. Mud falls off boots. It is unsettling.',
+        'Entering the Sparkle Zone: the party\'s armor polishes itself. Mud falls off boots. It is unsettling. Spiral begins: each session, the Sparkle Zone intensifies. Session 1: things are clean. Session 2: things are aggressively clean. Session 3: the concept of dirt is being erased from memory within the zone.',
         'Investigation: Aldwin\'s apartment is ground zero. It is so clean it hurts to look at.',
         'The trail: Aldwin fled to the sewers. The sewers are clean. This is deeply wrong.',
         'The alchemy district sounds the alarm: the Sparkle Zone is two days from reaching their reagents.',
@@ -50,7 +50,7 @@ export const theSpellThatWouldNotEnd: FullCampaign = {
         'The Grimwallow manifests: a writhing mass of ancient filth, mold, and entropy.',
         'Ashwick splits: the Sparkle Zone and the Filth Zone advance toward each other like weather fronts.',
         'Aldwin\'s gambit: he attempts to weaponize his own Prestidigitation as a sealing spell.',
-        'The final clean: the party helps Aldwin cast the largest Prestidigitation in history to reseal the ley line. The lavender is overwhelming.',
+        'The final clean: the party helps Aldwin cast the largest Prestidigitation in history to reseal the ley line. The lavender is overwhelming. Chaos callback: Jasper Gleam the real estate agent immediately begins marketing "Vintage Sparkle Zone Properties" at a premium. The man is incapable of not capitalizing. Aldwin\'s robe, for the record, is finally clean.',
       ],
       estimatedSessions: 3,
     },

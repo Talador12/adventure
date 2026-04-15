@@ -25,7 +25,7 @@ export const dimensionalAutocorrect: FullCampaign = {
       keyEvents: [
         'First combat with autocorrect: every battle cry and spell component is "corrected" into nonsense.',
         'The circumlocution solution: the party learns to say "the hot orange thing" instead of "fire."',
-        'Social chaos: a diplomat says "war" and it autocorrects to "warm." Treaties are accidentally signed.',
+        'Social chaos: a diplomat says "war" and it autocorrects to "warm." Treaties are accidentally signed. Spiral begins: each act introduces more aggressive corrections. Act 1 corrects words. Act 2 corrects sentences. Act 3 corrects intentions.',
         'Discovery: a scholar identifies the pattern - the corrections follow an algorithm, not random chance.',
       ],
       estimatedSessions: 3,
@@ -50,7 +50,7 @@ export const dimensionalAutocorrect: FullCampaign = {
         'The approach: every word is corrected. The party communicates in gestures, drawings, and creative descriptions.',
         'The weapon: slang. The Editor cannot parse slang. "That is not a word!" "It is NOW."',
         'The debate: the party argues that language is for connection, not precision. The Editor has never connected.',
-        'Resolution: the autocorrect is reprogrammed. It now suggests corrections but does not enforce them. Mortals can ignore it.',
+        'Resolution: the autocorrect is reprogrammed. It now suggests corrections but does not enforce them. Mortals can ignore it. Chaos callback: the first word spoken after the reprogramming is "fire." It stays "fire." The wizard weeps with relief.',
       ],
       estimatedSessions: 3,
     },

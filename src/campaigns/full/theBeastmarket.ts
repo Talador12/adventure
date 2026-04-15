@@ -60,7 +60,7 @@ export const theBeastmarket: FullCampaign = {
       name: 'The Ringmaster',
       role: 'market leader / complex villain',
       personality:
-        'A charismatic gnome who runs the Beastmarket with showman flair. Not evil by nature — sees creatures as merchandise. Can be turned if the party convinces him the lich will destroy everything.',
+        'A charismatic gnome who stands on a crate to address crowds, wears a coat three sizes too large, and introduces every lot with a flourish and a bad pun. "Ladies and gentlemen — a MANTICORE! Notice the wingspan. Notice the teeth. Notice the PRICE." Not evil by nature — sees creatures as merchandise. Can be turned if the party convinces him the lich will destroy everything.',
       secret: 'He started the market to pay off a debt to the lich. He\'s trapped. He\'d shut it down if he could.',
     },
     {

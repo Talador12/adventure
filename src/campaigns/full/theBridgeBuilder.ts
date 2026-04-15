@@ -37,7 +37,8 @@ export const theBridgeBuilder: FullCampaign = {
       keyEvents: [
         'Political delegation: hardliners from both nations visit the site and demand the project be stopped',
         'Historical research: old records mention previous bridge attempts — all failed at the same stage',
-        'A worker from each side becomes friends — the first genuine cross-cultural bond, and a target',
+        'A worker from each side becomes friends - the first genuine cross-cultural bond, and a target',
+        'Quiet moment: Malik teaches Seren a Valdris drinking song. Seren teaches Malik a Korreth prayer. Neither understands the words. Both learn the melody.',
         'The pattern: every sabotage uses the same methods, the same timing, the same result — this is not organic opposition',
       ],
       estimatedSessions: 6,
@@ -60,7 +61,7 @@ export const theBridgeBuilder: FullCampaign = {
       name: 'Chief Engineer Petra Yune',
       role: 'project leader',
       personality:
-        'The engineer in charge of the bridge construction. Brilliant, stubborn, and singularly focused on the build. She does not care about politics — she cares about load-bearing calculations. "I was hired to build a bridge. I am going to build a bridge."',
+        'The engineer in charge of the bridge construction. Brilliant, stubborn, and singularly focused on the build. Carries a slide rule like a weapon. Taps her pencil on surfaces when calculating. "I was hired to build a bridge. I am going to build a bridge. Your wars are not my department." Arc: begins apolitical, grows to understand the bridge is more than stone. By Act 3, she fights for it.',
     },
     {
       name: 'Ambassador Dorin Kell',
@@ -79,7 +80,7 @@ export const theBridgeBuilder: FullCampaign = {
       name: 'Malik and Seren',
       role: 'cross-cultural workers',
       personality:
-        'A Valdris stonemason and a Korreth carpenter who became friends over the project. They represent what the bridge is supposed to achieve. They are also targets for anyone who wants the project to fail.',
+        'A Valdris stonemason and a Korreth carpenter who became friends over the project. Malik is loud and Seren is quiet and they argue about everything except what matters. They represent what the bridge is supposed to achieve. They are also targets for anyone who wants the project to fail. If the party protected their friendship in Act 2, they rally both work crews in Act 3.',
     },
   ],
   keyLocations: [

@@ -24,7 +24,7 @@ export const theFlatEarthConspiracy: FullCampaign = {
         'The party discovers the edge, the gift shop, and both secret societies. They are recruited (aggressively) by both sides and must navigate conspiracy, counter-conspiracy, and a park ranger who just wants people to stop littering near the cosmic waterfall.',
       keyEvents: [
         'Discovery: the edge of the world, complete with safety railing and scenic overlook',
-        'The gift shop: run by an entrepreneur who stumbled here 10 years ago and saw a business opportunity',
+        'The gift shop: run by an entrepreneur who stumbled here 10 years ago and saw a business opportunity. Running gag begins: Jinx shows up at every major plot point trying to sell commemorative merchandise. The merch always has a factual error on it.',
         'The Flat Earth Society agents arrive: "You have seen too much. Also please do not post about this online"',
         'The Round Earth Society agents arrive: "The world is round, ignore the waterfall into space"',
       ],
@@ -50,7 +50,7 @@ export const theFlatEarthConspiracy: FullCampaign = {
         'Peace negotiations between the Flat and Round Earth Societies (they hate each other)',
         'The descent: rappelling down the waterfall of reality, past fragments of what the world used to look like',
         'The spell scar: a wound in the fabric of the world that must be sealed with combined magic',
-        'The gift shop owner shows up at the bottom because she heard there might be a new retail opportunity',
+        'The gift shop owner shows up at the bottom because she heard there might be a new retail opportunity. Callback: her final commemorative snow globe of the event is actually accurate for the first time. She is suspicious of it.',
       ],
       estimatedSessions: 4,
     },

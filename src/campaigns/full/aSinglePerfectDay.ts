@@ -65,7 +65,7 @@ export const aSinglePerfectDay: FullCampaign = {
       name: 'Orin Thatch',
       role: 'unwitting cause / desperate father',
       personality:
-        'A quiet man. Bad at small talk. Good at magic. Loves his daughter with a ferocity that blinds him. He has not slept properly in months. He is not a villain. He is a father who ran out of time and made the worst possible choice out of the best possible motivation.',
+        'A quiet man. Bad at small talk. Good at magic. Rubs his eyes constantly. Loves his daughter with a ferocity that blinds him. He has not slept properly in months. He is not a villain. He is a father who ran out of time and made the worst possible choice out of the best possible motivation. "I ran the numbers. Thirty percent failure. Seventy percent she lives. What would you choose?" Arc: across loops, the party watches him make the same desperate choice over and over. He never wavers. That is both his heroism and his tragedy.',
       secret: 'He knows the ley line tap is dangerous. He calculated a 30% chance of catastrophic failure. He decided those odds were acceptable. He was wrong.',
     },
     {
@@ -78,7 +78,7 @@ export const aSinglePerfectDay: FullCampaign = {
       name: 'Hesta',
       role: 'innkeeper / the singing woman',
       personality:
-        'Runs the Lannick inn. Sings while she cooks. Knows every person in the village by name. The party hears her voice every morning when the loop resets. She becomes the sound of a second chance.',
+        'Runs the Lannick inn. Sings while she cooks - always the same song, always slightly different. Knows every person in the village by name, and their breakfast orders. The party hears her voice every morning when the loop resets. She becomes the sound of a second chance. "Good morning, loves. Eggs or porridge? You look like you have not slept." She says this every loop. It hurts every time.',
     },
     {
       name: 'Tam Briar',

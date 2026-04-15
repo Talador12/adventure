@@ -23,7 +23,7 @@ export const criticalFailureState: FullCampaign = {
       summary:
         'Natural 1s start causing glitches. They are funny at first. Inconvenient. Then they start compounding. The party accumulates a growing list of permanent reality hiccups that make everything harder and more absurd. The DM maintains a running list.',
       keyEvents: [
-        'First glitch: a weapon becomes a fish. The party thinks it is a one-time joke.',
+        'First glitch: a weapon becomes a fish. The party thinks it is a one-time joke. Spiral begins: the DM keeps a visible running list of accumulated glitches. The list is a character in itself.',
         'Second glitch: permanent bioluminescence on a party member. It does not turn off.',
         'Glitches compound: a glowing party member whose voice is backwards holding a fish-sword trying to sneak.',
         'The city of Ironhaven starts glitching too - buildings swap places, the river flows uphill on Tuesdays.',
@@ -50,7 +50,7 @@ export const criticalFailureState: FullCampaign = {
         'The descent: corridors where doors lead to random rooms, stairs go sideways, and hallways are optional.',
         'The Order of Certainty confrontation: they beg the party not to fix the engine.',
         'The Probability Storm: a room where the party exists in multiple states simultaneously.',
-        'The final choice: certainty of doom, eternal chaos, or the impossible third option.',
+        'The final choice: certainty of doom, eternal chaos, or the impossible third option. Chaos callback: the accumulated glitch list from the entire campaign plays a role — every ridiculous modification the party endured becomes a tool. The fish-sword, the backwards voice, the bioluminescence — all of it matters now.',
       ],
       estimatedSessions: 4,
     },

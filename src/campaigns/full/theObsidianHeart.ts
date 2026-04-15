@@ -28,6 +28,7 @@ export const theObsidianHeart: FullCampaign = {
         'Cael\'s assistant Bren explains: the potion was meant for one woman. It hit everyone. Cael cannot undo it alone.',
         'Meeting Cael: he is polite, exhausted, and desperate. "Tell me something honest. Tell me I am wrong about something. Please."',
         'The party discovers the scope: the entire city, thousands of people, all enchanted. Removing them one by one would take years.',
+        'Quiet moment: Cael asks a party member to play cards with him. He loses. He smiles for the first time in months. "You did not let me win. Thank you."',
       ],
       estimatedSessions: 5,
     },
@@ -63,7 +64,7 @@ export const theObsidianHeart: FullCampaign = {
       name: 'Cael Meren',
       role: 'victim / quest center',
       personality:
-        'A talented wizard with no social confidence. He brewed the potion because he was afraid of rejection. Now he lives in a world where rejection is impossible and honesty is extinct. He would give anything for someone to tell him he is wrong.',
+        'A talented wizard with no social confidence. Avoids eye contact. Starts sentences three times before finishing one. He brewed the potion because he was afraid of rejection. Now he lives in a world where rejection is impossible and honesty is extinct. He would give anything for someone to tell him he is wrong. "Everyone agrees with me. About everything. Do you know what that is like? It is the loneliest sound in the world." Arc: grows from paralyzed self-doubt to the courage to be unloved, which is the bravest thing he has ever done.',
       secret: 'He has known for months that the counter-agent exists. He has not taken it because he is more afraid of being unloved than of being lied to.',
     },
     {

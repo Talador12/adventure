@@ -23,7 +23,7 @@ export const theDungeonThatFightsBack: FullCampaign = {
       summary:
         'The party enters a dungeon that does not want them there. Rooms rearrange. Traps are personalized. The treasure actively hides. The dungeon communicates through carved notes, rearranged furniture, and increasingly creative inconveniences.',
       keyEvents: [
-        'The welcome mat: "UNWELCOME. Please leave. I am serious."',
+        'The welcome mat: "UNWELCOME. Please leave. I am serious." Spiral begins: the dungeon\'s passive-aggressive notes escalate from annoyed to hurt to desperate across the three acts, tracking the emotional arc of a building learning to ask for help.',
         'Room rearrangement: the party maps a hallway. The hallway moves. The map is now fiction.',
         'Personal traps: the dungeon targets individual party members. The fighter\'s armor gets stuck to a magnetic wall.',
         'The guest book: previous adventurers\' notes, with the dungeon\'s annotations. "Killed my boss. Did not even say thank you."',
@@ -50,7 +50,7 @@ export const theDungeonThatFightsBack: FullCampaign = {
         'The fading: rooms go dark one by one. The dungeon is running out of energy to maintain them.',
         'The core room: a beautiful crystal chamber with a crack running through its heart.',
         'The plea: "I do not want to die. I only just started LIVING. I know I was difficult. I am sorry about the magnetic wall."',
-        'The choice: repair (sentient dungeon forever), peaceful death, or reincarnation into a new form.',
+        'The choice: repair (sentient dungeon forever), peaceful death, or reincarnation into a new form. Chaos callback: the final carved message reads "Thank you for not wiping your feet." It is the dungeon\'s first joke. It learned humor from the party. This is either heartwarming or terrifying.',
       ],
       estimatedSessions: 4,
     },

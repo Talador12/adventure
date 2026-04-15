@@ -60,7 +60,7 @@ export const theObsidianArchive: FullCampaign = {
       name: 'Scholar Vennon Crane',
       role: 'quest giver',
       personality:
-        'Obsessive archivist who has spent thirty years studying the Archive from the outside. Desperate but ethical—refuses to enter himself because he knows he would never leave.',
+        'Wears gloves indoors out of habit from handling ancient documents. Speaks in footnotes — qualifies every statement twice. Paces when excited, which is always. "I have spent thirty years studying this place from the outside. I will not enter. I know myself. I would sit down, open a book, and never stand up again. That is not courage. That is appetite."',
       secret: 'He is actually a former Librarian who escaped the Unwriting by hiding outside the Archive.',
     },
     {

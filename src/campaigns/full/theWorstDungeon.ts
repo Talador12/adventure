@@ -25,7 +25,7 @@ export const theWorstDungeon: FullCampaign = {
       keyEvents: [
         'Room 1: the pressure plate trap activates 30 seconds too late - after the party has already passed',
         'Room 2: the skeleton guards cannot find their weapons because someone mislabeled the armory',
-        'Room 3: a pit trap with a sign that says "Pit Trap Here" because Snikkik forgot to remove the construction label',
+        'Room 3: a pit trap with a sign that says "Pit Trap Here" because Snikkik forgot to remove the construction label. Running gag begins: Snikkik\'s clipboard notes get more emotionally devastating with each piece of feedback. He cries, writes it down, then thanks the party for their honesty.',
         'First sabotage clue: a trap mechanism has been deliberately rewired',
       ],
       estimatedSessions: 3,
@@ -50,7 +50,7 @@ export const theWorstDungeon: FullCampaign = {
         'Customers arrive - they are excited, oblivious, and deeply annoying',
         'Beauregard\'s agents infiltrate disguised as customers and start breaking things',
         'The party fights in and around the dungeon, using the traps they helped build against the invaders',
-        'Snikkik personally confronts Beauregard with a spreadsheet proving his dungeon is more cost-efficient',
+        'Snikkik personally confronts Beauregard with a spreadsheet proving his dungeon is more cost-efficient. Callback: the clipboard notes from every session are compiled into a business plan so thorough it makes Beauregard weep. Snikkik listened to every critique. The dungeon is better because it was tested honestly.',
       ],
       estimatedSessions: 3,
     },

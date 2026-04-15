@@ -64,7 +64,7 @@ export const theNeonAbyss: FullCampaign = {
       name: 'Veyra Castellane',
       role: 'the chronomancer / tragic antagonist',
       personality:
-        'Brilliant, desperate, and aware that what she is doing is wrong. She chose herself over strangers. She would do it again. She hates that about herself. Physically frail, magically extraordinary, morally complicated.',
+        'Physically frail — leans on a staff, hands tremble, coughs into a handkerchief she quickly hides. Magically extraordinary — when she casts, the air around her tastes like lightning. Speaks precisely, as if every word costs her something. "I chose myself over strangers. I would do it again. I hate that I would do it again. Does that make me better or worse than someone who would not hesitate?"',
       secret: 'She has already found the cure spell. She is afraid to use it because the last pull might kill someone she can see.',
     },
     {

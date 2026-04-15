@@ -64,7 +64,7 @@ export const theScaleOfThings: FullCampaign = {
       name: 'Whiskers',
       role: 'dragon (cat) / Act 1 threat',
       personality:
-        'A perfectly ordinary tabby cat who is, at Act 1 scale, the most terrifying creature the party has ever encountered. Curious, playful, and capable of destroying their entire civilization with one paw.',
+        'A perfectly ordinary tabby cat who is, at Act 1 scale, the most terrifying creature the party has ever encountered. Purrs like an earthquake. Yawns like a cave opening. Bats at the party with a paw the size of a wagon. It is not hostile. It is playing. The distinction is academic when you are the size of a thimble.',
     },
     {
       name: 'Archmage Toven Quill',

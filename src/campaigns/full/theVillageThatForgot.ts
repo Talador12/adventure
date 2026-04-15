@@ -4,7 +4,7 @@ export const theVillageThatForgot: FullCampaign = {
   id: 'full-village-that-forgot',
   type: 'full',
   title: 'The Village That Forgot',
-  tagline: 'Everyone wakes up. Nobody remembers. Something is still hungry.',
+  tagline: 'Your character sheet is blank. Your name is gone. The villager next to you is fading.',
   tone: 'horror',
   themes: ['horror', 'mystery', 'dark_fantasy'],
   playerCount: { min: 3, max: 5 },
@@ -60,21 +60,21 @@ export const theVillageThatForgot: FullCampaign = {
       name: 'The Hollow Mayor',
       role: 'reluctant ally',
       personality:
-        'The only person in town who remembers everything. Haunted, exhausted, speaks in whispers. Terrified that remembering makes you a target.',
-      secret: 'He made a deal with the entity years ago — his family\'s safety in exchange for leading victims to the village.',
+        'The only person in town who remembers everything. He speaks in whispers, leaning close, eyes darting to corners. He writes notes to himself and burns them after reading. He touches the walls of his office as if confirming they are real. He flinches when someone says his name, as if afraid it will be taken. Haunted, exhausted, terrified that remembering makes you a target.',
+      secret: 'He made a deal with the entity years ago - his family\'s safety in exchange for leading victims to the village. His family is safe. He has not looked in a mirror since.',
     },
     {
       name: 'Moth',
       role: 'mysterious child',
       personality:
-        'A child found in the temple ruins who seems immune to the amnesia. Speaks in riddles, draws pictures of things that haven\'t happened yet.',
-      secret: 'Moth is the entity\'s first attempt at a mortal form — a fragment given shape.',
+        'A child found in the temple ruins who seems immune to the amnesia. She speaks in riddles and hums songs nobody taught her. She draws pictures of things that have not happened yet with crayons that should have run out weeks ago. Her eyes are slightly too large. She smells like old stone and library dust.',
+      secret: 'Moth is the entity\'s first attempt at a mortal form - a fragment given shape. She does not know this. She thinks she is a normal child who happens to know things.',
     },
     {
       name: 'Old Bess',
       role: 'comic relief / tragic figure',
       personality:
-        'The tavern owner who cheerfully introduces herself every 10 minutes because she keeps forgetting she already has. Surprisingly perceptive despite her condition.',
+        'The tavern owner who cheerfully introduces herself every 10 minutes because she keeps forgetting she already has. She pours drinks with practiced ease - her hands remember even when her mind does not. Surprisingly perceptive despite her condition. Between introductions, she sometimes pauses and stares at a spot on the wall where a family portrait used to hang. She does not know what she is looking for.',
     },
     {
       name: 'The Weaver',

@@ -36,7 +36,8 @@ export const theWarBeneath: FullCampaign = {
         'The party travels between all three factions, learning their perspectives. Each side has legitimate grievances but also inexplicable hatred. The pattern suggests external manipulation.',
       keyEvents: [
         'Duergar perspective: militaristic, defensive, "they started it" (nobody remembers how)',
-        'Drow perspective: matriarchal, strategic, fighting for territory they can\'t explain needing',
+        'Drow perspective: matriarchal, strategic, fighting for territory they cannot explain needing',
+        'Quiet moment: Curator shares a meal with the party (it does not eat, but it sits). It asks: "Do you fight wars on the surface? Why? Is it also for reasons you cannot articulate?"',
         'Illithid perspective: alien, logical, waging war against their own pacifist instincts',
         'Discovery: historical records from all three factions show simultaneous "provocations" — too coordinated to be coincidence',
       ],
@@ -60,7 +61,7 @@ export const theWarBeneath: FullCampaign = {
       name: 'Sergeant Grimjaw',
       role: 'duergar ally',
       personality:
-        'A grizzled duergar NCO who\'s been fighting for 30 years and is deeply, quietly tired. Hates the drow reflexively but can\'t explain why when pressed. Respects the party for surviving the Drop.',
+        'A grizzled duergar NCO who has been fighting for 30 years and is deeply, quietly tired. Chews on iron nails when nervous. Hates the drow reflexively but cannot explain why when pressed. Respects the party for surviving the Drop. "You surface folk do not know how to fight down here. But you do not know how to quit either. That counts." Arc: if the party brings him face-to-face with Priestess Ilvara, decades of hatred crack against the reality that she is just as tired as he is.',
       secret: 'He has dreams in a language he doesn\'t know. It\'s the aboleth\'s frequency, leaking through during sleep.',
     },
     {

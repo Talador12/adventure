@@ -22,10 +22,11 @@ export const beforeTheFirst: FullCampaign = {
       title: 'Act 1: The Unnamed World',
       summary: 'Survival without language or tools. The party invents basic communication, discovers fire, builds shelter, and begins to understand the world through direct experience.',
       keyEvents: [
-        'First communication: the party develops gestures, then sounds, then proto-words',
-        'First tool: a shaped stone, a sharpened stick. The world becomes slightly less hostile.',
-        'First danger: a predator that is faster, stronger, and better adapted. The party must think, not fight.',
-        'First anomaly: a stone too flat, too smooth, too regular. Nature did not make this.',
+        'First communication: one party member points at water, makes a sound. Another repeats it. By the end of the session, they have twelve words. Language is being born at the table.',
+        'First tool: a shaped stone, a sharpened stick. A party member holds up a cutting edge and the world becomes slightly less hostile. Something clicks in the brain — not memory, but instinct.',
+        'First danger: a predator the size of a horse, low to the ground, patient. It is faster, stronger, and better adapted. The party must think, not fight. They discover that fire makes it cautious.',
+        'First anomaly: a stone too flat, too smooth, too regular. The party\'s proto-language has no word for "artificial." They invent one.',
+        'Quiet moment: night falls. The party huddles around the first fire they made. The stars are unnamed. One party member hums. Murmur glows brighter. This is the first music.',
       ],
       estimatedSessions: 5,
     },
@@ -75,9 +76,21 @@ export const beforeTheFirst: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Unnamed World', description: 'A landscape without names: tall grass, flowing water, distant peaks, unnamed sky. Beautiful and indifferent. Beneath the surface, the ruins of something vast.', significance: 'The entire campaign surface. Every landmark is a discovery waiting to be named.' },
-    { name: 'The Depression Field', description: 'A miles-wide flat area pocked with regular depressions. At scale, they form a pattern - the footprint of a city that stood here a million years ago.', significance: 'The first undeniable evidence that something came before.' },
-    { name: 'The Seed Vault', description: 'An underground complex of impossible age. Humming machinery, crystallized knowledge, and the recorded warning of a civilization that reached the stars and burned.', significance: 'The campaign\'s final destination and the source of the ultimate choice.' },
+    {
+      name: 'The Unnamed World',
+      description: 'A landscape without names: tall grass that changes color with the wind, flowing water that tastes like nothing the party has ever drunk, distant peaks sharp enough to cut the sky. Beautiful and indifferent. Beneath the surface, the ruins of something vast.',
+      significance: 'The entire campaign surface. Every landmark is a discovery waiting to be named. Naming things is how the party claims the world.',
+    },
+    {
+      name: 'The Depression Field',
+      description: 'A miles-wide flat area pocked with regular depressions, each exactly the same depth. At scale, they form a grid — the footprint of a city that stood here a million years ago. Grass grows differently in the depressions, greener, as if the soil remembers being tended.',
+      significance: 'The first undeniable evidence that something came before. Where the party stops inventing and starts remembering.',
+    },
+    {
+      name: 'The Seed Vault',
+      description: 'An underground complex of impossible age. Humming machinery that responds to intent. Crystallized knowledge on shelves that light up when approached. The recorded warning plays in a voice that sounds tired and kind.',
+      significance: 'The campaign\'s final destination. Every crystal the party takes accelerates civilization. Every crystal they leave delays it. The choice is not binary — it is a spectrum.',
+    },
   ],
   dataSystems: ['wildernessSurvival', 'magicalAnomaly', 'wildMagicExpanded', 'terrainAdvantage', 'socialEncounter', 'companionAnimal', 'travelMontage', 'ancientProphecy'],
 };

@@ -25,7 +25,7 @@ export const theBossRush: FullCampaign = {
       keyEvents: [
         'Dungeon 1: Ancient Red Dragon. 60 seconds. No warmup. The party learns immediately that this is not a joke.',
         'Dungeon 7: A Very Sad Goblin. He does not want to fight. He wants to talk about his feelings. The timer still counts down. Do you fight him or listen?',
-        'Dungeon 13: A Very Angry Goose. CR 0. Somehow the hardest fight so far. It dodges everything. It bites. It HONKS.',
+        'Dungeon 13: A Very Angry Goose. CR 0. Somehow the hardest fight so far. It dodges everything. It bites. It HONKS. Spiral begins: the bosses alternate between genuinely terrifying and absurdly anticlimactic. The emotional whiplash is the design.',
         'Dungeon 27: A boss that is just a locked door. The entire 60 seconds is picking the lock while nothing attacks. The rogue\'s moment to shine.',
         'Through the glass: Velocitus is ahead by 54 dungeons. He fights with terrifying efficiency. He also talks to himself constantly.',
       ],
@@ -53,7 +53,7 @@ export const theBossRush: FullCampaign = {
         'Dungeon 88: A tarrasque. In a room. For 60 seconds. The party does not need to kill it. They need to SURVIVE it.',
         'Dungeon 98: The scoreboard reads TIED. Velocitus looks at the party through the glass. He mouths: "Together."',
         'Dungeon 99: Glass shatters. Velocitus joins. Mirror copies appear. The only winning move: fight someone else\'s copy.',
-        'Dungeon 100: An empty room. A table. Sandwiches. The Infinity Hoard in a modest chest. Velocitus cries. "Six years. I have been trying to eat lunch for six years."',
+        'Dungeon 100: An empty room. A table. Sandwiches. The Infinity Hoard in a modest chest. Velocitus cries. "Six years. I have been trying to eat lunch for six years." Chaos callback: Gerald the rat swarm appears in Room 100 too. He brought a covered dish. He was rooting for them all 347 runs.',
       ],
       estimatedSessions: 3,
     },

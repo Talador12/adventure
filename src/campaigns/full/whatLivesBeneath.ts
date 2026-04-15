@@ -4,7 +4,7 @@ export const whatLivesBeneath: FullCampaign = {
   id: 'full-what-lives-beneath',
   type: 'full',
   title: 'What Lives Beneath',
-  tagline: 'Something is digging up. Something worse is chasing it.',
+  tagline: 'The scratching under the floorboards is not trying to get in. It is trying to get away from something deeper.',
   tone: 'horror',
   themes: ['horror', 'survival', 'underdark'],
   playerCount: { min: 3, max: 5 },
@@ -24,7 +24,7 @@ export const whatLivesBeneath: FullCampaign = {
         'Investigation of the tunnels beneath Dunmore. The party descends and discovers a network of smooth-bore tunnels dug from below. Something large made them. It is still making them.',
       keyEvents: [
         'The cellar crack: first descent into the tunnel network',
-        'Tunnel exploration: smooth walls, warm air, bioluminescent residue',
+        'Tunnel exploration: smooth walls that are warm to the touch, air that smells faintly of salt and something alive. Bioluminescent residue on the walls pulses in a slow rhythm - not random. Breathing.',
         'Scale realization: the tunnels are enormous — whatever made them is not small',
         'First encounter: a shed claw the size of a person, still warm, bioluminescent',
       ],
@@ -60,13 +60,13 @@ export const whatLivesBeneath: FullCampaign = {
       name: 'Elder Cora Wynn',
       role: 'quest giver',
       personality:
-        'The village elder. Practical, stubborn, and deeply unsettled. She has lived in Dunmore for seventy years and the ground has never moved before. She wants answers, not mysteries.',
+        'The village elder. Practical, stubborn, and deeply unsettled. She grips the arms of her chair when the ground shifts, knuckles white, then releases and continues talking as if nothing happened. She has lived in Dunmore for seventy years and the ground has never moved before. She wants answers, not mysteries. She taps her foot to a rhythm she does not notice - it matches the scratching.',
     },
     {
       name: 'Harrin the Miner',
       role: 'guide / ally',
       personality:
-        'A retired miner who knows the local geology. He insists the tunnels are impossible — the rock type does not allow for natural caves. Whatever made these tunnels melted through solid basalt.',
+        'A retired miner who knows the local geology. He presses his ear against walls when he thinks nobody is watching. He insists the tunnels are impossible - the rock type does not allow for natural caves. Whatever made these tunnels melted through solid basalt. His hands are steady until the ground pulses, and then they are not.',
     },
     {
       name: 'The Luminos',

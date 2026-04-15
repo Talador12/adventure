@@ -26,7 +26,7 @@ export const theArchivistsDilemma: FullCampaign = {
         'The Archive: vast, ancient, and increasingly empty',
         'Librarians can\'t remember what they\'ve lost — only that something is missing',
         'Pattern: the erasure spreads from the Deepest Vault outward, like a circle',
-        'The party finds a half-erased book: its characters are alive in the margins, terrified',
+        'The party finds a half-erased book: a knight drawn in the margins waves frantically at them, mouthing words the text no longer contains. The next page is blank. The knight is gone.',
       ],
       estimatedSessions: 4,
     },
@@ -60,7 +60,7 @@ export const theArchivistsDilemma: FullCampaign = {
       name: 'Head Archivist Quill',
       role: 'quest giver / increasingly confused',
       personality:
-        'A gnome who has devoted her life to the Archive. Watching it vanish is destroying her. She keeps forgetting words, then facts, then faces. "I can feel the gaps. Like missing teeth in my mind."',
+        'A gnome who adjusts spectacles that are no longer on her face — she forgot they vanished. Speaks in half-sentences, trailing off when a word escapes her. Taps surfaces compulsively, as if counting what is still real. "I can feel the gaps. Like missing teeth in my mind." By Act 2 she cannot remember the party\'s names. By Act 3 she writes everything down, including the word "write."',
       secret: 'She knew the manuscript was becoming sentient months ago. She did nothing because she was curious. That curiosity may have doomed the Archive.',
     },
     {

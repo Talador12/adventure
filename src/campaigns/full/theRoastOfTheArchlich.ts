@@ -25,7 +25,7 @@ export const theRoastOfTheArchlich: FullCampaign = {
       keyEvents: [
         'Arrival at the Necropolis of Mirth — a death-themed comedy club the size of a castle',
         'Meeting the other performers: a terrified bard, a skeleton who thinks he is still funny, a demon who only does observational humor',
-        'The first act bombs — Mortivus disintegrates a jester for a knock-knock joke',
+        'The first act bombs — Mortivus disintegrates a jester for a knock-knock joke. Running gag begins: Dustin the skeleton butler offers dry commentary after every performance. "The master did not laugh. The master has not laughed since 1247. That was at a funeral. It was inappropriate."',
         'The party realizes they need to learn what Mortivus actually finds funny',
       ],
       estimatedSessions: 4,
@@ -50,7 +50,7 @@ export const theRoastOfTheArchlich: FullCampaign = {
         'The rival comedian\'s set: cruel, funny, and dangerously close to making Mortivus snap',
         'Mortivus begins losing control — necromantic energy surges, the dead start rising',
         'The party\'s set: comedy, tragedy, and the most important roast in history',
-        'Resolution: Mortivus laughs, cries, or both — and decides what to do with eternity',
+        'Resolution: Mortivus laughs, cries, or both — and decides what to do with eternity. Callback: Dustin delivers one final line about when Mortivus last laughed. This time, the date is today.',
       ],
       estimatedSessions: 4,
     },

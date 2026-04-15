@@ -60,7 +60,7 @@ export const theEdgeOfTheMap: FullCampaign = {
       name: 'Aldric Voss',
       role: 'patron / secret antagonist',
       personality:
-        'A charming, educated cartographer who funded the expedition. Generous and knowledgeable. Asks too many questions about landmarks that should not exist.',
+        'Impeccably dressed for wilderness travel — clean boots, pressed collar, maps rolled in a leather case he treats like a child. Asks too many questions about landmarks that should not exist. Sketches constantly, but his drawings are more precise than reconnaissance should require. "Tell me — does that ridge formation look familiar to you? No? Curious. Curious."',
       secret: 'His ancestors were Veilkeepers exiled for advocating contact with the known world. He has spent his fortune engineering this expedition to tear the Veil down as revenge.',
     },
     {

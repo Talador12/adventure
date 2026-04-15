@@ -25,7 +25,7 @@ export const retirementHome: FullCampaign = {
       keyEvents: [
         'Move-in chaos: the wizard sets the welcome banner on fire, the rogue steals the party\'s room keys',
         'The communal vault is short 500 gold - Daisy asks the party to investigate',
-        'Interrogation montage: every resident has a 45-minute alibi that is actually a war story',
+        'Interrogation montage: every resident has a 45-minute alibi that is actually a war story. Running gag begins: Rupert tells the same three stories on repeat, but each retelling adds a detail that becomes a clue.',
         'Clue: gold dust found near the shuffleboard court, leading to the pool filter',
       ],
       estimatedSessions: 3,
@@ -49,7 +49,7 @@ export const retirementHome: FullCampaign = {
       keyEvents: [
         'Rupert summons his pegasus (equally elderly, equally confused) and charges through the dining hall',
         'Other residents join in - muscle memory kicks in and suddenly everyone is fighting imaginary enemies',
-        'The party must calm each resident down individually using knowledge of their personal histories',
+        'The party must calm each resident down individually using knowledge of their personal histories (callback: the three stories Rupert kept repeating were his way of asking for help — the details he added were the truth leaking through)',
         'Rupert wakes up mid-charge, realizes what is happening, and the community rallies around him',
       ],
       estimatedSessions: 3,

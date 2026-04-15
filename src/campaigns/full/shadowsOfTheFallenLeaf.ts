@@ -28,6 +28,7 @@ export const shadowsOfTheFallenLeaf: FullCampaign = {
         'Investigating Kenta\'s death: his body shows burns that match no known technique',
         'A second agent dies — this one in a locked room with no entry point. Void Step signature.',
         'The party\'s civilian lives start unraveling: a neighbor finds a hidden weapon, a student asks about the scars',
+        'Quiet moment: one party member sits in their kitchen at 3 AM, unable to sleep. Their hands clean a blade they hid under the floorboards. They do not remember hiding it. Their hands do.',
         'An old enemy surfaces: Hanzo, a rival clan operative who should have been executed after the war',
       ],
       estimatedSessions: 6,
@@ -66,14 +67,14 @@ export const shadowsOfTheFallenLeaf: FullCampaign = {
       name: 'Magistrate Okubo',
       role: 'former handler / antagonist',
       personality:
-        'Soft-spoken, methodical, genuinely believes he is protecting the peace. He ordered terrible things during the war and sleeps fine because the alternative was worse. Treats the party like wayward children — with affection, condescension, and a willingness to put them down if necessary.',
+        'Soft-spoken, methodical, genuinely believes he is protecting the peace. Folds his hands when speaking and never raises his voice. He ordered terrible things during the war and sleeps fine because the alternative was worse. Treats the party like wayward children - with affection, condescension, and a willingness to put them down if necessary. "You were my best work. It pains me to undo it." Arc: does not soften. He erased his own guilt and cannot feel what the party feels.',
       secret: 'He used Void Step on himself to erase the guilt. He literally cannot feel remorse for what he did. He chose not to.',
     },
     {
       name: 'Hanzo',
       role: 'former rival / erased ally',
       personality:
-        'Bitter, haunted, and furious. He fought alongside the party during the war and they erased him from their memories afterward to protect operational security. He remembers everything. They remember nothing. Imagine being forgotten by the people you would have died for.',
+        'Bitter, haunted, and furious. Cracks his knuckles when angry, which is always. He fought alongside the party during the war and they erased him from their memories afterward to protect operational security. He remembers everything. They remember nothing. "You called me brother. Then you unmade me." Arc: begins hostile, can become the party\'s most loyal ally if they acknowledge what was done to him.',
       secret: 'He has been protecting the party from Okubo\'s kill teams for months. They do not know because they do not remember he exists.',
     },
     {

@@ -60,7 +60,7 @@ export const theClockworkConspiracy: FullCampaign = {
       name: 'Inspector Cogg',
       role: 'ally / investigator',
       personality:
-        'A gruff dwarven detective who\'s been on the case since the first disappearance. Brilliant but technophobic — distrusts the Engine on principle.',
+        'A gruff dwarven detective who chews an unlit pipe and writes notes in a leather journal with a pencil he sharpens too often. Brilliant but technophobic — physically flinches at loud gears. "I have been a detective for thirty years. I can solve anything involving people. Machines that think? That is above my pay grade. That is above everyone\'s pay grade."',
     },
     {
       name: 'Ticker',

@@ -67,7 +67,7 @@ export const theSilverMask: FullCampaign = {
       name: 'Councillor Vex',
       role: 'primary antagonist',
       personality:
-        'Head of the council, driven by genuine belief that surveillance is wrong — even benevolent surveillance. Articulate, principled, and willing to kill for freedom from observation.',
+        'Head of the council. Removes his mask in private as a radical act — the only person in the city who shows his face behind closed doors. Speaks like a philosopher at a podium: measured, rhetorical, devastating. "She watches through every mask. Every whisper heard. Every secret known. You call that protection. I call it the most elegant prison ever built."',
     },
     {
       name: 'Councillor Maren',

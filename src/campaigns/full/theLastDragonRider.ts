@@ -20,34 +20,43 @@ export const theLastDragonRider: FullCampaign = {
   acts: [
     {
       title: 'Act 1: The Last Rider',
-      summary: 'Meeting Yara, learning the history of the Rider Order, and preparing for the journey beyond the Veil while the Accord Kingdoms slide toward war without their peacekeepers.',
+      summary:
+        'Meeting Yara, learning the history of the Rider Order, and preparing for the journey beyond the Veil while the Accord Kingdoms slide toward war without their peacekeepers.',
       keyEvents: [
-        'Meeting Yara: ninety years old, sharp as a lance, and riding a dragon with cataracts. She is magnificent.',
-        'The Rider archives: learning the Order\'s history. Glorious beginnings. Gradual corruption. The dragons\' departure.',
-        'A border skirmish: two kingdoms fighting because no rider is there to stop them. The party intervenes.',
-        'Preparation: gathering supplies, allies, and courage for a journey into a permanent storm',
+        'Meeting Yara: ninety years old, sharp as a lance, and riding a dragon with cataracts. She is magnificent and she is the last.',
+        'The Rider archives at Skyhold: learning the Order\'s history. Glorious beginnings. Gradual corruption. The dragons\' departure.',
+        'Quiet moment: Yara and Calebraxis alone on the roost at sunset. She brushes his scales. He rumbles. Neither says anything. They have been doing this for seventy years.',
+        'A border skirmish: two kingdoms fighting because no rider is there to stop them. The party intervenes and sees the cost of the dragons\' absence.',
+        'Prince Aldren arrives demanding to join the expedition. He wants the dragons for military power, not peace. Yara stares at him for a long time and says: "You remind me of why they left."',
+        'Preparation: gathering supplies, allies, and courage for a journey into a permanent storm.',
       ],
       estimatedSessions: 6,
     },
     {
       title: 'Act 2: Beyond the Veil',
-      summary: 'The journey through the Veil and into uncharted territory. The party faces the storm, the wilderness beyond it, and the growing understanding of why the dragons really left.',
+      summary:
+        'The journey through the Veil and into uncharted territory. The party faces the storm, the wilderness beyond it, and the growing understanding of why the dragons really left.',
       keyEvents: [
-        'The Veil crossing: a wall of perpetual storm. Calebraxis guides them through. It nearly kills the old dragon.',
-        'The wilderness beyond: a land untouched by civilization. The party survives on what they carry and what they find.',
+        'The Veil crossing: a wall of perpetual storm. Calebraxis guides them through. It nearly kills the old dragon. The party carries supplies while Yara whispers encouragement to a creature older than nations.',
+        'A letter from home: one party member receives a message (sent before the Veil) from someone who doubts them. It sits heavy in a pocket for sessions.',
+        'The wilderness beyond: a land untouched by civilization. The party survives on what they carry and what they find. No roads. No maps. No safety.',
         'Dragon sign: claw marks on cliffsides. Shed scales. Scorch marks from play-fighting. They are close.',
+        'Calebraxis refuses to go further. He tells the party (through Yara): "They left because of riders like me. Corrupt, comfortable, complicit. I stayed for Yara, not for honor. You go. Prove you are better than we were."',
         'A young dragon encounter: curious, cautious, and carrying a message: "The elders will hear you. Follow."',
       ],
       estimatedSessions: 6,
     },
     {
       title: 'Act 3: The Dragon Council',
-      summary: 'The party reaches the dragon roost-city, faces the council, and undergoes trials that test character rather than combat. The fate of the Rider Order is decided.',
+      summary:
+        'The party reaches the dragon roost-city, faces the council, and undergoes trials that test character rather than combat. The fate of the Rider Order is decided.',
       keyEvents: [
-        'The roost-city: floating mountains connected by bridges of hardened flame. Dragons of every color and age.',
-        'The council: ancient dragons who remember the corruption. They are not hostile. They are disappointed.',
-        'The trials: moral dilemmas with no clean answers. Power vs. mercy. Truth vs. kindness. Duty vs. compassion.',
-        'The return: dragons agree to come back on new terms. The flight home. Yara sees a hundred dragons in the sky and weeps.',
+        'The roost-city: floating mountains connected by bridges of hardened flame. Dragons of every color and age. Hatchlings chasing each other through clouds.',
+        'The council: ancient dragons who remember the corruption. They are not hostile. They are disappointed. Sovereign Malachite speaks first: "Thirty years and this is who comes asking?"',
+        'The trials: moral dilemmas with no clean answers. Power vs. mercy. Truth vs. kindness. Duty vs. compassion. If the party chose poorly with Prince Aldren earlier, the dragons reference it.',
+        'Quiet moment: a young dragon approaches the party at night and asks what the surface world is like. It has never seen it. It was born in exile. "Is it true there are creatures with no wings? How do they bear it?"',
+        'The return: dragons agree to come back on new terms. Partnership, not service. The flight home.',
+        'Yara sees a hundred dragons in the sky and weeps. Calebraxis flies one last time. The party rides dragons for the first time. The world below looks different from up here.',
       ],
       estimatedSessions: 6,
     },
@@ -56,29 +65,58 @@ export const theLastDragonRider: FullCampaign = {
     {
       name: 'Commander Yara Ashwing',
       role: 'last rider / mentor',
-      personality: 'Ninety years old and held together by stubbornness and duty. She was the youngest rider when the dragons left and the only one who asked herself why. She knows the Order was corrupt. She stayed because someone had to.',
-      secret: 'She can barely ride anymore. Calebraxis compensates for her failing body. They are each other\'s life support.',
+      personality:
+        'Ninety years old and held together by stubbornness and duty. She was the youngest rider when the dragons left and the only one who asked herself why. Speaks in short, declarative sentences. Never wastes a word. Calls everyone "recruit" until they earn a name. She knows the Order was corrupt. She stayed because someone had to.',
+      secret: 'She can barely ride anymore. Calebraxis compensates for her failing body. They are each other\'s life support. Arc: begins as commander, ends as witness - her role is to see the new order born, not to lead it.',
     },
     {
       name: 'Calebraxis',
       role: 'last dragon / ancient copper',
-      personality: 'A copper dragon with cataracts, arthritis, and a wit as sharp as ever. He stayed for Yara, not for the Order. He speaks rarely and means every word. "I stayed because she was worth staying for. The rest of you will have to prove it."',
+      personality:
+        'A copper dragon with cataracts, arthritis, and a wit as sharp as ever. Speaks rarely and means every word. Communicates mostly through rumbles, snorts, and pointed silences. When he does speak: "I stayed because she was worth staying for. The rest of you will have to prove it."',
     },
     {
       name: 'Sovereign Malachite',
       role: 'dragon council elder / judge',
-      personality: 'An ancient green dragon who led the exodus. She does not hate humanoids. She is tired of being used by them. Her judgment is fair but absolute. She has waited thirty years for someone to come and prove her wrong.',
+      personality:
+        'An ancient green dragon who led the exodus. She does not hate humanoids. She is tired of being used by them. Speaks in a low hum that vibrates the chest. Her judgment is fair but absolute. She has waited thirty years for someone to come and prove her wrong. Arc: begins as skeptic, softens if the party shows genuine humility in the trials.',
     },
     {
       name: 'Prince Aldren',
       role: 'Accord Kingdom heir / political pressure',
-      personality: 'A young prince who wants the dragons back for military power, not peace. He represents everything the dragons left to escape. If the party brings him along, the dragons will test him hardest.',
+      personality:
+        'A young prince who wants the dragons back for military power, not peace. Stands too straight. Speaks too loudly. Calls dragons "assets." He represents everything the dragons left to escape. If the party brings him along, the dragons will test him hardest. Arc: can learn or can break. If the party mentors him, he sees the corruption his family enabled. If ignored, he becomes a future problem.',
     },
   ],
   keyLocations: [
-    { name: 'Skyhold', description: 'The abandoned Rider headquarters. Empty roosts, dusty tack, and a hall of portraits showing five centuries of riders - from idealists to tyrants.', significance: 'Where the party learns the Order\'s history and its fall from grace.' },
-    { name: 'The Veil', description: 'A wall of perpetual storm at the edge of the known world. Lightning, wind, and rain so dense it is nearly solid. The dragons flew through it. Most things cannot.', significance: 'The barrier between the known world and the dragons\' refuge.' },
-    { name: 'The Roost', description: 'A city of floating mountains beyond the Veil. Connected by bridges of hardened dragonfire. Home to every dragon that left, and their children born in exile.', significance: 'The campaign\'s final destination and the site of the dragon council trials.' },
+    {
+      name: 'Skyhold',
+      description:
+        'The abandoned Rider headquarters. Empty roosts, dusty tack, and a hall of portraits showing five centuries of riders - from idealists to tyrants. The last portrait is Yara, painted before the exodus. She looks young.',
+      significance: 'Where the party learns the Order\'s history and its fall from grace.',
+    },
+    {
+      name: 'The Veil',
+      description:
+        'A wall of perpetual storm at the edge of the known world. Lightning, wind, and rain so dense it is nearly solid. The dragons flew through it. Most things cannot.',
+      significance: 'The barrier between the known world and the dragons\' refuge. Crossing it is Act 2\'s defining challenge.',
+    },
+    {
+      name: 'The Roost',
+      description:
+        'A city of floating mountains beyond the Veil. Connected by bridges of hardened dragonfire. Home to every dragon that left, and their children born in exile. The air smells like ozone and old stone.',
+      significance: 'The campaign\'s final destination and the site of the dragon council trials.',
+    },
   ],
-  dataSystems: ['companionAnimal', 'socialEncounter', 'npcRelationshipWeb', 'npcLoyalty', 'moralDilemma', 'diplomaticIncident', 'wildernessSurvival', 'naturalDisaster', 'legendaryLastStand'],
+  dataSystems: [
+    'companionAnimal',
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'npcLoyalty',
+    'moralDilemma',
+    'diplomaticIncident',
+    'wildernessSurvival',
+    'naturalDisaster',
+    'legendaryLastStand',
+  ],
 };

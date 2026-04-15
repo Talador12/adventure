@@ -25,7 +25,8 @@ export const theSiegeOfHope: FullCampaign = {
       keyEvents: [
         'Assessment: Bastion\'s strengths (walls, mages, geography) and weaknesses (food, soldiers, morale)',
         'Days 1-5: immediate preparations — reinforcing walls, training civilians',
-        'Days 6-10: first crisis — a spy is found, food stores are lower than reported',
+        'Days 6-10: first crisis - a spy is found, food stores are lower than reported',
+        'Quiet moment: Day 8. A child brings the party flowers and asks if the monsters are coming. The party\'s answer sets the morale tone for the rest of the campaign.',
         'Ally mission: a nearby dwarven fortress might help, but they have demands',
       ],
       estimatedSessions: 5,
@@ -60,7 +61,7 @@ export const theSiegeOfHope: FullCampaign = {
       name: 'Warchief Grom',
       role: 'opposing leader / potential ally',
       personality:
-        'A massive orc who carries the weight of a million refugees. Not cruel — exhausted, desperate, and willing to do terrible things because his people have no other options.',
+        'A massive orc who carries the weight of a million refugees. Not cruel - exhausted, desperate, and willing to do terrible things because his people have no other options. Speaks slowly, choosing words with the care of someone who knows one wrong sentence means war. "I did not come here to fight. I came here because my people need walls. Yours were the only walls left." Arc: begins as implacable threat, becomes a negotiating partner if the party discovered the Horde\'s true motivation in Act 2.',
       secret: 'His people\'s homeland was destroyed by a dragon flight. He sent diplomats to Bastion three times. Each time, the previous council refused to even meet.',
     },
     {

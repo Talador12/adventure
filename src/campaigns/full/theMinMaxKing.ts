@@ -25,7 +25,7 @@ export const theMinMaxKing: FullCampaign = {
       keyEvents: [
         'Arrival at Ironhold: the city is a perfect grid, brutally efficient, and completely joyless',
         'Meeting Gorath: he greets the party with a PowerPoint presentation of their combat capabilities',
-        'First diplomatic disaster: Gorath gives the elven ambassador a "friendship spreadsheet"',
+        'First diplomatic disaster: Gorath gives the elven ambassador a "friendship spreadsheet." Running gag begins: Gorath labels every emotion with a numbered "Condition." Condition 7 is loneliness. Condition 12 is embarrassment. He references them clinically in conversation.',
         'The party begins teaching basics: smiling, small talk, not ranking everyone by threat level',
       ],
       estimatedSessions: 4,
@@ -50,7 +50,7 @@ export const theMinMaxKing: FullCampaign = {
         'The fey ultimatum: "Your kingdom was built to serve us. We are collecting."',
         'Gorath\'s speech to the allied kingdoms — three sentences, no spreadsheets, genuine emotion',
         'The battle: Gorath\'s tactical genius combined with allied forces the fey never expected',
-        'The curse breaks when Gorath makes a tactically suboptimal choice to save an ally\'s soldiers instead of pressing an advantage',
+        'The curse breaks when Gorath makes a tactically suboptimal choice to save an ally\'s soldiers instead of pressing an advantage. Callback: Gorath looks at the party and says "Condition 7 has resolved." He is smiling. He does not know its name yet. He will learn.',
       ],
       estimatedSessions: 5,
     },

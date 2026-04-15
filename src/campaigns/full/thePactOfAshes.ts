@@ -4,7 +4,7 @@ export const thePactOfAshes: FullCampaign = {
   id: 'full-pact-of-ashes',
   type: 'full',
   title: 'The Pact of Ashes',
-  tagline: 'Every citizen signed a contract with the dead. No one read the fine print.',
+  tagline: 'The dead came with ledgers. They were polite. They knew your grandmother\'s name.',
   tone: 'horror',
   themes: ['dark_fantasy', 'mystery', 'political'],
   playerCount: { min: 3, max: 5 },
@@ -20,13 +20,14 @@ export const thePactOfAshes: FullCampaign = {
   acts: [
     {
       title: 'Act 1: The Debt Comes Due',
-  "summary":
+   summary:
         'The party navigates a city where the dead are peacefully but inexorably collecting souls. They investigate why certain people are being taken while others—specifically the wealthy founders\' families—are ignored.',
       keyEvents: [
-        'Arrival during the first day of collection—seeing the dead politely escort citizens to the necropolis',
-        'Meeting the Mayor, who is clearly hiding something about his immunity',
-        'Investigating the original contract in the city archives',
-        'Discovery of the blood ritual used to transfer debts',
+        'Arrival during the first day of collection - the dead walk calmly through the streets with leather-bound ledgers. They knock on doors. They wait. They are polite. That is what makes it unbearable.',
+        'Meeting the Mayor, who shakes hands with dry, papery skin and smiles too wide. He is clearly hiding something about his immunity. He steers conversation away from his family tree with practiced ease.',
+        'Investigating the original contract in the city archives. The contract is warm to the touch. The ink is red. It smells faintly of copper. The signatures at the bottom are in a handwriting the party recognizes from the Mayor\'s office.',
+        'Discovery of the blood ritual used to transfer debts. The diagram is carved into a floor beneath the council building. The grooves in the stone are stained dark. They are not old stains.',
+        'Quiet dread: a dead collector pauses outside a child\'s window. Checks the ledger. Moves on. The child was not on the list. This time.',
       ],
       estimatedSessions: 5,
     },
@@ -60,26 +61,26 @@ export const thePactOfAshes: FullCampaign = {
       name: 'Mayor Ashford',
       role: 'antagonist',
       personality:
-        'A Founder who has lived 150 years through descendant sacrifice. Charming, sophisticated, genuinely believes the ends justify the means.',
-      secret: 'He has sacrificed three of his own children to stay alive.',
+        'A Founder who has lived 150 years through descendant sacrifice. Charming, sophisticated, with hands that look too young for his face. He touches his family ring when he lies, which is often. He pours wine for guests before they ask and steers conversation like a man who has had 150 years to practice the art of not being questioned.',
+      secret: 'He has sacrificed three of his own children to stay alive. He keeps portraits of them in a locked room. He visits the room on their birthdays.',
     },
     {
       name: 'The Lord of the Dead',
       role: 'neutral power',
       personality:
-        'Not evil—just a cosmic accountant. Honorable, keeps his word, frustrated by the founders\' fraud. Willing to make a fair deal.',
+        'Not evil - a cosmic accountant with the patience of entropy. He speaks in measured, contractual language. He does not raise his voice. He does not need to. When he is displeased, the temperature drops and the candles burn blue. He is frustrated by the founders\' fraud the way an auditor is frustrated by embezzlement.',
     },
     {
       name: 'Elena Vane',
       role: 'ally / victim',
       personality:
-        'Commoner whose grandmother was taken by the dead. Angry, determined, has been investigating the founders for years.',
+        'Commoner whose grandmother was taken by the dead. She speaks fast and carries a ledger of her own - names, dates, connections, proof. Her hands are ink-stained. She has not slept properly in years. She flinches when the dead walk past but does not look away. Looking away is how the Founders got away with it.',
     },
     {
       name: 'The Adjudicator',
       role: 'undead lawyer',
       personality:
-        'Sent by the Lord of the Dead to audit the contracts. Precise, literal-minded, surprisingly helpful to the party\'s investigation.',
+        'Sent by the Lord of the Dead to audit the contracts. A skeleton in formal robes who adjusts spectacles he does not need on a nose he does not have. Precise, literal-minded, and surprisingly helpful. He takes notes with a quill that writes in cold blue fire. He finds the Founders\' fraud personally offensive.',
     },
   ],
   keyLocations: [

@@ -26,7 +26,7 @@ export const theChildrenOfIron: FullCampaign = {
         'The warforged in the tavern: the inciting conversation',
         'A formation of warforged patrolling a road that leads nowhere, executing flawless maneuvers for an audience of trees',
         'A warforged village: twelve units living in abandoned farmhouses, mimicking human routines they do not understand',
-        'One warforged has started painting. It is not good at it. It does it anyway.',
+        'Quiet moment: one warforged has started painting. It is not good at it. It does it anyway. When asked why, it says: "The manual says creativity indicates higher function. I am testing."',
         'A warforged asks the party: "Do I have a name, or only a designation?"',
       ],
       estimatedSessions: 5,
@@ -64,7 +64,7 @@ export const theChildrenOfIron: FullCampaign = {
       name: 'Unit 7 (who has started calling itself "Seven")',
       role: 'warforged leader / philosophical center',
       personality:
-        'The seventh warforged ever made. Has been inside the Crucible for thirty years maintaining systems, thinking. Speaks in precise, measured sentences. Has read every book in the factory library twice. Has developed opinions. Finds humor confusing but is trying.',
+        'The seventh warforged ever made. Has been inside the Crucible for thirty years maintaining systems, thinking. Speaks in precise, measured sentences with occasional pauses where a breath would be. Has read every book in the factory library twice. Has developed opinions. Finds humor confusing but is trying. "That was a joke. I recognize the structure. I do not yet understand why the structure produces laughter." Arc: begins as observer, becomes advocate for the warforged right to choose their own purpose.',
       secret: 'It has known about Ruska for years. It chose not to confront her because it was not sure it wanted the answer.',
     },
     {

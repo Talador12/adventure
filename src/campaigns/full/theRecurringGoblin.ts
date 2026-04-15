@@ -23,7 +23,7 @@ export const theRecurringGoblin: FullCampaign = {
       summary:
         'The party encounters Splurt across three separate adventures, each time in a slightly more important role. It starts as coincidence and becomes suspicious.',
       keyEvents: [
-        'Goblin cave — Splurt escapes through sheer clumsiness',
+        'Goblin cave — Splurt escapes through sheer clumsiness. Running gag begins: Splurt\'s escape methods get more improbable each time. A trap door that was not there. A convenient sneeze. A goat.',
         'Bandit hideout — Splurt is somehow second-in-command now',
         'Dragon\'s hoard — Splurt accidentally talked the dragon into a partnership',
         'The party realizes this goblin keeps showing up',
@@ -50,7 +50,7 @@ export const theRecurringGoblin: FullCampaign = {
         'Splurt\'s coronation — attended by confused nobles and one very smug goblin',
         'Reality glitches — NPCs repeat lines, weather becomes comedic',
         'The Narrativore manifests — it\'s been telling this story all along',
-        'Final confrontation — comedy, tragedy, or chaos: the party chooses',
+        'Final confrontation — comedy, tragedy, or chaos: the party chooses. Callback: Splurt tries to escape one last time using his signature clumsiness. This time the party catches him. Or lets him go. The goat from Act 1 reappears regardless.',
       ],
       estimatedSessions: 5,
     },

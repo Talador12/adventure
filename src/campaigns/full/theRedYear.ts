@@ -27,6 +27,7 @@ export const theRedYear: FullCampaign = {
         'A Khassari prisoner insists his people did not poison the wells. Nobody listens.',
         'The first atrocity: a village burned by a Valdren scout company because "they were harboring soldiers." They were not.',
         'Commander Brenneth disciplines the scouts. Then he burns the next village himself. "They knew what their leaders did."',
+        'Quiet moment: the party camps after the first battle. Sera, a captured Khassari healer, offers to tend their wounds. She does not speak their language well. She heals them anyway. If the party accepts her help, she becomes an ally in Act 2.',
         'The party sees Khassari refugees fleeing - families with children the same age as those who died in the wells.',
       ],
       estimatedSessions: 5,
@@ -63,7 +64,7 @@ export const theRedYear: FullCampaign = {
       name: 'Commander Brenneth',
       role: 'ally / moral barometer',
       personality:
-        'A decorated soldier whose daughter died from the poisoned wells. Professional, principled at first, then slowly consumed by a rage that feels earned. He is not a bad man. He is a grieving father with an army.',
+        'A decorated soldier whose daughter died from the poisoned wells. Professional, principled at first, then slowly consumed by a rage that feels earned. Polishes his daughter\'s locket every night. He is not a bad man. He is a grieving father with an army. "Every Khassari village we take is one less place that sheltered the people who killed her." Arc: hardens through Act 1, cracks in Act 2 when he sees Khassari children.',
       secret: 'He knows the war has gone too far. He cannot stop because stopping means his daughter died for nothing.',
     },
     {

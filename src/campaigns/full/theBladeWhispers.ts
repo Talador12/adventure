@@ -4,7 +4,7 @@ export const theBladeWhispers: FullCampaign = {
   id: 'full-the-blade-whispers',
   type: 'full',
   title: 'The Blade Whispers',
-  tagline: 'The dagger remembers every life it took. Three hundred names. They want to talk.',
+  tagline: 'Three hundred souls in the steel. The loudest is a child. She does not understand why she is here.',
   tone: 'horror',
   themes: ['horror', 'dark_fantasy', 'intrigue'],
   playerCount: { min: 3, max: 5 },
@@ -23,7 +23,7 @@ export const theBladeWhispers: FullCampaign = {
       summary:
         'The party finds Requiem and begins hearing the whispers. They track the dagger\'s history while the voices grow louder and more distinct. Some souls are helpful. Some are hostile. One is trying to warn them about something specific.',
       keyEvents: [
-        'Finding Requiem: Calder\'s body, the dagger in his heart, and the first whispers',
+        'Finding Requiem: Calder\'s body at the bottom of the ravine. The dagger in his heart. The crows will not land near it. The first whispers begin as a hum, like distant conversation through a wall, growing louder as the party approaches.',
         'The voices differentiate: a soldier who died in battle, a thief who died mid-heist, a child who should not be there',
         'Research into the dagger: old records, an artificer\'s journal, a name — Elias Mourne',
         'A soul provides useful intelligence: the location of a hidden cache, a secret passage, a warning about a trap',
@@ -66,8 +66,8 @@ export const theBladeWhispers: FullCampaign = {
       name: 'The Whisper (Maren Ashveil)',
       role: 'antagonist / previous wielder',
       personality:
-        'An assassin who views Requiem as a tool, not a memorial. She listened to the souls for intelligence — victim memories contained secrets worth killing for. She does not consider the souls people. She considers them resources. This is what makes her a monster and she does not see it.',
-      secret: 'She is afraid of the blade. She drove Calder to suicide by telling him the truth about the souls. She wants Requiem back not for the power but because she fears what happens if the souls find someone who will listen to them.',
+        'An assassin who views Requiem as a tool, not a memorial. She speaks in a flat, professional tone - the voice of someone who has been compartmentalizing for thirty years. She refers to the souls by number, not name. She does not fidget, does not pace, does not waste movement. But she will not touch the blade with bare hands. She wears gloves. Always. She does not consider the souls people. She considers them resources. This is what makes her a monster and she does not see it.',
+      secret: 'She is afraid of the blade. She drove Calder to suicide by telling him the truth about the souls. She wants Requiem back not for the power but because she fears what happens if the souls find someone who will listen to them. The gloves are because she can feel them through the steel. She could always feel them.',
     },
     {
       name: 'Elias Mourne (soul within the blade)',

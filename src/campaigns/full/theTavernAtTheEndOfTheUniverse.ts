@@ -24,7 +24,7 @@ export const theTavernAtTheEndOfTheUniverse: FullCampaign = {
         'The party learns the Tavern, meets the regulars, and handles increasingly bizarre patrons. A god who got fired. A tarrasque who is a vegetarian. A lich returning a library book. Sitcom structure with a heart: every patron has a story.',
       keyEvents: [
         'Orientation: the Tavern rules (no fighting inside, no summoning, no looking at the Void)',
-        'First shift: a fired god of rain orders nothing but water and cries',
+        'First shift: a fired god of rain orders nothing but water and cries. Running gag begins: Drizzle orders water every session and tips in small, useless blessings. "May your socks always be dry." The blessings are oddly specific and always come true.',
         'A vegetarian tarrasque squeezes through the door and orders a salad. The kitchen panics',
         'A lich returns a 400-year overdue library book to a patron from the library\'s home world (which no longer exists)',
       ],
@@ -50,7 +50,7 @@ export const theTavernAtTheEndOfTheUniverse: FullCampaign = {
         'Erasure explains his position: "Everything ends. I am just speeding it up. It is a mercy."',
         'The Void eats the back room. The kitchen relocates to the bar. Service continues.',
         'Patrons rally: the fired god, the vegetarian tarrasque, the lich — all fight for the Tavern',
-        'The party makes the case for existence: not a grand speech, but a shift well-worked and a drink well-poured',
+        'The party makes the case for existence: not a grand speech, but a shift well-worked and a drink well-poured. Callback: Drizzle blesses the Tavern one final time. "May this place never be dry." The Void recoils. Turns out a god of gentle rain, even a fired one, still has power when he means it.',
       ],
       estimatedSessions: 4,
     },

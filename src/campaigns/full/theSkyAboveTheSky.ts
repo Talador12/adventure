@@ -66,7 +66,7 @@ export const theSkyAboveTheSky: FullCampaign = {
       name: 'Captain Brask',
       role: 'airship pilot',
       personality:
-        'Pilot of the Skyward Venture. Former military, steady hands, quiet humor. Treats the airship like a living thing. "She does not like turbulence. Neither do I."',
+        'Pilot of the Skyward Venture. Former military — stands at parade rest even during casual conversations. Steady hands that never shake, even during turbulence. Quiet humor delivered without changing expression. Pats the ship\'s wheel before every launch. "She does not like turbulence. Neither do I. We have an understanding. I keep her steady, she keeps us alive."',
     },
     {
       name: 'Zephyr',

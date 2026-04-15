@@ -64,7 +64,7 @@ export const theRiverThatRemembers: FullCampaign = {
       name: 'Mayor Tessa Wren',
       role: 'quest giver',
       personality:
-        'Practical. Direct. Loves her town without sentimentality. She hired the party because the visions are scaring people away from the water and the fishing economy is collapsing. She wants the truth, but she wants her town to survive more.',
+        'Rolls her sleeves up past her elbows year-round. Stands with feet planted wide, arms crossed, like she is bracing for bad news. Speaks in plain sentences with no decoration. "The visions are scaring the fishermen. No fishermen, no fish. No fish, no town. I want the truth, but I want my town to survive more. If those two things conflict, we will cross that bridge when the river lets us."',
     },
     {
       name: 'Father Aldren',

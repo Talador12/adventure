@@ -23,7 +23,7 @@ export const reverseQuest: FullCampaign = {
       summary:
         'The party must un-kill the dragon (it is very confused about being alive again), un-loot the treasure (the dragon wants it arranged EXACTLY as it was), and un-rescue the princess (she has built a life outside the tower and is furious). Each un-do is harder than the original quest.',
       keyEvents: [
-        'The temporal bureaucrat explains the situation with a 47-page pamphlet.',
+        'The temporal bureaucrat explains the situation with a 47-page pamphlet. Spiral begins: each un-done achievement is harder than the original quest. Killing the dragon was one fight. Un-killing it is a three-session ordeal involving emotional labor.',
         'Un-killing the dragon: a resurrection ritual performed by heroes who originally killed it. The dragon wakes up mid-monologue.',
         'Un-looting: the dragon insists every coin be returned to its exact original position. It has a diagram.',
         'Un-rescuing the princess: she has a job, an apartment, and a cat. She is NOT going back.',
@@ -50,7 +50,7 @@ export const reverseQuest: FullCampaign = {
         'The tavern: the party must resist taking the quest while the DM narrates it enticingly.',
         'Form 7-B: a document so complex it folds into a fourth dimension. Requires a quill made from a phoenix feather dipped in bureaucratic ink.',
         'Signature collection: the dragon signs with its claw. The princess refuses to sign without legal representation.',
-        'The form is filed. The timeline resets. The quest begins again - properly this time - in a 60-second montage.',
+        'The form is filed. The timeline resets. The quest begins again — properly this time — in a 60-second montage. Chaos callback: the princess still has her accounting practice. She incorporated the tower into her business address. Some things stay changed.',
       ],
       estimatedSessions: 3,
     },

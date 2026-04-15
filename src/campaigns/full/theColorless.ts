@@ -25,36 +25,39 @@ export const theColorless: FullCampaign = {
         'Red vanishes. Fire loses heat. Blood turns black. Sunsets die. The party investigates as the world adapts to cold fire and still water. Then blue goes. The sky blanches. Oceans freeze in place. The party tracks the theft to the Chromatic Underspaces - the metaphysical source of each color.',
       keyEvents: [
         'The campfire goes cold. Red is gone. Not fading - absent. The concept of warmth in flame ceases.',
-        'Investigation: the Temple of the Chromatic Order confirms someone is extracting color essences from reality itself',
+        'Investigation: the Temple of the Chromatic Order confirms someone is extracting color essences from reality itself. Chromatic Prior Essek speaks in increasingly gray metaphors.',
         'Blue disappears: water stops flowing. Rivers stand like glass. Rain hangs frozen in the air mid-fall.',
-        'Entering the Chromatic Underspace of Red: a cavern that SHOULD be red but is now empty, scraped clean, with drag marks',
-        'The trail: magical residue at the extraction sites is consistent with synesthetic magic - converting one sense into another',
+        'Entering the Chromatic Underspace of Red: a cavern that SHOULD be red but is now empty, scraped clean, with drag marks.',
+        'Quiet moment: Fenn the Gray paints a sunset from memory. The canvas is all gray. She shrugs. "It was always a lie we agreed on. Now the lie is over." The party is not sure if she is coping or breaking.',
+        'The trail: magical residue at the extraction sites is consistent with synesthetic magic - converting one sense into another.',
       ],
       estimatedSessions: 5,
     },
     {
       title: 'Act 2: Yellow and the Artist',
       summary:
-        'Yellow vanishes. Light dims. The sun still shines but nothing is bright. The world becomes twilight. The party follows the trail to a remote cottage where Maren Voss paints in the dark, pulling colors from reality into a tactile masterpiece. She is not malicious. She is enraptured.',
+        'Yellow vanishes. Light dims. The sun still shines but nothing is bright. The world becomes twilight. The party follows the trail to a remote cottage where Maren Voss paints in the dark, pulling colors from reality into a tactile masterpiece.',
       keyEvents: [
         'Yellow disappears: light dims everywhere. The sun is a pale disk. Shadows have no edges. The world enters permanent twilight.',
         'Following the synesthetic trail to a cottage on a cliffside. Inside: darkness. And the most intense sensory experience in history.',
-        'The painting: even without seeing it, the party FEELS the colors radiating from the canvas. It is warm where red was applied. It flows where blue sits.',
-        'Meeting Maren: blind from birth, brilliant, kind, and completely unaware of the scale of damage she is causing. She thinks she is borrowing, not stealing.',
-        'The moral weight: Maren touches the painting and weeps. "This is what you see every day? This is what color feels like? How do you ever close your eyes?"',
+        'The painting: even without seeing it, the party FEELS the colors radiating from the canvas. It is warm where red was applied. It flows where blue sits. It glows where yellow lives.',
+        'Meeting Maren: blind from birth, brilliant, kind, and genuinely unaware of the full scale of damage she is causing. She thinks she is borrowing, not stealing.',
+        'The moment of cost: Maren touches the painting and weeps. "This is what you see every day? This is what color feels like? How do you ever close your eyes?" The party must decide what to do about someone who has just experienced beauty for the first time.',
+        'If the party brought Fenn along, the two artists meet. One who lost color. One who stole it. The conversation is devastating.',
       ],
       estimatedSessions: 6,
     },
     {
       title: 'Act 3: Green and the Choice',
       summary:
-        'Green begins to fade. Plants stop growing. Food stops ripening. Famine is weeks away. The party must make their choice: destroy the painting, find an alternative, or let the world die for art. Maren will not give it up willingly. She will not fight them either. She will just ask them to touch it first.',
+        'Green begins to fade. Plants stop growing. Food stops ripening. Famine is weeks away. The party must make their choice: destroy the painting, find an alternative, or let the world die for art.',
       keyEvents: [
         'Green fading: leaves gray, crops stalling, the first reports of famine. The timeline compresses.',
-        'Maren defense: "Touch it. Please. Before you destroy it, just touch it. Feel what I feel. Then decide."',
-        'Touching the painting: the party member experiences all stolen colors simultaneously through touch. It is transcendent.',
-        'The alternatives: a ritual to duplicate the painting properties without draining reality (requires all remaining color mages, uncertain outcome)',
-        'The choice: destroy (certain, devastating to Maren), duplicate (uncertain, risky, but preserves both), or abandon the world (unthinkable but the painting IS that beautiful)',
+        'Maren\'s defense: "Touch it. Please. Before you destroy it, just touch it. Feel what I feel. Then decide."',
+        'Touching the painting: the party member experiences all stolen colors simultaneously through touch. It is transcendent. It is the most beautiful thing they have ever experienced.',
+        'Quiet moment: Maren and the party sit in the dark cottage. She asks what green looks like. Not the concept. The experience. "Describe the color of a living thing to someone who has never seen one."',
+        'The alternatives: a ritual to duplicate the painting\'s properties without draining reality (requires all remaining color mages, uncertain outcome). Dr. Luma Vesk says she can do it but cannot promise anything.',
+        'The choice: destroy (certain, devastating to Maren), duplicate (uncertain, risky, but preserves both), or abandon the world (unthinkable but the painting IS that beautiful). Every choice the party made about art and compassion in Acts 1 and 2 colors this decision.',
       ],
       estimatedSessions: 5,
     },
@@ -64,44 +67,54 @@ export const theColorless: FullCampaign = {
       name: 'Maren Voss',
       role: 'antagonist / tragic artist',
       personality:
-        'A blind painter of extraordinary genius. Born without sight, she spent her life understanding color through description. When she found a way to extract color into a tactile medium, she finally experienced what everyone else takes for granted. She is gentle, brilliant, and will not stop willingly. Not because she is selfish but because she has tasted sight for the first time.',
-      secret: 'She knows she is hurting the world. She chose to keep going. The guilt is destroying her but the beauty is worth it. She hates herself for that calculation.',
+        'A blind painter of extraordinary genius. Born without sight, she spent her life understanding color through description. Moves her hands constantly, feeling the air as if testing for texture. When she found a way to extract color into a tactile medium, she finally experienced what everyone else takes for granted. Gentle, brilliant, and will not stop willingly.',
+      secret: 'She knows she is hurting the world. She chose to keep going. The guilt is destroying her but the beauty is worth it. She hates herself for that calculation. Arc: can accept the duplication attempt if the party shows her genuine compassion. Cannot be bullied into stopping.',
     },
     {
       name: 'Chromatic Prior Essek',
       role: 'quest giver / color priest',
       personality:
-        'Head of the Temple of the Chromatic Order, a faith that worships color as the fundamental forces of reality. Watching his gods die. Speaks in increasingly gray metaphors as colors vanish. Desperate, devout, and furious.',
+        'Head of the Temple of the Chromatic Order, a faith that worships color as the fundamental forces of reality. Watching his gods die. Speaks in increasingly gray metaphors as colors vanish. Wrings his hands. His robes used to be ceremonial rainbow. Now they are gray from the waist down. "We are losing the vocabulary of existence."',
     },
     {
       name: 'Dr. Luma Vesk',
       role: 'synesthesia scholar / ally',
       personality:
-        'A researcher who studies the connection between senses. She identified the extraction method as synesthetic magic and can theoretically reverse-engineer a duplication method. Cautious, methodical, and unwilling to promise anything she cannot deliver.',
+        'A researcher who studies the connection between senses. She identified the extraction method as synesthetic magic and can theoretically reverse-engineer a duplication method. Cautious, methodical, and unwilling to promise anything she cannot deliver. Pushes her glasses up when thinking. "I said theoretically. That is not the same word as certainly."',
     },
     {
       name: 'Fenn the Gray',
       role: 'survivor / cautionary tale',
       personality:
-        'A painter who lost the ability to see red when it vanished. Then blue. Then yellow. Now she paints in gray and calls it "honest." She is not bitter. She is broken. "Color was a lie we all agreed on. Now the lie is over."',
+        'A painter who lost the ability to see red when it vanished. Then blue. Then yellow. Now she paints in gray and calls it "honest." She is not bitter. She is broken in a way that looks like peace. Arc: if brought to meet Maren, she either forgives or condemns - depending on whether the party helped her grieve in Act 1.',
     },
   ],
   keyLocations: [
     {
       name: 'The Chromatic Underspace',
-      description: 'The metaphysical source of color. Each color has a cavern-like space where its essence is generated. The red space is scraped empty. The blue space is drained. They are beautiful and dying.',
+      description:
+        'The metaphysical source of color. Each color has a cavern-like space where its essence is generated. The red space is scraped empty. The blue space is drained. They are beautiful and dying.',
       significance: 'Where the theft is confirmed and the extraction method is identified.',
     },
     {
-      name: 'Maren Cottage',
-      description: 'A small cottage on a remote cliff. Completely dark inside. In the center, a canvas that radiates warmth, movement, light, and growth through touch. The most beautiful object in existence.',
+      name: 'Maren\'s Cottage',
+      description:
+        'A small cottage on a remote cliff. Completely dark inside. In the center, a canvas that radiates warmth, movement, light, and growth through touch. The most beautiful object in existence. The artist sits beside it and weeps.',
       significance: 'Where the artist works, the painting lives, and the final choice is made.',
     },
     {
       name: 'The Twilight City',
-      description: 'The capital after yellow vanishes. Permanent dim light. Lanterns barely function. People navigate by memory and touch. A city learning to live without brightness.',
-      significance: 'The emotional setting for Act 2 and 3. Where the stakes are most visible.',
+      description:
+        'The capital after yellow vanishes. Permanent dim light. Lanterns barely function. People navigate by memory and touch. A city learning to live without brightness. Children draw suns on walls because they are starting to forget what bright means.',
+      significance: 'The emotional setting for Acts 2 and 3. Where the stakes are most visible.',
     },
   ],
-  dataSystems: ['environmentalHazard', 'emotionalBeat', 'plotTwistEngine', 'magicalEcosystem', 'npcGenerator'],
+  dataSystems: [
+    'environmentalHazard',
+    'emotionalBeat',
+    'plotTwistEngine',
+    'magicalEcosystem',
+    'npcGenerator',
+    'socialEncounter',
+  ],
 };

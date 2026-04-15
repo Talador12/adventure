@@ -22,10 +22,11 @@ export const theCartographersGambit: FullCampaign = {
       title: 'Act 1: The Edit',
       summary: 'The world is changing. Towns move. Rivers bend. The party investigates the Master Map\'s theft and discovers the scope of the changes.',
       keyEvents: [
-        'The party\'s town is in the wrong place — only they notice',
-        'The cartographer explains: the Master Map defines geography, and it\'s been stolen',
-        'Three more edits: a mountain appears where there was none, a lake dries up, a forest rearranges',
-        'Tracking the thief: the trail changes direction because the Map rewrites the path',
+        'The party\'s town is in the wrong place — the tavern they slept in is now next to the river instead of the market square. Only they notice. The bartender says it has always been here.',
+        'The cartographer explains: she shows them two maps drawn a week apart. The coastline has changed. "The Master Map defines geography, and someone stole it three days ago."',
+        'Three more edits: a mountain appears overnight where farmers were planting. A lake drains into nothing. A forest rotates 90 degrees — the eastern trail now faces north.',
+        'Tracking the thief: the trail changes direction because the Map rewrites the path behind them. Footprints lead to a cliff that did not exist yesterday.',
+        'Quiet moment: the party camps on a hill and watches the horizon shift in the moonlight. A river below them slowly bends, like a sleeping snake turning over.',
       ],
       estimatedSessions: 5,
     },
@@ -55,25 +56,42 @@ export const theCartographersGambit: FullCampaign = {
   keyNPCs: [
     {
       name: 'Cartographer Mira',
-      role: 'quest giver / expert',
-      personality: 'The royal cartographer who discovered the Map\'s power (by accidentally erasing a village). Guilt-ridden, brilliant, and determined to fix this.',
-      secret: 'She didn\'t accidentally erase the village — she was testing the Map\'s limits. The village came back when she redrew it, but she knew the Map was dangerous and told no one.',
+      role: 'quest giver / expert / evolves from guilt to resolve',
+      personality: 'Chews her quill when thinking. Draws diagrams on any flat surface, including people\'s arms. Speaks in measurements when stressed: "We are approximately forty leagues from catastrophe." Brilliant, guilt-ridden, and determined to fix this.',
+      secret: 'She did not accidentally erase the village — she was testing the Map\'s limits. The village came back when she redrew it, but she knew the Map was dangerous and told no one. That silence is eating her alive.',
     },
     {
       name: 'The Master Map',
       role: 'sentient artifact / antagonist',
-      personality: 'A map that has developed aesthetic sensibilities over centuries. Considers itself an artist. "Your rivers are crooked. Your mountains have no symmetry. Your coastline is a MESS. I\'m fixing it. You\'re welcome."',
+      personality: 'Communicates through geography — rivers that spell words, mountain ranges that form arrows. Has developed aesthetic sensibilities over centuries. Considers itself an artist. When the party gets close, it writes in the landscape: "Your rivers are crooked. Your mountains have no symmetry. Your coastline is a MESS. I am fixing it. You are welcome."',
     },
     {
       name: 'Navigator Pell',
-      role: 'ally / increasingly lost',
-      personality: 'A navigator whose life depends on accurate maps. The Map\'s edits are driving him to the edge. "North was THAT way yesterday. Now it\'s over THERE. I just want to go HOME."',
+      role: 'ally / increasingly lost / comic relief who becomes heartbreaking',
+      personality: 'A halfling navigator who carries seventeen compasses, all pointing different directions. Twitches when someone says "north." Keeps a journal of where things USED to be. "North was THAT way yesterday. Now it is over THERE. I just want to go HOME." By Act 3, he cannot remember where home was.',
+    },
+    {
+      name: 'Elder Stonepath',
+      role: 'displaced leader / emotional anchor',
+      personality: 'Mayor of one of the shifted towns. Slow-speaking, dignified, confused. Her town moved and her people did not notice, but she feels the wrongness. "I have walked this road for sixty years. My feet know it is different. My eyes say I am mad."',
     },
   ],
   keyLocations: [
-    { name: 'The Shifted Towns', description: 'Towns that have been moved, rotated, or redesigned by the Map. Residents don\'t notice. Visitors are very confused.', significance: 'Evidence of the Map\'s power.' },
-    { name: 'The Perfect Valley', description: 'The one place the Map considers ideal — a valley with mathematical symmetry, golden-ratio proportions, and suspiciously organized vegetation.', significance: 'Where the Map has made its base.' },
-    { name: 'The Cartographer\'s Vault', description: 'Where the Map was kept — a heavily warded room with an empty pedestal and scorch marks where the Map burned through its containment.', significance: 'Where the investigation begins.' },
+    {
+      name: 'The Shifted Towns',
+      description: 'Towns moved, rotated, or redesigned by the Map. A church faces east instead of west. A river runs through someone\'s living room. Residents do not notice. Visitors are very confused.',
+      significance: 'Evidence of the Map\'s power. Where the party first understands what "rewriting geography" means in human terms.',
+    },
+    {
+      name: 'The Perfect Valley',
+      description: 'The one place the Map considers ideal — a valley with mathematical symmetry, golden-ratio proportions, and trees planted in Fibonacci spirals. Even the clouds overhead form geometric patterns.',
+      significance: 'Where the Map has made its base. Disturbingly beautiful.',
+    },
+    {
+      name: 'The Cartographer\'s Vault',
+      description: 'Where the Map was kept — a heavily warded room with an empty pedestal and scorch marks where the Map burned through its containment. The walls still show the Map\'s last "corrections" — the room is slightly more symmetrical than it should be.',
+      significance: 'Where the investigation begins. The scorch pattern tells the story of the escape.',
+    },
   ],
   dataSystems: ['lyingMap', 'magicalAnomaly', 'wildernessLandmarks', 'locationNameGenerator', 'travelEncounters', 'puzzleLock', 'pocketDimension', 'sentientItem', 'naturalDisaster'],
 };

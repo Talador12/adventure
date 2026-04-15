@@ -22,10 +22,11 @@ export const theAtomicGarden: FullCampaign = {
       title: 'Act 1: The Molecular World',
       summary: 'Orientation at atomic scale. The party learns to navigate a world where molecules are terrain, chemical bonds are infrastructure, and bacteria are wildlife.',
       keyEvents: [
-        'The shrinking: the world expands. A water droplet becomes an ocean of crystalline boulders.',
-        'First navigation: walking on hydrogen bonds, sliding between molecular clusters, reading chemical gradients',
-        'Bacterial encounter: a neutrophil the size of a dragon. It is not hostile - it is doing its job. The party is not on its list.',
-        'The corruption: dark crystals growing between molecules. They hum with something that feels like sadness.',
+        'The shrinking: the world expands around them like an explosion in reverse. A water droplet becomes an ocean. The party stands on a molecule and the horizon is chemistry.',
+        'First navigation: walking on hydrogen bonds that flex underfoot like rope bridges made of light. Sliding between molecular clusters. Reading chemical gradients the way a sailor reads wind.',
+        'Bacterial encounter: a neutrophil the size of a dragon drifts past, pseudopods extending like tentacles. It is not hostile — it is doing its job. The party is not on its list. Yet.',
+        'The corruption: dark crystals growing between molecules like frost between stones. They hum with something that feels like sadness. A party member touches one and their eyes fill with tears they cannot explain.',
+        'Quiet moment: the party rests inside the curve of a water molecule. The hydrogen bonds glow softly overhead like stars. Theren\'s voice crackles through the scrying link: "Are you alive? Please tell me you are alive."',
       ],
       estimatedSessions: 5,
     },
@@ -75,9 +76,21 @@ export const theAtomicGarden: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Molecular Ocean', description: 'A single drop of water at atomic scale. Crystalline water molecules the size of boulders. Hydrogen bonds as bridges of flexing light. An ocean contained in a tear.', significance: 'The campaign\'s entire terrain. Every journey is measured in nanometers.' },
-    { name: 'The Salt Fortress', description: 'A sodium chloride crystal at atomic scale - a perfect geometric structure of alternating ions. Inside, a pocket of chemical stability where the corruption cannot reach.', significance: 'Safe harbor and rest point in the molecular wilderness.' },
-    { name: 'The Core Crystal', description: 'A single perfect dark crystal at the center of the tear. It contains the complete memory of the god\'s loss. Touching it means experiencing divine grief firsthand.', significance: 'The campaign\'s final destination and the key to the cure.' },
+    {
+      name: 'The Molecular Ocean',
+      description: 'A single drop of water at atomic scale. Crystalline water molecules the size of boulders, refracting light into permanent rainbows. Hydrogen bonds stretch between them as bridges of flexing light that hum when walked on.',
+      significance: 'The campaign\'s entire terrain. Every journey is measured in nanometers. The most alien environment the party will ever explore — and it was sitting on someone\'s cheek.',
+    },
+    {
+      name: 'The Salt Fortress',
+      description: 'A sodium chloride crystal at atomic scale — a perfect geometric structure of alternating ions forming walls, floors, and ceilings of mathematical precision. Inside, a pocket of chemical stability where the corruption cannot reach. The walls taste exactly like you would expect.',
+      significance: 'Safe harbor and rest point. Where the party catches their breath and Alchemist Theren contacts them through the scrying link, audibly relieved.',
+    },
+    {
+      name: 'The Core Crystal',
+      description: 'A single perfect dark crystal at the center of the tear. It pulses like a heartbeat. Touching it means experiencing divine grief firsthand — the full weight of a god\'s loss compressed into a single moment of contact.',
+      significance: 'The campaign\'s final destination. Not a boss fight. A feeling. The party must endure it and carry the message back.',
+    },
   ],
   dataSystems: ['magicalAnomaly', 'wildMagicExpanded', 'dreamCombat', 'dreamSequence', 'terrainAdvantage', 'socialEncounter', 'curseLayered', 'travelMontage'],
 };

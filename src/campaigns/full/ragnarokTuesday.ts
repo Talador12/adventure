@@ -56,28 +56,63 @@ export const ragnarokTuesday: FullCampaign = {
     {
       name: 'Ledger',
       role: 'bureaucratic deity / secret quest giver',
-      personality: 'A small, fussy god who keeps immaculate records and is furious that no one else does. Wears spectacles. Carries a quill that never runs dry. Has been filing complaints about divine negligence for centuries. This is the first time anyone listened.',
+      personality:
+        'A small, fussy god who keeps immaculate records and is furious that no one else does. Wears spectacles. Carries a quill that never runs dry. Has been filing complaints about divine negligence for centuries. This is the first time anyone listened. Stamps everything. His divine power literally manifests as notarization seals.',
+      secret: 'He filed the complaint that localized Ragnarok to Midfjord. The "clerical error" WAS his complaint being processed. He is simultaneously the cause and the solution.',
     },
     {
       name: 'Brynhild',
       role: 'stranded Valkyrie / reluctant ally',
-      personality: 'A by-the-book warrior angel stuck in Midfjord because her paperwork says she has to collect a hero. She is bored, annoyed, and increasingly willing to lower her standards for what counts as "heroic."',
+      personality:
+        'A by-the-book warrior angel stuck in Midfjord because her paperwork says she has to collect a hero. She is bored, annoyed, and increasingly willing to lower her standards for what counts as "heroic." By Act 3, stubbing your toe bravely might qualify. "Did you just walk into that door with CONVICTION? That is borderline heroic. I am considering it."',
     },
     {
       name: 'Thrym',
       role: 'confused frost giant / gentle soul',
-      personality: 'Twenty feet tall, surprisingly soft-spoken. He spent fifty years preparing for Ragnarok - composing his death poem, sharpening his axe, making peace with his ancestors. Now he has nothing to do. He is having an existential crisis in the town square.',
+      personality:
+        'Twenty feet tall, surprisingly soft-spoken. He spent fifty years preparing for Ragnarok - composing his death poem, sharpening his axe, making peace with his ancestors. Now he has nothing to do. He is having an existential crisis in the town square. He keeps offering to read his death poem to anyone who will listen. It is 47 stanzas long. It is genuinely beautiful. Nobody has time.',
     },
     {
       name: 'Elder Magna',
       role: 'village leader / exasperated employer',
-      personality: 'An unflappable grandmother who has survived three dragon attacks, two plagues, and a tax audit. The localized apocalypse is just Tuesday to her. "Fix it. I do not care how. Send me the bill."',
+      personality:
+        'An unflappable grandmother who has survived three dragon attacks, two plagues, and a tax audit. The localized apocalypse is just Tuesday to her. "Fix it. I do not care how. Send me the bill." Every crisis gets the same measured response. The dead wolf is a "traffic concern." The ravens are a "noise complaint." The frost giant is a "seating issue."',
+    },
+    {
+      name: 'Ratatoskr',
+      role: 'cosmic squirrel / unreliable guide',
+      personality:
+        'The squirrel that runs up and down Yggdrasil carrying messages between the eagle at the top and the serpent at the roots. He is supposed to guide travelers between realms. He lies constantly, takes bribes in acorns, and gives deliberately wrong directions because he thinks it is funny. "Left at the fire realm? No, I said THE fire realm. The OTHER left."',
     },
   ],
   keyLocations: [
-    { name: 'Midfjord', description: 'A mid-sized fishing village with a dead cosmic wolf on the main road, a frost giant in the square, and ravens screaming on every rooftop.', significance: 'Ground zero of the worst apocalypse ever. Home base for Act 1.' },
-    { name: 'The World Tree (Yggdrasil)', description: 'The cosmic ash tree connecting the nine realms. Each branch is a different world. The squirrel running up and down the trunk is unhelpful.', significance: 'The transit system to Asgard when the Bifrost is booked solid.' },
-    { name: 'The Divine Scheduling Office', description: 'A vast celestial filing room in Asgard. Every cosmic event is logged here. The backlog is centuries deep and the filing system is a disaster.', significance: 'Where the complaint is filed and the audit takes place. The campaign\'s final arena.' },
+    {
+      name: 'Midfjord',
+      description:
+        'A mid-sized fishing village with a dead cosmic wolf blocking the main trade road, a frost giant sitting in the town square composing poetry, and two ravens screaming at each other on every rooftop. The fish market is somehow still open.',
+      significance: 'Ground zero of the worst apocalypse ever. Home base for Act 1.',
+    },
+    {
+      name: 'The World Tree (Yggdrasil)',
+      description:
+        'The cosmic ash tree connecting the nine realms. Each branch is a different world. The squirrel running up and down the trunk is unhelpful. There is a gift shop halfway up that sells "I Climbed the World Tree" tunics. It is run by an enterprising dwarf.',
+      significance: 'The transit system to Asgard when the Bifrost is booked solid.',
+    },
+    {
+      name: 'The Divine Scheduling Office',
+      description:
+        'A vast celestial filing room in Asgard. Every cosmic event for the next ten millennia is logged here. The backlog is centuries deep and the filing system changes every time a new intern starts. The coffee machine is broken. It has been broken since the Second Age.',
+      significance: 'Where the complaint is filed and the audit takes place. The campaign\'s final arena.',
+    },
   ],
-  dataSystems: ['socialEncounter', 'npcRelationshipWeb', 'fantasyInsults', 'dialogueTrees', 'randomNpcGenerator', 'voiceLines', 'travelMontage', 'diplomaticIncident'],
+  dataSystems: [
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'fantasyInsults',
+    'dialogueTrees',
+    'randomNpcGenerator',
+    'voiceLines',
+    'travelMontage',
+    'diplomaticIncident',
+  ],
 };

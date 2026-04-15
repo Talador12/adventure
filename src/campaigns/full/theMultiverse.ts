@@ -23,7 +23,7 @@ export const theMultiverse: FullCampaign = {
       summary:
         'Alternate versions of the party arrive one at a time. Each is absurd. Each is treated with absolute sincerity. The party must deal with evil duplicates, musical duplicates, animal duplicates, and versions of themselves that raise uncomfortable questions.',
       keyEvents: [
-        'Evil versions: goatees, dark magic, monologues. They are defeated but keep coming back.',
+        'Evil versions: goatees, dark magic, monologues. They are defeated but keep coming back. Spiral begins: each new version is more absurd than the last. Evil is scary. Bard is fun. Cat is adorable. By the time the Door versions arrive, the party has stopped being surprised.',
         'Bard versions: identical party but everyone is a bard. They are charming. They will not stop singing.',
         'Cat versions: the party but as cats. Still sentient. Still have class abilities. Still cats.',
         'Baby versions: infant versions of the party. They have hit dice. They cannot stop crying.',
@@ -50,7 +50,7 @@ export const theMultiverse: FullCampaign = {
         'The army of selves: 30+ versions of the party gather. The logistics are a nightmare.',
         'The Evil versions\' scheme: they try to keep the rift open. The party expected this.',
         'Rift closure: every version channels their power simultaneously. The Bard versions sing a power ballad.',
-        'The farewell: versions say goodbye as the rift closes. The Cat versions headbutt the party affectionately.',
+        'The farewell: versions say goodbye as the rift closes. The Cat versions headbutt the party affectionately. Chaos callback: the Evil versions attempt one final betrayal as the rift closes. The Cat versions sit on the Evil versions. Problem solved. The Bard versions sing a farewell ballad that is genuinely beautiful.',
       ],
       estimatedSessions: 4,
     },

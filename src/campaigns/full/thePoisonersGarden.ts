@@ -60,7 +60,7 @@ export const thePoisonersGarden: FullCampaign = {
       name: 'Thessa Vane',
       role: 'poisoner / sympathetic antagonist',
       personality:
-        'A gentle, soft-spoken healer who runs a free clinic for the poor. She is warm, kind, and genuinely cares about the sick. She is also a meticulous killer who has spent fifteen years planning the deaths of six people who destroyed everything she loved.',
+        'A gentle, soft-spoken healer who smells faintly of lavender and antiseptic. Holds patients\' hands while she talks to them. Hums while she works. Her clinic is spotless. She is warm, kind, and genuinely cares about the sick. She is also a meticulous killer who has spent fifteen years planning the deaths of six people who destroyed everything she loved. "Healing and killing require the same knowledge. Dosage is the only difference."',
       secret: 'She does not enjoy the killing. She throws up after each one. She will stop when the list is done. She will not stop before.',
     },
     {

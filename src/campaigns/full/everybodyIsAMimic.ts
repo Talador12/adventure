@@ -23,7 +23,7 @@ export const everybodyIsAMimic: FullCampaign = {
       summary:
         'The party enters the Undermaw expecting a standard dungeon crawl. Every object is suspect. The party develops increasingly elaborate methods to test whether things are mimics (poking everything with a 10-foot pole, refusing to sit down, eating nothing). The paranoia is the point.',
       keyEvents: [
-        'The first chest is safe. The floor is a mimic. Expectations shattered immediately.',
+        'The first chest is safe. The floor is a mimic. Expectations shattered immediately. Spiral begins: the ratio of real-to-mimic objects decreases each act. Act 1: some things are mimics. Act 2: most things are mimics. Act 3: the concept of "not-mimic" is a mimic.',
         'A party member sits on a mimic chair and has to be peeled off mid-combat.',
         'The party finds a room full of gold coins. Half are mimics. They cannot tell which half.',
         'Secret mimic player (if any) has their first involuntary sticky-tongue moment.',
@@ -50,7 +50,7 @@ export const everybodyIsAMimic: FullCampaign = {
         'The dungeon reveals itself: walls ripple, the ceiling blinks, the floor has a pulse.',
         'The Undermaw speaks. It is sad. It just wanted visitors who stayed.',
         'The dungeon starts walking toward the nearest city. The party is still inside.',
-        'Final choice: befriend it, sedate it, or somehow explain to a city that a dungeon is moving in next door.',
+        'Final choice: befriend it, sedate it, or somehow explain to a city that a dungeon is moving in next door. Chaos callback: Chester, the mimic who insisted he was a normal person, turns out to be the ONLY real person the party met inside the dungeon. He was just weird.',
       ],
       estimatedSessions: 3,
     },

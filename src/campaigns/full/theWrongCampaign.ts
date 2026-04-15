@@ -23,7 +23,7 @@ export const theWrongCampaign: FullCampaign = {
       summary:
         'The party is forced into wedding planning. Venue scouting reveals dungeons. Catering tastings involve suspiciously sentient food. The florist is a druid hiding war crimes. Every mundane task has a sinister undertone that the party cannot quite explain.',
       keyEvents: [
-        'The briefing: armored adventurers given a seating chart and a color palette.',
+        'The briefing: armored adventurers given a seating chart and a color palette. Spiral begins: the Dark Lord bleed-through escalates each session. Session 1: the venue is suspicious. Session 2: shadow assassins crash the fitting. Session 3: the undead army arrives at the reception. The wedding planning escalates in parallel.',
         'Venue scouting: the "charming rustic estate" is clearly a converted evil fortress.',
         'The cake tasting: one cake whispers. The baker insists this is normal. It is not.',
         'The band audition: every band plays ominous music. The party hires the least threatening one.',
@@ -50,7 +50,7 @@ export const theWrongCampaign: FullCampaign = {
         'The ceremony begins. A demon prince objects. The party handles it "quietly."',
         'The undead army arrives during appetizers. The party fights them behind the venue.',
         'The lich makes a last appeal during the father-daughter dance. Brenda banishes him.',
-        'The bouquet toss: it is a weapon. Old habits. The wedding is saved. Brenda cries. She means it.',
+        'The bouquet toss: it is a weapon. Old habits. The wedding is saved. Brenda cries. She means it. Chaos callback: Morvaine the lich catches the bouquet. He was not invited to the wedding but he was invited to the toss. Brenda sent a separate card. He starts ugly-crying. A lich ugly-crying is something nobody needed to see.',
       ],
       estimatedSessions: 4,
     },

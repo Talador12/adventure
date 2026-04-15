@@ -23,7 +23,7 @@ export const theReviewBoard: FullCampaign = {
       summary:
         'The party enters the Gastronomic Labyrinth, meets their guide, and begins the first courses. Each room is a combat or trap encounter themed around a dish. They must rate each experience while surviving it. Madame Roux watches.',
       keyEvents: [
-        'The amuse-bouche room: a single gelatinous cube with a cherry on top',
+        'The amuse-bouche room: a single gelatinous cube with a cherry on top. Running gag begins: Garson the skeleton butler appears between every course with increasingly absurd wine pairings. He cannot taste any of them. His recommendations are flawless anyway.',
         'The appetizer course: an owlbear guards a cheese board - defeating it is optional but the cheese is behind it',
         'The soup course: the room fills with boiling broth while ingredients (animated vegetables) attack',
         'First hint something is wrong: the second room is suspiciously tailored to their first review',
@@ -50,7 +50,7 @@ export const theReviewBoard: FullCampaign = {
         'Entering the kitchen: every criticized monster is here, rearranged to address the notes',
         'Madame Roux reveals herself - she has been cooking the entire time they have been fighting',
         'The magnum opus: a seven-layer planar cake that is genuinely the best thing anyone has ever tasted',
-        'The final review: the party writes their honest assessment while Roux watches, trembling',
+        'The final review: the party writes their honest assessment while Roux watches, trembling. Callback: Garson delivers one final wine pairing for the review itself. "Madame recommends a crisp Verdant White with the written critique. I am told it pairs well with vulnerability."',
       ],
       estimatedSessions: 4,
     },

@@ -24,7 +24,7 @@ export const theAccidentalKing: FullCampaign = {
         'The accidental king is crowned and immediately drowns in royal obligations. Court politics are vicious. The advisory council is incompetent. Every decision has consequences and the party has no idea what they are doing. The rest of the party is roped in as the royal court.',
       keyEvents: [
         'Coronation aftermath: the party member receives a crown, a scepter, and 400 pages of pending legislation.',
-        'First day: the dwarven ambassador demands an audience. The treasury secretary admits the books are "creative."',
+        'First day: the dwarven ambassador demands an audience. The treasury secretary admits the books are "creative." Spiral begins: each session adds a new crisis to the pile. By Act 3, the party is juggling five simultaneous disasters that each make the others worse.',
         'Court politics: three noble houses immediately try to manipulate the new king. They are bad at hiding it.',
         'Role assignment: the rest of the party becomes the royal court by default. The rogue is now Spymaster.',
       ],
@@ -50,7 +50,7 @@ export const theAccidentalKing: FullCampaign = {
         'Dawn: the dwarven army is spotted. The party has until noon to resolve the embargo.',
         'Midday: the dragon lands on the castle for its zoning appointment. It has a lawyer.',
         'Afternoon: the neighbor kingdom\'s declaration of war arrives. By raven. The raven is also hostile.',
-        'Sunset: the party solves everything through some combination of diplomacy, combat, and creative accounting. Aldric slow-claps from his mirror.',
+        'Sunset: the party solves everything through some combination of diplomacy, combat, and creative accounting. Aldric slow-claps from his mirror. Chaos callback: Korventhax the dragon gets his zoning permit. He builds the nicest lair in the kingdom. Property values in the northern border skyrocket. The treasury problem solves itself through dragon-driven gentrification.',
       ],
       estimatedSessions: 4,
     },

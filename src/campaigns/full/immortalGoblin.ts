@@ -24,7 +24,7 @@ export const immortalGoblin: FullCampaign = {
         'Skrix attaches to the party and will not leave. They try everything: abandoning him, trapping him, teleporting away. He always comes back. He is relentlessly cheerful and completely useless. The party must complete normal adventuring quests while a indestructible goblin tries to participate.',
       keyEvents: [
         'First death and resurrection: the party kills Skrix three times in two minutes. He does not mind.',
-        'Attachment: Skrix names himself after the fighter. "I am Skrix [Fighter Name]. We are the same."',
+        'Attachment: Skrix names himself after the fighter. "I am Skrix [Fighter Name]. We are the same." Spiral begins: Skrix adopts one new party member behavior per session. He copies how they eat, fight, and sleep. By Act 3 he is a goblin-shaped mosaic of the entire party\'s habits.',
         'The fan club: Skrix starts recruiting other goblins to admire the party. There are commemorative pins.',
         'Abandonment attempts: the party leaves Skrix on an island. He appears in their tent that night.',
       ],
@@ -50,7 +50,7 @@ export const immortalGoblin: FullCampaign = {
         'The cult assembles: a weapon forged from condensed apathy, designed to destroy abstract concepts.',
         'The battle: the party fights entropy cultists while Skrix "helps" by throwing rocks at allies.',
         'The critical moment: the weapon fires. Skrix walks in front of it. The party dives to shield him.',
-        'The spark holds: Skrix survives. Persistence survives. Skrix gives everyone a hug. Nobody is dry-eyed.',
+        'The spark holds: Skrix survives. Persistence survives. Skrix gives everyone a hug. Nobody is dry-eyed. Chaos callback: Skrix performs the party\'s signature moves — all of them, from every member — in a single chaotic sequence to distract the cult during the critical moment. Every behavior he copied matters.',
       ],
       estimatedSessions: 4,
     },

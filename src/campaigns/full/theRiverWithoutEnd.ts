@@ -60,7 +60,7 @@ export const theRiverWithoutEnd: FullCampaign = {
       name: 'Professor Lira Ashdown',
       role: 'patron / quest giver',
       personality:
-        'A brilliant, haunted scholar who has studied the river her entire career. Warm but evasive. Pushes the party to explore but panics when they mention crossing.',
+        'Wears her late partner\'s compass on a chain around her neck. Touches it when she is lying, which is how the party eventually catches her. Warm, brilliant, and evasive in a way that feels like protection rather than deception. Panics visibly — goes pale, grips the compass — when the party mentions crossing the river. "Follow the current. Map what you see. Do not cross the river until I say so." She will not explain why. She cannot explain without crying.',
       secret: 'She crossed the river twenty years ago with her partner, Daven. He is still on the other side. She hired the party to find a way to bring him back.',
     },
     {

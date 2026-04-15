@@ -23,7 +23,7 @@ export const theDungeonHasReviews: FullCampaign = {
       summary:
         'The party does a dungeon crawl while being live-reviewed. Every trap, every fight, every piece of loot is rated in real time. The dungeon boss is desperately trying to make a good impression - renovating rooms the party has not reached yet, planting better loot, and coaching his minions on customer service.',
       keyEvents: [
-        'The entrance: rated on ambiance, signage, and "first impression dread factor."',
+        'The entrance: rated on ambiance, signage, and "first impression dread factor." Spiral begins: the dungeon gets increasingly elaborate in response to each review. Bad rating on traps? Next room has triple traps. Good rating on ambiance? Every subsequent room has mood lighting.',
         'Trap review: "The spike pit was adequate but lacked innovation. 3 stars."',
         'The boss panic-renovates the throne room mid-dungeon. The party hears construction noises ahead.',
         'Boss fight: the boss is more concerned about the review than the fight. "Was that dramatic enough? Should I monologue more?"',
@@ -50,7 +50,7 @@ export const theDungeonHasReviews: FullCampaign = {
         'The meeting: 40 dungeon bosses, a corrupt board, and one party with evidence.',
         'The DAB chair\'s defense: "Without us, dungeons would be UNREGULATED. Think of the adventurers."',
         'Quillsworth testifies: "I was told to rate the Crypts of Malvoran a 2 before I entered."',
-        'Resolution: the DAB is dissolved or reformed. The dungeon economy survives. The boss gets 4 stars. He cries.',
+        'Resolution: the DAB is dissolved or reformed. The dungeon economy survives. The boss gets 4 stars. He cries. Chaos callback: Gary the Goblin (Employee of the Month) gets his own review from the party. Five stars. "Best customer service experience in any dungeon. Was polite before, during, and after attempting murder."',
       ],
       estimatedSessions: 3,
     },

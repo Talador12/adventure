@@ -24,7 +24,7 @@ export const theTaxCollector: FullCampaign = {
         'Traveling to the dragon\'s lair with the world\'s most dedicated tax assessor. Every encounter along the way involves the assessor trying to audit someone.',
       keyEvents: [
         'Meet the assessor: Percival Ledger, who has audited a king and survived',
-        'The road: bandits (Percival tries to audit them), a troll bridge (Percival asks about toll permits)',
+        'The road: bandits (Percival tries to audit them), a troll bridge (Percival asks about toll permits). Running gag begins: Percival attempts to audit every creature the party encounters, regardless of species or hostility. His success rate is disturbingly high.',
         'Arrival at the mountain: the dragon\'s lair entrance has a "DO NOT DISTURB" sign',
         'First contact: Scorchtail wakes up, very confused about why tiny people are in her cave',
       ],
@@ -50,7 +50,7 @@ export const theTaxCollector: FullCampaign = {
         'The Director: "The hoard is unclaimed property. Seize it."',
         'Scorchtail: "I just agreed to PAY and now you want to STEAL?"',
         'Percival: "This is a massive breach of protocol. I\'m filing a complaint."',
-        'Resolution: legal battle, physical battle, or the funniest compromise imaginable',
+        'Resolution: legal battle, physical battle, or the funniest compromise imaginable. Callback: Percival audits Director Graves and discovers HE has been evading taxes. The auditor becomes the audited. Percival has never been happier.',
       ],
       estimatedSessions: 5,
     },

@@ -4,7 +4,7 @@ export const thePatientMan: FullCampaign = {
   id: 'full-the-patient-man',
   type: 'full',
   title: 'The Patient Man',
-  tagline: 'His revenge was justified. It ended five years ago. He did not stop.',
+  tagline: 'The five guilty nobles are already destroyed. He finished five years ago. He cannot stop.',
   tone: 'horror',
   themes: ['horror', 'mystery', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -63,15 +63,15 @@ export const thePatientMan: FullCampaign = {
       name: 'Orin Thatch',
       role: 'antagonist / victim',
       personality:
-        'A man of terrifying patience and absolute clarity. He speaks softly. He plans loudly. He loved his family more than anything, and the space where that love was has been filled with something that looks like purpose but is actually just momentum.',
-      secret: 'He visits his family\'s graves every morning before dawn. He tells them what he did that day. He stopped expecting them to tell him to stop.',
+        'A man of terrifying patience and absolute clarity. He speaks softly, never raising his voice, choosing words the way an architect chooses stones. His hands are always still. His eyes are always moving. He sits in a chair that faces the door and never puts his back to a window. He loved his family more than anything, and the space where that love was has been filled with something that looks like purpose but is actually just momentum. When the party asks him to stop, he pauses, genuinely considers it, and says: "I would. I cannot find the switch."',
+      secret: 'He visits his family\'s graves every morning before dawn. He tells them what he did that day. He stopped expecting them to tell him to stop three years ago. He still goes.',
     },
     {
       name: 'Lady Revara Ashmont',
       role: 'quest giver / guilty party',
       personality:
-        'Elegant, composed, and hiding a twenty-year secret behind perfect diction. She participated in the burning. She has nightmares about it. She hired the party because she deserves to be protected, not because she is innocent.',
-      secret: 'She tried to stop the fire. She failed. She has told herself that trying counts. It does not.',
+        'Elegant, composed, and hiding a twenty-year secret behind perfect diction. She never sits with her back to a fireplace. She flinches at the smell of smoke and covers it by adjusting her collar. She participated in the burning. She has nightmares about it. She hired the party because she deserves to be protected, not because she is innocent.',
+      secret: 'She tried to stop the fire. She failed. She has told herself that trying counts. It does not. Her hands still smell like ash when she wakes from the nightmares.',
     },
     {
       name: 'Fenwick',

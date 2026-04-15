@@ -25,7 +25,7 @@ export const theWrongHero: FullCampaign = {
       keyEvents: [
         'The Council of Sages presents the prophecy. The party stares at the goat. The goat stares back.',
         'Collecting Gerald from the farm - his owner does not believe the prophecy and haggles over the price',
-        'Gerald eats the map. The backup map. And the compass.',
+        'Gerald eats the map. The backup map. And the compass. Running gag begins: Gerald eats one plot-critical item per act. Maps, scrolls, treaties, battle plans. The party learns to make copies of everything.',
         'First ambush by the Dark Lord\'s scouts - Gerald accidentally saves the party by headbutting an assassin off a bridge',
       ],
       estimatedSessions: 4,
@@ -50,7 +50,7 @@ export const theWrongHero: FullCampaign = {
         'The fortress gates: Gerald headbutts them and they shatter (he hit the structural weak point)',
         'The Dark Lord confronts Gerald. Gerald eats his battle plans. Malachar screams.',
         'Gerald drops polymorph for three seconds - a blast of arcane power destroys the dark army\'s command structure',
-        'Gerald is a goat again. He chews on the Dark Lord\'s fallen crown. The war is over.',
+        'Gerald is a goat again. He chews on the Dark Lord\'s fallen crown. The war is over. Callback: Gerald eats the final victory declaration. The party does not even try to stop him. Some things are sacred. Gerald eating important documents is one of them.',
       ],
       estimatedSessions: 5,
     },

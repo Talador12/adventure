@@ -63,7 +63,7 @@ export const theQuietProfession: FullCampaign = {
       name: 'The Arbiter',
       role: 'guild master / moral authority',
       personality:
-        'The guild\'s leader, who takes the title "Arbiter" because "guild master" sounds criminal. Speaks softly, decides firmly, and carries the weight of every contract the guild has ever taken. Does not know about Constance. Believes the Code is the guild\'s own invention.',
+        'The guild\'s leader. Wears reading glasses she does not need — a habit from years of studying case files. Speaks softly enough that people lean in, giving her control of every conversation. Never raises her voice. Never needs to. Steeples her fingers when delivering verdicts. "We do not take lives. We render verdicts. The distinction is everything. Without it, we are just killers with paperwork."',
       secret: 'She has refused more contracts than she has accepted. Her rejection rate is 60%. She has never told the guild this because it would undermine confidence.',
     },
     {

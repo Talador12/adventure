@@ -63,7 +63,7 @@ export const theCollectorOfBeautifulThings: FullCampaign = {
       name: 'Vivienne Lace',
       role: 'antagonist / tragic figure',
       personality:
-        'Once the most sensitive aesthetic mind in the city. Now a woman in a fading world, stealing light before her eyes close forever. Dignified, honest, and heartbreaking. She does not excuse what she does. She just cannot face a world without beauty.',
+        'Sits perfectly still, hands folded, head slightly tilted as if listening to music only she can hear. Speaks slowly and chooses each word as if selecting a gem from a velvet tray. Touches beautiful things with her fingertips first, then her palm, as if memorizing their texture before the perception fades. "I am losing the ability to see what makes things matter. Not blind. Worse. I can see the painting. I cannot feel it. Do you understand how that is worse?"',
       secret: 'The first thing she stole was her own reflection. She could no longer see herself as beautiful. That was when she knew she was losing everything.',
     },
     {

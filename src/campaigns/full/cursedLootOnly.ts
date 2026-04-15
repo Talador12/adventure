@@ -24,7 +24,7 @@ export const cursedLootOnly: FullCampaign = {
         'The party enters the first two vaults of Malvorix and accumulates their initial wave of cursed items. Each item is genuinely useful - powerful weapons, strong armor, excellent accessories - but every single one has a curse that makes life incrementally worse. The curses are annoying alone but start creating unexpected interactions when stacked.',
       keyEvents: [
         'Vault 1: Boots of Flatulence, Ring of Narration, Helmet of Bird Attraction, and a Sword That Apologizes to everything it cuts.',
-        'First combat with curses active: the rogue tries to sneak in farting boots while the ring announces "SHE IS SNEAKING" at full volume.',
+        'First combat with curses active: the rogue tries to sneak in farting boots while the ring announces "SHE IS SNEAKING" at full volume. Spiral begins: every new curse interacts with all previous curses. The DM tracks the stack. By Act 3, the interaction chart needs its own table.',
         'Vault 2: Cloak of Perpetual Dampness, Shield of Insults (berates anyone it blocks), Gauntlets of Butterfingers (drop held items on natural 1-3), Amulet of Inappropriate Laughter.',
         'The merchant who hired them is revealed to be a previous vault delver who got out - but his curse (Beard of Bees) is permanent because he left early.',
       ],

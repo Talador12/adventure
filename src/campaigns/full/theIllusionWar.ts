@@ -63,7 +63,7 @@ export const theIllusionWar: FullCampaign = {
       name: 'Sensei Kagami',
       role: 'mentor / mastermind',
       personality:
-        'Speaks in riddles not because she enjoys it but because direct answers are dangerous in a world built on lies. Warm, patient, terrifyingly powerful. She has lived inside her own illusions so long she sometimes forgets which version of herself is original.',
+        'Folds her hands inside opposite sleeves when at rest. Tilts her head when listening, like a bird. Speaks in riddles not because she enjoys it but because direct answers are dangerous in a world built on lies. Occasionally flickers — her form shifts for a frame, showing an older or younger version of herself. "Truth is a privilege I cannot afford to share carelessly. Ask me a question. I will answer with a question. We will both learn."',
       secret: 'She has run this simulation 47 times with different recruits. The party is the first group to notice the cracks before Act 3.',
     },
     {

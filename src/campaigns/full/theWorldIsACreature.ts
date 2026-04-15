@@ -4,7 +4,7 @@ export const theWorldIsACreature: FullCampaign = {
   id: 'full-the-world-is-a-creature',
   type: 'full',
   title: 'The World Is a Creature',
-  tagline: 'The mountains are bones. The rivers are veins. The ground just started breathing.',
+  tagline: 'The healer examined the white substance from the crack. "This is a white blood cell. The size of a horse."',
   tone: 'horror',
   themes: ['horror', 'exploration', 'survival'],
   playerCount: { min: 3, max: 5 },
@@ -24,7 +24,7 @@ export const theWorldIsACreature: FullCampaign = {
       summary:
         'The world shows signs of life. The ground breathes. Water pulses. The immune system activates. White-cell creatures emerge and attack settlements. The party investigates and discovers the horrifying truth: they live on a living organism.',
       keyEvents: [
-        'The first breath: the earth rises and falls beneath the party feet. Animals panic. Birds flee.',
+        'The first breath: the earth rises and falls beneath the party\'s feet. A slow, rhythmic expansion. The trees sway in unison. The water in a nearby stream pulses. Animals panic. Birds flee. The silence between breaths is worse than the movement.',
         'White cell emergence: amorphous creatures crawl from cracks in the earth, attacking anything "foreign" - including buildings',
         'A scholar deciphers ancient texts: "The First People knew. They called the world Soma. They said it slept. They begged us not to wake it."',
         'Mapping the anatomy: mountains correspond to a skeletal structure. Rivers follow circulatory patterns. The world has organs.',
@@ -64,8 +64,8 @@ export const theWorldIsACreature: FullCampaign = {
       name: 'Elder Whisper',
       role: 'Nerve Speaker leader',
       personality:
-        'Leader of the cult that communicates with the world creature. Speaks in half-sentences because the world speaks in feelings, not words. Patient, strange, and deeply sad. She has known the world was dying for decades and nobody believed her.',
-      secret: 'She is partially bonded with the creature nervous system. She feels its pain. Every mine that opens is a wound she experiences.',
+        'Leader of the cult that communicates with the world creature. Speaks in half-sentences because the world speaks in feelings, not words. She winces at random intervals - not from anything the party can see, but from something she feels underground. She presses her palms flat against stone surfaces when she talks, as if listening through her hands. Patient, strange, and deeply sad. She has known the world was dying for decades and nobody believed her.',
+      secret: 'She is partially bonded with the creature nervous system. She feels its pain. Every mine that opens is a wound she experiences. She has scars that match no injury - they appear when the creature is cut.',
     },
     {
       name: 'The Phage',

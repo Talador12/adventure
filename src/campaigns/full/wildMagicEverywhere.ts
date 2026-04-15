@@ -23,7 +23,7 @@ export const wildMagicEverywhere: FullCampaign = {
       summary:
         'Every spell is a surprise. The party navigates a kingdom where magic is essential but unpredictable. Society has adapted in hilarious ways: anti-surge insurance, spell surge forecasts like weather reports, and support groups for people turned into plants.',
       keyEvents: [
-        'First surge cascade: a simple combat encounter where every spell causes a chain reaction of surges.',
+        'First surge cascade: a simple combat encounter where every spell causes a chain reaction of surges. Spiral begins: each act, the surges get more dramatic. Act 1: cosmetic effects. Act 2: structural changes. Act 3: reality-altering events. Mayor Fernsworth\'s fern status is just the beginning.',
         'The Plant Support Group: former citizens who were polymorphed by surge effects. They have a newsletter.',
         'Surge forecasting: a gnome meteorologist predicts "high surge activity with a chance of temporal displacement."',
         'Investigation: the party maps the zone edge and discovers it is expanding in one direction.',
@@ -50,7 +50,7 @@ export const wildMagicEverywhere: FullCampaign = {
         'The collision front: spells work perfectly AND surge simultaneously. Fireballs that are also flowers.',
         'The archmage attacks: she will not allow her Stable Zone to be compromised.',
         'Surge crescendo: every spell cast by anyone produces a surge. The battlefield is beautiful insanity.',
-        'The merge: the party combines the zones. Magic becomes mostly stable with occasional moments of wonder. The mayor un-plants.',
+        'The merge: the party combines the zones. Magic becomes mostly stable with occasional moments of wonder. The mayor un-plants. Chaos callback: Mayor Fernsworth returns to human form and immediately delivers a policy address. His first executive order: mandatory watering schedules for all government buildings. Old habits.',
       ],
       estimatedSessions: 4,
     },

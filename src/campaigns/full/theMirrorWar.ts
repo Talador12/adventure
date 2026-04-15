@@ -4,7 +4,7 @@ export const theMirrorWar: FullCampaign = {
   id: 'full-the-mirror-war',
   type: 'full',
   title: 'The Mirror War',
-  tagline: 'Your reflection has declared war. In their world, you are the evil twin.',
+  tagline: 'Your reflection did not move when you did. It smiled. It mouthed: "We are coming through."',
   tone: 'horror',
   themes: ['horror', 'planar', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -64,14 +64,14 @@ export const theMirrorWar: FullCampaign = {
       name: 'The Doubles',
       role: 'antagonists / dark mirrors',
       personality:
-        'Mirror versions of each party member. Same capabilities, opposite morality and personality. A kind party member has a cruel double. A cowardly one has a brave double. They are not evil - they are reversed. In their world, they are the heroes.',
-      secret: 'They are just as frightened as the party. Their war declaration was a preemptive strike born of fear.',
+        'Mirror versions of each party member. Same capabilities, opposite morality and personality. A kind party member has a cruel double. A cowardly one has a brave double. They gesture with the wrong hand. They lead with the wrong foot. They are not evil - they are reversed. In their world, they are the heroes. They look at the party with the same horror the party feels looking at them.',
+      secret: 'They are just as frightened as the party. Their war declaration was a preemptive strike born of fear. Their children asked "why do the bad people look like us?"',
     },
     {
       name: 'The Reflection Scholar (Lyris / Siryk)',
       role: 'neutral guide',
       personality:
-        'An ancient being that exists in both worlds simultaneously as two people arguing in one body. Speaks in contradictions. Knows the truth about the Prime but is terrified of what the knowledge will cause.',
+        'An ancient being that exists in both worlds simultaneously as two people arguing in one body. She speaks in contradictions - starting sentences with one voice and finishing with another. Her hands move in opposite directions. She knows the truth about the Prime and is terrified of it. When she is agitated, both voices speak at once and the words cancel each other out into static.',
     },
     {
       name: 'Commander Vex (Mirror Side)',

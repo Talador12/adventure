@@ -60,7 +60,7 @@ export const theGlassCipher: FullCampaign = {
       name: 'Captain Ilyssa Vane',
       role: 'quest giver / ally',
       personality:
-        'Mirror Watch commander who destroyed her own reflection to prevent anyone from using it against her. Sharp, practical, terrified of what she saw in the Spire.',
+        'Mirror Watch commander who never looks at reflective surfaces — turns her back to windows, avoids puddles, covers mirrors in her office with cloth. Speaks in short, decisive sentences. Cracks her knuckles when stressed. "I destroyed my own reflection. Do you know what that feels like? Looking in a mirror and seeing nothing? It is the safest I have ever been."',
       secret: 'She saw herself as a tyrant in the Spire and is trying desperately to avoid that future.',
     },
     {

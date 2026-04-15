@@ -60,7 +60,7 @@ export const theSongOfTheDeep: FullCampaign = {
       name: 'Coral Vex',
       role: 'marine wizard / equipment provider',
       personality:
-        'An eccentric marine biologist-wizard who has been studying the song for months. Obsessed with the ocean. "I\'ve spent my life studying the deep. I\'ve never heard it sing back."',
+        'An eccentric marine biologist-wizard whose clothes are permanently damp and whose hair smells like salt regardless of how recently she bathed. Talks to the ocean when she thinks no one is watching. Taps rhythms on surfaces — she has been transcribing the song onto everything she touches. "I have spent my life studying the deep. I have never heard it sing back. It is the most beautiful and terrifying thing I have ever experienced."',
       secret: 'She can partially understand the song. She hasn\'t told anyone because what it says terrifies her — it\'s not just singing, it\'s composing a replacement for everything.',
     },
     {

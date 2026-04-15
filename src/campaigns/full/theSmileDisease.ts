@@ -4,7 +4,7 @@ export const theSmileDisease: FullCampaign = {
   id: 'full-smile-disease',
   type: 'full',
   title: 'The Smile Disease',
-  tagline: 'They cannot stop smiling. They can still scream.',
+  tagline: 'The child is crying. She is also grinning. She has been doing both for nine days.',
   tone: 'horror',
   themes: ['horror', 'urban', 'mystery'],
   playerCount: { min: 3, max: 5 },
@@ -60,19 +60,19 @@ export const theSmileDisease: FullCampaign = {
       name: 'Captain Dorst',
       role: 'city guard / quest giver',
       personality:
-        'Head of the quarantine effort. Blindfolded, exhausted, and barely holding it together. His wife is infected. He can hear her smiling through the door of the room he locked her in. He has not slept in days.',
+        'Head of the quarantine effort. Blindfolded, exhausted, speaking in the measured tone of a man holding himself together with discipline alone. His wife is infected. He can hear her smiling through the door of the room he locked her in - she taps on the door and says "Look at me, love" in a voice that is cheerful and desperate simultaneously. He has not slept in days. He keeps his blindfold tight. His hands shake when he adjusts it.',
     },
     {
       name: 'Sister Vell',
       role: 'temple keeper / ally',
       personality:
-        'A priestess who tended Felara\'s forgotten shrine for decades. She is infected but resists the urge to spread it. She understands what Felara is trying to do and why it is wrong. Speaking through a permanent grin, she guides the party.',
+        'A priestess who tended Felara\'s forgotten shrine for decades. She is infected - her face is locked in a wide, frozen grin - but she resists the urge to spread it. She speaks through clenched, smiling teeth, each word a fight against the expression. Her eyes are red from crying above a mouth that will not stop performing joy. She understands what Felara is trying to do and why it is wrong, and explaining this through a permanent smile is its own kind of horror.',
     },
     {
       name: 'Felara',
       role: 'the goddess / unintentional antagonist',
       personality:
-        'A minor goddess of joy. Warm, loving, and fundamentally unable to comprehend negative emotion. She is not evil. She is a being of pure happiness who has never experienced — and cannot imagine — sadness. Teaching her is the campaign\'s final challenge.',
+        'A minor goddess of joy. She radiates golden warmth. Flowers bloom where she steps. She speaks with the enthusiasm of someone who has only ever felt one emotion. She tilts her head when people cry, confused, the way a dog watches a broken toy. She is not evil. She is a being of pure happiness who has never experienced - and cannot imagine - sadness. Teaching her is the campaign\'s final challenge and the hardest conversation the party will ever have.',
     },
   ],
   keyLocations: [

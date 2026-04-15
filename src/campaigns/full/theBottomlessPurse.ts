@@ -4,7 +4,7 @@ export const theBottomlessPurse: FullCampaign = {
   id: 'full-the-bottomless-purse',
   type: 'full',
   title: 'The Bottomless Purse',
-  tagline: 'Every coin costs a life. He knows. He cannot stop reaching in.',
+  tagline: 'He is crying and reaching into the purse simultaneously. He has been doing this for hours.',
   tone: 'horror',
   themes: ['horror', 'dark_fantasy', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -23,7 +23,7 @@ export const theBottomlessPurse: FullCampaign = {
       summary:
         'Investigation. People are aging to death overnight. The party traces the deaths, maps the pattern, and discovers they cluster around a single merchant district. Someone is spending stolen time.',
       keyEvents: [
-        'The first crime scene: a young woman aged to ninety in her bed, her husband screaming',
+        'The first crime scene: a young woman aged to ninety in her bed. Her hair is white. Her skin is paper. Her husband sits beside her, holding a hand that was smooth this morning. The room smells like dust and lilacs - her perfume, aged along with her.',
         'Divination reveals the deaths share a magical signature - something is extracting life force',
         'The party maps the deaths geographically: they radiate outward from the market district',
         'A shopkeeper remembers a merchant named Aldren who suddenly became very wealthy three months ago',
@@ -63,14 +63,14 @@ export const theBottomlessPurse: FullCampaign = {
       name: 'Aldren Soth',
       role: 'victim / villain',
       personality:
-        'A merchant of middling success who found the purse and became the wealthiest man in Verdemonte. Intelligent, self-aware, and destroyed by his own understanding of what he is doing. He hates himself more than the party ever could.',
-      secret: 'He tried to kill himself twice to stop the deaths. The purse would not let him die. It needs a hand to reach into it.',
+        'A merchant of middling success who found the purse and became the wealthiest man in Verdemonte. He speaks in short, precise sentences, as if rationing words the way he cannot ration greed. His hands move toward the purse constantly - he catches himself, forces them flat on the table, and they migrate back. His eyes are clear and aware. That is the horror. He sees exactly what he is doing. He hates himself more than the party ever could.',
+      secret: 'He tried to kill himself twice to stop the deaths. The purse would not let him die. It needs a hand to reach into it. The scars are on his wrists. He wears long sleeves.',
     },
     {
       name: 'Aurava',
       role: 'god / observer / judge',
       personality:
-        'A forgotten god of fair exchange who speaks in the language of ledgers and balances. She is not malicious. She is exhausted by ten thousand years of the same result. She wants to be proven wrong.',
+        'A forgotten god of fair exchange who speaks in the language of ledgers and balances. She manifests as a tired woman with ink-stained fingers, carrying a book that is too heavy. She does not look at the party when she speaks. She looks at the book. She is not malicious. She is exhausted by ten thousand years of the same result. She wants to be proven wrong. Her voice cracks when she says "I was hoping."',
       secret: 'She has been placing the purses hoping someone will stop. If someone does, she will restore everything. She has never had to prepare that contingency.',
     },
     {

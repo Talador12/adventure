@@ -4,7 +4,7 @@ export const theEclipseCourt: FullCampaign = {
   id: 'full-eclipse-court',
   type: 'full',
   title: 'The Eclipse Court',
-  tagline: 'When the sun dies, the shadow throne claims its due.',
+  tagline: 'The sun went out three weeks ago. Your shadow kept moving.',
   tone: 'horror',
   themes: ['dark_fantasy', 'political', 'survival'],
   playerCount: { min: 3, max: 5 },
@@ -23,10 +23,11 @@ export const theEclipseCourt: FullCampaign = {
       summary:
         'The party survives the initial transition as shadows become physical. They learn the rules of Eclipse Month and discover this eclipse is not following the normal patterns.',
       keyEvents: [
-        'The eclipse begins—shadows detach and take form',
-        'Meeting the Shadow Tax collectors who demand life essence as tribute',
-        'Finding survivors hiding in light-warded sanctuaries',
-        'Discovery that the eclipse should have ended days ago',
+        'The eclipse begins - shadows detach from their owners and stand up. They do not mirror their owners. They bow to something the party cannot see.',
+        'Meeting the Shadow Tax collectors who demand life essence as tribute. They speak in the voices of the people they shadow. They smell like cold stone.',
+        'Finding survivors hiding in light-warded sanctuaries. A child draws pictures of a sun she has never seen - she was born during the last eclipse. The pictures are wrong. Too many rays.',
+        'Discovery that the eclipse should have ended days ago. The astronomers have gone silent. Their instruments show nothing. One astronomer sits in her observatory repeating "the math is right, the math is right" while her shadow paces behind her.',
+        'Quiet dread: the party lights a torch. Their shadows flicker normally. Then one shadow turns to look at them. Just for a moment. Then it is a shadow again.',
       ],
       estimatedSessions: 5,
     },
@@ -35,10 +36,11 @@ export const theEclipseCourt: FullCampaign = {
       summary:
         'The party investigates why the eclipse persists, uncovering the secret pact between surface and shadow rulers. They must navigate both societies—hated as living in the Court, as rebels on the surface.',
       keyEvents: [
-        'Infiltrating the Eclipse Court as "tribute bearers"',
-        'Discovering the ritual site where surface nobles trade citizens for power',
-        'Meeting the Shadow Queen, who is more reasonable than expected',
-        'Learning the surface king has broken the pact, causing the permanent eclipse',
+        'Infiltrating the Eclipse Court as "tribute bearers." The Court is beautiful - architecture of living shadow, staircases that float on nothing, light that comes from darkness. The air smells like cold metal and midnight.',
+        'Discovering the ritual site where surface nobles trade citizens for power. The stones are stained with life essence. The nobles\' names are carved into the altar. The party recognizes one of the names.',
+        'Meeting the Shadow Queen, who is more reasonable than expected. She offers the party tea. The cup casts no shadow. Neither does the tea. She is polite in a way that makes the party\'s skin crawl with how normal it feels.',
+        'Learning the surface king has broken the pact, causing the permanent eclipse. His throne room is half-shadow now. He sits in it, half his face in light, half in dark. He does not notice.',
+        'Quiet dread: the party sleeps in the Eclipse Court. They dream of sunlight. They wake and cannot remember the color of the sun. It comes back slowly. One of them takes longer than the others.',
       ],
       estimatedSessions: 5,
     },
@@ -60,20 +62,20 @@ export const theEclipseCourt: FullCampaign = {
       name: 'Queen Nocturne',
       role: 'shadow ruler',
       personality:
-        'Ancient shadow sovereign who honors the ancient pacts. Not evil, just from a different realm with different needs. Willing to negotiate if approached with respect.',
+        'Ancient shadow sovereign who honors the ancient pacts. She speaks in a whisper that fills the room, as if the darkness itself is her voice box. Not evil, just from a different realm with different needs. She tilts her head when she listens, and the tilt goes further than a neck should allow. Willing to negotiate if approached with respect.',
     },
     {
       name: 'King Aldric',
       role: 'surface antagonist',
       personality:
-        'Corrupted ruler who tried to cheat the eclipse pact to gain unlimited shadow power. Now trapped between realms, half-shadow himself.',
+        'Corrupted ruler who tried to cheat the eclipse pact. Now trapped between realms, half-shadow himself. One eye is dark, one is light. He speaks in two voices simultaneously - his own and his shadow\'s. His hands shake when he reaches for solid objects, as if unsure they will be there.',
       secret: 'He can still be saved. The shadow transformation is not complete and Queen Nocturne knows the reversal ritual, but she will only perform it if the surface kingdom surrenders the stolen eclipse stone.',
     },
     {
       name: 'Sister Light',
       role: 'resistance leader',
       personality:
-        'Cleric maintaining sanctuaries for refugees. Practical, exhausted, willing to make hard choices to protect the innocent.',
+        'Cleric maintaining sanctuaries for refugees. She has not slept since the eclipse began - her eyes are bloodshot and her hands glow faintly with maintained warding spells. She speaks in short, clipped commands and flinches when shadows move, which is always. She keeps count of the people she has lost. She taps the number on her thigh when she thinks nobody is watching.',
     },
   ],
   keyLocations: [

@@ -4,7 +4,7 @@ export const insideOut: FullCampaign = {
   id: 'full-inside-out',
   type: 'full',
   title: 'Inside Out',
-  tagline: 'The sky is below. The ground is above. You have been walking on the ceiling for three days and nobody told you.',
+  tagline: 'You tried to save a child from falling into the sky. Everyone else saw you drag her off solid ground.',
   tone: 'horror',
   themes: ['horror', 'planar', 'dark_fantasy'],
   playerCount: { min: 3, max: 5 },
@@ -71,19 +71,19 @@ export const insideOut: FullCampaign = {
       name: 'Sage Miriel Kast',
       role: 'diagnostician / ally',
       personality:
-        'A perception scholar who has studied the Inversion curse in texts but never seen it in person. Clinically fascinated and genuinely helpful. She has to constantly remind the party: "I am standing on the floor. YOU are on the ceiling. Please stop trying to rescue me."',
+        'A perception scholar who has studied the Inversion curse in texts but never seen it in person. She speaks rapidly, excitedly, taking notes while the party describes their symptoms. She tilts her head upward when addressing them because to her, they are on the ceiling. She has to constantly remind the party: "I am standing on the floor. YOU are on the ceiling. Please stop trying to rescue me." She is clinically fascinated and genuinely helpful, and that combination is maddening.',
     },
     {
       name: 'Brother Felt',
       role: 'blind guide / key to the cure',
       personality:
-        'A monk who was born blind. The Inversion does not affect him because he never relied on sight. He navigates the inverted party through dangerous areas by touch and sound. He does not understand what the fuss is about. "The world feels the same as always to me."',
+        'A monk who was born blind. The Inversion does not affect him because he never relied on sight. He walks confidently where the party crawls. He navigates by touch and sound and does not understand the vertigo. He reaches for the party\'s hands without hesitation. His calm is the most disorienting thing in a disorienting world. "The world feels the same as always to me. Perhaps it is your eyes that are the problem."',
     },
     {
       name: 'Marta Voss',
       role: 'collateral damage / emotional weight',
       personality:
-        'A woman the party "rescued" from falling in Act 1 - actually, they grabbed a woman standing on solid ground and dragged her onto the ceiling. She is injured and confused. She represents the harm the party has accidentally caused by trusting their broken senses.',
+        'A woman the party "rescued" from falling in Act 1 - actually, they grabbed a woman standing on solid ground and dragged her onto the ceiling. She has a broken arm from their help. She flinches when the party approaches. She cannot understand why they did it. She represents the harm the party has accidentally caused by trusting their broken senses, and she is afraid of them in a way that is entirely justified.',
     },
   ],
   keyLocations: [

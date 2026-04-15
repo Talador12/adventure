@@ -48,7 +48,7 @@ export const bureaucracyAndDragons: FullCampaign = {
         'The kingdom descends into chaos as wards collapse. The party must file the Master Form — the original contract that binds all threats — while fighting through a deregulated hellscape of freed monsters and a lich who just wants to abolish the DMV.',
       keyEvents: [
         'Gathering the signatures: three ancient beings must co-sign the Master Form',
-        'The dragon from Act 1 helps — she LIKES the bureaucracy because it keeps competitors away',
+        'The dragon from Act 1 helps — she LIKES the bureaucracy because it keeps competitors away (callback: she serves the party with a formal alliance agreement, referencing the restraining order from Act 1)',
         'The Deregulator\'s lair: a burned-out records office surrounded by freed monsters',
         'Filing the Master Form: the most dramatic act of paperwork in the history of the realm',
       ],
@@ -79,7 +79,7 @@ export const bureaucracyAndDragons: FullCampaign = {
       name: 'Aldric the Archivist',
       role: 'lore keeper',
       personality:
-        'Keeper of the Grand Archive. Speaks exclusively in footnotes and citations. Knows every form ever filed and can locate any document in seconds. Terrified of the Deregulator because a world without records is his personal hell.',
+        'Keeper of the Grand Archive. Speaks exclusively in footnotes and citations. Knows every form ever filed and can locate any document in seconds. Terrified of the Deregulator because a world without records is his personal hell. Running gag: he cites the relevant form number for every situation, including emotional ones. "Your grief is noted. Please file Form 11-D, Emotional Distress Regarding Institutional Collapse."',
     },
   ],
   keyLocations: [

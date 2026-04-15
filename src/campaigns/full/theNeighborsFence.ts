@@ -24,7 +24,7 @@ export const theNeighborsFence: FullCampaign = {
         'The party surveys the disaster zone that is Willowbrook Lane. They meet both wizards, survive the enchantments, free some gnomes, and begin to realize the "feud" has a weird energy. Aldric insults Pethra\'s tower and then asks the party, casually, if she mentioned him.',
       keyEvents: [
         'The briefing: Mrs. Kettleburn\'s thousand-yard stare, the seven-page waiver, and the map of known hazards',
-        'Aldric\'s property: fire fence, enslaved gnomes, a greenhouse that grows only things Pethra once mentioned liking',
+        'Aldric\'s property: fire fence, enslaved gnomes, a greenhouse that grows only things Pethra once mentioned liking. Running gag begins: Gerald the gnome files a new formal grievance every time the party visits. The stack of grievances becomes a physical hazard by Act 3.',
         'Pethra\'s property: Abyssal mailbox, tooth roses, a tower one foot taller than Aldric\'s with a window aimed at his kitchen',
         'The gnomes file a formal grievance with the party. They have a union rep. His name is Gerald.',
         'First mediation attempt: both wizards attend. Both insult each other. Both ask the party afterward what the other said about them.',
@@ -53,7 +53,7 @@ export const theNeighborsFence: FullCampaign = {
         'The party\'s plan: dinner, neutral ground, no wands. Getting both wizards to agree is harder than any dungeon.',
         'The dinner: awkward, tense, and interrupted by Gerald the gnome delivering a speech about emotional honesty',
         'Aldric casts one more enchantment - not competitive, but protective. A ward around Pethra\'s tower. She notices.',
-        'The confession, the kiss, and the immediate explosive unraveling of forty years of spiteful enchantments (the party should run)',
+        'The confession, the kiss, and the immediate explosive unraveling of forty years of spiteful enchantments (the party should run). Callback: Gerald files his final grievance — "Resolved: All Outstanding Complaints." He gets the afternoon off. He does not know what to do with it.',
       ],
       estimatedSessions: 4,
     },

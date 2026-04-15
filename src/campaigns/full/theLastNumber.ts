@@ -64,7 +64,7 @@ export const theLastNumber: FullCampaign = {
       name: 'Dr. Yara Solen',
       role: 'vault keeper / protector',
       personality:
-        'A brilliant mathematician who discovered the finite nature of numbers and has been quietly saving the world by hoarding the endangered ones. Exhausted, paranoid, and fully aware that she looks insane. "I am not stealing numbers. I am keeping reality from dividing by zero."',
+        'Writes equations on every surface — walls, tables, her own arms. Counts things compulsively: tiles, heartbeats, words per sentence. Exhausted, paranoid, and fully aware that she looks insane. Hands shake when she holds the crystals. "I am not stealing numbers. I am keeping reality from dividing by zero. Do you know what happens when you divide by zero? Everything. Everything happens. All at once. Forever."',
       secret: 'She has already used up her personal allocation of the number 1. She is technically zero people. She exists only because she is standing in the vault where the concept of one is preserved.',
     },
     {

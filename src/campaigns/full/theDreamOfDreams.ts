@@ -64,7 +64,7 @@ export const theDreamOfDreams: FullCampaign = {
       name: 'The Watcher',
       role: 'dream entity / guardian',
       personality:
-        'A shadowy figure that appears in the early dreamscape. It does not speak. It does not attack. It watches with an expression of infinite sadness. It is the dreamer self-awareness, trying to tell them something they are not ready to hear.',
+        'A shadowy figure that appears in the early dreamscape. It does not speak. It does not attack. It stands at the edge of rooms with its arms at its sides and an expression of infinite sadness. When the party approaches, it takes one step backward. Always one step. It is the dreamer\'s self-awareness, trying to tell them something they are not ready to hear. If a party member waves, it waves back — slowly, as if remembering how.',
     },
     {
       name: 'The Woman',

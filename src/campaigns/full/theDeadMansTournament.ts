@@ -35,8 +35,9 @@ export const theDeadMansTournament: FullCampaign = {
       summary:
         'Rounds 2-4, each testing a different virtue. Between rounds, the party learns about their competitors, discovers they were murdered, and identifies their killer in the bracket.',
       keyEvents: [
-        'Round 2: Trial of Sacrifice — each team member must give up something real',
-        'Round 3: Trial of Wisdom — a puzzle that requires understanding death',
+        'Round 2: Trial of Sacrifice - each team member must give up something real. Not hit points. A memory. A skill. A relationship.',
+        'Quiet moment: between rounds, Sergeant Voss shares a flask of something that tastes like regret. "Best drink in the afterlife. Tastes like everything you miss."',
+        'Round 3: Trial of Wisdom - a puzzle that requires understanding death, not fearing it',
         'Round 4: Trial of Mercy — the opponent begs for their life (test of character)',
         'Discovery: the catastrophe that killed the party was engineered by another competitor',
       ],
@@ -60,7 +61,7 @@ export const theDeadMansTournament: FullCampaign = {
       name: 'The Raven Queen',
       role: 'tournament master / judge',
       personality:
-        'Ancient, impassive, and deeply interested in mortal choices. She holds the tournament not for entertainment but to understand why mortals cling to life so fiercely.',
+        'Ancient, impassive, and deeply interested in mortal choices. Speaks without moving her lips. Her voice comes from the air itself. She holds the tournament not for entertainment but to understand why mortals cling to life so fiercely. "You have had your life. Why do you want it again? What makes it worth repeating?"',
     },
     {
       name: 'Kael Ashbringer',

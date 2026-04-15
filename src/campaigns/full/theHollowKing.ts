@@ -60,7 +60,7 @@ export const theHollowKing: FullCampaign = {
       name: 'Queen Evaine',
       role: 'quest giver / ally',
       personality:
-        'A sharp, courageous woman who loves her husband and knows something is wrong. She\'s been quietly gathering evidence for months. Trusts the party because she has no other options.',
+        'Speaks quietly so the walls cannot hear. Keeps one hand on a hidden dagger at all times. Smiles in public to maintain the appearance of normalcy, and the smile never reaches her eyes. "I have been sleeping next to something that wears my husband\'s face for six months. Do not tell me to be patient."',
     },
     {
       name: 'Nyx (the shadar-kai)',

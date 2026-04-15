@@ -23,10 +23,10 @@ export const theClockTowerMurders: FullCampaign = {
       summary:
         'Deaths one through four. The party investigates the victims, looking for connections. Each death scene contains a clue — but the clues only make sense as a set. The clock tower is locked and warded.',
       keyEvents: [
-        'Chime one: a merchant dies mid-sentence — no cause of death',
-        'Chime two: a noblewoman at a garden party — witnesses saw nothing',
-        'Chime three: a dock worker — found sitting upright, eyes open, dead',
-        'The pattern emerges: each victim occupies a social role, and the deaths form a geographic spiral toward the clock tower',
+        'Chime one: a merchant dies mid-sentence — his last word is "seven," the number of his market stall. No wound, no poison, no cause.',
+        'Chime two: a noblewoman at a garden party drops her teacup. The tea is still warm when the party arrives. Her expression is peaceful.',
+        'Chime three: a dock worker found sitting upright on a coil of rope, eyes open, dead. A clock gear made of bone sits in his lap.',
+        'The pattern emerges: each victim occupies a social role matching the century-old victims, and the death sites form a geographic spiral inward toward the clock tower. The party maps it on the city grid.',
       ],
       estimatedSessions: 4,
     },
@@ -60,13 +60,13 @@ export const theClockTowerMurders: FullCampaign = {
       name: 'Mayor Cressida Hale',
       role: 'quest giver',
       personality:
-        'A pragmatic leader who is terrified and hiding it well. She cares about her city and will give the party anything they need. Does not handle the supernatural well.',
+        'Stands with her hands clasped behind her back to stop them from shaking. Speaks in clipped, official sentences that crack when the body count rises. Paces when thinking. "I do not believe in ghosts. I believe in civic responsibility. But the chimes — someone explain the chimes."',
     },
     {
       name: 'Archivist Pell',
       role: 'information ally',
       personality:
-        'The city archivist who has spent forty years cataloging Thornwall\'s history. He knows about the original murders and has always suspected they were connected. Dry, meticulous, and thrilled to finally be useful.',
+        'Dry hands from decades of handling paper. Licks his thumb before turning every page, even imaginary ones. Speaks in citations: "As noted in Volume Three, Subsection Nine..." Forty years of waiting for someone to ask the right question. Now that they have, he cannot talk fast enough. "I have been saying this for decades. Nobody listens to archivists until people start dying."',
     },
     {
       name: 'Edric Vane',
