@@ -9,7 +9,7 @@ export interface WikiPage {
   id: string;
   title: string;
   content: string;
-  category: 'location' | 'npc' | 'faction' | 'lore' | 'item';
+  category: 'location' | 'npc' | 'faction' | 'lore' | 'item' | 'quest';
   createdBy: string;
   updatedAt: number;
   tags?: string[];
@@ -22,16 +22,17 @@ interface Props {
   onDeletePage?: (pageId: string) => void;
   playerName: string;
   sceneName?: string;
+  isDM?: boolean;
 }
 
 const CATEGORY_ICONS: Record<WikiPage['category'], string> = {
-  location: '📍', npc: '👤', faction: '⚔️', lore: '📜', item: '💎',
+  location: '📍', npc: '👤', faction: '⚔️', lore: '📜', item: '💎', quest: '📋',
 };
 const CATEGORY_COLORS: Record<WikiPage['category'], string> = {
-  location: 'text-emerald-400', npc: 'text-amber-400', faction: 'text-red-400', lore: 'text-violet-400', item: 'text-sky-400',
+  location: 'text-emerald-400', npc: 'text-amber-400', faction: 'text-red-400', lore: 'text-violet-400', item: 'text-sky-400', quest: 'text-yellow-400',
 };
 
-export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage, playerName, sceneName }: Props) {
+export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage, playerName, sceneName, isDM = true }: Props) {
   const [generating, setGenerating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -69,13 +70,13 @@ export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800 shrink-0">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">World Wiki ({pages.length})</span>
-        {onAddPage && (
+        {onAddPage && isDM && (
           <button
             onClick={() => {
               const title = prompt('Page title:');
               if (!title?.trim()) return;
-              const catStr = prompt('Category (location/npc/faction/lore/item):', 'lore') || 'lore';
-              const category = (['location', 'npc', 'faction', 'lore', 'item'].includes(catStr) ? catStr : 'lore') as WikiPage['category'];
+              const catStr = prompt('Category (location/npc/faction/lore/item/quest):', 'lore') || 'lore';
+              const category = (['location', 'npc', 'faction', 'lore', 'item', 'quest'].includes(catStr) ? catStr : 'lore') as WikiPage['category'];
               const tags = (prompt('Tags (comma-separated):', '') || '').split(',').map((t) => t.trim()).filter(Boolean);
               onAddPage({ id: crypto.randomUUID().slice(0, 8), title: title.trim(), content: '', category, createdBy: playerName, updatedAt: Date.now(), tags });
               // Auto-select new page
@@ -185,8 +186,8 @@ export default function WorldWiki({ pages, onAddPage, onUpdatePage, onDeletePage
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    {onUpdatePage && <button onClick={startEdit} className="text-[8px] text-teal-400 hover:text-teal-300 font-semibold">Edit</button>}
-                    {onDeletePage && <button onClick={() => { if (confirm(`Delete "${selected.title}"?`)) { onDeletePage(selected.id); setSelectedId(null); } }} className="text-[8px] text-red-500 hover:text-red-400">Delete</button>}
+                    {onUpdatePage && isDM && <button onClick={startEdit} className="text-[8px] text-teal-400 hover:text-teal-300 font-semibold">Edit</button>}
+                    {onDeletePage && isDM && <button onClick={() => { if (confirm(`Delete "${selected.title}"?`)) { onDeletePage(selected.id); setSelectedId(null); } }} className="text-[8px] text-red-500 hover:text-red-400">Delete</button>}
                   </div>
                 </div>
                 {selected.tags && selected.tags.length > 0 && (

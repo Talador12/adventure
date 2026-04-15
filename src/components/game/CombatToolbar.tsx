@@ -67,6 +67,11 @@ interface CombatToolbarProps {
   setSpellZones?: React.Dispatch<React.SetStateAction<import('../../types/game').SpellZone[]>>;
   triggerDramatic?: (type: 'crit' | 'fumble' | 'boss_kill' | 'tpk_threat' | 'clutch_save' | 'level_up', title: string, subtitle?: string) => void;
   weather?: 'none' | 'rain' | 'fog' | 'snow' | 'sandstorm';
+  onShowHelp?: () => void;
+  initiativeVariant?: import('../../data/initiativeVariants').InitiativeVariant;
+  onInitiativeVariantChange?: (v: import('../../data/initiativeVariants').InitiativeVariant) => void;
+  popcornChooseNext?: boolean;
+  onPopcornChooseUnit?: (unitId: string) => void;
 }
 
 export default function CombatToolbar({
@@ -123,6 +128,11 @@ export default function CombatToolbar({
   onAddToPartyInventory,
   stagedLoot,
   onConsumeStagedLoot,
+  onShowHelp,
+  initiativeVariant = 'standard',
+  onInitiativeVariantChange,
+  popcornChooseNext,
+  onPopcornChooseUnit,
 }: CombatToolbarProps) {
   const {
     units,
@@ -169,6 +179,17 @@ export default function CombatToolbar({
                        saveStatus === 'error' ? 'Save failed' :
                        lastSavedAt ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
                     </span>
+                  )}
+
+                  {/* Keyboard shortcuts help button */}
+                  {onShowHelp && (
+                    <button
+                      onClick={onShowHelp}
+                      className="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-amber-400 text-xs font-mono font-bold rounded-lg transition-all"
+                      title="Keyboard shortcuts (?)"
+                    >
+                      ?
+                    </button>
                   )}
 
                   {/* DM-only controls: encounter, NPC, scene */}
@@ -226,18 +247,41 @@ export default function CombatToolbar({
                     </>
                   )}
 
+                  {/* Initiative variant selector (DM, out of combat) */}
+                  {canUseDMTools && !inCombat && units.some((u) => u.type === 'enemy') && onInitiativeVariantChange && (
+                    <select
+                      value={initiativeVariant}
+                      onChange={(e) => onInitiativeVariantChange(e.target.value as typeof initiativeVariant)}
+                      className="text-[10px] px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 outline-none"
+                      title={
+                        initiativeVariant === 'standard' ? 'D20 + DEX mod. Classic D&D 5e.' :
+                        initiativeVariant === 'side' ? 'Each side rolls once. Winning side acts first, members choose order.' :
+                        initiativeVariant === 'popcorn' ? 'Random first. Each combatant picks who goes next.' :
+                        'D20 + DEX mod + action modifier. Melee -2, ranged +0, spells -5.'
+                      }
+                    >
+                      <option value="standard">Standard Init</option>
+                      <option value="side">Side Init</option>
+                      <option value="popcorn">Popcorn Init</option>
+                      <option value="speed_factor">Speed Factor</option>
+                    </select>
+                  )}
+
                   {/* Combat controls — show when enemies exist */}
                   {units.some((u) => u.type === 'enemy') && (
                     <>
                       {!inCombat ? (
                         <button
                           onClick={() => {
-                            const sorted = rollInitiative();
+                            const sorted = rollInitiative(initiativeVariant);
                             playTurnChange();
-                            const initOrder = sorted.map((u) => `${u.name}: ${u.initiative}`).join(', ');
-                            setCombatLog((prev) => [...prev, combatOpener(), `Initiative rolled! ${initOrder}`]);
+                            const variantLabel = initiativeVariant !== 'standard' ? ` [${initiativeVariant}]` : '';
+                            const initOrder = initiativeVariant === 'popcorn'
+                              ? sorted.filter((u) => u.hp > 0).map((u) => u.name).join(', ')
+                              : sorted.map((u) => `${u.name}: ${u.initiative}`).join(', ');
+                            setCombatLog((prev) => [...prev, combatOpener(), `Initiative rolled${variantLabel}! ${initOrder}`]);
                             addDmMessage(combatOpener());
-                            addDmMessage(`Roll for initiative! Order: ${initOrder}`);
+                            addDmMessage(`Roll for initiative${variantLabel}! Order: ${initOrder}`);
                             broadcastCombatSync(sorted, true, 1, 0);
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-900/40 hover:bg-yellow-900/60 border border-yellow-700/50 text-yellow-300 text-xs font-semibold rounded-lg transition-all"
@@ -290,6 +334,26 @@ export default function CombatToolbar({
                             </button>
                           );
                         })()
+                      )}
+
+                      {/* Popcorn Initiative: Choose Next unit */}
+                      {inCombat && popcornChooseNext && onPopcornChooseUnit && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-purple-900/30 border border-purple-700/40 rounded-lg">
+                          <span className="text-[9px] text-purple-300 font-semibold mr-1">Choose next:</span>
+                          {units.filter((u) => u.hp > 0 && !u.isCurrentTurn).map((u) => (
+                            <button
+                              key={u.id}
+                              onClick={() => onPopcornChooseUnit(u.id)}
+                              className={`text-[9px] px-2 py-0.5 rounded border transition-all ${
+                                u.type === 'player'
+                                  ? 'border-blue-700/50 text-blue-300 hover:bg-blue-900/40'
+                                  : 'border-red-700/50 text-red-300 hover:bg-red-900/40'
+                              }`}
+                            >
+                              {u.name}
+                            </button>
+                          ))}
+                        </div>
                       )}
 
                       {/* Quick attack — uses equipped weapon stats, range-aware (melee=adjacency, ranged=distance+LOS) */}
@@ -1731,9 +1795,9 @@ export default function CombatToolbar({
                         <button
                           data-combat-action="reroll-init"
                           onClick={() => {
-                            const sorted = rollInitiative();
+                            const sorted = rollInitiative(initiativeVariant);
                             setCombatLog((prev) => [...prev, 'Initiative re-rolled!']);
-                            addDmMessage('Initiative re-rolled — new turn order!');
+                            addDmMessage('Initiative re-rolled - new turn order!');
                             broadcastCombatSync(sorted, true, combatRound, 0);
                           }}
                           className="flex items-center gap-1.5 px-2 py-1.5 bg-yellow-900/20 hover:bg-yellow-900/40 border border-yellow-700/30 text-yellow-400 text-[10px] font-semibold rounded-lg transition-all"

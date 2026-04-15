@@ -93,13 +93,13 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 21. [ ] Dependabot vulns — blocked on Node 21 incompatibility, needs Node upgrade
 22. [ ] Doodle pad persistence — D1 archival + R2 snapshots
 
-### v0.3.0 Roadmap (next)
+### v0.3.0 Roadmap (in progress)
 
 **Gameplay depth:**
-1. [ ] Counterspell reaction (enemy spell prompt, ability check for higher-level spells)
-2. [ ] Ritual casting (cast without slot, 10 min extra, Wizard/Cleric/Druid)
+1. [x] Counterspell reaction (enemy spell prompt, ability check for higher-level spells)
+2. [x] Ritual casting (6 ritual spells, no-slot cast for Wizard/Cleric/Druid, CombatToolbar toggle)
 3. [ ] Multiclass support (class dip, combined spell slots, prerequisite checks)
-4. [ ] Conditions system overhaul (prone, grappled, restrained, frightened with mechanical effects)
+4. [x] Conditions system overhaul (12 conditions with mechanical effects, advantage/disadvantage, auto-crit)
 5. [ ] Initiative variants (side initiative, popcorn initiative, DEX-based with tiebreakers)
 
 **World building:**

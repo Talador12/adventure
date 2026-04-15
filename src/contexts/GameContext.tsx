@@ -122,7 +122,7 @@ interface GameContextValue {
   damageUnit: (unitId: string, damage: number, damageType?: string, attackRoll?: number) => Unit[];
   healUnit: (unitId: string, amount: number) => Unit[];
   removeUnit: (unitId: string) => Unit[];
-  rollInitiative: () => Unit[];
+  rollInitiative: (variant?: import('../data/initiativeVariants').InitiativeVariant) => Unit[];
   nextTurn: () => { units: Unit[]; turnIndex: number; newRound: boolean; deathSaveMessage?: string };
 }
 
@@ -1649,31 +1649,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Roll initiative for all units, sort by result (descending), mark first as current turn.
-  // Accepts optional manual overrides: { unitId: number } for player-entered values.
+  // Accepts optional variant to use alternative initiative systems.
   // Returns sorted units for multiplayer sync.
-  const rollInitiative = useCallback((manualOverrides?: Record<string, number>): Unit[] => {
+  const rollInitiative = useCallback((variant?: import('../data/initiativeVariants').InitiativeVariant): Unit[] => {
+    const mode = variant || 'standard';
     let result: Unit[] = [];
     setUnits((prev) => {
-      const withInitiative = prev.map((u) => {
-        // DEX mod from character (players) or unit stat (enemies)
+      // Helper: get DEX mod + feat bonus for a unit
+      const getUnitDexInfo = (u: Unit) => {
         let dexMod = u.dexMod || 0;
         let featInitBonus = 0;
         if (u.characterId) {
           const char = characters.find((c) => c.id === u.characterId);
           if (char) {
             dexMod = Math.floor((char.stats.DEX - 10) / 2);
-            // Alert feat: +5 initiative
             featInitBonus = (char.feats || []).reduce((sum, fid) => {
               const f = FEATS.find((ft) => ft.id === fid);
               return sum + (f?.initiativeBonus || 0);
             }, 0);
           }
         }
-        // Use manual override if provided, otherwise auto-roll
-        const roll = (manualOverrides && manualOverrides[u.id] !== undefined)
-          ? manualOverrides[u.id]
-          : Math.floor(Math.random() * 20) + 1 + dexMod + featInitBonus;
-        // Reset movement for combat start; calculate speed from character data
+        return { dexMod, featInitBonus };
+      };
+
+      // Helper: compute speed for a unit
+      const getSpeed = (u: Unit) => {
         let speed = u.speed || 6;
         if (u.characterId) {
           const char = characters.find((c) => c.id === u.characterId);
@@ -1681,25 +1681,91 @@ export function GameProvider({ children }: { children: ReactNode }) {
             speed = 6 + Math.floor(Math.max(0, char.level - 1) / 4) + (char.level >= 2 ? 2 : 0);
           }
         }
-        // Surprise detection: hidden players surprise enemies (and vice versa)
-        const isHidden = u.conditions?.some((c) => c.type === 'hidden');
+        return speed;
+      };
+
+      // Helper: surprise detection
+      const getSurpriseConditions = (u: Unit, allUnits: Unit[]) => {
+        const { dexMod } = getUnitDexInfo(u);
         const conditions = [...(u.conditions || [])];
-        // If enemy and any player was hidden, this enemy is surprised
-        if (u.type === 'enemy' && prev.some((p) => p.type === 'player' && p.conditions?.some((c) => c.type === 'hidden'))) {
-          const stealthDC = 10 + dexMod; // rough passive perception
-          const partyStealthRoll = Math.floor(Math.random() * 20) + 1 + 3; // party average
+        if (u.type === 'enemy' && allUnits.some((p) => p.type === 'player' && p.conditions?.some((c) => c.type === 'hidden'))) {
+          const stealthDC = 10 + dexMod;
+          const partyStealthRoll = Math.floor(Math.random() * 20) + 1 + 3;
           if (partyStealthRoll >= stealthDC) conditions.push({ type: 'surprised', duration: 1, source: 'Ambush' });
         }
-        return { ...u, initiative: roll, isCurrentTurn: false, movementUsed: 0, reactionUsed: false, bonusActionUsed: false, disengaged: false, speed, conditions };
+        return conditions;
+      };
+
+      // Reset all units for combat start
+      const resetUnit = (u: Unit): Unit => ({
+        ...u,
+        isCurrentTurn: false,
+        movementUsed: 0,
+        reactionUsed: false,
+        bonusActionUsed: false,
+        disengaged: false,
+        speed: getSpeed(u),
+        conditions: getSurpriseConditions(u, prev),
       });
-      // Sort by initiative descending, then DEX mod tiebreaker, then stable ID comparison
-      withInitiative.sort((a, b) => {
-        if (b.initiative !== a.initiative) return b.initiative - a.initiative;
-        const aDex = a.characterId ? Math.floor(((characters.find((c) => c.id === a.characterId)?.stats.DEX ?? 10) - 10) / 2) : (a.dexMod || 0);
-        const bDex = b.characterId ? Math.floor(((characters.find((c) => c.id === b.characterId)?.stats.DEX ?? 10) - 10) / 2) : (b.dexMod || 0);
-        if (bDex !== aDex) return bDex - aDex;
-        return a.id < b.id ? -1 : 1; // stable tiebreaker
-      });
+
+      let withInitiative: Unit[];
+
+      if (mode === 'side') {
+        // Side Initiative: each side rolls d20. Winning side goes first.
+        const playerRoll = Math.floor(Math.random() * 20) + 1;
+        const enemyRoll = Math.floor(Math.random() * 20) + 1;
+        const playersFirst = playerRoll >= enemyRoll; // tie goes to players
+        const players = prev.filter((u) => u.type === 'player').map((u) => resetUnit({ ...u, initiative: playerRoll }));
+        const enemies = prev.filter((u) => u.type !== 'player').map((u) => resetUnit({ ...u, initiative: enemyRoll }));
+        withInitiative = playersFirst ? [...players, ...enemies] : [...enemies, ...players];
+      } else if (mode === 'popcorn') {
+        // Popcorn Initiative: random first unit. Turn order chosen by players.
+        // All units get initiative 0 (order is determined dynamically).
+        withInitiative = prev.map((u) => resetUnit({ ...u, initiative: 0 }));
+        // Pick a random alive unit to go first
+        const alive = withInitiative.filter((u) => u.hp > 0);
+        if (alive.length > 0) {
+          const starter = alive[Math.floor(Math.random() * alive.length)];
+          const starterIdx = withInitiative.findIndex((u) => u.id === starter.id);
+          // Move starter to front
+          if (starterIdx > 0) {
+            const [first] = withInitiative.splice(starterIdx, 1);
+            withInitiative.unshift(first);
+          }
+        }
+      } else if (mode === 'speed_factor') {
+        // Speed Factor: d20 + DEX mod + action modifier
+        withInitiative = prev.map((u) => {
+          const { dexMod, featInitBonus } = getUnitDexInfo(u);
+          // Enemies default to melee (-2), players default to 0 (chosen at action time)
+          const actionMod = u.type === 'enemy' ? -2 : 0;
+          const roll = Math.floor(Math.random() * 20) + 1 + dexMod + featInitBonus + actionMod;
+          return resetUnit({ ...u, initiative: roll });
+        });
+        // Sort descending
+        withInitiative.sort((a, b) => {
+          if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+          const aDex = getUnitDexInfo(a).dexMod;
+          const bDex = getUnitDexInfo(b).dexMod;
+          if (bDex !== aDex) return bDex - aDex;
+          return a.id < b.id ? -1 : 1;
+        });
+      } else {
+        // Standard: d20 + DEX mod + feat bonus
+        withInitiative = prev.map((u) => {
+          const { dexMod, featInitBonus } = getUnitDexInfo(u);
+          const roll = Math.floor(Math.random() * 20) + 1 + dexMod + featInitBonus;
+          return resetUnit({ ...u, initiative: roll });
+        });
+        withInitiative.sort((a, b) => {
+          if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+          const aDex = getUnitDexInfo(a).dexMod;
+          const bDex = getUnitDexInfo(b).dexMod;
+          if (bDex !== aDex) return bDex - aDex;
+          return a.id < b.id ? -1 : 1;
+        });
+      }
+
       // Mark first unit as current turn
       if (withInitiative.length > 0) {
         withInitiative[0].isCurrentTurn = true;

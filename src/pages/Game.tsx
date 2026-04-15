@@ -90,6 +90,7 @@ import { useVoiceChat } from '../hooks/useVoiceChat';
 const CombatReplay = lazy(() => import('../components/game/CombatReplay'));
 import { type WikiPage } from '../components/game/WorldWiki';
 const WorldWiki = lazy(() => import('../components/game/WorldWiki'));
+const CampaignWiki = lazy(() => import('../components/game/CampaignWiki'));
 import { type CalendarState } from '../components/game/CampaignCalendar';
 const CampaignCalendar = lazy(() => import('../components/game/CampaignCalendar'));
 const CharacterCompare = lazy(() => import('../components/game/CharacterCompare'));
@@ -393,6 +394,16 @@ export default function Game() {
   const [showMonsterBrowser, setShowMonsterBrowser] = useState(false);
   // Rules reference modal
   const [showRulesRef, setShowRulesRef] = useState(false);
+
+  // Initiative variant (DM selects before combat)
+  const [initiativeVariant, setInitiativeVariant] = useState<import('../data/initiativeVariants').InitiativeVariant>(() => {
+    try { return (localStorage.getItem(`adventure:initiative-variant:${room}`) as import('../data/initiativeVariants').InitiativeVariant) || 'standard'; } catch { return 'standard'; }
+  });
+  // Popcorn initiative: when true, show "Choose Next" prompt at end of turn
+  const [popcornChooseNext, setPopcornChooseNext] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem(`adventure:initiative-variant:${room}`, initiativeVariant); } catch { /* ok */ }
+  }, [initiativeVariant, room]);
 
   // Weather effects on battle map
   const [weather, setWeather] = useState<'none' | 'rain' | 'fog' | 'snow' | 'sandstorm'>('none');
@@ -928,6 +939,8 @@ export default function Game() {
       if (e.key === 'l' || e.key === 'L') { setShowCombatLog((s) => !s); return; }
       // J — toggle journal view
       if (e.key === 'j' || e.key === 'J') { setActiveView((v) => v === 'journal' ? 'narration' : 'journal'); return; }
+      // W — toggle wiki view
+      if (e.key === 'w' || e.key === 'W') { setActiveView((v) => v === 'wiki' ? 'narration' : 'wiki'); return; }
       // R — toggle rules reference
       if (e.key === 'r' || e.key === 'R') { setShowRulesRef((s) => !s); return; }
       // B — toggle monster browser (DM only)
@@ -943,8 +956,25 @@ export default function Game() {
       if (e.key === '8') { setActiveView('dicestats'); return; }
       if (e.key === '9') { setActiveView('timeline'); return; }
       if (e.key === '0') { setActiveView('achievements'); return; }
+      // Tab — cycle through units on the map
+      if (e.key === 'Tab' && inCombat) {
+        e.preventDefault();
+        const aliveUnits = units.filter((u) => u.hp > 0);
+        if (aliveUnits.length === 0) return;
+        const curIdx = selectedUnitId ? aliveUnits.findIndex((u) => u.id === selectedUnitId) : -1;
+        const nextIdx = (curIdx + 1) % aliveUnits.length;
+        setSelectedUnitId(aliveUnits[nextIdx].id);
+        return;
+      }
       // Combat shortcuts (only when it's the player's turn)
       if (inCombat && isPlayerTurn && selectedCharacter) {
+        // Space — end turn alias
+        if (e.key === ' ') {
+          e.preventDefault();
+          const endBtn = document.querySelector('[data-combat-action="end-turn"]') as HTMLButtonElement | null;
+          if (endBtn && !endBtn.disabled) endBtn.click();
+          return;
+        }
         // A — quick attack
         if (e.key === 'a' || e.key === 'A') {
           const attackBtn = document.querySelector('[data-combat-action="attack"]') as HTMLButtonElement | null;
@@ -3056,6 +3086,7 @@ export default function Game() {
                   adventureStarted={adventureStarted}
                   saveStatus={saveStatus}
                   lastSavedAt={lastSavedAt}
+                  onShowHelp={() => setShowHelpOverlay(true)}
                   encounterDifficulty={encounterDifficulty}
                   setEncounterDifficulty={setEncounterDifficulty}
                   encounterLoading={encounterLoading}
@@ -3472,13 +3503,11 @@ export default function Game() {
                 ) : activeView === 'calendar' ? (
                   <CampaignCalendar state={calendar} onUpdate={(next) => { setCalendar(next); broadcastGameEvent('calendar_sync', { calendar: next }); }} canEdit={canUseDMTools} />
                 ) : activeView === 'wiki' ? (
-                  <WorldWiki
-                    pages={wikiPages}
+                  <CampaignWiki
+                    roomId={room}
+                    isDM={canUseDMTools}
                     playerName={currentPlayer.username || 'Unknown'}
-                    sceneName={sceneName}
-                    onAddPage={(page) => { const next = [...wikiPages, page]; setWikiPages(next); broadcastGameEvent('wiki_sync', { pages: next }); }}
-                    onUpdatePage={(id, updates) => { const next = wikiPages.map((p) => p.id === id ? { ...p, ...updates } : p); setWikiPages(next); broadcastGameEvent('wiki_sync', { pages: next }); }}
-                    onDeletePage={(id) => { const next = wikiPages.filter((p) => p.id !== id); setWikiPages(next); broadcastGameEvent('wiki_sync', { pages: next }); }}
+                    onPagesChange={(next) => { setWikiPages(next as WikiPage[]); broadcastGameEvent('wiki_sync', { pages: next }); }}
                   />
                 ) : activeView === 'relationships' ? (
                   <RelationshipGraph
@@ -3784,51 +3813,10 @@ export default function Game() {
         <CombatReplay recording={showReplay} onClose={() => setShowReplay(null)} />
       )}
 
-      {showHelpOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onClick={() => setShowHelpOverlay(false)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-amber-400">Keyboard Shortcuts</h2>
-              <button onClick={() => setShowHelpOverlay(false)} className="text-slate-500 hover:text-white transition-colors text-xl leading-none">&times;</button>
-            </div>
-            <div className="space-y-1 text-sm">
-              {[
-                ['?', 'Toggle this help'],
-                ['Esc', 'Close topmost panel/modal'],
-                ['M', 'Toggle sound mute'],
-                ['C', 'Toggle character sheet'],
-                ['Q', 'Toggle quest tracker'],
-                ['L', 'Toggle combat log'],
-                ['D', 'Toggle DM sidebar (DM only)'],
-                ['1', 'Narration view'],
-                ['2', 'Battle map view'],
-                ['3', 'Shop view (out of combat)'],
-                ['4 / J', 'Session journal'],
-                ['5', 'Party loot tracker'],
-                ['R', 'Quick rules reference'],
-                ['6', 'Encounter history log'],
-                ['7', 'NPC relationship tracker'],
-                ['N', 'Player notes panel'],
-                ['8', 'Dice roll statistics'],
-                ['B', 'Monster manual (DM only)'],
-                ['—', '— Combat (your turn) —'],
-                ['A', 'Quick attack selected target'],
-                ['E', 'End turn / Next turn'],
-                ['P', 'Use healing potion'],
-                ['G', 'Dodge (+2 AC)'],
-                ['H', 'Dash (double movement)'],
-                ['F', 'Use class ability'],
-              ].map(([key, desc]) => (
-                <div key={key} className="flex items-center gap-3 py-1.5 border-b border-slate-800/50 last:border-0">
-                  <kbd className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-md text-xs font-mono text-slate-300 shadow-sm">{key}</kbd>
-                  <span className="text-slate-400">{desc}</span>
-                </div>
-              ))}
-            </div>
-            <p className="mt-4 text-[10px] text-slate-600 text-center">Shortcuts are disabled when typing in input fields</p>
-          </div>
-        </div>
-      )}
+      {/* Keyboard shortcuts overlay - driven by showHelpOverlay state */}
+      <Suspense fallback={null}>
+        <KeyboardShortcuts visible={showHelpOverlay} onClose={() => setShowHelpOverlay(false)} />
+      </Suspense>
 
       {/* Rules Reference modal */}
       {showRulesRef && (
@@ -3917,8 +3905,7 @@ export default function Game() {
       )}
       {/* Performance dashboard — toggle with Ctrl+Shift+P */}
       <Suspense fallback={null}><PerfDashboard /></Suspense>
-      {/* Keyboard shortcuts overlay — toggle with ? */}
-      <Suspense fallback={null}><KeyboardShortcuts /></Suspense>
+      {/* KeyboardShortcuts rendered above via showHelpOverlay */}
     </div>
   );
 }
