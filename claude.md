@@ -64,10 +64,11 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
    - Concepts ready: oopsAllGoblins, theDungeonIsACake, criticalGoose, thePolymorph, npcOfTheYear, everythingIsMimics, theWizardSneezed, boulderDash, thePunishmentDungeon, inventoryManagement, theRaceCondition, allergicToMagic, gravityIsVoting, theInvisibleDungeon, speedrunAny, itFollows, theLootGoblin, theBardicExplosion, tpkSpeedrun, theEscortMission, stackingConditions, theWrongSpellbook, naturalOnesOnly, theDungeonIsAlive, petCombat, theIdentityCrisis, tooManyQuests, theLoadingScreen, respawnCamping, theLastBraincell, absoluteUnit, theGlitchZone, everyoneHasAThemeSong, theWorldsWorstHeist, sentientLoot, theNerfedParty, randomEncounterHell, theGiantsBaby, allBards, theDMIsAnNPC, oneHitPointEach, theContagiousDance, backwardsDay, theArtificialDifficulty, theCowardsBravery, paperworkQuest, theYeetSpell, theWorldRecordDungeon, accidentallyEvil, theImpossibleRoll
 
 **Target counts when complete:**
-- Full comedic: 25 (currently 25 - DONE)
-- Full shenanigans: 25 (currently 0 - NEEDS WRITING)
-- Oneshot comedic: 50 (currently 50 - DONE)
-- Oneshot shenanigans: 50 (currently 0 - NEEDS WRITING)
+- Full comedic: 25/25 - DONE
+- Full shenanigans: 23/25 - NEEDS 2 MORE (theBossRush, cursedLootOnly)
+- Oneshot comedic: 50/50 - DONE
+- Oneshot shenanigans: 29/50 - NEEDS 21 MORE (see concepts list above, start from theLastBraincell onwards)
+- Also need to register any unregistered campaigns in index.ts before committing
 
 **After shenanigans are done, commit and push to staging, merge to main.**
 
