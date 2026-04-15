@@ -1013,3 +1013,251 @@ export function exportFoundryModule(
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+// ============================================================================
+//  Campaign State Export — full reimportable JSON with all localStorage data
+// ============================================================================
+
+interface CampaignStateExport {
+  version: 2;
+  exportedAt: string;
+  campaignName: string;
+  roomId: string;
+  characters: Character[];
+  localStorage: Record<string, string>;
+}
+
+export function exportCampaignState(
+  roomId: string,
+  campaignName: string,
+  characters: Character[],
+) {
+  // Gather all localStorage keys related to this campaign
+  const lsData: Record<string, string> = {};
+  const prefixes = [
+    `adventure:dm-history:${roomId}`,
+    `adventure:scene:${roomId}`,
+    `adventure:notes:${roomId}`,
+    `adventure:dmnotes:${roomId}`,
+    `adventure:quests:${roomId}`,
+    `adventure:pins:${roomId}`,
+    `adventure:dm-personality:${roomId}`,
+    `adventure:dynDiff:${roomId}`,
+    `adventure:terrain:${roomId}`,
+    `adventure:sessionStart:${roomId}`,
+    `adventure:bonds:${roomId}`,
+    `adventure:state:${roomId}`,
+    `adventure:template:${roomId}`,
+    `adventure:campaignName:${roomId}`,
+  ];
+  // Also grab wildcard keys like chatRead, wiki, calendar, etc
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+    if (prefixes.some(p => key === p || key.startsWith(p + ':'))) {
+      lsData[key] = localStorage.getItem(key) || '';
+    }
+    // Grab any key containing the roomId (catches system-specific stores)
+    if (key.includes(roomId)) {
+      lsData[key] = localStorage.getItem(key) || '';
+    }
+  }
+
+  const exportData: CampaignStateExport = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    campaignName: campaignName || roomId,
+    roomId,
+    characters,
+    localStorage: lsData,
+  };
+
+  const json = JSON.stringify(exportData, null, 2);
+  const safeName = (campaignName || roomId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  downloadFile(`${safeName}-campaign.adventure.json`, json, 'application/json');
+}
+
+// ============================================================================
+//  Campaign State Import — restore from exported JSON
+// ============================================================================
+
+export function importCampaignState(): Promise<{
+  success: boolean;
+  campaignName?: string;
+  roomId?: string;
+  characters?: Character[];
+  errors: string[];
+}> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.adventure.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return resolve({ success: false, errors: ['No file selected'] });
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!data.version || data.version < 2) {
+          return resolve({ success: false, errors: ['Unsupported campaign export version'] });
+        }
+        if (!data.roomId || !data.characters) {
+          return resolve({ success: false, errors: ['Invalid campaign export: missing roomId or characters'] });
+        }
+        // Restore localStorage entries
+        if (data.localStorage && typeof data.localStorage === 'object') {
+          for (const [key, value] of Object.entries(data.localStorage)) {
+            if (typeof value === 'string') {
+              try { localStorage.setItem(key, value); } catch { /* quota */ }
+            }
+          }
+        }
+        resolve({
+          success: true,
+          campaignName: data.campaignName,
+          roomId: data.roomId,
+          characters: data.characters,
+          errors: [],
+        });
+      } catch (e) {
+        resolve({ success: false, errors: [`Failed to parse: ${e instanceof Error ? e.message : 'unknown error'}`] });
+      }
+    };
+    input.click();
+  });
+}
+
+// ============================================================================
+//  Batch Character Export — all characters as a single JSON archive
+// ============================================================================
+
+export function exportAllCharacters(characters: Character[], includePortraits = false) {
+  const data = characters.map(c => {
+    if (!includePortraits) {
+      const clean = { ...c };
+      delete (clean as Record<string, unknown>).portrait;
+      return clean;
+    }
+    return c;
+  });
+  const archive = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    count: data.length,
+    characters: data,
+  };
+  downloadFile(
+    `adventure-characters-${new Date().toISOString().slice(0, 10)}.json`,
+    JSON.stringify(archive, null, 2),
+    'application/json',
+  );
+}
+
+// ============================================================================
+//  Batch Character Import — restore from archive JSON
+// ============================================================================
+
+export function importAllCharacters(): Promise<{ characters: Character[]; errors: string[] }> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return resolve({ characters: [], errors: ['No file selected'] });
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (data.characters && Array.isArray(data.characters)) {
+          const results: Character[] = [];
+          const errors: string[] = [];
+          for (const raw of data.characters) {
+            const v = validateCharacterJSON(raw);
+            if (v.valid && v.character) {
+              v.character.id = crypto.randomUUID(); // new ID to avoid conflicts
+              results.push(v.character);
+            } else {
+              errors.push(`Skipped: ${raw?.name || 'unknown'} (${v.errors.join(', ')})`);
+            }
+          }
+          resolve({ characters: results, errors });
+        } else {
+          // Maybe a single character file
+          const v = validateCharacterJSON(data);
+          if (v.valid && v.character) {
+            v.character.id = crypto.randomUUID();
+            resolve({ characters: [v.character], errors: [] });
+          } else {
+            resolve({ characters: [], errors: v.errors });
+          }
+        }
+      } catch (e) {
+        resolve({ characters: [], errors: [`Failed to parse: ${e instanceof Error ? e.message : 'unknown error'}`] });
+      }
+    };
+    input.click();
+  });
+}
+
+// ============================================================================
+//  JSON Export with portraits (option)
+// ============================================================================
+
+export function exportJSONWithPortrait(char: Character) {
+  const json = JSON.stringify(char, null, 2);
+  downloadFile(`${char.name.replace(/\s+/g, '_')}-full.adventure.json`, json, 'application/json');
+}
+
+// ============================================================================
+//  Homebrew Export — export all homebrew content from localStorage
+// ============================================================================
+
+export function exportHomebrew() {
+  const homebrew: Record<string, unknown> = {};
+  const keys = ['homebrewMonsters', 'homebrewItems', 'homebrewSpells', 'homebrewEditor'];
+  for (const key of keys) {
+    const val = localStorage.getItem(key);
+    if (val) {
+      try { homebrew[key] = JSON.parse(val); } catch { homebrew[key] = val; }
+    }
+  }
+  if (Object.keys(homebrew).length === 0) return false;
+  downloadFile(
+    `adventure-homebrew-${new Date().toISOString().slice(0, 10)}.json`,
+    JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), ...homebrew }, null, 2),
+    'application/json',
+  );
+  return true;
+}
+
+// ============================================================================
+//  Homebrew Import — restore homebrew content to localStorage
+// ============================================================================
+
+export function importHomebrew(): Promise<{ success: boolean; errors: string[] }> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return resolve({ success: false, errors: ['No file selected'] });
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const keys = ['homebrewMonsters', 'homebrewItems', 'homebrewSpells', 'homebrewEditor'];
+        let restored = 0;
+        for (const key of keys) {
+          if (data[key]) {
+            localStorage.setItem(key, typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]));
+            restored++;
+          }
+        }
+        resolve({ success: restored > 0, errors: restored === 0 ? ['No homebrew data found in file'] : [] });
+      } catch (e) {
+        resolve({ success: false, errors: [`Failed to parse: ${e instanceof Error ? e.message : 'unknown error'}`] });
+      }
+    };
+    input.click();
+  });
+}

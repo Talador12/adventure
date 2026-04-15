@@ -921,11 +921,30 @@ export default function Home() {
 
         {/* Campaigns column */}
         <div className="flex flex-col gap-4 animate-fade-in-up">
-          <div className="flex items-center justify-between">
+           <div className="flex items-center justify-between gap-2">
             <h2 className="text-xl font-semibold bg-gradient-to-r from-[#F38020] to-amber-400 bg-clip-text text-transparent">{t('nav.yourCampaigns')}</h2>
-            <Button variant="default" className="btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
-              + {t('nav.newCampaign')}
-            </Button>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!user) { toast('Sign in first', 'warning'); return; }
+                  const { importCampaignState } = await import('../lib/export');
+                  const result = await importCampaignState();
+                  if (!result.success) { toast(result.errors[0] || 'Import failed', 'error'); return; }
+                  if (result.characters) {
+                    for (const c of result.characters) addCharacter({ ...c, playerId: user.id || '' });
+                  }
+                  toast(`Restored campaign: ${result.campaignName}`, 'success');
+                  if (result.roomId) navigate(`/lobby/${result.roomId}`);
+                }}
+                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-all"
+                title="Restore a campaign from a backup file"
+              >
+                Restore
+              </button>
+              <Button variant="default" className="btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
+                + {t('nav.newCampaign')}
+              </Button>
+            </div>
           </div>
           {/* Search + Sort controls */}
           {!campaignsLoading && campaigns.filter((c) => !c.archived).length > 2 && (
@@ -1186,6 +1205,35 @@ export default function Home() {
                 title="Restore character from encrypted backup file"
               >
                 Restore
+              </button>
+              <button
+                onClick={async () => {
+                  if (characters.length === 0) { toast('No characters to export', 'warning'); return; }
+                  const { exportAllCharacters } = await import('../lib/export');
+                  exportAllCharacters(characters, true);
+                  toast(`Exported ${characters.length} character${characters.length !== 1 ? 's' : ''}`, 'success');
+                }}
+                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-amber-500/50 hover:text-amber-400 transition-all"
+                title="Export all characters as a single JSON archive"
+              >
+                Export All
+              </button>
+              <button
+                onClick={async () => {
+                  if (!user) { toast('Sign in first', 'warning'); return; }
+                  const { importAllCharacters } = await import('../lib/export');
+                  const result = await importAllCharacters();
+                  if (result.errors.length > 0 && result.characters.length === 0) { toast(result.errors[0], 'error'); return; }
+                  for (const c of result.characters) {
+                    addCharacter({ ...c, playerId: user.id || '', createdAt: Date.now() });
+                  }
+                  if (result.characters.length > 0) toast(`Imported ${result.characters.length} character${result.characters.length !== 1 ? 's' : ''}`, 'success');
+                  if (result.errors.length > 0) toast(`${result.errors.length} skipped`, 'warning');
+                }}
+                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-purple-500/50 hover:text-purple-400 transition-all"
+                title="Import multiple characters from an archive JSON"
+              >
+                Import All
               </button>
               <Button variant="default" className="btn-glow bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
                 + New

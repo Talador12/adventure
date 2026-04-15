@@ -2228,6 +2228,17 @@ export default function Game() {
           >
             Export Log
           </button>
+          <button
+            onClick={() => {
+              import('../lib/export').then(({ exportCampaignState }) => {
+                exportCampaignState(room, sceneName || room, characters);
+              });
+            }}
+            className="text-[9px] px-2 py-0.5 rounded bg-emerald-900/30 border border-emerald-700/40 text-emerald-300 hover:bg-emerald-900/50 font-semibold transition-colors"
+            title="Export full campaign state as reimportable backup"
+          >
+            Backup
+          </button>
           {canUseDMTools && (
             <button
               onClick={() => {
