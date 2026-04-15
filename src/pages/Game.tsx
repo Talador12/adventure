@@ -99,6 +99,7 @@ const Achievements = lazy(() => import('../components/game/Achievements'));
 import { type Monster } from '../data/monsters';
 import PartyHealthBar from '../components/game/PartyHealthBar';
 import FloatingCombatText, { useFloatingCombatText } from '../components/game/FloatingCombatText';
+import ReactionPrompt from '../components/game/ReactionPrompt';
 
 // API base — empty string uses same origin, Vite proxy forwards /api to wrangler in dev
 function apiBase(): string {
@@ -143,6 +144,8 @@ export default function Game() {
     tickConditions,
     useClassAbility,
     concentrationMessages,
+    pendingReaction,
+    resolveReaction,
     terrain,
     setTerrain,
     mapPositions,
@@ -792,6 +795,49 @@ export default function Game() {
         units.map((u) => ({ id: u.id, name: u.name, hp: u.hp, maxHp: u.maxHp, type: u.type, isCurrentTurn: u.isCurrentTurn })));
     }
   }, [turnIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Spell zone damage at the start of each creature's turn
+  useEffect(() => {
+    if (!inCombat || spellZones.length === 0) return;
+    const currentUnit = units.find((u) => u.isCurrentTurn);
+    if (!currentUnit || currentUnit.hp <= 0) return;
+    const pos = mapPositions.find((p) => p.unitId === currentUnit.id);
+    if (!pos) return;
+    const cellKey = `${pos.col},${pos.row}`;
+    for (const zone of spellZones) {
+      if (!zone.damagePerTurn) continue;
+      const inZone = zone.cells.some((c) => `${c.col},${c.row}` === cellKey);
+      if (!inZone) continue;
+      // Skip damage to the caster of Spirit Guardians (it centers on them)
+      if (zone.casterId === currentUnit.id) continue;
+      // Save vs zone effect
+      const saveStat = zone.saveStat;
+      const saveRoll = Math.floor(Math.random() * 20) + 1;
+      const saveMod = saveStat === 'DEX' ? (currentUnit.dexMod || 0) : 0;
+      // Use a default DC of 13 for zones (could be enhanced later)
+      const dc = 13;
+      const saved = (saveRoll + saveMod) >= dc;
+      const dmg = saved ? Math.floor(zone.damagePerTurn / 2) : zone.damagePerTurn;
+      damageUnit(currentUnit.id, dmg, zone.damageType);
+      const saveNote = saved ? `saves (${saveRoll}+${saveMod} vs DC ${dc}) - ${dmg} damage (half)` : `fails save (${saveRoll}+${saveMod} vs DC ${dc}) - ${dmg} damage`;
+      const msg = `${currentUnit.name} starts turn in ${zone.name}! ${saveNote}`;
+      setCombatLog((prev) => [...prev, msg]);
+      addDmMessage(msg);
+      drainConcentrationMessages();
+    }
+  }, [turnIndex, inCombat]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Remove spell zones when concentration drops (caster's concentratingOn becomes undefined)
+  useEffect(() => {
+    if (spellZones.length === 0) return;
+    setSpellZones((prev) => prev.filter((zone) => {
+      if (!zone.casterId) return true; // no caster = DM-placed, always keep
+      const caster = units.find((u) => u.id === zone.casterId);
+      if (!caster) return false; // caster removed from combat
+      if (!caster.concentratingOn) return false; // concentration dropped
+      return true;
+    }));
+  }, [units, spellZones.length]);
 
   // Broadcast state to DM Screen (separate browser tab) via BroadcastChannel
   useEffect(() => {
@@ -2065,10 +2111,27 @@ export default function Game() {
     const fullMsg = `${casterName} casts ${spell.name}! ${messages.join(' ')}${spell.level > 0 ? ` (Level ${spell.level} slot used)` : ''}`;
     setCombatLog((prev) => [...prev, fullMsg]);
     addDmMessage(fullMsg);
+    // Create a persistent SpellZone for concentration AoE spells
+    if (spell.isConcentration && spell.aoe && affectedCells.length > 0) {
+      const casterUnit = units.find((u) => u.characterId === charId);
+      const zone: import('../types/game').SpellZone = {
+        id: `zone-${crypto.randomUUID().slice(0, 8)}`,
+        name: spell.name,
+        cells: affectedCells,
+        color: spell.aoe.color || 'rgba(147,51,234,0.25)',
+        opacity: 0.6,
+        roundsRemaining: -1, // lasts until concentration drops
+        damagePerTurn: spell.damage ? rollSpellDamage(spell.damage) : undefined,
+        damageType: spell.school === 'evocation' ? 'fire' : 'radiant',
+        casterId: casterUnit?.id,
+      };
+      if (spell.saveStat) zone.saveStat = spell.saveStat;
+      setSpellZones((prev) => [...prev, zone]);
+    }
     setActiveAoE(null);
     setPendingAoESpell(null);
     setTimeout(broadcastCombatSyncLatest, 50);
-  }, [pendingAoESpell, castSpell, characters, units, mapPositions, damageUnit, applyCondition, addDmMessage, broadcastCombatSyncLatest]);
+  }, [pendingAoESpell, castSpell, characters, units, mapPositions, damageUnit, applyCondition, addDmMessage, broadcastCombatSyncLatest, setSpellZones]);
 
   const statusColor = status === 'connected' ? 'bg-green-500' : status === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500';
 
@@ -3440,6 +3503,7 @@ export default function Game() {
                       }}
                       animateMoveRef={animateMoveRef}
                       attackIndicators={attackIndicators}
+                      spellZones={spellZones}
                       activeAoE={activeAoE}
                       onAoEConfirm={handleAoEConfirm}
                       onAoECancel={() => {
@@ -3727,6 +3791,21 @@ export default function Game() {
           onCombatLog={(msg) => setCombatLog((prev) => [...prev, msg])}
         />
       )}
+      {/* Reaction prompt (Shield / Counterspell) */}
+      {pendingReaction && (() => {
+        const targetUnit = units.find((u) => u.id === pendingReaction.targetUnitId);
+        return (
+          <ReactionPrompt
+            reaction={pendingReaction}
+            targetName={targetUnit?.name || 'Unknown'}
+            onResolve={(use) => {
+              const result = resolveReaction(use);
+              drainConcentrationMessages();
+              if (result.length > 0) broadcastCombatSync(result);
+            }}
+          />
+        );
+      })()}
       {/* === THE JUICE === */}
       <CritCelebration active={critActive} confetti={critConfetti} />
       <KillStreak display={killStreakDisplay} />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGame, type StatName, type Character, hasPendingASI, FEATS, HIT_DIE_SIDES, getSpellSlots, FULL_CASTERS, HALF_CASTERS, getClassAbility } from '../../contexts/GameContext';
+import { getFeaturesForLevel } from '../../data/classFeatures';
 
 interface LevelUpModalProps {
   character: Character;
@@ -125,6 +126,25 @@ export default function LevelUpModal({ character, onClose, onMessage, onCombatLo
                   {classAbility && <li className="text-sky-400">• {classAbility.name}: {classAbility.description.slice(0, 80)}...</li>}
                 </ul>
               </div>
+
+              {/* New class features at this level */}
+              {(() => {
+                const newFeatures = getFeaturesForLevel(character.class, character.level);
+                if (newFeatures.length === 0) return null;
+                return (
+                  <div className="bg-slate-800/40 rounded-xl p-3 border border-amber-700/30">
+                    <div className="text-[10px] text-amber-500 font-semibold uppercase mb-1.5">New Class Features</div>
+                    <div className="space-y-2">
+                      {newFeatures.map((feature, i) => (
+                        <div key={i}>
+                          <div className="text-xs font-bold text-amber-300">{feature.name}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">{feature.description}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Navigation hint */}
               {hasASI && (

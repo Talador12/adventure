@@ -27,7 +27,7 @@ export {
 import type {
   Player, Unit, Character, DiceRoll, DieType, Stats, StatName, EquipSlot, Item,
   EquipmentSlots, ActiveCondition, ConditionType, Condition, Spell, ClassAbility, Feat,
-  CharacterClass,
+  CharacterClass, PendingReaction,
 } from '../types/game';
 import {
   CONDITION_EFFECTS, XP_THRESHOLDS, HIT_DIE_AVG, HIT_DIE_SIDES, EMPTY_EQUIPMENT, CLASS_SAVE_PROFICIENCIES,
@@ -110,9 +110,13 @@ interface GameContextValue {
   mapImageUrl: string | null;
   setMapImageUrl: (url: string | null) => void;
 
+  // Reaction system — pauses damage for Shield/Counterspell prompts
+  pendingReaction: PendingReaction | null;
+  resolveReaction: (useReaction: boolean) => Unit[];
+
   // Combat helpers (return updated units array for multiplayer sync)
   concentrationMessages: React.MutableRefObject<string[]>;
-  damageUnit: (unitId: string, damage: number, damageType?: string) => Unit[];
+  damageUnit: (unitId: string, damage: number, damageType?: string, attackRoll?: number) => Unit[];
   healUnit: (unitId: string, amount: number) => Unit[];
   removeUnit: (unitId: string) => Unit[];
   rollInitiative: () => Unit[];
@@ -167,6 +171,8 @@ const GameContext = createContext<GameContextValue>({
   setMapPositions: () => {},
   mapImageUrl: null,
   setMapImageUrl: () => {},
+  pendingReaction: null,
+  resolveReaction: () => [],
   concentrationMessages: { current: [] },
   damageUnit: () => [],
   healUnit: () => [],
@@ -240,6 +246,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   // Concentration save messages — collected during damageUnit state updates, consumed by Game.tsx
   const concentrationBreakMessages = useRef<string[]>([]);
+
+  // Reaction system — hold damage while player decides whether to use Shield
+  const [pendingReaction, setPendingReaction] = useState<PendingReaction | null>(null);
 
   // Persist characters to localStorage + server sync on change
   const syncingRef = useRef(false); // prevent save-during-load loops
@@ -749,8 +758,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const clearRolls = useCallback(() => setRolls([]), []);
 
   // Combat: apply damage to a unit (clamp to 0) + concentration check. Returns updated units for sync.
+  // attackRoll is the total attack roll that hit (used for Shield reaction check).
   const damageUnit = useCallback(
-    (unitId: string, damage: number, damageType?: string): Unit[] => {
+    (unitId: string, damage: number, damageType?: string, attackRoll?: number): Unit[] => {
+      // Check if target can use Shield reaction before applying damage
+      const target = units.find((u) => u.id === unitId);
+      if (target && target.characterId && target.type === 'player' && !target.reactionUsed) {
+        const char = characters.find((c) => c.id === target.characterId);
+        if (char) {
+          const slots = getSpellSlots(char.class, char.level);
+          const used = char.spellSlotsUsed || {};
+          const hasShieldSpell = SPELL_LIST.some((s) => s.id === 'shield' && s.classes.includes(char.class)) || (char.customSpells || []).some((s) => s.id === 'shield');
+          const hasSlot = Object.entries(slots).some(([lvl, max]) => Number(lvl) >= 1 && (max as number) - (used[Number(lvl)] || 0) > 0);
+          if (hasShieldSpell && hasSlot && !pendingReaction) {
+            setPendingReaction({ type: 'shield', targetUnitId: unitId, sourceUnitId: '', damage, damageType, attackRoll });
+            return []; // pause - resolveReaction will finish
+          }
+        }
+      }
+
       let result: Unit[] = [];
       setUnits((prev) => {
         // Apply damage type modifiers (resistance = half, vulnerability = double, immunity = zero)
@@ -783,7 +809,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
               conMod = Math.floor((char.stats.CON - 10) / 2);
               // Saving throw proficiency: add proficiency bonus if class is proficient in CON saves
               if (CLASS_SAVE_PROFICIENCIES[char.class]?.includes('CON')) {
-                conMod += proficiencyBonus(char.level);
+                conMod += Math.ceil(char.level / 4) + 1;
               }
               // War Caster feat: +2 to concentration saves
               if ((char.feats || []).includes('war-caster')) conMod += 2;
@@ -809,8 +835,84 @@ export function GameProvider({ children }: { children: ReactNode }) {
       });
       return result;
     },
-    [characters]
+    [characters, units, pendingReaction]
   );
+
+  // Reaction resolver: player decided whether to use Shield (or declined / timed out)
+  const resolveReaction = useCallback((useReaction: boolean): Unit[] => {
+    if (!pendingReaction) return [];
+    const { type, targetUnitId, damage, damageType, attackRoll } = pendingReaction;
+    setPendingReaction(null);
+
+    if (type === 'shield' && useReaction) {
+      // Spend a level-1 slot, mark reaction used, add +5 AC for this check
+      const target = units.find((u) => u.id === targetUnitId);
+      if (target?.characterId) {
+        const char = characters.find((c) => c.id === target.characterId);
+        if (char) {
+          // Spend lowest available slot
+          const slots = getSpellSlots(char.class, char.level);
+          const used = char.spellSlotsUsed || {};
+          let spentLevel = 0;
+          for (const lvl of Object.keys(slots).map(Number).sort()) {
+            if (lvl >= 1 && (slots[lvl] || 0) - (used[lvl] || 0) > 0) { spentLevel = lvl; break; }
+          }
+          if (spentLevel > 0) {
+            setCharacters((prev) => prev.map((c) => c.id !== char.id ? c : { ...c, spellSlotsUsed: { ...c.spellSlotsUsed, [spentLevel]: (c.spellSlotsUsed[spentLevel] || 0) + 1 } }));
+          }
+          // Mark reaction as used this turn
+          setUnits((prev) => prev.map((u) => u.id === targetUnitId ? { ...u, reactionUsed: true } : u));
+          // Shield gives +5 AC - check if the attack now misses
+          const shieldedAC = target.ac + 5;
+          if (attackRoll !== undefined && attackRoll < shieldedAC) {
+            concentrationBreakMessages.current.push(`${target.name} casts Shield (+5 AC = ${shieldedAC})! The attack misses!`);
+            return units; // attack dodged, no damage applied
+          }
+          // Attack still hits even with Shield
+          concentrationBreakMessages.current.push(`${target.name} casts Shield (+5 AC = ${shieldedAC}), but the attack still hits!`);
+        }
+      }
+    }
+
+    // Apply the original damage (either Shield did not negate or player declined)
+    let result: Unit[] = [];
+    setUnits((prev) => {
+      let effectiveDamage = damage;
+      const tgt = prev.find((u) => u.id === targetUnitId);
+      if (tgt && damageType) {
+        if (tgt.immunities?.includes(damageType as import('../types/game').DamageType)) effectiveDamage = 0;
+        else if (tgt.resistances?.includes(damageType as import('../types/game').DamageType)) effectiveDamage = Math.floor(damage / 2);
+        else if (tgt.vulnerabilities?.includes(damageType as import('../types/game').DamageType)) effectiveDamage = damage * 2;
+      }
+      const updated = prev.map((u) => (u.id === targetUnitId ? { ...u, hp: Math.max(0, u.hp - effectiveDamage) } : u));
+      // Concentration save (same logic as damageUnit)
+      const damagedUnit = updated.find((u) => u.id === targetUnitId);
+      if (damagedUnit?.concentratingOn && damagedUnit.hp > 0) {
+        const dc = Math.max(10, Math.floor(damage / 2));
+        const saveRoll = Math.floor(Math.random() * 20) + 1;
+        let conMod = 0;
+        if (damagedUnit.characterId) {
+          const char = characters.find((c) => c.id === damagedUnit.characterId);
+          if (char) {
+            conMod = Math.floor((char.stats.CON - 10) / 2);
+            if (CLASS_SAVE_PROFICIENCIES[char.class]?.includes('CON')) conMod += Math.ceil(char.level / 4) + 1;
+            if ((char.feats || []).includes('war-caster')) conMod += 2;
+          }
+        }
+        if (saveRoll + conMod < dc) {
+          concentrationBreakMessages.current.push(`${damagedUnit.name} fails concentration save! ${damagedUnit.concentratingOn} ends.`);
+          result = updated.map((u) => {
+            if (u.id === targetUnitId) return { ...u, concentratingOn: undefined };
+            return { ...u, conditions: (u.conditions || []).filter((c) => c.source !== damagedUnit.name) };
+          });
+          return result;
+        }
+      }
+      result = updated;
+      return updated;
+    });
+    return result;
+  }, [pendingReaction, units, characters]);
 
   // Combat: heal a unit (clamp to maxHp). Returns updated units for sync.
   const healUnit = useCallback((unitId: string, amount: number): Unit[] => {
@@ -1631,6 +1733,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setMapPositions,
         mapImageUrl,
         setMapImageUrl,
+        pendingReaction,
+        resolveReaction,
         concentrationMessages: concentrationBreakMessages,
         damageUnit,
         healUnit,

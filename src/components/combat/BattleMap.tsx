@@ -572,9 +572,11 @@ interface BattleMapProps {
   onStairClick?: (direction: 'up' | 'down') => void;
   /** Grid type: square (default) or hex */
   gridType?: 'square' | 'hex';
+  /** Persistent spell effect zones (Spirit Guardians, Wall of Fire, etc.) */
+  spellZones?: import('../../types/game').SpellZone[];
 }
 
-export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], onPing, incomingPings, myUnitId, lighting, onLightingChange, onStairClick, gridType: gridTypeProp }: BattleMapProps = {}) {
+export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityAttack, onMapImageChange, canUseDMTools = true, activeAoE, onAoEConfirm, onAoECancel, animateMoveRef, mapPins = [], onPinAdd, onPinRemove, attackIndicators = [], onPing, incomingPings, myUnitId, lighting, onLightingChange, onStairClick, gridType: gridTypeProp, spellZones = [] }: BattleMapProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1044,6 +1046,33 @@ export default function BattleMap({ onTokenMove, onTerrainChange, onOpportunityA
           ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
         }
       }
+    }
+
+    // Draw spell zones (persistent AoE overlays: Spirit Guardians, Wall of Fire, etc.)
+    for (const zone of spellZones) {
+      ctx.save();
+      ctx.globalAlpha = zone.opacity || 0.4;
+      ctx.fillStyle = zone.color;
+      for (const cell of zone.cells) {
+        if (cell.col >= 0 && cell.col < gridCols && cell.row >= 0 && cell.row < gridRows) {
+          ctx.fillRect(cell.col * CELL_SIZE, cell.row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+      }
+      // Draw zone name label at the center of the zone
+      if (zone.cells.length > 0) {
+        const avgCol = zone.cells.reduce((s, c) => s + c.col, 0) / zone.cells.length;
+        const avgRow = zone.cells.reduce((s, c) => s + c.row, 0) / zone.cells.length;
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.lineWidth = 2;
+        ctx.strokeText(zone.name, (avgCol + 0.5) * CELL_SIZE, (avgRow + 0.5) * CELL_SIZE);
+        ctx.fillText(zone.name, (avgCol + 0.5) * CELL_SIZE, (avgRow + 0.5) * CELL_SIZE);
+      }
+      ctx.restore();
     }
 
     // Draw traps (visible in DM mode, or when detected by players)

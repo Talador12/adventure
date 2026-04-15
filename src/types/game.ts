@@ -174,6 +174,17 @@ export interface Unit {
   deathSaves?: { successes: number; failures: number };
 }
 
+// Reaction prompt — pauses damage to let a player respond with Shield, Counterspell, etc.
+export interface PendingReaction {
+  type: 'shield' | 'counterspell';
+  targetUnitId: string;
+  sourceUnitId: string;
+  damage: number;
+  damageType?: string;
+  attackRoll?: number;     // the attack total that hit (for Shield AC comparison)
+  spellName?: string;      // for Counterspell: the spell being cast
+}
+
 // Persistent spell effect zones on the battle map
 export interface SpellZone {
   id: string;
@@ -184,6 +195,7 @@ export interface SpellZone {
   roundsRemaining: number;   // -1 = until dismissed
   damagePerTurn?: number;    // damage dealt to units starting turn in zone
   damageType?: string;
+  saveStat?: string;         // saving throw stat (DEX, WIS, etc.) for zone damage
   blocksVision?: boolean;    // Darkness, Fog Cloud
   casterId?: string;         // unit ID of caster (for concentration tracking)
 }
