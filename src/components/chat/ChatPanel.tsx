@@ -98,6 +98,7 @@ interface ChatPanelProps {
   onSend: (text: string) => void;
   onSlashRoll?: (result: SlashRollResult) => void;
   onWhisper?: (targetUsername: string, message: string) => void;
+  onCommand?: (command: string, args: string) => void; // /initiative, /hp, /conditions, /emote
   onTyping?: () => void;
   onReaction?: (messageId: string, emoji: string) => void;
   onLoadOlder?: () => void;
@@ -320,7 +321,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, initialReadAnchorTs, onMarkRead, typingUsers, currentPlayerId, readOnly }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onCommand, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, initialReadAnchorTs, onMarkRead, typingUsers, currentPlayerId, readOnly }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -379,11 +380,11 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
   const handleSend = () => {
     const text = input.trim();
     if (!text) return;
-    // Slash commands
-    if (text.startsWith('/roll ') || text === '/roll') {
-      const arg = text.slice(6).trim();
+    // Slash commands: /roll and /r (shorthand)
+    const rollMatch = text.match(/^\/(?:roll|r)\s*(.*)?$/);
+    if (rollMatch !== null) {
+      const arg = (rollMatch[1] || '').trim();
       if (!arg) {
-        // bare /roll = d20
         const result = parseSlashRoll('d20');
         if (result) onSlashRoll?.(result);
       } else {
@@ -397,8 +398,10 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
       setInput('');
       return;
     }
-    if (text.startsWith('/me ')) {
-      onSend(`*${text.slice(4)}*`);
+    // /me or /emote - third-person emote
+    if (text.startsWith('/me ') || text.startsWith('/emote ')) {
+      const body = text.startsWith('/me ') ? text.slice(4) : text.slice(7);
+      onSend(`*${body}*`);
       setInput('');
       return;
     }
@@ -406,6 +409,22 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
     const whisperMatch = text.match(/^\/(?:whisper|w)\s+@(\S+)\s+(.+)$/);
     if (whisperMatch && onWhisper) {
       onWhisper(whisperMatch[1], whisperMatch[2]);
+      setInput('');
+      return;
+    }
+    // Character-context commands: /initiative, /init, /hp, /conditions
+    if (/^\/(?:initiative|init)$/i.test(text)) {
+      onCommand?.('initiative', '');
+      setInput('');
+      return;
+    }
+    if (/^\/hp$/i.test(text)) {
+      onCommand?.('hp', '');
+      setInput('');
+      return;
+    }
+    if (/^\/conditions$/i.test(text)) {
+      onCommand?.('conditions', '');
       setInput('');
       return;
     }
@@ -494,6 +513,26 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
               );
             }
 
+            // Emote detection: messages wrapped in *...*  from /me or /emote
+            const isEmote = msg.type === 'chat' && msg.text.startsWith('*') && msg.text.endsWith('*') && msg.text.length > 2;
+            if (isEmote) {
+              const emoteText = msg.text.slice(1, -1);
+              return (
+                <div key={msg.id} data-msg-id={msg.id} className="relative group" onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
+                  <div className="text-xs text-center py-1 italic text-violet-300/80">
+                    <span className="font-semibold text-violet-400">{msg.username}</span> {emoteText}
+                    <span className="text-[9px] text-violet-700/50 ml-2">{formatTime(msg.timestamp)}</span>
+                  </div>
+                  {reactionBar}
+                  {showPicker && onReaction && (
+                    <div className="absolute -top-3 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ReactionPicker onPick={(emoji) => { onReaction(msg.id, emoji); setHoveredMsgId(null); }} />
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             // Message grouping — skip avatar/name if same sender as previous chat message
             const prev = idx > 0 ? messages[idx - 1] : null;
             const isGrouped = prev && prev.type === 'chat' && prev.playerId === msg.playerId && (msg.timestamp - prev.timestamp < 60000);
@@ -578,7 +617,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
               typingThrottleRef.current = Date.now();
               onTyping();
             }
-          }} placeholder="Type a message... (/roll, /me, /w @name)" className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
+          }} placeholder="Type a message... (/r, /me, /w @name, /hp, /init)" className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
           <button onClick={handleSend} disabled={!input.trim()} className="px-3 py-2 bg-[#F38020] hover:bg-[#e06a10] disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors">
             Send
           </button>

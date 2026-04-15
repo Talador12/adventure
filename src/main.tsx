@@ -55,6 +55,7 @@ const CharacterCreate = React.lazy(() => import('./pages/CharacterCreate'));
 const DMScreen = React.lazy(() => import('./pages/DMScreen'));
 const Companion = React.lazy(() => import('./pages/Companion'));
 const HotSeat = React.lazy(() => import('./pages/HotSeat'));
+const DiceStandalone = React.lazy(() => import('./pages/DiceStandalone'));
 
 // Minimal loading fallback — matches the app's dark theme
 function PageLoader() {
@@ -187,6 +188,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                 <Route path="/dm-screen" element={<DMScreen />} />
                 <Route path="/companion/:roomId" element={<Companion />} />
                 <Route path="/hotseat/:roomId" element={<HotSeat />} />
+                <Route path="/dice" element={<DiceStandalone />} />
                 <Route path="/characters/new" element={<RequireAuth><CharacterCreate /></RequireAuth>} />
                 <Route path="/characters/:id/edit" element={<RequireAuth><CharacterCreate /></RequireAuth>} />
                 <Route path="*" element={<NotFound />} />

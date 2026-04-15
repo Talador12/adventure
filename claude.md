@@ -100,15 +100,15 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 2. [x] Ritual casting (6 ritual spells, no-slot cast for Wizard/Cleric/Druid, CombatToolbar toggle)
 3. [ ] Multiclass support (class dip, combined spell slots, prerequisite checks)
 4. [x] Conditions system overhaul (12 conditions with mechanical effects, advantage/disadvantage, auto-crit)
-5. [ ] Initiative variants (side initiative, popcorn initiative, DEX-based with tiebreakers)
+5. [x] Initiative variants (standard, side, popcorn, speed factor with tooltips)
 
 **World building:**
-6. [ ] Campaign wiki (DM-editable pages for lore, NPCs, locations, searchable)
+6. [x] Campaign wiki (DM-editable, category filters, search, wiki links, WebSocket sync)
 7. [ ] Random dungeon generator improvements (themed rooms, puzzle placement, loot scaling)
 8. [ ] NPC conversation memory (AI remembers past interactions per NPC)
 
 **Quality of life:**
-9. [ ] Keyboard shortcuts reference panel (? key opens overlay)
+9. [x] Keyboard shortcuts reference panel (? key, W for wiki)
 10. [ ] Undo/redo for character edits
 11. [ ] Dice roller standalone mode (no game, just dice with presets)
 12. [ ] Chat commands expansion (/whisper, /roll inline, /emote improvements)

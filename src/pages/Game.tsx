@@ -1339,6 +1339,9 @@ export default function Game() {
       if (!selectedCharacter || !npcName) return;
       setNpcLoading(true);
       try {
+        // Include client-side NPC memory context for richer prompts
+        const { formatNPCContext } = await import('../lib/npcMemory');
+        const npcMemoryContext = formatNPCContext(room, npcName);
         const res = await fetchWithTimeout(
           `${apiBase()}/api/dm/npc`,
           {
@@ -1347,6 +1350,7 @@ export default function Game() {
             body: JSON.stringify({
               npcName,
               npcRole,
+              npcPersonality: npcMemoryContext ? `${npcRole}. ${npcMemoryContext}` : '',
               playerMessage,
               playerName: selectedCharacter.name,
               playerClass: selectedCharacter.class,
@@ -1373,6 +1377,11 @@ export default function Game() {
           ]);
           setDmHistory((prev) => [...prev, `${npcName}: "${npcText}"`]);
           setNpcDialogueHistory((prev) => [...prev, `${selectedCharacter.name}: ${playerMessage}`, `${npcName}: ${npcText}`]);
+          // Save NPC interaction to local memory
+          import('../lib/npcMemory').then(({ addNPCInteraction, inferSentiment }) => {
+            const summary = `${selectedCharacter.name} said: "${playerMessage}" - ${npcName} replied: "${npcText.slice(0, 120)}"`;
+            addNPCInteraction(room, npcName, summary, inferSentiment(npcText));
+          });
           // Broadcast NPC dialogue to all players
           sendRef.current({ type: 'dm_npc', npcName, dialogue: npcText });
           // TTS: speak NPC dialogue with NPC-specific voice
@@ -1388,7 +1397,7 @@ export default function Game() {
         setNpcLoading(false);
       }
     },
-    [selectedCharacter, npcName, npcRole, sceneName, npcDialogueHistory, addDmMessage]
+    [selectedCharacter, npcName, npcRole, sceneName, npcDialogueHistory, addDmMessage, room]
   );
 
   // Detect when selected character drops to 0 HP — set unconscious, announce
@@ -2043,6 +2052,84 @@ export default function Game() {
       });
     },
     [selectedCharacter, currentPlayer, room, showRollPopup]
+  );
+
+  // Handle chat slash commands that need character context
+  const handleChatCommand = useCallback(
+    (command: string, _args: string) => {
+      const char = selectedCharacter;
+      const playerName = currentPlayer.username || 'Adventurer';
+
+      if (command === 'initiative') {
+        const dexMod = char ? Math.floor((char.stats.DEX - 10) / 2) : 0;
+        const roll = Math.floor(Math.random() * 20) + 1;
+        const total = roll + dexMod;
+        const isCrit = roll === 20;
+        const isFumble = roll === 1;
+        const name = char?.name || playerName;
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            type: 'roll',
+            playerId: currentPlayer.id,
+            username: playerName,
+            characterName: char?.name || undefined,
+            portrait: char?.portrait || undefined,
+            text: `Initiative: d20(${roll}) ${dexMod >= 0 ? '+' : ''}${dexMod} = ${total}`,
+            timestamp: Date.now(),
+            die: 'd20',
+            sides: 20,
+            value: total,
+            isCritical: isCrit,
+            isFumble,
+          },
+        ]);
+        return;
+      }
+
+      if (command === 'hp') {
+        if (!char) {
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'No character selected.', timestamp: Date.now() }]);
+          return;
+        }
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            type: 'system',
+            username: 'System',
+            text: `${char.name}: ${char.hp}/${char.maxHp} HP (AC ${char.ac})`,
+            timestamp: Date.now(),
+          },
+        ]);
+        return;
+      }
+
+      if (command === 'conditions') {
+        if (!char) {
+          setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'system', username: 'System', text: 'No character selected.', timestamp: Date.now() }]);
+          return;
+        }
+        const unit = units.find((u) => u.characterId === char.id);
+        const conditions = unit?.conditions;
+        const condText = conditions && conditions.length > 0
+          ? conditions.map((c) => `${c.type}${c.duration > 0 ? ` (${c.duration} rounds)` : ''}`).join(', ')
+          : 'None';
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            type: 'system',
+            username: 'System',
+            text: `${char.name} conditions: ${condText}`,
+            timestamp: Date.now(),
+          },
+        ]);
+        return;
+      }
+    },
+    [selectedCharacter, currentPlayer, units]
   );
 
   // Handle dice macro execution — macro label + notation result posted to chat with SFX
@@ -3780,7 +3867,7 @@ export default function Game() {
                 </div>
               )}
               <div className="flex-1 flex flex-col p-4 overflow-hidden">
-                <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => {
+                <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onCommand={handleChatCommand} onWhisper={(target, msg) => {
                   send({ type: 'whisper', targetUsername: target, message: msg });
                 }} onReaction={(messageId, emoji) => {
                   send({ type: 'chat_reaction', messageId, emoji });

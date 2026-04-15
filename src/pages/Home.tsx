@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { useToast } from '../components/ui/toast';
@@ -1701,6 +1701,17 @@ export default function Home() {
       )}
 
       {/* Delete/archive campaign confirmation modal */}
+      {/* Footer with utility links */}
+      <footer className="w-full text-center py-4 border-t border-slate-800/50 mt-auto">
+        <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
+          <Link to="/dice" className="hover:text-[#F38020] transition-colors">Dice Roller</Link>
+          <span className="text-slate-700">|</span>
+          <Link to="/dm-screen" className="hover:text-[#F38020] transition-colors">DM Screen</Link>
+          <span className="text-slate-700">|</span>
+          <a href="https://github.com/talador12/adventure" target="_blank" rel="noreferrer" className="hover:text-[#F38020] transition-colors">GitHub</a>
+        </div>
+      </footer>
+
       {deleteConfirm && (() => {
         const isArchived = campaigns.find((c) => c.roomId === deleteConfirm.roomId)?.archived;
         return (

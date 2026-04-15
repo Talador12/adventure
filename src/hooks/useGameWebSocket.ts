@@ -481,6 +481,12 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               },
             ]);
             setDmHistory((prev) => [...prev, `${msg.npcName}: "${msg.dialogue}"`]);
+            // Mirror NPC interaction to local memory for all players
+            import('../lib/npcMemory').then(({ addNPCInteraction, inferSentiment }) => {
+              const npc = msg.npcName as string;
+              const text = msg.dialogue as string;
+              addNPCInteraction(room, npc, `${npc} said: "${text.slice(0, 120)}"`, inferSentiment(text));
+            }).catch(() => {});
           }
           break;
 
