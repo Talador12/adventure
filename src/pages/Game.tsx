@@ -2114,6 +2114,11 @@ export default function Game() {
             <div className={`w-2 h-2 rounded-full ${statusColor}`} />
             <span className="text-[10px] text-slate-500">{status}</span>
           </div>
+          {isSpectating && (
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-900/30 border border-sky-700/30 text-sky-400 font-semibold animate-fade-in-up">
+              Spectating
+            </span>
+          )}
           {status === 'connected' && clockRttMs !== null && (
             <span className="hidden lg:inline text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
               sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
@@ -2462,9 +2467,15 @@ export default function Game() {
               DM Tools
             </button>
           )}
-          <button onClick={() => setShowCharacterPicker(true)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-            Switch Character
-          </button>
+          {isSpectating ? (
+            <button onClick={() => navigate(`/lobby/${room}`)} className="text-xs px-3 py-1 rounded bg-sky-900/40 border border-sky-700/40 text-sky-300 hover:bg-sky-800/50 font-semibold transition-all">
+              Leave
+            </button>
+          ) : (
+            <button onClick={() => setShowCharacterPicker(true)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+              Switch Character
+            </button>
+          )}
           {inCombat && <span className="text-xs text-red-400 font-semibold">Round {combatRound}</span>}
           {rolls.length > 0 && (
             <span className="text-xs text-slate-500">
@@ -3619,7 +3630,7 @@ export default function Game() {
                   send({ type: 'whisper', targetUsername: target, message: msg });
                 }} onReaction={(messageId, emoji) => {
                   send({ type: 'chat_reaction', messageId, emoji });
-                }} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} />
+                }} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || currentPlayer.id} readOnly={isSpectating} />
               </div>
             </>
           )}

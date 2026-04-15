@@ -534,8 +534,7 @@ export default function CombatToolbar({
                                     : 'Cantrips only'}
                                 </div>
                                 {spells.map((spell) => {
-                                  const slotsAvail = spell.level === 0 ? Infinity : (slots[spell.level] || 0) - (used[spell.level] || 0);
-                                  // AoE spells target a location, not a unit — skip range/LOS checks (handled during placement)
+                                  // AoE spells target a location, not a unit - skip range/LOS checks (handled during placement)
                                   const isAoE = !!spell.aoe;
                                   // Range + LOS check for targeted spells (damage or condition spells that need an enemy)
                                   const spellRangeCells = parseRangeFt(spell.range);
@@ -547,66 +546,102 @@ export default function CombatToolbar({
                                     if (dist > spellRangeCells) outOfRange = true;
                                     else if (terrain.length > 0 && !hasLineOfSight(terrain, casterPos.col, casterPos.row, spellTargetPos.col, spellTargetPos.row)) noLos = true;
                                   }
-                                  const disabled = slotsAvail <= 0 || outOfRange || noLos;
                                   const rangeHint = outOfRange ? ' (out of range)' : noLos ? ' (no line of sight)' : '';
+
+                                  // Build available slot levels for this spell (base level through max available)
+                                  const maxSlotLevel = Math.max(...Object.keys(slots).map(Number), 0);
+                                  const availableSlotLevels: number[] = [];
+                                  if (spell.level > 0) {
+                                    for (let lvl = spell.level; lvl <= maxSlotLevel; lvl++) {
+                                      const avail = (slots[lvl] || 0) - (used[lvl] || 0);
+                                      if (avail > 0) availableSlotLevels.push(lvl);
+                                    }
+                                  }
+                                  const canCast = spell.level === 0 ? true : availableSlotLevels.length > 0;
+                                  const disabled = !canCast || outOfRange || noLos;
+
+                                  // Shared cast handler for both base and upcast
+                                  const doCast = (castAtLevel?: number) => {
+                                    if (spell.aoe && selectedCharacter) {
+                                      const casterUnit2 = units.find((u) => u.characterId === selectedCharacter.id);
+                                      const casterMapPos = casterUnit2 ? mapPositions.find((p) => p.unitId === casterUnit2.id) : undefined;
+                                      setActiveAoE({
+                                        shape: spell.aoe.shape,
+                                        radiusCells: spell.aoe.radiusCells,
+                                        color: spell.aoe.color,
+                                        origin: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : { col: 0, row: 0 },
+                                        casterPos: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : undefined,
+                                        spellRangeCells: spellRangeCells > 0 ? spellRangeCells : undefined,
+                                      });
+                                      setPendingAoESpell({ spell, charId: selectedCharacter.id });
+                                      setActiveView('map');
+                                      return;
+                                    }
+                                    const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id, castAtLevel);
+                                    if (result.success) {
+                                      playMagicSpell();
+                                      setCombatLog((prev) => [...prev, result.message]);
+                                      addDmMessage(result.message);
+                                      if (spell.damage && enemyTarget) {
+                                        if (enemyTarget.hp <= 0) {
+                                          playEnemyDeath();
+                                          addDmMessage(`${enemyTarget.name} falls!`);
+                                        }
+                                        addFloatingText(`${spell.damage}`, 'damage');
+                                      }
+                                      if (spell.healAmount) { playHealing(); addFloatingText(`${spell.healAmount}`, 'heal'); }
+                                      setTimeout(broadcastCombatSyncLatest, 50);
+                                    } else {
+                                      setShopMessage(result.message);
+                                      setTimeout(() => setShopMessage(null), 2500);
+                                    }
+                                  };
+
                                   return (
-                                    <button
-                                      key={spell.id}
-                                      disabled={disabled}
-                                      title={outOfRange ? `Out of range (${spell.range})` : noLos ? 'No line of sight' : undefined}
-                                      onClick={() => {
-                                        // AoE spells: enter targeting mode on the battle map
-                                        if (spell.aoe && selectedCharacter) {
-                                          const casterUnit = units.find((u) => u.characterId === selectedCharacter.id);
-                                          const casterMapPos = casterUnit ? mapPositions.find((p) => p.unitId === casterUnit.id) : undefined;
-                                          setActiveAoE({
-                                            shape: spell.aoe.shape,
-                                            radiusCells: spell.aoe.radiusCells,
-                                            color: spell.aoe.color,
-                                            origin: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : { col: 0, row: 0 },
-                                            casterPos: casterMapPos ? { col: casterMapPos.col, row: casterMapPos.row } : undefined,
-                                            spellRangeCells: spellRangeCells > 0 ? spellRangeCells : undefined,
-                                          });
-                                          setPendingAoESpell({ spell, charId: selectedCharacter.id });
-                                          setActiveView('map'); // switch to map so player can place the AoE
-                                          return;
-                                        }
-                                        const result = castSpell(selectedCharacter.id, spell.id, enemyTarget?.id);
-                                        if (result.success) {
-                                          playMagicSpell();
-                                          setCombatLog((prev) => [...prev, result.message]);
-                                          addDmMessage(result.message);
-                                          if (spell.damage && enemyTarget) {
-                                            if (enemyTarget.hp <= 0) {
-                                              playEnemyDeath();
-                                              addDmMessage(`${enemyTarget.name} falls!`);
-                                            }
-                                            addFloatingText(`${spell.damage}`, 'damage');
-                                          }
-                                          if (spell.healAmount) { playHealing(); addFloatingText(`${spell.healAmount}`, 'heal'); }
-                                          setTimeout(broadcastCombatSyncLatest, 50);
-                                        } else {
-                                          setShopMessage(result.message);
-                                          setTimeout(() => setShopMessage(null), 2500);
-                                        }
-                                      }}
-                                      className={`w-full text-left px-3 py-1.5 hover:bg-slate-700/50 transition-colors ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className={`text-xs font-semibold ${spell.level === 0 ? 'text-slate-300' : 'text-purple-300'}`}>
-                                          {spell.name}
-                                          {rangeHint}
-                                        </span>
-                                         <span className="flex items-center gap-1">
-                                          {spell.components && <span className="text-[7px] text-slate-600 font-mono">{spell.components.join('')}</span>}
-                                          {spell.aoe && <span className="text-[8px] px-1 py-0 rounded bg-orange-900/50 text-orange-300 font-bold uppercase">AoE</span>}
-                                          <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
-                                        </span>
-                                      </div>
-                                      <div className="text-[9px] text-slate-500 truncate">
-                                        {spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.aoe ? `${spell.aoe.shape} ${spell.aoe.radiusCells * 5}ft` : spell.range}</span>
-                                      </div>
-                                    </button>
+                                    <div key={spell.id} className={`${disabled ? 'opacity-30' : ''}`}>
+                                      <button
+                                        disabled={disabled}
+                                        title={outOfRange ? `Out of range (${spell.range})` : noLos ? 'No line of sight' : undefined}
+                                        onClick={() => doCast(spell.level > 0 ? availableSlotLevels[0] : undefined)}
+                                        className={`w-full text-left px-3 py-1.5 hover:bg-slate-700/50 transition-colors ${disabled ? 'cursor-not-allowed' : ''}`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span className={`text-xs font-semibold ${spell.level === 0 ? 'text-slate-300' : 'text-purple-300'}`}>
+                                            {spell.name}
+                                            {spell.attackRoll && <span className="text-[8px] ml-1 text-sky-400 font-mono">ATK</span>}
+                                            {rangeHint}
+                                          </span>
+                                          <span className="flex items-center gap-1">
+                                            {spell.components && <span className="text-[7px] text-slate-600 font-mono">{spell.components.join('')}</span>}
+                                            {spell.aoe && <span className="text-[8px] px-1 py-0 rounded bg-orange-900/50 text-orange-300 font-bold uppercase">AoE</span>}
+                                            <span className="text-[9px] text-slate-500">{spell.level === 0 ? 'Cantrip' : `Lv${spell.level}`}</span>
+                                          </span>
+                                        </div>
+                                        <div className="text-[9px] text-slate-500 truncate">
+                                          {spell.damage ? `${spell.damage} dmg` : spell.healAmount ? `+${spell.healAmount} HP` : spell.description.slice(0, 50)} <span className="text-slate-600">{spell.aoe ? `${spell.aoe.shape} ${spell.aoe.radiusCells * 5}ft` : spell.range}</span>
+                                        </div>
+                                      </button>
+                                      {/* Upcast slot selector: row of buttons for higher-level slots */}
+                                      {spell.level > 0 && availableSlotLevels.length > 1 && !disabled && (
+                                        <div className="flex items-center gap-1 px-3 pb-1.5 pt-0.5">
+                                          <span className="text-[8px] text-slate-600 mr-1">Slot:</span>
+                                          {availableSlotLevels.map((lvl) => (
+                                            <button
+                                              key={lvl}
+                                              onClick={(e) => { e.stopPropagation(); doCast(lvl); }}
+                                              className={`text-[9px] px-1.5 py-0.5 rounded border font-semibold transition-all ${
+                                                lvl === spell.level
+                                                  ? 'bg-purple-900/50 border-purple-600/50 text-purple-300'
+                                                  : 'bg-amber-900/30 border-amber-600/40 text-amber-300 hover:bg-amber-800/50'
+                                              }`}
+                                              title={lvl > spell.level ? `Upcast at level ${lvl} (+${lvl - spell.level} bonus dice)` : `Base level ${lvl}`}
+                                            >
+                                              {lvl}{lvl > spell.level ? '\u2191' : ''}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   );
                                 })}
                               </div>

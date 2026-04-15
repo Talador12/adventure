@@ -513,6 +513,8 @@ export interface Spell {
   material?: string;
   /** Whether this spell is cast as a reaction (Shield, Counterspell, Hellish Rebuke) */
   isReaction?: boolean;
+  /** Whether this spell uses a spell attack roll instead of a saving throw */
+  attackRoll?: boolean;
 }
 
 // --- Class abilities ---

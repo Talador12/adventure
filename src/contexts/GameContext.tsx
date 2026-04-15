@@ -70,7 +70,7 @@ interface GameContextValue {
   sellItem: (charId: string, itemId: string) => { success: boolean; message: string };
 
   // Spells
-  castSpell: (charId: string, spellId: string, targetUnitId?: string) => { success: boolean; message: string };
+  castSpell: (charId: string, spellId: string, targetUnitId?: string, slotLevel?: number) => { success: boolean; message: string };
   restoreSpellSlots: (charId: string) => void;
 
   // Class abilities
@@ -926,8 +926,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [characters, units, setCharacters]);
 
   // Spells: cast a spell (check slots, apply damage/healing, consume slot)
+  // slotLevel allows upcasting: spend a higher-level slot for extra effect
   const castSpell = useCallback(
-    (charId: string, spellId: string, targetUnitId?: string): { success: boolean; message: string } => {
+    (charId: string, spellId: string, targetUnitId?: string, slotLevel?: number): { success: boolean; message: string } => {
       let result = { success: false, message: '' };
       // Search both the global spell list and the caster's custom spellbook
       const casterChar = characters.find((c) => c.id === charId);
@@ -936,18 +937,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return { success: false, message: 'Unknown spell.' };
       }
 
+      // Determine the slot level to consume (default to spell's base level)
+      const castLevel = spell.level === 0 ? 0 : Math.max(spell.level, slotLevel || spell.level);
+
       setCharacters((prev) =>
         prev.map((c) => {
           if (c.id !== charId) return c;
-          if (spell.level > 0) {
+          if (castLevel > 0) {
             const maxSlots = getSpellSlots(c.class, c.level);
             const used = c.spellSlotsUsed || {};
-            const slotsAvail = (maxSlots[spell.level] || 0) - (used[spell.level] || 0);
+            const slotsAvail = (maxSlots[castLevel] || 0) - (used[castLevel] || 0);
             if (slotsAvail <= 0) {
-              result = { success: false, message: `No level ${spell.level} spell slots remaining!` };
+              result = { success: false, message: `No level ${castLevel} spell slots remaining!` };
               return c;
             }
-            const newUsed = { ...used, [spell.level]: (used[spell.level] || 0) + 1 };
+            const newUsed = { ...used, [castLevel]: (used[castLevel] || 0) + 1 };
             result = { success: true, message: '' };
             return { ...c, spellSlotsUsed: newUsed };
           }
@@ -959,14 +963,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (result.success) {
         const char = characters.find((c) => c.id === charId);
         const casterName = char?.name || 'Caster';
+        const upcastLevels = castLevel - spell.level; // 0 if not upcasting
 
         // Concentration: if this spell requires concentration, drop any existing concentration
         if (spell.isConcentration) {
           const casterUnit = units.find((u) => u.characterId === charId);
           if (casterUnit?.concentratingOn) {
-            // Drop old concentration — remove conditions applied by the old spell
+            // Drop old concentration - remove conditions applied by the old spell
             const oldSpellName = casterUnit.concentratingOn;
-            // Clear concentration conditions from all units that were sourced by this caster
             setUnits((prev) =>
               prev.map((u) => ({
                 ...u,
@@ -976,38 +980,47 @@ export function GameProvider({ children }: { children: ReactNode }) {
             );
             result.message = `${casterName} breaks concentration on ${oldSpellName}. `;
           }
-          // Set new concentration on caster unit
           if (casterUnit) {
             setUnits((prev) => prev.map((u) => (u.id === casterUnit.id ? { ...u, concentratingOn: spell.name } : u)));
           }
         }
+
+        // Spell attack bonus: proficiency + casting stat mod (used for attackRoll spells)
+        const castingStatMap: Record<string, StatName> = {
+          Wizard: 'INT', Sorcerer: 'CHA', Cleric: 'WIS', Druid: 'WIS',
+          Bard: 'CHA', Warlock: 'CHA', Paladin: 'CHA', Ranger: 'WIS',
+        };
+        const castingStat = char ? (castingStatMap[char.class] || 'INT') : 'INT';
+        const castMod = char ? Math.floor((char.stats[castingStat] - 10) / 2) : 0;
+        const profBonus = char ? Math.ceil(char.level / 4) + 1 : 2;
+        const spellAttackBonus = profBonus + castMod;
+        const spellDC = 8 + profBonus + castMod;
 
         // Saving throw: if spell has saveStat, target rolls to resist
         let targetSaved = false;
         if (spell.saveStat && targetUnitId) {
           const target = units.find((u) => u.id === targetUnitId);
           if (target && char) {
-            // Spell save DC = 8 + proficiency + casting stat mod
-            const castingStatMap: Record<string, StatName> = {
-              Wizard: 'INT',
-              Sorcerer: 'CHA',
-              Cleric: 'WIS',
-              Druid: 'WIS',
-              Bard: 'CHA',
-              Warlock: 'CHA',
-              Paladin: 'CHA',
-              Ranger: 'WIS',
-            };
-            const castingStat = castingStatMap[char.class] || 'INT';
-            const castMod = Math.floor((char.stats[castingStat] - 10) / 2);
-            const profBonus = Math.ceil(char.level / 4) + 1;
-            const spellDC = 8 + profBonus + castMod;
-            // Target save roll: d20 + save stat mod (enemies use dexMod for DEX, or 0 for others)
             const saveRoll = Math.floor(Math.random() * 20) + 1;
             const targetSaveMod = spell.saveStat === 'DEX' ? target.dexMod || 0 : 0;
             const condSaveMod = (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.saveMod || 0), 0);
             const totalSave = saveRoll + targetSaveMod + condSaveMod;
             targetSaved = totalSave >= spellDC;
+          }
+        }
+
+        // Spell attack roll: d20 + spell attack bonus vs target AC
+        let spellAttackHit = true;
+        let spellAttackCrit = false;
+        let spellAttackRollValue = 0;
+        if (spell.attackRoll && targetUnitId) {
+          const target = units.find((u) => u.id === targetUnitId);
+          if (target) {
+            spellAttackRollValue = Math.floor(Math.random() * 20) + 1;
+            spellAttackCrit = spellAttackRollValue === 20;
+            const totalAttack = spellAttackRollValue + spellAttackBonus;
+            const targetAC = target.ac + (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.acMod || 0), 0);
+            spellAttackHit = spellAttackCrit || totalAttack >= targetAC;
           }
         }
 
@@ -1024,43 +1037,99 @@ export function GameProvider({ children }: { children: ReactNode }) {
               effectiveDamage = `${baseDice * scaleMultiplier}${dieSuffix}`;
             }
           }
-          let dmg = rollSpellDamage(effectiveDamage);
-          if (targetSaved) dmg = Math.floor(dmg / 2); // half damage on save
-          if (targetUnitId) damageUnit(targetUnitId, dmg);
-          const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
-          result.message = targetSaved ? `${casterName} casts ${spell.name}! ${targetName} saves \u2014 ${dmg} damage (half).` : `${casterName} casts ${spell.name} for ${dmg} damage!`;
-          // Apply condition only if target failed the save
-          if (spell.appliesCondition && targetUnitId && !targetSaved) {
-            applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
-            result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
-          } else if (spell.appliesCondition && targetSaved) {
-            result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} resists the ${spell.appliesCondition} effect.`;
+
+          // Upcast bonus: add 1 die per slot level above base for damage spells
+          // Magic Missile is special: +1 dart (1d4+1) per upcast level
+          if (upcastLevels > 0 && spell.level > 0) {
+            if (spell.id === 'magic-missile') {
+              // Base: 3d4+3 at level 1. Each upcast adds 1d4+1 (one more dart).
+              const baseDarts = 3;
+              const totalDarts = baseDarts + upcastLevels;
+              effectiveDamage = `${totalDarts}d4+${totalDarts}`;
+            } else {
+              const dieMatch = effectiveDamage.match(/^(\d+)(d\d+)(\+\d+)?$/);
+              if (dieMatch) {
+                const baseDice = parseInt(dieMatch[1], 10);
+                const dieSuffix = dieMatch[2];
+                const bonusPart = dieMatch[3] || '';
+                effectiveDamage = `${baseDice + upcastLevels}${dieSuffix}${bonusPart}`;
+              }
+            }
+          }
+
+          // Attack roll spells: miss = no damage, crit = double dice
+          if (spell.attackRoll && targetUnitId) {
+            const target = units.find((u) => u.id === targetUnitId);
+            const targetName = target?.name || 'Target';
+            const targetAC = target ? target.ac + (target.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.acMod || 0), 0) : 10;
+            const totalAtk = spellAttackRollValue + spellAttackBonus;
+            if (!spellAttackHit) {
+              result.message += `${casterName} casts ${spell.name}: ${totalAtk} (${spellAttackRollValue}+${spellAttackBonus}) vs AC ${targetAC} - MISS!`;
+            } else {
+              let dmg = rollSpellDamage(effectiveDamage);
+              if (spellAttackCrit) dmg = dmg * 2;
+              damageUnit(targetUnitId, dmg);
+              const critTag = spellAttackCrit ? 'CRITICAL HIT! ' : 'HIT! ';
+              result.message += `${casterName} casts ${spell.name}: ${totalAtk} (${spellAttackRollValue}+${spellAttackBonus}) vs AC ${targetAC} - ${critTag}${effectiveDamage} -> ${dmg} damage`;
+              if (spell.appliesCondition && !targetSaved) {
+                applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+                result.message += ` ${targetName} is ${spell.appliesCondition}!`;
+              }
+            }
+          } else {
+            // Save-based or auto-hit damage spells
+            let dmg = rollSpellDamage(effectiveDamage);
+            if (targetSaved) dmg = Math.floor(dmg / 2);
+            if (targetUnitId) damageUnit(targetUnitId, dmg);
+            const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
+            result.message += targetSaved
+              ? `${casterName} casts ${spell.name}! ${targetName} saves - ${dmg} damage (half).`
+              : `${casterName} casts ${spell.name} for ${dmg} damage!`;
+            if (spell.appliesCondition && targetUnitId && !targetSaved) {
+              applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
+              result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} is ${spell.appliesCondition}!`;
+            } else if (spell.appliesCondition && targetSaved) {
+              result.message += ` ${units.find((u) => u.id === targetUnitId)?.name || 'Target'} resists the ${spell.appliesCondition} effect.`;
+            }
           }
         } else if (spell.healAmount) {
           if (char) {
-            const healed = Math.min(spell.healAmount, char.maxHp - char.hp);
+            // Upcast healing: Cure Wounds +1d8, Healing Word +1d4 per slot above base
+            let healTotal = spell.healAmount;
+            if (upcastLevels > 0 && spell.level > 0) {
+              const healDie = spell.id === 'healing-word' ? 4 : 8; // Healing Word = d4, Cure Wounds = d8
+              for (let i = 0; i < upcastLevels; i++) {
+                healTotal += Math.floor(Math.random() * healDie) + 1;
+              }
+            }
+            const healed = Math.min(healTotal, char.maxHp - char.hp);
             setCharacters((prev) =>
               prev.map((c) => {
                 if (c.id !== charId) return c;
-                let updated = { ...c, hp: Math.min(c.maxHp, c.hp + spell.healAmount!) };
+                let updated = { ...c, hp: Math.min(c.maxHp, c.hp + healTotal) };
                 if (c.condition === 'unconscious' || c.condition === 'stabilized') {
                   updated = { ...updated, condition: 'normal' as const, deathSaves: { successes: 0, failures: 0 } };
                 }
                 return updated;
               })
             );
-            result.message = `${casterName} casts ${spell.name}, restoring ${healed} HP!`;
+            const upcastNote = upcastLevels > 0 ? ` (upcast to level ${castLevel})` : '';
+            result.message += `${casterName} casts ${spell.name}${upcastNote}, restoring ${healed} HP!`;
           } else {
-            result.message = `${casterName} casts ${spell.name}.`;
+            result.message += `${casterName} casts ${spell.name}.`;
           }
         } else if (spell.appliesCondition && targetUnitId) {
           // Pure condition spell (like Hold Person with no damage)
           const targetName = units.find((u) => u.id === targetUnitId)?.name || 'Target';
           if (targetSaved) {
-            result.message = `${casterName} casts ${spell.name}! ${targetName} resists with a successful save.`;
+            result.message += `${casterName} casts ${spell.name}! ${targetName} resists with a successful save.`;
           } else {
             applyCondition(targetUnitId, { type: spell.appliesCondition, duration: spell.conditionDuration || 2, source: casterName });
-            result.message = `${casterName} casts ${spell.name}! ${targetName} is ${spell.appliesCondition}!`;
+            result.message += `${casterName} casts ${spell.name}! ${targetName} is ${spell.appliesCondition}!`;
+          }
+          // Hold Person upcast: note that additional creatures can be targeted
+          if (spell.id === 'hold-person' && upcastLevels > 0) {
+            result.message += ` (Upcast to ${castLevel}: can target ${1 + upcastLevels} creatures)`;
           }
         } else if (spell.id === 'dispel-magic' && targetUnitId) {
           // Dispel Magic: strip all magical conditions from target
@@ -1089,7 +1158,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         } else {
           result.message = `${casterName} casts ${spell.name}. ${spell.description}`;
         }
-        if (spell.level > 0) result.message += ` (Level ${spell.level} slot used)`;
+        if (castLevel > 0) {
+          const upcastTag = upcastLevels > 0 ? ` (Level ${castLevel} slot used, upcast from ${spell.level})` : ` (Level ${castLevel} slot used)`;
+          result.message += upcastTag;
+        }
 
         // Wild Magic Surge check: Sorcerers casting leveled spells roll d20, nat 1 = surge
         if (spell.level > 0 && casterChar?.class === 'Sorcerer') {

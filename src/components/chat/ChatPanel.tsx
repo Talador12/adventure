@@ -107,6 +107,7 @@ interface ChatPanelProps {
   onMarkRead?: (timestamp: number) => void;
   typingUsers?: string[]; // usernames of people currently typing
   currentPlayerId?: string;
+  readOnly?: boolean; // spectators: show messages but hide input
 }
 
 function ReactionBar({ reactions, currentPlayerId, onReaction, messageId }: {
@@ -319,7 +320,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, initialReadAnchorTs, onMarkRead, typingUsers, currentPlayerId }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, initialReadAnchorTs, onMarkRead, typingUsers, currentPlayerId, readOnly }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -563,20 +564,26 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
         </div>
       )}
 
-      {/* Input */}
-      <div className="mt-3 shrink-0 flex gap-2">
-        <input type="text" value={input} aria-label="Chat message" onChange={(e) => {
-          setInput(e.target.value);
-          // Throttled typing indicator — max once per 2s
-          if (onTyping && e.target.value.trim() && Date.now() - typingThrottleRef.current > 2000) {
-            typingThrottleRef.current = Date.now();
-            onTyping();
-          }
-        }} placeholder="Type a message... (/roll, /me, /w @name)" className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
-        <button onClick={handleSend} disabled={!input.trim()} className="px-3 py-2 bg-[#F38020] hover:bg-[#e06a10] disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors">
-          Send
-        </button>
-      </div>
+      {/* Input - hidden for spectators */}
+      {readOnly ? (
+        <div className="mt-3 shrink-0 text-center text-[10px] text-slate-600 py-2 border-t border-slate-800/50">
+          Spectator mode - read only
+        </div>
+      ) : (
+        <div className="mt-3 shrink-0 flex gap-2">
+          <input type="text" value={input} aria-label="Chat message" onChange={(e) => {
+            setInput(e.target.value);
+            // Throttled typing indicator - max once per 2s
+            if (onTyping && e.target.value.trim() && Date.now() - typingThrottleRef.current > 2000) {
+              typingThrottleRef.current = Date.now();
+              onTyping();
+            }
+          }} placeholder="Type a message... (/roll, /me, /w @name)" className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-[#F38020] focus:border-[#F38020] outline-none" onKeyDown={(e) => e.key === 'Enter' && handleSend()} />
+          <button onClick={handleSend} disabled={!input.trim()} className="px-3 py-2 bg-[#F38020] hover:bg-[#e06a10] disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors">
+            Send
+          </button>
+        </div>
+      )}
     </div>
   );
 }

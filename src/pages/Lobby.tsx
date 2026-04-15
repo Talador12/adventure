@@ -1532,7 +1532,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full-width on mobile when chat tab active, fixed width on desktop */}
         <div className={`w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0 ${lobbyMobilePanel !== 'chat' ? 'hidden sm:flex' : ''}`}>
-          <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} />
+           <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} readOnly={isSpectating} />
         </div>
       </div>
 
