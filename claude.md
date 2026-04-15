@@ -45,13 +45,35 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v16.0.0 — 3,226 tests across 385 data files + 411 campaign files, 194 systems, 61 UI buttons
+## Current Version: v16.0.0 — 3,226 tests across 385 data files + 430 campaign files, 194 systems, 61 UI buttons
 
-## Campaign Starter Kit Library — Phase 13 COMPLETE (411 campaigns — 194 full + 217 one-shots)
+## Campaign Starter Kit Library — Phase 14 IN PROGRESS (430+ campaigns — 200 full + 230 one-shots)
 
-**One-shot tone distribution (all at 20+ each):** comedic 37, survival 20, social 20, serious 20, political 20, mystery 20, horror 20, heist 20, exploration 20, epic 20
+## RESUME HERE — Shenanigans + Comedy Expansion (IN PROGRESS)
 
-### Recent Session (Phase 6-12) — Massive Campaign & i18n Overhaul
+**What was completed and pushed (staging + main, commit 3c8b54a):**
+- 411 campaigns total (194 full + 217 one-shots), all registered in index.ts
+- 'shenanigans' tone added to CampaignTone type in types.ts
+- 6 new comedic full campaigns written and registered (theReviewBoard, retirementHome, theWorstDungeon, theApprenticesRevenge, monstersInc, theWrongHero)
+- 13 new comedic one-shots written and registered (theCustomerIsAlwaysWrong, thePerformanceReview, theHelpDesk, thePetShow, theRealEstateAgent, thePotionTasting, theSupportGroup, theInternship, theReturnDesk, theCookOff, theRoommate, theDatingGame, theClassReunion)
+
+**What still needs to be done (agents were writing but got interrupted):**
+1. Write 25 shenanigans full campaigns (0/25 done - agent was aborted mid-write)
+   - Concepts ready: everybodyIsAMimic, theGoblinSpaceProgram, reverseQuest, criticalFailureState, theWrongCampaign, questsGoneWild, theNPCRevolt, gravityFlips, infiniteTavern, theAccidentalKing, theSpellThatWouldNotEnd, turnsOutTheyreRelated, thePortalLottery, weaponsWithPersonalities, everythingSpeaks, theDungeonHasReviews, wildMagicEverywhere, theQuestGiversUnion, dimensionalAutocorrect, thePartySwap, theDungeonThatFightsBack, immortalGoblin, theMultiverse, cursedLootOnly, theBossRush
+2. Write 50 shenanigans one-shots (0/50 done - agent was aborted mid-write)
+   - Concepts ready: oopsAllGoblins, theDungeonIsACake, criticalGoose, thePolymorph, npcOfTheYear, everythingIsMimics, theWizardSneezed, boulderDash, thePunishmentDungeon, inventoryManagement, theRaceCondition, allergicToMagic, gravityIsVoting, theInvisibleDungeon, speedrunAny, itFollows, theLootGoblin, theBardicExplosion, tpkSpeedrun, theEscortMission, stackingConditions, theWrongSpellbook, naturalOnesOnly, theDungeonIsAlive, petCombat, theIdentityCrisis, tooManyQuests, theLoadingScreen, respawnCamping, theLastBraincell, absoluteUnit, theGlitchZone, everyoneHasAThemeSong, theWorldsWorstHeist, sentientLoot, theNerfedParty, randomEncounterHell, theGiantsBaby, allBards, theDMIsAnNPC, oneHitPointEach, theContagiousDance, backwardsDay, theArtificialDifficulty, theCowardsBravery, paperworkQuest, theYeetSpell, theWorldRecordDungeon, accidentallyEvil, theImpossibleRoll
+
+**Target counts when complete:**
+- Full comedic: 25 (currently 25 - DONE)
+- Full shenanigans: 25 (currently 0 - NEEDS WRITING)
+- Oneshot comedic: 50 (currently 50 - DONE)
+- Oneshot shenanigans: 50 (currently 0 - NEEDS WRITING)
+
+**After shenanigans are done, commit and push to staging, merge to main.**
+
+**One-shot tone distribution (all at 20+ each):** comedic 50, survival 20, social 20, serious 20, political 20, mystery 20, horror 20, heist 20, exploration 20, epic 20, shenanigans 0 (pending)
+
+### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul
 
 **i18n Full Site Text Overhaul:**
 - All 8 locale files (de, fr, ja, es, ko, pt, zh, en-gb) brought to full 104-key parity with en.json

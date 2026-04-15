@@ -11,7 +11,8 @@ export type CampaignTone =
   | 'epic'
   | 'survival'
   | 'exploration'
-  | 'social';
+  | 'social'
+  | 'shenanigans';
 
 export type CampaignTheme =
   | 'classic_fantasy'

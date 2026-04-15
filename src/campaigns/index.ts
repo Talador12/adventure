@@ -244,6 +244,14 @@ import { theQuietProfession } from './full/theQuietProfession';
 import { theFinalContract } from './full/theFinalContract';
 import { theBladeWhispers } from './full/theBladeWhispers';
 
+// Phase 14 full campaign imports (comedic)
+import { theReviewBoard } from './full/theReviewBoard';
+import { retirementHome } from './full/retirementHome';
+import { theWorstDungeon } from './full/theWorstDungeon';
+import { theApprenticesRevenge } from './full/theApprenticesRevenge';
+import { monstersInc } from './full/monstersInc';
+import { theWrongHero } from './full/theWrongHero';
+
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
 import { theGreatCheeseHeist } from './oneshots/theGreatCheeseHeist';
@@ -479,6 +487,21 @@ import { theWrongBody } from './oneshots/theWrongBody';
 import { trappedBeneath } from './oneshots/trappedBeneath';
 import { underSiege } from './oneshots/underSiege';
 
+// Phase 14 one-shot imports (comedic)
+import { theCustomerIsAlwaysWrong } from './oneshots/theCustomerIsAlwaysWrong';
+import { thePerformanceReview } from './oneshots/thePerformanceReview';
+import { theHelpDesk } from './oneshots/theHelpDesk';
+import { thePetShow } from './oneshots/thePetShow';
+import { theRealEstateAgent } from './oneshots/theRealEstateAgent';
+import { thePotionTasting } from './oneshots/thePotionTasting';
+import { theSupportGroup } from './oneshots/theSupportGroup';
+import { theInternship } from './oneshots/theInternship';
+import { theReturnDesk } from './oneshots/theReturnDesk';
+import { theCookOff } from './oneshots/theCookOff';
+import { theRoommate } from './oneshots/theRoommate';
+import { theDatingGame } from './oneshots/theDatingGame';
+import { theClassReunion } from './oneshots/theClassReunion';
+
 export const FULL_CAMPAIGNS: FullCampaign[] = [
   theShatteredCrown,
   theVillageThatForgot,
@@ -695,6 +718,13 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theQuietProfession,
   theFinalContract,
   theBladeWhispers,
+  // Phase 14 (comedic)
+  theReviewBoard,
+  retirementHome,
+  theWorstDungeon,
+  theApprenticesRevenge,
+  monstersInc,
+  theWrongHero,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
@@ -924,6 +954,20 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   theHarvestOfWorlds,
   theBirthOfAGod,
   thePactEternal,
+  // Phase 14 (comedic)
+  theCustomerIsAlwaysWrong,
+  thePerformanceReview,
+  theHelpDesk,
+  thePetShow,
+  theRealEstateAgent,
+  thePotionTasting,
+  theSupportGroup,
+  theInternship,
+  theReturnDesk,
+  theCookOff,
+  theRoommate,
+  theDatingGame,
+  theClassReunion,
 ];
 
 export const ALL_CAMPAIGNS: CampaignStarterKit[] = [
