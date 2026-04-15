@@ -546,6 +546,9 @@ export interface Feat {
 }
 
 export const ASI_LEVELS = [4, 8, 12, 16, 19];
+// Fighter gets extra ASIs at 6 and 14. Rogue gets extra ASI at 10.
+export const FIGHTER_ASI_LEVELS = [4, 6, 8, 12, 14, 16, 19];
+export const ROGUE_ASI_LEVELS = [4, 8, 10, 12, 16, 19];
 export const EXTRA_ATTACK_CLASSES: CharacterClass[] = ['Fighter', 'Barbarian', 'Paladin', 'Ranger', 'Monk'];
 
 // --- Character ---
@@ -637,8 +640,15 @@ export function getStatModifier(value: number): number {
   return Math.floor((value - 10) / 2);
 }
 
+export function getASILevels(charClass: CharacterClass): number[] {
+  if (charClass === 'Fighter') return FIGHTER_ASI_LEVELS;
+  if (charClass === 'Rogue') return ROGUE_ASI_LEVELS;
+  return ASI_LEVELS;
+}
+
 export function hasPendingASI(character: Character): boolean {
-  const asiLevelsReached = ASI_LEVELS.filter((l) => character.level >= l).length;
+  const levels = getASILevels(character.class);
+  const asiLevelsReached = levels.filter((l) => character.level >= l).length;
   const choicesMade = character.asiChoicesMade || 0;
   return asiLevelsReached > choicesMade;
 }

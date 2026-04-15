@@ -68,6 +68,76 @@ export function getAllDifficultyTiers(): DifficultyTier[] {
   return ['easy', 'medium', 'hard', 'deadly'];
 }
 
+// PHB encounter difficulty rating per RAW (DMG p.82).
+// Sums party XP budgets, applies monster-count multiplier, compares adjusted XP to thresholds.
+
+export type EncounterRating = 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly';
+
+export interface EncounterDifficultyResult {
+  difficulty: EncounterRating;
+  adjustedXP: number;
+  budgets: { easy: number; medium: number; hard: number; deadly: number };
+  multiplier: number;
+}
+
+function getMonsterCountMultiplier(count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return 1;
+  if (count === 2) return 1.5;
+  if (count <= 6) return 2;
+  if (count <= 10) return 2.5;
+  if (count <= 14) return 3;
+  return 4;
+}
+
+export function calculateEncounterDifficulty(
+  partyLevels: number[],
+  monsterXPs: number[],
+): EncounterDifficultyResult {
+  // Sum party budgets per tier
+  const budgets = { easy: 0, medium: 0, hard: 0, deadly: 0 };
+  for (const lvl of partyLevels) {
+    const idx = Math.min(Math.max(lvl, 1), 20) - 1;
+    budgets.easy += XP_THRESHOLDS.easy[idx];
+    budgets.medium += XP_THRESHOLDS.medium[idx];
+    budgets.hard += XP_THRESHOLDS.hard[idx];
+    budgets.deadly += XP_THRESHOLDS.deadly[idx];
+  }
+
+  const rawXP = monsterXPs.reduce((s, v) => s + v, 0);
+  const multiplier = getMonsterCountMultiplier(monsterXPs.length);
+  const adjustedXP = Math.round(rawXP * multiplier);
+
+  let difficulty: EncounterRating = 'trivial';
+  if (adjustedXP >= budgets.deadly) difficulty = 'deadly';
+  else if (adjustedXP >= budgets.hard) difficulty = 'hard';
+  else if (adjustedXP >= budgets.medium) difficulty = 'medium';
+  else if (adjustedXP >= budgets.easy) difficulty = 'easy';
+
+  return { difficulty, adjustedXP, budgets, multiplier };
+}
+
+export function formatEncounterDifficulty(
+  partyLevels: number[],
+  monsterXPs: number[],
+): string {
+  if (partyLevels.length === 0) return '*No party members to evaluate.*';
+  if (monsterXPs.length === 0) return '*No monsters in the encounter.*';
+
+  const result = calculateEncounterDifficulty(partyLevels, monsterXPs);
+  const rawXP = monsterXPs.reduce((s, v) => s + v, 0);
+  const icon = result.difficulty === 'deadly' ? '💀' : result.difficulty === 'hard' ? '🔥' : result.difficulty === 'medium' ? '⚔️' : result.difficulty === 'easy' ? '🟢' : '😴';
+  const lines = [
+    `${icon} **Encounter Balance: ${result.difficulty.toUpperCase()}**`,
+    `  Party: ${partyLevels.length} PC${partyLevels.length !== 1 ? 's' : ''} (avg Lv ${Math.round(partyLevels.reduce((a, b) => a + b, 0) / partyLevels.length)})`,
+    `  Monsters: ${monsterXPs.length} (raw ${rawXP} XP, x${result.multiplier} = **${result.adjustedXP} adjusted XP**)`,
+    `  **Budgets:** Easy ${result.budgets.easy} | Medium ${result.budgets.medium} | Hard ${result.budgets.hard} | Deadly ${result.budgets.deadly}`,
+  ];
+  if (result.difficulty === 'deadly') lines.push('  *Warning: this encounter risks character death.*');
+  if (result.difficulty === 'trivial') lines.push('  *This encounter is below the easy threshold - trivial for this party.*');
+  return lines.join('\n');
+}
+
 export function formatDifficultyAdjustment(adj: DifficultyAdjustment): string {
   const lines = [`⚔️ **Encounter Tuning** — CR ${adj.adjustedCR} (base ${adj.baseCR})`];
   lines.push(`  Recommended enemies: ${adj.recommendedEnemyCount}`);

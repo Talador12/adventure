@@ -3879,6 +3879,28 @@ export default function DMSidebar({
                 </button>
               </div>
             )}
+            {/* Check Balance — PHB encounter difficulty with monster-count multiplier */}
+            <button
+              onClick={async () => {
+                const { calculateEncounterDifficulty: calcDiff, formatEncounterDifficulty: fmtDiff } = await import('../../data/encounterDifficultyTuner');
+                const playerUnits = units.filter((u: Unit) => u.characterId);
+                const partyLevels = playerUnits.map((u: Unit) => {
+                  const c = characters.find((ch) => ch.id === u.characterId);
+                  return c?.level || 1;
+                });
+                if (partyLevels.length === 0 && selectedCharacter) {
+                  partyLevels.push(selectedCharacter.level || 1);
+                }
+                const monsterXPs = units.filter((u: Unit) => u.type === 'enemy' && u.hp > 0).map((u: Unit) => u.xpValue || 0);
+                onAddDmMessage(fmtDiff(partyLevels, monsterXPs));
+              }}
+              disabled={!units.some((u: Unit) => u.characterId) && !selectedCharacter}
+              className="w-full mb-2 text-[10px] py-1.5 rounded bg-emerald-900/20 border border-emerald-600/30 text-emerald-400 font-semibold hover:bg-emerald-800/30 transition-all disabled:opacity-30"
+              title="PHB encounter difficulty — applies monster-count multiplier to raw XP"
+            >
+              ⚖️ Check Balance (PHB)
+            </button>
+
             {/* Encounter difficulty calculator */}
             {(() => {
               const playerUnits = units.filter((u: Unit) => u.characterId);

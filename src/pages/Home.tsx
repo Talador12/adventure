@@ -107,7 +107,9 @@ export default function Home() {
   const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [campaignSearch, setCampaignSearch] = useState('');
   const [campaignSort, setCampaignSort] = useState<'newest' | 'oldest' | 'name'>('newest');
-  const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number }>>([]);
+  const [publicCampaigns, setPublicCampaigns] = useState<Array<{ roomId: string; name: string; description?: string; dmName?: string; playerCount?: number; updatedAt?: number }>>([]);
+  const [showPublicBrowser, setShowPublicBrowser] = useState(false);
+  const [publicLoading, setPublicLoading] = useState(false);
   const [partyMembers, setPartyMembers] = useState<Record<string, Array<{ display_name: string; avatar_url: string | null; role: string }>>>({});
   const [prefSyncState, setPrefSyncState] = useState<PrefSyncState>('idle');
   const [lastPrefSyncAt, setLastPrefSyncAt] = useState<number | null>(null);
@@ -503,6 +505,17 @@ export default function Home() {
     navigate('/characters/new');
   };
 
+  const fetchPublicGames = () => {
+    setPublicLoading(true);
+    fetch('/api/campaigns/public')
+      .then((r) => (r.ok ? (r.json() as Promise<{ campaigns?: typeof publicCampaigns }>) : null))
+      .then((data) => {
+        if (data?.campaigns) setPublicCampaigns(data.campaigns);
+      })
+      .catch(() => { toast('Failed to load public games', 'error'); })
+      .finally(() => setPublicLoading(false));
+  };
+
   const handleImportCharacter = async () => {
     if (!user) {
       toast('Sign in to import a character', 'warning');
@@ -772,6 +785,9 @@ export default function Home() {
               <Button variant="default" className="btn-glow flex-1 sm:flex-none bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
                 {t('nav.createCharacter')}
               </Button>
+              <Button variant="default" className="flex-1 sm:flex-none bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={() => { setShowPublicBrowser(!showPublicBrowser); if (!showPublicBrowser) fetchPublicGames(); }}>
+                Browse Public Games
+              </Button>
             </div>
           </div>
 
@@ -860,10 +876,74 @@ export default function Home() {
 
       <main className="flex-1 px-4 sm:px-6 py-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
 
-        {/* Public campaign browser — only show if there are public games */}
-        {publicCampaigns.length > 0 && (
+        {/* Public Games Browser — collapsible section with refresh */}
+        {showPublicBrowser && (
           <div className="space-y-3 animate-fade-in-up">
-            <h2 className="text-lg font-semibold text-slate-400">Public Games</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-sky-400">Public Games</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={fetchPublicGames}
+                  disabled={publicLoading}
+                  className="py-1.5 px-3 rounded-lg text-xs font-semibold border border-sky-600/50 text-sky-400 hover:bg-sky-500/10 transition-all disabled:opacity-40"
+                >
+                  {publicLoading ? 'Loading...' : 'Refresh'}
+                </button>
+                <button
+                  onClick={() => setShowPublicBrowser(false)}
+                  className="py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-400 hover:text-slate-200 transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            {publicLoading && publicCampaigns.length === 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="rounded-xl bg-slate-900/80 border border-slate-700/50 p-4 space-y-2 animate-pulse">
+                    <div className="skeleton skeleton-text w-3/4 h-3.5" />
+                    <div className="skeleton skeleton-text w-1/2 h-2.5" />
+                  </div>
+                ))}
+              </div>
+            ) : publicCampaigns.length === 0 ? (
+              <div className="rounded-xl bg-slate-900/60 border border-slate-700/50 p-6 text-center">
+                <p className="text-sm text-slate-500">No public games available right now. Check back later or create your own.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children">
+                {publicCampaigns.filter((pc) => !campaigns.some((c) => c.roomId === pc.roomId)).map((pc) => (
+                  <Card key={pc.roomId} className="game-card card-glow rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow hover:shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
+                    <CardContent className="p-0">
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{pc.name}</h3>
+                        {pc.description && <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{pc.description}</p>}
+                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500 dark:text-slate-400 flex-wrap">
+                          {pc.dmName && <span className="text-amber-500">DM: {pc.dmName}</span>}
+                          {typeof pc.playerCount === 'number' && <span>{pc.playerCount} player{pc.playerCount !== 1 ? 's' : ''}</span>}
+                          {pc.updatedAt && <span>{new Date(pc.updatedAt).toLocaleDateString()}</span>}
+                        </div>
+                      </div>
+                      <div className="flex border-t border-slate-200 dark:border-slate-700/50">
+                        <button onClick={() => navigate(`/lobby/${pc.roomId}`)} className="flex-1 py-2 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 transition-colors text-center">
+                          Join
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Public campaign quick row — shows when browser is closed and there are public games */}
+        {!showPublicBrowser && publicCampaigns.length > 0 && (
+          <div className="space-y-3 animate-fade-in-up">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-400">Public Games</h2>
+              <button onClick={() => setShowPublicBrowser(true)} className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold transition-colors">Browse All</button>
+            </div>
             <div className="flex gap-3 overflow-x-auto pb-1 stagger-children">
               {publicCampaigns.filter((pc) => !campaigns.some((c) => c.roomId === pc.roomId)).slice(0, 8).map((pc) => (
                 <div key={pc.roomId} className="game-card card-glow shrink-0 w-56 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 shadow hover:shadow-lg overflow-hidden animate-card-reveal backdrop-blur-sm">
