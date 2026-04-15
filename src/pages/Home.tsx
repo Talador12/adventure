@@ -13,6 +13,7 @@ import { ALL_CAMPAIGNS, FULL_CAMPAIGNS, ONESHOT_CAMPAIGNS, filterCampaigns, getA
 import { faCloudflare, faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { importJSONFile } from '../lib/export';
 import { randomFantasyName } from '../lib/names';
+import { hasOnboardingData, markHintSeen, hasSeenHint } from '../lib/onboarding';
 
 type Theme = 'dark' | 'light';
 type PreferencePayload = {
@@ -66,6 +67,7 @@ export default function Home() {
   const [user, setUser] = useState<Record<string, string> | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => !hasOnboardingData());
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState<'choose' | 'custom' | 'catalog'>('choose');
   const [customCampaignName, setCustomCampaignName] = useState('');
@@ -750,6 +752,45 @@ export default function Home() {
 
             <button onClick={() => setShowLoginModal(false)} className="mt-4 w-full text-center text-sm text-slate-400 hover:text-slate-300 transition-colors">
               Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome modal — first visit only */}
+      {showWelcome && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up" role="dialog" aria-modal="true" aria-label="Welcome">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Welcome to Adventure</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Three steps to your first session:</p>
+            <ol className="space-y-3 mb-5">
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#F38020] flex items-center justify-center text-xs font-bold text-white shrink-0">1</span>
+                <div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white">Create a character</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Pick a race, class, and roll stats. AI can do it for you.</div>
+                </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#F38020] flex items-center justify-center text-xs font-bold text-white shrink-0">2</span>
+                <div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white">Start or join a campaign</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Create a new game or paste an invite link from a friend.</div>
+                </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#F38020] flex items-center justify-center text-xs font-bold text-white shrink-0">3</span>
+                <div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white">Play</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Roll dice, explore, fight monsters. Solo or with friends.</div>
+                </div>
+              </li>
+            </ol>
+            <button
+              onClick={() => { markHintSeen('welcome'); setShowWelcome(false); }}
+              className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold text-sm transition-all active:scale-[0.97] shadow"
+            >
+              Got it
             </button>
           </div>
         </div>

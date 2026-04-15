@@ -7,13 +7,14 @@ import DiceRoller, { type DiceRollerHandle, type LocalRollResult } from '../comp
 import BG3RollPopup from '../components/dice/BG3RollPopup';
 import ChatPanel, { type ChatMessage, type SlashRollResult } from '../components/chat/ChatPanel';
 import { Button } from '../components/ui/button';
+import { useToast } from '../components/ui/toast';
 import { useGame, type Unit, type DieType, type Character, type StatName, type EnemyAbility, type Item, type Spell, generateEnemies, rollSpellDamage, CONDITION_EFFECTS, randomEncounterTheme, hasPendingASI } from '../contexts/GameContext';
 import { calculateEncounterBudget } from '../types/game';
 import LevelUpModal from '../components/game/LevelUpModal';
 import CharacterPicker from '../components/game/CharacterPicker';
 import { type TerrainType, type TokenPosition } from '../lib/mapUtils';
 import { useWebSocket, type WSMessage } from '../hooks/useWebSocket';
-import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, isMuted, toggleMute, getVolume, setVolume, setAmbientMood, getAmbientMood, type AmbientMood, getDiceSoundPack, setDiceSoundPack, DICE_SOUND_PACKS, type DiceSoundPack } from '../hooks/useSoundFX';
+import { playEncounterStart, playMagicSpell, playEnemyDeath, playDiceRoll, playCritical, playFumble, playNotification, playDamage, isMuted, toggleMute, getVolume, setVolume, setAmbientMood, getAmbientMood, type AmbientMood, getDiceSoundPack, setDiceSoundPack, DICE_SOUND_PACKS, type DiceSoundPack } from '../hooks/useSoundFX';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import { loadChatHistory, persistChatMessage } from '../lib/chatApi';
 import { useEnemyAI } from '../hooks/useEnemyAI';
@@ -106,6 +107,7 @@ function apiBase(): string {
 export default function Game() {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const room = roomId || 'default';
   const {
     setPlayers,
@@ -2315,6 +2317,20 @@ export default function Game() {
           )}
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const link = `${window.location.origin}/lobby/${room}`;
+              navigator.clipboard.writeText(link).then(() => toast('Invite link copied!', 'success'));
+            }}
+            className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded bg-[#F38020]/10 border border-[#F38020]/30 text-[#F38020] hover:text-[#f9a05f] font-semibold transition-all"
+            title="Copy invite link for this game"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+              <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+              <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 005.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+            </svg>
+            Invite
+          </button>
           <SessionStreak roomId={room} playerName={currentPlayer.username || 'Guest'} />
           {/* Sound controls — mute toggle + volume slider */}
           <div className="relative flex items-center">

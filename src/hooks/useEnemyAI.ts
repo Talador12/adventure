@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useGame, type Unit, CONDITION_EFFECTS, rollSpellDamage, rollD20WithProne, effectiveAC } from '../contexts/GameContext';
 import { findBestMoveToward, findOpportunityAttackers, isAdjacent, chebyshevDistance, hasLineOfSight, DEFAULT_COLS, DEFAULT_ROWS } from '../lib/mapUtils';
-import { playTurnChange, playCombatHit, playCombatMiss, playCritical, playEnemyDeath } from './useSoundFX';
+import { playTurnChange, playCombatHit, playCombatMiss, playCritical, playEnemyDeath, playDamage } from './useSoundFX';
 
 interface UseEnemyAIOptions {
   addDmMessage: (text: string) => void;
@@ -228,6 +228,7 @@ export function useEnemyAI({
           playerTargets.forEach((pt) => damageUnit(pt.id, dmg));
           abilMsg += ` All players take ${dmg} damage!`;
           playCombatHit();
+          playDamage();
         } else if (availAbility.type === 'attack' || availAbility.type === 'condition') {
           const condAtkMod = (currentUnit.conditions || []).reduce((sum, c) => sum + (CONDITION_EFFECTS[c.type]?.attackMod || 0), 0);
           const targetAC = effectiveAC(target.ac, target.conditions || []);
@@ -285,6 +286,7 @@ export function useEnemyAI({
           const finalDmg = Math.max(1, isCrit ? baseDmg * 2 + dmgBonus : baseDmg + dmgBonus);
           damageUnit(target.id, finalDmg);
           playCombatHit();
+          if (latestTarget.type === 'player') playDamage();
           if (isCrit) playCritical();
           addDmMessage(isCrit ? `${multiTag}CRITICAL! ${currentUnit.name} strikes ${latestTarget.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}` : `${multiTag}${currentUnit.name} hits ${latestTarget.name} for ${finalDmg} damage! (${diceTag}${attackRoll}+${atkBonus}=${totalAttack} vs AC ${targetAC})${advTag}`);
           if (latestTarget.hp - finalDmg <= 0) {

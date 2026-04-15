@@ -10,6 +10,7 @@ import { STARTING_EQUIPMENT } from '../data/items';
 import { EXPORT_FORMATS, runExport, type ExportFormat } from '../lib/export';
 import { fetchWithTimeout } from '../lib/fetchUtils';
 import AppearanceStep, { type PortraitStyle } from '../components/character/AppearanceStep';
+import { hasSeenHint, markHintSeen } from '../lib/onboarding';
 
 
 
@@ -100,6 +101,8 @@ export default function CharacterCreate() {
   const { addCharacter, updateCharacter, characters, currentPlayer } = useGame();
   const editingCharacter = editId ? characters.find((c) => c.id === editId) : null;
   const isEditMode = Boolean(editingCharacter);
+
+  const [showCreateHint, setShowCreateHint] = useState(() => !hasSeenHint('create-character'));
 
   // Wizard step state (0-5)
   const [step, setStep] = useState(0);
@@ -781,6 +784,19 @@ export default function CharacterCreate() {
           )}
         </button>
       </header>
+
+      {/* First-time hint banner */}
+      {showCreateHint && (
+        <div className="relative bg-amber-900/20 border-b border-amber-700/30 px-6 py-2 flex items-center justify-between">
+          <p className="text-xs text-amber-300/80">Roll your stats, pick a class, name your hero. Export when done.</p>
+          <button
+            onClick={() => { markHintSeen('create-character'); setShowCreateHint(false); }}
+            className="text-xs text-amber-600 hover:text-amber-400 font-semibold transition-colors shrink-0 ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Wizard stepper nav */}
       <nav className="relative bg-[#1e160e]/70 border-b border-amber-900/20 px-6 py-2">

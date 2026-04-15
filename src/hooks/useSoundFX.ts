@@ -445,6 +445,43 @@ export function playHealing() {
   });
 }
 
+// Notification — single soft chime for chat messages, turn alerts
+export function playNotification() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = 880;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.1, now + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+  osc.connect(g).connect(dest());
+  osc.start(now);
+  osc.stop(now + 0.35);
+}
+
+// Damage taken — low bass thud
+export function playDamage() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(100, now);
+  osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.3, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+  osc.connect(g).connect(dest());
+  osc.start(now);
+  osc.stop(now + 0.25);
+  // Impact noise layer
+  const { node, gainNode } = noise(ctx, 0.06, 0.25);
+  gainNode.connect(dest());
+  node.start(now);
+  node.stop(now + 0.06);
+}
+
 // Loot drop — metallic jingle
 export function playLootDrop() {
   const ctx = getCtx();

@@ -16,7 +16,7 @@ import type { NpcRecord } from '../components/game/NpcTracker';
 import type { WikiPage } from '../components/game/WorldWiki';
 import type { CalendarState } from '../components/game/CampaignCalendar';
 import type { RelationshipEdge } from '../components/game/RelationshipGraph';
-import { playPlayerJoin } from './useSoundFX';
+import { playPlayerJoin, playNotification } from './useSoundFX';
 import { persistChatMessage } from '../lib/chatApi';
 
 export interface GameWebSocketDeps {
@@ -255,6 +255,8 @@ export function useGameWebSocket(deps: GameWebSocketDeps): GameWebSocketState {
               timestamp: msg.timestamp as number,
             },
           ]);
+          // Chime for messages from other players
+          if (msg.playerId !== wsPlayerIdRef.current) playNotification();
           break;
 
         case 'chat_reaction': {

@@ -949,6 +949,17 @@ export default function Lobby() {
             </h1>
           )}
           <span className="text-[10px] font-mono bg-slate-800/80 px-2 py-1 rounded-md text-slate-500 border border-slate-700/50 hidden sm:inline">{room}</span>
+          <button
+            onClick={copyLink}
+            className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-md bg-[#F38020]/10 hover:bg-[#F38020]/20 border border-[#F38020]/30 text-[#F38020] hover:text-[#f9a05f] font-semibold transition-all active:scale-[0.97]"
+            title={`Copy invite link: ${roomLink}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+              <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+              <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 005.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+            </svg>
+            Copy Invite Link
+          </button>
           {isDM && (
             <button
               onClick={() => setShowSettings(!showSettings)}
