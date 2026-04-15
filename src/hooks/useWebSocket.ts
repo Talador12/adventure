@@ -65,8 +65,13 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
   }, []);
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
-      return;
+    // If already open, skip
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    // If stuck in CONNECTING for over 10s, kill it and retry
+    if (wsRef.current?.readyState === WebSocket.CONNECTING) {
+      const stuckSocket = wsRef.current;
+      wsRef.current = null;
+      try { stuckSocket.close(); } catch { /* ignore */ }
     }
 
     setStatus('connecting');
@@ -78,10 +83,28 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
     const port = window.location.port;
     const wsUrl = `${protocol}//${host}${port ? ':' + port : ''}/api/ws?room=${encodeURIComponent(roomId)}`;
 
-    const ws = new WebSocket(wsUrl);
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch {
+      // WebSocket constructor can throw if URL is malformed
+      setStatus('error');
+      const delay = Math.min(BASE_RECONNECT_DELAY * 2 ** reconnectAttempt.current, MAX_RECONNECT_DELAY);
+      reconnectAttempt.current++;
+      reconnectTimer.current = setTimeout(connect, delay);
+      return;
+    }
     wsRef.current = ws;
 
+    // Connection timeout - if still CONNECTING after 10s, force close and retry
+    const connectTimeout = setTimeout(() => {
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    }, 10000);
+
     ws.addEventListener('open', () => {
+      clearTimeout(connectTimeout);
       setStatus('connected');
       reconnectAttempt.current = 0;
 
@@ -144,6 +167,7 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
     });
 
     ws.addEventListener('close', () => {
+      clearTimeout(connectTimeout);
       wsRef.current = null;
       stopPing();
       if (intentionalClose.current) {

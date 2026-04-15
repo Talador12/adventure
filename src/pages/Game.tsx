@@ -199,9 +199,20 @@ export default function Game() {
 
   // Game state — derive selectedCharacter from characters array so it stays reactive
   // to GameContext updates (grantXP, restCharacter, updateCharacter, damageUnit, etc.)
-  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
+  // Auto-select character from Lobby's seat assignment (seatCharId stored in sessionStorage)
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(`adventure:seatCharId:${room}`) || null;
+    } catch { return null; }
+  });
   const selectedCharacter = selectedCharacterId ? (characters.find((c) => c.id === selectedCharacterId) ?? null) : null;
-  const [showCharacterPicker, setShowCharacterPicker] = useState(true);
+  // Show character picker only if no character was pre-assigned from Lobby
+  const [showCharacterPicker, setShowCharacterPicker] = useState(() => {
+    try {
+      const seatId = sessionStorage.getItem(`adventure:seatCharId:${room}`);
+      return !seatId; // skip picker if Lobby already assigned a character
+    } catch { return true; }
+  });
   // AI player character IDs — loaded from sessionStorage (set by Lobby on Start Game)
   const [aiCharacterIds] = useState<Set<string>>(() => {
     try {
