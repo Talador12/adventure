@@ -79,6 +79,7 @@ import { getSpellSlots } from '../data/spells';
 import SessionStreak from '../components/game/SessionStreak';
 import OfflineBanner from '../components/game/OfflineBanner';
 import { emitPluginEvent, setPluginMessageCallback } from '../lib/plugins';
+import { startSession as startProgressSession, endSession as endProgressSession, buildSessionSummary, getCampaignProgress, formatProgressMarkdown } from '../lib/campaignProgress';
 import RoundMVP, { useRoundMVP } from '../components/game/RoundMVP';
 import CombatEmotes, { useCombatEmotes } from '../components/game/CombatEmotes';
 const CampaignTimeline = lazy(() => import('../components/game/CampaignTimeline'));
@@ -276,6 +277,8 @@ export default function Game() {
   const [incomingPings, setIncomingPings] = useState<Array<{ col: number; row: number; time: number }>>([]);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
   const sessionStartTime = useRef(Date.now());
+  // Campaign progress tracking - snapshot initial XP to calculate delta at session end
+  const initialXpRef = useRef<Record<string, number>>({});
   const { flytexts, addFlytext } = useHPFlytext();
   const { active: critActive, confetti: critConfetti, trigger: triggerCrit } = useCritCelebration();
   const { display: killStreakDisplay, recordKill } = useKillStreak();
@@ -964,12 +967,18 @@ export default function Game() {
       { id: currentPlayer.id, username: currentPlayer.username, controllerType: 'human' },
       { id: 'ai-dm', username: 'Dungeon Master', controllerType: 'ai' },
     ]);
-  }, [setCurrentPlayer, setPlayers, currentPlayer.id, currentPlayer.username]);
+    // Mark session start for campaign progress tracking
+    startProgressSession(room);
+  }, [setCurrentPlayer, setPlayers, currentPlayer.id, currentPlayer.username, room]);
 
   // Show character picker if no character selected
   useEffect(() => {
     if (selectedCharacter) {
       setShowCharacterPicker(false);
+      // Snapshot initial XP for session progress delta calculation
+      if (!initialXpRef.current[selectedCharacter.id]) {
+        initialXpRef.current[selectedCharacter.id] = selectedCharacter.xp;
+      }
     }
   }, [selectedCharacter]);
 
@@ -2089,31 +2098,31 @@ export default function Game() {
         />
       )}
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 px-3 md:px-6 py-2 md:py-3 flex justify-between items-center shrink-0 relative z-10">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white text-xs md:text-sm" aria-label="Back to lobby">
+      <header className="bg-slate-900 border-b border-slate-800 px-2 sm:px-3 md:px-6 py-1.5 sm:py-2 md:py-3 flex justify-between items-center shrink-0 relative z-10 overflow-x-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 min-w-0">
+          <Button variant="ghost" onClick={() => navigate(`/lobby/${room}`)} className="text-slate-400 hover:text-white text-xs md:text-sm shrink-0" aria-label="Back to lobby">
             &larr; <span className="hidden md:inline">Lobby</span>
           </Button>
-          <h1 className="text-sm md:text-lg font-bold text-[#F38020]">Adventure</h1>
+          <h1 className="text-sm md:text-lg font-bold text-[#F38020] shrink-0">Adventure</h1>
           {selectedCharacter && (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-400 hidden sm:inline truncate">
               Playing as <span className="text-white font-semibold">{selectedCharacter.name}</span>
             </span>
           )}
-          {roomId && <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-slate-400">Room: {roomId}</span>}
+          {roomId && <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-slate-400 hidden md:inline">Room: {roomId}</span>}
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${statusColor}`} />
             <span className="text-[10px] text-slate-500">{status}</span>
           </div>
           {status === 'connected' && clockRttMs !== null && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
+            <span className="hidden lg:inline text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
               sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
             </span>
           )}
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+          <span className={`hidden md:inline text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
             {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
           </span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${
+          <span className={`hidden sm:inline text-[9px] px-1.5 py-0.5 rounded-full border ${
             aiBackend === 'local' ? 'border-emerald-700/40 bg-emerald-900/20 text-emerald-400'
             : aiBackend === 'workers-ai' ? 'border-sky-700/40 bg-sky-900/20 text-sky-400'
             : 'border-slate-700/40 bg-slate-800/40 text-slate-500'
@@ -2173,7 +2182,7 @@ export default function Game() {
             </div>
           )}
           {recordings.length > 0 && (
-            <div className="relative group">
+            <div className="relative group hidden md:block">
               <button
                 onClick={() => setShowReplay(recordings[recordings.length - 1])}
                 className="text-[9px] px-2 py-0.5 rounded bg-indigo-900/30 border border-indigo-700/40 text-indigo-300 hover:bg-indigo-900/50 font-semibold transition-colors"
@@ -2199,7 +2208,7 @@ export default function Game() {
           {canUseDMTools && (
             <button
               onClick={() => window.open('/dm-screen', '_blank', 'width=900,height=600')}
-              className="text-[9px] px-2 py-0.5 rounded bg-purple-900/30 border border-purple-700/40 text-purple-300 hover:bg-purple-900/50 font-semibold transition-colors"
+              className="hidden md:inline text-[9px] px-2 py-0.5 rounded bg-purple-900/30 border border-purple-700/40 text-purple-300 hover:bg-purple-900/50 font-semibold transition-colors"
               title="Open DM Screen in a new window (synced with this game)"
             >
               DM Screen
@@ -2214,7 +2223,7 @@ export default function Game() {
                 });
               });
             }}
-            className="text-[9px] px-2 py-0.5 rounded bg-amber-900/30 border border-amber-700/40 text-amber-300 hover:bg-amber-900/50 font-semibold transition-colors"
+            className="hidden lg:inline text-[9px] px-2 py-0.5 rounded bg-amber-900/30 border border-amber-700/40 text-amber-300 hover:bg-amber-900/50 font-semibold transition-colors"
             title="Export full campaign as a printable PDF book"
           >
             Book
@@ -2225,7 +2234,7 @@ export default function Game() {
                 exportFoundryModule(sceneName || room, characters, quests);
               });
             }}
-            className="text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
+            className="hidden lg:inline text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
             title="Export campaign as Foundry VTT module JSON"
           >
             Foundry
@@ -2236,7 +2245,7 @@ export default function Game() {
                 exportSessionLog(sceneName || room, dmHistory, chatMessages, combatLog, characters);
               });
             }}
-            className="text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
+            className="hidden lg:inline text-[9px] px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
             title="Export full session log as markdown"
           >
             Export Log
@@ -2247,7 +2256,7 @@ export default function Game() {
                 exportCampaignState(room, sceneName || room, characters);
               });
             }}
-            className="text-[9px] px-2 py-0.5 rounded bg-emerald-900/30 border border-emerald-700/40 text-emerald-300 hover:bg-emerald-900/50 font-semibold transition-colors"
+            className="hidden md:inline text-[9px] px-2 py-0.5 rounded bg-emerald-900/30 border border-emerald-700/40 text-emerald-300 hover:bg-emerald-900/50 font-semibold transition-colors"
             title="Export full campaign state as reimportable backup"
           >
             Backup
@@ -2266,7 +2275,7 @@ export default function Game() {
                 // Navigate to the fork
                 navigate(`/game/${forkId}`);
               }}
-              className="text-[9px] px-2 py-0.5 rounded bg-violet-900/40 border border-violet-700/40 text-violet-400 hover:text-violet-300 font-semibold transition-colors"
+              className="hidden md:inline text-[9px] px-2 py-0.5 rounded bg-violet-900/40 border border-violet-700/40 text-violet-400 hover:text-violet-300 font-semibold transition-colors"
               title="Fork this campaign — create a 'what if' branch"
             >
               Fork
@@ -2307,13 +2316,40 @@ export default function Game() {
             </button>
           )}
           {canUseDMTools && dmHistory.length > 3 && (
-            <button
-              onClick={() => setShowSessionSummary(true)}
-              className="text-[9px] px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
-              title="Show session stats summary"
-            >
-              Wrap Up
-            </button>
+            <>
+              <button
+                onClick={() => setShowSessionSummary(true)}
+                className="text-[9px] px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-slate-400 hover:text-slate-200 font-semibold transition-colors"
+                title="Show session stats summary"
+              >
+                Wrap Up
+              </button>
+              <button
+                onClick={() => {
+                  // Calculate XP earned this session across all characters
+                  const xpEarned = characters.reduce((sum, c) => {
+                    const initial = initialXpRef.current[c.id] || 0;
+                    return sum + Math.max(0, c.xp - initial);
+                  }, 0);
+                  const partyLevel = Math.max(...characters.map((c) => c.level), 1);
+                  const summary = buildSessionSummary({
+                    dmHistory,
+                    combatLog,
+                    xpGranted: xpEarned,
+                    partyLevel,
+                    sceneName,
+                  });
+                  const session = endProgressSession(room, summary);
+                  toast(`Session ${session.sessionNumber} saved! (${session.duration}min, ${session.xpEarned} XP)`, 'success');
+                  // Reset XP snapshot for next session
+                  for (const c of characters) initialXpRef.current[c.id] = c.xp;
+                }}
+                className="text-[9px] px-2 py-0.5 rounded bg-emerald-900/30 border border-emerald-600/40 text-emerald-400 hover:bg-emerald-900/50 font-semibold transition-colors"
+                title="Save session progress (XP, monsters, events) to campaign timeline"
+              >
+                Save Session
+              </button>
+            </>
           )}
         </div>
         <div className="flex items-center gap-3">

@@ -14,6 +14,7 @@ import { faCloudflare, faDiscord, faGithub } from '@fortawesome/free-brands-svg-
 import { importJSONFile } from '../lib/export';
 import { randomFantasyName } from '../lib/names';
 import { hasOnboardingData, markHintSeen, hasSeenHint } from '../lib/onboarding';
+import { getProgressSummaryLine, getCampaignProgress, type SessionSummary } from '../lib/campaignProgress';
 
 type Theme = 'dark' | 'light';
 type PreferencePayload = {
@@ -117,6 +118,7 @@ export default function Home() {
   const [lastPrefSyncAt, setLastPrefSyncAt] = useState<number | null>(null);
   const [prefSyncRetryNonce, setPrefSyncRetryNonce] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<{ roomId: string; name: string } | null>(null);
+  const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const lastCampaignCacheKeyRef = useRef<string | null>(null);
   const prefsHydratedUserRef = useRef<string | null>(null);
   const prefsSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -812,14 +814,14 @@ export default function Home() {
           </p>
 
           {/* Quick actions */}
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-2 justify-center w-full sm:w-auto animate-fade-in-up" style={{ animationDelay: '160ms' }}>
-            <div className="flex gap-2 items-center w-full sm:w-auto">
+          <div className="flex flex-col gap-3 sm:gap-4 mt-2 justify-center w-full sm:w-auto animate-fade-in-up" style={{ animationDelay: '160ms' }}>
+            <div className="flex flex-col xs:flex-row gap-2 items-stretch xs:items-center w-full sm:w-auto">
               <input type="text" placeholder={t('nav.roomCode')} className="input-glow flex-1 sm:flex-none px-4 py-2.5 sm:w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} aria-label="Room code" />
               <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97] shrink-0" onClick={handleJoinCampaign}>
                 {t('nav.join')}
               </Button>
             </div>
-            <div className="flex gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Button variant="default" className="btn-glow flex-1 sm:flex-none bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
                 {t('nav.newCampaign')}
               </Button>
@@ -1153,6 +1155,54 @@ export default function Home() {
                         </div>
                       )}
                     </div>
+                    {/* Campaign progress indicator */}
+                    {(() => {
+                      const progressLine = getProgressSummaryLine(c.roomId);
+                      const isExpanded = expandedProgress === c.roomId;
+                      if (!progressLine) return null;
+                      return (
+                        <div className="border-t border-slate-200 dark:border-slate-700/50">
+                          <button
+                            onClick={() => setExpandedProgress(isExpanded ? null : c.roomId)}
+                            className="w-full px-4 py-1.5 flex items-center justify-between text-[10px] hover:bg-slate-800/30 transition-colors"
+                          >
+                            <span className="text-emerald-400 font-semibold">{progressLine}</span>
+                            <svg className={`w-3 h-3 text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                          </button>
+                          {isExpanded && (() => {
+                            const progress = getCampaignProgress(c.roomId);
+                            return (
+                              <div className="px-4 pb-3 space-y-1.5 animate-fade-in-up">
+                                {progress.milestonesReached.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {progress.milestonesReached.map((m) => (
+                                      <span key={m} className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-900/30 border border-amber-700/30 text-amber-400">{m}</span>
+                                    ))}
+                                  </div>
+                                )}
+                                {progress.sessions.slice().reverse().slice(0, 5).map((s: SessionSummary) => (
+                                  <div key={s.sessionNumber} className="text-[10px] text-slate-400 flex items-start gap-2">
+                                    <span className="text-slate-500 font-mono shrink-0">#{s.sessionNumber}</span>
+                                    <div className="min-w-0">
+                                      <span className="text-slate-300">{s.date}</span>
+                                      {s.duration > 0 && <span className="text-slate-600 ml-1">({s.duration}min)</span>}
+                                      {s.xpEarned > 0 && <span className="text-emerald-400 ml-1">+{s.xpEarned} XP</span>}
+                                      {s.monstersDefeated.length > 0 && <span className="text-red-400/60 ml-1">{s.monstersDefeated.length} slain</span>}
+                                      {s.keyEvents.length > 0 && (
+                                        <div className="text-slate-500 mt-0.5 line-clamp-1">{s.keyEvents[0]}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                                {progress.sessions.length > 5 && (
+                                  <div className="text-[9px] text-slate-600">...and {progress.sessions.length - 5} earlier sessions</div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })()}
                     {/* Action buttons */}
                     <div className="flex border-t border-slate-200 dark:border-slate-700/50">
                       <button onClick={() => navigate(`/lobby/${c.roomId}`)} className="flex-1 py-2.5 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 hover:text-sky-300 transition-all text-center border-r border-slate-200 dark:border-slate-700/50">
@@ -1227,7 +1277,7 @@ export default function Home() {
         <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-xl font-semibold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">{t('nav.yourCharacters')}</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleImportCharacter}
                 className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-all"
@@ -1250,7 +1300,7 @@ export default function Home() {
                     toast(`Imported ${imported.name} from URL!`, 'success');
                   }
                 }}
-                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-violet-500/50 hover:text-violet-400 transition-all"
+                className="hidden sm:inline-flex py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-violet-500/50 hover:text-violet-400 transition-all"
                 title="Import character from a URL (paste a link to a JSON file)"
               >
                 URL
@@ -1305,7 +1355,7 @@ export default function Home() {
                   addCharacter(char as any); // eslint-disable-line @typescript-eslint/no-explicit-any
                   toast(`Imported ${char.name} from clipboard text!`, 'success');
                 }}
-                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-teal-500/50 hover:text-teal-400 transition-all"
+                className="hidden sm:inline-flex py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-teal-500/50 hover:text-teal-400 transition-all"
                 title="Import character from clipboard text — paste a character sheet or JSON"
               >
                 Paste
@@ -1322,7 +1372,7 @@ export default function Home() {
                   addCharacter(restored);
                   toast(`Restored ${restored.name}!`, 'success');
                 }}
-                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-sky-500/50 hover:text-sky-400 transition-all"
+                className="hidden sm:inline-flex py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-sky-500/50 hover:text-sky-400 transition-all"
                 title="Restore character from encrypted backup file"
               >
                 Restore
@@ -1334,7 +1384,7 @@ export default function Home() {
                   exportAllCharacters(characters, true);
                   toast(`Exported ${characters.length} character${characters.length !== 1 ? 's' : ''}`, 'success');
                 }}
-                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-amber-500/50 hover:text-amber-400 transition-all"
+                className="hidden sm:inline-flex py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-amber-500/50 hover:text-amber-400 transition-all"
                 title="Export all characters as a single JSON archive"
               >
                 Export All
@@ -1351,7 +1401,7 @@ export default function Home() {
                   if (result.characters.length > 0) toast(`Imported ${result.characters.length} character${result.characters.length !== 1 ? 's' : ''}`, 'success');
                   if (result.errors.length > 0) toast(`${result.errors.length} skipped`, 'warning');
                 }}
-                className="py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-purple-500/50 hover:text-purple-400 transition-all"
+                className="hidden sm:inline-flex py-2 px-3 rounded-lg text-xs font-semibold border border-slate-600 text-slate-300 hover:border-purple-500/50 hover:text-purple-400 transition-all"
                 title="Import multiple characters from an archive JSON"
               >
                 Import All
@@ -1464,7 +1514,7 @@ export default function Home() {
       {/* Campaign Creation Wizard */}
       {showCampaignWizard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in-up" onClick={() => setShowCampaignWizard(false)} role="dialog" aria-modal="true" aria-label="Create Campaign">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-3xl w-full mx-2 sm:mx-4 max-h-[90vh] sm:max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
 
             {/* Wizard header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-800">

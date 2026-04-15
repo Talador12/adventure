@@ -758,7 +758,7 @@ export default function CharacterCreate() {
       }} />
 
       {/* Header — warm tones */}
-      <header className="relative bg-[#1e160e]/90 border-b border-amber-900/30 px-6 py-3 flex justify-between items-center backdrop-blur-sm">
+      <header className="relative bg-[#1e160e]/90 border-b border-amber-900/30 px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center backdrop-blur-sm gap-2">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate('/')} className="text-amber-700 hover:text-amber-400">
             &larr; Home
@@ -799,8 +799,8 @@ export default function CharacterCreate() {
       )}
 
       {/* Wizard stepper nav */}
-      <nav className="relative bg-[#1e160e]/70 border-b border-amber-900/20 px-6 py-2">
-        <div className="max-w-5xl mx-auto flex items-center gap-1">
+      <nav className="relative bg-[#1e160e]/70 border-b border-amber-900/20 px-2 sm:px-6 py-2 overflow-x-auto">
+        <div className="max-w-5xl mx-auto flex items-center gap-1 min-w-0">
           {WIZARD_STEPS.map((ws, i) => {
             const isActive = step === i;
             const isDone = step > i;
@@ -837,7 +837,7 @@ export default function CharacterCreate() {
         </div>
       </nav>
 
-      <div className="relative max-w-5xl mx-auto flex gap-6 p-6">
+      <div className="relative max-w-5xl mx-auto flex gap-4 lg:gap-6 p-3 sm:p-6">
         {/* Main content — wizard step */}
         <main className="flex-1 min-w-0 space-y-6">
 
@@ -939,7 +939,7 @@ export default function CharacterCreate() {
         </div>
 
         {/* Race + Class side by side — tavern card grid */}
-        <div className="grid grid-cols-[1fr_1fr] gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-6 md:gap-8">
           {/* Race */}
           <div className="space-y-3">
             <h2 className="text-xl font-black uppercase tracking-wider text-amber-200/80" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>Race</h2>
@@ -1055,7 +1055,7 @@ export default function CharacterCreate() {
 
         {/* Step 2: Background + Alignment */}
         {step === 2 && (<div className="space-y-6 animate-fade-in-up">
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Background */}
           <div className="space-y-2">
             <label className="text-sm font-semibold text-amber-500/70 uppercase tracking-wider">Background</label>
@@ -1152,8 +1152,8 @@ export default function CharacterCreate() {
             />
           </div>
 
-          {/* Ideals / Bonds / Flaws — 3-column but full page width */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Ideals / Bonds / Flaws — 3-column on desktop, stacked on mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs text-amber-600/60 font-medium">Ideals</label>
               <textarea
@@ -1249,7 +1249,7 @@ export default function CharacterCreate() {
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {STAT_NAMES.map((stat) => {
               const roll = statRolls[stat];
               const bonus = RACE_BONUSES[race][stat] || 0;
@@ -1524,7 +1524,7 @@ export default function CharacterCreate() {
 
         {/* Live Preview Sidebar — visible from step 1 onward */}
         {step > 0 && (
-          <aside className="w-64 shrink-0 sticky top-6 self-start space-y-4">
+          <aside className="hidden lg:block w-64 shrink-0 sticky top-6 self-start space-y-4">
             <div className="rounded-xl border border-amber-900/30 bg-[#1e160e]/90 p-4 space-y-3">
               <img
                 src={portrait || illustratedPortrait}
@@ -1560,10 +1560,10 @@ export default function CharacterCreate() {
 
       {/* Export Modal */}
       {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowExportModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setShowExportModal(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-lg rounded-2xl border border-amber-900/40 bg-[#1e160e] shadow-2xl"
+            className="relative w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl border border-amber-900/40 bg-[#1e160e] shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

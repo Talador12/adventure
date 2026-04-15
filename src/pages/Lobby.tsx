@@ -973,14 +973,14 @@ export default function Lobby() {
             status === 'connected' ? 'bg-emerald-900/30 text-emerald-400' : status === 'connecting' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-red-900/30 text-red-400'
           }`}>
             <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
-            <span className="font-medium">{status}</span>
+            <span className="font-medium hidden sm:inline">{status}</span>
           </div>
           {status === 'connected' && clockRttMs !== null && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
+            <span className="hidden md:inline text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-slate-300">
               sync {serverTimeOffsetMs >= 0 ? '+' : ''}{serverTimeOffsetMs}ms | rtt {clockRttMs}ms
             </span>
           )}
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
+          <span className={`hidden sm:inline text-[10px] px-2 py-0.5 rounded-full border ${effectiveMode === 'strict' ? 'border-sky-700/40 bg-sky-900/20 text-sky-300' : 'border-amber-700/40 bg-amber-900/20 text-amber-200'}`}>
             {rollInterpolationMode === 'auto' ? `auto (${effectiveMode})` : rollInterpolationMode}
           </span>
           {isSpectating && (
@@ -1230,8 +1230,8 @@ export default function Lobby() {
               </div>
             )}
 
-            {/* Seat grid — wraps on mobile, scrolls on desktop */}
-            <div className="flex flex-wrap sm:flex-nowrap gap-2.5 overflow-x-auto pb-1 stagger-children">
+            {/* Seat grid — single column on tiny screens, wraps on small, scrolls on desktop */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2.5 overflow-x-auto pb-1 stagger-children">
               {seats.map((seat) => (
                 <div
                   key={seat.id}
