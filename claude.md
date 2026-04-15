@@ -49,28 +49,17 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 
 ## Campaign Starter Kit Library — Phase 14 IN PROGRESS (430+ campaigns — 200 full + 230 one-shots)
 
-## RESUME HERE — Shenanigans + Comedy Expansion (IN PROGRESS)
+## RESUME HERE — Shenanigans + Comedy Expansion COMPLETE
 
-**What was completed and pushed (staging + main, commit 3c8b54a):**
-- 411 campaigns total (194 full + 217 one-shots), all registered in index.ts
-- 'shenanigans' tone added to CampaignTone type in types.ts
-- 6 new comedic full campaigns written and registered (theReviewBoard, retirementHome, theWorstDungeon, theApprenticesRevenge, monstersInc, theWrongHero)
-- 13 new comedic one-shots written and registered (theCustomerIsAlwaysWrong, thePerformanceReview, theHelpDesk, thePetShow, theRealEstateAgent, thePotionTasting, theSupportGroup, theInternship, theReturnDesk, theCookOff, theRoommate, theDatingGame, theClassReunion)
+**All targets hit:**
+- Full comedic: 25/25
+- Full shenanigans: 25/25
+- Oneshot comedic: 50/50
+- Oneshot shenanigans: 50/50
+- All campaigns registered in index.ts (zero missing)
+- Total: 225 full + 280 one-shots = 505 campaigns
 
-**What still needs to be done (agents were writing but got interrupted):**
-1. Write 25 shenanigans full campaigns (0/25 done - agent was aborted mid-write)
-   - Concepts ready: everybodyIsAMimic, theGoblinSpaceProgram, reverseQuest, criticalFailureState, theWrongCampaign, questsGoneWild, theNPCRevolt, gravityFlips, infiniteTavern, theAccidentalKing, theSpellThatWouldNotEnd, turnsOutTheyreRelated, thePortalLottery, weaponsWithPersonalities, everythingSpeaks, theDungeonHasReviews, wildMagicEverywhere, theQuestGiversUnion, dimensionalAutocorrect, thePartySwap, theDungeonThatFightsBack, immortalGoblin, theMultiverse, cursedLootOnly, theBossRush
-2. Write 50 shenanigans one-shots (0/50 done - agent was aborted mid-write)
-   - Concepts ready: oopsAllGoblins, theDungeonIsACake, criticalGoose, thePolymorph, npcOfTheYear, everythingIsMimics, theWizardSneezed, boulderDash, thePunishmentDungeon, inventoryManagement, theRaceCondition, allergicToMagic, gravityIsVoting, theInvisibleDungeon, speedrunAny, itFollows, theLootGoblin, theBardicExplosion, tpkSpeedrun, theEscortMission, stackingConditions, theWrongSpellbook, naturalOnesOnly, theDungeonIsAlive, petCombat, theIdentityCrisis, tooManyQuests, theLoadingScreen, respawnCamping, theLastBraincell, absoluteUnit, theGlitchZone, everyoneHasAThemeSong, theWorldsWorstHeist, sentientLoot, theNerfedParty, randomEncounterHell, theGiantsBaby, allBards, theDMIsAnNPC, oneHitPointEach, theContagiousDance, backwardsDay, theArtificialDifficulty, theCowardsBravery, paperworkQuest, theYeetSpell, theWorldRecordDungeon, accidentallyEvil, theImpossibleRoll
-
-**Target counts when complete:**
-- Full comedic: 25/25 - DONE
-- Full shenanigans: 23/25 - NEEDS 2 MORE (theBossRush, cursedLootOnly)
-- Oneshot comedic: 50/50 - DONE
-- Oneshot shenanigans: 29/50 - NEEDS 21 MORE (see concepts list above, start from theLastBraincell onwards)
-- Also need to register any unregistered campaigns in index.ts before committing
-
-**After shenanigans are done, commit and push to staging, merge to main.**
+**Needs commit + push to staging, then merge staging into main.**
 
 **One-shot tone distribution (all at 20+ each):** comedic 50, survival 20, social 20, serious 20, political 20, mystery 20, horror 20, heist 20, exploration 20, epic 20, shenanigans 0 (pending)
 

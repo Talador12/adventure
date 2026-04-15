@@ -252,6 +252,10 @@ import { theApprenticesRevenge } from './full/theApprenticesRevenge';
 import { monstersInc } from './full/monstersInc';
 import { theWrongHero } from './full/theWrongHero';
 
+// Phase 15 full campaign imports (shenanigans)
+import { cursedLootOnly } from './full/cursedLootOnly';
+import { theBossRush } from './full/theBossRush';
+
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
 import { theGreatCheeseHeist } from './oneshots/theGreatCheeseHeist';
@@ -502,6 +506,85 @@ import { theRoommate } from './oneshots/theRoommate';
 import { theDatingGame } from './oneshots/theDatingGame';
 import { theClassReunion } from './oneshots/theClassReunion';
 
+// Phase 15 one-shot imports (shenanigans)
+import { theLastBraincell } from './oneshots/theLastBraincell';
+import { absoluteUnit } from './oneshots/absoluteUnit';
+import { theGlitchZone } from './oneshots/theGlitchZone';
+import { everyoneHasAThemeSong } from './oneshots/everyoneHasAThemeSong';
+import { theWorldsWorstHeist } from './oneshots/theWorldsWorstHeist';
+import { sentientLoot } from './oneshots/sentientLoot';
+import { theNerfedParty } from './oneshots/theNerfedParty';
+import { randomEncounterHell } from './oneshots/randomEncounterHell';
+import { theGiantsBaby } from './oneshots/theGiantsBaby';
+import { allBards } from './oneshots/allBards';
+import { theDMIsAnNPC } from './oneshots/theDMIsAnNPC';
+import { oneHitPointEach } from './oneshots/oneHitPointEach';
+import { theContagiousDance } from './oneshots/theContagiousDance';
+import { backwardsDay } from './oneshots/backwardsDay';
+import { theArtificialDifficulty } from './oneshots/theArtificialDifficulty';
+import { theCowardsBravery } from './oneshots/theCowardsBravery';
+import { paperworkQuest } from './oneshots/paperworkQuest';
+import { theYeetSpell } from './oneshots/theYeetSpell';
+import { theWorldRecordDungeon } from './oneshots/theWorldRecordDungeon';
+import { accidentallyEvil } from './oneshots/accidentallyEvil';
+import { theImpossibleRoll } from './oneshots/theImpossibleRoll';
+
+// Phase 16 full campaign imports (missing registrations)
+import { criticalFailureState } from './full/criticalFailureState';
+import { dimensionalAutocorrect } from './full/dimensionalAutocorrect';
+import { everybodyIsAMimic } from './full/everybodyIsAMimic';
+import { everythingSpeaks } from './full/everythingSpeaks';
+import { gravityFlips } from './full/gravityFlips';
+import { immortalGoblin } from './full/immortalGoblin';
+import { infiniteTavern } from './full/infiniteTavern';
+import { questsGoneWild } from './full/questsGoneWild';
+import { reverseQuest } from './full/reverseQuest';
+import { theAccidentalKing } from './full/theAccidentalKing';
+import { theDungeonHasReviews } from './full/theDungeonHasReviews';
+import { theDungeonThatFightsBack } from './full/theDungeonThatFightsBack';
+import { theGoblinSpaceProgram } from './full/theGoblinSpaceProgram';
+import { theMultiverse } from './full/theMultiverse';
+import { theNPCRevolt } from './full/theNPCRevolt';
+import { thePartySwap } from './full/thePartySwap';
+import { thePortalLottery } from './full/thePortalLottery';
+import { theQuestGiversUnion } from './full/theQuestGiversUnion';
+import { theSpellThatWouldNotEnd } from './full/theSpellThatWouldNotEnd';
+import { theWrongCampaign } from './full/theWrongCampaign';
+import { turnsOutTheyreRelated } from './full/turnsOutTheyreRelated';
+import { weaponsWithPersonalities } from './full/weaponsWithPersonalities';
+import { wildMagicEverywhere } from './full/wildMagicEverywhere';
+
+// Phase 16 one-shot imports (missing registrations)
+import { allergicToMagic } from './oneshots/allergicToMagic';
+import { boulderDash } from './oneshots/boulderDash';
+import { criticalGoose } from './oneshots/criticalGoose';
+import { everythingIsMimics } from './oneshots/everythingIsMimics';
+import { gravityIsVoting } from './oneshots/gravityIsVoting';
+import { inventoryManagement } from './oneshots/inventoryManagement';
+import { itFollows } from './oneshots/itFollows';
+import { naturalOnesOnly } from './oneshots/naturalOnesOnly';
+import { npcOfTheYear } from './oneshots/npcOfTheYear';
+import { oopsAllGoblins } from './oneshots/oopsAllGoblins';
+import { petCombat } from './oneshots/petCombat';
+import { respawnCamping } from './oneshots/respawnCamping';
+import { speedrunAny } from './oneshots/speedrunAny';
+import { stackingConditions } from './oneshots/stackingConditions';
+import { theBardicExplosion } from './oneshots/theBardicExplosion';
+import { theDungeonIsACake } from './oneshots/theDungeonIsACake';
+import { theDungeonIsAlive } from './oneshots/theDungeonIsAlive';
+import { theEscortMission } from './oneshots/theEscortMission';
+import { theIdentityCrisis } from './oneshots/theIdentityCrisis';
+import { theInvisibleDungeon } from './oneshots/theInvisibleDungeon';
+import { theLoadingScreen } from './oneshots/theLoadingScreen';
+import { theLootGoblin } from './oneshots/theLootGoblin';
+import { thePolymorph } from './oneshots/thePolymorph';
+import { thePunishmentDungeon } from './oneshots/thePunishmentDungeon';
+import { theRaceCondition } from './oneshots/theRaceCondition';
+import { theWizardSneezed } from './oneshots/theWizardSneezed';
+import { theWrongSpellbook } from './oneshots/theWrongSpellbook';
+import { tooManyQuests } from './oneshots/tooManyQuests';
+import { tpkSpeedrun } from './oneshots/tpkSpeedrun';
+
 export const FULL_CAMPAIGNS: FullCampaign[] = [
   theShatteredCrown,
   theVillageThatForgot,
@@ -725,6 +808,33 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theApprenticesRevenge,
   monstersInc,
   theWrongHero,
+  // Phase 15 (shenanigans)
+  cursedLootOnly,
+  theBossRush,
+  // Phase 16 (missing registrations)
+  criticalFailureState,
+  dimensionalAutocorrect,
+  everybodyIsAMimic,
+  everythingSpeaks,
+  gravityFlips,
+  immortalGoblin,
+  infiniteTavern,
+  questsGoneWild,
+  reverseQuest,
+  theAccidentalKing,
+  theDungeonHasReviews,
+  theDungeonThatFightsBack,
+  theGoblinSpaceProgram,
+  theMultiverse,
+  theNPCRevolt,
+  thePartySwap,
+  thePortalLottery,
+  theQuestGiversUnion,
+  theSpellThatWouldNotEnd,
+  theWrongCampaign,
+  turnsOutTheyreRelated,
+  weaponsWithPersonalities,
+  wildMagicEverywhere,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
@@ -968,6 +1078,58 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   theRoommate,
   theDatingGame,
   theClassReunion,
+  // Phase 15 (shenanigans)
+  theLastBraincell,
+  absoluteUnit,
+  theGlitchZone,
+  everyoneHasAThemeSong,
+  theWorldsWorstHeist,
+  sentientLoot,
+  theNerfedParty,
+  randomEncounterHell,
+  theGiantsBaby,
+  allBards,
+  theDMIsAnNPC,
+  oneHitPointEach,
+  theContagiousDance,
+  backwardsDay,
+  theArtificialDifficulty,
+  theCowardsBravery,
+  paperworkQuest,
+  theYeetSpell,
+  theWorldRecordDungeon,
+  accidentallyEvil,
+  theImpossibleRoll,
+  // Phase 16 (missing registrations)
+  allergicToMagic,
+  boulderDash,
+  criticalGoose,
+  everythingIsMimics,
+  gravityIsVoting,
+  inventoryManagement,
+  itFollows,
+  naturalOnesOnly,
+  npcOfTheYear,
+  oopsAllGoblins,
+  petCombat,
+  respawnCamping,
+  speedrunAny,
+  stackingConditions,
+  theBardicExplosion,
+  theDungeonIsACake,
+  theDungeonIsAlive,
+  theEscortMission,
+  theIdentityCrisis,
+  theInvisibleDungeon,
+  theLoadingScreen,
+  theLootGoblin,
+  thePolymorph,
+  thePunishmentDungeon,
+  theRaceCondition,
+  theWizardSneezed,
+  theWrongSpellbook,
+  tooManyQuests,
+  tpkSpeedrun,
 ];
 
 export const ALL_CAMPAIGNS: CampaignStarterKit[] = [
