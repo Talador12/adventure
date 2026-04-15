@@ -23,8 +23,8 @@ export const theCursedPortrait: OneShotCampaign = {
       summary: 'Studying the portrait\'s progression. Each scene is a clue. The party must interpret them like a visual diary.',
       challenge: 'puzzle',
       keyEvents: [
-        'Scene 1-3: a woman, happy then frightened. A man appears. His face is obscured.',
-        'Scene 4 (today): the woman at a desk, writing. A letter? A confession?',
+        'Scenes 1-3 (already happened): a woman smiling in a garden, then the same woman with fear in her painted eyes, then a man behind her with a hand on her shoulder - his face is a smear of dark paint.',
+        'Scene 4 (this morning): the woman at a writing desk, quill in hand, her painted gaze turned directly at the viewer as if she knows someone is finally watching.',
         'Research: Lady Isolde Aldervane, original owner. Died of "illness" a century ago.',
         'No grave. No death certificate. Her husband remarried within a month.',
       ],

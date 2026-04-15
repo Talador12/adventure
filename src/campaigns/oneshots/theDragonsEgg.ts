@@ -51,9 +51,9 @@ export const theDragonsEgg: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Dr. Fenn Ashwick', role: 'quest giver', personality: 'A half-elf dragonologist who is more excited about the egg than afraid of the dragon. His urgency about the timeline is genuine - even if his math was wrong.', secret: 'He wants to study the hatchling, not destroy it. He believes he can raise a dragon peacefully.' },
-    { name: 'Scoria', role: 'the dragon', personality: 'An ancient red dragon. Not evil by choice - just ancient, territorial, and protective. She has waited centuries for this egg. She will burn the world to protect it.' },
-    { name: 'The Hatchling', role: 'the cargo', personality: 'A newborn red dragon the size of a cat. Curious, hungry, and prone to small bursts of flame when startled. Has imprinted on whoever it saw first.' },
+    { name: 'Dr. Fenn Ashwick', role: 'quest giver', personality: 'Speaks in footnotes - interrupts himself to clarify details nobody asked about. "The egg - well, technically it is an ootheca with a single embryo - needs to be removed before - did I mention she is an ancient? Fascinating specimen. Do not touch the gold."', secret: 'He wants to study the hatchling, not destroy it. He believes he can raise a dragon peacefully.' },
+    { name: 'Scoria', role: 'the dragon', personality: 'Not a character you talk to. A force of nature you survive. Her breathing fills the cavern like a bellows. When she shifts in her sleep, gold coins cascade like an avalanche. One eye opens and the temperature in the room rises thirty degrees.' },
+    { name: 'The Hatchling', role: 'the cargo', personality: 'The size of a housecat with the confidence of something that will eventually be the size of a castle. Chirps when curious. Hiccups small jets of flame. Follows whoever it imprinted on with absolute devotion and zero stealth.' },
   ],
   keyLocations: [
     { name: 'The Volcanic Cavern', description: 'A massive cave inside an active volcano. The floor is covered in gold coins. A red dragon sleeps at the center. The heat is unbearable.', significance: 'Where the heist happens.' },

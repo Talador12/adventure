@@ -4,7 +4,7 @@ export const theSoundBelow: OneShotCampaign = {
   id: 'oneshot-sound-below',
   type: 'oneshot',
   title: 'The Sound Below',
-  tagline: 'Something is playing music deep beneath the earth. It is beautiful. That is what worries people.',
+  tagline: 'Press your ear to the sealed mine. A stringed instrument, played with extraordinary skill, echoing up from hundreds of feet below. The music is heartbreakingly sad.',
   tone: 'exploration',
   themes: ['exploration', 'underdark'],
   playerCount: { min: 3, max: 5 },
@@ -32,10 +32,10 @@ export const theSoundBelow: OneShotCampaign = {
       summary: 'The lower mine levels have been transformed into a living garden of bioluminescent fungi. Someone has been tending this for years.',
       challenge: 'exploration',
       keyEvents: [
-        'The garden: tunnels filled with cultivated mushrooms that glow in shifting colors',
-        'The colors respond to the music, pulsing in time with the melody',
-        'Spore communication: the party begins receiving emotional impressions from the fungi',
-        'A chamber filled with failed instruments: bones, sticks, stretched leather, all abandoned attempts',
+        'The garden: tunnels carpeted in mushrooms that glow amber, then violet, then seafoam green. The air tastes of petrichor and fresh-turned earth',
+        'The colors pulse in time with the melody. When the music swells, the entire tunnel blazes gold. When it fades, the light contracts to embers',
+        'Spore communication: the party breathes in and feels emotions that are not theirs. Loneliness. Pride in a melody finally played correctly. The ache of creating beauty no one hears',
+        'A side chamber is littered with failed instruments: a rib bone with string, a hollowed log with membrane stretched across it, a set of stones arranged by tone. Decades of attempts before the lute.',
       ],
     },
     {
@@ -51,7 +51,7 @@ export const theSoundBelow: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Musician', role: 'the mystery / heart', personality: 'A myconid elder who taught itself music over two decades of isolation. It cannot speak but plays with a depth of emotion that transcends language. It is afraid of being alone and afraid of being found.' },
+    { name: 'The Musician', role: 'the mystery / heart', personality: 'Eight feet tall, cap mottled with age. Cradles the battered lute with fungal tendrils adapted over years to pluck strings. When it sees the party, it stops playing and the silence is devastating. Its spores carry emotions instead of words: loneliness like drowning, joy like sunrise, fear of rejection so sharp it makes the party flinch.' },
     { name: 'Mine Warden Goss', role: 'quest giver', personality: 'The official responsible for the sealed mine. Nervous about reopening it, but the music is disturbing the townspeople. "Mines do not play music. This is a problem."' },
     { name: 'Lirel', role: 'ally', personality: 'A half-elf bard in town who heard the music and wept. She insists on accompanying the party. "Whoever is playing that has more soul than anyone I have ever heard."' },
   ],

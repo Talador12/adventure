@@ -51,9 +51,9 @@ export const thePeoplesVoice: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Lysara Thornwick', role: 'imprisoned bard', personality: 'A halfling bard who writes political songs because nobody else will say what everyone thinks. In jail, defiant, refusing to apologize.' },
-    { name: 'Tax Collector Brenn', role: 'antagonist', personality: 'The named villain in the song. Not a monster - just a man who has been skimming taxes for years and is terrified of exposure. His counter-performance plan shows he is clever, not just cruel.' },
-    { name: 'Maestro Silvanus', role: 'counter-bard', personality: 'A famous bard hired to perform the sanitized version. He does not know the original lyrics - he thinks he is performing a folk song. If the party tells him the truth, he might refuse to play.' },
+    { name: 'Lysara Thornwick', role: 'imprisoned bard', personality: 'Hums the banned song through her cell bars. Speaks in rhythm, like every sentence is a lyric waiting for a melody. "They can jail the singer. They cannot jail the song." Tiny, fierce, three feet tall and louder than the guards.' },
+    { name: 'Tax Collector Brenn', role: 'antagonist', personality: 'Laughs too loudly at things that are not funny. Sweats when anyone mentions music. His counter-performance plan reveals a man who thinks in systems, not emotions - and is terrified of a halfling with a lute.' },
+    { name: 'Maestro Silvanus', role: 'counter-bard', personality: 'Speaks about himself in the third person. "Silvanus does not perform propaganda. Silvanus performs ART." Genuinely offended when he learns the truth about the sanitized lyrics. His ego is the party\'s best weapon.' },
   ],
   keyLocations: [
     { name: 'The Festival Square', description: 'The heart of the city during Harvest Festival. Stalls, stages, thousands of people, and guards at every corner.', significance: 'Where the performance must happen.' },

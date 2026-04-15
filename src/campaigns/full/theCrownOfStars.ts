@@ -25,6 +25,7 @@ export const theCrownOfStars: FullCampaign = {
         'The constellation event: every oracle speaks at once. The race begins.',
         'Artifact 1 (Material Plane): the Star of Ambition. Grants power, whispers of potential. The first corruption test.',
         'Artifact 2 (Feywild): the Star of Memory. Shows the wielder their greatest failure. Demands they relive it.',
+        'Quiet moment: Vesper sits by a fire after the party first meets Aldren. She tells them what happened the first time he wore the crown. Her voice is steady. Her hands shake.',
         'First encounter with Aldren: he is not a villain. He is a man who has been through this before and bears the scars.',
       ],
       estimatedSessions: 7,
@@ -33,9 +34,10 @@ export const theCrownOfStars: FullCampaign = {
       title: 'Act 2: The Trials',
       summary: 'Deeper into the planes. The artifacts grow more dangerous. The party discovers the prophecy\'s true author.',
       keyEvents: [
-        'Artifact 3 (Shadowfell): the Star of Sacrifice. Demands the wielder give up something they love. The cost is real.',
+        'The moment of cost: Artifact 3 (Shadowfell) - the Star of Sacrifice. Demands the wielder give up something they love. Not equipment or gold. A memory, a relationship, a part of themselves. The cost is real and permanent.',
         'Artifact 4 (Elemental Planes): the Star of Doubt. Makes the wielder question everything, including their mission.',
         'The discovery: a dead god\'s journal reveals the prophecy was authored by the pantheon as a control mechanism',
+        'Quiet moment: Aldren shows the party the place where he was cast down. A crater where nothing grows. He kneels and touches the burned earth. "This is what I was. For eleven seconds I was a god. Then I was this." Vesper puts her hand on his shoulder.',
         'Aldren\'s history: he ascended, was controlled, and was thrown back to mortality. His scars glow with residual divinity.',
       ],
       estimatedSessions: 8,
@@ -46,7 +48,8 @@ export const theCrownOfStars: FullCampaign = {
       keyEvents: [
         'Artifacts 5 and 6 acquired in rapid succession. The crown\'s influence is overwhelming. Reality bends around the wielder.',
         'Artifact 7: the Star of Will. Located in the divine plane itself. The gods are watching.',
-        'Aldren proposes an alliance: "Together we can break the cage. Alone, it breaks us."',
+        'Aldren proposes an alliance: "Together we can break the cage. Alone, it breaks us." If the party sacrificed meaningfully at the Star of Sacrifice, Aldren trusts them. If they found a loophole, he respects them but does not trust.',
+        'Quiet moment: the night before the ascension, Vesper asks the party to promise that if Aldren is consumed again, they will end it quickly. "Do not let him suffer like last time. Please."',
         'The ascension chamber: the crown assembles. The trap springs. The party must choose their path.',
       ],
       estimatedSessions: 7,
@@ -77,9 +80,33 @@ export const theCrownOfStars: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Planar Circuit', description: 'Seven locations across seven planes, each holding an artifact. From the Feywild to the Shadowfell to the Elemental Chaos.', significance: 'The campaign\'s primary exploration arc.' },
-    { name: 'The Fallen Sanctum', description: 'Aldren\'s hidden base: a pocket dimension where he was cast after his failed ascension. Scarred with divine burns. His war room for the second attempt.', significance: 'Where the truth about the prophecy is fully revealed.' },
-    { name: 'The Ascension Chamber', description: 'A space between planes where the crown assembles and the mortal touches divinity. The room where gods are made - or broken.', significance: 'The final scene. The choice. The transformation.' },
+    {
+      name: 'The Planar Circuit',
+      description:
+        'Seven locations across seven planes, each holding an artifact. From the Feywild to the Shadowfell to the Elemental Chaos. Each location is a mirror - reflecting what the seeker values and what they fear.',
+      significance: 'The campaign\'s primary exploration arc.',
+    },
+    {
+      name: 'The Fallen Sanctum',
+      description:
+        'Aldren\'s hidden base: a pocket dimension where he was cast after his failed ascension. Scarred with divine burns. His war room for the second attempt. Vesper keeps flowers alive on a windowsill that overlooks a crater.',
+      significance: 'Where the truth about the prophecy is fully revealed.',
+    },
+    {
+      name: 'The Ascension Chamber',
+      description:
+        'A space between planes where the crown assembles and the mortal touches divinity. The room where gods are made - or broken. Seven pedestals ring a central dais. The ceiling is an open sky. The stars are watching.',
+      significance: 'The final scene. The choice. The transformation.',
+    },
   ],
-  dataSystems: ['legendaryWeapon', 'ancientProphecy', 'cataclysmCountdown', 'encounterWaves', 'puzzleTrap', 'magicalAnomaly', 'factionWar', 'dreamSequence'],
+  dataSystems: [
+    'legendaryWeapon',
+    'ancientProphecy',
+    'cataclysmCountdown',
+    'encounterWaves',
+    'puzzleTrap',
+    'magicalAnomaly',
+    'factionWar',
+    'dreamSequence',
+  ],
 };

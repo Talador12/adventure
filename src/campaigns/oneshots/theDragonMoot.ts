@@ -4,7 +4,7 @@ export const theDragonMoot: OneShotCampaign = {
   id: 'oneshot-dragon-moot',
   type: 'oneshot',
   title: 'The Dragon Moot',
-  tagline: 'Every dragon meets once per century. One proposes war on mortals. Convince them otherwise.',
+  tagline: 'Every dragon in the world is in one room. The vote is unanimous extinction of mortals. You are the defense attorney for your entire species.',
   tone: 'epic',
   themes: ['epic', 'political', 'classic_fantasy'],
   playerCount: { min: 3, max: 6 },
@@ -23,7 +23,7 @@ export const theDragonMoot: OneShotCampaign = {
       keyEvents: [
         'The caldera: a massive volcanic bowl where dragons perch on cliff ledges like senators in an amphitheater',
         'The factions: metallic dragons (mostly pro-mortal), chromatic dragons (divided), Pyraxis\'s bloc (pro-war)',
-        'First impressions: dragons test the party with riddles, challenges, and deliberate intimidation',
+        'First impressions: a blue dragon exhales lightning at the party\'s feet. "You did not flinch. Good. I was going to eat you if you ran."',
         'The undecided: three ancient dragons who have not chosen a side - they are the swing votes',
       ],
     },

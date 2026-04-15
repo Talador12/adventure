@@ -51,9 +51,9 @@ export const theClockworkVault: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Marina Dross', role: 'client', personality: 'A shipwright whose family built the waterfront. The bank president forged documents to steal her property. She hired the party because the courts failed her. Practical, bitter, and paying well.' },
-    { name: 'Bank President Cogsworth III', role: 'absent antagonist', personality: 'Grandson of the bank\'s founder. Inherited the building, the vault, and a talent for creative accounting. Currently asleep in his mansion while his bank is being robbed.' },
-    { name: 'The Clockwork Warden', role: 'obstacle', personality: 'A large clockwork golem that activates when the vault is tampered with. Not intelligent - just persistent, strong, and made of brass.' },
+    { name: 'Marina Dross', role: 'client', personality: 'Explains the heist using shipbuilding metaphors. "The vault is the hull. The gears are the rigging. Box 714 is the cargo." Bitter in a precise way - she can tell you the exact date her property was stolen, the name of the forged document, and the clerk who filed it.' },
+    { name: 'Bank President Cogsworth III', role: 'absent antagonist', personality: 'His portrait hangs in the lobby next to a clock that has his family name on the face. Asleep in his mansion right now. The kind of man who inherits both a building and a talent for forgery and considers both family traditions.' },
+    { name: 'The Clockwork Warden', role: 'obstacle', personality: 'Eight feet of brass, copper, and bad intentions. Ticks louder the closer it gets. Does not think. Does not negotiate. Does not stop. If it catches you in the gears during rotation, it does not notice.' },
   ],
   keyLocations: [
     { name: 'The First Mechanical Bank', description: 'A clock tower that is also a bank. Nine floors connected by gears, tracks, and the rotating vault platform. Beautiful, deadly, and always ticking.', significance: 'The entire heist takes place here.' },

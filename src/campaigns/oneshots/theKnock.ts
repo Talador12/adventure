@@ -51,8 +51,8 @@ export const theKnock: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Caretaker Vorn', role: 'information / victim', personality: 'The manor\'s elderly caretaker who heard the first knock and has been hiding in his room since. He knows the house\'s history but hoped it was folklore. "My grandmother said never let anyone knock three times. I thought she was superstitious."' },
-    { name: 'The Sealed One', role: 'antagonist', personality: 'A revenant bound beneath the manor centuries ago. It does not speak. It does not negotiate. It was sealed for a reason and the reason becomes clear when it starts breaking free.' },
+    { name: 'Caretaker Vorn', role: 'information / victim', personality: 'Found behind a locked door in his nightshirt, holding a fire poker with both hands. Whispers. Will not look at the floor. "My grandmother said there are three rules about this house. Never knock three times. Never go into the basement after dark. And if the locks open on their own, leave. I broke two of those tonight."' },
+    { name: 'The Sealed One', role: 'antagonist', personality: 'Does not speak. Does not have a face. It is a shape that presses against stone from below, leaving handprints in the mortar. When the third seal cracks, the sound it makes is not a voice. It is the sound of stone being pushed aside by something that has been patient for centuries.' },
   ],
   keyLocations: [
     { name: 'The Manor', description: 'A fortified house on a hill, older than it looks, built on a foundation that predates the building by centuries.', significance: 'The entire adventure takes place here. Every unlocked door is a countdown.' },

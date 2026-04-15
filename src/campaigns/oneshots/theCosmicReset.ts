@@ -4,7 +4,7 @@ export const theCosmicReset: OneShotCampaign = {
   id: 'oneshot-cosmic-reset',
   type: 'oneshot',
   title: 'The Cosmic Reset',
-  tagline: 'A button that resets the universe. Someone is about to press it. There is no combat solution.',
+  tagline: 'A man at the center of reality has his hand on a button. His math says the universe should not exist. He is waiting for someone to prove him wrong.',
   tone: 'epic',
   themes: ['epic', 'planar', 'social'],
   playerCount: { min: 3, max: 5 },
@@ -52,7 +52,7 @@ export const theCosmicReset: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Kael', role: 'the philosopher', personality: 'A brilliant mathematician driven to the Origin Point by grief. Not a villain. Not insane. Just a man who did the math on suffering and decided the universe failed the test. He WANTS to be wrong.' },
-    { name: 'The Watcher', role: 'the mechanism\'s guardian', personality: 'A being that exists to ensure the reset mechanism works if activated. Completely neutral. Will not stop Kael or help the party. Observes without judgment.' },
+    { name: 'The Watcher', role: 'the mechanism\'s guardian', personality: 'A being with no face and no voice who gestures instead of speaking. Points at the button. Points at Kael. Shrugs. It has seen this before. It will see it again. Or it will not. Either way.' },
   ],
   keyLocations: [
     { name: 'The Layers', description: 'Descending levels of reality that strip away physical, magical, and emotional armor. By the time you reach the Origin Point, you are just yourself.', significance: 'The journey that prepares the party for a conversation, not a fight.' },

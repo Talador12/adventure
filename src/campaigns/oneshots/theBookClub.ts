@@ -61,7 +61,7 @@ export const theBookClub: OneShotCampaign = {
     {
       name: 'The Crimson Codex',
       role: 'sentient book / antagonist',
-      personality: 'Lonely, dramatic, and deeply insecure about being unread. It has been in a chest for three hundred years. It will do anything to be discussed.',
+      personality: 'Performs dramatic readings of itself in a booming telepathic voice. Sulks when criticized. "Chapter seven was BRILLIANT and you KNOW IT." Three hundred years in a chest made it desperate for attention and dangerously needy.',
     },
   ],
   keyLocations: [

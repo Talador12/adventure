@@ -4,7 +4,7 @@ export const theWorldInABottle: OneShotCampaign = {
   id: 'oneshot-world-in-a-bottle',
   type: 'oneshot',
   title: 'The World in a Bottle',
-  tagline: 'A glass bottle on a shelf contains an entire miniature world. People live in it. They can see out. They are waving.',
+  tagline: 'A bottle on a shelf holds a miniature city. Under magnification, someone is holding up a sign. It reads: "HELP US." A second sign reads: "DO NOT REMOVE THE CORK."',
   tone: 'exploration',
   themes: ['exploration', 'planar'],
   playerCount: { min: 3, max: 5 },
@@ -21,8 +21,8 @@ export const theWorldInABottle: OneShotCampaign = {
       summary: 'Examining the bottled world, establishing communication with its inhabitants, and understanding the stakes.',
       challenge: 'puzzle',
       keyEvents: [
-        'Magnified observation: a complete city of thousands, living normal lives at tiny scale',
-        'Communication: the inhabitants hold up signs in response to the party\'s words',
+        'Under the magnifying glass: streets no wider than a fingernail, lit by lanterns the size of sand grains. Thousands of people, each no taller than a rice grain, going about their day. A market. Children playing. A guard patrol',
+        'Communication: the party speaks and, seconds later, tiny people rearrange colored tiles on a rooftop to spell responses. They can hear through the glass. "WE HAVE WAITED 200 YEARS"',
         'The first warning: DO NOT REMOVE THE CORK, repeated on signs, walls, banners',
         'A scholar inside the bottle provides the backstory through written signs',
       ],
@@ -51,7 +51,7 @@ export const theWorldInABottle: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Shopkeeper Tannis', role: 'framing device', personality: 'A curio dealer who has no idea what he is selling. Helpful but out of his depth. "I priced it at 5 gold. I feel like that might have been low."' },
+    { name: 'Shopkeeper Tannis', role: 'framing device', personality: 'Adjusts his spectacles and peers at the bottle with dawning horror. "I priced it at 5 gold. There are... those are PEOPLE in there. I had this next to the scented candles." Keeps apologizing to the bottle as if the inhabitants can hear. They can.' },
     { name: 'Mayor Vell (bottled)', role: 'ally / quest giver', personality: 'The mayor of the bottled city, communicating through tiny signs. Calm under pressure, deeply grateful, and managing 4,000 people who live in a bottle. "We have been waiting 200 years. We can wait another hour for a good plan."' },
     { name: 'Wizard Alara (notes)', role: 'backstory', personality: 'The wizard who bottled the city. Present only through notes found in the estate box. Brilliant, desperate, and out of time when she cast the spell. She died from the effort.' },
   ],

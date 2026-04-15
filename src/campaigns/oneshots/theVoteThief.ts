@@ -51,9 +51,9 @@ export const theVoteThief: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Velara Ashton', role: 'antagonist', personality: 'Duskfall\'s chief of staff. Brilliant, exhausted, genuinely believes she is preventing economic collapse. Not corrupt - just convinced she knows better than the voters.', secret: 'Her family lost everything in the last economic downturn. Her fear is personal, not political.' },
-    { name: 'Candidate Maren Lowe', role: 'reform candidate', personality: 'A former teacher who ran on workers\' rights and public education. Calm, principled, and completely unaware that her election is being stolen.' },
-    { name: 'Lord Duskfall', role: 'unwitting figure', personality: 'An old-money noble who genuinely wanted to win fairly. Horrified when he learns what Velara did. His reaction depends on how the party handles it.' },
+    { name: 'Velara Ashton', role: 'antagonist', personality: 'Has not slept in three days and it shows - dark circles, trembling hands, a voice that cracks between sentences. Speaks in economic projections: "Fourteen percent unemployment. Supply chain collapse in six months. I ran the numbers." Brilliant, desperate, and wrong in a way that almost sounds right.', secret: 'Her family lost everything in the last economic downturn. Her fear is personal, not political.' },
+    { name: 'Candidate Maren Lowe', role: 'reform candidate', personality: 'Speaks to adults the same way she spoke to students - patient, clear, waiting for the thought to land before moving on. Never raises her voice. Wins arguments by asking questions the other person cannot answer.' },
+    { name: 'Lord Duskfall', role: 'unwitting figure', personality: 'Gestures too much when he is being sincere. Keeps a family ring he twists when anxious. When he discovers what Velara did, he does not shout - he goes very quiet and asks to sit down.' },
   ],
   keyLocations: [
     { name: 'The Counting Hall', description: 'A converted warehouse where ballots from all districts are brought for the final count. Long tables, oil lamps, tired volunteers.', significance: 'Where the climax happens and the election is decided.' },

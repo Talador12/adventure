@@ -4,7 +4,7 @@ export const theWhistleblower: OneShotCampaign = {
   id: 'oneshot-whistleblower',
   type: 'oneshot',
   title: 'The Whistleblower',
-  tagline: 'A clerk found the receipts. Now everyone wants her dead. Get the evidence out before they burn it all.',
+  tagline: 'A bleeding clerk stumbles into your inn with copied ledgers and a crossbow bolt in her shoulder. The judiciary opens at dawn. She needs to survive until then.',
   tone: 'political',
   themes: ['political', 'intrigue', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theWhistleblower: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Nella Briggs', role: 'whistleblower', personality: 'A young human clerk who is terrified but resolute. She did not plan to be brave. She just could not look at the numbers and stay silent. Practical, shaking, determined.' },
-    { name: 'Lord Treasurer Vance', role: 'primary antagonist', personality: 'A charming, well-dressed man who has stolen enough gold to build a small kingdom. Believes he deserves it. "I kept this city running for a decade. The money is my fee."', secret: 'He is already preparing to flee the country. The guard response is his backup plan.' },
-    { name: 'Judge Orvaan', role: 'ally', personality: 'An elderly dwarf judge known for being incorruptible. Has been suspicious of the treasury for years but never had proof. Will act on the evidence immediately.' },
+    { name: 'Nella Briggs', role: 'whistleblower', personality: 'Apologizes for bleeding on things. Keeps touching the ledger copies to make sure they are still there. Explains the fraud in accounting terminology and has to be asked to slow down. "Column C minus Column F. That is the theft. Ten years of it. I checked it eleven times."' },
+    { name: 'Lord Treasurer Vance', role: 'primary antagonist', personality: 'Never appears in person during the one-shot, but his voice is everywhere - quoted by guards, referenced in documents, his portrait in every government building. His charm is a thing people describe in the past tense, like weather that has already passed.', secret: 'He is already preparing to flee the country. The guard response is his backup plan.' },
+    { name: 'Judge Orvaan', role: 'ally', personality: 'Reads documents with a magnifying glass held six inches from his nose. Does not rush. Does not get excited. When he finishes reading Nella\'s ledgers, he sets them down, folds his hands, and says one word: "Finally."' },
   ],
   keyLocations: [
     { name: 'The City Streets (Night)', description: 'Dark, patrolled, dangerous. Every alley could hide a guard or a friend. The party must cross the city by dawn.', significance: 'The gauntlet the party must navigate to survive the night.' },

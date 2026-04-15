@@ -4,7 +4,7 @@ export const theEmptyThroneOneshot: OneShotCampaign = {
   id: 'oneshot-empty-throne',
   type: 'oneshot',
   title: 'The Empty Throne',
-  tagline: 'The king abdicated. Three factions want the crown. You are the only thing between them and civil war.',
+  tagline: 'The king nailed a letter to the throne room door that says "I am done." Three factions are mobilizing. You have twelve hours.',
   tone: 'political',
   themes: ['political', 'intrigue', 'war'],
   playerCount: { min: 3, max: 6 },
@@ -51,10 +51,10 @@ export const theEmptyThroneOneshot: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'King Aldric', role: 'departing monarch', personality: 'Tired, haunted, but sharper than he looks. He engineered this crisis on purpose to break the nobles\' stranglehold. Whether that was brave or reckless depends on the outcome.' },
-    { name: 'Guildmaster Hessa', role: 'Merchant Council leader', personality: 'A half-elf merchant who thinks every problem is a negotiation. Reasonable but will always prioritize market stability over justice.' },
-    { name: 'Lady Korrath', role: 'Noble Houses leader', personality: 'Cold, aristocratic, and genuinely believes noble stewardship is necessary. Did not order the poisoning but knew about it and said nothing.', secret: 'Her own daughter is sick from the tainted water. She has been in denial.' },
-    { name: 'Ren of Millhaven', role: 'People\'s Assembly leader', personality: 'A dockworker who taught herself to read law books. Furious, eloquent, and absolutely correct about the injustice - but her fury could tip into vengeance.' },
+    { name: 'King Aldric', role: 'departing monarch', personality: 'Speaks in the past tense about everything, including himself. "The king would have done nothing. I am no longer the king." Smiles at inappropriate moments because he has been waiting thirty years to stop pretending.' },
+    { name: 'Guildmaster Hessa', role: 'Merchant Council leader', personality: 'Assigns a gold value to every proposal. "What does justice cost? Because stability costs twelve thousand gold a quarter and we cannot afford both." Taps her fingers when anyone speaks too long about morality.' },
+    { name: 'Lady Korrath', role: 'Noble Houses leader', personality: 'Speaks only in the third person plural: "The Houses believe," "The nobility requires." Never says "I." Flinches when someone mentions the lower districts by name.', secret: 'Her own daughter is sick from the tainted water. She has been in denial.' },
+    { name: 'Ren of Millhaven', role: 'People\'s Assembly leader', personality: 'Quotes law at nobles who think she cannot read. Interrupts to correct legal terminology. Speaks fast, cites page numbers from memory. Her anger is precise, not reckless - until someone dismisses her people as "the lower districts."' },
   ],
   keyLocations: [
     { name: 'The Throne Room', description: 'An empty throne with a letter nailed to the door. Three faction banners hang on the walls. A round table has been set up in the center.', significance: 'Where the summit takes place and the new government is formed.' },

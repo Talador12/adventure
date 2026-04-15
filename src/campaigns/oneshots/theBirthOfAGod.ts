@@ -21,10 +21,10 @@ export const theBirthOfAGod: OneShotCampaign = {
       summary: 'The three-mile radius of warped reality around the ascension. Getting to Vara means crossing a landscape gone mad.',
       challenge: 'exploration',
       keyEvents: [
-        'The outer ring: gravity is inconsistent, buildings float, people are disoriented but safe',
-        'The middle ring: time loops, matter transforms, walls become water and back again',
-        'The inner ring: divine energy is thick enough to see, touch, and taste - reality is optional',
-        'Reaching Vara: she is at the center, floating, screaming, golden light pouring from her eyes',
+        'The outer ring: a child floats ten feet off the ground, laughing. A house drifts sideways like a boat. Gravity is a suggestion here.',
+        'The middle ring: a soldier walks the same patrol loop every eight seconds, unaware. A stone wall turns to water, then back. The party steps through what used to be solid.',
+        'The inner ring: the air glows gold. Breathing it tastes like copper and sunlight. A step forward ages a boot. A step back reverses it. Reality is negotiable.',
+        'The center: Vara hangs in a column of light, screaming in two voices - one human, one something much older.',
       ],
     },
     {
@@ -53,7 +53,7 @@ export const theBirthOfAGod: OneShotCampaign = {
   keyNPCs: [
     { name: 'Vara', role: 'involuntary vessel', personality: 'A baker who was in the wrong place at the wrong time. Terrified, in pain, but able to communicate in brief windows. She does not want to be a god. She wants to go home.' },
     { name: 'Lathander (dying)', role: 'the transferring god', personality: 'The morning lord, dying of a cosmic plague. Desperate, guilty, and grateful for any vessel. He knows what he is doing to Vara and it horrifies him. "I am sorry. I was not ready to cease."' },
-    { name: 'Guildmaster Thane', role: 'mortal authority', personality: 'Head of the Mage Guild. Trying to manage the crisis from outside the zone. Pragmatic: he will sacrifice Vara if it saves the city. The party is his moral check.' },
+    { name: 'Guildmaster Thane', role: 'mortal authority', personality: 'Head of the Mage Guild. Speaks in clipped, measured sentences even while the sky splits open. "Acceptable casualties. Define that for me. Because I have a number and you will not like it." The party is the only thing between him and a kill order.' },
   ],
   keyLocations: [
     { name: 'The Ascension Zone', description: 'A three-mile radius of warped reality centered on Vara. Gravity fails, time loops, matter transforms. Beautiful and lethal.', significance: 'The obstacle course to reach Vara.' },

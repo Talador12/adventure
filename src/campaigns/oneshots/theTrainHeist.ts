@@ -51,9 +51,9 @@ export const theTrainHeist: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Handler Voss', role: 'quest giver', personality: 'A veterans\' advocate with a missing arm - one of the prosthetics that was confiscated was his. Calm, organized, and driven by personal injustice. "They took my arm twice. Once in battle. Once with a form."' },
-    { name: 'Guard Captain Mira Steele', role: 'antagonist', personality: 'Professional, smart, and one step ahead. She suspected the cargo would be targeted and set the trap. Not cruel - just very good at her job.' },
-    { name: 'Conductor Thatch', role: 'neutral / bribable', personality: 'The train conductor who has seen everything and says nothing. Can be bribed to look the other way or provide information about the guard schedule.' },
+    { name: 'Handler Voss', role: 'quest giver', personality: 'His right sleeve is pinned at the elbow. Points at the train map with his left hand. Speaks with the calm of someone who has rehearsed this briefing a hundred times. "Car 6 contains confiscated prosthetics. Enchanted limbs taken from people who already lost them once. Mine was serial number 447. I would like it back."' },
+    { name: 'Guard Captain Mira Steele', role: 'antagonist', personality: 'Suspected the cargo would be targeted and baited the trap using herself as the lure. Sits in a crate in Car 6 for six hours reading a book. When the party opens the door, she bookmarks her page before drawing her sword. Not cruel. Just always three steps ahead.' },
+    { name: 'Conductor Thatch', role: 'neutral / bribable', personality: 'Punches tickets without looking up. Has seen every scam, every smuggle, every romance on this train for fifteen years. Can be bribed, but only with information - he collects secrets the way other people collect coins. "Tell me something I do not know and I will tell you the guard schedule."' },
   ],
   keyLocations: [
     { name: 'The Iron Serpent', description: 'A 12-car arcane express. Elegant passenger cars in front, fortified cargo in the middle, more passengers in back. Moves at speed, never stops.', significance: 'The entire heist takes place on this train.' },

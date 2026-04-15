@@ -56,7 +56,7 @@ export const thePenPal: OneShotCampaign = {
     {
       name: 'Thessaly (pen pal)',
       role: 'polymorphed bronze dragon',
-      personality: 'Earnest, overthinking, terrible at blending in. Uses archaic phrases. Knows too much about weather patterns and maritime history. Desperately wants mortal friends.',
+      personality: 'Refers to decades as "a short while." Eats a candle absentmindedly during dinner. Knows the exact wind speed and correctly predicts rain three hours early. When flustered, speaks in Draconic. Desperately, achingly lonely.',
     },
   ],
   keyLocations: [

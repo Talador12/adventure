@@ -21,10 +21,10 @@ export const theOldRoad: OneShotCampaign = {
       summary: 'Following the buried road through dense forest. The further they go, the more intact it becomes. Something preserved it.',
       challenge: 'exploration',
       keyEvents: [
-        'Clearing brush and roots to follow the cobblestones deeper into the forest',
-        'Milestones carved in an unknown language, spaced at regular intervals',
-        'The forest thins around the road as if the trees chose not to grow on it',
-        'Animal behavior: wildlife avoids the road entirely, as if it is territory they respect',
+        'Hacking through centuries of undergrowth to follow the cobblestones. The stones are warm to the touch and fitted so precisely that a knife blade will not fit between them',
+        'Every half mile: a milestone carved with spiraling script in a language that predates Common, Elvish, and Dwarvish. The stone is harder than anything in the current kingdom',
+        'The forest does not grow on the road. Trees stop at its exact edge, roots curling away as if repelled. The boundary is knife-sharp',
+        'A deer stands at the road\'s edge, watching the party. It will not step onto the stones. Nothing living will. The party\'s footsteps echo differently here, as if the road remembers being walked',
       ],
     },
     {

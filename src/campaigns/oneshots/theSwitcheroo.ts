@@ -51,9 +51,9 @@ export const theSwitcheroo: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Commander Thayne', role: 'the target', personality: 'A military commander imprisoned for refusing an immoral order. Believes her imprisonment is more powerful than her freedom. Proud, principled, and will punch anyone who tries to rescue her.' },
-    { name: 'The Double (Maris)', role: 'volunteer', personality: 'Thayne\'s twin sister. A civilian who believes her sister is more important to the cause. Calm, brave, and heartbreakingly willing to disappear into a prison.', secret: 'She has a terminal illness. She volunteered because she has less time to lose.' },
-    { name: 'The Resistance Leader', role: 'quest giver', personality: 'A pragmatist who loves Thayne but needs her free. Made the decision to override Thayne\'s wishes. Carries that weight.' },
+    { name: 'Commander Thayne', role: 'the target', personality: 'Even in chains, she stands at attention. Addresses the party as hostiles when they open the carriage door. Fights with her hands bound because she trained for exactly this scenario. "I gave my people a symbol. A prisoner with dignity. What are you giving them? A fugitive."' },
+    { name: 'The Double (Maris)', role: 'volunteer', personality: 'Practices her sister\'s walk in the mirror. Gets the jaw set right but the eyes wrong - too kind. Asks the party practical questions about prison food and exercise time, like she is packing for a trip. Does not cry. Saves that for later.', secret: 'She has a terminal illness. She volunteered because she has less time to lose.' },
+    { name: 'The Resistance Leader', role: 'quest giver', personality: 'Gives orders, then pauses, then gives them again - like he is convincing himself each time. Does not look at the party when he explains the plan. Looks at his hands. Made this decision alone and will carry it alone.' },
   ],
   keyLocations: [
     { name: 'The Transfer Route', description: 'Five blocks through the merchant district. Cobblestones, market stalls, and one narrow alley where the carriage must slow.', significance: 'Where the intercept happens.' },

@@ -23,10 +23,10 @@ export const gravityWell: OneShotCampaign = {
       summary: 'Gravity increases. The party explores the room and finds the puzzle while adapting to crushing force.',
       challenge: 'puzzle',
       keyEvents: [
-        'Round 1: 2x gravity. Movement halved. Jumping impossible.',
-        'The puzzle: a mechanical lock on the far wall with delicate tumblers.',
-        'Round 3: 4x gravity. Weapons nearly unusable. Armor becomes a prison.',
-        'Smart parties start shedding equipment. Others pay the price.',
+        'Round 1: 2x gravity. A potion bottle slips from a belt and shatters on the floor. It fell twice as fast. Movement is wading through invisible mud.',
+        'The puzzle: a mechanical lock with eight delicate tumblers across the room. Each tumbler requires precise finger pressure. At normal gravity, trivial. At 4x, your fingers weigh four times what they should.',
+        'Round 3: 4x gravity. A longsword weighs twenty pounds. Plate armor weighs two hundred and forty. The fighter\'s knees buckle. The wizard cannot lift her arms to cast.',
+        'Smart parties start shedding equipment. The clang of dropped weapons echoes. Others learn the hard way when their spine compresses.',
       ],
     },
     {

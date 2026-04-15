@@ -51,9 +51,9 @@ export const theTaxRevolt: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Elder Marsh', role: 'quest giver', personality: 'A weathered farmer who leads by consensus. Has never asked for help before. The shame of asking hurts more than the tax.' },
-    { name: 'Tax Collector Venn', role: 'neutral turned ally', personality: 'A Crown bureaucrat who takes pride in fairness. When he discovers the fraud, his professionalism turns from enforcing the tax to enforcing the law against the lord.' },
-    { name: 'Lord Castellan', role: 'absent antagonist', personality: 'The regional lord running the tax fraud. Never appears in person - his power is in documents and soldiers. A coward who exploits the Crown\'s authority for personal gain.' },
+    { name: 'Elder Marsh', role: 'quest giver', personality: 'Takes his hat off before speaking to anyone. Looks at his hands when he asks for help - they are farmer\'s hands, never meant for begging. Keeps apologizing for the trouble. The whole village watches his face to know whether to hope.' },
+    { name: 'Tax Collector Venn', role: 'neutral turned ally', personality: 'Refers to regulations by number. "Section 14, subsection C." Carries a stamp and an inkwell on his belt like weapons. When he realizes the tax notice is forged, his face goes white, then red, then very, very still. Fraud against the Crown is personal to him.' },
+    { name: 'Lord Castellan', role: 'absent antagonist', personality: 'Never appears in person. His signature is on every document. His manor has twelve rooms and two servants. The gap between what he collected and what he reported could build a castle.' },
   ],
   keyLocations: [
     { name: 'Thornfield', description: 'A farming village of thirty families. Modest, hardworking, and about to lose everything to a tax they should not owe.', significance: 'The community at stake.' },

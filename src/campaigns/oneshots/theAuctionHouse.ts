@@ -4,7 +4,7 @@ export const theAuctionHouse: OneShotCampaign = {
   id: 'oneshot-auction-house',
   type: 'oneshot',
   title: 'The Auction House',
-  tagline: 'The item you need is being auctioned. You cannot afford it. Steal it during the bidding without anyone noticing.',
+  tagline: 'Lot 47 is a dead woman\'s necklace. Starting bid: ten thousand gold. You have twelve. Steal it before the hammer falls.',
   tone: 'heist',
   themes: ['heist', 'social', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theAuctionHouse: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Grandmother Elara', role: 'quest giver', personality: 'An elderly woman who lost her village, her daughter, and her daughter\'s pendant. She asks for nothing for herself - only the return of a memory.' },
-    { name: 'Madame Sable', role: 'auctioneer / criminal', personality: 'Runs the Gilded Gavel with charm and ruthlessness. Knows every item\'s provenance - and most of them are stolen. She considers theft an art form and herself a gallery owner.', secret: 'She fences stolen goods for three thieves\' guilds and launders the money through legitimate auction sales.' },
-    { name: 'Bidder Nine', role: 'rival', personality: 'A masked noble who bids aggressively on Lot 47. Wealthy, competitive, and suspicious of anyone who pays too much attention to the pendant.' },
+    { name: 'Grandmother Elara', role: 'quest giver', personality: 'Holds the faded portrait with both hands at all times. When she describes the pendant, she touches her own neck where it used to hang. Does not ask the party to steal - asks them to "bring her daughter home." Offers her twelve gold like it is a fortune, because to her it is.' },
+    { name: 'Madame Sable', role: 'auctioneer / criminal', personality: 'Describes stolen goods with the reverence of a museum curator. "Provenance: acquired." Never says "stolen." Wears gloves at all times. Her voice drops half a register when she senses a lie. She does not run an auction house - she runs a laundry.', secret: 'She fences stolen goods for three thieves\' guilds and launders the money through legitimate auction sales.' },
+    { name: 'Bidder Nine', role: 'rival', personality: 'Bids by raising one finger. Never speaks. Wears a porcelain mask that shows no expression. Their bodyguard does all the talking, and what the bodyguard says is: "My employer is not accustomed to losing."' },
   ],
   keyLocations: [
     { name: 'The Gilded Gavel', description: 'An opulent auction house with velvet ropes, crystal chandeliers, and more security than a bank. Every surface gleams.', significance: 'The heist location.' },

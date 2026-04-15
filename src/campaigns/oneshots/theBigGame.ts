@@ -4,7 +4,7 @@ export const theBigGame: OneShotCampaign = {
   id: 'oneshot-big-game',
   type: 'oneshot',
   title: 'The Big Game',
-  tagline: 'The village championship. You are the team. The rival village has won for thirty years. No pressure.',
+  tagline: 'The whole team has food poisoning. The championship is at noon. The children are already painting your names on banners.',
   tone: 'social',
   themes: ['social', 'comedy'],
   playerCount: { min: 4, max: 6 },
@@ -34,10 +34,10 @@ export const theBigGame: OneShotCampaign = {
       summary: 'Two rounds of chaotic, skill-check-based sport. The party plays their hearts out.',
       challenge: 'social',
       keyEvents: [
-        'Round 1: Thornvale dominates. Big Berrick is unstoppable.',
-        'Halftime: the party regroups. A new strategy. Target weaknesses.',
-        'Round 2: The party claws back. The crowd goes wild.',
-        'A collision with Berrick. Something feels wrong. He is too dense. Too heavy.',
+        'Round 1: Thornvale scores three times. Big Berrick plows through two party members like they are made of paper. The crowd groans.',
+        'Halftime: Coach Millicent delivers a speech that makes grown warriors weep. "Thirty years I have waited. You will not give me thirty-one."',
+        'Round 2: The party runs a play using Berrick\'s overconfidence. They score. The crowd erupts so loud the birds scatter.',
+        'A collision with Berrick: the party member bounces off him like hitting stone. His skin rippled. Something is very wrong.',
       ],
     },
     {

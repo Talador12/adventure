@@ -23,10 +23,10 @@ export const theCollapsingDungeon: OneShotCampaign = {
       summary: 'The first stretch. Each room has a puzzle or obstacle. Five minutes per room. The party learns the pace or dies.',
       challenge: 'puzzle',
       keyEvents: [
-        'Room 1: Locked door. Puzzle lock. Timer starts. Rubble falls.',
-        'Room 2: Flooded corridor. Swim fast or drown in collapsing stone.',
-        'Room 3: A trapped hallway. Disarm or tank the damage. No time for both.',
-        'Room 4: A chasm. The bridge is half-collapsed. Jump, climb, or get creative.',
+        'Room 1: A locked door with nine rotating rings. Dust falls from the ceiling like sand in an hourglass. A stone the size of a fist drops and shatters at the rogue\'s feet.',
+        'Room 2: Water up to the waist. The ceiling is four feet high and dropping. Swim through or the room becomes a coffin.',
+        'Room 3: Pressure plates. The first person through gets a dart in the shoulder. Disarm the mechanism or sprint through taking hits. No time for careful.',
+        'Room 4: A chasm. The bridge is three planks and a prayer. The far side is crumbling as they watch. Jump now or the landing zone will not exist in sixty seconds.',
       ],
     },
     {
@@ -34,10 +34,10 @@ export const theCollapsingDungeon: OneShotCampaign = {
       summary: 'The collapse accelerates. Rooms fall faster. Encounters appear. The dungeon is not empty.',
       challenge: 'combat',
       keyEvents: [
-        'Room 5: Undead guardians that do not care about falling rocks.',
-        'Room 6: A treasure room. Grabbing anything costs seconds. Seconds matter.',
-        'Room 7: The floor is giving way. Platforming across crumbling stone.',
-        'Room 8: A sealed door. The key is in the room that just collapsed behind them.',
+        'Room 5: Skeletons rise from alcoves. A ceiling slab crushes one mid-swing. The skeletons do not care. The party should.',
+        'Room 6: Gold. Gems. A magic sword on a pedestal. The ceiling groans. Every second spent grabbing loot is a second closer to burial. The sword is very shiny.',
+        'Room 7: The floor tiles are falling into darkness one by one, spiraling inward. The party is standing on a shrinking island of stone.',
+        'Room 8: A sealed door with a keyhole. The key is in Room 6, which is rubble now. Break it, pick it, or burn a spell slot. The ceiling does not wait.',
       ],
     },
     {

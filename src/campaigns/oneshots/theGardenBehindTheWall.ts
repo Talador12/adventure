@@ -32,10 +32,10 @@ export const theGardenBehindTheWall: OneShotCampaign = {
       summary: 'Exploring the garden interior. Plants from every era and biome grow side by side. The garden watches and responds to the party.',
       challenge: 'exploration',
       keyEvents: [
-        'Species variety: desert cacti beside arctic moss beside tropical orchids, all thriving',
-        'Extinct plants: species from textbooks growing as though they never disappeared',
-        'The garden responds: paths open and close, flowers turn to face the party',
-        'A grove at the center containing a tree so old it predates written history',
+        'Desert cacti grow beside arctic moss beside tropical orchids in the same soil. A flower that textbooks say went extinct 800 years ago blooms at the party\'s feet, smelling of cinnamon and thunderstorms',
+        'Extinct species everywhere: ferns from the age of dragons, a tree that produces fruit described only in children\'s fairy tales. A botanist would weep',
+        'The garden responds to the party: vines retract from their path, flowers turn their faces to follow like tiny suns tracking, a sweet citrus scent intensifies when they move in the right direction',
+        'A grove at the center: a single tree so vast its canopy blocks the sky. Its bark is petrified at the base and living at the crown. It predates every civilization the party has ever heard of',
       ],
     },
     {
@@ -52,7 +52,7 @@ export const theGardenBehindTheWall: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Council Chair Parveen', role: 'quest giver', personality: 'A pragmatic leader who sees the garden as wasted land in a growing town. Not malicious, just focused on the town\'s needs. "We need that land. Or at least we need to know why we cannot have it."' },
-    { name: 'Druid Wynn', role: 'ally / secret keeper', personality: 'The druid who flew over the wall and returned with "no memory." She remembers everything. The garden asked her to keep its secret. She is relieved someone else might finally know.' },
+    { name: 'Druid Wynn', role: 'ally / secret keeper', personality: 'Maintains the "I do not remember anything" story with practiced calm, but her eyes flick to the garden wall every few minutes. When the party gets close to the truth, she exhales like she has been holding her breath for three days. "It asked me not to tell. I have been carrying this alone. Please do not make me regret trusting you."' },
     { name: 'The Seed Keeper', role: 'sentient garden', personality: 'The oldest living thing in the region. Patient as stone, protective as a parent, and willing to negotiate if approached with respect. It speaks through nature, not words.' },
   ],
   keyLocations: [

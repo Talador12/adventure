@@ -51,9 +51,9 @@ export const thePrisonReform: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Warden Esha Varn', role: 'reformer', personality: 'A former battlefield medic who believes every person can be rehabilitated. Idealistic but not naive - she knows the system is rotten and has been documenting it.' },
-    { name: 'Captain Holt', role: 'antagonist', personality: 'Guild leader who turned a prison into a personal business. Charismatic with his guards, brutal with inmates. Justifies everything as "maintaining order."', secret: 'He was once an inmate himself. His hatred of prisoners is self-hatred projected outward.' },
-    { name: 'Inmate Kora', role: 'witness', personality: 'A young woman serving time for theft. Works in Holt\'s basement workshop. Too scared to speak unless the party can guarantee her safety.' },
+    { name: 'Warden Esha Varn', role: 'reformer', personality: 'Uses medical language for everything. Calls the prison "the patient." Calls corruption "the infection." Keeps rehabilitation proposals pinned to her wall and crosses off the ones Holt killed. "I have been treating symptoms for two years. You are the scalpel."' },
+    { name: 'Captain Holt', role: 'antagonist', personality: 'Calls every guard "brother." Calls every inmate by number, never name. Walks with his hands behind his back, military posture, boots always polished. Smiles when he talks about "order." The smile does not reach his eyes.', secret: 'He was once an inmate himself. His hatred of prisoners is self-hatred projected outward.' },
+    { name: 'Inmate Kora', role: 'witness', personality: 'Counts things compulsively - stones in the wall, bars on the window, party members in the room. Talks to the floor, not to faces. Will only speak if the party sits down so they are shorter than her. Three years of looking up at guards did something to her.' },
   ],
   keyLocations: [
     { name: 'Thornwall Prison', description: 'A massive stone fortress repurposed as a prison. Cold, damp, and designed to crush hope. The warden\'s office has flowers in the window.', significance: 'The entire one-shot takes place here.' },

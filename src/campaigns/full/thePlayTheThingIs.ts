@@ -24,6 +24,7 @@ export const thePlayTheThingIs: FullCampaign = {
       keyEvents: [
         'Recruitment and the first rehearsal - learning that the "stage combat" is real combat',
         'First performance: coded message delivered, resistance contact made, audience cheers',
+        'Quiet moment: after the first show, the troupe eats together backstage. Sable raises a cup. "To the words we cannot say in daylight." Pip does not understand but cheers loudest.',
         'A close call: an imperial censor attends a show and finds nothing suspicious',
         'The troupe\'s internal dynamics: rivalries, romances, and one member who might be a spy',
       ],
@@ -35,8 +36,9 @@ export const thePlayTheThingIs: FullCampaign = {
       keyEvents: [
         'A performance goes wrong: a real monster in the show nearly kills an actor, the audience thinks it is brilliant',
         'The troupe discovers their anonymous patron is incredibly generous - suspiciously so',
+        'The moment of cost: a resistance cell is compromised after a show. People the party met are arrested. If the party identified the spy early, the damage is contained. If not, the cell is destroyed and the party hears the names read at a public execution.',
+        'Quiet moment: Sable writes a new scene for the next performance. It is about the people who were arrested. She disguises it as fiction. The audience weeps. They do not know it is real. Sable does, and she cannot stop her hands from shaking during the performance.',
         'An imperial spy infiltrates the troupe. The party must identify them without breaking character.',
-        'A resistance cell is compromised after a show. Was the code cracked, or is there a traitor?',
       ],
       estimatedSessions: 5,
     },
@@ -45,9 +47,10 @@ export const thePlayTheThingIs: FullCampaign = {
       summary: 'The capital performance. Draven in the audience. The revolution in the script. The most important show ever staged.',
       keyEvents: [
         'The revelation: Draven is their patron. He has been watching and funding them for months.',
-        'Draven confronts Sable backstage: "I loved your art. Was any of it real?"',
+        'Draven confronts Sable backstage: "I loved your art. Was any of it real?" Sable\'s answer depends on what the party has taught her about truth. If they encouraged honesty, she says: "All of it. Every word."',
         'The final performance must go on. The codes will trigger the revolution. Draven is watching.',
-        'The choice: Draven can stop the show or let the art speak. The party must convince him.',
+        'Quiet moment: mid-performance, Draven laughs at a joke that is about him. The audience does not know. He does. For one moment, the tyrant and the revolutionary are sharing the same truth.',
+        'The choice: Draven can stop the show or let the art speak. If Sable told him the truth backstage, he hesitates. If she lied, he acts.',
       ],
       estimatedSessions: 5,
     },
@@ -72,9 +75,33 @@ export const thePlayTheThingIs: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Crimson Stage', description: 'The troupe\'s traveling wagon-stage. Folds out into a full theater. Conceals weapons, code books, and resistance documents in secret compartments.', significance: 'Home base, performance venue, and the revolution\'s mobile headquarters.' },
-    { name: 'The Provincial Towns', description: 'A circuit of towns across the empire, each with a resistance cell, a performance venue, and imperial eyes watching.', significance: 'Each town is a self-contained social encounter.' },
-    { name: 'The Grand Amphitheater', description: 'The capital\'s largest performance space. Seats ten thousand. The site of the final show.', significance: 'Where the revolution is won or lost, through art.' },
+    {
+      name: 'The Crimson Stage',
+      description:
+        'The troupe\'s traveling wagon-stage. Folds out into a full theater. Conceals weapons, code books, and resistance documents in secret compartments. Pip has decorated it with ribbons. Sable has hidden messages in the paint.',
+      significance: 'Home base, performance venue, and the revolution\'s mobile headquarters.',
+    },
+    {
+      name: 'The Provincial Towns',
+      description:
+        'A circuit of towns across the empire, each with a resistance cell, a performance venue, and imperial eyes watching. Each town remembers the troupe. By Act 2, fans follow them between cities.',
+      significance: 'Each town is a self-contained social encounter.',
+    },
+    {
+      name: 'The Grand Amphitheater',
+      description:
+        'The capital\'s largest performance space. Seats ten thousand. The site of the final show. Draven\'s private box overlooks the stage. The acoustics carry a whisper to the back row.',
+      significance: 'Where the revolution is won or lost, through art.',
+    },
   ],
-  dataSystems: ['socialEncounter', 'npcRelationshipWeb', 'courtIntrigue', 'diplomaticNegotiation', 'rumorMill', 'backstoryComplication', 'encounterWaves', 'factionWar'],
+  dataSystems: [
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'courtIntrigue',
+    'diplomaticNegotiation',
+    'rumorMill',
+    'backstoryComplication',
+    'encounterWaves',
+    'factionWar',
+  ],
 };

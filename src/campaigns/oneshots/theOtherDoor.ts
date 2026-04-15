@@ -21,10 +21,10 @@ export const theOtherDoor: OneShotCampaign = {
       summary: 'Exploring the meadow demiplane. It is beautiful, peaceful, and clearly artificial. The sky has no sun, just light. The horizon shimmers.',
       challenge: 'exploration',
       keyEvents: [
-        'The meadow: endless grass, perfect weather, flowers that bloom in patterns',
-        'The door closes behind the party after 10 minutes',
-        'A cottage at the center of the meadow, well-maintained but old',
-        'Signs of a single occupant: tiny furniture, claw marks on doorframes, bowls of water',
+        'The meadow: waist-high grass that smells of warm honey. No sun in the sky, just soft golden light from everywhere. Flowers bloom in spirals that follow the party\'s footsteps',
+        'The door swings shut behind them after ten minutes with a soft click. From this side, it is a freestanding rectangle of oak in the middle of a field, perfectly ordinary and deeply wrong',
+        'A cottage at the meadow\'s center: thatched roof, smoke curling from a chimney, a garden of herbs that grow in alphabetical order',
+        'Inside the cottage: furniture sized for something small, claw marks at knee-height on every doorframe, tiny bowls of water refilled by an unseen hand',
       ],
     },
     {

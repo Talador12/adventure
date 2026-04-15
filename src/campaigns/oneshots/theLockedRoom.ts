@@ -25,8 +25,8 @@ export const theLockedRoom: OneShotCampaign = {
       keyEvents: [
         'The body: Lord Vane, stabbed in the chest. Expression of surprise.',
         'The room: iron bolts on the door, no windows, solid stone walls. No secret passages.',
-        'Detect Magic shows nothing on the room or the body. The knife radiates faintly but "all magic weapons do."',
-        'Suspects: the butler, the wife, the business partner. All have motive. None had access.',
+        'Detect Magic shows nothing on the room or body. The knife radiates faint transmutation. Inspector Morwen waves it off: "It is a masterwork blade. They all glow a little."',
+        'Suspects: the butler (cut from the will last month), the wife (in another city - verified), the partner (at a public auction with forty witnesses). Everyone has motive. Nobody had access.',
       ],
     },
     {
@@ -56,12 +56,12 @@ export const theLockedRoom: OneShotCampaign = {
     {
       name: 'Inspector Morwen',
       role: 'city guard investigator',
-      personality: 'Methodical, skeptical, exhausted. She has been on the force for twenty years and this is the first case that makes no sense.',
+      personality: 'Chews the end of her quill while thinking. Mutters "no, that does not work either" under her breath. Twenty years on the force and this is the first case that makes her feel stupid. She hates feeling stupid.',
     },
     {
       name: 'The Whisper Blade',
       role: 'sentient dagger / the actual killer',
-      personality: 'Intelligent, manipulative, and enjoying the game. It has been killing for decades and being passed from owner to owner. It considers murder an art form.',
+      personality: 'Speaks in a whisper directly into the mind. "You are clever. I respect that. Most investigators blame the butler." Considers murder a craft. Critiques its own past kills. Genuinely offended when called evil.',
       secret: 'It was made by an assassin who bound his soul into the blade at death. He cannot stop killing. It is compulsion, not choice.',
     },
   ],

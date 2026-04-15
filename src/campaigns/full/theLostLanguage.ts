@@ -24,6 +24,7 @@ export const theLostLanguage: FullCampaign = {
       keyEvents: [
         'Meeting the children: they are not possessed, cursed, or mad. They are simply bilingual in a language nobody else speaks.',
         'University linguists arrive and fail: the language does not match any known family',
+        'Quiet moment: Elara takes the party to the river and speaks to it. The water shifts - not dramatically, just a gentle lean toward her voice. She smiles. "It likes you. It says you walk heavy but you mean well."',
         'A temple cleric detects no magic, no curse, no divine influence. This is natural.',
         'An elderly herbalist says: "My grandmother spoke like that. She said the herbs told her what they needed."',
       ],
@@ -35,7 +36,8 @@ export const theLostLanguage: FullCampaign = {
       keyEvents: [
         'A crumbling archive contains a pre-civilizational text: "Before words, we listened. The world spoke first."',
         'The party finds a hermit druid who speaks fragments of the language. She has been alone for decades because nobody believed her.',
-        'The children demonstrate: they speak to a dying tree, and it blooms. They speak to a blocked stream, and it clears.',
+        'The moment of cost: Old Maren and Professor Venn meet. She speaks the language he spent his career cataloguing. He cannot hear it. He devoted his life to words and missed the oldest ones. The look on his face when Elara translates for him is the sound of a worldview breaking.',
+        'Quiet moment: the children demonstrate. They speak to a dying tree and it blooms. A farmer who wanted the tree removed watches new leaves unfold. He takes off his hat. He does not have words for what he saw.',
         'Historical records show the language was systematically suppressed during the Age of Expansion - nature was to be tamed, not spoken to',
       ],
       estimatedSessions: 4,
@@ -45,8 +47,9 @@ export const theLostLanguage: FullCampaign = {
       summary: 'The mining confrontation, the hill that speaks, and the village\'s choice: listen to their children or silence the last speakers.',
       keyEvents: [
         'The mining company arrives. The hill groans. Only the children understand: it is begging.',
-        'The children translate the hill\'s words for the village: it has been their water source, their windbreak, their protector for centuries',
-        'The village must decide: the mine brings wealth, the hill brings life',
+        'The children translate the hill\'s words for the village: it has been their water source, their windbreak, their protector for centuries. If the party helped Old Maren reconnect with the village, her testimony adds weight.',
+        'The village must decide: the mine brings wealth, the hill brings life. Foreman Drace is not wrong about the economics. The children are not wrong about the hill.',
+        'Quiet moment: Venn kneels on the hill and presses his ear to the ground. He closes his eyes. "I do not hear words," he says. "But I hear something." He looks up at Elara. "What does it sound like to you?" She says: "It sounds like home."',
         'If the party has built enough trust, the adults begin to hear fragments themselves. The language was never lost. They just stopped paying attention.',
       ],
       estimatedSessions: 4,
@@ -76,9 +79,33 @@ export const theLostLanguage: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'Ashenmoor', description: 'A rural village nestled against a range of old hills. The kind of place where people know the land without ever really knowing it.', significance: 'Where the mystery unfolds and the community decides its future.' },
-    { name: 'The Speaking Hill', description: 'An ancient hill covered in wildflowers. The children say it hums. If you press your ear to the ground, you can almost hear it.', significance: 'The living embodiment of the language. The thing that must be saved or lost.' },
-    { name: 'The Old Archive', description: 'A forgotten library beneath the village church, full of pre-civilizational texts that nobody has read in centuries.', significance: 'Where the historical evidence of the language is found.' },
+    {
+      name: 'Ashenmoor',
+      description:
+        'A rural village nestled against a range of old hills. The kind of place where people know the land without ever really knowing it. The well water tastes different than any other village\'s. Nobody ever asked why.',
+      significance: 'Where the mystery unfolds and the community decides its future.',
+    },
+    {
+      name: 'The Speaking Hill',
+      description:
+        'An ancient hill covered in wildflowers. The children say it hums. If you press your ear to the ground, you can almost hear it. Birds circle it differently than other hills. The wildflowers bloom a week early here.',
+      significance: 'The living embodiment of the language. The thing that must be saved or lost.',
+    },
+    {
+      name: 'The Old Archive',
+      description:
+        'A forgotten library beneath the village church, full of pre-civilizational texts that nobody has read in centuries. The pages smell like earth. Some of the text appears to have been written by pressing leaves into wet clay.',
+      significance: 'Where the historical evidence of the language is found.',
+    },
   ],
-  dataSystems: ['socialEncounter', 'npcRelationshipWeb', 'ancientProphecy', 'rumorMill', 'magicalAnomaly', 'backstoryComplication', 'settlementEvent', 'diplomaticNegotiation'],
+  dataSystems: [
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'ancientProphecy',
+    'rumorMill',
+    'magicalAnomaly',
+    'backstoryComplication',
+    'settlementEvent',
+    'diplomaticNegotiation',
+  ],
 };

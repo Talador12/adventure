@@ -34,10 +34,10 @@ export const frozenSolid: OneShotCampaign = {
       summary: 'The map is outdated. A landmark is missing. The party must adapt or freeze.',
       challenge: 'puzzle',
       keyEvents: [
-        'The ridge the map shows is gone. An avalanche took it years ago.',
-        'A frozen corpse with a newer map. But the body is encased in ice.',
-        'Ice worms surface nearby. Fast, heat-seeking, and relentless.',
-        'A faint light ahead. Smoke? Fire? The shelter exists, but something lives there.',
+        'The ridge the map shows is gone. Where it should be is a sheer drop. Fifty years of weather carved a canyon. The map might as well be fiction.',
+        'A frozen corpse half-buried in snow, arm outstretched toward the south. Clutched in one ice-locked fist: a newer map. Getting it out means chipping ice with numb fingers.',
+        'The snow moves. Not wind - something beneath it. A pale, segmented body surfaces, mandibles clicking. Heat-seeking ice worms. They felt the party from thirty feet away.',
+        'A faint orange glow through the whiteout. Smoke rises from a cave mouth. Relief. Then the footprint in the snow: three feet long, pressed four inches deep.',
       ],
     },
     {

@@ -4,7 +4,7 @@ export const theMarketDay: OneShotCampaign = {
   id: 'oneshot-market-day',
   type: 'oneshot',
   title: 'The Market Day',
-  tagline: 'No monsters. No dungeons. Just a village market, a pie contest, and a dance at sunset. Pure cozy.',
+  tagline: 'A village pie contest, a lost cat on a roof, and a fey brownie dying under the stage. Save market day.',
   tone: 'social',
   themes: ['social', 'comedy'],
   playerCount: { min: 3, max: 6 },

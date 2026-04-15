@@ -4,7 +4,7 @@ export const theWorldTreeOneshot: OneShotCampaign = {
   id: 'oneshot-world-tree',
   type: 'oneshot',
   title: 'The World Tree',
-  tagline: 'The World Tree is dying. Its roots connect all planes. If it dies, reality fragments.',
+  tagline: 'Leaves are falling from the sky in every plane at once. The World Tree is rotting from the inside. A city of a million people is living in its branches, and they do not know they are killing it.',
   tone: 'epic',
   themes: ['epic', 'planar', 'wilderness'],
   playerCount: { min: 3, max: 6 },
@@ -23,7 +23,7 @@ export const theWorldTreeOneshot: OneShotCampaign = {
       keyEvents: [
         'The roots: tunnels of living wood connecting planes - some are dark and dead, cutting off entire realms',
         'The damage: rot spreading from above, not below - something in the canopy is causing this',
-        'A dying root: the connection to the Feywild flickers and fades - Fey creatures pour through before it closes',
+        'A dying root: the tunnel goes dark ahead. A pixie slams into the party, screaming. Behind her, the root tunnel collapses like a closing throat. The Feywild connection is severed. She is the last thing through.',
         'The path upward: climbing the trunk toward the source of the poison',
       ],
     },
@@ -52,7 +52,7 @@ export const theWorldTreeOneshot: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Archdruid Oaken', role: 'guide', personality: 'An ancient druid who has lived within the Tree for centuries. She felt the sickness first and has been screaming into the void for decades. Bitter, exhausted, and vindicated by the party\'s arrival.' },
-    { name: 'Mayor Thell', role: 'Canopy leader', personality: 'Mayor of the city in the branches. Loves the Tree, denies the science, then slowly accepts the truth. His denial is not malice - it is the terror of losing everything.', secret: 'He has seen the rot himself. He has been in denial because the alternative is unbearable.' },
+    { name: 'Mayor Thell', role: 'Canopy leader', personality: 'A man who built his career on Canopy\'s prosperity. When shown the rot, he goes through five stages of grief in ten minutes. Denial: "Our filtration systems are fine." Anger: "You are fearmongering." Bargaining: "What if we reduce output by half?" Depression: silence. Acceptance: "Tell me what to do. Tell me how to save my city without killing the thing it stands on."', secret: 'He has seen the rot himself. He has been in denial because the alternative is unbearable.' },
     { name: 'The Heartwood Spirit', role: 'the tree itself', personality: 'A manifestation of the World Tree\'s consciousness. Speaks in seasons and growth cycles. Not angry at the city - just tired and in pain.' },
   ],
   keyLocations: [

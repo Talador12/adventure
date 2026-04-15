@@ -36,10 +36,10 @@ export const theArenasChampion: OneShotCampaign = {
         'Three escalating fights. Each tests a different virtue: Round 2 tests mercy, Round 3 tests sacrifice, Round 4 tests cunning.',
       challenge: 'combat',
       keyEvents: [
-        'Round 2: the "monster" is a captured village chief — do they fight or refuse?',
-        'Round 3: a trap room where the party can sacrifice a team member\'s HP to save the others',
-        'Round 4: Team Ironblood — a fight against rivals who respect the party',
-        'Between rounds: backstage politics, healing, and the crowd\'s growing investment',
+        'Round 2: the gate opens and a chained man stumbles out - a village chief, unarmed, weeping. The crowd chants FIGHT. Refusing costs crowd favor but gains the Arbiter\'s nod.',
+        'Round 3: a trap room where pressure plates force a choice - one member stands on the kill plate so the others can cross. Their HP drains visibly.',
+        'Round 4: Team Ironblood enters with weapons drawn and salutes. Kael whispers: "Make it a good fight. We owe each other that."',
+        'Between rounds: the Beautiful Ones offer an alliance, Ironblood shares healing potions, the Nameless watch in silence.',
       ],
     },
     {
@@ -48,10 +48,10 @@ export const theArenasChampion: OneShotCampaign = {
         'Mirror match against magical constructs of themselves. Then the wish — and its price.',
       challenge: 'combat',
       keyEvents: [
-        'Round 5: mirror constructs with exact stat copies — brute force won\'t work',
-        'Victory through creativity: doing things classes "can\'t" do',
-        'The patron god appears: "Your wish is granted. The price is one champion\'s greatest gift."',
-        'The sacrifice: which party member gives up what matters most?',
+        'Round 5: the constructs walk out wearing the party\'s faces. Same stats, same spells, same fighting style. Every attack they make, the mirror matches.',
+        'The crowd falls silent. This is not entertainment. This is a test. A barbarian who casts a spell. A wizard who throws a punch. The mirrors cannot adapt to what you are not.',
+        'The patron descends: light bends, the arena goes quiet, and a voice like a temple bell says "Your wish is granted. The price is one champion\'s greatest gift."',
+        'The silence. Every party member knows what their greatest gift is. One must say it aloud and watch it leave.',
       ],
     },
   ],
@@ -60,7 +60,7 @@ export const theArenasChampion: OneShotCampaign = {
       name: 'The Arbiter',
       role: 'tournament master',
       personality:
-        'A stern, fair half-giant who runs the tournament with military precision. Announces fights with theatrical flair. Secretly ensures fights are fair even when they don\'t seem it.',
+        'A twelve-foot half-giant who speaks exclusively in arena announcer cadence, even off-stage. Every sentence lands like a gavel. "YOU. WILL. WAIT. YOUR. TURN." Secretly rigs matchups to test character, not just combat skill.',
     },
     {
       name: 'Kael Ironblood',

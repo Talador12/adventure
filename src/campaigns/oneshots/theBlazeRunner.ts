@@ -23,8 +23,8 @@ export const theBlazeRunner: OneShotCampaign = {
       summary: 'The party organizes the village evacuation. Who carries what. Who moves slow. The fire is visible on the treeline.',
       challenge: 'social',
       keyEvents: [
-        'Forty villagers, including elderly, children, and a woman in labor.',
-        'A farmer refuses to leave his livestock. A merchant demands to bring his cart.',
+        'Forty villagers. A grandmother who cannot walk fast. Three children under five. A woman whose contractions started an hour ago.',
+        'A farmer stands in his doorway with a pitchfork, refusing to leave his pigs. A merchant has hitched his cart to the last mule and is blocking the road.',
         'The party must choose: main road (longer, safer) or forest trail (shorter, riskier).',
         'The fire jumps a ridge. It is closer than expected.',
       ],

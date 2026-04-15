@@ -23,10 +23,10 @@ export const theMapOfScars: OneShotCampaign = {
       summary: 'Examining the corpse. Identifying the victim. Reading the map carved into skin.',
       challenge: 'exploration',
       keyEvents: [
-        'The scars: precise, deliberate, topographic. Years old. This was planned.',
-        'The victim: no identification. Young woman. Calloused hands. Ink-stained fingers.',
-        'Cartographer\'s guild identifies her: Sera Inkwell, missing for three years.',
-        'She was researching forbidden locations. Her notes were destroyed in a fire.',
+        'The scars: raised keloid ridgelines that match real topography when compared to a regional map. Years of deliberate scarification. This took months.',
+        'The victim: no identification. Young woman. Calloused writing-hand. Ink permanently embedded under her fingernails. A compass rose scarred above her heart.',
+        'The cartographer\'s guild checks their records. Sera Inkwell, filed as missing three years ago. "She was brilliant. Obsessive. She said she found something that could not be written on paper."',
+        'Her apartment: burned out. Her workshop: emptied. Every note she ever made, destroyed. Except the map on her body.',
       ],
     },
     {

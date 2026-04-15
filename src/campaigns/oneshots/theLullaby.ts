@@ -21,10 +21,10 @@ export const theLullaby: OneShotCampaign = {
       summary: 'The lullaby begins. The forest falls asleep around the party. They must stay awake as the song draws closer.',
       challenge: 'exploration',
       keyEvents: [
-        'The melody: wordless, in a minor key, heartbreakingly beautiful',
-        'The forest sleeps: animals collapse, flames freeze, wind dies, water stops flowing',
-        'Constitution saves to resist the drowsiness. Failure means falling into magical sleep',
-        'The singing moves through the trees. A shape is visible in the darkness, drifting closer',
+        'The melody: wordless, in a minor key. The kind of melody that makes you think of a memory you do not have. Your eyelids are heavy before you understand why',
+        'The campfire freezes mid-flicker. Not goes out. Freezes. A bird drops from a branch, asleep before it hits the ground. The wind stops. Water in a canteen stops sloshing. Everything is falling asleep',
+        'Constitution saves each round. Failure means your head drops. Your weapon lowers. You sit down. You do not want to sit down but you are sitting down. Your eyes close and it feels wonderful',
+        'A shape between the trees. White. Drifting. Cradling empty arms. The singing is coming from it. It is so close you can see its mouth moving',
       ],
     },
     {
@@ -51,9 +51,9 @@ export const theLullaby: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Singer', role: 'antagonist / tragic figure', personality: 'A banshee who was a mother in life. Her lullaby kills because death twisted her love into a weapon. She does not know. She sees sleeping children where there are empty camps. She sees her baby where there is only air.' },
-    { name: 'Ranger Voss', role: 'quest giver', personality: 'A forest ranger who has been tracking the disappearances for weeks. He is exhausted from not sleeping. "I cannot sleep. If I sleep when the song comes, I am gone. I have not slept in four days."' },
-    { name: 'The Child (spirit)', role: 'the key', personality: 'A faint, gentle spirit in the grave behind the cottage. Not scared. Waiting. It has been calling for its mother but cannot reach her through the madness of the song.' },
+    { name: 'The Singer', role: 'antagonist / tragic figure', personality: 'Drifts between the trees cradling nothing. Her mouth moves and the lullaby comes out but her eyes are looking down at her empty arms and she is smiling. She smiles at empty campsites. She smiles at the places where people used to be. She tucks invisible blankets around nothing. She does not know they are gone. She thinks they are sleeping.' },
+    { name: 'Ranger Voss', role: 'quest giver', personality: 'Shakes constantly. Pupils blown. Drinks cold water to stay awake and flinches at every sound. "Four days. I have not slept in four days. Every night the song comes and I stuff wax in my ears and bite my own hand to stay awake. Look." He shows the bite marks. "If I sleep when it sings, I am gone. Like the others. Gone."' },
+    { name: 'The Child (spirit)', role: 'the key', personality: 'A faint glow in the small grave. Not scared. Patient. It reaches up when the party approaches, the way a toddler reaches for a parent. It has been calling for its mother for centuries but the song drowns it out. If brought close enough, the mother hears it through the madness, and the lullaby softens, and slows, and finally stops.' },
   ],
   keyLocations: [
     { name: 'The Forest', description: 'A woodland that falls completely silent when the lullaby begins. No wind, no fire, no sound but the song.', significance: 'The hunting ground. The silence is the first warning.' },

@@ -4,7 +4,7 @@ export const theMuseumHeist: OneShotCampaign = {
   id: 'oneshot-museum-heist',
   type: 'oneshot',
   title: 'The Museum Heist',
-  tagline: 'The exhibits are alive. The security is cursed. The painting you need is running.',
+  tagline: 'The security guard is a suit of armor that speaks in all caps. The painting you need is hiding in a landscape, pretending to be a bush.',
   tone: 'heist',
   themes: ['heist', 'comedy', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theMuseumHeist: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Amulet of Alara', role: 'the target / reluctant', personality: 'A sentient amulet that loves attention. Museum life means thousands of admirers daily. Home means a dusty shelf. "I\'m APPRECIATED here!"' },
-    { name: 'Sir Galvanize', role: 'guardian armor', personality: 'A massive animated suit of armor that takes museum security very seriously. Speaks in all caps. "I LIVE TO SERVE. AND TO APPREHEND."' },
-    { name: 'Mona (portrait)', role: 'living exhibit / informant', personality: 'A woman in a painting who watches everything and gossips with other portraits. Will share security info for compliments.' },
+    { name: 'The Amulet of Alara', role: 'the target / reluctant', personality: 'Glows brighter when people look at it. Dims when ignored. Has been making friends with the other exhibits for years. Jumps between painting frames to avoid capture, shouting "I HAVE VISITORS! THOUSANDS A DAY! WHAT DO YOU OFFER? A SHELF?!" Dramatic, needy, and surprisingly fast for jewelry.' },
+    { name: 'Sir Galvanize', role: 'guardian armor', personality: 'Seven feet of enchanted plate mail with the personality of a hall monitor. Speaks exclusively in all caps at parade volume. "HALT. STATE YOUR BUSINESS. VISITING HOURS ENDED FOUR HOURS AGO. I WILL WAIT WHILE YOU EXPLAIN." Takes museum security more seriously than anyone has ever taken anything.' },
+    { name: 'Mona (portrait)', role: 'living exhibit / informant', personality: 'Leans out of her frame to whisper to adjacent paintings. Knows every guard rotation, every ward trigger, and who kissed whom at last month\'s gala. Will trade intelligence for compliments about her smile. "Tell me I am mysterious. Be specific."' },
   ],
   keyLocations: [
     { name: 'The Royal Museum', description: 'A grand building where every exhibit has a personality and most have magical security.', significance: 'The entire one-shot takes place here.' },

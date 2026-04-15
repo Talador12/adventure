@@ -23,8 +23,8 @@ export const thePoison: OneShotCampaign = {
       summary: 'Discovery of the poisoning. The race to the caves begins. Every choice matters because everything has a cost.',
       challenge: 'exploration',
       keyEvents: [
-        'Poison symptoms: weakening, blurred vision, trembling hands. Ability scores drop hourly.',
-        'The caves are four hours away on foot. Running cuts it to two but accelerates the poison.',
+        'The first sign: a sword feels heavier than it should. Then the edges of vision blur. Then the shaking starts. Ability scores drop by 1 every hour. At zero in any score, the heart stops.',
+        'The caves are four hours on foot. Running halves it but doubles the poison\'s speed. The math is cruel either way.',
         'A herbalist provides a temporary suppressant. Buys one hour but uses their last supplies.',
         'The road to the caves is not empty. Bandits. Wildlife. Each encounter is a gamble.',
       ],
@@ -56,7 +56,7 @@ export const thePoison: OneShotCampaign = {
     {
       name: 'Selwyn Marr',
       role: 'employer / poisoner',
-      personality: 'Apologetic, businesslike, genuinely uncomfortable with what he has done. He needed the artifact to save his daughter and every legitimate adventurer refused the cave.',
+      personality: 'Cannot look the party in the eye. Keeps straightening his coat, adjusting his collar. "I know what this looks like. I know what I did. My daughter is dying of the same poison - natural exposure. Every mercenary company I hired refused that cave. I am not a good man. But she is a good child and she does not deserve to die because her father could not find braver people to ask nicely."',
       secret: 'His daughter is dying of the same poison. Natural exposure. He needs the artifact, a purification stone, to cure her permanently.',
     },
     {

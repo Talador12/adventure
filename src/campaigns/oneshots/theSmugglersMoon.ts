@@ -4,7 +4,7 @@ export const theSmugglersMoon: OneShotCampaign = {
   id: 'oneshot-smugglers-moon',
   type: 'oneshot',
   title: 'The Smuggler\'s Moon',
-  tagline: 'Smuggle the most famous person in the city past locked gates, patrolled walls, and a bounty that doubles every hour.',
+  tagline: 'Her face is on every wanted poster. Every gate is locked. The bounty doubles every hour. Get her out by dawn.',
   tone: 'heist',
   themes: ['heist', 'intrigue', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theSmugglersMoon: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Sera Quinn', role: 'the cargo', personality: 'A resistance leader who inspires thousands but cannot defend herself. Brave with words, terrified in the streets. Trusts the party completely because she has no other choice.' },
-    { name: 'Gate Captain Renn', role: 'obstacle', personality: 'Head of the north gate checkpoint. Thorough, incorruptible, and doing her job. Not hunting Sera specifically but will arrest her on sight.' },
-    { name: 'Forger Kell', role: 'ally', personality: 'A document forger who provides Sera\'s fake papers. Nervous, meticulous, and very expensive. "I guarantee the paper. I do not guarantee the performance."' },
+    { name: 'Sera Quinn', role: 'the cargo', personality: 'Writes speeches that move thousands. Cannot lie to a single guard without her voice shaking. Keeps trying to adjust her disguise. Apologizes every time she slows the party down. Brave in exactly one way and terrified in all the others.' },
+    { name: 'Gate Captain Renn', role: 'obstacle', personality: 'Checks papers by holding them up to the light. Asks the same three questions of every person and watches their eyes, not their mouths. Not hunting Sera - just doing her job with a thoroughness that might as well be malice.' },
+    { name: 'Forger Kell', role: 'ally', personality: 'Examines his own forgeries with a magnifying glass before handing them over. Talks about paper weight and ink consistency the way sommeliers talk about wine. "I guarantee the paper. I guarantee the seal. The performance is your problem. Do not sweat on the documents."' },
   ],
   keyLocations: [
     { name: 'The Safe House', description: 'A basement apartment in the merchant quarter. Temporary, cramped, and about to be compromised.', significance: 'Where the plan is made.' },

@@ -4,7 +4,7 @@ export const theRefugeeCamp: OneShotCampaign = {
   id: 'oneshot-refugee-camp',
   type: 'oneshot',
   title: 'The Refugee Camp',
-  tagline: 'Families outside the wall. Winter coming. The city says no. You say otherwise.',
+  tagline: 'Three hundred people in tents. Two weeks until frost. The city voted no. You need to change one vote by sunset.',
   tone: 'political',
   themes: ['political', 'social', 'war'],
   playerCount: { min: 3, max: 5 },
@@ -51,10 +51,10 @@ export const theRefugeeCamp: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Council Member Dara', role: 'quest giver', personality: 'A half-orc healer on the council who has been fighting for refugee entry alone. Exhausted but unwavering.' },
-    { name: 'Suli', role: 'refugee leader', personality: 'A human mother who organized three hundred people into a functioning community in a muddy field. Will not beg. Will not grovel. Will negotiate.' },
-    { name: 'Farmer Edric', role: 'swing voter', personality: 'A practical man who voted no because the numbers did not add up. Not cruel - just scared. Persuadable with a real plan, not just emotion.' },
-    { name: 'Councilor Harke', role: 'opposition', personality: 'Believes the city must protect its own first. Wrong about the refugees but right about the treasury. Makes the argument that good people make when they are afraid.' },
+    { name: 'Council Member Dara', role: 'quest giver', personality: 'Keeps a tally on her hand of how many children are in the camp. Updates it every time she visits. Currently at sixty-three. Speaks in precise medical terms about what cold exposure will do. Does not let anyone look away.' },
+    { name: 'Suli', role: 'refugee leader', personality: 'Runs the camp like a ship captain. Assigns jobs, settles disputes, tracks rations on a board made from a wagon door. Refuses to say "please." Says "here is what we need" and waits. If you offer pity, she hands you a shovel.' },
+    { name: 'Farmer Edric', role: 'swing voter', personality: 'Keeps doing math on a piece of paper while the party talks. Asks about bushels, storage capacity, and caloric needs. Not heartless - just terrified of making a promise the city cannot keep. "Show me the grain and I will change my vote."' },
+    { name: 'Councilor Harke', role: 'opposition', personality: 'Begins every argument with "I take no pleasure in this." Says "our people" to mean city residents and "those people" to mean refugees, and does not notice the distinction. Believes his own fear is civic responsibility.' },
   ],
   keyLocations: [
     { name: 'The Refugee Camp', description: 'Tents and cook fires outside Greyhaven\'s north gate. Muddy, cold, organized with desperate efficiency.', significance: 'Where the human cost is visible and undeniable.' },

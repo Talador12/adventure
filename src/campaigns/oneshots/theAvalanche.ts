@@ -45,10 +45,10 @@ export const theAvalanche: OneShotCampaign = {
       summary: 'The party arrives to find the frost giant taking what he came for. Fight or negotiate while protecting the caravan.',
       challenge: 'combat',
       keyEvents: [
-        'The caravan is circled. Dead wolves around them. The frost giant walks through the wreckage.',
-        'He takes the runestone chest. These are his clan\'s property, stolen by the merchants.',
-        'The merchants lied. They stole the runestones. The giant has a legitimate claim.',
-        'Negotiate the return, fight an exhausted battle, or find a compromise.',
+        'The caravan is circled, wagons on their sides. Six dead wolves. The merchants huddle around a fire with the look of people who almost died and know it.',
+        'Hrothgar stands in the wreckage, the runestone chest under one arm. He is not looting. He is reclaiming. The runes on the stones match the tattoos on his arms.',
+        'Aldric\'s smile dies when the giant speaks. "These are my mother\'s bones. You dug them from our sacred ground. I have tracked you for seven days."',
+        'The party is exhausted, frost-bitten, outnumbered by one very large being with a very legitimate grievance. Negotiate, fight, or hand over stolen property.',
       ],
     },
   ],
@@ -62,7 +62,7 @@ export const theAvalanche: OneShotCampaign = {
     {
       name: 'Merchant Aldric Voss',
       role: 'caravan master / liar',
-      personality: 'Charming, grateful for rescue, and absolutely lying about how he acquired the cargo.',
+      personality: 'All smiles and handshakes. "Thank the gods you made it through! The cargo? Trade goods. Standard fare. Nothing worth dying over." He makes eye contact too long when he says it. He has been practicing that line.',
     },
   ],
   keyLocations: [

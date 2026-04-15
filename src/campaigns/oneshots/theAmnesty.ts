@@ -51,9 +51,9 @@ export const theAmnesty: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Colonel Varen', role: 'applicant', personality: 'A professional soldier who followed an order that killed two hundred people. Not a sadist - a machine. His calm is more disturbing than rage would be. He wants amnesty not from guilt but from pragmatism.' },
-    { name: 'Mira of Ashfield', role: 'survivor', personality: 'Lost her husband and three children at Ashfield. Has waited two years to face the man responsible. Her grief is a weapon and she knows it.' },
-    { name: 'General Storne', role: 'absent power', personality: 'The new government\'s war hero. Switched sides at the right moment. His heroism is real - and so is his role in Ashfield. He is not present today, but his shadow is in the room.', secret: 'He gave the Ashfield order, then defected to the winning side before anyone could hold him accountable.' },
+    { name: 'Colonel Varen', role: 'applicant', personality: 'Answers every question in exactly three sentences. Never uses the word "killed" - always "neutralized" or "processed." When asked about the children at Ashfield, he pauses for exactly two seconds, then continues in the same flat voice. His calm is more disturbing than rage.' },
+    { name: 'Mira of Ashfield', role: 'survivor', personality: 'Speaks slowly, deliberately, as if placing each word on the table like evidence. Never raises her voice. Lists her children by name, age, and what they wanted to be when they grew up. Calls Varen "the Colonel" - never his name.' },
+    { name: 'General Storne', role: 'absent power', personality: 'Not present, but his portrait hangs in the hall. Quotes from his victory speech are carved into the building. Every time Varen says "I was ordered," someone glances at that portrait.', secret: 'He gave the Ashfield order, then defected to the winning side before anyone could hold him accountable.' },
   ],
   keyLocations: [
     { name: 'The Amnesty Hall', description: 'A converted assembly room with a long table for the board, a witness chair, and a gallery of survivors, families, and journalists.', significance: 'Where every decision is made and witnessed.' },

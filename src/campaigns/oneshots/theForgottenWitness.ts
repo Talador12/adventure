@@ -23,9 +23,9 @@ export const theForgottenWitness: OneShotCampaign = {
       summary: 'Working with Hessa to pull memory fragments. Colors, sounds, emotions. Each one is a puzzle piece.',
       challenge: 'puzzle',
       keyEvents: [
-        'Fragment 1: the color red. Not blood. A red cloak. The killer wore red.',
-        'Fragment 2: a smell. Forge smoke. The scene was near a smithy.',
-        'Fragment 3: a sound. A voice she knows but cannot place. Familiar. Safe. Wrong.',
+        'Fragment 1: the color red. Hessa touches her temple. "A cloak. Heavy wool. Red as wine." Not the victim\'s blood. The killer\'s clothing.',
+        'Fragment 2: a smell. "Iron and coal. Like standing too close to a forge." The scene was in the smithy district.',
+        'Fragment 3: a sound. Hessa\'s voice cracks. "A voice I know. I trust it. But in the memory it is saying something terrible." She cannot place it.',
         'The husband arrives, concerned. He offers to help. He is very helpful.',
       ],
     },

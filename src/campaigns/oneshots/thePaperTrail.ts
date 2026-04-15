@@ -4,7 +4,7 @@ export const thePaperTrail: OneShotCampaign = {
   id: 'oneshot-paper-trail',
   type: 'oneshot',
   title: 'The Paper Trail',
-  tagline: 'Steal documents from a bureaucratic fortress. Finding them IS the heist.',
+  tagline: 'Seven floors of filing cabinets. Millions of documents. A sentient filing system that hides embarrassing paperwork. Finding the file IS the heist.',
   tone: 'heist',
   themes: ['heist', 'comedy', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const thePaperTrail: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Advocate Lira', role: 'quest giver', personality: 'A lawyer who needs the deeds for a morning court date. Brilliant, desperate, and convinced the filing system can be beaten. "Everything has a system. We just need to learn this one in six hours."' },
-    { name: 'The Arcane Index', role: 'obstacle / NPC', personality: 'A sentient filing system that takes immense pride in organization. Can be reasoned with but has loyalty to its instructions. It did not choose to hide fraud - it was told to "protect" the files.' },
-    { name: 'Night Guard Henrick', role: 'obstacle', personality: 'An elderly guard who does a sweep every hour. Not dangerous but persistent. Will raise the alarm if he finds the party.' },
+    { name: 'Advocate Lira', role: 'quest giver', personality: 'Stacks paper compulsively while she talks. Has the court date memorized to the minute. Speaks in legal citations when stressed, which is always. "Section 9, subsection B, precedent of Hale v. Crown - never mind. Just find the documents. I will handle the law part."' },
+    { name: 'The Arcane Index', role: 'obstacle / NPC', personality: 'Communicates by rearranging file labels to spell words. Hums when content. Slams drawers when annoyed. Files organized by emotion, not alphabet - joyful documents near windows, shameful ones in dark corners. Takes immense pride in its system. Being told its system "does not make sense" is a personal insult.' },
+    { name: 'Night Guard Henrick', role: 'obstacle', personality: 'Whistles the same tune every round. His lantern light precedes him by ten seconds. Moves slowly, checks doors methodically, and has been doing this route for twenty years. Not dangerous. Very predictable. Knows every creak in the building, which means he notices new ones.' },
   ],
   keyLocations: [
     { name: 'The Hall of Records', description: 'Seven floors of filing cabinets stretching from floor to ceiling. Millions of documents in an arcane filing system that defies mortal logic.', significance: 'The entire heist takes place here.' },

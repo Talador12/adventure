@@ -56,7 +56,7 @@ export const theMissingHour: OneShotCampaign = {
     {
       name: 'Seraphine Duskwood',
       role: 'chronomancer / the librarian',
-      personality: 'Quiet, precise, deeply sad. She planned the missing hour for months. Every detail was perfect because she has nothing left to lose.',
+      personality: 'Returns books with silent precision. Remembers every patron\'s name. Speaks in complete sentences with no contractions. "I calculated the temporal displacement to within four seconds. I am a professional." Her daughter\'s portrait is hidden inside her desk.',
       secret: 'She already confronted the prisoner during the missing hour. He is dead in the woods outside town. She has not told anyone.',
     },
     {

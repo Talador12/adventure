@@ -4,7 +4,7 @@ export const theHarvestOfWorlds: OneShotCampaign = {
   id: 'oneshot-harvest-of-worlds',
   type: 'oneshot',
   title: 'The Harvest of Worlds',
-  tagline: 'A being that farms entire worlds for energy is approaching. This world is the next crop.',
+  tagline: 'Every seer in the world screams at once. A shadow between stars. It is sorry. It is hungry. It arrives at sunset.',
   tone: 'epic',
   themes: ['epic', 'planar', 'survival'],
   playerCount: { min: 3, max: 6 },
@@ -32,10 +32,10 @@ export const theHarvestOfWorlds: OneShotCampaign = {
       summary: 'Whatever the party chose to do, they have half a day to do it. The sun descends.',
       challenge: 'exploration',
       keyEvents: [
-        'If defense: rallying armies, magical barriers, weapon construction - all ultimately insufficient',
-        'If evacuation: planar portals to the Feywild, Shadowfell, or allied planes - saving thousands but not millions',
-        'If negotiation: finding a way to contact the Reaper before arrival - planar sending, astral projection',
-        'The Reaper\'s approach: visible now in the sky, a shadow that dims the stars, sorrowful and immense',
+        'If defense: the army assembles its largest barrier spell. It takes four hundred mages an hour to cast. The Reaper will not notice it.',
+        'If evacuation: portals open to the Feywild and Shadowfell. Families separated at the threshold. A father pushes his children through and stays.',
+        'If negotiation: astral projection to reach the Reaper\'s mind. Its consciousness is vast and sad, like swimming in an ocean of regret.',
+        'The Reaper\'s approach: the stars behind it go dark one by one. The temperature drops. Magic items hum as their energy is gently pulled skyward.',
       ],
     },
     {
@@ -52,7 +52,7 @@ export const theHarvestOfWorlds: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'The Reaper', role: 'cosmic inevitability', personality: 'A being as old as the multiverse, created to recycle magical energy. Not evil. Not even predatory. It is maintenance. It mourns every world it consumes. "I have wept for a billion civilizations. Yours will be the next."' },
-    { name: 'Archmage Council Leader', role: 'mortal authority', personality: 'The most powerful mage in the world. For the first time, completely out of her depth. Her power means nothing against a cosmic function.' },
+    { name: 'Archmage Velessa', role: 'mortal authority', personality: 'The most powerful mage alive. Hands shaking for the first time in fifty years. She keeps starting sentences about magical defenses and trailing off. "I could... no. We could try a... no. I have nothing. I have nothing and I am the best we have."' },
     { name: 'The Witness', role: 'survivor of a previous harvest', personality: 'A being from a world the Reaper consumed centuries ago. Survived by fleeing to the astral plane. Carries the memory of a dead world. Can advise but cannot save.' },
   ],
   keyLocations: [

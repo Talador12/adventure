@@ -4,7 +4,7 @@ export const theTruthCommission: OneShotCampaign = {
   id: 'oneshot-truth-commission',
   type: 'oneshot',
   title: 'The Truth Commission',
-  tagline: 'The tyrant fell. Now comes the hard part: justice without revenge.',
+  tagline: 'The tyrant fell three months ago. Today you hear testimony from a torturer and the woman he tortured. They are both asking for mercy.',
   tone: 'political',
   themes: ['political', 'intrigue', 'social'],
   playerCount: { min: 3, max: 6 },
@@ -51,9 +51,9 @@ export const theTruthCommission: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Sera Voss', role: 'victim / perpetrator', personality: 'A resistance leader who did terrible things for a cause she believed in. Haunted by the bombing. Haunted by the torture. Neither cancels the other.' },
-    { name: 'Captain Roth', role: 'perpetrator / victim', personality: 'A former secret police officer who tortured the woman who killed his daughter. His grief does not justify his cruelty. His cruelty does not erase his grief.' },
-    { name: 'Commissioner Adela', role: 'commission chair', personality: 'The chair who appointed the party. A former judge who insists on process even when emotion demands shortcuts. "Justice without procedure is just another word for revenge."' },
+    { name: 'Sera Voss', role: 'victim / perpetrator', personality: 'Testifies with her hands flat on the table, pressing down like she is holding something in place. Describes her torture in clinical detail without flinching. When asked about the bombing, the clinical tone cracks. She counts the dead by name. She knows all twelve.' },
+    { name: 'Captain Roth', role: 'perpetrator / victim', personality: 'Sits at attention. Calls the commissioners "sir" and "ma\'am" reflexively. Describes "interrogation techniques" in passive voice - "pressure was applied" - until someone makes him say "I." Then his voice drops to almost nothing. Carries his daughter\'s photograph face-down in his pocket.' },
+    { name: 'Commissioner Adela', role: 'commission chair', personality: 'Interrupts emotion with procedure. "Let the record show..." is her shield. Calls recesses when the room gets too hot. A former judge who believes that if the process is fair, the outcome can be lived with - even if it is not perfect.' },
   ],
   keyLocations: [
     { name: 'The Commission Hall', description: 'A converted courthouse. Witness chairs, a long table for the commissioners, a gallery packed with citizens. Every word echoes.', significance: 'Where testimony is given and justice is attempted.' },

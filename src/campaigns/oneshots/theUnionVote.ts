@@ -51,9 +51,9 @@ export const theUnionVote: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Marta Cole', role: 'union organizer', personality: 'A dockworker who has been organizing for two years. Tough, persuasive, and running on three hours of sleep. "We load their ships. We build their wealth. We deserve a voice."' },
-    { name: 'CEO Adrienne Keel', role: 'secret ally', personality: 'Head of Ironwind Shipping. Publicly opposes the union (her board demands it). Privately knows a union would reduce turnover and improve safety. Trapped between her board and her conscience.', secret: 'She has been leaking information to the union organizer through a trusted aide.' },
-    { name: 'Harbor Master Fell', role: 'neutral authority', personality: 'A retired naval officer who runs the port. Cares about order and fairness in equal measure. Will back the party\'s authority completely.' },
+    { name: 'Marta Cole', role: 'union organizer', personality: 'Counts votes on her fingers during conversations. Knows every dockworker\'s name, shift, and how many kids they have. Talks like she is giving a speech even in private. Runs on coffee and fury. "Two thousand people load their ships every day and not one of them gets a say in how."' },
+    { name: 'CEO Adrienne Keel', role: 'secret ally', personality: 'Speaks like a press release in public - measured, corporate, deniable. In private, drops the mask and talks fast, checking the door. "My board wants a war. I want a workforce that does not hate me. Tell me what you need. Do not tell me how you got it."', secret: 'She has been leaking information to the union organizer through a trusted aide.' },
+    { name: 'Harbor Master Fell', role: 'neutral authority', personality: 'Stands with hands clasped behind his back at all times. Addresses everyone by title. Issues instructions, not requests. "You are election observers. Observe. Document. Intervene only when the rules are broken. The rules will be broken."' },
   ],
   keyLocations: [
     { name: 'The Port Gallus Docks', description: 'A sprawling waterfront of warehouses, cranes, and ships. Two thousand workers load and unload cargo here every day.', significance: 'Where the vote happens and the blockade occurs.' },

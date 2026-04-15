@@ -21,10 +21,10 @@ export const theForgottenFloor: OneShotCampaign = {
       summary: 'Finding and entering the hidden 4th floor. The architecture makes no sense. Hallways curve where they should not. Rooms are bigger inside than outside.',
       challenge: 'exploration',
       keyEvents: [
-        'The sealed door: warm metal, no keyhole, opens to a touch after the party examines it',
-        'The 4th floor: different architecture, older materials, books on shelves in an unknown script',
-        'Spatial anomalies: a hallway that loops, a room with no ceiling that opens to a starlit sky',
-        'A reading room where the books rearrange themselves when no one is looking',
+        'The sealed door: bronze, warm as skin, no hinges or keyhole. When a party member places their palm flat against it, it swings inward with a sigh like displaced air',
+        'The 4th floor: vaulted stone ceilings twice the height of the floors below. Shelves of dark wood hold books bound in materials that are not leather. The script on the spines shifts when viewed peripherally',
+        'Spatial anomalies: a hallway that turns four right angles and returns to its starting point. A reading alcove with no ceiling that opens to a sky full of unfamiliar stars',
+        'A circular reading room where book spines rearrange to spell messages when the party looks away and back: W-E-L-C-O-M-E',
       ],
     },
     {

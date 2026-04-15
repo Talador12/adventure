@@ -4,7 +4,7 @@ export const theLastSunrise: OneShotCampaign = {
   id: 'oneshot-last-sunrise',
   type: 'oneshot',
   title: 'The Last Sunrise',
-  tagline: 'The sun will not rise tomorrow. Not stolen - broken. The celestial machinery has stopped.',
+  tagline: 'Dawn was four hours ago. The sky is black. The sun is not missing. The machine that moves it is broken. Someone has to go past the sky and fix it.',
   tone: 'epic',
   themes: ['epic', 'planar', 'dungeon_crawl'],
   playerCount: { min: 3, max: 6 },
@@ -32,10 +32,10 @@ export const theLastSunrise: OneShotCampaign = {
       summary: 'Finding the sabotaged gear and the celestial engineer who stopped the machine.',
       challenge: 'social',
       keyEvents: [
-        'The gear: a massive cog jammed with a crystal wedge - clearly deliberate',
-        'The engineer: a being of starlight and metal, ancient, exhausted, and relieved to see the party',
-        'Her explanation: "A solar flare. If the sun moves, the flare fires when it reaches noon position. Everything burns."',
-        'The dilemma: the world is already freezing - but restarting means the flare',
+        'The gear: a cog the size of a castle, jammed with a crystal wedge glowing with intent. This was not carelessness. This was a wrench thrown into the works.',
+        'The engineer: she uncurls from beside the gear like she has been waiting. Starlight skin, brass joints, eyes like dying suns. "Oh thank the void. Someone came."',
+        'Her explanation: she pulls the party to a viewport. Behind the frozen sun, a wall of fire builds silently. "That. If the sun moves to noon, that fires. Everything below burns."',
+        'The dilemma: frost is already forming on the mortal world below. Visible from up here. The world freezes or the world burns.',
       ],
     },
     {
@@ -52,7 +52,7 @@ export const theLastSunrise: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Engineer Astra', role: 'celestial mechanic', personality: 'An ancient being created to maintain the Celestial Orrery. She has been alone here for a million years. Stopped the sun to save the world. Needs the party\'s help to fix both problems.' },
-    { name: 'Astronomer Tetch', role: 'quest giver', personality: 'The mortal astronomer who figured out what happened. Cannot make the journey himself but provides the portal key and the knowledge to understand the Orrery.' },
+    { name: 'Astronomer Tetch', role: 'quest giver', personality: 'A very old man with ink-stained fingers and a telescope longer than he is tall. He keeps checking his instruments and muttering "still stopped, still stopped." Hands the party a crystal key with shaking hands. "I would go myself but my knees stopped working before the sun did."' },
   ],
   keyLocations: [
     { name: 'The Celestial Orrery', description: 'A mechanism the size of a solar system that drives the heavens. Gears of crystal and adamantine, tracks for celestial bodies, and a silence where there should be motion.', significance: 'The entire second half takes place here.' },

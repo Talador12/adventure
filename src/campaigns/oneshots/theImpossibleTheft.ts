@@ -4,7 +4,7 @@ export const theImpossibleTheft: OneShotCampaign = {
   id: 'oneshot-impossible-theft',
   type: 'oneshot',
   title: 'The Impossible Theft',
-  tagline: 'Stolen from a sealed room. No entry points. Sealed for fifty years. The item was there yesterday.',
+  tagline: 'The vault was bricked shut fifty years ago. The scrying confirmed it was there yesterday. Today the wall is open. The crown is gone. It was stolen twenty years ago.',
   tone: 'mystery',
   themes: ['mystery', 'intrigue', 'dungeon_crawl'],
   playerCount: { min: 3, max: 5 },

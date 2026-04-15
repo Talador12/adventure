@@ -51,9 +51,9 @@ export const theOldSword: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Garren Holt', role: 'quest giver', personality: 'A retired soldier with one arm, a small pension, and a sword-shaped hole in his life. Not angry. Just sad. "My boy carried that sword into his last fight. I carried it home. Someone took it while I slept."' },
-    { name: 'Pim', role: 'the thief', personality: 'A 10-year-old street kid who stole a sword to buy bread. Tough, fast, and fiercely protective of the younger children she cares for. She is not sorry. She is hungry.' },
-    { name: 'Collector Vars', role: 'obstacle', personality: 'A military memorabilia collector who bought the sword fairly and recognizes its regiment markings. He is not unreasonable but he is not generous. Business is business.' },
+    { name: 'Garren Holt', role: 'quest giver', personality: 'Sits on the bench with his one hand on his knee. Does not look up when he talks. Voice is level and quiet, like a man who used up all his shouting years ago. "My boy carried that sword into his last fight. I carried it home. Someone took it while I slept." Pauses. "The mount on the wall has a dust outline. I keep looking at it."' },
+    { name: 'Pim', role: 'the thief', personality: 'Stands in front of the younger kids with her arms out even when no one is threatening them. Talks too loud. Chews her lip. "I sold it for two coppers and bought bread. We ate. I am not sorry. I would do it again. Are you going to hit me or what?"' },
+    { name: 'Collector Vars', role: 'obstacle', personality: 'Polishes things while he talks. Never makes eye contact. Knows the value of everything and the meaning of nothing. "Third Regiment, Kelden Campaign. See the notch on the crossguard? Field repair. Interesting piece. I paid fair price. You want it back, you pay market rate."' },
   ],
   keyLocations: [
     { name: 'Garren\'s Home', description: 'A small, clean house with an empty sword mount and too much quiet.', significance: 'Where the quest begins and ends. The heart of the story.' },

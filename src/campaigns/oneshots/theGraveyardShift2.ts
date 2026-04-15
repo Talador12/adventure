@@ -51,9 +51,9 @@ export const theGraveyardShift2: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Elara Venn', role: 'quest giver', personality: 'A desperate wife who has spent three days finding a cure while her husband lies buried. Fierce, sleep-deprived, and will fight anyone who gets between her and that grave.' },
-    { name: 'Gravedigger Mord', role: 'unexpected ally', personality: 'A gaunt man who has not slept in forty years because his daughter is buried under the same curse. He guards the cemetery because he guards her grave. His deal is non-negotiable.', secret: 'He has dug up and reburied his daughter\'s grave dozens of times over the years, just to check.' },
-    { name: 'The Stone Watcher', role: 'golem guardian', personality: 'A cemetery golem with one directive: nothing leaves the grounds after dark. Does not think. Does not tire. Does not stop.' },
+    { name: 'Elara Venn', role: 'quest giver', personality: 'Grips a vial of cure so tightly her knuckles are white. Has not slept in three days and it shows in her voice - cracking between fury and panic. Refers to her husband in present tense. "He IS alive. He is just... underground." Will physically grab the party if they hesitate.' },
+    { name: 'Gravedigger Mord', role: 'unexpected ally', personality: 'Appears between headstones like he grew there. Speaks in a whisper that somehow carries across the cemetery. Knows every grave by name, date, and cause of death. When he talks about his daughter, his voice does not change - it has been the same grief for ten years and he has worn it smooth.', secret: 'He has dug up and reburied his daughter\'s grave dozens of times over the years, just to check.' },
+    { name: 'The Stone Watcher', role: 'golem guardian', personality: 'Its footsteps on gravel are the cemetery\'s heartbeat. One directive: nothing leaves after dark. Does not think. Does not tire. When it turns the corner of a row and sees the party, it does not speed up. It does not need to.' },
   ],
   keyLocations: [
     { name: 'Greymoor Cemetery', description: 'A fog-bound graveyard on a hill. Hundreds of headstones, ancient trees, and the constant sound of the golem\'s footsteps on gravel.', significance: 'The heist location.' },

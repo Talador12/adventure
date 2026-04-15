@@ -4,7 +4,7 @@ export const thePactEternal: OneShotCampaign = {
   id: 'oneshot-pact-eternal',
   type: 'oneshot',
   title: 'The Pact Eternal',
-  tagline: 'Every mortal must choose a side: Order or Chaos. Today is Choosing Day. Your choice reshapes the world.',
+  tagline: 'The sky splits in half. Gold on one side, silver on the other. A voice in every mind: "Choose." Your vote counts as ten thousand.',
   tone: 'epic',
   themes: ['epic', 'planar', 'social'],
   playerCount: { min: 3, max: 6 },
@@ -35,7 +35,7 @@ export const thePactEternal: OneShotCampaign = {
         'A farmer: wants Order because he needs predictable seasons to feed his family',
         'An artist: wants Chaos because Order banned her paintings for "subversive imagery"',
         'A healer: wants Order because standardized medicine saves lives',
-        'A child: wants Chaos because under Order, children cannot play games with unpredictable outcomes',
+        'A child: tugs the party\'s sleeve. "They took my dice. The guards said rolling dice is too random. I just wanted to play."',
       ],
     },
     {
@@ -53,7 +53,7 @@ export const thePactEternal: OneShotCampaign = {
   keyNPCs: [
     { name: 'Seraphel', role: 'Order\'s advocate', personality: 'A celestial being of perfect symmetry. Her arguments are logical, her promises are real, and her vision of the future is safe and sterile. She genuinely believes freedom is overrated.' },
     { name: 'The Shimmer', role: 'Chaos\'s advocate', personality: 'An archfey who changes shape every sentence. Brilliant, unpredictable, and honest about the cost of freedom. "Chaos hurts. But it is alive."' },
-    { name: 'The Warden', role: 'Balance keeper', personality: 'An ancient being who appears only if someone mentions Balance. He is the guardian of the third option. He has not been needed in ten thousand years. He is very happy to see the party.' },
+    { name: 'The Warden', role: 'Balance keeper', personality: 'Materializes from dust the instant someone says "Balance" - a being of half gold, half silver, grinning like someone who has been waiting ten thousand years for this exact conversation. "Finally! Do you have any idea how boring it is waiting for someone to remember the third option? I have been standing in a hallway since before your species invented fire."' },
   ],
   keyLocations: [
     { name: 'The Choosing Stone', description: 'A monolith at the geographic center of the world. On Choosing Day, it amplifies every declaration to cosmic significance.', significance: 'Where the party declares and the world changes.' },

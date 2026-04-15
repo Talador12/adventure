@@ -51,9 +51,9 @@ export const theWaterRights: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Widow Tarn', role: 'Dusthaven elder', personality: 'An old woman who has buried three grandchildren this year from waterborne illness. Quiet anger, iron dignity. She does not want war. She wants water.' },
-    { name: 'Mayor Bren', role: 'Millbrook leader', personality: 'A stout human who built the dam and the mill. Proud, stubborn, and genuinely does not understand why Dusthaven cannot just dig deeper wells.', secret: 'He found the old dam reinforcements and wondered about them but never investigated.' },
-    { name: 'Druid Kael', role: 'neutral expert', personality: 'A half-elf druid who monitors the river. She suspected contamination for years but lacked proof. The party gives her the chance to speak.' },
+    { name: 'Widow Tarn', role: 'Dusthaven elder', personality: 'Speaks in measurements. "Two cups per person per day. That is what we have. A horse needs ten. We do not have horses anymore." Never raises her voice. Does not need to. Places a jar of brown water on the table and lets it sit there during the entire conversation.' },
+    { name: 'Mayor Bren', role: 'Millbrook leader', personality: 'Talks with his hands because they built the dam and he is proud of them. Takes any criticism of the dam personally. "I carried those stones myself." Cannot hear Dusthaven\'s argument because admitting the dam is a problem means admitting his life\'s work is wrong.', secret: 'He found the old dam reinforcements and wondered about them but never investigated.' },
+    { name: 'Druid Kael', role: 'neutral expert', personality: 'Touches the water before drinking it everywhere she goes. Has a collection of water samples in labeled vials. Speaks to the river when she thinks nobody is listening. Has been keeping contamination records for years in a journal no one asked to see - until now.' },
   ],
   keyLocations: [
     { name: 'Dusthaven', description: 'A dying village downstream. Cracked earth, empty troughs, and the sound of coughing from every house.', significance: 'Where the cost of water deprivation is undeniable.' },

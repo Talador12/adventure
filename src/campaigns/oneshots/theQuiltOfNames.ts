@@ -51,9 +51,9 @@ export const theQuiltOfNames: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Eryn Thatch', role: 'the living dead', personality: 'A woman who faked her death at 16 to escape a forced marriage and built an entire life in the capital. She is not a victim anymore. She is a person who made a choice and does not regret it.' },
-    { name: 'Tommas Elder', role: 'the mourner', personality: 'The elder\'s son, now 50, who has visited a quilt patch every year for 20 years, mourning a woman who is not dead. He never remarried. He is gentle and sad and entirely deceived.' },
-    { name: 'Scholar Niven', role: 'the catalyst', personality: 'An academic who found the discrepancy and intends to publish it. Brilliant, oblivious to the human stakes, and unwilling to suppress findings. "Truth is not optional."' },
+    { name: 'Eryn Thatch', role: 'the living dead', personality: 'Opens her door in the capital and the color drains from her face when she hears the village name. Grips the doorframe. Speaks fast. "I was sixteen. He was thirty. The village helped me disappear because nobody could say no to his father. I am not going back. I built this life with my hands. Do not take it from me."' },
+    { name: 'Tommas Elder', role: 'the mourner', personality: 'Gentle hands. Soft voice. Touches the quilt patch when he visits, traces the stitched name with his finger. "I never remarried. I know people think that is foolish. But she was the one." He is fifty. He has mourned a living woman for twenty years. He is the kindest person in the story and the most deceived.' },
+    { name: 'Scholar Niven', role: 'the catalyst', personality: 'Pushes spectacles up nose between every sentence. Speaks in citations. Genuinely cannot understand why anyone would suppress a finding. "The quilt says she died. The census says she lives. This is a discrepancy. Discrepancies are published. That is what we do. Truth is not optional."' },
   ],
   keyLocations: [
     { name: 'The Meeting Hall', description: 'A community hall where the quilt of names hangs, each patch a life and a story.', significance: 'Where the discrepancy is found and the mystery begins.' },

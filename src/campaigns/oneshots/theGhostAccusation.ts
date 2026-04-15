@@ -4,7 +4,7 @@ export const theGhostAccusation: OneShotCampaign = {
   id: 'oneshot-ghost-accusation',
   type: 'oneshot',
   title: 'The Ghost Accusation',
-  tagline: 'A ghost appears every midnight and accuses someone of murder. Different person each night. The ghost cannot lie.',
+  tagline: 'Five nights. Five accusations. Five different people. The ghost cannot lie. They all pass Zone of Truth. Someone is wrong.',
   tone: 'mystery',
   themes: ['mystery', 'horror', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -23,10 +23,10 @@ export const theGhostAccusation: OneShotCampaign = {
       summary: 'Interviewing the five accused. Each has a motive. Each denies murder. Each is telling a partial truth.',
       challenge: 'social',
       keyEvents: [
-        'Accused #1: the baker. Had a grudge. Admits nothing.',
-        'Accused #2: the guard. Was not at his post that night. Says he was sick.',
-        'Accused #3: the healer. Was called away from the alderman. Says it was an emergency.',
-        'All five pass Zone of Truth: "I did not murder the alderman." Technically true for each.',
+        'Accused #1: Brennan the baker. He poisoned the alderman\'s meal. "I put something in his soup. I thought it was a laxative. A woman gave it to me." Zone of Truth: "I did not murder him." True. He thought he was pranking, not killing.',
+        'Accused #2: Guardsman Tol. He left his post. "I was told the alderman wanted privacy." Zone of Truth: "I did not murder him." True. He just opened the door.',
+        'Accused #3: Healer Messa. She was called away. "An emergency at the mill. When I came back, he was dead." True. The emergency was fabricated.',
+        'Each accused did ONE thing. None did everything. All pass Zone of Truth because none of them committed murder alone.',
       ],
     },
     {
@@ -61,7 +61,7 @@ export const theGhostAccusation: OneShotCampaign = {
     {
       name: 'Marta Voss',
       role: 'the alderman\'s wife / mastermind',
-      personality: 'Grieving, sympathetic, helpful. She brought the party tea. She answered their questions. She is the reason her husband is dead.',
+      personality: 'Brings the party tea without being asked. Remembers details about her husband the investigators overlooked. Cries at the right moments. She orchestrated every step and she is the most helpful person in the room.',
       secret: 'The alderman was corrupt and abusive. She organized his death using people he had wronged. She feels no guilt.',
     },
   ],

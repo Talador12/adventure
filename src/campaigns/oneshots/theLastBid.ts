@@ -51,9 +51,9 @@ export const theLastBid: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Xenthar', role: 'auctioneer / threat', personality: 'A beholder who runs an auction because it enjoys watching lesser beings compete. Paranoid, brilliant, and uses its eye stalks as the ultimate surveillance system. Considers cheating an insult punishable by disintegration.' },
-    { name: 'Matron Zilith', role: 'rival bidder', personality: 'A drow matron who wants the amulet for political power. Wealthy, ruthless, and willing to kill the winning bidder after the auction if she loses the bid.' },
-    { name: 'The Handler', role: 'quest giver', personality: 'A surface-world fixer who knows the Underdark well enough to be afraid of it. Provides the plan framework but the execution is entirely on the party.' },
+    { name: 'Xenthar', role: 'auctioneer / threat', personality: 'Speaks from the center of the chamber in a voice that comes from everywhere. Each eye stalk tracks a different bidder. Announces bids with theatrical relish. "Ten thousand from the drow. Do I hear eleven? The mind flayer blinks. Was that a bid? EVERYTHING is a bid." Considers cheating an insult punishable by disintegration.' },
+    { name: 'Matron Zilith', role: 'rival bidder', personality: 'Bids without looking at the auctioneer. Snaps her fingers and a servant raises the paddle. Has two assassins disguised as attendants who will follow the winning bidder home. Smiles at the party the way a spider smiles at a fly.' },
+    { name: 'The Handler', role: 'quest giver', personality: 'Briefs the party by candlelight in a cave that smells like fear and bat guano. Draws maps in the dirt. Speaks about the Underdark the way sailors speak about storms - respect born from near-death. "Do not make eye contact with the beholder. Do not make eye contact with the drow. Actually, do not make eye contact."' },
   ],
   keyLocations: [
     { name: 'The Auction Chamber', description: 'A circular obsidian cavern deep in the Underdark. Xenthar floats at the center. Bidders sit in carved alcoves around the perimeter.', significance: 'Where the auction and the heist happen.' },

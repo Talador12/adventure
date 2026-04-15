@@ -53,7 +53,7 @@ export const theLastPrayer: OneShotCampaign = {
   keyNPCs: [
     { name: 'Sister Ember', role: 'the last cleric', personality: 'Two hundred years of prayer have made her more spirit than person. She speaks in whispers, glows faintly, and has not eaten in a century. She is not a martyr by choice - she is a prisoner of devotion.' },
     { name: 'The Echo of Thandril', role: 'the dead god', personality: 'Not truly Thandril - a memory sustained by Ember\'s faith. Gentle, grateful, and ready to disperse. His last words are for Ember: "You were always enough."' },
-    { name: 'Scholar Dorn', role: 'divine theologian', personality: 'A priest of another god who studies divine mechanics. He is the one who realizes Thandril is dead. The discovery shakes his own faith.' },
+    { name: 'Scholar Dorn', role: 'divine theologian', personality: 'A priest of another god who studies divine mechanics the way an engineer studies bridges. When he realizes Thandril is dead, he sits down heavily and whispers: "If her faith sustained power without a god... what does that mean about mine?" He does not finish the thought.' },
   ],
   keyLocations: [
     { name: 'The Temple of Thandril', description: 'A ruined temple in a forgotten forest. The roof is gone. The walls are covered in moss. At the altar, a woman kneels and prays, glowing faintly.', significance: 'Where Ember has been praying for two hundred years.' },

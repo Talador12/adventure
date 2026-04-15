@@ -4,7 +4,7 @@ export const theSilentWitness: OneShotCampaign = {
   id: 'oneshot-silent-witness',
   type: 'oneshot',
   title: 'The Silent Witness',
-  tagline: 'The murder weapon is a sentient sword. It saw everything. It can only answer yes or no.',
+  tagline: '"Did you see the murder?" The sword pulses. Yes. "Can you tell us who?" A different pulse. No. Twenty questions to solve a murder.',
   tone: 'mystery',
   themes: ['mystery', 'intrigue'],
   playerCount: { min: 3, max: 5 },

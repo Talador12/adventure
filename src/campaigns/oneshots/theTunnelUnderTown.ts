@@ -21,8 +21,8 @@ export const theTunnelUnderTown: OneShotCampaign = {
       summary: 'Mapping the tunnel from multiple basements and realizing the scale. Every building in town connects to it.',
       challenge: 'exploration',
       keyEvents: [
-        'The tavern cellar breach: a clean tunnel with functional rune lights',
-        'Checking other buildings: every basement has a hidden connection, some bricked over',
+        'Through the broken cellar wall: carved stone, 15 feet wide, lit by runes that flicker to life as if waking up. The air inside is warm and dry and smells of deep stone',
+        'Checking other buildings: the blacksmith\'s basement has a bricked-over arch. The temple\'s crypt has a sealed door with matching runes. Every building in town sits on this tunnel',
         'The tunnel runs the full length of town and continues beyond in both directions',
         'Maintenance signs: swept floors, repaired runes, but no footprints',
       ],

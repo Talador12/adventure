@@ -45,10 +45,10 @@ export const underSiege: OneShotCampaign = {
       summary: 'The wife rises. The undead surge. The farmer wavers. End this or lose the farmhouse.',
       challenge: 'combat',
       keyEvents: [
-        'The cellar explodes open. The necromancer wife rises, intelligent and speaking.',
-        'She calls the farmer by name. He hesitates. She offers him undeath beside her.',
-        'All remaining undead converge. The farmhouse will not hold.',
-        'Destroy her remains, break the anchor, and the undead collapse. Dawn finishes the rest.',
+        'The cellar door splinters outward. Cold air rushes up. A woman in a burial dress floats through the opening, dirt still in her hair. Her voice is exactly what you would expect from someone who loved this man. "Dorin. Come downstairs, love. I have been waiting."',
+        'Dorin drops the hammer. He takes a step toward her. The party has seconds to intervene before he takes her hand.',
+        'Every undead outside surges at once. Windows crack. The barn door caves in. She is calling them home and the house is in the way.',
+        'Her burial shroud is the anchor. Destroy it and the magic unravels. She reaches for Dorin one last time. "I just wanted us to be together." Then ash.',
       ],
     },
   ],
@@ -56,7 +56,7 @@ export const underSiege: OneShotCampaign = {
     {
       name: 'Farmer Dorin',
       role: 'host / complication',
-      personality: 'Quiet, tired, haunted. He has survived these nights alone for two years. He did not tell the party about his wife. He is not sure he wants her destroyed.',
+      personality: 'Moves through the farmhouse like a man who has boarded these windows a hundred times. Hammer strokes are automatic, eyes dead. When asked about the cellar, his hand tightens on the hammer. "Nothing down there. Just stores." He has been having this conversation with the dead for two years and he is running out of reasons to keep the door locked.',
     },
     {
       name: 'Elara, the Dead Wife',

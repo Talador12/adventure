@@ -4,7 +4,7 @@ export const theSunStealer: OneShotCampaign = {
   id: 'oneshot-sun-stealer',
   type: 'oneshot',
   title: 'The Sun Stealer',
-  tagline: 'Someone stole the sun. You have one night to find it before the world freezes.',
+  tagline: 'Dawn was two hours ago. The sky is black. The sun was not eclipsed. It was taken. The trail leads underground, and the temperature is already dropping.',
   tone: 'epic',
   themes: ['epic', 'mystery', 'planar'],
   playerCount: { min: 3, max: 5 },
@@ -52,7 +52,7 @@ export const theSunStealer: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Solenne', role: 'the sun thief / dying god', personality: 'The first sun god. Forgotten for three thousand years. Not malicious - starving for belief. Her consciousness flickers like a candle. She took the sun because it was all she had left.' },
-    { name: 'Scholar Fennwick', role: 'guide', personality: 'An astronomer who first noticed the sun was gone (not missing - gone). Brilliant, terrified, and fascinated by the theological implications in equal measure.' },
+    { name: 'Scholar Fennwick', role: 'guide', personality: 'An astronomer who keeps adjusting spectacles that are already perfectly positioned. He stares at the empty sky and mutters calculations. "Not an eclipse. Not occluded. The gravitational signature is just... absent. That is not possible. The sun cannot be absent. Someone took it the way you take a coin off a table."' },
     { name: 'Echo Priestess', role: 'memory ghost', personality: 'A ghostly echo of Solenne\'s last high priestess. Not truly alive - a memory given form by the fading realm. She can teach the party the prayer if they can reach her.' },
   ],
   keyLocations: [

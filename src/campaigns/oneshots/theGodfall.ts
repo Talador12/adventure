@@ -33,9 +33,9 @@ export const theGodfall: OneShotCampaign = {
       challenge: 'combat',
       keyEvents: [
         'The ascent method: whatever the party chose, it is dangerous and untested',
-        'The divine aura: Aethon\'s presence warps reality around him - gravity shifts, metal melts, air burns',
-        'Celestial debris: pieces of the celestial forge falling alongside Aethon, each one a hazard',
-        'First contact: reaching Aethon, who is conscious, aware, and does not want help',
+        'The divine aura: a sword blade droops like warm candle wax. Armor rivets glow cherry red. The air tastes like a blacksmith\'s forge.',
+        'Celestial debris: an anvil the size of a house tumbles past, trailing sparks. A half-finished divine sword spins in freefall, still glowing from the forge.',
+        'First contact: Aethon turns one enormous eye toward the party. Iron tears streak his face. "Go back. I chose this."',
       ],
     },
     {
@@ -53,7 +53,7 @@ export const theGodfall: OneShotCampaign = {
   keyNPCs: [
     { name: 'Aethon', role: 'the falling god', personality: 'God of the forge. Ancient, weary, and choosing death over complicity. His sorrow is not mortal sadness - it is geological. He has been tired for a thousand years.' },
     { name: 'Seer Calista', role: 'information source', personality: 'A mortal oracle who collapsed when the vision hit. Recovering, terrified, and the party\'s main source of information about what is happening in the heavens.' },
-    { name: 'Celestial Historian Vex', role: 'exposition', personality: 'A scholar who has studied the gods for decades. Knows the politics of the divine war. Provides the context that makes Aethon\'s choice understandable.' },
+    { name: 'Celestial Historian Vex', role: 'exposition', personality: 'A scholar who paces when she talks, tracing constellations on any flat surface. She has been studying the divine war for forty years and this is the worst day of her career. "He is not falling. He is making a point. Gods do not jump. But he jumped."' },
   ],
   keyLocations: [
     { name: 'The Impact Zone', description: 'A hundred-mile radius centered on the capital city. Everything inside dies when Aethon hits.', significance: 'The stakes.' },

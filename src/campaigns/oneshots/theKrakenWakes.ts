@@ -12,7 +12,7 @@ export const theKrakenWakes: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'The Kraken (Tempest)', role: 'quest giver / environmental hazard', personality: 'An ancient kraken with the vocabulary of a scholar and the enthusiasm of a puppy. Polite, grateful, and absolutely devastating when excited. "I AM SO HAPPY! I WILL SHOW MY GRATITUDE! PLEASE HOLD STILL WHILE I— oh. Your mast. I am... so sorry."' },
-    { name: 'The Lich (Nethros)', role: 'antagonist / distant', personality: 'A lich who trapped the kraken to claim its wish. Not present physically — commands undead servants from his tower. The party never sees him but feels his influence.' },
+    { name: 'The Lich (Nethros)', role: 'antagonist / distant', personality: 'Never seen. His presence is felt through the undead who move with unnatural coordination and the necrotic chains that pulse to a heartbeat only he can hear. His final chain-cutter carries a scroll that reads: "Bring the wish. Do not bring excuses."' },
     { name: 'First Mate Coral', role: 'ship crew / ally', personality: 'The ship\'s first mate who has seen many things but never a polite kraken. Adapting in real time. "I\'ve sailed 30 years. I was NOT briefed on diplomatic krakens."' },
   ],
   keyLocations: [

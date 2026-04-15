@@ -4,7 +4,7 @@ export const theSpeakersCorner: OneShotCampaign = {
   id: 'oneshot-speakers-corner',
   type: 'oneshot',
   title: 'The Speaker\'s Corner',
-  tagline: 'A public square where anyone can speak is being shut down. Defend free speech in one chaotic afternoon.',
+  tagline: 'Two centuries of free speech. One staged riot. A council vote at sunset. The square does not defend itself.',
   tone: 'political',
   themes: ['political', 'social', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theSpeakersCorner: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Grandmother Wynn', role: 'catalyst', personality: 'The oldest regular at the Corner. Has been speaking here since she was a girl. Her first speech was about her brother who died in a mine collapse. "Every voice matters. That is the point."' },
-    { name: 'Councilor Draven', role: 'antagonist', personality: 'The council member who arranged the staged riot. A pragmatist who sees free speech as a threat to governance. Genuinely believes order requires control.', secret: 'He was named in the bribery speech. His motive is self-preservation disguised as public safety.' },
-    { name: 'Beck', role: 'hired agitator', personality: 'An actor paid to start a riot. Not ideological - just broke. Will flip on Draven if the party offers protection or enough coin. "It was just a gig. I did not know they would shut the whole place down."' },
+    { name: 'Grandmother Wynn', role: 'catalyst', personality: 'Grips the speaking stone like an old friend when she talks. Addresses the crowd as "neighbors" even when half of them are strangers. Tells you the history of every speech she remembers, dating back sixty years, and expects you to remember too.' },
+    { name: 'Councilor Draven', role: 'antagonist', personality: 'Uses the phrase "reasonable people can agree" to introduce unreasonable proposals. Speaks with the calm of someone who has already decided and is performing deliberation. Touches his collar when someone mentions bribery.', secret: 'He was named in the bribery speech. His motive is self-preservation disguised as public safety.' },
+    { name: 'Beck', role: 'hired agitator', personality: 'Still in character half the time - slips between his real voice and the "angry citizen" persona he performed. Picks at his fingernails when nervous. "Look, I am an actor. I needed coin. He said make some noise, I made some noise. Nobody said anything about shutting the place down."' },
   ],
   keyLocations: [
     { name: 'The Speaker\'s Corner', description: 'A weathered stone platform in a cobblestone square. Two centuries of footprints have worn grooves into the speaking stone. Surrounded by listeners, vendors, and today, guards.', significance: 'The place itself is what is at stake.' },

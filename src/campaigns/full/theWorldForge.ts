@@ -23,6 +23,7 @@ export const theWorldForge: FullCampaign = {
       summary: 'Reality is malfunctioning. The party investigates, discovers the Forge\'s existence, and begins the descent.',
       keyEvents: [
         'Gravity anomalies, time loops, and elemental reversals spread across the continent',
+        'Quiet moment: Sage Orryn sits in his study surrounded by forty years of theoretical papers and says, very quietly, "I was right. I wish I was wrong." The party watches a scholar confront the most terrifying validation imaginable.',
         'The wizard\'s divination: the Forge exists, it is deep, and it is failing. Or changing.',
         'The entrance: a cavern beneath the oldest mountain, where the stone becomes metal becomes something else',
         'The first layer: a realm where the laws of physics are exposed as mechanisms. Gravity is a gear. Light is a filament.',
@@ -35,7 +36,9 @@ export const theWorldForge: FullCampaign = {
       keyEvents: [
         'The time layer: the party experiences time as a spatial dimension. They can walk to yesterday.',
         'The magic layer: raw arcane energy flows like rivers. Spells behave differently here.',
+        'The moment of cost: Axiom, the living law, is being overwritten in real time. The party watches gravity become someone else. Axiom asks the party to remember what falling felt like under the old rules. "If someone remembers me, I am not entirely gone."',
         'First contact with an Architect: a being of pure geometry who examines the party like a user examining a file',
+        'Quiet moment: the Architect Fragment asks the party to explain "music." It has the concept of vibration but not the concept of beauty. The party plays a song. The Fragment listens. Something in its geometry shifts.',
         'The upgrade in progress: new rules being installed alongside old ones. Reality stutters.',
       ],
       estimatedSessions: 7,
@@ -47,7 +50,8 @@ export const theWorldForge: FullCampaign = {
         'The Forge: a construct the size of a small plane. Gears of solidified law. Pistons of compressed time.',
         'The Architects: not one, not many, but a collective intelligence debugging their creation',
         'The patch notes: version 2.0 is elegant, efficient, and uninhabitable for current life. A clean rewrite.',
-        'The negotiation: preserve the old, accept the new, or merge them into something neither side planned',
+        'Quiet moment: Orryn touches a gear of the Forge and weeps. "It is beautiful. The math is perfect. I understand everything." He looks at the party. "I understand why they want to replace it too. The new version is better. It just does not have us in it."',
+        'The negotiation: preserve the old, accept the new, or merge them into something neither side planned. If the party taught the Fragment about music, the Architects hesitate - beauty was not in their specifications.',
       ],
       estimatedSessions: 7,
     },
@@ -56,24 +60,51 @@ export const theWorldForge: FullCampaign = {
     {
       name: 'Sage Orryn',
       role: 'the guide / theoretical physicist',
-      personality: 'A gnome wizard who has spent forty years theorizing that reality has an engine. He was right. He is terrified. "I wanted to be wrong. I really wanted to be wrong. I wrote a paper about the Forge as a thought experiment. It is not a thought experiment."',
+      personality:
+        'A gnome wizard who has spent forty years theorizing that reality has an engine. He was right. He is terrified. "I wanted to be wrong. I really wanted to be wrong. I wrote a paper about the Forge as a thought experiment. It is not a thought experiment." Arc: wonder and terror in Act 1, growing understanding in Act 2 that nearly seduces him to the Architects\' perspective, and in Act 3 he must choose between the elegant new mathematics and the messy, beautiful world he grew up in.',
     },
     {
       name: 'The Architect (Fragment)',
       role: 'builder / alien intelligence',
-      personality: 'A shard of the collective Architect consciousness, separated to communicate with the party. It thinks in blueprints and speaks in specifications. It does not understand "suffering" as a concept. "Your version has... legacy dependencies. We are cleaning them up."',
+      personality:
+        'A shard of the collective Architect consciousness, separated to communicate with the party. It thinks in blueprints and speaks in specifications. It does not understand "suffering" as a concept. "Your version has... legacy dependencies. We are cleaning them up." Arc: pure alien logic in Act 2, but if the party engages with it genuinely, it develops curiosity - the first emotion an Architect has ever experienced.',
       secret: 'It is developing curiosity about mortal experience. The party is the first interesting thing it has encountered in the new version.',
     },
     {
       name: 'Axiom',
       role: 'Forge guardian / living law',
-      personality: 'A construct born from the Forge itself - a personification of natural law. It maintains the current version and is being overwritten. It does not want to die. "I am gravity. I am the reason things fall. If they replace me, things will still fall. But it will not be me making them fall. Does that matter?"',
+      personality:
+        'A construct born from the Forge itself - a personification of natural law. It maintains the current version and is being overwritten. It does not want to die. "I am gravity. I am the reason things fall. If they replace me, things will still fall. But it will not be me making them fall. Does that matter?" Arc: dutiful guardian in Act 1, existentially terrified in Act 2 as the overwrite begins, and in Act 3 the party must decide if saving Axiom is worth preserving imperfect physics.',
     },
   ],
   keyLocations: [
-    { name: 'The Glitch Zones', description: 'Areas on the surface where reality\'s rules fail. Gravity inverts, time loops, fire freezes. Dangerous and disorienting.', significance: 'The visible symptoms that drive the investigation.' },
-    { name: 'The Infrastructure', description: 'Layers beneath reality where natural laws are exposed as mechanisms. Gears of gravity, filaments of light, rivers of time.', significance: 'The primary exploration environment of the campaign.' },
-    { name: 'The World Forge', description: 'The construct at the center of everything. Miles of machinery that generates and maintains the laws of physics. Currently half-dismantled for upgrades.', significance: 'The final destination and the site of the campaign\'s central choice.' },
+    {
+      name: 'The Glitch Zones',
+      description:
+        'Areas on the surface where reality\'s rules fail. Gravity inverts, time loops, fire freezes. In one zone, a river flows backward. In another, spoken words appear as floating text. Dangerous and disorienting.',
+      significance: 'The visible symptoms that drive the investigation.',
+    },
+    {
+      name: 'The Infrastructure',
+      description:
+        'Layers beneath reality where natural laws are exposed as mechanisms. Gears of gravity, filaments of light, rivers of time. Axiom lives here, tending mechanisms that are being disassembled around it.',
+      significance: 'The primary exploration environment of the campaign.',
+    },
+    {
+      name: 'The World Forge',
+      description:
+        'The construct at the center of everything. Miles of machinery that generates and maintains the laws of physics. Currently half-dismantled for upgrades. Old gears and new gears turn side by side, producing two sets of physics simultaneously.',
+      significance: 'The final destination and the site of the campaign\'s central choice.',
+    },
   ],
-  dataSystems: ['cataclysmCountdown', 'magicalAnomaly', 'ancientProphecy', 'encounterWaves', 'puzzleTrap', 'legendaryWeapon', 'dreamSequence', 'diplomaticNegotiation'],
+  dataSystems: [
+    'cataclysmCountdown',
+    'magicalAnomaly',
+    'ancientProphecy',
+    'encounterWaves',
+    'puzzleTrap',
+    'legendaryWeapon',
+    'dreamSequence',
+    'diplomaticNegotiation',
+  ],
 };

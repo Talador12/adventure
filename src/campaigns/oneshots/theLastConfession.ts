@@ -4,7 +4,7 @@ export const theLastConfession: OneShotCampaign = {
   id: 'oneshot-last-confession',
   type: 'oneshot',
   title: 'The Last Confession',
-  tagline: 'A priest heard a murder confession. Sacred oath: he cannot tell you. But his "hypothetical" questions are very specific.',
+  tagline: '"Hypothetically, if someone checked the old well on Merchant Street..." The priest cannot tell you who confessed. But his hypotheticals are surgical.',
   tone: 'mystery',
   themes: ['mystery', 'intrigue'],
   playerCount: { min: 3, max: 5 },
@@ -56,7 +56,7 @@ export const theLastConfession: OneShotCampaign = {
     {
       name: 'Father Aldric',
       role: 'priest / reluctant guide',
-      personality: 'Devout, tormented, and creative with language. His oath is absolute but he finds every loophole in the phrasing to help without technically breaking it.',
+      personality: 'Chooses every word like a man defusing a bomb. Sweats visibly when the party asks direct questions. "I CANNOT tell you that. But I CAN say, hypothetically, that a person of interest might own a red cloak." His faith and his conscience are tearing him in half.',
     },
     {
       name: 'Harren',

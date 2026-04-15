@@ -56,7 +56,7 @@ export const sandstorm: OneShotCampaign = {
     {
       name: 'Keeper Ankheset',
       role: 'undead scholar / reluctant ally',
-      personality: 'A mummified librarian who has been cataloging desert winds for three centuries. Dry humor. Dislikes the living but respects knowledge.',
+      personality: 'A mummified librarian with sand-dry wit and bandages that trail behind him like a scarf. He has been cataloging wind patterns for three centuries and can name every sandstorm by year. "Storm of 847. That one took the east wall. This one sounds angrier." He will help the living if they show respect for his books.',
     },
     {
       name: 'The Sand Matriarch',

@@ -4,7 +4,7 @@ export const theDoorAtTheEnd: OneShotCampaign = {
   id: 'oneshot-door-at-the-end',
   type: 'oneshot',
   title: 'The Door at the End',
-  tagline: 'A door appeared in the sky. It is opening. Behind it: another universe. Close it or step through.',
+  tagline: 'A door hangs in the sky like a wound. Through the crack, voices beg: "Open it. Our world is dying. Yours is all we have left."',
   tone: 'epic',
   themes: ['epic', 'planar', 'exploration'],
   playerCount: { min: 3, max: 5 },
@@ -21,10 +21,10 @@ export const theDoorAtTheEnd: OneShotCampaign = {
       summary: 'The door in the sky. Getting to it. Understanding what is on the other side.',
       challenge: 'exploration',
       keyEvents: [
-        'The door: enormous, hanging at cloud level, visible worldwide, slowly opening',
-        'Reaching it: flight, levitation, or the ancient staircase that appeared when the door did',
-        'The crack: peering through reveals a dying world - grey skies, dead forests, desperate people',
-        'The voice: communication with the other side - they are coherent, desperate, and grateful',
+        'The door: ornate, the size of a city block, hanging where the clouds should be. Sunlight bends around its frame.',
+        'Reaching it: a white stone staircase spirals from a farmer\'s field to the sky. Nobody built it. It grew overnight.',
+        'The crack: a child presses her face to the gap from the other side. Grey skin, hollow eyes, but alive. She waves.',
+        'The voice: clear now, a woman\'s voice, educated and exhausted: "We have been trying to reach you for a thousand years."',
       ],
     },
     {

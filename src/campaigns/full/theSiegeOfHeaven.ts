@@ -23,6 +23,7 @@ export const theSiegeOfHeaven: FullCampaign = {
       summary: 'Angels as refugees. The mortal world reacts to heaven\'s fall. The party assembles a coalition from nations that barely trust each other.',
       keyEvents: [
         'Angel refugees appear across the material plane. Some are welcomed. Many are not.',
+        'Quiet moment: a wingless angel sits in a refugee camp, teaching mortal children to sing hymns she no longer has the power to enchant. The music is just music now. She does not stop.',
         'The devil\'s offer: asylum in exchange for service. Some angels accept. The moral fallout is immediate.',
         'Coalition building: convincing mortal armies to march on heaven. Most think it is insane.',
         'The loyalist angels in hiding reveal the truth: the invaders are not demons. They are angels.',
@@ -36,6 +37,8 @@ export const theSiegeOfHeaven: FullCampaign = {
         'Planar crossing: the coalition enters the celestial plane through a forgotten gate',
         'The first heaven: occupied by Compassionate angels who are healing mortal souls the old order forbade them from touching',
         'A Compassionate commander explains: "We watched a child die of plague. We could have cured her. The order forbade it. We are done watching."',
+        'The moment of cost: Marshal Kael loses half a battalion in the fourth heaven. She sits alone in a command tent and the party finds her counting names. If they recruited allies from the devil\'s offer in Act 1, those allies fight with contract-bound ferocity but whisper promises to the weakened.',
+        'Quiet moment: a Compassionate angel and a loyalist angel recognize each other mid-battle and stop. They were friends. They lower their weapons. The armies watch. Then the moment passes and the fighting resumes. But everyone saw it.',
         'The middle heavens: escalating resistance, moral complexity, angels fighting angels',
       ],
       estimatedSessions: 8,
@@ -47,7 +50,8 @@ export const theSiegeOfHeaven: FullCampaign = {
         'The ninth heaven: the throne room. The Compassionate leader sits on the celestial throne, not in triumph but in grief.',
         'The offer: reform the divine order. Let angels intervene. End the policy of divine indifference.',
         'The loyalists\' counter: without hierarchy, heaven collapses. Without rules, angels become tyrants of mercy.',
-        'The party\'s judgment: broker the reform, side with tradition, or propose something neither side imagined',
+        'Quiet moment: Seraphiel shows the party a room in the ninth heaven where every mortal prayer for divine intervention was recorded and filed. Millions of unanswered pleas. She has read them all. "This is why I broke," she says.',
+        'The party\'s judgment: broker the reform, side with tradition, or propose something neither side imagined. If the party built genuine relationships with both sides, a compromise is possible. If they fought their way through, only force remains.',
       ],
       estimatedSessions: 7,
     },
@@ -56,12 +60,14 @@ export const theSiegeOfHeaven: FullCampaign = {
     {
       name: 'Seraphiel the Compassionate',
       role: 'leader of the rebellion / sympathetic antagonist',
-      personality: 'A seraph who served faithfully for ten thousand years before breaking. She does not enjoy what she has done. She considers it a moral necessity. "I held a dying child\'s hand and whispered that heaven loved her while doing nothing to save her. I will not do that again."',
+      personality:
+        'A seraph who served faithfully for ten thousand years before breaking. She does not enjoy what she has done. She considers it a moral necessity. "I held a dying child\'s hand and whispered that heaven loved her while doing nothing to save her. I will not do that again." Arc: in Act 2 the party sees her compassion firsthand as she heals mortals. In Act 3 she sits on the throne and weeps. She wanted to change heaven, not conquer it.',
     },
     {
       name: 'Archon Metatrus',
       role: 'celestial loyalist / traditionalist',
-      personality: 'The highest-ranking angel still loyal to the old order. He believes the hierarchy exists for a reason: without rules, divine power corrupts. "Compassion without restraint is tyranny with a kind face. We have seen it before. They called it the Fall."',
+      personality:
+        'The highest-ranking angel still loyal to the old order. He believes the hierarchy exists for a reason: without rules, divine power corrupts. "Compassion without restraint is tyranny with a kind face. We have seen it before. They called it the Fall." Arc: rigid authority in Act 1, shaken certainty in Act 2 when the party shows him what the Compassionate actually do with their power, and in Act 3 he either bends or breaks.',
     },
     {
       name: 'Asmodeus\'s Envoy',
@@ -76,9 +82,33 @@ export const theSiegeOfHeaven: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Refugee Camps', description: 'Material plane camps where fallen angels shelter among mortals. A jarring sight: celestial beings queuing for bread.', significance: 'Where the coalition is formed and the stakes are made personal.' },
-    { name: 'The Nine Heavens', description: 'The celestial plane\'s layered realms. Each heaven is a distinct domain, now occupied by the Compassionate and transformed to serve their vision.', significance: 'The campaign\'s primary theater of war.' },
-    { name: 'The Throne of Light', description: 'The seat of divine authority in the highest heaven. Once a symbol of cosmic order. Now a contested chair.', significance: 'Where the final confrontation and negotiation take place.' },
+    {
+      name: 'The Refugee Camps',
+      description:
+        'Material plane camps where fallen angels shelter among mortals. A jarring sight: celestial beings queuing for bread. Some teach. Some heal. Some stare at the sky they fell from.',
+      significance: 'Where the coalition is formed and the stakes are made personal.',
+    },
+    {
+      name: 'The Nine Heavens',
+      description:
+        'The celestial plane\'s layered realms. Each heaven is a distinct domain, now occupied by the Compassionate and transformed to serve their vision. The lower heavens are hospitals. The upper heavens are fortresses.',
+      significance: 'The campaign\'s primary theater of war.',
+    },
+    {
+      name: 'The Throne of Light',
+      description:
+        'The seat of divine authority in the highest heaven. Once a symbol of cosmic order. Now a contested chair. The room behind it holds the archive of unanswered prayers - the evidence that broke Seraphiel.',
+      significance: 'Where the final confrontation and negotiation take place.',
+    },
   ],
-  dataSystems: ['massCombat', 'siegeWarfare', 'cataclysmCountdown', 'factionWar', 'diplomaticNegotiation', 'encounterWaves', 'warRoomBriefing', 'legendaryWeapon'],
+  dataSystems: [
+    'massCombat',
+    'siegeWarfare',
+    'cataclysmCountdown',
+    'factionWar',
+    'diplomaticNegotiation',
+    'encounterWaves',
+    'warRoomBriefing',
+    'legendaryWeapon',
+  ],
 };

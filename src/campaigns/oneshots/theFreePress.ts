@@ -4,7 +4,7 @@ export const theFreePress: OneShotCampaign = {
   id: 'oneshot-free-press',
   type: 'oneshot',
   title: 'The Free Press',
-  tagline: 'The city\'s only newspaper is being bought by the mayor\'s ally. Save journalism or lose the truth.',
+  tagline: 'The presses run at midnight. The mayor\'s man buys the building at dawn. Print the story or lose it forever.',
   tone: 'political',
   themes: ['political', 'intrigue', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theFreePress: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Editor Laine Reed', role: 'ally', personality: 'A veteran journalist who has been threatened, bribed, and fired from every other paper in the city. The Gazette is her last stand. "A city without a free press is a city without eyes."' },
-    { name: 'Merrick Thorne', role: 'antagonist', personality: 'The mayor\'s business partner. Buying the paper to kill a story. Not ideological - transactional. He views journalism as a product to be controlled, not a public service.', secret: 'He has already promised the mayor the story will never run.' },
-    { name: 'Madam Elara', role: 'owner', personality: 'The 80-year-old founder of the Gazette. Built it from nothing. Tired, sick, and heartbroken about selling - but she has no children and no savings. Needs convincing that another way exists.' },
+    { name: 'Editor Laine Reed', role: 'ally', personality: 'Talks in headlines. "Corruption exposed. Mayor denies. Citizens demand answers." Every conversation sounds like she is dictating copy. Chain-smokes when stressed, which is always. Assigns tasks like she is running a newsroom - because she is.' },
+    { name: 'Merrick Thorne', role: 'antagonist', personality: 'Speaks softly and slowly, like every word costs money. Never threatens directly - implies. "I would hate for Madam Elara to face legal complications during the sale." Smiles with his mouth only.', secret: 'He has already promised the mayor the story will never run.' },
+    { name: 'Madam Elara', role: 'owner', personality: 'Calls the printing press "she." Touches the walls of the building as she walks through it. Starts sentences about the future and trails off. "When I am gone, the Gazette will..." Needs someone to finish that sentence for her.' },
   ],
   keyLocations: [
     { name: 'The Broadstone Gazette', description: 'A three-story building with a newsroom on top, offices in the middle, and a printing press in the basement. Ink-stained, noisy, alive.', significance: 'The heart of the operation and the site of the final defense.' },

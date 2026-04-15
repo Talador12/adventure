@@ -34,10 +34,10 @@ export const trappedBeneath: OneShotCampaign = {
       summary: 'The party pushes deeper, navigating unstable tunnels, underground water, and claustrophobic passages. Air gets thinner.',
       challenge: 'exploration',
       keyEvents: [
-        'A flooded passage. Swimming costs massive air but shortcuts the route.',
-        'An underground pocket with breathable air. Brief respite.',
-        'Cave creatures disturbed by the blast. Combat in tight quarters burns air fast.',
-        'Evidence of previous miners who found this vein. Their skeletons tell a story.',
+        'A flooded passage. The water is black and cold. Swimming through costs three air ticks. Walking around costs forty minutes. Choose.',
+        'An air pocket the size of a closet. The party gasps. Fresh-ish air. They have maybe ten minutes before they use it up. Rest or move.',
+        'Something moves in the dark. Pale, eyeless cave crawlers drawn to the heat of living bodies. Fighting in a three-foot-high tunnel. Every swing costs air.',
+        'Three skeletons in miner\'s gear around the glowing ore. One still holds a pickaxe. Another holds a note: "They sealed us in. The company knows about this vein."',
       ],
     },
     {
@@ -61,7 +61,7 @@ export const trappedBeneath: OneShotCampaign = {
     {
       name: 'Captain Serna',
       role: 'cleanup crew leader',
-      personality: 'Professional, detached, efficient. Following orders. Not evil, just doing a job. Will negotiate if cornered.',
+      personality: 'Military posture, clean armor, flat voice. Gives orders like checking items off a list. "Seal shaft B. Confirm no egress." When cornered, she negotiates like someone doing math. Not cruel. Just compartmentalized.',
       secret: 'She does not know what the ore is. She was told the miners found a plague vein.',
     },
   ],

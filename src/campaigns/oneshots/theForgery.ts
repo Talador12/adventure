@@ -51,9 +51,9 @@ export const theForgery: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Chamberlain', role: 'unwitting obstacle', personality: 'An elderly official who has served three kings. Handles the crown with reverence and precision. He will notice if something is wrong - his hands know the weight of that crown.' },
-    { name: 'Prince Darian', role: 'secret ally', personality: 'The prince being crowned. Publicly eager, privately terrified of the crown\'s power. He cannot help the party without raising suspicion but he will not interfere.', secret: 'He will subtly adjust his schedule to give the party an extra moment if he senses their plan.' },
-    { name: 'Rebel Contact Shade', role: 'quest giver', personality: 'A changeling operative who communicates through dead drops and disguises. Efficient, professional, and prepared to sacrifice the party if the mission demands it.' },
+    { name: 'The Chamberlain', role: 'unwitting obstacle', personality: 'Carried the crown for two coronations before this one. His hands shake with age but they know that crown to the ounce. Counts his steps during the procession. If the weight changes by a feather, he will stop walking. He rehearsed the procession route eleven times this week.' },
+    { name: 'Prince Darian', role: 'secret ally', personality: 'Laughs too loudly at the pre-ceremony toasts. Keeps touching his head where the crown will sit. When he catches a party member\'s eye, he holds the gaze one beat too long - the look of a man hoping someone will save him from his own coronation.', secret: 'He will subtly adjust his schedule to give the party an extra moment if he senses their plan.' },
+    { name: 'Rebel Contact Shade', role: 'quest giver', personality: 'Never the same face twice. Communicates through objects left in specific places - a coin on a windowsill, a folded napkin under a plate. When the party finally meets Shade in person, Shade is already someone they spoke to earlier without knowing it.' },
   ],
   keyLocations: [
     { name: 'The Royal Vault', description: 'A fortified chamber beneath the throne room. Three locks, two guards, and a ward that screams if unauthorized hands touch the crown.', significance: 'Where the crown starts the day.' },

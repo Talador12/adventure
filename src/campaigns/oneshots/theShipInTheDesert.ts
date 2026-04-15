@@ -4,7 +4,7 @@ export const theShipInTheDesert: OneShotCampaign = {
   id: 'oneshot-ship-in-the-desert',
   type: 'oneshot',
   title: 'The Ship in the Desert',
-  tagline: 'A sailing ship in the middle of a desert. No ocean for 500 miles. The wood is not even weathered.',
+  tagline: 'A three-masted galleon in the deep desert. Flag still flying. Anchor buried in sand. Breakfast still warm below decks. No crew.',
   tone: 'exploration',
   themes: ['exploration', 'mystery'],
   playerCount: { min: 3, max: 5 },
@@ -32,10 +32,10 @@ export const theShipInTheDesert: OneShotCampaign = {
       summary: 'Water begins appearing around the ship. Pools form in the sand. Sea creatures from an ancient ocean surface briefly before vanishing.',
       challenge: 'exploration',
       keyEvents: [
-        'Water seeps up through the sand in expanding circles around the ship',
-        'Ancient marine life appears in the pools: fish, kelp, creatures from a dead ecosystem',
-        'The artifact pulses faster and the water rises to ankle depth across a mile',
-        'A ghostly overlay of the ancient ocean becomes visible: waves, horizon, distant shores',
+        'Water seeps up through sand that has been dry for millennia. It pools around the ship in expanding circles, cold and salt-sharp, carrying the smell of a living ocean',
+        'Things surface in the pools: translucent fish with too many fins, kelp that glows faintly blue, a jellyfish pulsing in water that should not exist. Creatures from an ecosystem that died 3,000 years ago',
+        'The artifact pulses faster. Water rises to ankle depth across a mile of desert. The sand beneath dissolves into mud, then sediment, then open water',
+        'A ghostly overlay shimmers into existence: waves cresting where dunes stood, the silhouette of a harbor on a horizon that holds no city, the distant cry of seabirds that went extinct with the ocean',
       ],
     },
     {

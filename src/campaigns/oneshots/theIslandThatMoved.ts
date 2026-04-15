@@ -21,10 +21,10 @@ export const theIslandThatMoved: OneShotCampaign = {
       summary: 'Sailing to the island and making landfall. The terrain is wrong: the soil is thin, the trees have shallow roots, and the ground occasionally shifts.',
       challenge: 'exploration',
       keyEvents: [
-        'The approach: the island has no beach, just a steep shell-like ridge rising from the water',
-        'The forest: real trees with shallow roots, birds nesting, a complete ecosystem',
-        'The ground moves: subtle, rhythmic, like breathing',
-        'A freshwater spring that pulses like a heartbeat',
+        'The approach: no beach, no sand. The island rises from the water as a sheer ridge of grey-green stone with hexagonal patterns like dried mud - or scales',
+        'The forest is real but wrong: trees lean slightly toward the island\'s center, roots sprawl across the surface instead of digging deep, birds nest but none leave',
+        'Standing still, the party feels it: the ground rises and falls. Not an earthquake. Rhythm. Like standing on a chest that breathes',
+        'A freshwater spring in a clearing pulses in regular intervals, warm to the touch, tasting faintly of salt and iron',
       ],
     },
     {
@@ -52,7 +52,7 @@ export const theIslandThatMoved: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Harbor Master Voss', role: 'quest giver', personality: 'A no-nonsense logistics officer who cares about ships, schedules, and not having an island crash into the port. "I do not care what it is. I care where it is going."' },
-    { name: 'Thistle', role: 'guide / ally', personality: 'A half-elf druid who has lived on the zaratan\'s back for 12 years, tending its ecosystem. She knew what it was from the start. She is grieving because she can feel it dying.' },
+    { name: 'Thistle', role: 'guide / ally', personality: 'Barefoot, sun-weathered, speaks to the trees like old friends. She has lived on this island for 12 years knowing it was a living creature. She can feel it dying through the root network. Her voice breaks when she talks about it. "It is going home. You cannot stop something from going home."' },
     { name: 'The Zaratan', role: 'the island itself', personality: 'Ancient beyond measure. Not intelligent in a conversational way, but deeply purposeful. It wants to go home. It does not know about the city in its path.' },
   ],
   keyLocations: [

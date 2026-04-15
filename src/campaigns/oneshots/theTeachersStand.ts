@@ -4,7 +4,7 @@ export const theTeachersStand: OneShotCampaign = {
   id: 'oneshot-teachers-stand',
   type: 'oneshot',
   title: 'The Teacher\'s Stand',
-  tagline: 'She taught real history. They fired her. Now the students are organizing.',
+  tagline: 'She taught real history. They fired her. Tomorrow morning, every student in the Academy walks out.',
   tone: 'political',
   themes: ['political', 'social', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theTeachersStand: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Professor Mira Sandoval', role: 'inspiration', personality: 'A middle-aged human historian who refused to teach propaganda. Calm, dignified, and at peace with her firing. "The truth does not need my permission to exist."' },
-    { name: 'Fen', role: 'student leader', personality: 'A 17-year-old half-elf student who organized the walkout. Nervous, brave, and terrified of failing the people who trust her leadership.' },
-    { name: 'Headmaster Corvin', role: 'conflicted authority', personality: 'A man who knows the truth, chose money over principle, and now watches his students do what he could not. His guilt is visible.', secret: 'He kept Sandoval\'s original history textbook in his desk drawer for twenty years.' },
+    { name: 'Professor Mira Sandoval', role: 'inspiration', personality: 'Teaches even when she is not teaching. Points at things and asks questions instead of giving answers. "Why do you think they rewrote that chapter? What are they afraid you will learn?" Packs her books slowly, like she is leaving a friend\'s house for the last time.' },
+    { name: 'Fen', role: 'student leader', personality: 'Talks too fast when nervous, which is always. Carries a list of every student who said yes and rereads it when she doubts herself. Practices her walkout speech in the mirror and hates every version. Seventeen years old and carrying something that should weigh more than she does.' },
+    { name: 'Headmaster Corvin', role: 'conflicted authority', personality: 'Pauses too long before answering questions about Sandoval. Straightens things on his desk that are already straight. When students quote Sandoval\'s lessons back to him, his jaw tightens and he looks out the window.', secret: 'He kept Sandoval\'s original history textbook in his desk drawer for twenty years.' },
   ],
   keyLocations: [
     { name: 'Aldwick Academy', description: 'A stone campus with ivy-covered walls, lecture halls, and a central courtyard large enough for every student.', significance: 'Where the walkout happens and the confrontation takes place.' },

@@ -4,7 +4,7 @@ export const theGoodbye: OneShotCampaign = {
   id: 'oneshot-goodbye',
   type: 'oneshot',
   title: 'The Goodbye',
-  tagline: 'The village elder is leaving forever. One day to give her the send-off she deserves.',
+  tagline: 'She was going to leave without saying goodbye. Twelve hours to give a woman who gave everything the farewell she will not ask for.',
   tone: 'social',
   themes: ['social'],
   playerCount: { min: 3, max: 5 },
@@ -24,9 +24,9 @@ export const theGoodbye: OneShotCampaign = {
       challenge: 'social',
       keyEvents: [
         'Wynn packing in secret. She does not want attention. The party disagrees.',
-        'Canvassing the village: who has a story, a gift, a debt to settle?',
-        'The baker owes her his life. The schoolteacher owes her a career. Everyone has a story.',
-        'A venue, decorations, food. Twelve hours. Go.',
+        'Canvassing the village: the baker weeps openly - she pulled his son from the river at age four. The schoolteacher stammers - she paid for his schooling anonymously.',
+        'The blacksmith starts carving a memorial plaque without being asked. His hands shake. He does not stop.',
+        'A venue, decorations, food. The party has twelve hours and an entire village that owes this woman everything.',
       ],
     },
     {
@@ -34,9 +34,9 @@ export const theGoodbye: OneShotCampaign = {
       summary: 'Running around the village gathering tributes, settling old grudges, and convincing Wynn to let this happen.',
       challenge: 'social',
       keyEvents: [
-        'The blacksmith carves a memorial plaque. He cries while hammering.',
-        'Two families feuding for years are asked to put it aside for Wynn. They try.',
-        'Wynn keeps deflecting: "Please do not make a fuss." The party insists.',
+        'Two families feuding for years are asked to stand together for Wynn. They manage it. Barely.',
+        'Wynn is found re-packing her bag for the third time. "Please do not make a fuss. I am just an old woman who got lucky with neighbors."',
+        'A child delivers a crayon drawing of Wynn to the party. "For the lady. So she does not forget us."',
         'The party finds the daughter\'s letter. The truth comes out.',
       ],
     },
@@ -56,12 +56,12 @@ export const theGoodbye: OneShotCampaign = {
     {
       name: 'Elder Wynn',
       role: 'departing elder',
-      personality: 'Warm, selfless, and deeply private about her own pain. Has given everything to this village for fifty years. Asking for help is physically difficult for her.',
+      personality: 'Deflects every compliment with a chuckle and a redirect. Packs her own bags. Refuses help carrying them. "I have carried heavier." Her hands tremble when she thinks nobody is looking.',
     },
     {
       name: 'Apprentice Rowan',
       role: 'Wynn\'s successor',
-      personality: 'Young, nervous, and terrified of filling Wynn\'s shoes. Organizing the farewell gives them purpose and the village sees their potential.',
+      personality: 'Keeps a list of everything Wynn does in a day, trying to memorize it. Voice cracks when someone calls them "Elder." Organizing the farewell is the first thing they have done without Wynn telling them how.',
     },
   ],
   keyLocations: [

@@ -51,9 +51,9 @@ export const theDoubleBluff: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Client (Mr. Ash)', role: 'double-crossing employer', personality: 'A fixer who plays both sides of every deal. Hired two teams because he needed the ruby and wanted a scapegoat. Charming, amoral, and always has an exit plan.', secret: 'He has a third team waiting outside to rob whoever comes out with the ruby.' },
-    { name: 'Silver Knife Captain Vex', role: 'rival team leader', personality: 'Leader of the Silver Knives. Professional, proud, and furious when she discovers the double-cross. Potential ally if the party plays it right.' },
-    { name: 'Museum Warden Aldric', role: 'obstacle', personality: 'Head of museum security. A retired war mage who takes his post seriously. His wards are no joke and his guards are well-trained.' },
+    { name: 'The Client (Mr. Ash)', role: 'double-crossing employer', personality: 'Speaks like every sentence is a contract clause. Never uses your real name - assigns codenames on the spot. "You are Flint. You are Ember. You do not need to know why." Always has one hand near the door. Always smiling.', secret: 'He has a third team waiting outside to rob whoever comes out with the ruby.' },
+    { name: 'Silver Knife Captain Vex', role: 'rival team leader', personality: 'Communicates with her team using hand signals even mid-conversation. Sizes up every person she meets by where they keep their weapon. When she finds the matching contract, she does not rage - she goes still, then says "We have a mutual problem. Want to solve it together or separately?"' },
+    { name: 'Museum Warden Aldric', role: 'obstacle', personality: 'A retired war mage who sleeps in his office because he trusts nobody. His wards are layered three deep. He named the wards. He talks to them. "Good girl, Patience. Let me know if anyone breathes wrong."' },
   ],
   keyLocations: [
     { name: 'The Velvet Museum', description: 'A three-story museum of rare artifacts. Marble floors, trapped galleries, and magical wards on every display case.', significance: 'The heist location.' },

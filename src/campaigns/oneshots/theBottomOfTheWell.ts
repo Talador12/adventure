@@ -21,10 +21,10 @@ export const theBottomOfTheWell: OneShotCampaign = {
       summary: 'Down the well shaft, past the water table, into a carved stone passage that should not exist below a farming village.',
       challenge: 'exploration',
       keyEvents: [
-        'The well descent: 30 feet of normal well, then the shaft continues into carved stone',
-        'Past the water: the walls are worked stone, dwarven geometric patterns, ancient and precise',
-        'A horizontal passage at 300 feet opens onto a platform with rails set into the floor',
-        'The coin: sitting on the platform where it landed, glinting in the party\'s torchlight',
+        'The well: mossy stone for 30 feet, cold water at the bottom. Below the water line, the shaft continues into stone that is too smooth, too geometric to be natural',
+        'Past the water table: the walls become fitted dwarven masonry. Geometric patterns carved in precise repeating sequences. The air smells of mineral dust and deep earth, and it is warm',
+        'At 300 feet, the vertical shaft opens onto a horizontal platform. Iron rails are set into the floor, polished by use. The silence down here is total, like being inside a held breath',
+        'The coin: a copper piece sitting on the platform exactly where it landed, glinting in torchlight. Around it, the floor has been swept clean. Recently.',
       ],
     },
     {
@@ -52,7 +52,7 @@ export const theBottomOfTheWell: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Elder Moss', role: 'quest giver', personality: 'The village elder who has lived here 70 years and never heard a sound from the well before last Tuesday. Practical, suspicious of magic, but honest about what she heard.' },
-    { name: 'The Caretaker', role: 'neutral presence', personality: 'A stone golem running a 3,000-year-old maintenance routine. Not hostile, not friendly. It has a job. It does the job. It does not understand why the trains stopped.' },
+    { name: 'The Caretaker', role: 'neutral presence', personality: 'Ten feet of polished granite carrying a toolbox older than every surface civilization. It notices the party the way a janitor notices someone in the hallway: brief acknowledgment, then back to work. Speaks ancient Dwarvish in a grinding bass. "The 14:00 service to Karak Dorn is delayed. Please wait on the platform." The 14:00 service has been delayed for 3,000 years.' },
     { name: 'Mira', role: 'ally', personality: 'The child who dropped the first coin. Brave, curious, and absolutely certain something wonderful is down there. She is not wrong.' },
   ],
   keyLocations: [

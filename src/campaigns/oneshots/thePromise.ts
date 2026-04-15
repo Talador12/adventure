@@ -51,9 +51,9 @@ export const thePromise: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Aldric Thorne', role: 'the dying man', personality: 'A one-armed veteran who spent 40 years carrying a box he was too ashamed to deliver. Gentle, regretful, and at the end of his time. "I was not brave enough to face her. I was brave enough to face an army. Strange, that."' },
-    { name: 'Magistrate Elowynn Darr', role: 'the recipient', personality: 'A woman who waited, then stopped waiting, then built an extraordinary life. Not bitter but not soft about it either. "I did not put my life on hold. I wore the key because it fit the chain."' },
-    { name: 'Father Simms', role: 'hospice keeper', personality: 'The priest tending the hospice who has heard Aldric talk about the box for years. He convinced Aldric to finally ask someone to deliver it.' },
+    { name: 'Aldric Thorne', role: 'the dying man', personality: 'Speaks between coughs. Holds the box with his one remaining hand, thumb rubbing the lid in circles. Looks at the wall when he talks about her. "I was not brave enough to face her. I was brave enough to face an army. Strange, that." Laughs, then coughs. "Do not let me die with this box still here."' },
+    { name: 'Magistrate Elowynn Darr', role: 'the recipient', personality: 'Pours tea before she asks who sent you. Measures you with her eyes while she listens. Does not touch the box immediately. "I wore the key because it fit the chain. Do not make more of that than it is." But her hand shakes when she finally reaches for it.' },
+    { name: 'Father Simms', role: 'hospice keeper', personality: 'Folds his hands in front of him constantly. Whispers even when there is no reason to. "He has talked about that box every week for six years. Every week I said, let me send it. Every week he said, not yet. Last week he said yet. That scared me more than the coughing."' },
   ],
   keyLocations: [
     { name: 'The Hospice', description: 'A quiet place where the old and the sick wait. Aldric\'s room has one personal item: the box.', significance: 'Where the quest begins and the emotional weight is established.' },

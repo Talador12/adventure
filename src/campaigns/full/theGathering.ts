@@ -23,6 +23,7 @@ export const theGathering: FullCampaign = {
       summary: 'Arrival, introductions, and the first round of negotiations. Every delegation has demands, secrets, and red lines.',
       keyEvents: [
         'The pre-conference dinner: eight species, eight grudges, one dining hall',
+        'Quiet moment: Speaker Thal stands alone in the Grand Chamber before the delegations arrive. He counts the seats. He lingers on the ninth, dusty and empty. He touches it. He says a name nobody else remembers.',
         'Opening statements: each delegation presents demands. The math does not add up - everyone wants more than exists.',
         'Backroom deals begin: the dwarves offer the orcs military support in exchange for mineral rights',
         'Strange signs: someone is watching the proceedings from outside the diplomatic complex',
@@ -35,7 +36,8 @@ export const theGathering: FullCampaign = {
       keyEvents: [
         'The archive discovery: records of the 200-year-old Gathering show irregularities - votes that do not add up',
         'The Verdani reveal themselves: a delegation of shapeshifters who have been hiding among the other groups',
-        'Every delegation reacts differently: guilt, denial, anger, opportunism',
+        'The moment of cost: Sylvaine drops her disguise in the middle of the Grand Chamber. Some delegations draw weapons. Warchief Durga stands between them. "You want to kill someone for existing? That is why we are here. Sit down." If the party built a relationship with Durga in Act 1, she acts without prompting.',
+        'Quiet moment: Sylvaine shows the party a Verdani lullaby. It is about a forest that no longer exists. She has not sung it in public in 200 years.',
         'A coalition must be built: the party needs at least five of eight delegations to vote for Verdani inclusion',
       ],
       estimatedSessions: 6,
@@ -44,10 +46,11 @@ export const theGathering: FullCampaign = {
       title: 'Act 3: The Vote',
       summary: 'The final days. Last-minute deals, betrayals, and the vote that reshapes the continent.',
       keyEvents: [
-        'Holdout delegations demand concessions: each "yes" vote comes with a price',
+        'Holdout delegations demand concessions: each "yes" vote comes with a price. Ambassador Aldric wants trade agreements. Durga wants sovereignty recognized. Each deal the party brokered in Act 1 pays dividends here.',
         'A sabotage attempt: someone would rather have war than share power with the Verdani',
         'The final speeches: the party can address the full Gathering and make their case',
-        'The vote: eight delegations, one question, and the future of every nation on the continent',
+        'Quiet moment: before the vote, Speaker Thal addresses the chamber. He confesses he knew about the erasure. He could not stop it. He has carried the guilt for two centuries. He asks the delegations to be better than the people who came before them. Then he sits down. Nobody speaks for a long time.',
+        'The vote: eight delegations, one question, and the future of every nation on the continent. The ninth seat is dusted off.',
       ],
       estimatedSessions: 5,
     },
@@ -76,9 +79,33 @@ export const theGathering: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Neutral Grounds', description: 'An island diplomatic complex where no nation holds sovereignty. Grand halls, private meeting rooms, and gardens designed for whispered conversations.', significance: 'Where the entire campaign takes place.' },
-    { name: 'The Archive of Compacts', description: 'A sealed vault containing every treaty signed at every Gathering. Two centuries of diplomatic history - and two centuries of buried crimes.', significance: 'Where the evidence of the Verdani erasure is found.' },
-    { name: 'The Grand Chamber', description: 'A circular hall with eight delegation seats arranged as equals. A ninth seat sits empty, covered in dust. Nobody remembers who it was for.', significance: 'Where the final vote takes place.' },
+    {
+      name: 'The Neutral Grounds',
+      description:
+        'An island diplomatic complex where no nation holds sovereignty. Grand halls, private meeting rooms, and gardens designed for whispered conversations. Each delegation has a wing. The walls between them are thinner than they look.',
+      significance: 'Where the entire campaign takes place.',
+    },
+    {
+      name: 'The Archive of Compacts',
+      description:
+        'A sealed vault containing every treaty signed at every Gathering. Two centuries of diplomatic history - and two centuries of buried crimes. One shelf has been emptied. The documents that should be there were removed 200 years ago.',
+      significance: 'Where the evidence of the Verdani erasure is found.',
+    },
+    {
+      name: 'The Grand Chamber',
+      description:
+        'A circular hall with eight delegation seats arranged as equals. A ninth seat sits empty, covered in dust. Nobody remembers who it was for. The dust on that seat is 200 years deep.',
+      significance: 'Where the final vote takes place.',
+    },
   ],
-  dataSystems: ['socialEncounter', 'npcRelationshipWeb', 'diplomaticNegotiation', 'courtIntrigue', 'factionWar', 'rumorMill', 'backstoryComplication', 'warRoomBriefing'],
+  dataSystems: [
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'diplomaticNegotiation',
+    'courtIntrigue',
+    'factionWar',
+    'rumorMill',
+    'backstoryComplication',
+    'warRoomBriefing',
+  ],
 };

@@ -51,9 +51,9 @@ export const theWatchman: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Brenn Marsh', role: 'quest giver / protagonist', personality: 'A veteran gatekeep with 30 years of stories and one unfinished piece of business. Patient as stone, sharp as a blade, and ready for tonight. "I have watched this gate for 30 years. Not because I love the work. Because someone is coming back."' },
-    { name: 'The Cursor', role: 'antagonist', personality: 'A fey entity that steals identities for sport, passing through mortal gates on a 15-year cycle. Amused by Brenn\'s persistence but underestimates his resolve.' },
-    { name: 'Guard Captain Thren', role: 'framing device', personality: 'Brenn\'s superior who organized the retirement party. She has no idea why Brenn insisted on working tonight instead of attending. "The man has earned his rest. He will not take it."' },
+    { name: 'Brenn Marsh', role: 'quest giver / protagonist', personality: 'Pours tea without looking at the kettle. Tells stories with his hands, miming every character. Laughs at the funny ones like he is hearing them for the first time. But his eyes never leave the road. "I have watched this gate for 30 years. Not because I love the work. Because someone is coming back." His hand rests on something under his cloak. He has been ready for 15 years.' },
+    { name: 'The Cursor', role: 'antagonist', personality: 'Speaks in the voice of whoever it last consumed. Tilts its head at wrong angles. Smiles before it has reason to. "Little watchman. Still at your post? How devoted. How delicious." It has done this to hundreds of people. Brenn is the first one who remembered.' },
+    { name: 'Guard Captain Thren', role: 'framing device', personality: 'Taps her boot when she is impatient, which is always. "We had a cake. We had speeches. He said he had one more shift. Thirty years and he will not take one night off. The man has earned his rest. He will not take it."' },
   ],
   keyLocations: [
     { name: 'The City Gate', description: 'A stone gate manned by one watchman for 30 years, with a kettle, a chair, and 30 years of memories.', significance: 'The entire adventure takes place here. One gate, one night, one confrontation.' },

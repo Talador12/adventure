@@ -51,9 +51,9 @@ export const theReplacementChild: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Wren Hartwell', role: 'the changeling', personality: 'A teenager who has been human in every way that matters for 15 years. Learning they are a changeling is the worst thing that has ever happened to them. "I remember learning to walk in this house. I remember my first day of school. Those memories are mine. I am me."' },
-    { name: 'Lily Hartwell', role: 'the returned child', personality: 'A teenager who spent 15 years in the Feywild remembering a family that was living with someone else. Not angry at Wren. Angry at the fey who took her. Heartbroken that her place was filled.' },
-    { name: 'Maren and Coll Hartwell', role: 'the parents', personality: 'Parents who love the child they raised and the child they lost. They cannot choose. They should not have to. They look to the party for help they cannot find themselves.' },
+    { name: 'Wren Hartwell', role: 'the changeling', personality: 'Talks with their hands, a habit they got from their mother. Paces when they are scared. Voice cracks. "I remember learning to walk in this house. I remember the dog we had when I was six. I remember - " Their skin flickers, just for a second, translucent at the edges. They look at their own hands in horror. "No. No. I am me. I am still me."' },
+    { name: 'Lily Hartwell', role: 'the returned child', personality: 'Hugs herself. Eyes too old for fifteen. Speaks carefully, like someone who has been rehearsing what they would say for a decade. "I am not angry at Wren. How can I be angry at someone who did not choose this? I am angry at the thing that took me. I am angry that I spent fifteen years remembering a family that was learning to forget me."' },
+    { name: 'Maren and Coll Hartwell', role: 'the parents', personality: 'Maren holds Wren\'s hand and will not let go. Coll stands in the doorway staring at Lily, the child he mourned, alive and grown, and his face does something the party has never seen: he is happy and devastated at the same time. Neither parent speaks first. They cannot. Every word is a choice between two children.' },
   ],
   keyLocations: [
     { name: 'The Hartwell Home', description: 'A family home with two children\'s rooms and only one child\'s worth of recent memories.', significance: 'Where the impossible situation plays out in the most domestic setting possible.' },

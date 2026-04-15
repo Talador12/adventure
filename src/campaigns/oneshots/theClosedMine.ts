@@ -51,9 +51,9 @@ export const theClosedMine: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Foreman Dag', role: 'quest giver', personality: 'A dwarf who spent thirty years in the mine. His hands are scarred, his back is bent, and his conviction is unbreakable. "This mine feeds families. That matters more than profit margins."' },
-    { name: 'Director Marsh', role: 'antagonist', personality: 'Creston\'s regional director. Believes corporations drive progress and workers are replaceable. Not sadistic - just indifferent to suffering that does not appear on a ledger.', secret: 'He is under pressure from Creston\'s board. If this fails, he loses his position too.' },
-    { name: 'Clerk Penny', role: 'reluctant witness', personality: 'A young woman who took a filing job and found herself complicit in fraud. Wants to help but is terrified of retaliation.' },
+    { name: 'Foreman Dag', role: 'quest giver', personality: 'Speaks by hitting things for emphasis - the table, his knee, the wall. Never finishes a sentence without a mining metaphor. "You do not find truth sitting on the surface. You dig." Thirty years underground carved permanence into his voice.' },
+    { name: 'Director Marsh', role: 'antagonist', personality: 'Speaks in quarterly earnings language even when discussing human lives. Calls miners "labor units." Calls the town "the operational footprint." Genuinely does not hear how monstrous it sounds.', secret: 'He is under pressure from Creston\'s board. If this fails, he loses his position too.' },
+    { name: 'Clerk Penny', role: 'reluctant witness', personality: 'Whispers everything. Looks at the door before answering any question. Folds and unfolds the same piece of paper while talking. Will not make eye contact but will slide documents across the table when no one is looking.' },
   ],
   keyLocations: [
     { name: 'Ironhollow', description: 'A mining town built around a single industry. Without the mine, it is a collection of empty houses and desperate people.', significance: 'The human stakes.' },

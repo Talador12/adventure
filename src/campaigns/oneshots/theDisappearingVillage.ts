@@ -4,7 +4,7 @@ export const theDisappearingVillage: OneShotCampaign = {
   id: 'oneshot-disappearing-village',
   type: 'oneshot',
   title: 'The Disappearing Village',
-  tagline: 'The village vanishes every night. Reappears at dawn. Different location. Why? And how long until it does not come back?',
+  tagline: 'The village was here yesterday. Now it is three miles east. The villagers slept through it. A child has a music box she plays every night.',
   tone: 'mystery',
   themes: ['mystery', 'planar', 'wilderness'],
   playerCount: { min: 3, max: 5 },

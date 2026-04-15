@@ -23,10 +23,10 @@ export const driftwood: OneShotCampaign = {
       summary: 'Survival on the raft. Sun exposure, dehydration, rationing, and the thing below.',
       challenge: 'exploration',
       keyEvents: [
-        'Inventory: one water cask, rope, a fishing hook, driftwood, and the clothes on their backs.',
-        'The sun is relentless. Dehydration begins. Constitution saves each hour.',
-        'Something bumps the raft. Large. Deliberate. Then silence.',
-        'A dead sailor surfaces nearby. His pockets hold a waterlogged map.',
+        'Inventory: one water cask (half full, brackish), six feet of rope, a bent fishing hook, and whatever the party was wearing when the ship went down.',
+        'The sun does not care about your HP. Constitution saves each hour. Failure means exhaustion. The cask has enough water for two people for one day. There are more than two people.',
+        'A thump from below. The raft shudders. Something large brushed the underside. Then nothing. Worse than an attack: patience.',
+        'A dead sailor bobs to the surface face-down. His pockets: a waterlogged map, three copper coins, and a locket with a child\'s portrait inside.',
       ],
     },
     {

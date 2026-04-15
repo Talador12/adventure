@@ -4,7 +4,7 @@ export const theInheritance2: OneShotCampaign = {
   id: 'oneshot-unexpected-inheritance',
   type: 'oneshot',
   title: 'The Unexpected Inheritance',
-  tagline: 'A party member inherits a house from a relative they never met. The house tells the story of who that person was.',
+  tagline: 'You inherited a house from a great-aunt you never knew existed. The walls are covered in maps. The study smells like old blood and regret.',
   tone: 'serious',
   themes: ['mystery', 'social'],
   playerCount: { min: 3, max: 5 },
@@ -21,10 +21,10 @@ export const theInheritance2: OneShotCampaign = {
       summary: 'Exploring the house and discovering it is not a normal home. Each room is curated, deliberate, and full of artifacts from an extraordinary life.',
       challenge: 'exploration',
       keyEvents: [
-        'The entry hall: adventuring gear mounted on walls, well-maintained, clearly once used',
-        'The sitting room: portraits of five people, the great-aunt and four others, in adventuring gear',
-        'The study: journals spanning 40 years, maps, pressed flowers from distant lands',
-        'A locked room at the end of the hall that the party must find the key for',
+        'The entry hall: a longsword on the wall, recently oiled. Boots by the door, sized for a woman, worn through at the heel. She walked far',
+        'The sitting room: five portraits. The great-aunt and four companions, young and grinning. Four of the frames have black ribbon tied at the corner',
+        'The study: forty years of journals. The early ones are excited, full of sketches. The later ones are just names, dates, and amounts of gold sent to addresses the party does not recognize',
+        'A locked room at the end of the hall. The key is inside a hollowed-out book titled "Things I Cannot Say Aloud"',
       ],
     },
     {
@@ -51,9 +51,9 @@ export const theInheritance2: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Great-Aunt Vesta (deceased)', role: 'the story', personality: 'Present through her house, her journals, and her final letter. A woman who had one terrible day 40 years ago and spent the rest of her life trying to balance the scales.' },
-    { name: 'Solicitor Marsh', role: 'quest giver', personality: 'A businesslike lawyer who processed the will without asking questions. He does not know the house\'s contents. He does not want to know.' },
-    { name: 'Neighbor Gale', role: 'context', personality: 'An elderly neighbor who knew Vesta as a quiet, generous woman who never had visitors. "She baked for every child on the street. She never told anyone her name. I think she was hiding from something. Not the law. Herself."' },
+    { name: 'Great-Aunt Vesta (deceased)', role: 'the story', personality: 'Present only through her house. Her journals shift voice over the decades: the early ones say "we" constantly. After the quest, the word "we" disappears entirely. Forty years of "I." Her final letter is the first time she uses "you."' },
+    { name: 'Solicitor Marsh', role: 'quest giver', personality: 'Adjusts his spectacles before every sentence. Speaks in subclauses. "The deceased - that is, your great-aunt, or rather, your father\'s aunt - specified, and I quote, your name. Only yours. I found that - well. Unusual."' },
+    { name: 'Neighbor Gale', role: 'context', personality: 'Leans on a fence and talks with one eye closed against the sun. "She baked for every child on the street but she never told anyone her name. I called her \'the quiet one.\' Forty years. Never once saw a visitor. I think she was hiding from something. Not the law. Herself."' },
   ],
   keyLocations: [
     { name: 'Vesta\'s House', description: 'A modest house that is secretly a museum of one woman\'s adventuring past and decades of quiet penance.', significance: 'The entire adventure. Every room is a chapter of the story.' },

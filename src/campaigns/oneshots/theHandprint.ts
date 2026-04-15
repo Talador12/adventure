@@ -51,9 +51,9 @@ export const theHandprint: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Harren Family', role: 'the protected', personality: 'A terrified family that has been fleeing something they do not understand for generations. The current family knows nothing about the original summoning. They just know that walls in their homes develop handprints.' },
-    { name: 'The Bound One', role: 'antagonist', personality: 'A fire demon tethered to a bloodline by a botched summoning. Not actively malicious, but a demon in a wall is a demon in a wall. It wants to reach its anchor. It does not care about the property damage.' },
-    { name: 'Archivist Senna', role: 'ally', personality: 'A local historian who knows the Harren family history and the rumors about their cursed homes. She has the old summoning notes. "Every house they live in develops these prints. I always assumed it was structural. It is not structural."' },
+    { name: 'The Harren Family', role: 'the protected', personality: 'The father keeps touching the wall and pulling his hand back from the heat. The mother has already packed two bags and set them by the door. The child, seven, draws pictures of handprints because that is what their walls have always done, in every house. "Mummy, is the wall person coming to visit again?" The parents look at each other.' },
+    { name: 'The Bound One', role: 'antagonist', personality: 'Not a personality. A presence. The handprints descend the wall one per hour, each one larger and warmer than the last. At four feet, the plaster blisters. At two feet, the wallpaper peels in curls. At floor level, the handprint glows orange at the edges. Then the fingers push through. They are not fingers. They are too long. They bend the wrong way. And they are reaching for the child.' },
+    { name: 'Archivist Senna', role: 'ally', personality: 'Taps her pen against her teeth when she reads. Pulls files without looking up. "The Harren family has moved four times in two generations. Every house develops the same handprints. I always assumed it was structural. Subsidence, thermal cracking, something rational." She puts down the file. "Then I found the summoning circle in the basement of the first house. It is not structural."' },
   ],
   keyLocations: [
     { name: 'The Harren Home', description: 'A normal family house with an abnormal handprint crawling down the interior wall.', significance: 'Where the horror plays out in the most domestic setting possible.' },

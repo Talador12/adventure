@@ -4,7 +4,7 @@ export const theLivingVault: OneShotCampaign = {
   id: 'oneshot-living-vault',
   type: 'oneshot',
   title: 'The Living Vault',
-  tagline: 'The vault is a mimic. The whole thing. A vault-sized mimic that eats thieves.',
+  tagline: 'Nobody has ever broken into the Obsidian Vault. Nobody has ever broken out, either. The vault is a mimic. The whole vault.',
   tone: 'heist',
   themes: ['heist', 'horror', 'dungeon_crawl'],
   playerCount: { min: 3, max: 6 },
@@ -51,9 +51,9 @@ export const theLivingVault: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Mimic', role: 'the vault / captive', personality: 'A colossal mimic that has been chained in a basement for sixty years. Not evil - starving, miserable, and desperate for freedom. Communicates in rumbles and vibrations.' },
-    { name: 'The Fence', role: 'quest giver', personality: 'A black market dealer who lost a team to the vault and is sending the party as a second attempt. Knows the vault is dangerous but not that it is alive.' },
-    { name: 'Guild Master Crest', role: 'absent antagonist', personality: 'Head of the Merchant Guild. Knows the vault is a living creature and feeds it thieves deliberately. Considers it the perfect security system.' },
+    { name: 'The Mimic', role: 'the vault / captive', personality: 'Communicates through vibrations in the walls - low rumbles for "no," rapid pulses for "danger," a sound like a heartbeat for "please." Has been chained in a basement for sixty years. When it realizes the party can hear it, the vibrations become frantic, then stop, then resume slowly, carefully, like someone learning to speak after decades of silence.' },
+    { name: 'The Fence', role: 'quest giver', personality: 'Drinks while briefing the party. Keeps refilling the glass. When asked what happened to the last team, he stares at the table for three seconds, then changes the subject. "The vault is well-defended. Standard locks, standard traps. Nothing you cannot handle." He is lying about everything except the locks.' },
+    { name: 'Guild Master Crest', role: 'absent antagonist', personality: 'His name is on the Guild Hall plaque. His portrait shows him standing next to the vault door with one hand on it, smiling. He feeds the vault thieves the way a farmer feeds livestock - on schedule, without sentiment.' },
   ],
   keyLocations: [
     { name: 'The Guild Hall Basement', description: 'A stone basement with standard locks leading to the vault door. The bones of previous thieves litter the floor before the entrance.', significance: 'The approach and the first warning.' },

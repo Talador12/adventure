@@ -51,9 +51,9 @@ export const theSmile: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Merchant (host)', role: 'vessel / threat', personality: 'The original host of the smile parasite. The person inside is gone, consumed first. The body sits at the inn, smiling endlessly, a puppet with nothing behind the expression.' },
-    { name: 'Lira (the child)', role: 'the first warning', personality: 'A child who was infected but is young enough to know something is wrong. She tugs at her own smile, trying to make it stop. "My face is stuck. My face is stuck and it is not my smile."' },
-    { name: 'Apothecary Venn', role: 'ally', personality: 'The town apothecary who has been wearing a cloth over their face for days. "I noticed on the second day. I have not looked anyone in the eyes since. I can hear my own urge to smile and it is not mine."' },
+    { name: 'The Merchant (host)', role: 'vessel / threat', personality: 'Sits at a table in the inn. Has not moved in eight days. The smile is too wide. The muscles in his cheeks should not be able to hold that position. His eyes track movement but there is nothing behind them. Soup sits in front of him, untouched, growing mold. He is still smiling at it.' },
+    { name: 'Lira (the child)', role: 'the first warning', personality: 'Pulls at the corners of her mouth with both hands, trying to make it stop. Her eyes are terrified above the smile. Writes in the dirt with a stick because she is afraid to open her mouth. The note says: "My face is stuck. It is not my smile. Please help me take it off."' },
+    { name: 'Apothecary Venn', role: 'ally', personality: 'Speaks through a cloth tied over their mouth and nose. Eyes only visible. Those eyes are exhausted. "I noticed on the second day. Everyone was smiling the same way. I covered my face and I have not looked anyone in the eyes since. I can feel it. The urge. It sits behind my teeth like a word I do not want to say."' },
   ],
   keyLocations: [
     { name: 'The Market Town', description: 'A prosperous, pleasant town where every resident wears the exact same smile.', significance: 'The setting. The wrongness is everywhere and inescapable.' },

@@ -25,8 +25,8 @@ export const theDeadMansChess: OneShotCampaign = {
       keyEvents: [
         'The body: Vane at his desk, poisoned, hand on a piece. The board is mid-game.',
         'The student explains: this is not a real game. The position is a message.',
-        'Algebraic notation of the remaining moves spells letters: a name, or is it?',
-        'The "name" does not match any suspect. It is an anagram.',
+        'The remaining moves: Qe4, Nh5, Rg3, Bb2, Kc1. In algebraic shorthand, the pieces spell Q-N-R-B-K. The student writes the full notation. "These letters do not spell a name. They spell... something else."',
+        'Rearranged: the letters form a location. Vane was too smart to just point a finger. He built a treasure map.',
       ],
     },
     {
@@ -56,7 +56,7 @@ export const theDeadMansChess: OneShotCampaign = {
     {
       name: 'Mira Ashvane',
       role: 'student / key to the code',
-      personality: 'A prodigy chess player and Vane\'s final student. Brilliant, grieving, and the only person who could recognize the encoded message for what it is.',
+      personality: 'Eyes red from crying. Fingers trace the board without moving pieces. "He taught me everything. Including this." Can read chess notation the way most people read sentences. Her grief is quiet and precise, like her play.',
     },
     {
       name: 'Magistrate Reeves',

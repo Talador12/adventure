@@ -51,9 +51,9 @@ export const theLastGuest: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Innkeeper Dalton', role: 'victim / obstacle', personality: 'The longest-term resident, now so enmeshed in the enchantment that he functions as the inn\'s caretaker. He knows something is wrong. He cannot bring himself to care. "Stay. Rest. What is out there that is better than this?"' },
-    { name: 'Mara', role: 'recent victim / ally', personality: 'A merchant who arrived three days ago and has just enough awareness to know the comfort is artificial. She is fighting the compulsion and losing. "I have a family. I need to leave. But I do not want to. Help me."' },
-    { name: 'The Node', role: 'the threat', personality: 'Not sentient. A magical artifact that amplifies contentment and suppresses motivation. It was meant to provide one good night\'s rest. After 400 years, it provides an inescapable prison of comfort.' },
+    { name: 'Innkeeper Dalton', role: 'victim / obstacle', personality: 'Moves like someone underwater. Polishes the same glass for ten minutes without noticing. Smiles vaguely. "Checking out? Of course. The door is right there." Gestures toward the door the way someone gestures toward a window on the hundredth floor. "But why would you? Supper is almost ready. It is always almost ready." He does not realize he has been saying that for eleven years.' },
+    { name: 'Mara', role: 'recent victim / ally', personality: 'Grips the edge of the table with white knuckles. Talks through her teeth. "I have a family. Two children. I need to leave. I know I need to leave. But I do not want to. It feels like - have you ever been in a warm bath and the water is perfect and you know you should get out but you cannot make yourself move? It is like that. Except I have been in this bath for three days. Help me. Please."' },
+    { name: 'The Node', role: 'the threat', personality: 'A crystal the size of a fist embedded in the foundation stone, pulsing with warm golden light. Standing near it feels like the best morning of your life. The urge to sit down next to it and never get up is not a compulsion. It is a promise. That is what makes it dangerous. It does not force. It offers. And the offer is perfect.' },
   ],
   keyLocations: [
     { name: 'The Hearthstone Inn', description: 'A roadside inn that is the most comfortable place in the world and the hardest place to leave.', significance: 'The trap. Every comfortable detail is part of the enchantment.' },

@@ -24,6 +24,7 @@ export const theAshlands: FullCampaign = {
       keyEvents: [
         'Emergence from the cave: a world of gray. No sky, no horizon, no sound except settling ash.',
         'The first ash storm: zero visibility, choking air, navigation impossible for hours',
+        'Quiet moment: the party finds a child\'s drawing preserved under glass in a buried house. A family, a dog, a sun. The sun is yellow. Nothing here is yellow anymore.',
         'A collapsed town found: buried to the rooftops. Supplies scavenged. Bodies not examined too closely.',
         'Signs of life: footprints in the ash. Someone else survived. They are heading the wrong direction.',
       ],
@@ -35,6 +36,8 @@ export const theAshlands: FullCampaign = {
       keyEvents: [
         'First contact: masked figures emerge from the ash. They communicate with hand signals. They offer water.',
         'The Cinder settlement: an underground community with filtered air, mushroom gardens, and a purpose',
+        'The moment of cost: Keeper Ulva explains the druid circle\'s sacrifice. Seven druids triggered the eruption. Six died in the ritual. The party must decide if that sacrifice was justified.',
+        'Quiet moment: Spark, the fire elemental, sits with the party and describes the Plane of Fire\'s civil war in halting Common. It is homesick for a home that would kill it.',
         'The truth: the eruption was deliberate. A circle of druids triggered it to bury the rift.',
         'The rift glows beneath the deepest ash. The ground hums with elemental fire trying to break through.',
       ],
@@ -44,9 +47,10 @@ export const theAshlands: FullCampaign = {
       title: 'Act 3: The Rift',
       summary: 'The choice: leave or seal. If the party stays, the journey to the rift is the most dangerous trek yet.',
       keyEvents: [
-        'The Cinders show the party the way out. It is a clear path. They can leave.',
+        'The Cinders show the party the way out. It is a clear path. They can leave. If the party bonded with the Cinders in Act 2, leaving feels like abandonment.',
         'The rift is destabilizing. Ash melts from below. Fire elementals probe the weakening seal.',
-        'The descent: volcanic tunnels, toxic air, molten ground. The party must reach the rift before it breaches.',
+        'The descent: volcanic tunnels, toxic air, molten ground. If Spark survived Act 2, it guides them through the worst passages - it knows fire.',
+        'Quiet moment: at the rift\'s edge, Ulva plants a seed in the ash. "When this blooms, the ashlands are done mourning." She does not expect to see it.',
         'Sealing the rift: a ritual using the volcanic energy itself. Close the wound and let the ashlands heal.',
       ],
       estimatedSessions: 5,
@@ -56,24 +60,51 @@ export const theAshlands: FullCampaign = {
     {
       name: 'Ashwalker Dren',
       role: 'Cinder leader / guide',
-      personality: 'A former ranger who adapted to the ashlands faster than anyone. She moves through ash storms like weather. Laconic, competent, and uninterested in explaining herself twice. "Breathe through the filter. Walk where I walk. Do not touch anything orange."',
+      personality:
+        'A former ranger who adapted to the ashlands faster than anyone. She moves through ash storms like weather. Laconic, competent, and uninterested in explaining herself twice. "Breathe through the filter. Walk where I walk. Do not touch anything orange." Arc: Act 1 a mysterious figure following the party. Act 2 a taciturn guide who slowly reveals dry humor. Act 3 she volunteers to lead the descent and finally explains why she stayed - she lost her family in the eruption and the ashlands are the only grave she can tend.',
     },
     {
       name: 'Keeper Ulva',
       role: 'Cinder elder / druid legacy',
-      personality: 'The last surviving member of the druid circle that triggered the eruption. She carries the guilt and the knowledge. "We killed a mountain to save a world. I would do it again. I wish I did not have to."',
+      personality:
+        'The last surviving member of the druid circle that triggered the eruption. She carries the guilt and the knowledge. "We killed a mountain to save a world. I would do it again. I wish I did not have to." Arc: weary certainty in Act 2, cracking resolve in Act 3 as she faces the rift her friends died to seal.',
       secret: 'The ritual that triggered the eruption required a sacrifice: her entire circle. She alone survived because someone had to maintain the watch.',
     },
     {
       name: 'Spark',
       role: 'fire elemental scout / reluctant informant',
-      personality: 'A minor fire elemental that slipped through the rift before it was sealed. It does not want the rift open either - the Plane of Fire is in civil war and this rift leads to the losing side. "Close it. Please. I do not want to go back."',
+      personality:
+        'A minor fire elemental that slipped through the rift before it was sealed. It does not want the rift open either - the Plane of Fire is in civil war and this rift leads to the losing side. "Close it. Please. I do not want to go back." Arc: nervous informant in Act 2, invaluable guide in Act 3, and at the sealing it whispers goodbye to the rift in Ignan - the last door to its home, closing forever.',
     },
   ],
   keyLocations: [
-    { name: 'The Ashlands', description: 'Two hundred miles of volcanic desolation. Ash drifts like snow. The air tastes of sulfur. The landscape changes daily.', significance: 'The entire hostile environment the party must traverse.' },
-    { name: 'Cinder Hold', description: 'An underground community in a lava tube, sealed with clever engineering and druidic wards. The only breathable space for a hundred miles.', significance: 'Where the truth is learned and the choice is made.' },
-    { name: 'The Rift', description: 'A wound in reality at the bottom of the deepest volcanic tunnel. The ground is glass. The air is fire. The rift glows orange and whispers in Ignan.', significance: 'The final destination. Close it or the world burns.' },
+    {
+      name: 'The Ashlands',
+      description:
+        'Two hundred miles of volcanic desolation. Ash drifts like snow. The air tastes of sulfur. The landscape changes daily. Occasionally a buried chimney pokes through - a reminder that people lived here.',
+      significance: 'The entire hostile environment the party must traverse.',
+    },
+    {
+      name: 'Cinder Hold',
+      description:
+        'An underground community in a lava tube, sealed with clever engineering and druidic wards. Mushroom gardens glow blue. Children draw pictures of a sky they have never seen. The only breathable space for a hundred miles.',
+      significance: 'Where the truth is learned and the choice is made.',
+    },
+    {
+      name: 'The Rift',
+      description:
+        'A wound in reality at the bottom of the deepest volcanic tunnel. The ground is glass. The air is fire. The rift glows orange and whispers in Ignan. Six stone cairns ring its edge - one for each druid who died to seal it.',
+      significance: 'The final destination. Close it or the world burns.',
+    },
   ],
-  dataSystems: ['wildernessSurvival', 'cataclysmCountdown', 'encounterWaves', 'magicalAnomaly', 'monsterEcology', 'settlementEvent', 'npcRelationshipWeb', 'socialEncounter'],
+  dataSystems: [
+    'wildernessSurvival',
+    'cataclysmCountdown',
+    'encounterWaves',
+    'magicalAnomaly',
+    'monsterEcology',
+    'settlementEvent',
+    'npcRelationshipWeb',
+    'socialEncounter',
+  ],
 };

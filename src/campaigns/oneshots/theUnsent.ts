@@ -51,9 +51,9 @@ export const theUnsent: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Ilsa Grent', role: 'the sender', personality: 'A proud, lonely woman who wrote an apology 50 years ago and spent her life thinking it was ignored. Learning it was never delivered is worse than being rejected.' },
-    { name: 'Marta Grent', role: 'the recipient', personality: 'A stubborn, hurt woman who built her identity around being wronged. She moved six times to avoid her sister. The letter, if she reads it, demolishes five decades of certainty.' },
-    { name: 'Clerk Fenn', role: 'quest giver', personality: 'A fastidious postal worker who takes undelivered mail personally. "Every letter is a conversation that never happened. Fifty years of silence is enough."' },
+    { name: 'Ilsa Grent', role: 'the sender', personality: 'Sews while she talks, needle never stopping. Speaks precisely, like someone who chose her words carefully fifty years ago and never stopped. "I wrote that letter the morning after. I thought she read it and chose silence. Fifty years of thinking my sister hated me. And it was sitting in a drawer." The needle stops. "That is worse. That is so much worse."' },
+    { name: 'Marta Grent', role: 'the recipient', personality: 'Opens the door two inches and speaks through the gap. Arms crossed even when she finally lets you in. "I moved six times so she could not find me. I did not need her apology then and I do not need it now." Takes the letter. Holds it without opening it. Her thumb traces the handwriting on the front. "She always had better penmanship than me."' },
+    { name: 'Clerk Fenn', role: 'quest giver', personality: 'Adjusts letters on his desk so the edges line up. Speaks to the mail as much as to the party. "Every letter is a conversation that never happened. This one has been waiting fifty years. I take that personally. I take all of them personally."' },
   ],
   keyLocations: [
     { name: 'The Dead Letter Office', description: 'A vault of thousands of undeliverable letters, sorted by decade, gathering dust.', significance: 'Where the quest begins and the weight of unspoken words is made physical.' },

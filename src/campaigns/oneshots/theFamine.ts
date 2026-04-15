@@ -23,10 +23,10 @@ export const theFamine: OneShotCampaign = {
       summary: 'Assessing the crisis. The party learns the scope of the problem and explores options: hunt, forage, send runners, or investigate the river.',
       challenge: 'exploration',
       keyEvents: [
-        'Three days of food. Sixty mouths. The math is clear.',
-        'Options: hunt the depleted forest, forage, send a runner for help, investigate why the river stopped.',
-        'The forest is nearly barren. Hunting yields little. Foraging buys half a day.',
-        'The riverbed is dry. Upstream, it should not be. Something blocked it.',
+        'The granary: the elder opens it. Half a barrel of grain, a wheel of hard cheese, dried fish. She counts heads without looking up. "Three days. Maybe four if we stop feeding the dogs."',
+        'Options: the forest is picked clean - two rabbits and a handful of roots is a good hour. Sending a runner to the nearest town is five days there and five back. The only real question is the river.',
+        'The riverbed: cracked mud where water should be. A child\'s footprints walk to the center and stop. She was looking for fish. There are no fish.',
+        'Upstream: the riverbed is dry for half a mile, then... wet stones. The water stops at a line. Something is blocking it. Something new.',
       ],
     },
     {
@@ -56,7 +56,7 @@ export const theFamine: OneShotCampaign = {
     {
       name: 'Elder Greta Thornfield',
       role: 'village leader',
-      personality: 'Practical, unsentimental, already deciding who eats last. She has been through hard winters but nothing like this.',
+      personality: 'Hands like oak roots, voice like gravel. She has already done the math and divided the village into who eats first and who eats last. She put herself on the last-to-eat list. "I am old. Children grow. That is the order."',
     },
     {
       name: 'Lord Edric Harren',

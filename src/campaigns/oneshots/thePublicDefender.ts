@@ -51,9 +51,9 @@ export const thePublicDefender: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Grix', role: 'defendant', personality: 'A goblin father who broke the law to save his daughter. Not articulate. Not educated. Just desperate and loving. When he talks about Pip, even the judge listens.' },
-    { name: 'Master Hale', role: 'hidden antagonist', personality: 'The apothecary who has been exploiting non-human customers for years. Presents himself as the victim of a robbery. Becomes very nervous when his pricing practices are questioned.' },
-    { name: 'Judge Aldric Stone', role: 'the bench', personality: 'A human judge who has heard a thousand cases and expects this to be routine. Strict but not unfair. If the evidence is strong, he will listen.' },
+    { name: 'Grix', role: 'defendant', personality: 'Speaks in short, broken Common. Keeps asking if Pip is okay - every few minutes, no matter the conversation topic. Shows the party a drawing Pip made of their family. Holds it like it is made of glass. When the court asks him to state what he did, he says "I stole medicine. My daughter was dying. I would do it again."' },
+    { name: 'Master Hale', role: 'hidden antagonist', personality: 'Over-enunciates every word like he is speaking to someone slow. Calls himself "a pillar of this community" three times in one conversation. Adjusts his cuffs when nervous. When confronted about the two price lists, his voice goes up half an octave.' },
+    { name: 'Judge Aldric Stone', role: 'the bench', personality: 'Rubs the bridge of his nose when lawyers waste his time. Interrupts with "Relevant point, counselor?" Writes notes constantly. Looks bored until the diluted medicine evidence comes out - then he sets down his quill and just listens.' },
   ],
   keyLocations: [
     { name: 'The City Jail', description: 'A cold stone building. Grix\'s cell has a blanket and a drawing his daughter made him. It is the only color in the room.', significance: 'Where the party meets their client.' },

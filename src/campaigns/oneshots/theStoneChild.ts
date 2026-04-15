@@ -51,9 +51,9 @@ export const theStoneChild: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Lira', role: 'the stakes', personality: 'A 9-year-old girl who is turning to stone and handles it with more grace than the adults around her. She is brave, quiet, and does not want anyone to get hurt saving her. "If the monster has babies, maybe do not kill the monster."' },
-    { name: 'Healer Voss', role: 'quest giver', personality: 'The village healer who has tried everything else. Exhausted, desperate, and honest about the odds. "Heartbloom moss. That is the only thing left. I wish I could tell you it grows somewhere safe."' },
-    { name: 'The Basilisk', role: 'obstacle / mirror', personality: 'A mother protecting her young. Not evil, not sapient in a way that allows negotiation. She acts on instinct. She will die for her eggs. She is, in every way that matters, the same as Lira\'s mother.' },
+    { name: 'Lira', role: 'the stakes', personality: 'Knocks on her own stone knee and giggles because it sounds funny. Draws pictures with her still-working fingers while the adults argue. Says things that destroy the room without knowing it. "If the monster has babies, maybe do not kill the monster. That would make more sad people."' },
+    { name: 'Healer Voss', role: 'quest giver', personality: 'Dark circles under his eyes. Washes his hands constantly, a nervous habit. Speaks fast and then stops mid-sentence to think. "Heartbloom moss. That is the only thing left. I wish I could - look, it grows in a basilisk lair. I am not going to pretend that is fine. It is not fine."' },
+    { name: 'The Basilisk', role: 'obstacle / mirror', personality: 'A mother protecting her young. Not evil, not sapient enough to negotiate with. She curls around her eggs the way Lira\'s mother curls around Lira\'s chair. She watches the party with one eye. She will die for those eggs. She is, in every way that matters, the same as the woman who has not slept in a week.' },
   ],
   keyLocations: [
     { name: 'The Mountain Village', description: 'A small community in the peaks where a child is slowly turning to stone.', significance: 'Where the quest begins and the emotional stakes are set.' },

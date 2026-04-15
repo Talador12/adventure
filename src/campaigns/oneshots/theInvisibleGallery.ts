@@ -4,7 +4,7 @@ export const theInvisibleGallery: OneShotCampaign = {
   id: 'oneshot-invisible-gallery',
   type: 'oneshot',
   title: 'The Invisible Gallery',
-  tagline: 'Steal a painting from a gallery where the art is invisible. Only the curator can see it. Good luck.',
+  tagline: 'Steal a painting worth fifty thousand gold from a gallery where every canvas is blank. The curator says you just cannot see it. She is lying.',
   tone: 'heist',
   themes: ['heist', 'mystery', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,8 +51,8 @@ export const theInvisibleGallery: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Curator Veil', role: 'con artist', personality: 'A changeling who has been running the invisible gallery scam for five years. Charming, theatrical, and genuinely talented at description. "Art is about what you feel, not what you see. I just removed the middleman."' },
-    { name: 'Lady Prism', role: 'client / rival con artist', personality: 'A wealthy socialite who figured out Veil\'s scam and wants to expose it for personal glory. She is not interested in justice - she is interested in being the person who revealed the fraud.', secret: 'She bought three "invisible paintings" before she realized. This is revenge.' },
+    { name: 'Curator Veil', role: 'con artist', personality: 'Describes empty walls with the passion of someone who truly sees something there - and maybe she has convinced herself she does. Pauses in front of blank canvases with genuine reverence. "Notice the brushwork in the upper left. Devastating." Has an answer for every skeptic, delivered with the patience of a saint.' },
+    { name: 'Lady Prism', role: 'client / rival con artist', personality: 'Speaks through her teeth when she mentions Veil\'s name. Commissioned this heist wearing a dress that cost more than the party\'s equipment combined. "I bought three paintings. THREE. Do you know how much I paid for blank canvas? This is not about money. This is about principle. And also money."', secret: 'She bought three "invisible paintings" before she realized. This is revenge.' },
   ],
   keyLocations: [
     { name: 'The Gallery of Unseen Masterworks', description: 'A windowless building with ornate frames on every wall holding blank canvases. Guards, traps, and climate control protect nothing. Beautifully lit nothing.', significance: 'The heist location and the crime scene of the con.' },

@@ -23,6 +23,7 @@ export const theFuneralGames: FullCampaign = {
       summary: 'The funeral, the reading of the will, and the first three games. Meet the competitors. Discover the stakes.',
       keyEvents: [
         'The funeral: genuinely emotional. Voss was loved. Her companions weep real tears.',
+        'Quiet moment: after the funeral, the party finds Korrin alone in the Trophy Hall holding a dented shield. He and Voss carried it between them for twenty years. He cannot stop touching the strap she held.',
         'The will reading: shock, outrage, and the rules of the games announced',
         'Game 1: The Riddle Vault - a puzzle dungeon that rewards cooperation but scores individually',
         'Game 2: The Feast of Strangers - cook a meal for a panel of judges. The real test: the judges are refugees, and the meal is judged on generosity, not taste.',
@@ -35,7 +36,8 @@ export const theFuneralGames: FullCampaign = {
       keyEvents: [
         'Game 3: The Trial of Memory - competitors must recount Voss\'s greatest adventures accurately. Those who inflate their own role are penalized.',
         'Game 4: The Market - each team is given a pouch of gold and must return the most value. The "value" is not monetary.',
-        'Sabotage: one competitor poisons another team\'s supplies. The party must decide whether to report it or handle it privately.',
+        'The moment of cost: one competitor poisons another team\'s supplies. The party must decide whether to report it or handle it privately. If they showed generosity in the Feast of Strangers, the victim trusts them enough to cooperate. If not, it becomes a public accusation and the games nearly end.',
+        'Quiet moment: the servant Marta brings the party tea at midnight. She sits with them uninvited and asks about their lives - not the competition, their actual lives. Where they grew up. Who they miss. Her questions are oddly specific and deeply kind.',
         'A servant seems to know too much about the games. Unusually perceptive. Suspiciously familiar.',
       ],
       estimatedSessions: 5,
@@ -45,9 +47,10 @@ export const theFuneralGames: FullCampaign = {
       summary: 'The final games, the truth about Voss, and the question of who truly deserves an adventurer\'s legacy.',
       keyEvents: [
         'Game 5: The Duel of Stories - competitors must tell the tale of their greatest failure. Vulnerability is the point.',
-        'Game 6: The Rescue - a staged emergency where competitors can save each other or advance their own score. Only one choice is correct.',
+        'Game 6: The Rescue - a staged emergency where competitors can save each other or advance their own score. Only one choice is correct. If the party saved the poisoned competitor in Act 2, Korrin notices and adjusts his own strategy - he starts playing honorably.',
         'Game 7: The Division - divide the estate by consensus. No fighting. Just conversation.',
-        'Voss reveals herself. She has seen everything. She names her heir based on character, not victory.',
+        'Quiet moment: Voss reveals herself. She takes off the groundskeeper\'s apron. Korrin sees her and his knees buckle. Whisper\'s eyes go wide, then she laughs - she knew. Voss looks at the party and says: "You were kind to an old woman who refilled your tea. That told me everything."',
+        'Voss names her heir based on character, not victory. Every choice the party made across all seven games shaped her judgment.',
       ],
       estimatedSessions: 4,
     },
@@ -77,9 +80,33 @@ export const theFuneralGames: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'Iremark Keep', description: 'Voss\'s estate: a sprawling keep filled with trophies, artifacts, and memories of a legendary career. Every room tells a story.', significance: 'The prize and the arena. Each game takes place in a different part of the keep.' },
-    { name: 'The Trophy Hall', description: 'A vast hall lined with mementos from Voss\'s adventures. Weapons, paintings, maps, and a locked case labeled "For the Worthy."', significance: 'The heart of the estate and the location of the final game.' },
-    { name: 'The Garden of Remembrance', description: 'A beautiful garden where Voss planted a tree for every companion lost on the road. The funeral was held here.', significance: 'Where the truth is revealed and Voss returns from the "dead."' },
+    {
+      name: 'Iremark Keep',
+      description:
+        'Voss\'s estate: a sprawling keep filled with trophies, artifacts, and memories of a legendary career. Every room tells a story. The groundskeeper keeps fresh flowers on every table. She knows which flowers Voss loved.',
+      significance: 'The prize and the arena. Each game takes place in a different part of the keep.',
+    },
+    {
+      name: 'The Trophy Hall',
+      description:
+        'A vast hall lined with mementos from Voss\'s adventures. Weapons, paintings, maps, and a locked case labeled "For the Worthy." Korrin\'s dented shield hangs on the wall. Next to it, an empty hook where a second shield once hung.',
+      significance: 'The heart of the estate and the location of the final game.',
+    },
+    {
+      name: 'The Garden of Remembrance',
+      description:
+        'A beautiful garden where Voss planted a tree for every companion lost on the road. The funeral was held here. The newest tree is planted but unlabeled - Voss left a blank marker for herself, knowing she would be back to fill it in.',
+      significance: 'Where the truth is revealed and Voss returns from the "dead."',
+    },
   ],
-  dataSystems: ['socialEncounter', 'npcRelationshipWeb', 'festivalAdvanced', 'backstoryComplication', 'courtIntrigue', 'rumorMill', 'diplomaticNegotiation', 'puzzleTrap'],
+  dataSystems: [
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'festivalAdvanced',
+    'backstoryComplication',
+    'courtIntrigue',
+    'rumorMill',
+    'diplomaticNegotiation',
+    'puzzleTrap',
+  ],
 };

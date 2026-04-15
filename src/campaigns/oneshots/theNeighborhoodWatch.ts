@@ -4,7 +4,7 @@ export const theNeighborhoodWatch: OneShotCampaign = {
   id: 'oneshot-neighborhood-watch',
   type: 'oneshot',
   title: 'The Neighborhood Watch',
-  tagline: 'Strange things at night. The neighbors are terrified. The "threat" is adorable and harmless.',
+  tagline: 'Someone sorted the petunias by color. Restacked the woodpile. Set the pies to cool properly. The neighborhood wants blood.',
   tone: 'social',
   themes: ['social', 'comedy', 'mystery'],
   playerCount: { min: 3, max: 5 },

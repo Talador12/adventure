@@ -51,9 +51,9 @@ export const theCollection: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Curator', role: 'antagonist', personality: 'A night hag who considers herself an artist of the highest order. She is polite, intelligent, and horrifying because she genuinely believes she is doing beautiful work. "I freed these faces from the tyranny of human emotion. They are pure now. Perfect."' },
-    { name: 'The Faceless', role: 'the victims', personality: 'Forty-eight people, alive and aware, without faces. They communicate through gestures and muffled sounds. They are not in pain. They are in a hell that is worse: they cannot express what they feel.' },
-    { name: 'Investigator Carr', role: 'quest giver', personality: 'The detective who traced the missing persons to this manor and needs the party because going in alone was not an option. "I looked through the window. I saw the jars. I left. I am not going back in there without help."' },
+    { name: 'The Curator', role: 'antagonist', personality: 'Gestures with long fingers the way a museum docent gestures at paintings. Offers tea. Pours it herself. "This one is my favorite. A child, mid-laugh. Look at the way the cheeks lift. You could never capture that on a living face. They squint. They frown. They waste it. I freed these faces from the tyranny of human emotion." She says this while offering a biscuit. The politeness is the horror.' },
+    { name: 'The Faceless', role: 'the victims', personality: 'Forty-eight people sitting in chairs. Breathing. Smooth skin where features should be. They hear the party enter and their heads turn toward the sound. Hands reach out. One of them grips a party member\'s arm and will not let go. They cannot scream. They cannot cry. They can only grip and shake.' },
+    { name: 'Investigator Carr', role: 'quest giver', personality: 'Chain-smokes. Will not make eye contact. "I traced the missing persons to the manor. I looked through the window. I saw the jars." Long drag. "The faces looked back at me." Drops the cigarette. Steps on it. "I am not going back in there without help. You could not pay me enough."' },
   ],
   keyLocations: [
     { name: 'The Manor', description: 'A well-maintained estate that doubles as a gallery of stolen faces. Clean, organized, and deeply wrong.', significance: 'The adventure location. The juxtaposition of domestic comfort and horror is the point.' },

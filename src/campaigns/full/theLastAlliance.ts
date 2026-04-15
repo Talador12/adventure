@@ -24,6 +24,7 @@ export const theLastAlliance: FullCampaign = {
       keyEvents: [
         'The vault: thousands of documents proving every major war was orchestrated by the same entity',
         'Verification: the party cross-references the documents with historical records. It checks out.',
+        'Quiet moment: the party finds a letter in the archive. Forged, never sent, but written in perfect elvish. It was the letter that triggered the elf-dwarf border war. It accuses the dwarves of poisoning a river. The river was fine. Three thousand elves died over a lie on paper.',
         'First contact: approaching the elven delegation. Their reaction: "You expect us to believe our war with the dwarves was manufactured? We have a thousand years of graves."',
         'The dwarven response is worse: "Even if it is true, the dead are still dead. Knowing we were manipulated does not bring them back."',
       ],
@@ -35,7 +36,8 @@ export const theLastAlliance: FullCampaign = {
       keyEvents: [
         'The orc summit: presenting evidence that the orc crusades were provoked by forged atrocities on both sides',
         'The dragon conclave: even the dragons were manipulated. Their rampages were responses to planted provocations.',
-        'A sabotage attempt: the Warden\'s agents try to reignite old conflicts. A border incident that could collapse everything.',
+        'The moment of cost: the Warden\'s agents try to reignite old conflicts with a border incident. If the party built trust with the elves in Act 1, Caelynn stops her people from retaliating. If not, the alliance nearly shatters before it forms.',
+        'Quiet moment: Thane Borik and Warchief Gorra share a drink at the Council of All. They do not speak each other\'s language. Borik slides a dwarven war medal across the table. Gorra places an orc battle tooth beside it. They nod. The alliance is not in the treaty. It is in that nod.',
         'The alliance forms: fragile, suspicious, held together by evidence and the party\'s reputation. Every species sends representatives.',
       ],
       estimatedSessions: 9,
@@ -47,7 +49,8 @@ export const theLastAlliance: FullCampaign = {
         'The united army marches to the Warden\'s stronghold. The largest combined force in history.',
         'The Warden appears: not a monster, not a tyrant. A weary construct doing the job it was made to do.',
         'The crack in reality: the Warden shows what happened last time mortals were united. The scar is still there.',
-        'The final choice: disband and stay safe, stay united and risk the world, or heal the crack and prove the Warden\'s mission is complete',
+        'Quiet moment: the Warden asks the party a single question. "Are you better than they were?" The party must answer honestly. The Warden has watched for ten thousand years. It knows when people lie.',
+        'The final choice: disband and stay safe, stay united and risk the world, or heal the crack and prove the Warden\'s mission is complete. If Borik and Gorra\'s trust holds, the healing ritual has enough participants. If the alliance fractured during the sabotage, they are short-handed.',
       ],
       estimatedSessions: 8,
     },
@@ -76,9 +79,34 @@ export const theLastAlliance: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'The Historian\'s Vault', description: 'A vast underground archive containing ten thousand years of forged correspondence, manipulated treaties, and manufactured provocations.', significance: 'Where the conspiracy is discovered and the evidence is gathered.' },
-    { name: 'The Council of All', description: 'A hastily-constructed diplomatic camp where representatives of every species meet for the first time in millennia. Tense, historic, and one insult away from war.', significance: 'Where the alliance is forged.' },
-    { name: 'The Scar', description: 'A wound in reality at the center of the continent, hidden by the Warden for ten thousand years. The evidence of what united mortals nearly did.', significance: 'The proof that the Warden\'s fears are justified - and the thing that must be healed.' },
+    {
+      name: 'The Historian\'s Vault',
+      description:
+        'A vast underground archive containing ten thousand years of forged correspondence, manipulated treaties, and manufactured provocations. The dust is undisturbed. Nobody has been here in centuries. The truth was buried and forgotten.',
+      significance: 'Where the conspiracy is discovered and the evidence is gathered.',
+    },
+    {
+      name: 'The Council of All',
+      description:
+        'A hastily-constructed diplomatic camp where representatives of every species meet for the first time in millennia. Tense, historic, and one insult away from war. The cooking fires smell different. The languages blur together at night.',
+      significance: 'Where the alliance is forged.',
+    },
+    {
+      name: 'The Scar',
+      description:
+        'A wound in reality at the center of the continent, hidden by the Warden for ten thousand years. The air hums. The ground is warm. Light bends wrong. The evidence of what united mortals nearly did - and the thing they must now heal together.',
+      significance: 'The proof that the Warden\'s fears are justified - and the thing that must be healed.',
+    },
   ],
-  dataSystems: ['massCombat', 'factionWar', 'diplomaticNegotiation', 'cataclysmCountdown', 'warRoomBriefing', 'ancientProphecy', 'npcRelationshipWeb', 'encounterWaves', 'legendaryWeapon'],
+  dataSystems: [
+    'massCombat',
+    'factionWar',
+    'diplomaticNegotiation',
+    'cataclysmCountdown',
+    'warRoomBriefing',
+    'ancientProphecy',
+    'npcRelationshipWeb',
+    'encounterWaves',
+    'legendaryWeapon',
+  ],
 };

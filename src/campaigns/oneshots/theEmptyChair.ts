@@ -51,9 +51,9 @@ export const theEmptyChair: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Tommas Veren', role: 'the trapped', personality: 'A young merchant imprisoned in a mirror for a year. Desperate, resourceful, and clinging to sanity by watching his family eat dinner every night through a reflection he could not reach.' },
-    { name: 'Elara Veren', role: 'the mother', personality: 'A woman who never stopped setting a plate for her missing son. Fierce, grieving, and immediately decisive when she learns he is alive. "Tell me where he is. I will tear this house apart."' },
-    { name: 'Merchant Calder Brynn', role: 'antagonist', personality: 'The rival who cursed Tommas to steal his trade contracts. Has been visiting the family as a sympathetic friend for a year while profiting from Tommas\'s absence. Charming, cowardly, and panics when caught.' },
+    { name: 'Tommas Veren', role: 'the trapped', personality: 'Visible only in the mirror. Pounds on the glass with flat palms. Mouths words that make no sound. When he sees his mother, he presses his hand against the glass and does not move it. He has watched his family eat dinner every night for a year, three feet away, unable to make a sound.' },
+    { name: 'Elara Veren', role: 'the mother', personality: 'Sets the plate with careful hands every night. Knife and fork exactly right. Stands too quickly when she hears the chair is warm. Grabs the nearest party member by the arm. "Tell me where he is. I will tear this house apart with my hands. Tell me where my son is."' },
+    { name: 'Merchant Calder Brynn', role: 'antagonist', personality: 'Arrives with flowers and condolences, as he does every week. Laughs too easily. Touches his collar when he lies. "Terrible business about Tommas. I think of him often." He has been dining at this table for a year, sitting across from the chair of the man he imprisoned, making small talk with the family he is robbing.' },
   ],
   keyLocations: [
     { name: 'The Veren Home', description: 'A warm merchant household where an empty chair is set at every dinner.', significance: 'The entire adventure takes place in and around this house.' },

@@ -43,16 +43,16 @@ export const theKingOfNothing: OneShotCampaign = {
       summary: 'Someone sits. The power comes. The test begins.',
       challenge: 'social',
       keyEvents: [
-        'The power: absolute knowledge, absolute control, the ability to reshape reality with a thought',
-        'The temptation: every wrong can be righted, every loss reversed, every dream made real',
-        'The party\'s role: they cannot help from outside but they can speak to their friend on the throne',
-        'The standing: the sitter must release the power and stand up - the hardest physical action in history',
+        'The power: the sitter sees everything. Every prayer. Every death. Every preventable tragedy. They can fix ALL of it with a thought.',
+        'The temptation: a dead parent is alive again. A ruined city is whole. A childhood wound heals. All the sitter has to do is stay seated.',
+        'The party\'s role: they see their friend\'s face change. The eyes go distant. The hands grip the armrests. They are losing them. Words are all they have.',
+        'The standing: the sitter\'s legs do not want to work. Not physical weakness - the throne makes leaving feel like dying. Every inch upward costs everything.',
       ],
     },
   ],
   keyNPCs: [
     { name: 'The Arbiter', role: 'planar council representative', personality: 'A being from outside the planes who has watched every previous attempt. Provides information without guidance. "I cannot tell you how to pass the test. I can tell you how everyone else failed."' },
-    { name: 'Ghost of Emperor Valkyr', role: 'warning', personality: 'The last god to sit on the throne. His ghost lingers. He grabbed the power and was destroyed. "I wanted to fix everything. The wanting is what killed me."' },
+    { name: 'Ghost of Emperor Valkyr', role: 'warning', personality: 'A translucent figure with a crown fused to a cracked skull. Paces the corridor endlessly. Grabs the party by the shoulders with hands they can feel but not see. "I sat for thirty seconds. I remade a continent. I cured a plague. I was reaching for the stars when it burned me from the inside. Thirty seconds. It felt like enough. It was not."' },
     { name: 'The Throne', role: 'the test', personality: 'Not sentient in the way mortals understand. It amplifies desire and rewards surrender. It does not want a king. It wants proof that power can be trusted to the selfless.' },
   ],
   keyLocations: [

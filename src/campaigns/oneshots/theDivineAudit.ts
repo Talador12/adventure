@@ -21,10 +21,10 @@ export const theDivineAudit: OneShotCampaign = {
       summary: 'Reviewing each god\'s domain performance. Some are doing well. Some are coasting. Some have been absent for centuries.',
       challenge: 'social',
       keyEvents: [
-        'The war god: has not responded to a prayer in 200 years, his clergy are improvising',
-        'The harvest goddess: crops have been declining steadily, she blames mortals for pollution',
-        'The death god: actually performing excellently, souls processed on time, no backlog',
-        'The knowledge god: hoarding information instead of sharing it, his temples charge for prayers',
+        'The war god: a cleric reads his last 200 years of unanswered prayer transcripts aloud. Kord sinks lower in his chair with each one.',
+        'The harvest goddess: blames mortals for pollution. The Arbiter produces a chart. Her domain output dropped before the pollution started. She goes quiet.',
+        'The death god: perfect metrics. Zero backlog. Souls processed on time. He adjusts his spectacles and says "I take my work seriously." Awkward divine silence.',
+        'The knowledge god: his temples charge for prayers. A worshipper testifies: "I asked for guidance. They sent an invoice."',
       ],
     },
     {
@@ -53,7 +53,7 @@ export const theDivineAudit: OneShotCampaign = {
   keyNPCs: [
     { name: 'The Arbiter', role: 'cosmic authority', personality: 'A being beyond divine comprehension. Speaks in calm, bureaucratic tones. Views the gods the way a manager views department heads. "Your performance review is overdue by three millennia."' },
     { name: 'Tymora', role: 'undercover hero', personality: 'Goddess of luck. Exhausted, overextended, and too proud to ask for help. She has been quietly keeping the world running while her colleagues coast.', secret: 'She has been using her own divine essence to compensate. If she stops, she recovers. But the world suffers.' },
-    { name: 'Kord', role: 'underperformer', personality: 'God of war. Has been on a "divine sabbatical" for two centuries. Not malicious - just bored. When confronted, he is embarrassed rather than defiant.' },
+    { name: 'Kord', role: 'underperformer', personality: 'God of war. Enormous, sheepish, fidgets with a thunderbolt like a student with a pencil. Has been on a "divine sabbatical" for two centuries. When confronted: "I meant to come back. Time is... different up here. Has it really been two hundred years?"' },
   ],
   keyLocations: [
     { name: 'The Audit Chamber', description: 'A plane between planes where the walls are made of starlight and the conference table seats the entire pantheon. Surprisingly corporate.', significance: 'Where the audit takes place.' },

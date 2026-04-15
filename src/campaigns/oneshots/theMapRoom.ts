@@ -4,7 +4,7 @@ export const theMapRoom: OneShotCampaign = {
   id: 'oneshot-map-room',
   type: 'oneshot',
   title: 'The Map Room',
-  tagline: 'A room full of maps of places that do not exist. One of them starts glowing.',
+  tagline: 'Hundreds of maps of impossible places. One starts glowing. Outside the window, the forest is gone. A city of brass spires stands where trees were.',
   tone: 'exploration',
   themes: ['exploration', 'planar'],
   playerCount: { min: 3, max: 5 },
@@ -32,8 +32,8 @@ export const theMapRoom: OneShotCampaign = {
       summary: 'Exploring the manifested city. It is mostly complete but has unfinished edges where reality frays into blank white void.',
       challenge: 'exploration',
       keyEvents: [
-        'The city: beautiful, empty, with buildings that are detailed on one side and blank on the other',
-        'Unfinished zones: streets that end in white nothingness, buildings with no interiors',
+        'The city: brass-domed buildings gleam under a painted sky. Every rivet, every window is rendered in loving detail on the south face. The north face of each building is blank white, flat as canvas, warm to the touch',
+        'Unfinished zones: a cobblestone street that stops mid-brick at a wall of featureless white void. A market stall with fruit on the front shelf and nothing behind it, not even air',
         'The edges are growing: consuming the real landscape beyond the map\'s borders',
         'Signs of the wizard: half-drawn additions, notes in the margins of reality itself',
       ],
@@ -51,7 +51,7 @@ export const theMapRoom: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Cartographer Lune', role: 'trapped creator', personality: 'A brilliant, exhausted wizard who has been drawing the same map for 30 years from inside it. She cannot stop because the edges keep growing. "I just wanted to make something beautiful. I did not expect it to eat the world."' },
+    { name: 'Cartographer Lune', role: 'trapped creator', personality: 'Ink-stained hands that shake from exhaustion. Hair white from decades of sleepless drawing. She sketches compulsively even while talking. "I just wanted to make something beautiful. Every detail I add creates ten more edges. It is eating the world and I cannot draw fast enough to finish it." She has not stopped working in thirty years.' },
     { name: 'The Brass Sentinel', role: 'guardian', personality: 'A construct that patrols the finished sections of the city. It was drawn by Lune as a protector. It follows its purpose with mechanical precision.' },
     { name: 'Arlan Dreft', role: 'quest giver', personality: 'A traveling merchant who noticed the landscape changed overnight and came to investigate. Practical, curious, and deeply concerned about his trade route vanishing.' },
   ],

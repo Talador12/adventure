@@ -32,10 +32,10 @@ export const theStarFall: OneShotCampaign = {
       summary: 'Entering the star. Meeting the light-beings. Understanding their claim and their need.',
       challenge: 'social',
       keyEvents: [
-        'The interior: a crystalline world of pure light, geometric structures, and beings made of radiance',
-        'Communication: the light-beings speak in colors and harmonics - translation is itself a challenge',
-        'Their story: they ascended when the world was young, now their star dies and they return',
-        'The deeds: ancient documents in a language that predates mortal writing - their claim is genuine',
+        'The interior: stepping inside is like walking into a prism. Geometry that should not exist. Corridors of compressed light that hum when touched.',
+        'Communication: a light-being extends a tendril of color. Touching it floods the mind with images - not words. A history told in sunrise and aurora.',
+        'Their story: they show the party a memory. This valley, green and empty, a million years ago. These beings walking it. Then ascending. Then watching from above as mortals arrived.',
+        'The deeds: a crystal tablet older than any mortal language. The translation is clear: "This land is ours. We lent it. We are returning."',
       ],
     },
     {
@@ -52,7 +52,7 @@ export const theStarFall: OneShotCampaign = {
   ],
   keyNPCs: [
     { name: 'Lux Prima', role: 'light-being ambassador', personality: 'The eldest of the star-beings. Communicates in shifting colors. Patient by nature - she has existed for millions of years. She does not understand mortal urgency but respects it.' },
-    { name: 'Governor Thane', role: 'mortal authority', personality: 'The governor of the valley the star is targeting. Responsible for ten thousand lives. Pragmatic, scared, and willing to negotiate if the alternative is extinction.' },
+    { name: 'Governor Thane', role: 'mortal authority', personality: 'A stocky woman who governs with lists and schedules. Her desk is covered in evacuation plans, each one crossed out. She keeps checking the window where the star grows brighter every hour. "I have ten thousand people in this valley. Give me something to tell them besides run."' },
     { name: 'Translator Kira', role: 'linguistic bridge', personality: 'A mortal scholar who has studied ancient light-scripts. She is the only person who can partially communicate with the star-beings. Overwhelmed but rising to the moment.' },
   ],
   keyLocations: [

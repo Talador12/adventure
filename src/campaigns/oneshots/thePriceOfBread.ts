@@ -4,7 +4,7 @@ export const thePriceOfBread: OneShotCampaign = {
   id: 'oneshot-price-of-bread',
   type: 'oneshot',
   title: 'The Price of Bread',
-  tagline: 'Bread tripled overnight. Someone is getting rich while the city starves.',
+  tagline: 'Bread costs nine coppers. Yesterday it cost three. The grain baron says he is saving the city. The baker says people are starving now.',
   tone: 'political',
   themes: ['political', 'intrigue', 'urban'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const thePriceOfBread: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Baron Kelwick', role: 'antagonist', personality: 'A grain merchant who sees himself as a savior. Paternalistic, condescending, and genuinely worried about the future. He has not missed a meal in his life.', secret: 'He is also profiting enormously from the price increase. The blight fear is real, but so is the greed.' },
-    { name: 'Hilda Crumb', role: 'quest giver', personality: 'Head of the baker\'s guild. Flour on her apron, fury in her eyes. Has been baking bread for thirty years and never turned away a hungry child.' },
-    { name: 'Druid Ashwell', role: 'wild card', personality: 'The druid who warned Kelwick about the blight. Reclusive, honest, horrified to learn her warning was used to justify price gouging.' },
+    { name: 'Baron Kelwick', role: 'antagonist', personality: 'Leans back in his chair while he explains economics to people who cannot feed their children. Uses the phrase "the bigger picture" like a shield. "You see hunger. I see a famine we are not ready for. Which of us is thinking clearly?" Has not missed a meal in his life.' , secret: 'He is also profiting enormously from the price increase. The blight fear is real, but so is the greed.' },
+    { name: 'Hilda Crumb', role: 'quest giver', personality: 'Slams things on tables for emphasis - loaves, ledgers, fists. Talks with flour on her hands. Names every family who cannot afford bread this week by name. "The Tanner kids have not eaten since Tuesday. Tell me again about supply and demand."' },
+    { name: 'Druid Ashwell', role: 'wild card', personality: 'Speaks to plants more comfortably than people. Long pauses before answering, like she is listening to something the party cannot hear. Horrified that her warning became a weapon. "I told him the earth was sick. He heard opportunity."' },
   ],
   keyLocations: [
     { name: 'The Baker\'s Quarter', description: 'Usually smells like fresh bread. Today it smells like worry. Half the ovens are cold.', significance: 'Where the crisis is felt most directly.' },

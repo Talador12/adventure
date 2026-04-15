@@ -23,10 +23,10 @@ export const theLastLifeboat: OneShotCampaign = {
       summary: 'The ship is flooding. The party assesses damage, discovers one lifeboat, and realizes the math does not work.',
       challenge: 'exploration',
       keyEvents: [
-        'Ship shudders and begins listing. Water rises fast.',
-        'Captain found dead. No chain of command. Passengers panicking.',
-        'One lifeboat, capacity twelve. Thirty people aboard.',
-        'Cargo hold has supplies but is flooding. Every minute matters.',
+        'A crack loud enough to feel in your teeth. The deck tilts fifteen degrees. Cargo slides. Someone screams below deck.',
+        'The captain is pinned under the mainmast, eyes open, gone. The first mate looks at the party and says nothing. He does not know what to do.',
+        'One lifeboat on the port davits. Capacity twelve if nobody breathes deep. Thirty souls aboard. The math is the monster.',
+        'The cargo hold is knee-deep and rising. Rope, food, a medical kit - all down there. Going in means going under if the ship rolls.',
       ],
     },
     {
@@ -67,7 +67,7 @@ export const theLastLifeboat: OneShotCampaign = {
     {
       name: 'Lord Desmond Hale',
       role: 'noble / antagonist',
-      personality: 'Demands a seat because of his title. Offers gold. Threatens legal consequences. Utterly useless in a crisis but loud about his importance.',
+      personality: 'Grabs the party by the collar while water rises around his ankles. "Do you know who I am? I have a seat on the Trade Council. That seat on that boat is MINE by right." He cannot swim. He cannot tie a knot. He is holding a velvet coin purse.',
     },
   ],
   keyLocations: [

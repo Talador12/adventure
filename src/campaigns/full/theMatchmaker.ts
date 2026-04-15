@@ -24,6 +24,7 @@ export const theMatchmaker: FullCampaign = {
       keyEvents: [
         'The poisoned wine tasting - an early sabotage attempt from an unknown source',
         'Meeting the bride (Sera Valdren) and groom (Theron Kethara) - genuinely in love, terrified of their families',
+        'Quiet moment: Sera and Theron steal five minutes alone in the chapel garden. The party guards the door. Through the window, the couple is laughing. It is the only laughter anyone has heard in the manor.',
         'House Valdren demands a Trial of Worth - the groom must pass or the wedding is off',
         'House Kethara insists on rewriting the guest list to exclude half the Valdren family',
       ],
@@ -35,7 +36,8 @@ export const theMatchmaker: FullCampaign = {
       keyEvents: [
         'The groom\'s ex arrives claiming a prior engagement - legitimate or planted?',
         'A Valdren uncle hires mercenaries to kidnap the bride "for her own protection"',
-        'The party discovers both families share a common ancestor - a secret that could unite or destroy them',
+        'The moment of cost: the party discovers both families share a common ancestor - a secret that could unite or destroy them. Matriarch Voss lost two sons to the feud. Telling her it was pointless could break her or save the wedding. The party must choose how and when.',
+        'Quiet moment: Matriarch Voss finds Theron alone in the kitchen. She tests him with a question about her dead sons. His answer - honest, humble, grieving for people he never met - is the first crack in her armor.',
         'A mysterious benefactor keeps sending generous gifts. Too generous. The Serathi agent makes contact.',
       ],
       estimatedSessions: 5,
@@ -45,8 +47,9 @@ export const theMatchmaker: FullCampaign = {
       summary: 'The final week. The Serathi plot revealed. A wedding that must happen but cannot happen as written.',
       keyEvents: [
         'The marriage contract is found to contain clauses nobody agreed to - inheritance language that hands both kingdoms to a foreign power',
-        'The Serathi agent is someone the party trusted - a member of the wedding party',
+        'The Serathi agent is someone the party trusted - a member of the wedding party. If the party investigated the mysterious gifts in Act 2, they catch the agent early. If not, the reveal comes at the altar.',
         'Both families must be told the truth: their feud was manufactured, and the wedding is a trap',
+        'Quiet moment: Matriarch Voss and Sera\'s father stand in the chapel before the ceremony. Neither speaks. Then Voss says: "Your daughter has courage. My sons did too." It is the closest thing to a peace treaty either family has ever offered.',
         'A new contract, a real wedding, and two families that finally have a common enemy',
       ],
       estimatedSessions: 5,
@@ -77,9 +80,33 @@ export const theMatchmaker: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'Thornfield Manor', description: 'The neutral estate chosen for the wedding. Grand, crumbling, and haunted by the ghost of the original dispute.', significance: 'Where the entire campaign takes place. Every room has seen a fight.' },
-    { name: 'The Chapel of Accord', description: 'A centuries-old chapel on the estate grounds where the ceremony will be held. Beautiful stained glass depicting a peace that never existed.', significance: 'The wedding venue and the site of the final confrontation.' },
-    { name: 'The Treaty Room', description: 'A locked room containing the original documents of the border dispute. Dusty, forgotten, and full of evidence.', significance: 'Where the Serathi plot is uncovered.' },
+    {
+      name: 'Thornfield Manor',
+      description:
+        'The neutral estate chosen for the wedding. Grand, crumbling, and haunted by the ghost of the original dispute. Valdren and Kethara banners hang on opposite walls of the dining hall. By Act 3, someone has moved them closer.',
+      significance: 'Where the entire campaign takes place. Every room has seen a fight.',
+    },
+    {
+      name: 'The Chapel of Accord',
+      description:
+        'A centuries-old chapel on the estate grounds where the ceremony will be held. Beautiful stained glass depicting a peace that never existed. Until now.',
+      significance: 'The wedding venue and the site of the final confrontation.',
+    },
+    {
+      name: 'The Treaty Room',
+      description:
+        'A locked room containing the original documents of the border dispute. Dusty, forgotten, and full of evidence that the Serathi Consortium wrote the first provocation.',
+      significance: 'Where the Serathi plot is uncovered.',
+    },
   ],
-  dataSystems: ['socialEncounter', 'npcRelationshipWeb', 'diplomaticNegotiation', 'courtIntrigue', 'backstoryComplication', 'festivalAdvanced', 'rumorMill', 'factionWar'],
+  dataSystems: [
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'diplomaticNegotiation',
+    'courtIntrigue',
+    'backstoryComplication',
+    'festivalAdvanced',
+    'rumorMill',
+    'factionWar',
+  ],
 };

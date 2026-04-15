@@ -21,10 +21,10 @@ export const theRoomBeyond: OneShotCampaign = {
       summary: 'Stepping through and confronting the impossible. An entire world inside a room. The dungeon door behind them shrinks to a pinprick of light.',
       challenge: 'exploration',
       keyEvents: [
-        'The threshold: one step from a 10-foot corridor to an open plain under alien skies',
-        'Two suns, neither of which casts warmth. The light is bright but the air is cool',
-        'The door behind them: visible but miles away from the inside, a glowing rectangle in the sky',
-        'Flora and fauna that exist nowhere else: crystalline trees, silent birds, rivers of light',
+        'The threshold: one foot in a ten-foot dungeon corridor, the next on open grassland. The transition is instantaneous. The air changes from stale to sweet. The ceiling is replaced by sky',
+        'Two suns hang overhead, one amber and one violet. Neither casts warmth. The light is bright but the air is cool, like standing in a painting of a summer day',
+        'The dungeon door behind them: from this side, it is a glowing golden rectangle hovering in the sky, impossibly distant, shrinking as they walk forward',
+        'Crystalline trees ring like chimes in a wind that has no source. Birds circle overhead in silence. A river of pale blue light flows through a valley, casting no reflection',
       ],
     },
     {

@@ -23,10 +23,10 @@ export const risingWaters: OneShotCampaign = {
       summary: 'The water rises. The party evacuates villagers and races for high ground.',
       challenge: 'exploration',
       keyEvents: [
-        'Flash flood hits the valley floor. Minutes to react.',
-        'Villagers scattered: children on a rooftop, an elder trapped in a cellar.',
-        'The water rises steadily. Low ground is gone in an hour.',
-        'Thornridge hill is the only option. Something large circles its peak.',
+        'A sound like thunder without lightning. Brown water surges around the bend, carrying trees and fence posts. It is moving faster than a horse.',
+        'A child screams from a rooftop across the rising water. An elderly man pounds on his cellar door - the water outside is holding it shut.',
+        'The water does not stop. It is not rain runoff. Something upstream collapsed. In one hour, the valley floor is a lake. Only rooftops and Thornridge show above it.',
+        'Thornridge: the only hill tall enough. Something screeches from its peak - a shape with wings and a lion\'s body, circling. She has seen the flood too.',
       ],
     },
     {
@@ -56,7 +56,7 @@ export const risingWaters: OneShotCampaign = {
     {
       name: 'Stormfeather',
       role: 'griffon / obstacle / potential ally',
-      personality: 'A mother protecting her young. Fierce, intelligent, and absolutely willing to die for her eggs. Not evil. Not negotiable through words alone. Actions speak.',
+      personality: 'Eight feet at the shoulder. Golden feathers matted from three days of rain. She screeches at anything that approaches within fifty feet of the nest. But when the water laps at the eggs, she looks at the party. Just looks. The desperation in a predator\'s eyes is unmistakable.',
     },
     {
       name: 'Warden Callum',

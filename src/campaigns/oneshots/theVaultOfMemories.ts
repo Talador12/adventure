@@ -51,9 +51,9 @@ export const theVaultOfMemories: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Dream-Walker Nysa', role: 'quest giver / anchor', personality: 'A half-elf psion who can project people into dreams. Maintains the connection from outside. If her concentration breaks, the party is trapped.' },
-    { name: 'Merchant Prince Aldric', role: 'the dreamer', personality: 'A wealthy man who stole from the public treasury. In waking life, cold and calculating. In dreams, a grieving father who never recovered from losing his child.' },
-    { name: 'Dream-Aldric', role: 'guardian', personality: 'Aldric\'s subconscious defender. Not a monster - a manifestation of guilt and grief. He cannot be defeated by force. Only empathy can move him aside.' },
+    { name: 'Dream-Walker Nysa', role: 'quest giver / anchor', personality: 'Speaks in half-finished sentences because she is monitoring two realities simultaneously. "You will see - hold on, he is stirring - a city made of - okay, he is settled. A city made of his memories. Do not touch the golden ones. Those wake him." Her nose bleeds when concentration slips.' },
+    { name: 'Merchant Prince Aldric', role: 'the dreamer', personality: 'In waking life: a cold man in expensive clothes who stole millions. In the dream: a father sitting on the floor of a child\'s bedroom, holding a music box, playing the same song on repeat. Two versions of the same person, and the dream is the real one.' },
+    { name: 'Dream-Aldric', role: 'guardian', personality: 'Does not attack. Stands in the doorway of the child\'s room and asks "Why are you here?" over and over, each time more quietly. Cannot be fought. Can only be answered honestly. If the party lies, the room dissolves. If they tell the truth, he steps aside and weeps.' },
   ],
   keyLocations: [
     { name: 'The Dream City', description: 'A surreal version of Aldric\'s waking life. Buildings shift, streets loop, and memories walk like people.', significance: 'The outer layer of the dreamscape.' },

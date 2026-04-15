@@ -51,9 +51,9 @@ export const thePoisonCabinet: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Alchemist Venom', role: 'absent antagonist', personality: 'A poison specialist who views toxins as art and people as test subjects. Currently selling her wares to the highest bidder across town. Her lab is her autobiography.', secret: 'Her real name is Tessara Wren. She was once a healer who was wronged by the medical establishment.' },
-    { name: 'Apprentice Lira', role: 'reluctant ally', personality: 'A 15-year-old girl kidnapped three years ago and forced to learn poison-craft. Knows the lab intimately. Terrified of Venom returning. Wants out more than anything.' },
-    { name: 'The Crystal Golem', role: 'guardian', personality: 'An automaton made of crystal vials filled with different poisons. Breaking it releases the contents. Fighting it is as dangerous as the poisons inside.' },
+    { name: 'Alchemist Venom', role: 'absent antagonist', personality: 'Not present, but her lab speaks for her. Labels in elegant handwriting. Poisons organized by beauty of effect, not lethality. A framed apothecary license hangs on the wall, crossed out in red ink. She left the medical establishment. The establishment did not leave her.', secret: 'Her real name is Tessara Wren. She was once a healer who was wronged by the medical establishment.' },
+    { name: 'Apprentice Lira', role: 'reluctant ally', personality: 'Flinches when the party moves too fast. Names every poison in the room by smell before the party can touch anything. "Do not. That one makes your blood boil. Literally." Three years of kidnapping taught her everything about toxins and nothing about trust. Will not walk in front of the party - only behind.' },
+    { name: 'The Crystal Golem', role: 'guardian', personality: 'Made of vials. Every vial is a different poison. It does not attack so much as it threatens to shatter. Each step sounds like wind chimes made of death. Fighting it means fighting the room after it breaks.' },
   ],
   keyLocations: [
     { name: 'Venom\'s Laboratory', description: 'A basement lab where every surface is coated in residual toxins. Glassware, distillation equipment, and the faint smell of almonds and flowers - both deadly.', significance: 'The heist location and a death trap.' },

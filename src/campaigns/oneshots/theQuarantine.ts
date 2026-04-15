@@ -23,10 +23,10 @@ export const theQuarantine: OneShotCampaign = {
       summary: 'The plague spreads. The party investigates the source while managing the sick and rationing supplies.',
       challenge: 'exploration',
       keyEvents: [
-        'The cook, first mate, and three sailors are infected. Sleepwalking, spreading it by touch.',
-        'Investigation: the plague started near the cargo hold. Something down there is wrong.',
-        'Supplies for two days. Medicine for one. Hard rationing decisions.',
-        'A healthy crewman tries to swim to shore. The port fires a warning shot.',
+        'The cook shuffles past the party, eyes open but unseeing. His hand brushes a sailor. The sailor shudders. By nightfall, five are infected.',
+        'Investigation: every infected person was near the cargo hold in the last 24 hours. The hold is locked. The lock was picked from the inside.',
+        'Two days of hardtack and salt pork. One day of fresh water. The medicine chest has three doses of anything useful. Fifteen people need it.',
+        'A crewman named Darren ties a rope to the rail and slips overboard at 3am. The port tower puts a crossbow bolt six inches from his head. He climbs back aboard, shaking.',
       ],
     },
     {
@@ -56,7 +56,7 @@ export const theQuarantine: OneShotCampaign = {
     {
       name: 'Voss Erren',
       role: 'alchemist / antagonist',
-      personality: 'Brilliant, amoral, clinical. Views the plague as a scientific achievement. Will negotiate coolly while people die around him.',
+      personality: 'Speaks like a professor giving a lecture while people moan in the corridors above. Takes notes on the infection rate. "Fascinating. The incubation period is shorter than I projected. I should adjust the formula." He will negotiate for his life with the same clinical detachment he uses for everything else.',
       secret: 'He is dying. The immunity is temporary. He needs to reach a proper lab before it wears off.',
     },
     {

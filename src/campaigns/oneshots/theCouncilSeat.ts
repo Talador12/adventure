@@ -51,9 +51,9 @@ export const theCouncilSeat: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Grotha Ironfist', role: 'the candidate', personality: 'A half-orc blacksmith who is better with a hammer than words. Honest to a fault, bad at politics, and exactly what the neighborhood needs. Gets frustrated by how much campaigning is performance.' },
-    { name: 'Alderman Fenn', role: 'opponent', personality: 'A human merchant who has served on the council for eight years. Smooth, experienced, and willing to stoke racial fear through proxies while keeping his own speech clean and reasonable.', secret: 'He knows Grotha\'s platform is better. He is running on identity because he cannot run on policy.' },
-    { name: 'Pip Weaver', role: 'volunteer coordinator', personality: 'A halfling community organizer who has been waiting years for a candidate like Grotha. Energetic, connected, knows every family in the neighborhood.' },
+    { name: 'Grotha Ironfist', role: 'the candidate', personality: 'Talks like she is quoting an invoice - direct, numbered, itemized. "First: roads. Second: wages. Third: water. Questions?" Loses her composure when anyone makes it about her race instead of her platform. Grips the podium like an anvil.' },
+    { name: 'Alderman Fenn', role: 'opponent', personality: 'Never says anything directly racist. Mastered the art of the dog whistle. "I just want someone who understands our traditions." Laughs warmly at his own jokes. Puts a hand on your shoulder when he lies.', secret: 'He knows Grotha\'s platform is better. He is running on identity because he cannot run on policy.' },
+    { name: 'Pip Weaver', role: 'volunteer coordinator', personality: 'Finishes your sentence, hands you a flyer, and introduces you to three people before you can blink. Speaks entirely in optimistic present tense: "We are winning this. The numbers are there. I have the numbers."' },
   ],
   keyLocations: [
     { name: 'Grotha\'s Blacksmith Shop', description: 'A working forge that doubles as campaign headquarters. Iron tools on one wall, campaign posters on the other. Smells like coal and coffee.', significance: 'Campaign HQ and a target for vandalism.' },

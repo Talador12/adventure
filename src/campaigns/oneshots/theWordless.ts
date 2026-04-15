@@ -51,9 +51,9 @@ export const theWordless: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Elder Moss', role: 'guide', personality: 'The village elder who imposed the silence rule and has not spoken in six months. Communicates through expressive writing and gestures. Every word she writes is precise because words are now the most dangerous things in her world.' },
-    { name: 'Scholar Irith', role: 'the cause', personality: 'The bitter academic who summoned the Word Eater and hides behind silencing wards while the village suffers in silence. She knows the banishment but it requires her to speak aloud, making herself the target.' },
-    { name: 'The Word Eater', role: 'antagonist', personality: 'A predatory entity from the Far Realm that feeds on language. It does not eat sound. It eats meaning. A scream is safe. A word is fatal. It cannot be reasoned with because it consumes the words before they finish.' },
+    { name: 'Elder Moss', role: 'guide', personality: 'Writes on a slate with chalk in small, precise letters. Underlines important words twice. When the party speaks aloud, she grabs the nearest arm and squeezes so hard it hurts. Her eyes say everything her mouth cannot: "Stop. Please. Stop." She has not spoken in six months. Her slate is worn smooth from use.' },
+    { name: 'Scholar Irith', role: 'the cause', personality: 'Speaks freely behind her wards, and the sound of a human voice after the village silence is almost painful. Talks too fast, a woman who has had no one to talk to. "I summoned it to silence a rival. One person. It was supposed to target one person. It did not. It stayed. And now a hundred people cannot speak because of me." She knows the banishment. She has to speak it. Outside the wards. She has to be the bait.' },
+    { name: 'The Word Eater', role: 'antagonist', personality: 'Invisible until someone speaks. Then: a distortion in the air, like heat shimmer, that lunges toward the mouth. It enters through the words themselves, swallowing meaning mid-syllable. A party member says "I think we should -" and the sentence ends. Not interrupted. Consumed. The last two words are simply gone. So is the speaker.' },
   ],
   keyLocations: [
     { name: 'The Silent Village', description: 'A functioning community where no one has spoken a word in six months. Signs replace speech. Life continues in eerie quiet.', significance: 'The setting. The silence is oppressive and the party must operate within it.' },

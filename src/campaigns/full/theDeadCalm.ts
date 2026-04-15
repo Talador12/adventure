@@ -25,6 +25,7 @@ export const theDeadCalm: FullCampaign = {
         'Day 7: the captain\'s briefing. The party takes charge of crisis management.',
         'Rationing begins. The cook calculates: 15 days of food, 10 of fresh water.',
         'The shadow beneath the ship: something enormous that never surfaces, never attacks, just circles',
+        'Quiet moment: at midnight the silence is total. No waves. No creaking. A sailor plays a fiddle and the crew gathers on deck, listening. Nobody speaks. The music is the only sound in miles.',
         'A sailor goes overboard at night. He says the water called to him. He cannot explain how.',
       ],
       estimatedSessions: 4,
@@ -35,7 +36,8 @@ export const theDeadCalm: FullCampaign = {
       keyEvents: [
         'The water itself is the clue: faintly luminous at night, warm in spots, cold in others. A pattern.',
         'A diving expedition: beneath the ship, the ocean floor is covered in temples, coral-encrusted shrines to a forgotten god',
-        'Crew mutiny attempt: a faction wants to take the longboat and row. The party must handle it.',
+        'The moment of cost: Bosun Crake leads a mutiny attempt. He wants to take the longboat and row. If the party earned his respect in Act 1, he gives them one more day before he acts. If not, it happens at dawn.',
+        'Quiet moment: Crake sits alone at the bow. The party finds him whispering "bury me" over and over. He does not know he is doing it. When told, he looks terrified - then relieved. "So it is not just me hearing it."',
         'The name MARETHAN appears everywhere: carved into the hull, whispered in dreams, spelled out by phosphorescent algae',
       ],
       estimatedSessions: 5,
@@ -45,7 +47,8 @@ export const theDeadCalm: FullCampaign = {
       summary: 'Gathering the god\'s essence, performing the rites, and burying a deity to free the sea.',
       keyEvents: [
         'The essence: scattered pieces of divine presence that must be gathered from the water, the air, and the crew\'s dreams',
-        'The rite: pieced together from the ship\'s library, sailor folklore, and the leviathan\'s behavior (it shows them how)',
+        'The rite: pieced together from the ship\'s library, sailor folklore, and the leviathan\'s behavior (it shows them how). If Crake stayed loyal, he leads the sailors in the funeral hymn - his voice carries fragments of Marethan\'s language.',
+        'Quiet moment: the captain removes her hat and places it on the water with the essence vessel. "I have buried sailors. I have never buried a god. Same principle." She recites the words.',
         'The lowering: Marethan\'s essence placed in a vessel and sent to the deep. The leviathan carries it down.',
         'The wind returns. A storm. The crew fights to survive the sudden gale. Then: blue sky, fair wind, and a sea that moves.',
       ],
@@ -56,29 +59,57 @@ export const theDeadCalm: FullCampaign = {
     {
       name: 'Captain Thessaly',
       role: 'ship captain / authority figure',
-      personality: 'A veteran sailor who has survived storms, pirates, and sea monsters. She has never faced calm. It terrifies her more than any storm. "A storm you can fight. A calm just sits there and watches you die."',
+      personality:
+        'A veteran sailor who has survived storms, pirates, and sea monsters. She has never faced calm. It terrifies her more than any storm. "A storm you can fight. A calm just sits there and watches you die." Arc: stoic authority in Act 1, cracking composure in Act 2 as supplies dwindle, and in Act 3 she leads the funeral rite with the quiet dignity of someone who has buried too many sailors to be afraid of ceremony.',
     },
     {
       name: 'Bosun Crake',
       role: 'crew leader / mutiny risk',
-      personality: 'The crew\'s representative. Loyal to the captain but loyal to survival first. He will follow the party if they show competence. If not, he will take the longboat and leave. "I have a wife and a kid in Saltmere. I am going home."',
+      personality:
+        'The crew\'s representative. Loyal to the captain but loyal to survival first. He will follow the party if they show competence. If not, he will take the longboat and leave. "I have a wife and a kid in Saltmere. I am going home." Arc: reasonable skeptic in Act 1, mutiny leader in Act 2 if trust is not built, and in Act 3 he becomes the funeral\'s strongest voice - because Marethan chose him to hear the words.',
       secret: 'He has been hearing Marethan\'s voice for days. He understands fragments. It is saying "bury me."',
     },
     {
       name: 'The Leviathan',
       role: 'Marethan\'s last faithful / guide',
-      personality: 'An ancient whale-like creature that has circled this spot for centuries, waiting for someone who can perform the funeral rites. It communicates through movement: leading the party to key locations, nudging the ship toward the essence fragments.',
+      personality:
+        'An ancient whale-like creature that has circled this spot for centuries, waiting for someone who can perform the funeral rites. It communicates through movement: leading the party to key locations, nudging the ship toward the essence fragments. In Act 3 it surfaces for the first time, its eye the size of the longboat, and watches the funeral with something that looks like peace.',
     },
     {
       name: 'Marethan (dead god)',
       role: 'the cause / the solution',
-      personality: 'Present only as fragments: a voice in the water, phosphorescence, warmth in the deep. Not vengeful. Not demanding. Just dead and unburied. The sadness is oceanic.',
+      personality:
+        'Present only as fragments: a voice in the water, phosphorescence, warmth in the deep. Not vengeful. Not demanding. Just dead and unburied. The sadness is oceanic. Across the acts, the fragments grow more coherent - from a wordless pull in Act 1, to a name in Act 2, to a whispered "thank you" as the essence descends in Act 3.',
     },
   ],
   keyLocations: [
-    { name: 'The Ardent Star', description: 'A three-masted merchant vessel. Sturdy, well-maintained, and going absolutely nowhere. The entire campaign takes place on and around this ship.', significance: 'Home, prison, and the only solid ground for miles.' },
-    { name: 'The Dead Water', description: 'A miles-wide patch of ocean where nothing moves. The surface is glass. The depths glow faintly. The silence is oppressive.', significance: 'The dead god\'s domain and the source of all problems.' },
-    { name: 'The Sunken Temples', description: 'Ruins on the ocean floor beneath the ship. Coral-covered shrines to Marethan, preserved by the stagnant water.', significance: 'Where the funeral rites are discovered and the essence is strongest.' },
+    {
+      name: 'The Ardent Star',
+      description:
+        'A three-masted merchant vessel. Sturdy, well-maintained, and going absolutely nowhere. The entire campaign takes place on and around this ship. By Act 2, the crew has carved MARETHAN into every surface without remembering doing it.',
+      significance: 'Home, prison, and the only solid ground for miles.',
+    },
+    {
+      name: 'The Dead Water',
+      description:
+        'A miles-wide patch of ocean where nothing moves. The surface is glass. The depths glow faintly. The silence is oppressive. Drop a coin and you can watch it sink for minutes.',
+      significance: 'The dead god\'s domain and the source of all problems.',
+    },
+    {
+      name: 'The Sunken Temples',
+      description:
+        'Ruins on the ocean floor beneath the ship. Coral-covered shrines to Marethan, preserved by the stagnant water. The architecture suggests a deity of wind and current - the very things the dead water lacks.',
+      significance: 'Where the funeral rites are discovered and the essence is strongest.',
+    },
   ],
-  dataSystems: ['wildernessSurvival', 'navalCombat', 'cataclysmCountdown', 'socialEncounter', 'npcRelationshipWeb', 'encounterWaves', 'dreamSequence', 'ambientSounds'],
+  dataSystems: [
+    'wildernessSurvival',
+    'navalCombat',
+    'cataclysmCountdown',
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'encounterWaves',
+    'dreamSequence',
+    'ambientSounds',
+  ],
 };

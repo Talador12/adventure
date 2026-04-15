@@ -4,7 +4,7 @@ export const theVeteran: OneShotCampaign = {
   id: 'oneshot-veteran',
   type: 'oneshot',
   title: 'The Veteran',
-  tagline: 'A one-armed veteran begging in the street was once the greatest swordsman alive. What happened?',
+  tagline: 'The greatest swordsman who ever lived is begging for coppers in the rain. His sword arm is gone. He cut it off himself.',
   tone: 'serious',
   themes: ['war', 'social'],
   playerCount: { min: 3, max: 5 },
@@ -21,10 +21,10 @@ export const theVeteran: OneShotCampaign = {
       summary: 'Finding Kael and trying to understand what happened to him. He is not forthcoming. He is not interested in help.',
       challenge: 'social',
       keyEvents: [
-        'The recognition: a legend reduced to begging, unrecognized by everyone but the party',
-        'Kael refuses to talk about the past. He is not angry. He is done',
-        'Other veterans on the street know him. "He does not take charity. He does not take pity."',
-        'A clue: Kael\'s stump is surgically clean. Not a battle wound. A deliberate cut',
+        'A party member does a double take at the beggar\'s face. That jaw. That scar. Grand Tournament champion, three years running. Holding a tin cup in the rain',
+        'Kael looks through them. Not angry. Not broken. Just done. "I do not do stories anymore."',
+        'A one-legged veteran nearby: "You know who that is? Course you do not. Nobody does. He prefers it."',
+        'The stump: surgically clean. No ragged scar, no combat damage. A deliberate, single cut. He did this to himself',
       ],
     },
     {
@@ -32,10 +32,10 @@ export const theVeteran: OneShotCampaign = {
       summary: 'Investigating what happened. Military records, fellow soldiers, and the commander who stripped Kael of everything.',
       challenge: 'exploration',
       keyEvents: [
-        'Military records: "Discharged for insubordination. Refused direct order."',
-        'Fellow soldiers: "He was ordered to kill prisoners. Women and children among them."',
-        'The commander: General Hadren, now celebrated, who gave the order and punished the refusal',
-        'Kael\'s choice: he cut off his arm the night after the order, in front of his entire company',
+        'Military records: one line. "Discharged for insubordination. Refused direct order." The file is thin. Suspiciously thin',
+        'A soldier who was there, drinking alone in a tavern: "The order was to execute prisoners. Women. Children. He said no. Then he said something I will never forget."',
+        'General Hadren: celebrated hero, medal collection, portrait in the war museum. He gave the order. He destroyed Kael for refusing it',
+        'Kael stood in front of his entire company that night. He said, "This arm will not do what you ask." Then he took a field knife and the company watched in silence',
       ],
     },
     {
@@ -51,9 +51,9 @@ export const theVeteran: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Kael Drennan', role: 'the question', personality: 'Once the greatest swordsman alive. Now a one-armed beggar by choice. He is not broken. He made a decision that cost him everything and he would make it again. "I could not swing a sword and call myself a good man. So I chose."' },
-    { name: 'General Hadren', role: 'antagonist', personality: 'The commander who ordered the execution of prisoners and destroyed Kael for refusing. Celebrated, powerful, and certain that history will remember him as a hero. He might be right.' },
-    { name: 'Corporal Senna', role: 'witness', personality: 'A soldier who served under Kael and watched him cut off his own arm. She has carried the truth for years. "He stood in front of the whole company and said, \'This arm will not do what you ask.\' Then he took a field knife and..."' },
+    { name: 'Kael Drennan', role: 'the question', personality: 'Speaks in short, flat sentences. No self-pity. Refuses to make eye contact at first. When he finally talks, he picks at the hem of his sleeve. "I could not swing a sword and call myself a good man. So I chose. You want the story to be more complicated than that. It is not."' },
+    { name: 'General Hadren', role: 'antagonist', personality: 'Booming laugh. Claps people on the shoulder. Tells war stories at dinner parties. "Drennan? A coward. Could not handle the reality of command. Some men are not built for hard choices." He says this while pouring expensive wine in a manor built on a war pension.' },
+    { name: 'Corporal Senna', role: 'witness', personality: 'Drinks steadily but never seems drunk. Stares at the table when she talks. Long pauses between sentences. "Nobody moved. Nobody spoke. Just the sound of the knife. And then he held up his arm - the one that was still attached - and said, \'I am free now.\' Then he walked out the gate."' },
   ],
   keyLocations: [
     { name: 'The Street Corner', description: 'Where a legend begs for coins and nobody recognizes him.', significance: 'The starting image. The gap between who Kael was and where he is.' },

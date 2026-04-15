@@ -25,6 +25,7 @@ export const theNewNeighbors: FullCampaign = {
         'The school confrontation: goblin children just want to learn to read',
         'The tinker shop explosion: a kobold invention destroys a market stall, nobody hurt but trust shattered',
         'The owlbear chicken incident: compensation, apology, and a very awkward dinner',
+        'Quiet moment: a goblin child gives a human classmate a hand-carved wooden toy. The human child gives the goblin a drawing of them playing together. Both mothers see it. Neither knows what to say.',
         'A human mob forms at night. The party must de-escalate before it becomes a pogrom.',
       ],
       estimatedSessions: 4,
@@ -34,7 +35,8 @@ export const theNewNeighbors: FullCampaign = {
       summary: 'Slow progress. Joint projects, shared meals, grudging respect. But every step forward risks two steps back.',
       keyEvents: [
         'The bugbear schoolteacher wins over the children - the parents are less convinced',
-        'A goblin healer saves a human child from fever. The village begins to shift.',
+        'The moment of cost: a goblin healer saves a human child from fever using methods the village healer does not recognize. The child lives. The village must decide whether to be grateful or afraid. If the party built trust in Act 1, gratitude wins. If not, fear does.',
+        'Quiet moment: Elder Brynn visits the monster quarter alone at night. She stands in front of the owlbear barn for a long time. Tinka opens the door, sees her, and offers her tea. Brynn accepts. They sit together in silence. It is the bravest thing either has done.',
         'Greystone scouts appear on the hills. The monsters recognize the company that destroyed their home.',
         'Festival planning begins: who cooks what, who performs, and a thousand small negotiations',
       ],
@@ -44,9 +46,10 @@ export const theNewNeighbors: FullCampaign = {
       title: 'Act 3: The Harvest',
       summary: 'The festival, the Greystone confrontation, and the question: are they one community or two?',
       keyEvents: [
-        'The harvest festival: a celebration of what both communities built together',
+        'The harvest festival: a celebration of what both communities built together. If the party managed the festival planning well, the food is a mix of goblin, kobold, and human recipes. If not, there are two separate tables.',
         'Greystone Mining arrives with a court order and a mercenary escort',
-        'The village votes: fight together or abandon the monsters to save themselves',
+        'The village votes: fight together or abandon the monsters to save themselves. Elder Brynn stands and says something she has never said publicly. The vote turns on her words.',
+        'Quiet moment: after the vote, Grikkle finds the party. He does not say thank you. He says: "My children will remember this. Their children will remember this."',
         'United resistance: goblin traps, kobold engineering, owlbear strength, human organization',
       ],
       estimatedSessions: 4,
@@ -76,9 +79,33 @@ export const theNewNeighbors: FullCampaign = {
     },
   ],
   keyLocations: [
-    { name: 'Millhaven', description: 'A quiet farming village with a market square, a school, and a church. The kind of place where nothing happens - until everything does.', significance: 'The entire campaign setting.' },
-    { name: 'The Monster Quarter', description: 'The edge of town where the monster community has settled. Goblin warrens alongside kobold workshops alongside an owlbear den that used to be a barn.', significance: 'Where most cross-cultural encounters happen.' },
-    { name: 'Greystone Hills', description: 'The hills outside town, rich in ore. Beautiful wildflower meadows about to become an open-pit mine.', significance: 'The stakes made physical. What both communities stand to lose.' },
+    {
+      name: 'Millhaven',
+      description:
+        'A quiet farming village with a market square, a school, and a church. The kind of place where nothing happens - until everything does. By Act 3, the market square has goblin and human stalls side by side.',
+      significance: 'The entire campaign setting.',
+    },
+    {
+      name: 'The Monster Quarter',
+      description:
+        'The edge of town where the monster community has settled. Goblin warrens alongside kobold workshops alongside an owlbear den that used to be a barn. Tinka planted wildflowers along the fence. Bor carved a welcome sign in three languages.',
+      significance: 'Where most cross-cultural encounters happen.',
+    },
+    {
+      name: 'Greystone Hills',
+      description:
+        'The hills outside town, rich in ore. Beautiful wildflower meadows about to become an open-pit mine. The owlbear cubs play here. The goblin children forage here. It is the only place both communities already share.',
+      significance: 'The stakes made physical. What both communities stand to lose.',
+    },
   ],
-  dataSystems: ['socialEncounter', 'npcRelationshipWeb', 'diplomaticNegotiation', 'festivalAdvanced', 'rumorMill', 'settlementEvent', 'backstoryComplication', 'factionWar'],
+  dataSystems: [
+    'socialEncounter',
+    'npcRelationshipWeb',
+    'diplomaticNegotiation',
+    'festivalAdvanced',
+    'rumorMill',
+    'settlementEvent',
+    'backstoryComplication',
+    'factionWar',
+  ],
 };

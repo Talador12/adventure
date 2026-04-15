@@ -51,9 +51,9 @@ export const thePrisonBreak: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Warden Thess', role: 'extraction target', personality: 'A former military warden who exposed corruption and was imprisoned for it. Three years in solitary made her sharper, not broken. She values her manuscript more than her freedom.' },
-    { name: 'Guard Captain Mora', role: 'obstacle', personality: 'The Ironkeep\'s head of security. Professional, thorough, and suspicious of every new inmate. She runs a clean prison and takes escapes personally.' },
-    { name: 'Inmate Skiv', role: 'prison contact', personality: 'A long-term inmate who knows every corner of Ironkeep. Helps the party for a price - he wants a letter delivered to his daughter on the outside.' },
+    { name: 'Warden Thess', role: 'extraction target', personality: 'Three years in solitary gave her a voice that fills a room even at a whisper. Scratched chapter numbers into her cell wall. Refuses to leave without every page. "This manuscript is three hundred generals\' worst nightmare. It walks out with me or I do not walk out."' },
+    { name: 'Guard Captain Mora', role: 'obstacle', personality: 'Memorizes every new face. Counts inmates by habit during meals. Taps the wall as she walks - checking for hollow spots, loose stones, anything that was not there yesterday. Takes escapes the way chess players take lost games - personally.' },
+    { name: 'Inmate Skiv', role: 'prison contact', personality: 'Talks without moving his lips - a skill learned from eighteen years of sneaking conversations. Knows which guards drink, which ones gamble, and which ones sleep on the night shift. His price is a letter to his daughter. The letter is already written. He has been carrying it for six years.' },
   ],
   keyLocations: [
     { name: 'The Ironkeep', description: 'A fortress prison built into a cliff face. Three levels descending into the rock. No windows below Level 1. The only authorized exit is the front gate.', significance: 'The entire heist takes place here.' },

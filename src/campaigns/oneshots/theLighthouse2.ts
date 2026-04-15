@@ -4,7 +4,7 @@ export const theLighthouse2: OneShotCampaign = {
   id: 'oneshot-lighthouse-keeper',
   type: 'oneshot',
   title: 'The Lighthouse Keeper',
-  tagline: 'A lighthouse keeper has not come down in 10 years. Something happened up there.',
+  tagline: 'The lighthouse keeper has not come down in ten years. The light still burns. The supply notes are still in her handwriting.',
   tone: 'serious',
   themes: ['mystery', 'nautical'],
   playerCount: { min: 3, max: 5 },
@@ -21,10 +21,10 @@ export const theLighthouse2: OneShotCampaign = {
       summary: 'Ascending the lighthouse. Each floor shows a different era of the lighthouse\'s history, maintained by hands that no longer exist.',
       challenge: 'exploration',
       keyEvents: [
-        'The ground floor: Morwen\'s belongings, 10 years of dust on personal items, supply room clean',
-        'The second floor: sleeping quarters from multiple eras layered on top of each other',
-        'The walls: names carved by every keeper, going back centuries, including Morwen\'s',
-        'Each floor is warmer and the air feels thicker, like the presence of many people in one space',
+        'The ground floor: Morwen\'s coat hangs by the door, stiff with a decade of dust. The supply room beside it is spotless. Someone is cleaning one room and not the other',
+        'The second floor: three different beds from three different centuries, all made. A lantern from 200 years ago sits next to a modern oil tin',
+        'The walls: names carved by every keeper going back centuries. Run your fingers over them and the stone is warm beneath each name',
+        'The air thickens with each floor. Not fog. Presence. Like a room full of people holding their breath',
       ],
     },
     {
@@ -32,10 +32,10 @@ export const theLighthouse2: OneShotCampaign = {
       summary: 'Finding Morwen\'s remains and understanding what happened. She died peacefully. The light did not go out.',
       challenge: 'exploration',
       keyEvents: [
-        'Morwen: sitting in her chair, skeletal, facing the window, a quill in her hand',
-        'She died of natural causes, 10 years ago, writing a supply request',
-        'The request was finished and sent down. In her handwriting. After her death',
-        'The light room above: immaculately maintained, oil fresh, glass polished',
+        'Morwen: sitting in her chair, skeletal, facing the sea. A quill in her bone fingers. The ink is dry. The note is finished',
+        'The note reads: "Three gallons lamp oil. Two pounds salt pork. Thank you." Written in steady handwriting. By a woman who was already dead',
+        'Her logbook: ten years of entries after the last one in her living hand. The handwriting is hers. The hand was not',
+        'The light room above: glass polished to perfection, oil fresh, the wick trimmed this morning. By no one',
       ],
     },
     {
@@ -51,9 +51,9 @@ export const theLighthouse2: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Keeper Morwen (deceased)', role: 'the discovery', personality: 'Present only as remains and her final unfinished note. By all accounts, a dedicated keeper who loved her work and her solitude. She died as she lived: at her post.' },
-    { name: 'The Keepers (collective ghost)', role: 'the mystery', personality: 'Not individuals but an echo of devotion. Every keeper who served this lighthouse left a piece of themselves in it. Together, they are a presence that maintains the light through sheer accumulated purpose.' },
-    { name: 'Harbormaster Callen', role: 'quest giver', personality: 'A practical sailor who does not believe in ghosts but cannot explain 10 years of perfect lighthouse operation by a woman who might not be alive. "I do not care if it is a ghost. I care if the light stays on."' },
+    { name: 'Keeper Morwen (deceased)', role: 'the discovery', personality: 'Present only as bones and her final note. Her logbook entries are meticulous and dry: weather, oil levels, ship counts. The last entry in her living hand ends mid-word. The next entry, in the same handwriting, is complete.' },
+    { name: 'The Keepers (collective ghost)', role: 'the mystery', personality: 'Not individuals. A chorus of duty. They do not speak in sentences. Fragments of logbook language overlap: "Light steady." "Glass cleaned." "Storm coming, double wick." They acknowledge the party the way a worker acknowledges someone passing their desk: a nod, then back to work.' },
+    { name: 'Harbormaster Callen', role: 'quest giver', personality: 'Spits over the railing between sentences. Calls everyone "friend" regardless of whether he means it. "Look, friend, I do not believe in ghosts. But I believe in lamp oil. And someone is burning through three gallons a week up there. I want to know who."' },
   ],
   keyLocations: [
     { name: 'The Lighthouse', description: 'A coastal tower that has been perfectly maintained for a decade by a keeper who died 10 years ago.', significance: 'The entire adventure. Every floor tells a story.' },

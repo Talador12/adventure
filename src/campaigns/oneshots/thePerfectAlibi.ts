@@ -34,8 +34,8 @@ export const thePerfectAlibi: OneShotCampaign = {
       summary: 'Re-interviewing suspects with new questions. Looking not for lies, but for what is technically true.',
       challenge: 'social',
       keyEvents: [
-        'Key question: "Were YOU at the banquet?" vs "Was your likeness at the banquet?"',
-        'One suspect hesitates at the rephrased question. Barely. But the party catches it.',
+        'The key question: "Were YOU at the banquet?" All five say no. "Was anyone who LOOKED like you at the banquet?" Four answer instantly. One pauses for half a heartbeat. The party catches it.',
+        'Under Zone of Truth, the hesitater says: "I was not at the banquet." True. But they blink when asked: "Did any version of you attend?" The silence lasts three seconds.',
         'Research: what magic could create a perfect duplicate? Simulacrum.',
         'The suspect\'s home: a hidden room with expensive spell components and melting snow.',
       ],
@@ -56,7 +56,7 @@ export const thePerfectAlibi: OneShotCampaign = {
     {
       name: 'Magistrate Velen',
       role: 'frustrated investigator',
-      personality: 'Brilliant, proud, and deeply annoyed that magic is being used to beat magic. He has never failed to solve a case until now.',
+      personality: 'Paces his office and mutters. Has a wall of solved cases with red string. This one has no string. "I have broken forty alibis. I have never seen five that are all genuine AND all wrong." Takes it personally.',
     },
     {
       name: 'Elara Nightwend',

@@ -51,9 +51,9 @@ export const theShadowThatStayed: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The Shadow', role: 'protector / warning', personality: 'Not sentient in the traditional sense, but loyal. It separated to fight something it could not beat. It communicates in gestures, growing more frantic as it weakens. It is the bravest part of its owner.' },
-    { name: 'Sage Merivale', role: 'information', personality: 'A specialist in planar phenomena who recognizes the Shadowfell detachment immediately. Excited academically, then terrified practically. "This is remarkable. Also we need to move. Now."' },
-    { name: 'The Stalker', role: 'antagonist', personality: 'A Shadowfell entity that collects debts from past lives. It does not speak. It does not negotiate. It arrives, it claims, it leaves. Unless stopped.' },
+    { name: 'The Shadow', role: 'protector / warning', personality: 'Communicates only in gestures. Points behind the party. Mimes running. When the party does not understand, it falls to its knees and puts its shadow-hands together in a begging posture. As the hours pass, it moves more slowly, like a candle running out. In its final moments, it reaches toward its owner and mouths one word. The owner recognizes the shape of it: "Run."' },
+    { name: 'Sage Merivale', role: 'information', personality: 'Starts sentences with "Fascinating" and finishes them with "Oh no." Pulls books off shelves and lets them hit the floor. "Shadowfell detachment. Your shadow is fighting a rearguard action against - wait. How faint is it? When did it separate? We need to move. We needed to move an hour ago. Fascinating. Oh no."' },
+    { name: 'The Stalker', role: 'antagonist', personality: 'Does not walk. Slides. Does not breathe. Does not blink. It looks like the party member\'s shadow given depth, except the proportions are wrong. The limbs are too long. The head tilts at angles that do not correspond to any emotion. It does not speak. It reaches.' },
   ],
   keyLocations: [
     { name: 'The Inn', description: 'Where the shadow detaches and the party first realizes something is wrong.', significance: 'The discovery that starts the clock ticking.' },

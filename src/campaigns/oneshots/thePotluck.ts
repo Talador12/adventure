@@ -56,12 +56,12 @@ export const thePotluck: OneShotCampaign = {
     {
       name: 'Mrs. Crumb',
       role: 'baker / accidental enchanter',
-      personality: 'A sweet old woman who put "a pinch of honesty" into her pie. She found the spice at a market. She did not read the label carefully.',
+      personality: 'Blinks at the chaos with genuine confusion. "I just put in a pinch of honesty! The merchant said it would bring out the flavor!" She baked forty pies for the event. All of them are enchanted.',
     },
     {
       name: 'Flicker',
       role: 'pseudodragon / the casserole',
-      personality: 'Sarcastic, indignant, and covered in sauce. Being polymorphed into a casserole is the worst day of their life. They have opinions about the seasoning.',
+      personality: 'Dripping with rage and bechamel sauce. "I am a PSEUDODRAGON. I have lived for NINETY YEARS. And someone put PARSLEY on me." Rates the food layered on top of them: "Two out of ten. Underseasoned."',
     },
   ],
   keyLocations: [

@@ -21,10 +21,10 @@ export const theListeners: OneShotCampaign = {
       summary: 'Discovering the transcript cave. Reading their own private conversations on the walls. The invasion of privacy is total.',
       challenge: 'exploration',
       keyEvents: [
-        'The cave entrance: hidden beneath the crossroads where the party often camps',
-        'The walls: densely packed handwriting covering every surface, floor to ceiling',
-        'Personal conversations: word-for-word transcripts of things the party said privately',
-        'The scope: thousands of conversations from hundreds of travelers, spanning years',
+        'The cave entrance: hidden beneath the crossroads where the party has camped a dozen times. They have been sleeping directly above this',
+        'The walls: handwriting covers every surface. Neat. Organized. Floor to ceiling. A party member holds up a torch and sees their own name',
+        'A conversation from three months ago. Word for word. Something a party member whispered to only one other person while everyone else slept. On a wall. In a cave. In handwriting that is not anyone\'s',
+        'The scope hits them: thousands of conversations. Hundreds of travelers. Years of secrets. All on the walls. All readable. All true',
       ],
     },
     {
@@ -51,8 +51,8 @@ export const theListeners: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Merchant Dalis', role: 'antagonist', personality: 'A trader who discovered the cave five years ago and has been systematically reading the transcripts of every traveler. Not powerful in combat. Devastating in information. He knows what the party fears, what they want, and what they hide.' },
-    { name: 'The Fungi', role: 'the mechanism', personality: 'Not sentient. Not malicious. They absorb thought the way plants absorb sunlight. They do not understand what they record. They are a natural phenomenon that happens to be terrifying.' },
+    { name: 'Merchant Dalis', role: 'antagonist', personality: 'Smiles like someone who knows the punchline before you start the joke. Refers to people by things they told no one. "Ah, you must be the one who dreams about the fire. Your friend mentioned it in their sleep. March fourteenth. I have the transcript if you would like to see it." Not dangerous in a fight. Devastating in a conversation.' },
+    { name: 'The Fungi', role: 'the mechanism', personality: 'Pulse softly when the party speaks, like a heartbeat responding to sound. New text appears on the wall in real-time as the party talks. A party member says "this is wrong" and watches the words write themselves on the stone in front of them. The fungi do not understand what they record. They are as innocent as a plant turning toward light. That makes it worse.' },
   ],
   keyLocations: [
     { name: 'The Crossroads', description: 'A well-traveled intersection where the party has camped many times, unknowingly speaking above a listening network.', significance: 'The surface location. Every word said here was recorded.' },

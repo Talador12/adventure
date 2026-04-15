@@ -51,9 +51,9 @@ export const theHouseRemembered: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'The House', role: 'the heart / threat', personality: 'A sentient building that loved its family so much it refused to accept their death. It is not evil. It is a parent who cannot stop setting a place at the table. It will become dangerous only if forced to confront the truth without gentleness.' },
-    { name: 'Neighbor Hesta', role: 'context', personality: 'An elderly neighbor who remembers the family and the fire. She has watched the house light up every night for 30 years. "I leave flowers at the gate sometimes. I think it appreciates them. The flowers are always gone by morning."' },
-    { name: 'The Verrin Family (memory)', role: 'the past', personality: 'Present as echoes in the house\'s routine. A happy family frozen in the house\'s memory: the father\'s laugh, the mother\'s cooking, the children\'s play. They are not ghosts. They are the house\'s dream of them.' },
+    { name: 'The House', role: 'the heart / threat', personality: 'Communicates through its environment. Happy: warm fire, fresh bread smell, blankets appearing on chairs. Confused: doors opening and closing, rooms rearranging. Upset: temperature drops, shutters slam, the smell of smoke. Grieving: every light dims simultaneously and the house makes a sound like settling timber that sounds exactly like a sigh.' },
+    { name: 'Neighbor Hesta', role: 'context', personality: 'Clutches her shawl and will not cross the gate. Talks in a low voice as if the house might hear. "I leave flowers at the gate sometimes. Daisies. Mira liked daisies. The flowers are always gone by morning. Arranged in a vase in the window. A vase that has not moved in thirty years."' },
+    { name: 'The Verrin Family (memory)', role: 'the past', personality: 'Not ghosts. Routines. Invisible footsteps down the stairs every morning at 7. The sound of a chair pulling out. A child\'s laugh that comes from an empty room. The clink of a spoon stirring tea that is not there. The house plays these sounds on schedule, every day, because that is what a family sounds like and the house cannot bear the silence.' },
   ],
   keyLocations: [
     { name: 'The Verrin House', description: 'A house that is simultaneously abandoned and fully lived-in, warm and haunted, loving and dangerous.', significance: 'The entire adventure. The house is the NPC, the location, and the threat.' },

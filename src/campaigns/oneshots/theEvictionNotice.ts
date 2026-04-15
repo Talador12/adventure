@@ -51,9 +51,9 @@ export const theEvictionNotice: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Grandmother Asha', role: 'community leader', personality: 'An 80-year-old human woman who has outlived two husbands and raised six children in Bridgeward. Gentle voice, iron spine. "I am not leaving my home because a rich man wants what is underneath it."' },
-    { name: 'Lord Vesper', role: 'antagonist', personality: 'A real estate speculator who sees people as obstacles to profit. Polished, legally untouchable, and genuinely confused about why anyone would fight for a "rundown neighborhood."' },
-    { name: 'Advocate Lira', role: 'ally lawyer', personality: 'A young tiefling lawyer who takes cases the legal establishment won\'t touch. Sharp, overworked, and fueled by righteous anger and bad coffee.' },
+    { name: 'Grandmother Asha', role: 'community leader', personality: 'Refers to every young person as "child" regardless of age. Tells stories about who used to live in each building before making her point. "Child, let me tell you about Mrs. Renn who raised eleven kids in that house. Then you tell me what it is worth."' },
+    { name: 'Lord Vesper', role: 'antagonist', personality: 'Speaks in real estate jargon like it is poetry. Calls homes "units." Calls families "current occupants." Gestures at Bridgeward from his tower window the way a general gestures at a map. Genuinely puzzled why sentiment overrides a signed contract.' },
+    { name: 'Advocate Lira', role: 'ally lawyer', personality: 'Drinks coffee like it is medicine. Flips through legal codes at terrifying speed. Talks to the party while reading three documents simultaneously. "I need evidence of bad faith by Tuesday. That gives me - hold on - yes, that gives me exactly enough time to not sleep."' },
   ],
   keyLocations: [
     { name: 'Bridgeward', description: 'A working-class neighborhood with narrow streets, communal gardens, and doors that are never locked. Eviction notices on every door.', significance: 'The community at stake.' },

@@ -4,7 +4,7 @@ export const theMatchmakerOneShot: OneShotCampaign = {
   id: 'oneshot-matchmaker',
   type: 'oneshot',
   title: 'The Matchmaker',
-  tagline: 'Three clients. Three potential matches. One evening. You ARE the dating service.',
+  tagline: 'The matchmaker broke her leg. Three clients paid in advance. You are the dating service now. Midnight deadline.',
   tone: 'social',
   themes: ['social', 'comedy'],
   playerCount: { min: 3, max: 5 },
@@ -34,10 +34,10 @@ export const theMatchmakerOneShot: OneShotCampaign = {
       summary: 'Three simultaneous dates at the festival. The party splits up to chaperone, coach, and rescue.',
       challenge: 'social',
       keyEvents: [
-        'Date #1: the librarian spills wine. The fighter is charming but overwhelming. Rescue needed.',
-        'Date #2: the merchant keeps looking at someone across the room. Their date notices.',
-        'Date #3: the carpenter is doing well until their late spouse is mentioned. Tears.',
-        'The party runs between dates, coaching through whispered advice and creative distractions.',
+        'Date #1: the librarian spills wine down the fighter\'s shirt. The fighter laughs. The librarian tries to leave. The party physically redirects them.',
+        'Date #2: the merchant cannot stop glancing at someone across the dance floor. Their actual date says, "Should I leave you two alone?" Damage control needed.',
+        'Date #3: the carpenter is smiling for the first time in years, then their date innocently asks about family. The carpenter\'s eyes go distant. The party must intervene with grace.',
+        'The party sprints between three dates, whispering coaching from behind pillars and engineering "accidental" moments.',
       ],
     },
     {

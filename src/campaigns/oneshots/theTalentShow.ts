@@ -4,7 +4,7 @@ export const theTalentShow: OneShotCampaign = {
   id: 'oneshot-talent-show',
   type: 'oneshot',
   title: 'The Talent Show',
-  tagline: 'The annual talent show. You must perform. The audience has opinions. The rival act is suspiciously good.',
+  tagline: 'You must perform. The rival act gets a standing ovation for mediocre juggling. Detect Magic says the audience is charmed.',
   tone: 'social',
   themes: ['social', 'comedy'],
   playerCount: { min: 3, max: 5 },

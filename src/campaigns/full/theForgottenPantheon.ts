@@ -23,6 +23,7 @@ export const theForgottenPantheon: FullCampaign = {
       summary: 'Gods begin to vanish. The party investigates, crossing into divine planes to find them empty. The pattern becomes clear: the oldest gods fall first.',
       keyEvents: [
         'Pelor\'s dissolution: witnessed by millions. Clerics worldwide lose their connection.',
+        'Quiet moment: a cleric of Pelor sits in his empty temple at dawn. Light comes through the window but it is just light now. Nothing answers his prayer. The party watches a man lose his purpose.',
         'Investigation: other gods are weakening. Moradin\'s forges cool. Corellon\'s forests wilt.',
         'The party enters the Astral Plane and finds a god\'s throne empty - just formless potential where a deity sat',
         'A dead god\'s library: records of what existed before the pantheon. A name that predates names.',
@@ -34,7 +35,9 @@ export const theForgottenPantheon: FullCampaign = {
       summary: 'More gods fall. The party races to understand the Unspoken. Allies are scarce - who helps when the gods themselves cannot?',
       keyEvents: [
         'Half the pantheon is gone. The planes are destabilizing. Weather, magic, and reality glitch.',
+        'The moment of cost: Varek destroys a temple to Istara, the child-goddess, claiming he is liberating mortals from divine parasitism. If the party defended temples in Act 1, they have allies who warn them. If not, the temple falls before they arrive.',
         'A surviving god speaks directly to the party: "It is not attacking us. It is waking up. We are its dream."',
+        'Quiet moment: The Witness shares a memory of the very first prayer ever spoken. A mortal child, alone and afraid, reaching out to the universe. Something answered. "That was the moment the universe stopped being alone," she says.',
         'The party finds the Unspoken\'s edge: a region of reality where things lose definition. Colors blur. Identities merge.',
         'An audience with the Unspoken itself: not hostile, not aware, not anything. It is the absence of identity becoming present.',
       ],
@@ -46,7 +49,8 @@ export const theForgottenPantheon: FullCampaign = {
       keyEvents: [
         'The last pantheon: a handful of young gods, created by recent faith, protected by the party',
         'The Unspoken reaches the material plane. Reality simplifies. Mountains lose their names.',
-        'The argument: the party must embody what identity means. Mortal experience as evidence for existence.',
+        'Quiet moment: Istara asks the party to tell her a bedtime story. She is barely a century old and she is afraid of the dark. The party tells her a story. She listens like a child. She IS a child, despite being divine.',
+        'The argument: the party must embody what identity means. Mortal experience as evidence for existence. If Varek has been turned, he stands with the party. If not, he argues for dissolution alongside the Unspoken.',
         'The resolution: the Unspoken does not retreat. It integrates. The gods are reborn as something new - divine and primal, shaped and shapeless.',
       ],
       estimatedSessions: 9,
@@ -56,29 +60,57 @@ export const theForgottenPantheon: FullCampaign = {
     {
       name: 'The Witness',
       role: 'last archivist of the divine',
-      personality: 'An immortal record-keeper who existed before the gods and remembers what the universe was like without them. Neutral, precise, and deeply sad. "I have watched seventeen pantheons rise. This is the first time I have watched one dissolve from the inside."',
+      personality:
+        'An immortal record-keeper who existed before the gods and remembers what the universe was like without them. Neutral, precise, and deeply sad. "I have watched seventeen pantheons rise. This is the first time I have watched one dissolve from the inside." Arc: in Act 1 she is a distant source of exposition. By Act 2 she shares memories that reveal she loves what the universe became. In Act 3 she faces her own dissolution and chooses to testify for identity.',
       secret: 'She was created by the Unspoken as a witness. She is, in a sense, its only conscious fragment.',
     },
     {
       name: 'Istara, the Fearful',
       role: 'the last god / the stakes',
-      personality: 'A young goddess born from children\'s prayers. She governs small comforts: warm beds, bedtime stories, the feeling of safety. She is barely a century old and she is terrified. "I do not want to stop being me. Is that wrong?"',
+      personality:
+        'A young goddess born from children\'s prayers. She governs small comforts: warm beds, bedtime stories, the feeling of safety. She is barely a century old and she is terrified. "I do not want to stop being me. Is that wrong?" Arc: fragile and hidden in Act 2, then in Act 3 she stands before the Unspoken and says the simplest, truest thing anyone has ever said to entropy.',
     },
     {
       name: 'The Unspoken',
       role: 'the force / the antagonist without malice',
-      personality: 'Not a character. A state of being. It does not want anything because wanting requires identity. It is the universe before it decided to be something. Communicating with it is like arguing with gravity.',
+      personality:
+        'Not a character. A state of being. It does not want anything because wanting requires identity. It is the universe before it decided to be something. Communicating with it is like arguing with gravity. It does not hate. It cannot.',
     },
     {
       name: 'High Inquisitor Varek',
       role: 'mortal antagonist',
-      personality: 'A former paladin who lost his god and concluded that the gods were parasites on mortal belief. He wants the Unspoken to finish the job. "We prayed and they ate our prayers. We are better without them."',
+      personality:
+        'A former paladin who lost his god and concluded that the gods were parasites on mortal belief. He wants the Unspoken to finish the job. "We prayed and they ate our prayers. We are better without them." Arc: in Act 1 he is a dangerous zealot. In Act 2 the party can challenge his certainty by showing him Istara - a god made entirely of children\'s comfort. In Act 3, he either stands with the party or speaks for the void.',
     },
   ],
   keyLocations: [
-    { name: 'The Empty Thrones', description: 'The Astral Plane\'s divine seats, now vacant. Each throne holds the shape of its god like an imprint in sand, slowly smoothing.', significance: 'Where the investigation begins and the scope of the crisis becomes clear.' },
-    { name: 'The Blur', description: 'The edge of the Unspoken\'s influence. A region where reality loses resolution: colors fade, sounds merge, names are forgotten.', significance: 'The boundary between existence and potential.' },
-    { name: 'The Nursery', description: 'A hidden plane where the youngest gods shelter. Protected by mortal faith, fragile, and the last line of defense.', significance: 'Where the final stand takes place.' },
+    {
+      name: 'The Empty Thrones',
+      description:
+        'The Astral Plane\'s divine seats, now vacant. Each throne holds the shape of its god like an imprint in sand, slowly smoothing. Offerings still appear on the altars. The faithful do not know their gods are gone.',
+      significance: 'Where the investigation begins and the scope of the crisis becomes clear.',
+    },
+    {
+      name: 'The Blur',
+      description:
+        'The edge of the Unspoken\'s influence. A region where reality loses resolution: colors fade, sounds merge, names are forgotten. Step too far in and you forget your own.',
+      significance: 'The boundary between existence and potential.',
+    },
+    {
+      name: 'The Nursery',
+      description:
+        'A hidden plane where the youngest gods shelter. Protected by mortal faith, fragile, and the last line of defense. Istara\'s domain feels like a warm blanket and smells like a bakery. It is built from the prayers of children.',
+      significance: 'Where the final stand takes place.',
+    },
   ],
-  dataSystems: ['cataclysmCountdown', 'ancientProphecy', 'magicalAnomaly', 'encounterWaves', 'factionWar', 'diplomaticNegotiation', 'dreamSequence', 'legendaryWeapon'],
+  dataSystems: [
+    'cataclysmCountdown',
+    'ancientProphecy',
+    'magicalAnomaly',
+    'encounterWaves',
+    'factionWar',
+    'diplomaticNegotiation',
+    'dreamSequence',
+    'legendaryWeapon',
+  ],
 };

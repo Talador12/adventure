@@ -4,7 +4,7 @@ export const theWelcomeCommittee: OneShotCampaign = {
   id: 'oneshot-welcome-committee',
   type: 'oneshot',
   title: 'The Welcome Committee',
-  tagline: 'A tiefling family moves in. The village is scared. You are the welcome committee. Make it work.',
+  tagline: 'The tiefling children wave at passersby. Nobody waves back. You are the welcome committee. Make this village deserve them.',
   tone: 'social',
   themes: ['social', 'urban'],
   playerCount: { min: 3, max: 5 },

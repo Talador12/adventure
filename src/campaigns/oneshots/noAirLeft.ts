@@ -23,10 +23,10 @@ export const noAirLeft: OneShotCampaign = {
       summary: 'The enchantments fail. The entrance is blocked. The party assesses their air supply and plans a forward escape.',
       challenge: 'exploration',
       keyEvents: [
-        'Water Breathing flickers. Thirty minutes of air, shared unevenly among the party.',
-        'The entrance collapsed. Tons of stone and coral. No going back.',
-        'Forward: three corridors. The map says one leads to an air pocket. The map is old.',
-        'The walls feel wrong. Too smooth. Too warm for underwater stone.',
+        'The enchantment stutters like a guttering candle. The party\'s lungs tighten for half a second. It comes back. For now. Ilris estimates thirty minutes before total failure.',
+        'The entrance is gone. Not collapsed - fused. The stone looks like it grew shut, like a wound healing. No seams. No rubble. Just wall where door used to be.',
+        'Three corridors. The map says the left one leads to an air pocket. The map is seventy years old and drawn by someone who never came back.',
+        'A party member touches the wall. It is warm. Not stone-warm. Body-warm. And for one instant, they swear it pulsed.',
       ],
     },
     {
@@ -56,7 +56,7 @@ export const noAirLeft: OneShotCampaign = {
     {
       name: 'Mage Ilris',
       role: 'caster / liability',
-      personality: 'The mage who cast Water Breathing. Brilliant but panicking. Her magic is being drained fastest because she has the most. She is the canary in the coal mine.',
+      personality: 'Grips her staff like a lifeline. Her Water Breathing was supposed to last six hours. It has been forty minutes. She keeps casting Detect Magic and flinching at the results. "Something is eating my spells. Not dispelling - eating. The walls are metabolizing my magic. That is not a thing. That should not be a thing."',
     },
     {
       name: 'The Colony',

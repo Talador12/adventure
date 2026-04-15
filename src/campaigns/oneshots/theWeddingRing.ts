@@ -51,9 +51,9 @@ export const theWeddingRing: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Lady Ashara', role: 'unwitting victim', personality: 'A kind, intelligent noblewoman who genuinely loves Venn. She has no idea about the ring or the deal. Protecting her means protecting her happiness and her soul simultaneously.' },
-    { name: 'Lord Venn', role: 'hidden antagonist', personality: 'A charming nobleman who made a deal with a demon to save his family. He loves Ashara - and is condemning her anyway. His guilt is real but insufficient to stop him.', secret: 'He considered telling her a dozen times. He never did.' },
-    { name: 'Warlock Emris', role: 'quest giver', personality: 'A warlock who detected the soul-trap curse. Hired the party because he cannot attend the wedding himself - the ring\'s demon would sense his presence. Genuinely wants to save Ashara.' },
+    { name: 'Lady Ashara', role: 'unwitting victim', personality: 'Laughs easily. Touches people\'s arms when she talks to them. Keeps adjusting the ring because it never quite fits right - it was not made for her. Tells the party she is the happiest she has ever been. She means it. That is what makes this hard.' },
+    { name: 'Lord Venn', role: 'hidden antagonist', personality: 'Cannot stop looking at the ring. His wedding toast is beautiful and his hand trembles when he raises the glass. Stands too close to Ashara, like proximity is an apology. When the party gets near the ring, he positions himself between them and her hand - subtle, deliberate, desperate.', secret: 'He considered telling her a dozen times. He never did.' },
+    { name: 'Warlock Emris', role: 'quest giver', personality: 'Paces while he briefs the party. Cannot attend the wedding because the demon would sense him, which means he is trusting strangers with the life of a woman he clearly cares about. Hands them the replica ring and holds onto it one second too long before letting go.' },
   ],
   keyLocations: [
     { name: 'Ashara Estate Chapel', description: 'A beautiful white stone chapel filled with flowers, candles, and two hundred guests in their finest. The altar is visible from every seat.', significance: 'Where the ceremony and the swap happen.' },

@@ -56,7 +56,7 @@ export const theWrongBody: OneShotCampaign = {
     {
       name: 'Elias Crane',
       role: 'victim / living dead man',
-      personality: 'A mild-mannered merchant who woke up in a field and learned he was buried yesterday. Handling it with remarkable calm and significant wine.',
+      personality: 'Keeps touching his own face as if confirming he is real. Orders a second breakfast because "I apparently missed three days of meals." Handles existential terror with dry humor and escalating wine consumption.',
     },
     {
       name: 'Vera Crane',

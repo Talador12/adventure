@@ -34,10 +34,10 @@ export const theHuntedCamp: OneShotCampaign = {
       summary: 'The creature circles closer. It tests defenses. It is smarter than an animal.',
       challenge: 'combat',
       keyEvents: [
-        'Movement in the trees. Displacement effect: it is not where it appears.',
-        'It triggers a trap deliberately, studying the party\'s reaction.',
-        'A tent is slashed from the outside while the party watches the wrong direction.',
-        'It roars. The sound comes from everywhere. It is done testing.',
+        'A shape between the trees. The ranger looses an arrow. It passes through empty air. The shape was ten feet to the left. Displacement magic. Natural, not arcane.',
+        'SNAP. A trap triggers on the east perimeter. The party rushes over. The trap held a stick. Not a limb. A stick, placed there. It was testing their response time.',
+        'While the party investigates the eastern trap, a tent on the west side splits open in a single clean slash. Bedrolls shredded. Nobody was inside. A message.',
+        'A roar from every direction at once. The trees shake. Something has decided the reconnaissance is over.',
       ],
     },
     {
@@ -56,7 +56,7 @@ export const theHuntedCamp: OneShotCampaign = {
     {
       name: 'The Duskwood Mother',
       role: 'displacer beast / sympathetic antagonist',
-      personality: 'A predator driven by maternal instinct. Intelligent enough to plan but driven by desperation. She does not want to fight. She wants a home.',
+      personality: 'Seven feet at the shoulder, six tentacles, and eyes that track the party with unsettling intelligence. She tested the snares on night two. She slashed the tent on night three to show she could have done worse. Every action says the same thing: leave. This is mine now. When her cubs cry, her aggression doubles. When the party backs away from the cubs, she stops attacking. She is having a conversation. It just does not use words.',
     },
   ],
   keyLocations: [

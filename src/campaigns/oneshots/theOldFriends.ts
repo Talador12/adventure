@@ -4,7 +4,7 @@ export const theOldFriends: OneShotCampaign = {
   id: 'oneshot-old-friends',
   type: 'oneshot',
   title: 'The Old Friends',
-  tagline: 'Best friends for forty years. Stopped speaking ten years ago. Neither will say why. Fix it.',
+  tagline: 'Best friends for forty years. Neither has spoken in ten. Neither remembers why. There is an empty chair in the workshop.',
   tone: 'social',
   themes: ['social', 'mystery'],
   playerCount: { min: 3, max: 5 },

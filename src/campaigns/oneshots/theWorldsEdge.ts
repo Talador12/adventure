@@ -4,7 +4,7 @@ export const theWorldsEdge: OneShotCampaign = {
   id: 'oneshot-worlds-edge',
   type: 'oneshot',
   title: 'The World\'s Edge',
-  tagline: 'You reached the literal edge of the world. What is beyond? You step off and find out.',
+  tagline: 'A message in a bottle washed UP from below the edge of the world: "We are beneath you. We have been trying to reach you for a thousand years. Please come down."',
   tone: 'epic',
   themes: ['epic', 'exploration', 'planar'],
   playerCount: { min: 3, max: 5 },
@@ -21,10 +21,10 @@ export const theWorldsEdge: OneShotCampaign = {
       summary: 'Reaching the Precipice and making the decision to step off into the unknown.',
       challenge: 'exploration',
       keyEvents: [
-        'The Precipice: a cliff where the ground simply ends and void begins',
-        'The message: analysis confirms it came from below - something exists past the edge',
-        'The step: jumping off the edge, falling through the void, and landing... upside down',
-        'The inversion: gravity flips - the party stands on the underside of the world, looking up at their own sky',
+        'The Precipice: the ground stops. Mid-sentence, mid-stone, as if cut with a knife. Beyond it, nothing. Wind screams upward from below.',
+        'The message: a glass bottle sealed with wax so old it has turned black. The handwriting inside is shaky but legible. The paper smells of salt.',
+        'The step: the party jumps. For three heartbeats, there is nothing. Then gravity grabs them sideways, then upward, and they land on solid ground facing the wrong way.',
+        'The inversion: they are standing on the underside of the world. Their sky is above them. This sky is below. A pale woman stares at them with tears running down her face. "You came."',
       ],
     },
     {

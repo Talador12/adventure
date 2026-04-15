@@ -32,7 +32,7 @@ export const theFinalWord: OneShotCampaign = {
       summary: 'Following Elara\'s research. Discovering she is right about magic\'s cost. The moral ground shifts.',
       challenge: 'social',
       keyEvents: [
-        'The fishing village: people age twice as fast, their life force drained by the magical academies in the capital',
+        'The fishing village: a thirty-year-old woman with white hair and arthritic hands. She has never cast a spell in her life. Something is taking years from her.',
         'The ledger: Elara\'s research showing the flow of life force from periphery to center - exploitation at cosmic scale',
         'The counter-argument: magic also heals, protects, and enables civilization - ending it causes its own suffering',
         'The question: is a system built on hidden exploitation worth preserving if it can be reformed?',
@@ -53,7 +53,7 @@ export const theFinalWord: OneShotCampaign = {
   keyNPCs: [
     { name: 'Elara Voss', role: 'the speaker', personality: 'A former healer who discovered magic\'s hidden cost when she traced the life force she was channeling to dying farmers in distant villages. Not angry - sad. "I became a healer to stop suffering. I was causing it."' },
     { name: 'Archmage Theron', role: 'quest giver', personality: 'An archmage who benefits from the current system and does not want it to end. His motives are mixed: he genuinely believes magic is necessary AND he does not want to lose his power.' },
-    { name: 'The Weave Keeper', role: 'cosmic neutral', personality: 'An entity bound to the Weave. Neither supports nor opposes the Word. Can confirm Elara\'s research is accurate. Provides information but not guidance.' },
+    { name: 'The Weave Keeper', role: 'cosmic neutral', personality: 'An entity woven from threads of raw magic, shifting between forms mid-sentence. Speaks in facts with no opinion attached. "The transfer system is exploitative. Also functional. Both statements are true. I do not resolve contradictions. I am a filing system."' },
   ],
   keyLocations: [
     { name: 'The Drained Villages', description: 'Coastal communities where people age prematurely. The invisible cost of magic made visible in grey hair and tired bones.', significance: 'Where Elara\'s evidence is confirmed firsthand.' },

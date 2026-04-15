@@ -4,7 +4,7 @@ export const theDogKnows: OneShotCampaign = {
   id: 'oneshot-dog-knows',
   type: 'oneshot',
   title: 'The Dog Knows',
-  tagline: 'The dog keeps leading guards to the wrong suspect. But the dog is not wrong. It smells guilt, not identity.',
+  tagline: 'The tracking dog leads to the blacksmith. Three times. His alibi is iron. The dog is not tracking scent. It is tracking guilt.',
   tone: 'mystery',
   themes: ['mystery', 'intrigue'],
   playerCount: { min: 3, max: 5 },
@@ -56,7 +56,7 @@ export const theDogKnows: OneShotCampaign = {
     {
       name: 'Copper',
       role: 'blink dog / guilt detector',
-      personality: 'A good boy who knows something is wrong but cannot explain it in words. Persistent, loyal, and absolutely certain about what he smells.',
+      personality: 'Sits perfectly still when near guilt. Does not bark, does not growl. Just stares with amber eyes that see something humans cannot. Thumps his tail when the party gets closer to the truth. The best detective in town, and he cannot file a report.',
     },
     {
       name: 'Brennan Forge',

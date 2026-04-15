@@ -4,7 +4,7 @@ export const theLastLetter: OneShotCampaign = {
   id: 'oneshot-last-letter',
   type: 'oneshot',
   title: 'The Last Letter',
-  tagline: 'A soldier\'s last letter home was never sent. The party delivers it. The family has moved on.',
+  tagline: 'A sealed letter from a dead soldier. Ten years unsent. The family built a statue of him. The letter says he ran.',
   tone: 'serious',
   themes: ['war', 'social'],
   playerCount: { min: 3, max: 5 },
@@ -51,9 +51,9 @@ export const theLastLetter: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Maren Ashwick', role: 'the widow', personality: 'A strong woman who grieved, healed, and built a new life. She does not need the letter. But she would want to know the truth if asked. "I loved him. All of him. Even the parts I did not know."' },
-    { name: 'Dorin Ashwick', role: 'the son', personality: 'A 16-year-old who never knew his father and has built an identity around his heroism. Earnest, idealistic, and about to enlist. The letter could change everything for him.' },
-    { name: 'Sergeant Brannick', role: 'witness', personality: 'A veteran on the road who served with the soldier. He knows the truth but never told anyone. "He ran. Then he came back. That second part matters more."' },
+    { name: 'Maren Ashwick', role: 'the widow', personality: 'Dries her hands on her apron before shaking yours. Direct eye contact. No nonsense. Laughs once, sharply, when she hears about the letter. "After all this time. Well. Let me see it then." Reads it without expression. Then quietly: "I loved him. All of him. Even the parts he could not love himself."' },
+    { name: 'Dorin Ashwick', role: 'the son', personality: 'Wears his father\'s medal on a cord around his neck and touches it when he talks. Bounces on his heels. Talks too fast. "I am enlisting next month. I want to serve in his regiment. The same one." His whole identity is on that cord. The letter could snap it.' },
+    { name: 'Sergeant Brannick', role: 'witness', personality: 'Walks with a limp and pauses to breathe on hills. Does not look at people when he talks about the war. "He ran. I saw him go. I hated him for it. Then he came back at dawn and held the line while the rest of us got out. That second part matters more. But both parts are true."' },
   ],
   keyLocations: [
     { name: 'The Battlefield Memorial', description: 'A quiet field with rows of markers. Where the letter was found.', significance: 'The starting point and the weight of war.' },

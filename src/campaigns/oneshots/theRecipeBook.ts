@@ -51,9 +51,9 @@ export const theRecipeBook: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Chef Hellion', role: 'obstacle / duel opponent', personality: 'A retired adventurer who became the greatest chef alive. Paranoid, brilliant, and terrifyingly good with a cleaver. Treats his kitchen like a dungeon because to him, everything is a dungeon.' },
-    { name: 'Restaurateur Patel', role: 'quest giver', personality: 'Hellion\'s rival who wants the recipes. A decent cook overshadowed by genius. Will be disappointed when the recipes turn out to be coded memoirs.' },
-    { name: 'Sous Chef Knives', role: 'kitchen hazard', personality: 'Hellion\'s sous chef, a goblin with perfect technique and zero patience. Will report intruders unless distracted by a genuinely interesting cooking question.' },
+    { name: 'Chef Hellion', role: 'obstacle / duel opponent', personality: 'Shouts everything. Absolute everything. "FIRE ON STATION THREE! WHO PUT THAT THERE? TASTE THIS. IS THAT ENOUGH SALT? DO NOT ANSWER, IT IS PERFECT." Holds a cleaver the way a fighter holds a longsword - because he used to hold a longsword. His kitchen is a dungeon because he cannot stop being a dungeon master.' },
+    { name: 'Restaurateur Patel', role: 'quest giver', personality: 'Speaks about Hellion the way a bard speaks about a legend - equal parts reverence and jealousy. His own restaurant is "fine." He knows it is fine. "Fine" keeps him up at night. When the recipes turn out to be coded memoirs, his disappointment is visible from space.' },
+    { name: 'Sous Chef Knives', role: 'kitchen hazard', personality: 'A goblin who juliennes carrots faster than most people draw swords. Answers every question with "Chef says no." Can be distracted only by a genuinely interesting cooking question - "What is the right temperature for a roux?" will buy you thirty seconds of passionate lecture.' },
   ],
   keyLocations: [
     { name: 'Hellion\'s Restaurant', description: 'The best restaurant in the city. The dining room is elegant. The kitchen is a death trap. The food is worth dying for.', significance: 'The heist location.' },

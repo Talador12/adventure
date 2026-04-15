@@ -4,7 +4,7 @@ export const theLighthouse: OneShotCampaign = {
   id: 'oneshot-lighthouse',
   type: 'oneshot',
   title: 'The Lighthouse',
-  tagline: 'A lighthouse on a cliff with no ocean nearby. It turns on every night. What is it warning?',
+  tagline: 'A lighthouse sixty miles inland, on a cliff over a forest. No ocean in any direction. Every night at dusk, the beam sweeps the valley. What is it holding back?',
   tone: 'exploration',
   themes: ['exploration', 'mystery'],
   playerCount: { min: 3, max: 5 },
@@ -21,10 +21,10 @@ export const theLighthouse: OneShotCampaign = {
       summary: 'Approaching and entering the lighthouse. It is well-maintained from the inside despite no visible keeper. The mechanism is complex and ancient.',
       challenge: 'exploration',
       keyEvents: [
-        'The exterior: weathered but solid stone, no door, entry through a ground-level window',
-        'Inside: clean, organized, with tools laid out as if the keeper just stepped away',
-        'The light mechanism: not fire, not magic in any recognizable form, something else entirely',
-        'The logbook: entries in an unknown language, with drawings of something in the valley',
+        'The exterior: grey stone weathered by centuries of wind but structurally perfect. No door. Entry requires climbing through a ground-level window that opens easily, as if expecting visitors',
+        'Inside: clean floors, oiled hinges, tools arranged by size on a workbench. A half-eaten meal has been perfectly preserved by the same magic that maintains everything. It smells of fresh bread',
+        'The light mechanism: not fire, not crystal, not any recognizable magic. A sphere of pure white light that generates warmth and sound - a low hum felt in the teeth more than heard',
+        'The logbook: entries in a spiral script with no known translation. But the drawings are universal: something vast and dark filling the valley like smoke, held at bay by lines that clearly represent the beam',
       ],
     },
     {
@@ -51,7 +51,7 @@ export const theLighthouse: OneShotCampaign = {
     },
   ],
   keyNPCs: [
-    { name: 'Farmer Redd', role: 'local / information', personality: 'An old farmer who has lived near the lighthouse his whole life. He does not ask questions about it because his grandmother told him not to. "She said the light keeps things sleeping. I sleep better not thinking about what."' },
+    { name: 'Farmer Redd', role: 'local / information', personality: 'Leans on his fence and watches the lighthouse with the wary respect of someone who lives next to something they do not understand. "My grandmother told me three things: pay your debts, never lie to a cleric, and never go up that tower. I have followed all three. I sleep fine." His cattle will not graze within a mile of the valley.' },
     { name: 'The Builder (journal)', role: 'backstory', personality: 'Present only through journal entries and drawings. A practical engineer who built the lighthouse not for ships but for survival. Their final entry: "The crystal will last 1,000 years. Someone must replace it before then. I will not be alive. I hope someone reads this."' },
     { name: 'The Shadow', role: 'antagonist', personality: 'Not a creature with personality. A predator of pure darkness that fills empty spaces. It does not think. It consumes. The light is the only thing that stops it.' },
   ],

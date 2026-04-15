@@ -4,7 +4,7 @@ export const theLastMarch: OneShotCampaign = {
   id: 'oneshot-last-march',
   type: 'oneshot',
   title: 'The Last March',
-  tagline: 'A retreating army. You guard the rear. The enemy is behind you. The army is slow. Choose who to save.',
+  tagline: 'The battle is lost. Two thousand wounded behind you. The enemy on your heels. The fortress is two days away. Every decision you make costs someone their life.',
   tone: 'survival',
   themes: ['survival', 'war'],
   playerCount: { min: 4, max: 6 },
@@ -34,10 +34,10 @@ export const theLastMarch: OneShotCampaign = {
       summary: 'The party fights delaying actions. Bridge destruction, ambushes, and hard choices about who stays behind.',
       challenge: 'combat',
       keyEvents: [
-        'A river crossing: destroy the bridge after the column passes, or leave it for the wounded still coming.',
-        'Enemy cavalry probes. Fast, hit-and-run. The rearguard bleeds.',
-        'A narrow pass: perfect for an ambush. Someone must hold it. They will not make it back.',
-        'The defector is discovered among the refugees. She is fourteen and terrified.',
+        'A river crossing: the last wagon is still on the bridge when enemy scouts crest the hill. Destroy the bridge now and strand twenty wounded soldiers. Wait and the scouts become an army.',
+        'Enemy cavalry hits the rear at dusk. Three rearguard soldiers die in the first pass. Fast, organized, testing. They pull back. They will come again in an hour with more.',
+        'A narrow pass between two ridges. Perfect chokepoint. Hold it with ten soldiers and the column gains four hours. Those ten will not make it back. The colonel looks at the party. "Who stays?"',
+        'A soldier finds her hiding under a supply wagon. Fourteen years old, shaking, clutching a leather scroll case. "Please do not send me back. They will kill my village."',
       ],
     },
     {
@@ -56,7 +56,7 @@ export const theLastMarch: OneShotCampaign = {
     {
       name: 'Commander Vashka Dren',
       role: 'enemy commander / pragmatist',
-      personality: 'Professional, calm, respects the party for holding this long. She does not want bloodshed. She wants the plans. The defector is secondary, but she cannot say that openly.',
+      personality: 'Rides forward under a white flag with the posture of someone who has already won and knows it. Addresses the party by what they did, not who they are. "The bridge destroyers. The pass holders. You have cost me two hundred soldiers and a full day. I respect that. Now give me the girl and I will let the rest of you walk."',
       secret: 'She was ordered to retrieve the plans at any cost. If she returns without them, her own superiors will execute her.',
     },
     {
