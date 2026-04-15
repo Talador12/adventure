@@ -3,14 +3,18 @@
 // Falls back to English when a key is missing in the active locale.
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 
-export type Locale = 'en' | 'es' | 'fr' | 'de' | 'ja';
+export type Locale = 'en' | 'en-gb' | 'es' | 'fr' | 'de' | 'ja' | 'ko' | 'pt' | 'zh';
 
 export const LOCALE_NAMES: Record<Locale, string> = {
-  en: 'English',
-  es: 'Español',
-  fr: 'Français',
-  de: 'Deutsch',
-  ja: '日本語',
+  de: '🇩🇪 Deutsch',
+  en: '🇺🇸 English',
+  'en-gb': '🇬🇧 English (Bloke)',
+  es: '🇪🇸 Español',
+  fr: '🇫🇷 Français',
+  ja: '🇯🇵 日本語',
+  ko: '🇰🇷 한국어',
+  pt: '🇵🇹 Português',
+  zh: '🇨🇳 简体中文',
 };
 
 // English is the base — always loaded, used as fallback
@@ -38,6 +42,10 @@ const localeLoaders: Record<string, () => Promise<{ default: TranslationMap }>> 
   fr: () => import('../locales/fr.json'),
   de: () => import('../locales/de.json'),
   ja: () => import('../locales/ja.json'),
+  'en-gb': () => import('../locales/en-gb.json'),
+  ko: () => import('../locales/ko.json'),
+  pt: () => import('../locales/pt.json'),
+  zh: () => import('../locales/zh.json'),
 };
 
 export function I18nProvider({ children }: { children: ReactNode }) {

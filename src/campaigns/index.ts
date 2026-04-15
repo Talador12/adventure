@@ -87,6 +87,163 @@ import { theWeaversOfFate } from './full/theWeaversOfFate';
 import { theWardensOfAether } from './full/theWardensOfAether';
 import { theHollowMountain } from './full/theHollowMountain';
 
+// Phase 6 full campaign imports (emotional depth)
+import { theQuietYear } from './full/theQuietYear';
+import { theWeightOfCrowns } from './full/theWeightOfCrowns';
+import { theRiverThatRemembers } from './full/theRiverThatRemembers';
+import { whenTheMusicStopped } from './full/whenTheMusicStopped';
+import { theChildrenOfIron } from './full/theChildrenOfIron';
+import { aSinglePerfectDay } from './full/aSinglePerfectDay';
+
+// Phase 7 full campaign imports (comedy spectrum)
+import { thePungeon } from './full/thePungeon';
+import { bureaucracyAndDragons } from './full/bureaucracyAndDragons';
+import { theRoastOfTheArchlich } from './full/theRoastOfTheArchlich';
+import { theWrongQuestionnaire } from './full/theWrongQuestionnaire';
+import { criticalMassEffect } from './full/criticalMassEffect';
+import { theTavernAtTheEndOfTheUniverse } from './full/theTavernAtTheEndOfTheUniverse';
+import { theMinMaxKing } from './full/theMinMaxKing';
+import { theFlatEarthConspiracy } from './full/theFlatEarthConspiracy';
+
+// Phase 7 full campaign imports (hunted/pursuit)
+import { neverLookBack } from './full/neverLookBack';
+import { theBlackListCampaign } from './full/theBlackListCampaign';
+import { theHoundOfEveryRoad } from './full/theHoundOfEveryRoad';
+import { theSmilingShadow } from './full/theSmilingShadow';
+
+// Phase 8 full campaign imports (heist)
+import { theVaultOfSouls } from './full/theVaultOfSouls';
+import { theArtOfWar } from './full/theArtOfWar';
+import { theMintJob } from './full/theMintJob';
+import { theLongCon } from './full/theLongCon';
+import { breakingAndEnchanting } from './full/breakingAndEnchanting';
+import { theMuseumOfImpossibleThings } from './full/theMuseumOfImpossibleThings';
+
+// Phase 8 full campaign imports (political)
+import { thePeoplesCrown } from './full/thePeoplesCrown';
+import { theLastApothecary } from './full/theLastApothecary';
+import { theWallAndTheWild } from './full/theWallAndTheWild';
+import { theBookBurners } from './full/theBookBurners';
+import { theStrikeBeneath } from './full/theStrikeBeneath';
+import { theCouncilOfWhispers } from './full/theCouncilOfWhispers';
+
+// Phase 8 full campaign imports (social)
+import { theMatchmaker } from './full/theMatchmaker';
+import { theNewNeighbors } from './full/theNewNeighbors';
+import { thePlayTheThingIs } from './full/thePlayTheThingIs';
+import { theLostLanguage } from './full/theLostLanguage';
+import { theGathering } from './full/theGathering';
+import { theFuneralGames } from './full/theFuneralGames';
+
+// Phase 8 full campaign imports (survival)
+import { theLastWinter } from './full/theLastWinter';
+import { afterTheFlood } from './full/afterTheFlood';
+import { theAshlands } from './full/theAshlands';
+import { belowTheIce } from './full/belowTheIce';
+import { theDeadCalm } from './full/theDeadCalm';
+import { theCaravan } from './full/theCaravan';
+
+// Phase 8 full campaign imports (epic)
+import { theForgottenPantheon } from './full/theForgottenPantheon';
+import { theSiegeOfHeaven } from './full/theSiegeOfHeaven';
+import { theWorldForge } from './full/theWorldForge';
+import { theCrownOfStars } from './full/theCrownOfStars';
+import { theLastAlliance } from './full/theLastAlliance';
+
+// Phase 8 full campaign imports (exploration)
+import { theEdgeOfTheMap } from './full/theEdgeOfTheMap';
+import { theDepthsBelowDepths } from './full/theDepthsBelowDepths';
+import { theSkyAboveTheSky } from './full/theSkyAboveTheSky';
+import { theRiverWithoutEnd } from './full/theRiverWithoutEnd';
+import { theCartographersCurse } from './full/theCartographersCurse';
+
+// Phase 8 full campaign imports (mystery)
+import { theClockTowerMurders } from './full/theClockTowerMurders';
+import { theInheritanceOfLies } from './full/theInheritanceOfLies';
+import { theMissingDay } from './full/theMissingDay';
+import { thePoisonersGarden } from './full/thePoisonersGarden';
+
+// Phase 8 full campaign imports (horror)
+import { theThinPlaces } from './full/theThinPlaces';
+import { whatLivesBeneath } from './full/whatLivesBeneath';
+import { theSmileDisease } from './full/theSmileDisease';
+import { theArchive } from './full/theArchive';
+
+// Phase 8 full campaign imports (serious)
+import { theOathbreaker } from './full/theOathbreaker';
+import { theReturningSoldier } from './full/theReturningSoldier';
+import { thePriceOfMagic } from './full/thePriceOfMagic';
+import { theBridgeBuilder } from './full/theBridgeBuilder';
+
+// Phase 9 full campaign imports (therapy, cozy, satire, genre-bending)
+import { theGoodHarvest } from './full/theGoodHarvest';
+import { theLastHerd } from './full/theLastHerd';
+import { theLittleBakery } from './full/theLittleBakery';
+import { theElementalAccord } from './full/theElementalAccord';
+import { theIronDeep } from './full/theIronDeep';
+import { theNeonAbyss } from './full/theNeonAbyss';
+import { theScaleOfThings } from './full/theScaleOfThings';
+
+// Phase 10 full campaign imports (genre expansion)
+import { theLastLongship } from './full/theLastLongship';
+import { ragnarokTuesday } from './full/ragnarokTuesday';
+import { theStarwrightGuild } from './full/theStarwrightGuild';
+import { theBoneAge } from './full/theBoneAge';
+import { theClockworkAge } from './full/theClockworkAge';
+import { theFrozenThrone } from './full/theFrozenThrone';
+import { theSpellplague } from './full/theSpellplague';
+import { beforeTheFirst } from './full/beforeTheFirst';
+import { theSaurianEmpire } from './full/theSaurianEmpire';
+import { theWorldBelow } from './full/theWorldBelow';
+import { theLastDragonRider } from './full/theLastDragonRider';
+import { theAtomicGarden } from './full/theAtomicGarden';
+
+// Phase 10 full campaign imports (reality-breaking)
+import { theGiantsPerspective } from './full/theGiantsPerspective';
+import { theIncredibleShrinkingParty } from './full/theIncredibleShrinkingParty';
+import { benjaminDungeon } from './full/benjaminDungeon';
+import { theInfiniteGrowth } from './full/theInfiniteGrowth';
+import { gravityOptional } from './full/gravityOptional';
+import { theMirrorWar } from './full/theMirrorWar';
+import { theWorldIsACreature } from './full/theWorldIsACreature';
+import { theBodyPolitic } from './full/theBodyPolitic';
+import { theDreamOfDreams } from './full/theDreamOfDreams';
+import { theLanguageVirus } from './full/theLanguageVirus';
+import { theColorless } from './full/theColorless';
+import { immortalityForBeginners } from './full/immortalityForBeginners';
+import { theWorldForgotMagic } from './full/theWorldForgotMagic';
+import { insideOut } from './full/insideOut';
+import { theLastNumber } from './full/theLastNumber';
+
+// Phase 11 full campaign imports (sin-themed)
+import { theGoldenMile } from './full/theGoldenMile';
+import { theBottomlessPurse } from './full/theBottomlessPurse';
+import { theUndefeatedChampion } from './full/theUndefeatedChampion';
+import { theTowerThatTouchedTheSky } from './full/theTowerThatTouchedTheSky';
+import { theRedYear } from './full/theRedYear';
+import { thePatientMan } from './full/thePatientMan';
+import { theKingdomThatSlept } from './full/theKingdomThatSlept';
+import { theLastDayOfSummer } from './full/theLastDayOfSummer';
+import { theShadowsWeBecame } from './full/theShadowsWeBecame';
+import { theNeighborsFence } from './full/theNeighborsFence';
+import { theEndlessBanquet } from './full/theEndlessBanquet';
+import { theCityThatAteItself } from './full/theCityThatAteItself';
+import { theCollectorOfBeautifulThings } from './full/theCollectorOfBeautifulThings';
+import { theObsidianHeart } from './full/theObsidianHeart';
+
+// Phase 12 full campaign imports (ninja, pirate, assassin, battle royale, thieves)
+import { theIllusionWar } from './full/theIllusionWar';
+import { theThousandMasks } from './full/theThousandMasks';
+import { shadowsOfTheFallenLeaf } from './full/shadowsOfTheFallenLeaf';
+import { theBlackTide } from './full/theBlackTide';
+import { thePirateParliament } from './full/thePirateParliament';
+import { theLastOneStanding } from './full/theLastOneStanding';
+import { theGuildBeneath } from './full/theGuildBeneath';
+import { honourAmongThieves } from './full/honourAmongThieves';
+import { theQuietProfession } from './full/theQuietProfession';
+import { theFinalContract } from './full/theFinalContract';
+import { theBladeWhispers } from './full/theBladeWhispers';
+
 // One-shot imports
 import { familiarStrike } from './oneshots/familiarStrike';
 import { theGreatCheeseHeist } from './oneshots/theGreatCheeseHeist';
@@ -148,6 +305,179 @@ import { theInvisibleWar } from './oneshots/theInvisibleWar';
 import { theCursedWedding } from './oneshots/theCursedWedding';
 import { theReturnPolicy } from './oneshots/theReturnPolicy';
 import { theKrakenWakes } from './oneshots/theKrakenWakes';
+
+// Phase 9 one-shot imports (therapy, satire)
+import { theGroupSession } from './oneshots/theGroupSession';
+import { theHealingWord } from './oneshots/theHealingWord';
+import { theBabyOilDungeon } from './oneshots/theBabyOilDungeon';
+
+// Phase 12 one-shot imports (creature, battle royale, meme, pirate)
+import { theGhostFlotilla } from './oneshots/theGhostFlotilla';
+import { eightLeggedFreaks } from './oneshots/eightLeggedFreaks';
+import { spiderVsOctopus } from './oneshots/spiderVsOctopus';
+import { theAwakening } from './oneshots/theAwakening';
+import { royaleWithCheese } from './oneshots/royaleWithCheese';
+import { theFloorIsLava } from './oneshots/theFloorIsLava';
+import { leeroyJenkinsMemorial } from './oneshots/leeroyJenkinsMemorial';
+import { totalPartyKillTeamBuilding } from './oneshots/totalPartyKillTeamBuilding';
+import { standingHereIRealize } from './oneshots/standingHereIRealize';
+
+// Phase 13 one-shot imports (political)
+import { theVoteThief } from './oneshots/theVoteThief';
+import { theEmptyThroneOneshot } from './oneshots/theEmptyThroneOneshot';
+import { thePeoplesVoice } from './oneshots/thePeoplesVoice';
+import { theRefugeeCamp } from './oneshots/theRefugeeCamp';
+import { thePriceOfBread } from './oneshots/thePriceOfBread';
+import { theWhistleblower } from './oneshots/theWhistleblower';
+import { theClosedMine } from './oneshots/theClosedMine';
+import { theCensorBoard } from './oneshots/theCensorBoard';
+import { theTeachersStand } from './oneshots/theTeachersStand';
+import { theWaterRights } from './oneshots/theWaterRights';
+import { thePrisonReform } from './oneshots/thePrisonReform';
+import { theEvictionNotice } from './oneshots/theEvictionNotice';
+import { theTaxRevolt } from './oneshots/theTaxRevolt';
+import { theTruthCommission } from './oneshots/theTruthCommission';
+import { theUnionVote } from './oneshots/theUnionVote';
+import { thePublicDefender } from './oneshots/thePublicDefender';
+import { theCouncilSeat } from './oneshots/theCouncilSeat';
+import { theFreePress } from './oneshots/theFreePress';
+import { theAmnesty } from './oneshots/theAmnesty';
+import { theSpeakersCorner } from './oneshots/theSpeakersCorner';
+
+// Phase 13 one-shot imports (heist)
+import { theClockworkVault } from './oneshots/theClockworkVault';
+import { theInvisibleGallery } from './oneshots/theInvisibleGallery';
+import { theDragonsEgg } from './oneshots/theDragonsEgg';
+import { theWeddingRing } from './oneshots/theWeddingRing';
+import { thePrisonBreak } from './oneshots/thePrisonBreak';
+import { theRecipeBook } from './oneshots/theRecipeBook';
+import { theForgery } from './oneshots/theForgery';
+import { theAuctionHouse } from './oneshots/theAuctionHouse';
+import { theSmugglersMoon } from './oneshots/theSmugglersMoon';
+import { theVaultOfMemories } from './oneshots/theVaultOfMemories';
+import { theTrainHeist } from './oneshots/theTrainHeist';
+import { theDoubleBluff } from './oneshots/theDoubleBluff';
+import { thePoisonCabinet } from './oneshots/thePoisonCabinet';
+import { theLivingVault } from './oneshots/theLivingVault';
+import { theGraveyardShift2 } from './oneshots/theGraveyardShift2';
+import { theLastBid } from './oneshots/theLastBid';
+import { theSwitcheroo } from './oneshots/theSwitcheroo';
+import { thePaperTrail } from './oneshots/thePaperTrail';
+
+// Phase 13 one-shot imports (epic)
+import { theGodfall } from './oneshots/theGodfall';
+import { theWorldsEdge } from './oneshots/theWorldsEdge';
+import { theDragonMoot } from './oneshots/theDragonMoot';
+import { theChainBreaker } from './oneshots/theChainBreaker';
+import { theSunStealer } from './oneshots/theSunStealer';
+import { theLastPrayer } from './oneshots/theLastPrayer';
+import { theStarFall } from './oneshots/theStarFall';
+import { theOathOfTitans } from './oneshots/theOathOfTitans';
+import { theDoorAtTheEnd } from './oneshots/theDoorAtTheEnd';
+import { theLastSunrise } from './oneshots/theLastSunrise';
+import { theDivineAudit } from './oneshots/theDivineAudit';
+import { theWorldTreeOneshot } from './oneshots/theWorldTree';
+import { theCosmicReset } from './oneshots/theCosmicReset';
+import { theKingOfNothing } from './oneshots/theKingOfNothing';
+import { theFinalWord } from './oneshots/theFinalWord';
+import { theHarvestOfWorlds } from './oneshots/theHarvestOfWorlds';
+import { theBirthOfAGod } from './oneshots/theBirthOfAGod';
+import { thePactEternal } from './oneshots/thePactEternal';
+
+// Phase 13 one-shot imports (survival, social, mystery, exploration, serious, horror)
+import { driftwood } from './oneshots/driftwood';
+import { frozenSolid } from './oneshots/frozenSolid';
+import { gravityWell } from './oneshots/gravityWell';
+import { noAirLeft } from './oneshots/noAirLeft';
+import { risingWaters } from './oneshots/risingWaters';
+import { sandstorm } from './oneshots/sandstorm';
+import { theApology } from './oneshots/theApology';
+import { theAvalanche } from './oneshots/theAvalanche';
+import { theBigGame } from './oneshots/theBigGame';
+import { theBlazeRunner } from './oneshots/theBlazeRunner';
+import { theBlindDate } from './oneshots/theBlindDate';
+import { theBookClub } from './oneshots/theBookClub';
+import { theBottomOfTheWell } from './oneshots/theBottomOfTheWell';
+import { theBrokenClock } from './oneshots/theBrokenClock';
+import { theChildsQuestion } from './oneshots/theChildsQuestion';
+import { theCollapsingDungeon } from './oneshots/theCollapsingDungeon';
+import { theCollection } from './oneshots/theCollection';
+import { theCursedPortrait } from './oneshots/theCursedPortrait';
+import { theDeadMansChess } from './oneshots/theDeadMansChess';
+import { theDisappearingVillage } from './oneshots/theDisappearingVillage';
+import { theDogKnows } from './oneshots/theDogKnows';
+import { theEcho } from './oneshots/theEcho';
+import { theEmptyChair } from './oneshots/theEmptyChair';
+import { theEndlessStaircase } from './oneshots/theEndlessStaircase';
+import { theFamiliarFace } from './oneshots/theFamiliarFace';
+import { theFamine } from './oneshots/theFamine';
+import { theFirstDescent } from './oneshots/theFirstDescent';
+import { theForgiveness } from './oneshots/theForgiveness';
+import { theForgottenFloor } from './oneshots/theForgottenFloor';
+import { theForgottenWitness } from './oneshots/theForgottenWitness';
+import { theFuneral } from './oneshots/theFuneral';
+import { theGarden } from './oneshots/theGarden';
+import { theGardenBehindTheWall } from './oneshots/theGardenBehindTheWall';
+import { theGhostAccusation } from './oneshots/theGhostAccusation';
+import { theGoodbye } from './oneshots/theGoodbye';
+import { theHandprint } from './oneshots/theHandprint';
+import { theHouseRemembered } from './oneshots/theHouseRemembered';
+import { theHuntedCamp } from './oneshots/theHuntedCamp';
+import { theIdenticalTwins } from './oneshots/theIdenticalTwins';
+import { theImpossibleTheft } from './oneshots/theImpossibleTheft';
+import { theInheritance2 } from './oneshots/theInheritance2';
+import { theIslandThatMoved } from './oneshots/theIslandThatMoved';
+import { theKnock } from './oneshots/theKnock';
+import { theLastConfession } from './oneshots/theLastConfession';
+import { theLastDance } from './oneshots/theLastDance';
+import { theLastGuest } from './oneshots/theLastGuest';
+import { theLastLetter } from './oneshots/theLastLetter';
+import { theLastLifeboat } from './oneshots/theLastLifeboat';
+import { theLastMarch } from './oneshots/theLastMarch';
+import { theLighthouse } from './oneshots/theLighthouse';
+import { theLighthouse2 } from './oneshots/theLighthouse2';
+import { theListeners } from './oneshots/theListeners';
+import { theLockedRoom } from './oneshots/theLockedRoom';
+import { theLullaby } from './oneshots/theLullaby';
+import { theMapOfScars } from './oneshots/theMapOfScars';
+import { theMapRoom } from './oneshots/theMapRoom';
+import { theMarketDay } from './oneshots/theMarketDay';
+import { theMatchmakerOneShot } from './oneshots/theMatchmakerOneShot';
+import { theMissingHour } from './oneshots/theMissingHour';
+import { theNeighborhoodWatch } from './oneshots/theNeighborhoodWatch';
+import { theNorthernLights } from './oneshots/theNorthernLights';
+import { theOldFriends } from './oneshots/theOldFriends';
+import { theOldRoad } from './oneshots/theOldRoad';
+import { theOldSword } from './oneshots/theOldSword';
+import { theOtherDoor } from './oneshots/theOtherDoor';
+import { thePenPal } from './oneshots/thePenPal';
+import { thePerfectAlibi } from './oneshots/thePerfectAlibi';
+import { thePoison } from './oneshots/thePoison';
+import { thePotluck } from './oneshots/thePotluck';
+import { thePromise } from './oneshots/thePromise';
+import { theQuarantine } from './oneshots/theQuarantine';
+import { theQuiltOfNames } from './oneshots/theQuiltOfNames';
+import { theReplacementChild } from './oneshots/theReplacementChild';
+import { theReunion } from './oneshots/theReunion';
+import { theRoomBeyond } from './oneshots/theRoomBeyond';
+import { theShadowThatStayed } from './oneshots/theShadowThatStayed';
+import { theShipInTheDesert } from './oneshots/theShipInTheDesert';
+import { theSilentWitness } from './oneshots/theSilentWitness';
+import { theSmile } from './oneshots/theSmile';
+import { theSoundBelow } from './oneshots/theSoundBelow';
+import { theStoneChild } from './oneshots/theStoneChild';
+import { theTalentShow } from './oneshots/theTalentShow';
+import { theTunnelUnderTown } from './oneshots/theTunnelUnderTown';
+import { theUnreadLetter } from './oneshots/theUnreadLetter';
+import { theUnsent } from './oneshots/theUnsent';
+import { theVeteran } from './oneshots/theVeteran';
+import { theWatchman } from './oneshots/theWatchman';
+import { theWelcomeCommittee } from './oneshots/theWelcomeCommittee';
+import { theWordless } from './oneshots/theWordless';
+import { theWorldInABottle } from './oneshots/theWorldInABottle';
+import { theWrongBody } from './oneshots/theWrongBody';
+import { trappedBeneath } from './oneshots/trappedBeneath';
+import { underSiege } from './oneshots/underSiege';
 
 export const FULL_CAMPAIGNS: FullCampaign[] = [
   theShatteredCrown,
@@ -225,6 +555,146 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   theWeaversOfFate,
   theWardensOfAether,
   theHollowMountain,
+  // Phase 6 (emotional depth)
+  theQuietYear,
+  theWeightOfCrowns,
+  theRiverThatRemembers,
+  whenTheMusicStopped,
+  theChildrenOfIron,
+  aSinglePerfectDay,
+  // Phase 7 (comedy spectrum)
+  thePungeon,
+  bureaucracyAndDragons,
+  theRoastOfTheArchlich,
+  theWrongQuestionnaire,
+  criticalMassEffect,
+  theTavernAtTheEndOfTheUniverse,
+  theMinMaxKing,
+  theFlatEarthConspiracy,
+  // Phase 7 (hunted/pursuit)
+  neverLookBack,
+  theBlackListCampaign,
+  theHoundOfEveryRoad,
+  theSmilingShadow,
+  // Phase 8 (heist)
+  theVaultOfSouls,
+  theArtOfWar,
+  theMintJob,
+  theLongCon,
+  breakingAndEnchanting,
+  theMuseumOfImpossibleThings,
+  // Phase 8 (political)
+  thePeoplesCrown,
+  theLastApothecary,
+  theWallAndTheWild,
+  theBookBurners,
+  theStrikeBeneath,
+  theCouncilOfWhispers,
+  // Phase 8 (social)
+  theMatchmaker,
+  theNewNeighbors,
+  thePlayTheThingIs,
+  theLostLanguage,
+  theGathering,
+  theFuneralGames,
+  // Phase 8 (survival)
+  theLastWinter,
+  afterTheFlood,
+  theAshlands,
+  belowTheIce,
+  theDeadCalm,
+  theCaravan,
+  // Phase 8 (epic)
+  theForgottenPantheon,
+  theSiegeOfHeaven,
+  theWorldForge,
+  theCrownOfStars,
+  theLastAlliance,
+  // Phase 8 (exploration)
+  theEdgeOfTheMap,
+  theDepthsBelowDepths,
+  theSkyAboveTheSky,
+  theRiverWithoutEnd,
+  theCartographersCurse,
+  // Phase 8 (mystery)
+  theClockTowerMurders,
+  theInheritanceOfLies,
+  theMissingDay,
+  thePoisonersGarden,
+  // Phase 8 (horror)
+  theThinPlaces,
+  whatLivesBeneath,
+  theSmileDisease,
+  theArchive,
+  // Phase 8 (serious)
+  theOathbreaker,
+  theReturningSoldier,
+  thePriceOfMagic,
+  theBridgeBuilder,
+  // Phase 9 (therapy, cozy, satire, genre-bending)
+  theGoodHarvest,
+  theLastHerd,
+  theLittleBakery,
+  theElementalAccord,
+  theIronDeep,
+  theNeonAbyss,
+  theScaleOfThings,
+  // Phase 10 (genre expansion)
+  theLastLongship,
+  ragnarokTuesday,
+  theStarwrightGuild,
+  theBoneAge,
+  theClockworkAge,
+  theFrozenThrone,
+  theSpellplague,
+  beforeTheFirst,
+  theSaurianEmpire,
+  theWorldBelow,
+  theLastDragonRider,
+  theAtomicGarden,
+  // Phase 10 (reality-breaking)
+  theGiantsPerspective,
+  theIncredibleShrinkingParty,
+  benjaminDungeon,
+  theInfiniteGrowth,
+  gravityOptional,
+  theMirrorWar,
+  theWorldIsACreature,
+  theBodyPolitic,
+  theDreamOfDreams,
+  theLanguageVirus,
+  theColorless,
+  immortalityForBeginners,
+  theWorldForgotMagic,
+  insideOut,
+  theLastNumber,
+  // Phase 11 (sin-themed)
+  theGoldenMile,
+  theBottomlessPurse,
+  theUndefeatedChampion,
+  theTowerThatTouchedTheSky,
+  theRedYear,
+  thePatientMan,
+  theKingdomThatSlept,
+  theLastDayOfSummer,
+  theShadowsWeBecame,
+  theNeighborsFence,
+  theEndlessBanquet,
+  theCityThatAteItself,
+  theCollectorOfBeautifulThings,
+  theObsidianHeart,
+  // Phase 12 (ninja, pirate, assassin, battle royale, thieves)
+  theIllusionWar,
+  theThousandMasks,
+  shadowsOfTheFallenLeaf,
+  theBlackTide,
+  thePirateParliament,
+  theLastOneStanding,
+  theGuildBeneath,
+  honourAmongThieves,
+  theQuietProfession,
+  theFinalContract,
+  theBladeWhispers,
 ];
 
 export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
@@ -287,6 +757,173 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   theCursedWedding,
   theReturnPolicy,
   theKrakenWakes,
+  // Phase 9 (therapy, satire)
+  theGroupSession,
+  theHealingWord,
+  theBabyOilDungeon,
+  // Phase 12 (creature, battle royale, meme, pirate)
+  theGhostFlotilla,
+  eightLeggedFreaks,
+  spiderVsOctopus,
+  theAwakening,
+  royaleWithCheese,
+  theFloorIsLava,
+  leeroyJenkinsMemorial,
+  totalPartyKillTeamBuilding,
+  standingHereIRealize,
+  // Phase 13 (survival, social, mystery, exploration, serious, horror)
+  driftwood,
+  frozenSolid,
+  gravityWell,
+  noAirLeft,
+  risingWaters,
+  sandstorm,
+  theApology,
+  theAvalanche,
+  theBigGame,
+  theBlazeRunner,
+  theBlindDate,
+  theBookClub,
+  theBottomOfTheWell,
+  theBrokenClock,
+  theChildsQuestion,
+  theCollapsingDungeon,
+  theCollection,
+  theCursedPortrait,
+  theDeadMansChess,
+  theDisappearingVillage,
+  theDogKnows,
+  theEcho,
+  theEmptyChair,
+  theEndlessStaircase,
+  theFamiliarFace,
+  theFamine,
+  theFirstDescent,
+  theForgiveness,
+  theForgottenFloor,
+  theForgottenWitness,
+  theFuneral,
+  theGarden,
+  theGardenBehindTheWall,
+  theGhostAccusation,
+  theGoodbye,
+  theHandprint,
+  theHouseRemembered,
+  theHuntedCamp,
+  theIdenticalTwins,
+  theImpossibleTheft,
+  theInheritance2,
+  theIslandThatMoved,
+  theKnock,
+  theLastConfession,
+  theLastDance,
+  theLastGuest,
+  theLastLetter,
+  theLastLifeboat,
+  theLastMarch,
+  theLighthouse,
+  theLighthouse2,
+  theListeners,
+  theLockedRoom,
+  theLullaby,
+  theMapOfScars,
+  theMapRoom,
+  theMarketDay,
+  theMatchmakerOneShot,
+  theMissingHour,
+  theNeighborhoodWatch,
+  theNorthernLights,
+  theOldFriends,
+  theOldRoad,
+  theOldSword,
+  theOtherDoor,
+  thePenPal,
+  thePerfectAlibi,
+  thePoison,
+  thePotluck,
+  thePromise,
+  theQuarantine,
+  theQuiltOfNames,
+  theReplacementChild,
+  theReunion,
+  theRoomBeyond,
+  theShadowThatStayed,
+  theShipInTheDesert,
+  theSilentWitness,
+  theSmile,
+  theSoundBelow,
+  theStoneChild,
+  theTalentShow,
+  theTunnelUnderTown,
+  theUnreadLetter,
+  theUnsent,
+  theVeteran,
+  theWatchman,
+  theWelcomeCommittee,
+  theWordless,
+  theWorldInABottle,
+  theWrongBody,
+  trappedBeneath,
+  underSiege,
+  // Phase 13 (political)
+  theVoteThief,
+  theEmptyThroneOneshot,
+  thePeoplesVoice,
+  theRefugeeCamp,
+  thePriceOfBread,
+  theWhistleblower,
+  theClosedMine,
+  theCensorBoard,
+  theTeachersStand,
+  theWaterRights,
+  thePrisonReform,
+  theEvictionNotice,
+  theTaxRevolt,
+  theTruthCommission,
+  theUnionVote,
+  thePublicDefender,
+  theCouncilSeat,
+  theFreePress,
+  theAmnesty,
+  theSpeakersCorner,
+  // Phase 13 (heist)
+  theClockworkVault,
+  theInvisibleGallery,
+  theDragonsEgg,
+  theWeddingRing,
+  thePrisonBreak,
+  theRecipeBook,
+  theForgery,
+  theAuctionHouse,
+  theSmugglersMoon,
+  theVaultOfMemories,
+  theTrainHeist,
+  theDoubleBluff,
+  thePoisonCabinet,
+  theLivingVault,
+  theGraveyardShift2,
+  theLastBid,
+  theSwitcheroo,
+  thePaperTrail,
+  // Phase 13 (epic)
+  theGodfall,
+  theWorldsEdge,
+  theDragonMoot,
+  theChainBreaker,
+  theSunStealer,
+  theLastPrayer,
+  theStarFall,
+  theOathOfTitans,
+  theDoorAtTheEnd,
+  theLastSunrise,
+  theDivineAudit,
+  theWorldTreeOneshot,
+  theCosmicReset,
+  theKingOfNothing,
+  theFinalWord,
+  theHarvestOfWorlds,
+  theBirthOfAGod,
+  thePactEternal,
 ];
 
 export const ALL_CAMPAIGNS: CampaignStarterKit[] = [

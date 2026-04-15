@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -9,6 +9,7 @@ import { THEMES, getStoredTheme, applyTheme, type ThemeId } from '../lib/themes'
 import { Sun, Moon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { CAMPAIGN_TEMPLATES } from '../data/campaignTemplates';
+import { ALL_CAMPAIGNS, FULL_CAMPAIGNS, ONESHOT_CAMPAIGNS, filterCampaigns, getAvailableTones, type CampaignStarterKit, type CampaignTone } from '../campaigns/index';
 import { faCloudflare, faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { importJSONFile } from '../lib/export';
 import { randomFantasyName } from '../lib/names';
@@ -65,6 +66,13 @@ export default function Home() {
   const [user, setUser] = useState<Record<string, string> | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showCampaignWizard, setShowCampaignWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState<'choose' | 'custom' | 'catalog'>('choose');
+  const [customCampaignName, setCustomCampaignName] = useState('');
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogType, setCatalogType] = useState<'all' | 'full' | 'oneshot'>('all');
+  const [catalogTone, setCatalogTone] = useState<CampaignTone | 'all'>('all');
+  const [catalogExpanded, setCatalogExpanded] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -74,7 +82,7 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const templateId = params.get('template');
     if (!templateId) return;
-    const template = CAMPAIGN_TEMPLATES.find((t) => t.id === templateId);
+    const template = ALL_CAMPAIGNS.find((c) => c.id === templateId) || CAMPAIGN_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return;
     window.history.replaceState({}, '', '/'); // clean URL
     const roomId = `${template.id}-${Date.now().toString(36)}`;
@@ -83,6 +91,17 @@ export default function Home() {
   }, [navigate]);
   const { locale: i18nLocale, setLocale: setI18nLocale, t } = useI18n();
   const { characters, removeCharacter, addCharacter } = useGame();
+
+  // Pick 8 random full campaigns + 8 random one-shots for quick start (shuffled once per mount)
+  const quickStartPicks = useMemo(() => {
+    const shuffle = <T,>(arr: T[]): T[] => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      return a;
+    };
+    return [...shuffle(FULL_CAMPAIGNS).slice(0, 8), ...shuffle(ONESHOT_CAMPAIGNS).slice(0, 8)] as CampaignStarterKit[];
+  }, []);
+
   const [campaigns, setCampaigns] = useState<Array<{ roomId: string; name: string; createdAt: number; archived?: boolean; archivedAt?: number }>>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [campaignsLoading, setCampaignsLoading] = useState(true);
@@ -447,11 +466,32 @@ export default function Home() {
 
   const handleCreateCampaign = () => {
     if (!user) {
-      toast('Sign in to create a campaign', 'warning');
+      toast(t('auth.signInToCreate'), 'warning');
       return;
     }
+    setWizardStep('choose');
+    setCustomCampaignName('');
+    setCatalogSearch('');
+    setCatalogType('all');
+    setCatalogTone('all');
+    setCatalogExpanded(null);
+    setShowCampaignWizard(true);
+  };
+
+  const handleCustomCampaignCreate = () => {
+    const name = customCampaignName.trim() || 'Untitled Campaign';
     const roomId = crypto.randomUUID().slice(0, 8);
-    toast(`Created campaign: ${roomId}`, 'success');
+    try { localStorage.setItem(`adventure:campaignName:${roomId}`, name); } catch { /* ok */ }
+    toast(`Created: ${name}`, 'success');
+    setShowCampaignWizard(false);
+    navigate(`/lobby/${roomId}`);
+  };
+
+  const handleCatalogSelect = (campaign: CampaignStarterKit) => {
+    const roomId = `${campaign.id}-${Date.now().toString(36)}`;
+    try { localStorage.setItem(`adventure:template:${roomId}`, JSON.stringify(campaign)); } catch { /* ok */ }
+    toast(`Starting: ${campaign.title}`, 'success');
+    setShowCampaignWizard(false);
     navigate(`/lobby/${roomId}`);
   };
 
@@ -552,14 +592,7 @@ export default function Home() {
               Install
             </button>
           )}
-          {/* Accent color picker */}
-          <input
-            type="color"
-            value={accentColor}
-            onChange={(e) => { setAccentColor(e.target.value); document.documentElement.style.setProperty('--accent', e.target.value); localStorage.setItem('adventure:accent', e.target.value); }}
-            className="w-5 h-5 rounded-full border border-white/20 cursor-pointer bg-transparent"
-            title="Accent color"
-          />
+          {/* Accent color picker — hidden from header, available in settings */}
           {/* Low-FX toggle */}
           <button
             onClick={() => setLowFx(!lowFx)}
@@ -727,17 +760,17 @@ export default function Home() {
           {/* Quick actions */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-2 justify-center w-full sm:w-auto animate-fade-in-up" style={{ animationDelay: '160ms' }}>
             <div className="flex gap-2 items-center w-full sm:w-auto">
-              <input type="text" placeholder="Room code or invite link" className="input-glow flex-1 sm:flex-none px-4 py-2.5 sm:w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} aria-label="Room code" />
+              <input type="text" placeholder={t('nav.roomCode')} className="input-glow flex-1 sm:flex-none px-4 py-2.5 sm:w-56 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm backdrop-blur-sm" value={campaignCode} onChange={(e) => setCampaignCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleJoinCampaign()} aria-label="Room code" />
               <Button variant="default" className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97] shrink-0" onClick={handleJoinCampaign}>
-                Join
+                {t('nav.join')}
               </Button>
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <Button variant="default" className="btn-glow flex-1 sm:flex-none bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
-                New Campaign
+                {t('nav.newCampaign')}
               </Button>
               <Button variant="default" className="btn-glow flex-1 sm:flex-none bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg shadow hover:shadow-lg transition-all active:scale-[0.97]" onClick={handleCreateCharacter}>
-                Create Character
+                {t('nav.createCharacter')}
               </Button>
             </div>
           </div>
@@ -745,17 +778,17 @@ export default function Home() {
           {/* Feature highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-center w-full max-w-4xl stagger-children">
             {[
-              { icon: '🌱', label: 'Never Played? Perfect.', desc: 'The game teaches you as you go. Build a character, roll dice, fight monsters. No rulebook required.' },
-              { icon: '🎲', label: 'Real Dice, Real Drama', desc: 'Crits glow gold. Fumbles shake the screen. Every roll matters and it feels like it.' },
-              { icon: '👥', label: 'Bring Everyone', desc: 'Solo, duo, full table. Human, AI, or no AI at all. Works on any device with a browser.' },
-              { icon: '⚔️', label: 'Fight Stuff Together', desc: 'Cast fireballs, flank enemies, save your friends from dying. Combat that actually feels like combat.' },
-              { icon: '🗺️', label: 'Explore Real Maps', desc: 'Uncover fog of war, dodge traps, find treasure. Move your token and see what happens.' },
-              { icon: '🏰', label: 'Play in 60 Seconds', desc: 'No downloads. No accounts. No 400-page rulebook. Click a campaign and you are in.' },
+              { icon: '🌱', labelKey: 'feature.neverPlayed.label', descKey: 'feature.neverPlayed.desc' },
+              { icon: '🎲', labelKey: 'feature.realDice.label', descKey: 'feature.realDice.desc' },
+              { icon: '👥', labelKey: 'feature.bringEveryone.label', descKey: 'feature.bringEveryone.desc' },
+              { icon: '⚔️', labelKey: 'feature.combat.label', descKey: 'feature.combat.desc' },
+              { icon: '🗺️', labelKey: 'feature.maps.label', descKey: 'feature.maps.desc' },
+              { icon: '🏰', labelKey: 'feature.quickStart.label', descKey: 'feature.quickStart.desc' },
             ].map((f) => (
-              <div key={f.label} className="feature-card card-glow p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 backdrop-blur-sm animate-card-reveal">
+              <div key={f.labelKey} className="feature-card card-glow p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 backdrop-blur-sm animate-card-reveal">
                 <div className="text-2xl mb-1 animate-float" style={{ animationDelay: `${Math.random() * 2}s` }}>{f.icon}</div>
-                <div className="text-sm font-semibold text-white">{f.label}</div>
-                <div className="text-[11px] text-slate-300 leading-relaxed">{f.desc}</div>
+                <div className="text-sm font-semibold text-white">{t(f.labelKey)}</div>
+                <div className="text-[11px] text-slate-300 leading-relaxed">{t(f.descKey)}</div>
               </div>
             ))}
           </div>
@@ -764,59 +797,64 @@ export default function Home() {
 
       {/* How It Works */}
       <section className="px-4 sm:px-6 py-8 max-w-4xl mx-auto w-full">
-        <h2 className="text-center text-lg font-bold text-slate-400 uppercase tracking-widest mb-6 animate-fade-in-up">How It Works</h2>
+        <h2 className="text-center text-lg font-bold text-slate-400 uppercase tracking-widest mb-6 animate-fade-in-up">{t('howItWorks.title')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 stagger-children">
           {[
-            { step: '1', title: 'Create or Join', desc: 'Start a campaign in one click, or paste a room code to join your friends. No accounts required — play as a guest instantly.', icon: '🏰' },
-            { step: '2', title: 'Build Your Party', desc: 'Create characters with full D&D 5e stats, or import from D&D Beyond. Assign seats to humans or AI — any mix works.', icon: '⚔️' },
-            { step: '3', title: 'Play', desc: 'Explore, fight, and roleplay with live dice, fog of war, AI narration, and real-time sync. Everything runs in your browser.', icon: '🎲' },
+            { step: '1', titleKey: 'howItWorks.step1', descKey: 'howItWorks.step1.desc', icon: '🏰' },
+            { step: '2', titleKey: 'howItWorks.step2', descKey: 'howItWorks.step2.desc', icon: '⚔️' },
+            { step: '3', titleKey: 'howItWorks.step3', descKey: 'howItWorks.step3.desc', icon: '🎲' },
           ].map((s) => (
             <div key={s.step} className="relative flex flex-col items-center text-center p-5 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm animate-card-reveal">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-[#F38020] flex items-center justify-center text-xs font-black text-white shadow-lg">{s.step}</div>
               <div className="text-3xl mt-2 mb-2">{s.icon}</div>
-              <h3 className="text-sm font-bold text-white mb-1">{s.title}</h3>
-              <p className="text-[11px] text-slate-300 leading-relaxed">{s.desc}</p>
+              <h3 className="text-sm font-bold text-white mb-1">{t(s.titleKey)}</h3>
+              <p className="text-[11px] text-slate-300 leading-relaxed">{t(s.descKey)}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Main content */}
-      {/* Campaign Templates — quick-start adventures */}
+      {/* Quick Start Adventures — random selection from the full catalog */}
       <section className="px-4 sm:px-6 py-4 max-w-4xl mx-auto w-full">
-        <h3 className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Quick Start Adventures</h3>
+        <h3 className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">{t('quickStart.title')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {CAMPAIGN_TEMPLATES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                const roomId = `${t.id}-${Date.now().toString(36)}`;
-                // Store template data for the lobby to load
-                try { localStorage.setItem(`adventure:template:${roomId}`, JSON.stringify(t)); } catch { /* ok */ }
-                navigate(`/lobby/${roomId}`);
-              }}
-              className="text-left p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 hover:border-[#F38020]/30 hover:bg-slate-800/30 transition-all group"
-            >
-              <div className="text-2xl mb-1">{t.icon}</div>
-              <div className="text-xs font-bold text-slate-200 group-hover:text-[#F38020] transition-colors">{t.name}</div>
-              <div className="text-[9px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{t.description}</div>
-              <div className="flex items-center gap-1 mt-1.5">
-                <span className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-400">Lv {t.suggestedLevel}</span>
-                {t.tags.slice(0, 2).map((tag) => <span key={tag} className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-500">{tag}</span>)}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const url = `${window.location.origin}/?template=${t.id}`;
-                    navigator.clipboard.writeText(url).then(() => toast('Template link copied!', 'success')).catch(() => {});
-                  }}
-                  className="ml-auto text-[8px] text-slate-600 hover:text-[#F38020] transition-colors"
-                  title="Copy shareable template link"
-                >
-                  Share
-                </button>
-              </div>
-            </button>
-          ))}
+          {quickStartPicks.map((c) => {
+            const typeIcon = c.type === 'full' ? '📖' : '⚡';
+            const levelStr = c.type === 'full' ? `Lv ${c.levelRange.start}-${c.levelRange.end}` : `Lv ${c.level}`;
+            const durationStr = c.type === 'full' ? `~${c.estimatedSessions} sessions` : `~${c.estimatedHours}h`;
+            return (
+              <button
+                key={c.id}
+                onClick={() => {
+                  const roomId = `${c.id}-${Date.now().toString(36)}`;
+                  try { localStorage.setItem(`adventure:template:${roomId}`, JSON.stringify(c)); } catch { /* ok */ }
+                  navigate(`/lobby/${roomId}`);
+                }}
+                className="text-left p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 hover:border-[#F38020]/30 hover:bg-slate-800/30 transition-all group"
+              >
+                <div className="text-2xl mb-1">{typeIcon}</div>
+                <div className="text-xs font-bold text-slate-200 group-hover:text-[#F38020] transition-colors">{c.title}</div>
+                <div className="text-[9px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{c.tagline}</div>
+                <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                  <span className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-400">{levelStr}</span>
+                  <span className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-500">{c.tone}</span>
+                  <span className="text-[7px] px-1 py-0.5 rounded bg-slate-800 text-slate-500">{durationStr}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const url = `${window.location.origin}/?template=${c.id}`;
+                      navigator.clipboard.writeText(url).then(() => toast('Template link copied!', 'success')).catch(() => {});
+                    }}
+                    className="ml-auto text-[8px] text-slate-600 hover:text-[#F38020] transition-colors"
+                    title="Copy shareable template link"
+                  >
+                    Share
+                  </button>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -884,9 +922,9 @@ export default function Home() {
         {/* Campaigns column */}
         <div className="flex flex-col gap-4 animate-fade-in-up">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-[#F38020] to-amber-400 bg-clip-text text-transparent">Your Campaigns</h2>
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-[#F38020] to-amber-400 bg-clip-text text-transparent">{t('nav.yourCampaigns')}</h2>
             <Button variant="default" className="btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-semibold py-2 px-5 rounded-lg shadow hover:shadow-lg text-sm transition-all active:scale-[0.97]" onClick={handleCreateCampaign}>
-              + New Campaign
+              + {t('nav.newCampaign')}
             </Button>
           </div>
           {/* Search + Sort controls */}
@@ -1048,7 +1086,7 @@ export default function Home() {
         {/* Characters column */}
         <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">Your Characters</h2>
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">{t('nav.yourCharacters')}</h2>
             <div className="flex gap-2">
               <button
                 onClick={handleImportCharacter}
@@ -1253,6 +1291,195 @@ export default function Home() {
           </a>
         </p>
       </main>
+
+      {/* Campaign Creation Wizard */}
+      {showCampaignWizard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in-up" onClick={() => setShowCampaignWizard(false)} role="dialog" aria-modal="true" aria-label="Create Campaign">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+
+            {/* Wizard header */}
+            <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                {wizardStep !== 'choose' && (
+                  <button onClick={() => setWizardStep('choose')} className="text-slate-400 hover:text-white transition-colors text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" /></svg>
+                  </button>
+                )}
+                <h2 className="text-lg font-bold text-white">
+                  {wizardStep === 'choose' ? t('nav.newCampaign') : wizardStep === 'custom' ? 'Custom Campaign' : 'Campaign Catalog'}
+                </h2>
+              </div>
+              <button onClick={() => setShowCampaignWizard(false)} className="text-slate-500 hover:text-white transition-colors p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
+              </button>
+            </div>
+
+            {/* Wizard body */}
+            <div className="flex-1 overflow-y-auto p-6">
+
+              {/* Step 1: Choose path */}
+              {wizardStep === 'choose' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setWizardStep('custom')}
+                    className="group text-left p-6 rounded-xl bg-slate-800/60 border-2 border-slate-700/50 hover:border-[#F38020]/50 transition-all"
+                  >
+                    <div className="text-3xl mb-3">🎨</div>
+                    <h3 className="text-base font-bold text-white group-hover:text-[#F38020] transition-colors mb-1">Custom Campaign</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">Start from scratch. Name your campaign, invite players, build your own world. Full creative freedom.</p>
+                  </button>
+                  <button
+                    onClick={() => setWizardStep('catalog')}
+                    className="group text-left p-6 rounded-xl bg-slate-800/60 border-2 border-slate-700/50 hover:border-emerald-500/50 transition-all"
+                  >
+                    <div className="text-3xl mb-3">📚</div>
+                    <h3 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors mb-1">Browse Catalog</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">{ALL_CAMPAIGNS.length} premade campaigns ready to play. Full adventures and one-shots with NPCs, locations, and plot twists.</p>
+                  </button>
+                </div>
+              )}
+
+              {/* Step 2a: Custom campaign form */}
+              {wizardStep === 'custom' && (
+                <div className="space-y-4 max-w-md mx-auto">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Campaign Name</label>
+                    <input
+                      type="text"
+                      placeholder="The Fall of Blackstone Keep..."
+                      value={customCampaignName}
+                      onChange={(e) => setCustomCampaignName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCustomCampaignCreate()}
+                      className="w-full px-4 py-3 border-2 border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-[#F38020] focus:border-[#F38020] transition-all outline-none text-sm"
+                      autoFocus
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500">You can always change this later. Your players will see this name when they join.</p>
+                  <Button
+                    variant="default"
+                    className="w-full btn-glow bg-gradient-to-r from-[#F38020] to-[#e06a10] hover:from-[#ff8c2e] hover:to-[#f38020] text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.97]"
+                    onClick={handleCustomCampaignCreate}
+                  >
+                    Create & Go to Lobby
+                  </Button>
+                </div>
+              )}
+
+              {/* Step 2b: Campaign catalog browser */}
+              {wizardStep === 'catalog' && (() => {
+                const filteredCampaigns = filterCampaigns({
+                  type: catalogType === 'all' ? undefined : catalogType,
+                  tone: catalogTone === 'all' ? undefined : catalogTone,
+                  searchTerm: catalogSearch || undefined,
+                });
+                const tones = getAvailableTones();
+
+                return (
+                  <div className="space-y-4">
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-2">
+                      <input
+                        type="text"
+                        placeholder="Search campaigns..."
+                        value={catalogSearch}
+                        onChange={(e) => setCatalogSearch(e.target.value)}
+                        className="flex-1 min-w-[200px] px-3 py-2 text-xs border border-slate-700/80 rounded-lg bg-slate-800/80 text-slate-100 placeholder-slate-500 focus:ring-1 focus:ring-[#F38020]/50 outline-none"
+                      />
+                      <select
+                        value={catalogType}
+                        onChange={(e) => setCatalogType(e.target.value as 'all' | 'full' | 'oneshot')}
+                        className="px-3 py-2 text-xs rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300 cursor-pointer focus:outline-none"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="full">Full Campaigns</option>
+                        <option value="oneshot">One-Shots</option>
+                      </select>
+                      <select
+                        value={catalogTone}
+                        onChange={(e) => setCatalogTone(e.target.value as CampaignTone | 'all')}
+                        className="px-3 py-2 text-xs rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300 cursor-pointer focus:outline-none"
+                      >
+                        <option value="all">All Tones</option>
+                        {tones.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                      </select>
+                    </div>
+                    <div className="text-[10px] text-slate-500">{filteredCampaigns.length} campaign{filteredCampaigns.length !== 1 ? 's' : ''} found</div>
+
+                    {/* Campaign list */}
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                      {filteredCampaigns.map((c) => {
+                        const isExpanded = catalogExpanded === c.id;
+                        const typeIcon = c.type === 'full' ? '📖' : '⚡';
+                        const levelStr = c.type === 'full' ? `Lv ${c.levelRange.start}-${c.levelRange.end}` : `Lv ${c.level}`;
+                        const durationStr = c.type === 'full' ? `~${c.estimatedSessions} sessions` : `~${c.estimatedHours}h`;
+                        return (
+                          <div key={c.id} className="rounded-xl bg-slate-800/40 border border-slate-700/40 overflow-hidden transition-all hover:border-slate-600/60">
+                            <button
+                              onClick={() => setCatalogExpanded(isExpanded ? null : c.id)}
+                              className="w-full text-left px-4 py-3 flex items-start gap-3"
+                            >
+                              <span className="text-lg shrink-0 mt-0.5">{typeIcon}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-bold text-white">{c.title}</span>
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700/80 text-slate-400">{c.tone}</span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{c.tagline}</p>
+                                <div className="flex items-center gap-2 mt-1 text-[9px] text-slate-500">
+                                  <span>{levelStr}</span>
+                                  <span>{durationStr}</span>
+                                  <span>{c.playerCount.min}-{c.playerCount.max} players</span>
+                                </div>
+                              </div>
+                              <svg className={`w-4 h-4 text-slate-500 shrink-0 mt-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                            </button>
+                            {isExpanded && (
+                              <div className="px-4 pb-4 space-y-3 border-t border-slate-700/30 pt-3">
+                                <p className="text-xs text-slate-300 leading-relaxed">{c.settingSummary}</p>
+                                <div>
+                                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Hook</span>
+                                  <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">{c.hook}</p>
+                                </div>
+                                {c.keyNPCs.length > 0 && (
+                                  <div>
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Key NPCs</span>
+                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                      {c.keyNPCs.map((npc) => (
+                                        <span key={npc.name} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-300" title={npc.personality}>
+                                          {npc.name} ({npc.role})
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="flex flex-wrap gap-1.5">
+                                  {c.themes.map((th) => (
+                                    <span key={th} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-400">{th.replace('_', ' ')}</span>
+                                  ))}
+                                </div>
+                                <Button
+                                  variant="default"
+                                  className="w-full btn-glow bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-2.5 rounded-lg shadow-lg transition-all active:scale-[0.97] text-sm"
+                                  onClick={() => handleCatalogSelect(c)}
+                                >
+                                  Start This Campaign
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {filteredCampaigns.length === 0 && (
+                        <div className="text-center py-8 text-sm text-slate-500">No campaigns match your filters. Try broadening your search.</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete/archive campaign confirmation modal */}
       {deleteConfirm && (() => {

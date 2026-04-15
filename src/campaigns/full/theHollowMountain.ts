@@ -5,7 +5,7 @@ export const theHollowMountain: FullCampaign = {
   type: 'full',
   title: 'The Hollow Mountain',
   tagline: 'The mountain is not empty. It is sleeping.',
-  tone: 'dark',
+  tone: 'horror',
   themes: ['dark_fantasy', 'dungeon_crawl', 'horror'],
   playerCount: { min: 3, max: 5 },
   levelRange: { start: 6, end: 14 },

@@ -1,0 +1,75 @@
+import type { OneShotCampaign } from '../types';
+
+export const theGoodbye: OneShotCampaign = {
+  id: 'oneshot-goodbye',
+  type: 'oneshot',
+  title: 'The Goodbye',
+  tagline: 'The village elder is leaving forever. One day to give her the send-off she deserves.',
+  tone: 'social',
+  themes: ['social'],
+  playerCount: { min: 3, max: 5 },
+  level: 2,
+  estimatedHours: 2,
+  settingSummary:
+    'Elder Wynn has led Hearthstone Village for fifty years. Tomorrow she leaves to live with her daughter in a distant city. She will not return. The party has one day to organize the send-off she deserves: gathering tributes, settling old debts, and making sure she knows what she meant to everyone.',
+  hook: 'Elder Wynn packs quietly, telling no one. The party discovers she planned to leave without a goodbye. "I did not want a fuss." The village disagrees. The party has twelve hours to organize the farewell Wynn would never ask for.',
+  twist:
+    'Wynn is not leaving by choice. Her daughter sent a letter saying she is gravely ill and needs her mother. Wynn is leaving her life behind to care for a dying child. She is hiding her grief behind practicality.',
+  climax:
+    'The farewell gathering at sunset. Every tribute, every story, every gift is presented. Then someone reads the daughter\'s letter aloud (found by accident). The village rallies: they will send Wynn with supplies, money, and a healer. She does not leave alone.',
+  scenes: [
+    {
+      title: 'Scene 1: Discovery',
+      summary: 'The party finds out Wynn is leaving. They have twelve hours. They scramble to organize.',
+      challenge: 'social',
+      keyEvents: [
+        'Wynn packing in secret. She does not want attention. The party disagrees.',
+        'Canvassing the village: who has a story, a gift, a debt to settle?',
+        'The baker owes her his life. The schoolteacher owes her a career. Everyone has a story.',
+        'A venue, decorations, food. Twelve hours. Go.',
+      ],
+    },
+    {
+      title: 'Scene 2: The Day',
+      summary: 'Running around the village gathering tributes, settling old grudges, and convincing Wynn to let this happen.',
+      challenge: 'social',
+      keyEvents: [
+        'The blacksmith carves a memorial plaque. He cries while hammering.',
+        'Two families feuding for years are asked to put it aside for Wynn. They try.',
+        'Wynn keeps deflecting: "Please do not make a fuss." The party insists.',
+        'The party finds the daughter\'s letter. The truth comes out.',
+      ],
+    },
+    {
+      title: 'Scene 3: The Farewell',
+      summary: 'Sunset. The whole village gathers. Stories, gifts, tears, and a community showing what it means to belong.',
+      challenge: 'social',
+      keyEvents: [
+        'Every villager speaks. Short, heartfelt, sometimes clumsy.',
+        'The letter is read. The village learns why Wynn is truly leaving.',
+        'Spontaneous collection: gold, healing potions, a healer volunteers to go with her.',
+        'Wynn leaves at dawn. Not alone. Never alone.',
+      ],
+    },
+  ],
+  keyNPCs: [
+    {
+      name: 'Elder Wynn',
+      role: 'departing elder',
+      personality: 'Warm, selfless, and deeply private about her own pain. Has given everything to this village for fifty years. Asking for help is physically difficult for her.',
+    },
+    {
+      name: 'Apprentice Rowan',
+      role: 'Wynn\'s successor',
+      personality: 'Young, nervous, and terrified of filling Wynn\'s shoes. Organizing the farewell gives them purpose and the village sees their potential.',
+    },
+  ],
+  keyLocations: [
+    {
+      name: 'Hearthstone Village',
+      description: 'A warm, tight-knit village where everyone owes someone something and Elder Wynn is the thread that holds it together.',
+      significance: 'The community itself is the setting and the stakes.',
+    },
+  ],
+  dataSystems: ['npcGenerator', 'moraleTracker'],
+};

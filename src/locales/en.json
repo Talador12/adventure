@@ -30,18 +30,37 @@
   "nav.yourCharacters": "Your Characters",
   "nav.publicGames": "Public Games",
   "nav.install": "Install",
+  "nav.roomCode": "Room code or invite link",
 
-  "feature.anyPartySize": "Any Party Size",
-  "feature.fullCombat": "Full 5e Combat",
-  "feature.tacticalMaps": "Tactical Maps",
-  "feature.liveDice": "Live Dice",
-  "feature.justWorks": "Just Works",
-  "feature.everySeat": "Every Seat, Your Call",
+  "feature.neverPlayed.label": "Never Played? Perfect.",
+  "feature.neverPlayed.desc": "The game teaches you as you go. Build a character, roll dice, fight monsters. No rulebook required.",
+  "feature.realDice.label": "Real Dice, Real Drama",
+  "feature.realDice.desc": "Crits glow gold. Fumbles shake the screen. Every roll matters and it feels like it.",
+  "feature.bringEveryone.label": "Bring Everyone",
+  "feature.bringEveryone.desc": "Solo, duo, full table. Human, AI, or no AI at all. Works on any device with a browser.",
+  "feature.combat.label": "Fight Stuff Together",
+  "feature.combat.desc": "Cast fireballs, flank enemies, save your friends from dying. Combat that actually feels like combat.",
+  "feature.maps.label": "Explore Real Maps",
+  "feature.maps.desc": "Uncover fog of war, dodge traps, find treasure. Move your token and see what happens.",
+  "feature.quickStart.label": "Play in 60 Seconds",
+  "feature.quickStart.desc": "No downloads. No accounts. No 400-page rulebook. Click a campaign and you are in.",
 
   "howItWorks.title": "How It Works",
   "howItWorks.step1": "Create or Join",
+  "howItWorks.step1.desc": "Start a campaign in one click, or paste a room code to join your friends. No accounts required — play as a guest instantly.",
   "howItWorks.step2": "Build Your Party",
+  "howItWorks.step2.desc": "Create characters with full D&D 5e stats, or import from D&D Beyond. Assign seats to humans or AI — any mix works.",
   "howItWorks.step3": "Play",
+  "howItWorks.step3.desc": "Explore, fight, and roleplay with live dice, fog of war, AI narration, and real-time sync. Everything runs in your browser.",
+
+  "quickStart.title": "Quick Start Adventures",
+  "char.export": "Export",
+  "char.import": "Import",
+  "char.exportTitle": "Export Character",
+  "char.save": "Create Character",
+  "char.saveChanges": "Save Changes",
+  "char.rollStats": "Roll your stats first before exporting.",
+  "char.needName": "Give your character a name first.",
 
   "combat.rollInitiative": "Roll Initiative",
   "combat.rerollInit": "Re-roll Init",
@@ -75,5 +94,11 @@
   "session.fork": "Fork",
   "session.ready": "Ready?",
 
-  "settings.lowFx": "FX"
+  "lobby.chat": "Type a message... (/roll, /me, /w @name)",
+  "lobby.send": "Send",
+  "lobby.startGame": "Start Game",
+  "lobby.inviteLink": "Copy Invite Link",
+
+  "settings.lowFx": "FX",
+  "settings.theme": "Theme"
 }

@@ -5,7 +5,7 @@ export const theWardensOfAether: FullCampaign = {
   type: 'full',
   title: 'The Wardens of Aether',
   tagline: 'The sky is falling. Literally. Someone has to hold it up.',
-  tone: 'heroic',
+  tone: 'epic',
   themes: ['epic', 'exploration', 'classic_fantasy'],
   playerCount: { min: 3, max: 6 },
   levelRange: { start: 5, end: 15 },

@@ -44,12 +44,24 @@ html[data-theme="light"] .bg-\[\#0c0f1a\] {
 html[data-theme="light"] .bg-slate-800 {
   background-color: #fef3c7 !important;
 }
+html[data-theme="light"] .text-white {
+  color: #451a03 !important;
+}
+html[data-theme="light"] .text-slate-100,
+html[data-theme="light"] .text-slate-200,
 html[data-theme="light"] .text-slate-300,
 html[data-theme="light"] .text-slate-400 {
   color: #78350f !important;
 }
 html[data-theme="light"] .border-slate-700,
 html[data-theme="light"] .border-slate-800 {
+  border-color: #d97706 !important;
+}
+html[data-theme="light"] .hero-gradient,
+html.light .hero-gradient {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 30%, #fde68a 60%, #fef3c7 80%, #fffbeb 100%) !important;
+  background-size: 100% 100% !important;
+  animation: none !important;
   border-color: #d97706 !important;
 }
 
@@ -176,6 +188,13 @@ html[data-theme="parchment"] input::placeholder,
 html[data-theme="parchment"] textarea::placeholder {
   color: #9a8060 !important;
   font-style: italic;
+}
+html[data-theme="parchment"] .hero-gradient,
+html.light[data-theme="parchment"] .hero-gradient {
+  background: linear-gradient(135deg, #f5e6c8 0%, #ede0c0 20%, #e4d4b0 40%, #dcc8a0 60%, #e4d4b0 80%, #f5e6c8 100%) !important;
+  background-size: 100% 100% !important;
+  animation: none !important;
+  border-color: #b09878 !important;
 }
 
 /* High Contrast — maximum readability, large color differences */

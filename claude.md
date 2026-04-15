@@ -45,13 +45,52 @@ Adventure is a **player-driven** virtual tabletop. AI is a tool in the toolbox, 
 
 Uses semantic versioning. `make release` tags and publishes to GitHub. `make release-minor` / `make release-patch` bump + release in one step.
 
-## Current Version: v15.8.0 — 3,226 tests across 385 data files + 108 campaign files, 194 systems, 61 UI buttons
+## Current Version: v16.0.0 — 3,226 tests across 385 data files + 411 campaign files, 194 systems, 61 UI buttons
 
-## Campaign Starter Kit Library — Phase 4 COMPLETE (106/200) — PAST THE HALFWAY MARK
+## Campaign Starter Kit Library — Phase 13 COMPLETE (411 campaigns — 194 full + 217 one-shots)
 
-Infrastructure at `src/campaigns/` with shared types, catalog index, search/filter by tone/theme/level/playerCount/searchTerm. 581 campaign-specific tests.
+**One-shot tone distribution (all at 20+ each):** comedic 37, survival 20, social 20, serious 20, political 20, mystery 20, horror 20, heist 20, exploration 20, epic 20
 
-**20 Full Campaigns (multi-session, 3-5 acts each):**
+### Recent Session (Phase 6-12) — Massive Campaign & i18n Overhaul
+
+**i18n Full Site Text Overhaul:**
+- All 8 locale files (de, fr, ja, es, ko, pt, zh, en-gb) brought to full 104-key parity with en.json
+- en-gb.json rewritten as full UK English parody for the UK office (bloke mode)
+- Fixed hardcoded English strings in Home.tsx feature highlights, How It Works, buttons, headers - all now use t() from useI18n
+- Root cause of mixed-language homepage: feature cards and how-it-works section were inline English strings, not using the i18n system
+
+**Campaign Creation Wizard:**
+- "New Campaign" button now opens a modal wizard instead of going directly to lobby
+- Step 1: Choose between "Custom Campaign" (name it, go to lobby) or "Browse Catalog" (filter 145 premade campaigns)
+- Catalog browser: search by text, filter by type (full/oneshot), filter by tone, expandable campaign cards with setting, hook, NPCs, themes
+- Clicking "Start This Campaign" stores template data and navigates to lobby
+
+**18 New Full Campaigns (Phase 6-7):**
+- 6 emotionally deep campaigns: The Quiet Year (rebuilding/hope), The Weight of Crowns (cost of power), The River That Remembers (memory/identity), When the Music Stopped (understanding despair), The Children of Iron (warforged purpose), A Single Perfect Day (time loop/acceptance)
+- 8 comedy campaigns spanning the full humor spectrum: The Pungeon (pun worldbuilding), Bureaucracy & Dragons (deadpan absurdism), The Roast of the Archlich (dark humor), The Wrong Questionnaire (escalating absurdity), Critical Mass Effect (meta humor), The Tavern at the End of the Universe (sitcom), The Min-Max King (gaming satire), The Flat Earth Conspiracy (conspiracy comedy)
+- 4 hunted/pursuit campaigns: Never Look Back (horror-survival, unkillable pursuer), The Black List Campaign (political thriller, witness on the run), The Hound of Every Road (mythic, divine beast that sees all roads), The Smiling Shadow (dark comedy, polite assassin)
+- Total: 89 full + 56 one-shots = 145 campaigns (was 127)
+
+**Phase 8-12 Campaign Explosion (117 new campaigns):**
+- Phase 8: tone rebalancing — 6 heist, 6 political (left-leaning values, anti-tyranny), 6 social, 6 survival, 5 epic, 5 exploration, 4 mystery, 4 horror, 4 serious
+- Phase 9: therapy + cozy + genre-bending — therapy one-shots (comedy + serious), Stardew Valley farming, bakery sim, pastoral migration, cyberpunk noir, Avatar-style elemental nations, atomic-scale exploration, baby oil dungeon escape
+- Phase 10: genre expansion — Viking saga, Viking comedy (Ragnarok Tuesday), space fantasy, dinosaur survival, dinosaur riders, industrial revolution, Norse epic, cyberpunk dark fantasy, pre-civilization, deep mining, dragon riders, atomic garden
+- Phase 10: reality-breaking — giants in a shrunk world, shrinking party, Benjamin Button aging, infinite growth, gravity patches, mirror war, living planet, body-as-party, dream within dream, literal language virus, disappearing color, accidental immortality, forgotten magic, inverted world, finite numbers
+- Phase 11: sin-themed (never labeled) — 14 campaigns, 2 per sin with different genres (greed: heist + horror, pride: serious + epic, wrath: war + horror, sloth: mystery + social, envy: horror + comedy, gluttony: horror + survival, lust: mystery + serious)
+- Phase 12: ninja/pirate/assassin/creature/meme — genjutsu illusionists, ninja Bourne Identity, pirate survival, pirate parliament, ghost flotilla, spider POV, spider vs octopus, animal awakening, battle royale (serious + food-themed), thieves guild founding, Robin Hood thieves, assassin noir, immortal assassin road trip, haunted blade, Leeroy Jenkins academy, corporate team-building dungeon, meme world, floor is lava
+
+**Portuguese locale fix:** Added proper accents (ã, ç, é, à, ê, í, ó, ú, õ) and idiomatic constructions per Carlos Rodrigues feedback.
+
+**Quick Start Adventures overhaul:** Replaced static 8-template list with 8 random full campaigns + 8 random one-shots from the 262-campaign catalog, shuffled per page load. Same visual style, much more variety.
+
+**Tone distribution (current):**
+- comedic: ~50, exploration: ~30, serious: ~28, horror: ~26, epic: ~23, mystery: ~23, survival: ~23, social: ~22, political: ~20, heist: ~16
+
+### Next Session Priorities
+
+**SCOPE LOCK: Finish current roadmap before adding new items.**
+
+**20 Full Campaigns from original roadmap (multi-session, 3-5 acts each):**
 1. **The Shattered Crown** — political succession thriller, court intrigue, faction war (Lv 1-12, ~20 sessions)
 2. **The Village That Forgot** — horror/mystery, amnesia village, dying god feeds on memories (Lv 3-10, ~15 sessions)
 3. **The Vault of the Dead God** — planar heist, rob a deity's treasury across 3 planes (Lv 5-15, ~18 sessions)
