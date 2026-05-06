@@ -693,6 +693,7 @@ export default function Lobby() {
     const jitter = Math.sqrt(hist.reduce((s, v) => s + (v - avgRtt) ** 2, 0) / hist.length);
     return (avgRtt > autoStrictRttMs || jitter > autoStrictJitterMs) ? 'strict' : 'smooth';
   })();
+  const myConnectionCount = players.find((p) => p.id === wsPlayerId)?.connectionCount || 1;
 
   // Fun default names for lobby (no character selected yet)
   const LOBBY_DEFAULTS = ['A Curious Onlooker', 'Someone at the Bar', "The Innkeeper's Cat", 'A Dice-Obsessed Patron', 'Definitely Not a Mimic'];
@@ -1186,6 +1187,11 @@ export default function Lobby() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Party</h2>
+                {myConnectionCount > 1 && (
+                  <span className="rounded-full border border-sky-700/40 bg-sky-900/20 px-2 py-0.5 text-[10px] font-semibold text-sky-300" title="Your account is connected from multiple tabs in this lobby">
+                    You: {myConnectionCount} tabs
+                  </span>
+                )}
                 {/* DM seat badge */}
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-semibold border ${
                   dmSeatType === 'ai'

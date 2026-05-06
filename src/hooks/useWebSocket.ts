@@ -62,7 +62,6 @@ export function useWebSocket({ roomId, username, playerId, avatar, spectate, onM
   avatarRef.current = avatar;
   usernameRef.current = username;
   stablePlayerIdRef.current = playerId;
-  if (playerId) playerIdRef.current = playerId;
 
   const stopPing = useCallback(() => {
     if (pingTimer.current) {
@@ -122,7 +121,8 @@ export function useWebSocket({ roomId, username, playerId, avatar, spectate, onM
         username: usernameRef.current,
         avatar: avatarRef.current,
       };
-      if (playerIdRef.current) joinMsg.playerId = playerIdRef.current;
+      const effectivePlayerId = stablePlayerIdRef.current || playerIdRef.current;
+      if (effectivePlayerId) joinMsg.playerId = effectivePlayerId;
       if (isReconnectAttempt) joinMsg.reconnect = true;
       if (spectate) joinMsg.spectate = true;
       ws.send(JSON.stringify(joinMsg));
@@ -195,6 +195,17 @@ export function useWebSocket({ roomId, username, playerId, avatar, spectate, onM
       ws.close();
     });
   }, [roomId, stopPing]); // username removed — read from ref instead
+
+  useEffect(() => {
+    if (!playerId || playerIdRef.current === playerId) return;
+    playerIdRef.current = playerId;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      // The app initially connects before async auth resolves. Reconnect once
+      // with the real account id so same-login tabs share identity correctly.
+      intentionalClose.current = false;
+      wsRef.current.close();
+    }
+  }, [playerId]);
 
   const send = useCallback((msg: WSMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
