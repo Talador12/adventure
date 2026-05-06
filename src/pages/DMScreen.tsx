@@ -3,6 +3,14 @@
 
 import { useState, useEffect } from 'react';
 import type { Unit } from '../contexts/GameContext';
+import {
+  DEFAULT_DM_SCREEN_PANELS,
+  DM_SCREEN_PANEL_IDS,
+  DM_SCREEN_PANEL_LABELS,
+  type DMScreenPanelId,
+  normalizeDmScreenPanels,
+  toggleDmScreenPanel,
+} from '../lib/dmScreenPanels';
 
 interface DMScreenState {
   units: Unit[];
@@ -15,12 +23,41 @@ interface DMScreenState {
 }
 
 const CHANNEL_NAME = 'adventure-dm-screen';
+const PANEL_STORAGE_KEY = 'adventure:dm-screen:panels';
+const NOTES_STORAGE_KEY = 'adventure:dm-screen:notes';
+
+function loadPanels(): DMScreenPanelId[] {
+  try {
+    const raw = localStorage.getItem(PANEL_STORAGE_KEY);
+    return raw ? normalizeDmScreenPanels(JSON.parse(raw)) : [...DEFAULT_DM_SCREEN_PANELS];
+  } catch {
+    return [...DEFAULT_DM_SCREEN_PANELS];
+  }
+}
+
+function loadNotes(): string {
+  try {
+    return localStorage.getItem(NOTES_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
 
 export default function DMScreen() {
   const [state, setState] = useState<DMScreenState>({
     units: [], inCombat: false, combatRound: 0, turnIndex: 0, sceneName: '', dmNotes: '', partyInventoryCount: 0,
   });
   const [connected, setConnected] = useState(false);
+  const [visiblePanels, setVisiblePanels] = useState<DMScreenPanelId[]>(loadPanels);
+  const [notes, setNotes] = useState(loadNotes);
+
+  useEffect(() => {
+    localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify(visiblePanels));
+  }, [visiblePanels]);
+
+  useEffect(() => {
+    localStorage.setItem(NOTES_STORAGE_KEY, notes);
+  }, [notes]);
 
   useEffect(() => {
     const channel = new BroadcastChannel(CHANNEL_NAME);
@@ -41,22 +78,12 @@ export default function DMScreen() {
   const currentUnit = units.find((u) => u.isCurrentTurn);
   const sortedByInit = [...units].filter((u) => u.hp > 0 || (u.hp === 0 && u.type === 'player')).sort((a, b) => b.initiative - a.initiative);
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-bold text-[#F38020]">DM Screen</h1>
-          <p className="text-xs text-slate-500">{sceneName || 'No scene'} {inCombat ? `— Round ${combatRound}` : ''}</p>
-        </div>
-        <span className={`text-[10px] px-2 py-0.5 rounded-full ${connected ? 'bg-emerald-900/30 text-emerald-400' : 'bg-red-900/30 text-red-400'}`}>
-          {connected ? 'Synced' : 'Waiting for Game tab...'}
-        </span>
-      </div>
+  const panelClass = 'bg-slate-900 border border-slate-800 rounded-xl p-4';
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Initiative Order */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+  const renderPanel = (panel: DMScreenPanelId) => {
+    if (panel === 'initiative') {
+      return (
+        <div key={panel} className={panelClass}>
           <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Initiative Order</h2>
           <div className="space-y-1.5">
             {sortedByInit.length === 0 && <p className="text-xs text-slate-600 italic">No combat active</p>}
@@ -77,11 +104,15 @@ export default function DMScreen() {
             ))}
           </div>
         </div>
+      );
+    }
 
-        {/* Party Status */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+    if (panel === 'party') {
+      return (
+        <div key={panel} className={panelClass}>
           <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Party ({players.length})</h2>
           <div className="space-y-2">
+            {players.length === 0 && <p className="text-xs text-slate-600 italic">No party synced yet</p>}
             {players.map((p) => {
               const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp) * 100 : 0;
               return (
@@ -93,10 +124,7 @@ export default function DMScreen() {
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${hpPct < 33 ? 'bg-red-500' : hpPct < 66 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                      style={{ width: `${Math.max(0, Math.min(100, hpPct))}%` }}
-                    />
+                    <div className={`h-full rounded-full transition-all duration-300 ${hpPct < 33 ? 'bg-red-500' : hpPct < 66 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.max(0, Math.min(100, hpPct))}%` }} />
                   </div>
                   {(p.conditions || []).length > 0 && (
                     <div className="flex flex-wrap gap-1">
@@ -110,9 +138,12 @@ export default function DMScreen() {
             })}
           </div>
         </div>
+      );
+    }
 
-        {/* Enemy Stat Blocks */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+    if (panel === 'enemies') {
+      return (
+        <div key={panel} className={panelClass}>
           <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Enemies ({enemies.length})</h2>
           <div className="space-y-2">
             {enemies.length === 0 && <p className="text-xs text-slate-600 italic">No enemies in play</p>}
@@ -139,18 +170,79 @@ export default function DMScreen() {
             ))}
           </div>
         </div>
+      );
+    }
+
+    if (panel === 'currentTurn') {
+      return (
+        <div key={panel} className={`${panelClass} ${currentUnit && inCombat ? 'border-amber-500/30 bg-amber-950/10 text-center' : ''}`}>
+          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Current Turn</h2>
+          {currentUnit && inCombat ? (
+            <>
+              <div className="text-2xl font-black text-amber-300">{currentUnit.name}</div>
+              <div className="text-xs text-slate-400 mt-1">HP {currentUnit.hp}/{currentUnit.maxHp} · AC {currentUnit.ac} · Initiative {currentUnit.initiative}</div>
+            </>
+          ) : <p className="text-xs text-slate-600 italic">No active combat turn</p>}
+        </div>
+      );
+    }
+
+    return (
+      <div key={panel} className={panelClass}>
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">DM Notes</h2>
+        <textarea
+          value={notes || state.dmNotes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Private notes for this screen..."
+          className="min-h-40 w-full resize-y rounded-lg border border-slate-700 bg-slate-950/70 p-3 text-xs text-slate-200 outline-none focus:border-[#F38020]/60"
+        />
+        <p className="mt-2 text-[9px] text-slate-600">Saved locally in this browser.</p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-bold text-[#F38020]">DM Screen</h1>
+          <p className="text-xs text-slate-500">{sceneName || 'No scene'} {inCombat ? `— Round ${combatRound}` : ''}</p>
+        </div>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full ${connected ? 'bg-emerald-900/30 text-emerald-400' : 'bg-red-900/30 text-red-400'}`}>
+          {connected ? 'Synced' : 'Waiting for Game tab...'}
+        </span>
       </div>
 
-      {/* Current turn callout */}
-      {currentUnit && inCombat && (
-        <div className="mt-4 p-4 rounded-xl border-2 border-amber-500/30 bg-amber-950/10 text-center">
-          <span className="text-xs text-amber-400 uppercase tracking-wider font-bold">Current Turn</span>
-          <div className="text-2xl font-black text-amber-300 mt-1">{currentUnit.name}</div>
-          <div className="text-xs text-slate-400 mt-1">
-            HP {currentUnit.hp}/{currentUnit.maxHp} · AC {currentUnit.ac} · Initiative {currentUnit.initiative}
-          </div>
+      <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Visible Panels</h2>
+          <button
+            onClick={() => setVisiblePanels([...DEFAULT_DM_SCREEN_PANELS])}
+            className="rounded border border-slate-700 px-2 py-1 text-[10px] font-semibold text-slate-400 transition-colors hover:border-[#F38020]/60 hover:text-[#F38020]"
+          >
+            Reset
+          </button>
         </div>
-      )}
+        <div className="flex flex-wrap gap-2">
+          {DM_SCREEN_PANEL_IDS.map((panel) => {
+            const active = visiblePanels.includes(panel);
+            return (
+              <button
+                key={panel}
+                onClick={() => setVisiblePanels((prev) => toggleDmScreenPanel(prev, panel))}
+                className={`rounded-full border px-3 py-1 text-[10px] font-semibold transition-all ${active ? 'border-[#F38020]/70 bg-[#F38020]/10 text-[#F38020]' : 'border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'}`}
+              >
+                {active ? '✓ ' : ''}{DM_SCREEN_PANEL_LABELS[panel]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visiblePanels.map(renderPanel)}
+      </div>
 
       <div className="mt-4 text-center text-[9px] text-slate-700">
         Open the Game tab to sync data · Press ? in the game for keyboard shortcuts
