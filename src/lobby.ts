@@ -42,6 +42,7 @@ interface PlayerInfo {
   characterName?: string;
   rttMs?: number;
   stale?: boolean;
+  connectionCount?: number;
 }
 
 interface StrokeEntry {
@@ -1497,6 +1498,10 @@ export class Lobby {
   }
 
   private getPlayerList(): PlayerInfo[] {
+    const counts = new Map<string, number>();
+    for (const session of this.sessions.values()) {
+      counts.set(session.id, (counts.get(session.id) || 0) + 1);
+    }
     const unique = new Map<string, Session>();
     for (const session of this.sessions.values()) {
       if (!unique.has(session.id) || session.seatId) unique.set(session.id, session);
@@ -1515,6 +1520,7 @@ export class Lobby {
         characterName: seat?.characterName,
         rttMs: s.rttMs,
         stale: s.stale || undefined,
+        connectionCount: counts.get(s.id) || 1,
       };
     });
   }

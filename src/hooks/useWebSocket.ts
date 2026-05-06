@@ -113,6 +113,7 @@ export function useWebSocket({ roomId, username, playerId, avatar, spectate, onM
     ws.addEventListener('open', () => {
       clearTimeout(connectTimeout);
       setStatus('connected');
+      const isReconnectAttempt = reconnectAttempt.current > 0;
       reconnectAttempt.current = 0;
 
       // Send join message with current username + avatar + stable playerId (for reconnect)
@@ -122,7 +123,7 @@ export function useWebSocket({ roomId, username, playerId, avatar, spectate, onM
         avatar: avatarRef.current,
       };
       if (playerIdRef.current) joinMsg.playerId = playerIdRef.current;
-      if (reconnectAttempt.current > 0) joinMsg.reconnect = true;
+      if (isReconnectAttempt) joinMsg.reconnect = true;
       if (spectate) joinMsg.spectate = true;
       ws.send(JSON.stringify(joinMsg));
 

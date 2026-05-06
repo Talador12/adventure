@@ -543,6 +543,8 @@ describe('Phase 8 — session robustness', () => {
 
     expect(welcome2.playerId).toBe(stableId);
     expect((updated.players as unknown[]).length).toBe(2); // SameUser + Observer, not duplicate SameUser
+    const sameUser = (updated.players as Array<{ id: string; connectionCount?: number }>).find((p) => p.id === stableId);
+    expect(sameUser?.connectionCount).toBe(2);
     await waitForNoMessage(observer, 'player_reconnected');
 
     const firstTabSeesChat = waitForMessage(ws1, 'chat');
@@ -557,7 +559,9 @@ describe('Phase 8 — session robustness', () => {
 
     const updatedAfterClosePromise = waitForMessage(observer, 'players_updated');
     await closeAndWait(ws2);
-    await updatedAfterClosePromise;
+    const updatedAfterClose = await updatedAfterClosePromise;
+    const sameUserAfterClose = (updatedAfterClose.players as Array<{ id: string; connectionCount?: number }>).find((p) => p.id === stableId);
+    expect(sameUserAfterClose?.connectionCount).toBe(1);
     await waitForNoMessage(observer, 'player_left');
 
     await Promise.all([closeAndWait(ws1), closeAndWait(observer)]);

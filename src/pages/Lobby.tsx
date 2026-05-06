@@ -21,6 +21,7 @@ interface LobbyPlayer {
   ready?: boolean;
   characterId?: string;
   characterName?: string;
+  connectionCount?: number;
 }
 
 type SeatType = 'human' | 'ai' | 'empty';
@@ -1310,6 +1311,11 @@ export default function Lobby() {
                             playerLatency[seat.playerId] > 300 ? 'bg-red-900/30 text-red-400' : playerLatency[seat.playerId] > 150 ? 'bg-amber-900/30 text-amber-400' : 'bg-emerald-900/30 text-emerald-400'
                           }`} title={`RTT: ${playerLatency[seat.playerId]}ms`}>
                             {playerLatency[seat.playerId]}ms
+                          </span>
+                        )}
+                        {seat.type === 'human' && seat.playerId && (players.find((p) => p.id === seat.playerId)?.connectionCount || 0) > 1 && (
+                          <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-sky-900/30 text-sky-300" title="Same player is connected from multiple tabs">
+                            {players.find((p) => p.id === seat.playerId)?.connectionCount} tabs
                           </span>
                         )}
                       </div>
