@@ -322,6 +322,12 @@ export default function Lobby() {
           setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} reconnected`, timestamp: msg.timestamp as number }]);
           break;
 
+        case 'players_updated':
+          setPlayers(msg.players as LobbyPlayer[]);
+          if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
+          if (Array.isArray(msg.spectators)) setSpectators(msg.spectators as { id: string; username: string; avatar?: string }[]);
+          break;
+
         case 'player_left':
           setPlayers(msg.players as LobbyPlayer[]);
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
@@ -627,6 +633,7 @@ export default function Lobby() {
   const { status, send } = useWebSocket({
     roomId: room,
     username: currentPlayer.username,
+    playerId: currentPlayer.id !== 'local' ? currentPlayer.id : undefined,
     avatar: currentPlayer.avatar,
     spectate: wantsSpectate,
     onMessage: handleWsMessage,

@@ -53,7 +53,9 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 
 ### Done This Session
 - **DM screen command deck**: `/dm-screen` now has persistent visible-panel toggles, reset, local DM Notes, a private dice tray with roll history, and a compact rules reference panel. Added pure panel/dice helpers + tests.
-- **Verification**: `npx vitest run tests/player/dm-screen-panels.test.ts`, `npm run build`, and `npx playwright test tests/e2e/smoke.test.ts --grep "DM Screen"` all pass.
+- **Same-login multi-tab lobby fix**: lobby WebSocket identity now uses stable player IDs across tabs without treating a second tab as a reconnect. Parallel tabs share "me" chat styling and no longer kick each other into reconnected loops.
+- **Light mode contrast**: replaced yellow-heavy light theme surfaces with neutral slate/white, fixed room-code input readability, and kept dark/colored buttons readable.
+- **Verification**: `npx vitest run tests/player/dm-screen-panels.test.ts`, `npx vitest run --config vitest.workers.config.ts tests/multiplayer/campaign.test.ts`, `npx playwright test tests/e2e/smoke.test.ts --grep "Home page"`, `npx playwright test tests/e2e/smoke.test.ts --grep "DM Screen"`, and `npm run build` all pass.
 - **505 campaigns** (225 full + 280 one-shots). All tones balanced. Full editorial pass.
 - **388 DMSidebar buttons** (was 265). 123 new data systems wired.
 - **Export system**: campaign backup/restore, batch character export/import, homebrew, in-game Export/Sheet.

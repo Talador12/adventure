@@ -188,6 +188,17 @@ export class Lobby {
   }
 
   private handlePlayerLeave(session: Session) {
+    if (this.hasSessionWithId(session.id)) {
+      this.broadcast({
+        type: 'players_updated',
+        players: this.getPlayerList(),
+        seats: this.seats,
+        spectators: this.getSpectatorList(),
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
     // Remove any queued/active rolls from this player
     this.rollQueue = this.rollQueue.filter((r) => r.playerId !== session.id);
     if (this.activeRoll?.playerId === session.id) {
@@ -408,26 +419,25 @@ export class Lobby {
         // existed in a now-dead session. If so, reuse it for continuity.
         let finalId = sessionId;
         let isReconnect = false;
+        let isParallelSession = false;
         if (claimedId) {
           // Check if any existing session has this ID (on a different, possibly dead socket)
-          let existingSocket: WebSocket | null = null;
+          let existingSession: Session | null = null;
           for (const [ws, s] of this.sessions) {
             if (s.id === claimedId && ws !== server) {
-              existingSocket = ws;
+              existingSession = s;
               break;
             }
           }
-          if (existingSocket) {
-            // Old socket exists — remove it and reuse the ID
-            this.sessions.delete(existingSocket);
-            try { existingSocket.close(); } catch { /* already dead */ }
+          if (existingSession) {
+            // Same logged-in player opened another tab. Keep both sockets alive;
+            // they share player identity but are separate browser connections.
             finalId = claimedId;
-            isReconnect = true;
+            isParallelSession = true;
           } else {
-            // No existing socket with this ID — still reuse the claimed ID
-            // (client had it from a previous session that already closed)
+            // No existing socket with this ID — reuse the stable ID.
             finalId = claimedId;
-            isReconnect = true;
+            isReconnect = data.reconnect === true;
           }
         }
 
@@ -444,6 +454,10 @@ export class Lobby {
               prevSeat.avatar = avatar;
               assignedSeatId = prevSeat.id;
             }
+          }
+          if (isParallelSession) {
+            const currentSeat = this.seats.find((s) => s.playerId === finalId);
+            if (currentSeat) assignedSeatId = currentSeat.id;
           }
           if (!assignedSeatId) {
             // Claim first empty seat
@@ -504,15 +518,25 @@ export class Lobby {
         this.persistState();
 
         // Broadcast join/reconnect to everyone else
-        this.broadcast({
-          type: isReconnect ? 'player_reconnected' : 'player_joined',
-          username,
-          playerId: finalId,
-          players: this.getPlayerList(),
-          seats: this.seats,
-          seatId: assignedSeatId,
-          timestamp: Date.now(),
-        }, server); // exclude sender
+        if (isParallelSession) {
+          this.broadcast({
+            type: 'players_updated',
+            players: this.getPlayerList(),
+            seats: this.seats,
+            spectators: this.getSpectatorList(),
+            timestamp: Date.now(),
+          }, server);
+        } else {
+          this.broadcast({
+            type: isReconnect ? 'player_reconnected' : 'player_joined',
+            username,
+            playerId: finalId,
+            players: this.getPlayerList(),
+            seats: this.seats,
+            seatId: assignedSeatId,
+            timestamp: Date.now(),
+          }, server); // exclude sender
+        }
         break;
       }
 
@@ -1384,6 +1408,13 @@ export class Lobby {
     }
   }
 
+  private hasSessionWithId(playerId: string): boolean {
+    for (const session of this.sessions.values()) {
+      if (session.id === playerId) return true;
+    }
+    return false;
+  }
+
   private enqueueRoll(roll: QueuedRoll, server?: WebSocket) {
     if (!this.activeRoll) {
       const startedAt = Date.now();
@@ -1466,7 +1497,11 @@ export class Lobby {
   }
 
   private getPlayerList(): PlayerInfo[] {
-    return Array.from(this.sessions.values()).map((s) => {
+    const unique = new Map<string, Session>();
+    for (const session of this.sessions.values()) {
+      if (!unique.has(session.id) || session.seatId) unique.set(session.id, session);
+    }
+    return Array.from(unique.values()).map((s) => {
       const seat = s.seatId ? this.seats.find((st) => st.id === s.seatId) : undefined;
       return {
         id: s.id,
@@ -1485,7 +1520,11 @@ export class Lobby {
   }
 
   private getSpectatorList(): { id: string; username: string; avatar?: string }[] {
-    return Array.from(this.sessions.values())
+    const unique = new Map<string, Session>();
+    for (const session of this.sessions.values()) {
+      if (session.spectating || !session.seatId) unique.set(session.id, session);
+    }
+    return Array.from(unique.values())
       .filter((s) => s.spectating || !s.seatId)
       .map((s) => ({ id: s.id, username: s.username, avatar: s.avatar }));
   }

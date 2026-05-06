@@ -40,6 +40,24 @@ function waitForMessage(
   });
 }
 
+function waitForNoMessage(ws: WebSocket, type: string, timeoutMs = 150): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      ws.removeEventListener('message', handler);
+      resolve();
+    }, timeoutMs);
+    const handler = (event: MessageEvent) => {
+      const data = JSON.parse(event.data as string);
+      if (data.type === type) {
+        clearTimeout(timer);
+        ws.removeEventListener('message', handler);
+        reject(new Error(`Unexpected ${type}`));
+      }
+    };
+    ws.addEventListener('message', handler);
+  });
+}
+
 // Helper: close a WebSocket and wait for the close event to fully propagate.
 // This prevents the Miniflare isolated storage frame error that occurs when the
 // DO's close handler fires after the test suite's storage frame has already popped.
@@ -492,7 +510,7 @@ describe('Phase 8 — session robustness', () => {
     // Player 1 reconnects with same playerId
     const reconnectPromise = waitForMessage(ws2, 'player_reconnected');
     const ws1b = await connectPlayer(room);
-    send(ws1b, { type: 'join', username: 'Stable', playerId: stableId });
+    send(ws1b, { type: 'join', username: 'Stable', playerId: stableId, reconnect: true });
     const welcome1b = await waitForMessage(ws1b, 'welcome');
 
     // Same ID returned
@@ -504,6 +522,45 @@ describe('Phase 8 — session robustness', () => {
     expect(reconnect.username).toBe('Stable');
 
     await Promise.all([closeAndWait(ws1b), closeAndWait(ws2)]);
+  });
+
+  it('same playerId can connect from multiple tabs without reconnect ping-pong', async () => {
+    const room = 'same-user-tabs-' + Date.now();
+    const ws1 = await connectPlayer(room);
+    send(ws1, { type: 'join', username: 'SameUser' });
+    const welcome1 = await waitForMessage(ws1, 'welcome');
+    const stableId = welcome1.playerId as string;
+
+    const observer = await connectPlayer(room);
+    send(observer, { type: 'join', username: 'Observer' });
+    await waitForMessage(observer, 'welcome');
+
+    const ws2 = await connectPlayer(room);
+    const updatedPromise = waitForMessage(observer, 'players_updated');
+    send(ws2, { type: 'join', username: 'SameUser', playerId: stableId });
+    const welcome2 = await waitForMessage(ws2, 'welcome');
+    const updated = await updatedPromise;
+
+    expect(welcome2.playerId).toBe(stableId);
+    expect((updated.players as unknown[]).length).toBe(2); // SameUser + Observer, not duplicate SameUser
+    await waitForNoMessage(observer, 'player_reconnected');
+
+    const firstTabSeesChat = waitForMessage(ws1, 'chat');
+    const observerSeesChat = waitForMessage(observer, 'chat');
+    send(ws2, { type: 'chat', message: 'hello from my other tab' });
+    const chat1 = await firstTabSeesChat;
+    const chatObserver = await observerSeesChat;
+
+    expect(chat1.playerId).toBe(stableId);
+    expect(chat1.message).toBe('hello from my other tab');
+    expect(chatObserver.playerId).toBe(stableId);
+
+    const updatedAfterClosePromise = waitForMessage(observer, 'players_updated');
+    await closeAndWait(ws2);
+    await updatedAfterClosePromise;
+    await waitForNoMessage(observer, 'player_left');
+
+    await Promise.all([closeAndWait(ws1), closeAndWait(observer)]);
   });
 
   it('game_event rate limiting rejects excess events', async () => {
