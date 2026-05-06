@@ -25,10 +25,35 @@ test.describe('Home page', () => {
     await expect(input).toBeVisible();
   });
 
-  test('theme toggle exists', async ({ page }) => {
+  test('light mode keeps home controls readable', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.theme = 'light';
+      localStorage.setItem('adventure:theme', 'light');
+    });
     await page.goto('/');
-    const toggle = page.locator('button[aria-label="Toggle theme"]');
-    await expect(toggle).toBeVisible();
+    const input = page.locator('input[aria-label="Room code"]');
+    const join = page.getByRole('button', { name: 'Join' }).first();
+    await expect(input).toBeVisible();
+    await expect(join).toBeVisible();
+
+    const inputStyles = await input.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { color: style.color, background: style.backgroundColor };
+    });
+    const joinStyles = await join.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { color: style.color, background: style.backgroundColor };
+    });
+
+    expect(inputStyles.color).toBe('rgb(15, 23, 42)');
+    expect(inputStyles.background).toBe('rgb(255, 255, 255)');
+    expect(joinStyles.color).toBe('rgb(255, 255, 255)');
+    expect(joinStyles.background).not.toBe('rgb(255, 255, 255)');
+  });
+
+  test('theme selector exists', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('select[title="Theme"]')).toBeVisible();
   });
 
   test('Low-FX toggle exists', async ({ page }) => {
