@@ -81,6 +81,20 @@ test.describe('DM Screen page', () => {
     await page.goto('/dm-screen');
     await expect(page.getByText('Waiting for Game tab')).toBeVisible();
   });
+
+  test('rolls dice in the DM screen tray', async ({ page }) => {
+    await page.goto('/dm-screen');
+    await page.getByRole('button', { name: 'd20' }).click();
+    await expect(page.getByText('Latest Roll')).toBeVisible();
+    await expect(page.locator('div.mt-1').filter({ hasText: /d20:/ })).toBeVisible();
+  });
+
+  test('can toggle the quick rules panel', async ({ page }) => {
+    await page.goto('/dm-screen');
+    await page.getByRole('button', { name: 'Rules Reference' }).click();
+    await expect(page.getByText('Quick Rules')).toBeVisible();
+    await expect(page.getByText('Difficulty DCs')).toBeVisible();
+  });
 });
 
 test.describe('Navigation', () => {

@@ -11,6 +11,13 @@ import {
   normalizeDmScreenPanels,
   toggleDmScreenPanel,
 } from '../lib/dmScreenPanels';
+import {
+  formatRollFormula,
+  normalizeRollHistory,
+  rollDmDice,
+  trimRollHistory,
+  type DMScreenRoll,
+} from '../lib/dmScreenDice';
 
 interface DMScreenState {
   units: Unit[];
@@ -25,6 +32,7 @@ interface DMScreenState {
 const CHANNEL_NAME = 'adventure-dm-screen';
 const PANEL_STORAGE_KEY = 'adventure:dm-screen:panels';
 const NOTES_STORAGE_KEY = 'adventure:dm-screen:notes';
+const ROLLS_STORAGE_KEY = 'adventure:dm-screen:rolls';
 
 function loadPanels(): DMScreenPanelId[] {
   try {
@@ -43,6 +51,15 @@ function loadNotes(): string {
   }
 }
 
+function loadRolls(): DMScreenRoll[] {
+  try {
+    const raw = localStorage.getItem(ROLLS_STORAGE_KEY);
+    return raw ? normalizeRollHistory(JSON.parse(raw)) : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function DMScreen() {
   const [state, setState] = useState<DMScreenState>({
     units: [], inCombat: false, combatRound: 0, turnIndex: 0, sceneName: '', dmNotes: '', partyInventoryCount: 0,
@@ -50,6 +67,8 @@ export default function DMScreen() {
   const [connected, setConnected] = useState(false);
   const [visiblePanels, setVisiblePanels] = useState<DMScreenPanelId[]>(loadPanels);
   const [notes, setNotes] = useState(loadNotes);
+  const [rollModifier, setRollModifier] = useState('0');
+  const [rollHistory, setRollHistory] = useState<DMScreenRoll[]>(loadRolls);
 
   useEffect(() => {
     localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify(visiblePanels));
@@ -58,6 +77,10 @@ export default function DMScreen() {
   useEffect(() => {
     localStorage.setItem(NOTES_STORAGE_KEY, notes);
   }, [notes]);
+
+  useEffect(() => {
+    localStorage.setItem(ROLLS_STORAGE_KEY, JSON.stringify(rollHistory));
+  }, [rollHistory]);
 
   useEffect(() => {
     const channel = new BroadcastChannel(CHANNEL_NAME);
@@ -79,6 +102,13 @@ export default function DMScreen() {
   const sortedByInit = [...units].filter((u) => u.hp > 0 || (u.hp === 0 && u.type === 'player')).sort((a, b) => b.initiative - a.initiative);
 
   const panelClass = 'bg-slate-900 border border-slate-800 rounded-xl p-4';
+  const latestRoll = rollHistory[0];
+
+  const handleRoll = (sides: number) => {
+    const modifier = Number.parseInt(rollModifier, 10);
+    const roll = rollDmDice(sides, Number.isFinite(modifier) ? modifier : 0);
+    setRollHistory((prev) => trimRollHistory([roll, ...prev]));
+  };
 
   const renderPanel = (panel: DMScreenPanelId) => {
     if (panel === 'initiative') {
@@ -183,6 +213,93 @@ export default function DMScreen() {
               <div className="text-xs text-slate-400 mt-1">HP {currentUnit.hp}/{currentUnit.maxHp} · AC {currentUnit.ac} · Initiative {currentUnit.initiative}</div>
             </>
           ) : <p className="text-xs text-slate-600 italic">No active combat turn</p>}
+        </div>
+      );
+    }
+
+    if (panel === 'dice') {
+      return (
+        <div key={panel} className={`${panelClass} bg-gradient-to-br from-slate-900 to-slate-950`}>
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">DM Dice Tray</h2>
+              <p className="text-[10px] text-slate-600">Private rolls, saved on this screen.</p>
+            </div>
+            <label className="flex items-center gap-1 text-[10px] text-slate-500">
+              Mod
+              <input
+                value={rollModifier}
+                onChange={(e) => setRollModifier(e.target.value)}
+                className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-right text-slate-200 outline-none focus:border-[#F38020]/60"
+                inputMode="numeric"
+              />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {[4, 6, 8, 10, 12, 20, 100].map((sides) => (
+              <button
+                key={sides}
+                onClick={() => handleRoll(sides)}
+                className="rounded-lg border border-[#F38020]/30 bg-[#F38020]/10 px-3 py-2 text-xs font-black text-[#F38020] transition-all hover:-translate-y-0.5 hover:border-[#F38020] hover:bg-[#F38020]/20"
+              >
+                d{sides}
+              </button>
+            ))}
+          </div>
+
+          {latestRoll ? (
+            <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-950/10 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-amber-500">Latest Roll</div>
+              <div className="mt-1 text-4xl font-black text-amber-300">{latestRoll.total}</div>
+              <div className="mt-1 text-xs text-slate-500">{formatRollFormula(latestRoll)}</div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-center text-xs text-slate-600">No rolls yet</div>
+          )}
+
+          {rollHistory.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">History</span>
+                <button onClick={() => setRollHistory([])} className="text-[10px] text-slate-600 hover:text-red-400">Clear</button>
+              </div>
+              {rollHistory.slice(0, 6).map((roll) => (
+                <div key={roll.id} className="flex items-center justify-between rounded border border-slate-800 bg-slate-950/40 px-2 py-1 text-xs">
+                  <span className="text-slate-500">{formatRollFormula(roll)}</span>
+                  <span className="font-bold text-slate-200">{roll.total}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (panel === 'reference') {
+      return (
+        <div key={panel} className={panelClass}>
+          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Rules</h2>
+          <div className="grid gap-2 text-xs text-slate-400">
+            <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-2">
+              <div className="font-bold text-slate-300">Difficulty DCs</div>
+              <div className="mt-1 grid grid-cols-5 gap-1 text-[10px] text-slate-500">
+                <span>Easy 10</span><span>Med 15</span><span>Hard 20</span><span>Heroic 25</span><span>Mythic 30</span>
+              </div>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-2">
+              <div className="font-bold text-slate-300">Cover</div>
+              <p className="mt-1 text-[10px] text-slate-500">Half +2 AC/DEX saves · 3/4 +5 AC/DEX saves · Full blocks targeting.</p>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-2">
+              <div className="font-bold text-slate-300">Concentration</div>
+              <p className="mt-1 text-[10px] text-slate-500">CON save DC = max(10, half damage). Fail drops spell zones tied to that caster.</p>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-2">
+              <div className="font-bold text-slate-300">Death Saves</div>
+              <p className="mt-1 text-[10px] text-slate-500">3 successes stabilize · 3 failures die · nat 20: 1 HP · nat 1: two failures.</p>
+            </div>
+          </div>
         </div>
       );
     }

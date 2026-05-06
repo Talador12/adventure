@@ -52,7 +52,7 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 ## RESUME HERE — v0.2.0 Roadmap
 
 ### Done This Session
-- **DM screen customization**: `/dm-screen` now has persistent visible-panel toggles, a reset button, and a local DM Notes panel. Added pure panel preference helpers + tests.
+- **DM screen command deck**: `/dm-screen` now has persistent visible-panel toggles, reset, local DM Notes, a private dice tray with roll history, and a compact rules reference panel. Added pure panel/dice helpers + tests.
 - **Verification**: `npx vitest run tests/player/dm-screen-panels.test.ts`, `npm run build`, and `npx playwright test tests/e2e/smoke.test.ts --grep "DM Screen"` all pass.
 - **505 campaigns** (225 full + 280 one-shots). All tones balanced. Full editorial pass.
 - **388 DMSidebar buttons** (was 265). 123 new data systems wired.
@@ -134,7 +134,7 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 **DM tools:**
 11. [ ] Encounter templates (save/load encounter setups with terrain + monsters)
 12. [ ] Session scheduler (calendar integration, availability polling)
-13. [x] DM screen customizable panels (persistent panel toggles + local notes panel)
+13. [x] DM screen customizable panels (persistent panel toggles + local notes/dice/reference panels)
 14. [ ] Random NPC generator with voice/personality/secret
 
 ### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul

@@ -1,16 +1,18 @@
 // DM screen panel preferences — keep layout custom without coupling tests to React.
 
-export const DM_SCREEN_PANEL_IDS = ['initiative', 'party', 'enemies', 'currentTurn', 'notes'] as const;
+export const DM_SCREEN_PANEL_IDS = ['initiative', 'party', 'enemies', 'currentTurn', 'dice', 'reference', 'notes'] as const;
 
 export type DMScreenPanelId = typeof DM_SCREEN_PANEL_IDS[number];
 
-export const DEFAULT_DM_SCREEN_PANELS: DMScreenPanelId[] = ['initiative', 'party', 'enemies', 'currentTurn'];
+export const DEFAULT_DM_SCREEN_PANELS: DMScreenPanelId[] = ['initiative', 'party', 'enemies', 'currentTurn', 'dice'];
 
 export const DM_SCREEN_PANEL_LABELS: Record<DMScreenPanelId, string> = {
   initiative: 'Initiative',
   party: 'Party',
   enemies: 'Enemies',
   currentTurn: 'Current Turn',
+  dice: 'Dice Tray',
+  reference: 'Rules Reference',
   notes: 'DM Notes',
 };
 
