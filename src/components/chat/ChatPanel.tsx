@@ -30,6 +30,7 @@ export interface ChatMessage {
   targetPlayerId?: string;
   // Reactions — emoji -> array of playerIds who reacted
   reactions?: Record<string, string[]>;
+  pending?: boolean;
 }
 
 // Parse /roll commands: /roll d20, /roll 2d6+3, /roll adv, /roll disadv, /roll 4d6kh3
@@ -108,6 +109,7 @@ interface ChatPanelProps {
   onMarkRead?: (timestamp: number) => void;
   typingUsers?: string[]; // usernames of people currently typing
   currentPlayerId?: string;
+  connectionCount?: number;
   readOnly?: boolean; // spectators: show messages but hide input
 }
 
@@ -321,7 +323,7 @@ function RollMessage({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onCommand, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, initialReadAnchorTs, onMarkRead, typingUsers, currentPlayerId, readOnly }: ChatPanelProps) {
+export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, onCommand, onTyping, onReaction, onLoadOlder, canLoadOlder, loadingOlder, initialReadAnchorTs, onMarkRead, typingUsers, currentPlayerId, connectionCount = 1, readOnly }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -434,7 +436,14 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 shrink-0">Chat</h2>
+      <div className="mb-3 shrink-0 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Chat</h2>
+        {connectionCount > 1 && (
+          <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300" title="You are connected to this lobby from multiple tabs">
+            {connectionCount} tabs active
+          </span>
+        )}
+      </div>
 
       {/* Messages */}
       <div className="flex-1 relative min-h-0">
@@ -459,7 +468,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
             ) : null;
 
             // Hover reaction picker (for non-system messages)
-            const showPicker = hoveredMsgId === msg.id && msg.type !== 'system' && msg.type !== 'join' && msg.type !== 'leave';
+            const showPicker = hoveredMsgId === msg.id && !msg.pending && msg.type !== 'system' && msg.type !== 'join' && msg.type !== 'leave';
 
             if (msg.type === 'dm') {
               return (
@@ -542,7 +551,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
               return (
                 <div key={msg.id} data-msg-id={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} relative group`} onMouseEnter={() => setHoveredMsgId(msg.id)} onMouseLeave={() => setHoveredMsgId(null)}>
                   <div className={`${isMe ? 'mr-8' : 'ml-8'}`}>
-                    <div className={`px-3 py-1 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
+                    <div className={`px-3 py-1 rounded-xl text-xs max-w-[85%] ${msg.pending ? 'opacity-70' : ''} ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
                     {reactionBar}
                   </div>
                   {showPicker && onReaction && (
@@ -568,7 +577,7 @@ export default function ChatPanel({ messages, onSend, onSlashRoll, onWhisper, on
                     <span className={`text-[10px] font-semibold ${isMe ? 'text-[#F38020]' : 'text-slate-400'}`}>{msg.username}</span>
                     <span className="text-[9px] text-slate-600">{formatTime(msg.timestamp)}</span>
                   </div>
-                  <div className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
+                  <div className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] ${msg.pending ? 'opacity-70' : ''} ${isMe ? 'bg-[#F38020]/20 text-slate-100 rounded-br-sm' : 'bg-slate-800 text-slate-300 rounded-bl-sm'}`}>{msg.text}</div>
                   {reactionBar}
                 </div>
                 {showPicker && onReaction && (

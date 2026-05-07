@@ -413,28 +413,24 @@ export default function Lobby() {
 
         case 'chat': {
           const incomingPlayerId = msg.playerId as string;
-          // If this is the server echo of our own optimistic message, skip it
-          if (incomingPlayerId === wsPlayerId) {
-            // Check if we have a pending optimistic message with the same text
-            const msgText = msg.message as string;
-            const matchKey = `${incomingPlayerId}:${msgText}`;
-            if (pendingChatIds.current.has(matchKey)) {
-              pendingChatIds.current.delete(matchKey);
-              return; // deduplicated — already shown optimistically
-            }
+          const incomingMessageId = typeof msg.messageId === 'string' ? msg.messageId : crypto.randomUUID();
+          const clientMessageId = typeof msg.clientMessageId === 'string' ? msg.clientMessageId : undefined;
+          const incomingMessage: ChatMessage = {
+            id: incomingMessageId,
+            type: 'chat',
+            playerId: incomingPlayerId,
+            username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
+          text: msg.message as string,
+          timestamp: msg.timestamp as number,
+          };
+          // If this is our server echo, replace optimistic text with canonical text.
+          if (clientMessageId && pendingChatIds.current.has(clientMessageId)) {
+            pendingChatIds.current.delete(clientMessageId);
+            setChatMessages((prev) => prev.map((m) => (m.id === clientMessageId ? { ...incomingMessage, reactions: m.reactions } : m)));
+            return; // deduplicated, but keep the server-canonical text
           }
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'chat',
-              playerId: incomingPlayerId,
-              username: msg.username as string,
-              avatar: msg.avatar as string | undefined,
-              text: msg.message as string,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
+          setChatMessages((prev) => [...prev, incomingMessage]);
           break;
         }
 
@@ -608,6 +604,7 @@ export default function Lobby() {
         case 'typing': {
           const typerId = msg.playerId as string;
           const typerName = msg.username as string;
+          if (typerId === wsPlayerId) break;
           setTypingUsers((prev) => {
             const next = new Map(prev);
             next.set(typerId, typerName);
@@ -653,26 +650,27 @@ export default function Lobby() {
     (text: string) => {
       // Optimistic local display: show immediately regardless of WS state
       const playerId = wsPlayerId || currentPlayer.id;
-      const dedupKey = `${playerId}:${text}`;
-      pendingChatIds.current.add(dedupKey);
+      const clientMessageId = crypto.randomUUID();
+      pendingChatIds.current.add(clientMessageId);
       setChatMessages((prev) => [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: clientMessageId,
           type: 'chat',
           playerId,
           username: currentPlayer.username,
           avatar: currentPlayer.avatar,
           text,
           timestamp: Date.now(),
+          pending: true,
         },
       ]);
       // Send to server (if connected, it'll broadcast to others + echo back, which we deduplicate)
-      send({ type: 'chat', message: text });
+      send({ type: 'chat', message: text, clientMessageId });
       // Persist to D1 (fire-and-forget)
       persistChatMessage(room, { username: currentPlayer.username, type: 'chat', text, avatarUrl: currentPlayer.avatar });
       // Clean up stale dedup keys after 5s (in case server never echoes)
-      setTimeout(() => pendingChatIds.current.delete(dedupKey), 5000);
+      setTimeout(() => pendingChatIds.current.delete(clientMessageId), 5000);
     },
     [send, wsPlayerId, currentPlayer.id, currentPlayer.username, currentPlayer.avatar, room]
   );
@@ -1551,7 +1549,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full-width on mobile when chat tab active, fixed width on desktop */}
         <div className={`w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0 ${lobbyMobilePanel !== 'chat' ? 'hidden sm:flex' : ''}`}>
-           <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} readOnly={isSpectating} />
+           <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} connectionCount={myConnectionCount} readOnly={isSpectating} />
         </div>
       </div>
 

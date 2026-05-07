@@ -613,8 +613,14 @@ export class Lobby {
           }
         }
 
+        const rawClientMessageId = data.clientMessageId;
+        const clientMessageId = typeof rawClientMessageId === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(rawClientMessageId)
+          ? rawClientMessageId
+          : undefined;
         this.broadcast({
           type: 'chat',
+          messageId: crypto.randomUUID(),
+          clientMessageId,
           playerId: session.id,
           username: session.username,
           avatar: session.avatar,
