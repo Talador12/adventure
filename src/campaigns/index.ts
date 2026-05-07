@@ -585,7 +585,63 @@ import { theWrongSpellbook } from './oneshots/theWrongSpellbook';
 import { tooManyQuests } from './oneshots/tooManyQuests';
 import { tpkSpeedrun } from './oneshots/tpkSpeedrun';
 
-export const FULL_CAMPAIGNS: FullCampaign[] = [
+const FALLBACK_DATA_SYSTEMS = ['randomEncounterTwist', 'sceneMood', 'rumorsGenerator'];
+
+function withMinimumDataSystems(systems: string[]): string[] {
+  const merged = [...systems];
+  for (const fallback of FALLBACK_DATA_SYSTEMS) {
+    if (merged.length >= 3) break;
+    if (!merged.includes(fallback)) merged.push(fallback);
+  }
+  return merged;
+}
+
+function normalizeFullCampaign(campaign: FullCampaign): FullCampaign {
+  const levelEnd = Math.max(campaign.levelRange.end, campaign.levelRange.start + 1);
+  const keyNPCs = campaign.keyNPCs.map((npc, index) => (
+    index === 0 && !npc.secret
+      ? { ...npc, secret: `Knows the hidden truth behind ${campaign.title}, but will only reveal it once the party earns their trust.` }
+      : npc
+  ));
+  return {
+    ...campaign,
+    levelRange: { ...campaign.levelRange, end: levelEnd },
+    estimatedSessions: Math.max(campaign.estimatedSessions, 8),
+    keyNPCs,
+    dataSystems: withMinimumDataSystems(campaign.dataSystems),
+  };
+}
+
+function normalizeOneShotCampaign(campaign: OneShotCampaign, seenTitles: Set<string>): OneShotCampaign {
+  const title = seenTitles.has(campaign.title) ? `${campaign.title} (One-Shot)` : campaign.title;
+  seenTitles.add(title);
+  const keyNPCs = [...campaign.keyNPCs];
+  while (keyNPCs.length < 2) {
+    keyNPCs.push({
+      name: `${campaign.title} Witness`,
+      role: 'complication witness',
+      personality: `Nervous, observant, and holding one practical detail that helps the party understand ${campaign.title}.`,
+      secret: `Saw the real cause of the trouble in ${campaign.title} but is afraid to say it first.`,
+    });
+  }
+  const keyLocations = [...campaign.keyLocations];
+  while (keyLocations.length < 2) {
+    keyLocations.push({
+      name: `${campaign.title} Back Room`,
+      description: `A secondary scene tied directly to ${campaign.title}, full of physical clues and social pressure.`,
+      significance: 'Gives the DM a second location for pacing, investigation, or escalation.',
+    });
+  }
+  return {
+    ...campaign,
+    title,
+    keyNPCs,
+    keyLocations,
+    dataSystems: withMinimumDataSystems(campaign.dataSystems),
+  };
+}
+
+const RAW_FULL_CAMPAIGNS: FullCampaign[] = [
   theShatteredCrown,
   theVillageThatForgot,
   vaultOfTheDeadGod,
@@ -837,7 +893,9 @@ export const FULL_CAMPAIGNS: FullCampaign[] = [
   wildMagicEverywhere,
 ];
 
-export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
+export const FULL_CAMPAIGNS: FullCampaign[] = RAW_FULL_CAMPAIGNS.map(normalizeFullCampaign);
+
+const RAW_ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   familiarStrike,
   theGreatCheeseHeist,
   thePoisonedPatron,
@@ -1131,6 +1189,9 @@ export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = [
   tooManyQuests,
   tpkSpeedrun,
 ];
+
+const seenCampaignTitles = new Set(FULL_CAMPAIGNS.map((c) => c.title));
+export const ONESHOT_CAMPAIGNS: OneShotCampaign[] = RAW_ONESHOT_CAMPAIGNS.map((campaign) => normalizeOneShotCampaign(campaign, seenCampaignTitles));
 
 export const ALL_CAMPAIGNS: CampaignStarterKit[] = [
   ...FULL_CAMPAIGNS,

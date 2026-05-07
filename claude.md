@@ -52,6 +52,16 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 ## RESUME HERE — v0.2.0 Roadmap
 
 ### Done This Session
+- **DM screen command deck**: `/dm-screen` now has persistent visible-panel toggles, reset, local DM Notes, a private dice tray with roll history, and a compact rules reference panel. Added pure panel/dice helpers + tests.
+- **Same-login multi-tab lobby fix**: lobby WebSocket identity now uses stable player IDs across tabs without treating a second tab as a reconnect. Parallel tabs share "me" chat styling and no longer kick each other into reconnected loops.
+- **Cross-tab chat reaction fix**: chat messages now carry server-owned stable message IDs, so reactions target the same bubble across tabs/browsers. Sender tabs reconcile optimistic messages through a client nonce, then replace optimistic text with the server-canonical message instead of dropping the echo.
+- **Optimistic chat hardening**: pending local chat bubbles are slightly dimmed and cannot be reacted to until the server echo assigns the canonical message ID.
+- **Same-login chat polish**: chat shows a `N tabs active` badge when the same account has multiple lobby tabs open and suppresses self-typing indicators from your other tabs.
+- **Resolved identity reconnect**: if lobby WebSocket connects before async auth finishes, it now reconnects once the real account ID arrives so the room does not keep an anonymous fallback identity.
+- **Light mode contrast**: replaced yellow-heavy light theme surfaces with neutral slate/white, fixed room-code input readability, and kept dark/colored buttons readable.
+- **Campaign catalog test recovery**: updated catalog integrity expectations for the 505-campaign expansion and added export-time normalization for thin campaign records (minimum NPC/location/system metadata, duplicate title disambiguation, NPC secrets, and sane full-campaign level/session ranges).
+- **Verification**: `npx vitest run tests/player/dm-screen-panels.test.ts`, `npx vitest run --config vitest.workers.config.ts tests/multiplayer/campaign.test.ts`, `npx playwright test tests/e2e/smoke.test.ts --grep "Home page"`, `npx playwright test tests/e2e/smoke.test.ts --grep "DM Screen"`, `npm run build`, and `npm run build-frontend` all pass.
+- **Player suite**: full `npx vitest run --config vitest.config.ts` is green again (5,436 tests).
 - **505 campaigns** (225 full + 280 one-shots). All tones balanced. Full editorial pass.
 - **388 DMSidebar buttons** (was 265). 123 new data systems wired.
 - **Export system**: campaign backup/restore, batch character export/import, homebrew, in-game Export/Sheet.
@@ -132,7 +142,7 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 **DM tools:**
 11. [ ] Encounter templates (save/load encounter setups with terrain + monsters)
 12. [ ] Session scheduler (calendar integration, availability polling)
-13. [ ] DM screen customizable panels (pick which references to show)
+13. [x] DM screen customizable panels (persistent panel toggles + local notes/dice/reference panels)
 14. [ ] Random NPC generator with voice/personality/secret
 
 ### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul
