@@ -24,16 +24,16 @@ import type {
 // Catalog integrity
 // ---------------------------------------------------------------------------
 describe('campaign catalog — integrity', () => {
-  it('has 69 full campaigns', () => {
-    expect(FULL_CAMPAIGNS.length).toBe(71);
+  it('has 225 full campaigns', () => {
+    expect(FULL_CAMPAIGNS.length).toBe(225);
   });
 
-  it('has 56 one-shot campaigns', () => {
-    expect(ONESHOT_CAMPAIGNS.length).toBe(56);
+  it('has 280 one-shot campaigns', () => {
+    expect(ONESHOT_CAMPAIGNS.length).toBe(280);
   });
 
-  it('ALL_CAMPAIGNS contains all 127', () => {
-    expect(ALL_CAMPAIGNS.length).toBe(127);
+  it('ALL_CAMPAIGNS contains all 505', () => {
+    expect(ALL_CAMPAIGNS.length).toBe(505);
   });
 
   it('all campaigns have unique IDs', () => {
@@ -250,13 +250,13 @@ describe('campaign catalog — lookup', () => {
 describe('campaign catalog — filtering', () => {
   it('filter by type=full returns only full campaigns', () => {
     const results = filterCampaigns({ type: 'full' });
-    expect(results.length).toBe(71);
+    expect(results.length).toBe(FULL_CAMPAIGNS.length);
     results.forEach((c) => expect(c.type).toBe('full'));
   });
 
   it('filter by type=oneshot returns only one-shots', () => {
     const results = filterCampaigns({ type: 'oneshot' });
-    expect(results.length).toBe(56);
+    expect(results.length).toBe(ONESHOT_CAMPAIGNS.length);
     results.forEach((c) => expect(c.type).toBe('oneshot'));
   });
 
@@ -316,7 +316,7 @@ describe('campaign catalog — filtering', () => {
 
   it('empty filter returns all campaigns', () => {
     const results = filterCampaigns({});
-    expect(results.length).toBe(127);
+    expect(results.length).toBe(ALL_CAMPAIGNS.length);
   });
 });
 
@@ -357,7 +357,7 @@ describe('campaign catalog — aggregation', () => {
   it('every campaign appears in at least one tone group', () => {
     const grouped = getCampaignsByTone();
     const allGrouped = Object.values(grouped).flat();
-    expect(allGrouped.length).toBe(127);
+    expect(allGrouped.length).toBe(ALL_CAMPAIGNS.length);
   });
 });
 

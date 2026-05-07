@@ -13,6 +13,7 @@ export interface WSMessage {
 interface UseWebSocketOptions {
   roomId: string;
   username: string;
+  playerId?: string;
   avatar?: string;
   spectate?: boolean; // join as spectator (no seat)
   onMessage?: (msg: WSMessage) => void;
@@ -31,19 +32,22 @@ const MAX_RECONNECT_DELAY = 10000;
 const BASE_RECONNECT_DELAY = 1000;
 const PING_INTERVAL = 25000; // 25s keepalive
 
-// Session storage key for stable player ID across reconnects
+// Local storage key for stable player ID across tabs and reconnects
 const PLAYER_ID_KEY = 'adventure:playerId';
 
-export function useWebSocket({ roomId, username, avatar, spectate, onMessage, onTimeSync, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
+export function useWebSocket({ roomId, username, playerId, avatar, spectate, onMessage, onTimeSync, enabled = true }: UseWebSocketOptions): UseWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pingTimer = useRef<ReturnType<typeof setInterval>>(undefined);
   const reconnectAttempt = useRef(0);
   const intentionalClose = useRef(false);
-  // Stable player ID — persisted to sessionStorage so reconnects reuse the same ID
+  // Stable player ID — persisted to localStorage so same-login tabs share identity.
   const playerIdRef = useRef<string | null>(
-    (() => { try { return sessionStorage.getItem(`${PLAYER_ID_KEY}:${roomId}`); } catch { return null; } })()
+    (() => {
+      if (playerId) return playerId;
+      try { return localStorage.getItem(`${PLAYER_ID_KEY}:${roomId}`); } catch { return null; }
+    })()
   );
   // Offline message queue — buffered sends when socket is not OPEN (Phase 8.5)
   const messageQueue = useRef<WSMessage[]>([]);
@@ -53,9 +57,11 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
   const onTimeSyncRef = useRef(onTimeSync);
   onTimeSyncRef.current = onTimeSync;
   const usernameRef = useRef(username);
+  const stablePlayerIdRef = useRef(playerId);
   const avatarRef = useRef(avatar);
   avatarRef.current = avatar;
   usernameRef.current = username;
+  stablePlayerIdRef.current = playerId;
 
   const stopPing = useCallback(() => {
     if (pingTimer.current) {
@@ -106,6 +112,7 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
     ws.addEventListener('open', () => {
       clearTimeout(connectTimeout);
       setStatus('connected');
+      const isReconnectAttempt = reconnectAttempt.current > 0;
       reconnectAttempt.current = 0;
 
       // Send join message with current username + avatar + stable playerId (for reconnect)
@@ -114,7 +121,9 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
         username: usernameRef.current,
         avatar: avatarRef.current,
       };
-      if (playerIdRef.current) joinMsg.playerId = playerIdRef.current;
+      const effectivePlayerId = stablePlayerIdRef.current || playerIdRef.current;
+      if (effectivePlayerId) joinMsg.playerId = effectivePlayerId;
+      if (isReconnectAttempt) joinMsg.reconnect = true;
       if (spectate) joinMsg.spectate = true;
       ws.send(JSON.stringify(joinMsg));
 
@@ -158,7 +167,7 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
         // Capture stable playerId from welcome (Phase 8.1)
         if (data.type === 'welcome' && typeof data.playerId === 'string') {
           playerIdRef.current = data.playerId;
-          try { sessionStorage.setItem(`${PLAYER_ID_KEY}:${roomId}`, data.playerId); } catch { /* quota */ }
+          try { localStorage.setItem(`${PLAYER_ID_KEY}:${roomId}`, data.playerId); } catch { /* quota */ }
         }
         onMessageRef.current?.(data);
       } catch {
@@ -186,6 +195,17 @@ export function useWebSocket({ roomId, username, avatar, spectate, onMessage, on
       ws.close();
     });
   }, [roomId, stopPing]); // username removed — read from ref instead
+
+  useEffect(() => {
+    if (!playerId || playerIdRef.current === playerId) return;
+    playerIdRef.current = playerId;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      // The app initially connects before async auth resolves. Reconnect once
+      // with the real account id so same-login tabs share identity correctly.
+      intentionalClose.current = false;
+      wsRef.current.close();
+    }
+  }, [playerId]);
 
   const send = useCallback((msg: WSMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

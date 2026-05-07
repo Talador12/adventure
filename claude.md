@@ -52,6 +52,16 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 ## RESUME HERE — v0.2.0 Roadmap
 
 ### Done This Session
+- **DM screen command deck**: `/dm-screen` now has persistent visible-panel toggles, reset, local DM Notes, a private dice tray with roll history, and a compact rules reference panel. Added pure panel/dice helpers + tests.
+- **Same-login multi-tab lobby fix**: lobby WebSocket identity now uses stable player IDs across tabs without treating a second tab as a reconnect. Parallel tabs share "me" chat styling and no longer kick each other into reconnected loops.
+- **Cross-tab chat reaction fix**: chat messages now carry server-owned stable message IDs, so reactions target the same bubble across tabs/browsers. Sender tabs reconcile optimistic messages through a client nonce, then replace optimistic text with the server-canonical message instead of dropping the echo.
+- **Optimistic chat hardening**: pending local chat bubbles are slightly dimmed and cannot be reacted to until the server echo assigns the canonical message ID.
+- **Same-login chat polish**: chat shows a `N tabs active` badge when the same account has multiple lobby tabs open and suppresses self-typing indicators from your other tabs.
+- **Resolved identity reconnect**: if lobby WebSocket connects before async auth finishes, it now reconnects once the real account ID arrives so the room does not keep an anonymous fallback identity.
+- **Light mode contrast**: replaced yellow-heavy light theme surfaces with neutral slate/white, fixed room-code input readability, and kept dark/colored buttons readable.
+- **Campaign catalog test recovery**: updated catalog integrity expectations for the 505-campaign expansion and added export-time normalization for thin campaign records (minimum NPC/location/system metadata, duplicate title disambiguation, NPC secrets, and sane full-campaign level/session ranges).
+- **Verification**: `npx vitest run tests/player/dm-screen-panels.test.ts`, `npx vitest run --config vitest.workers.config.ts tests/multiplayer/campaign.test.ts`, `npx playwright test tests/e2e/smoke.test.ts --grep "Home page"`, `npx playwright test tests/e2e/smoke.test.ts --grep "DM Screen"`, `npm run build`, and `npm run build-frontend` all pass.
+- **Player suite**: full `npx vitest run --config vitest.config.ts` is green again (5,436 tests).
 - **505 campaigns** (225 full + 280 one-shots). All tones balanced. Full editorial pass.
 - **388 DMSidebar buttons** (was 265). 123 new data systems wired.
 - **Export system**: campaign backup/restore, batch character export/import, homebrew, in-game Export/Sheet.
@@ -93,25 +103,47 @@ Uses semantic versioning. `make release` tags and publishes to GitHub. `make rel
 21. [ ] Dependabot vulns — blocked on Node 21 incompatibility, needs Node upgrade
 22. [ ] Doodle pad persistence — D1 archival + R2 snapshots
 
-### v0.3.0 Roadmap (in progress)
+### v0.3.0 Roadmap — COMPLETE
 
 **Gameplay depth:**
 1. [x] Counterspell reaction (enemy spell prompt, ability check for higher-level spells)
 2. [x] Ritual casting (6 ritual spells, no-slot cast for Wizard/Cleric/Druid, CombatToolbar toggle)
-3. [ ] Multiclass support (class dip, combined spell slots, prerequisite checks)
+3. [x] Multiclass spell slots (PHB p165 combined caster table, classLevels tracking)
 4. [x] Conditions system overhaul (12 conditions with mechanical effects, advantage/disadvantage, auto-crit)
 5. [x] Initiative variants (standard, side, popcorn, speed factor with tooltips)
 
 **World building:**
 6. [x] Campaign wiki (DM-editable, category filters, search, wiki links, WebSocket sync)
-7. [ ] Random dungeon generator improvements (themed rooms, puzzle placement, loot scaling)
+7. [x] Random dungeon generator improvements (7 themes, room types, loot/enemies/traps per theme)
 8. [x] NPC conversation memory (AI remembers past interactions, sentiment, WebSocket sync)
 
 **Quality of life:**
 9. [x] Keyboard shortcuts reference panel (? key, W for wiki)
-10. [ ] Undo/redo for character edits
+10. [x] Undo/redo for character edits (50-state stack, Ctrl+Z/Shift+Z, greyed buttons)
 11. [x] Dice roller standalone mode (/dice, no auth, presets, custom notation, 10.3KB code-split)
 12. [x] Chat commands expansion (/r, /emote, /init, /hp, /conditions)
+
+### v0.4.0 Roadmap (next)
+
+**Combat depth:**
+1. [ ] Opportunity attacks with reaction prompts
+2. [ ] Grapple/shove contest system (STR athletics vs STR/DEX)
+3. [ ] Cover system wired to combat (half/three-quarter/full cover AC bonuses)
+4. [ ] Lair actions on round 20 (DM configurable per encounter)
+5. [ ] Legendary actions for boss monsters (1-3 per round between turns)
+
+**Player experience:**
+6. [ ] Character backstory integration (AI weaves backstory into narration)
+7. [ ] Achievement system (first crit, first level up, 100 monsters slain, etc)
+8. [ ] Party composition advisor (missing roles, synergy suggestions)
+9. [ ] Crafting system (use harvested monster parts + gold to make items)
+10. [ ] Downtime activities expanded (training, research, carousing, pit fighting)
+
+**DM tools:**
+11. [ ] Encounter templates (save/load encounter setups with terrain + monsters)
+12. [ ] Session scheduler (calendar integration, availability polling)
+13. [x] DM screen customizable panels (persistent panel toggles + local notes/dice/reference panels)
+14. [ ] Random NPC generator with voice/personality/secret
 
 ### Recent Session (Phase 6-14) — Massive Campaign & i18n Overhaul
 

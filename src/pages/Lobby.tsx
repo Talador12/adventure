@@ -21,6 +21,7 @@ interface LobbyPlayer {
   ready?: boolean;
   characterId?: string;
   characterName?: string;
+  connectionCount?: number;
 }
 
 type SeatType = 'human' | 'ai' | 'empty';
@@ -322,6 +323,12 @@ export default function Lobby() {
           setChatMessages((prev) => [...prev, { id: crypto.randomUUID(), type: 'join', username: msg.username as string, text: `${msg.username} reconnected`, timestamp: msg.timestamp as number }]);
           break;
 
+        case 'players_updated':
+          setPlayers(msg.players as LobbyPlayer[]);
+          if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
+          if (Array.isArray(msg.spectators)) setSpectators(msg.spectators as { id: string; username: string; avatar?: string }[]);
+          break;
+
         case 'player_left':
           setPlayers(msg.players as LobbyPlayer[]);
           if (Array.isArray(msg.seats)) setSeats(msg.seats as Seat[]);
@@ -406,28 +413,24 @@ export default function Lobby() {
 
         case 'chat': {
           const incomingPlayerId = msg.playerId as string;
-          // If this is the server echo of our own optimistic message, skip it
-          if (incomingPlayerId === wsPlayerId) {
-            // Check if we have a pending optimistic message with the same text
-            const msgText = msg.message as string;
-            const matchKey = `${incomingPlayerId}:${msgText}`;
-            if (pendingChatIds.current.has(matchKey)) {
-              pendingChatIds.current.delete(matchKey);
-              return; // deduplicated — already shown optimistically
-            }
+          const incomingMessageId = typeof msg.messageId === 'string' ? msg.messageId : crypto.randomUUID();
+          const clientMessageId = typeof msg.clientMessageId === 'string' ? msg.clientMessageId : undefined;
+          const incomingMessage: ChatMessage = {
+            id: incomingMessageId,
+            type: 'chat',
+            playerId: incomingPlayerId,
+            username: msg.username as string,
+            avatar: msg.avatar as string | undefined,
+          text: msg.message as string,
+          timestamp: msg.timestamp as number,
+          };
+          // If this is our server echo, replace optimistic text with canonical text.
+          if (clientMessageId && pendingChatIds.current.has(clientMessageId)) {
+            pendingChatIds.current.delete(clientMessageId);
+            setChatMessages((prev) => prev.map((m) => (m.id === clientMessageId ? { ...incomingMessage, reactions: m.reactions } : m)));
+            return; // deduplicated, but keep the server-canonical text
           }
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              type: 'chat',
-              playerId: incomingPlayerId,
-              username: msg.username as string,
-              avatar: msg.avatar as string | undefined,
-              text: msg.message as string,
-              timestamp: msg.timestamp as number,
-            },
-          ]);
+          setChatMessages((prev) => [...prev, incomingMessage]);
           break;
         }
 
@@ -601,6 +604,7 @@ export default function Lobby() {
         case 'typing': {
           const typerId = msg.playerId as string;
           const typerName = msg.username as string;
+          if (typerId === wsPlayerId) break;
           setTypingUsers((prev) => {
             const next = new Map(prev);
             next.set(typerId, typerName);
@@ -627,6 +631,7 @@ export default function Lobby() {
   const { status, send } = useWebSocket({
     roomId: room,
     username: currentPlayer.username,
+    playerId: currentPlayer.id !== 'local' ? currentPlayer.id : undefined,
     avatar: currentPlayer.avatar,
     spectate: wantsSpectate,
     onMessage: handleWsMessage,
@@ -645,26 +650,27 @@ export default function Lobby() {
     (text: string) => {
       // Optimistic local display: show immediately regardless of WS state
       const playerId = wsPlayerId || currentPlayer.id;
-      const dedupKey = `${playerId}:${text}`;
-      pendingChatIds.current.add(dedupKey);
+      const clientMessageId = crypto.randomUUID();
+      pendingChatIds.current.add(clientMessageId);
       setChatMessages((prev) => [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: clientMessageId,
           type: 'chat',
           playerId,
           username: currentPlayer.username,
           avatar: currentPlayer.avatar,
           text,
           timestamp: Date.now(),
+          pending: true,
         },
       ]);
       // Send to server (if connected, it'll broadcast to others + echo back, which we deduplicate)
-      send({ type: 'chat', message: text });
+      send({ type: 'chat', message: text, clientMessageId });
       // Persist to D1 (fire-and-forget)
       persistChatMessage(room, { username: currentPlayer.username, type: 'chat', text, avatarUrl: currentPlayer.avatar });
       // Clean up stale dedup keys after 5s (in case server never echoes)
-      setTimeout(() => pendingChatIds.current.delete(dedupKey), 5000);
+      setTimeout(() => pendingChatIds.current.delete(clientMessageId), 5000);
     },
     [send, wsPlayerId, currentPlayer.id, currentPlayer.username, currentPlayer.avatar, room]
   );
@@ -685,6 +691,7 @@ export default function Lobby() {
     const jitter = Math.sqrt(hist.reduce((s, v) => s + (v - avgRtt) ** 2, 0) / hist.length);
     return (avgRtt > autoStrictRttMs || jitter > autoStrictJitterMs) ? 'strict' : 'smooth';
   })();
+  const myConnectionCount = players.find((p) => p.id === wsPlayerId)?.connectionCount || 1;
 
   // Fun default names for lobby (no character selected yet)
   const LOBBY_DEFAULTS = ['A Curious Onlooker', 'Someone at the Bar', "The Innkeeper's Cat", 'A Dice-Obsessed Patron', 'Definitely Not a Mimic'];
@@ -1178,6 +1185,11 @@ export default function Lobby() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Party</h2>
+                {myConnectionCount > 1 && (
+                  <span className="rounded-full border border-sky-700/40 bg-sky-900/20 px-2 py-0.5 text-[10px] font-semibold text-sky-300" title="Your account is connected from multiple tabs in this lobby">
+                    You: {myConnectionCount} tabs
+                  </span>
+                )}
                 {/* DM seat badge */}
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-semibold border ${
                   dmSeatType === 'ai'
@@ -1303,6 +1315,11 @@ export default function Lobby() {
                             playerLatency[seat.playerId] > 300 ? 'bg-red-900/30 text-red-400' : playerLatency[seat.playerId] > 150 ? 'bg-amber-900/30 text-amber-400' : 'bg-emerald-900/30 text-emerald-400'
                           }`} title={`RTT: ${playerLatency[seat.playerId]}ms`}>
                             {playerLatency[seat.playerId]}ms
+                          </span>
+                        )}
+                        {seat.type === 'human' && seat.playerId && (players.find((p) => p.id === seat.playerId)?.connectionCount || 0) > 1 && (
+                          <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-sky-900/30 text-sky-300" title="Same player is connected from multiple tabs">
+                            {players.find((p) => p.id === seat.playerId)?.connectionCount} tabs
                           </span>
                         )}
                       </div>
@@ -1532,7 +1549,7 @@ export default function Lobby() {
 
         {/* Right sidebar: chat — full-width on mobile when chat tab active, fixed width on desktop */}
         <div className={`w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-slate-800/60 bg-slate-900/60 flex flex-col p-3 sm:p-4 shrink-0 overflow-hidden backdrop-blur-sm min-h-[200px] sm:min-h-0 ${lobbyMobilePanel !== 'chat' ? 'hidden sm:flex' : ''}`}>
-           <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} readOnly={isSpectating} />
+           <ChatPanel messages={chatMessages} onSend={handleChatSend} onSlashRoll={handleSlashRoll} onWhisper={(target, msg) => send({ type: 'whisper', targetUsername: target, message: msg })} onReaction={(messageId, emoji) => send({ type: 'chat_reaction', messageId, emoji })} onTyping={() => send({ type: 'typing' })} onLoadOlder={handleLoadOlderChat} canLoadOlder={canLoadOlderChat} loadingOlder={loadingOlderChat} initialReadAnchorTs={initialReadAnchorTs} onMarkRead={handleMarkRead} typingUsers={Array.from(typingUsers.values())} currentPlayerId={wsPlayerId || undefined} connectionCount={myConnectionCount} readOnly={isSpectating} />
         </div>
       </div>
 
